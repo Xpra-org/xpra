@@ -148,8 +148,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         gobject.GObject.__init__(self)
         X11ServerBase.__init__(self)
 
-    def init(self, clobber, sockets, opts):
-        X11ServerBase.init(self, clobber, sockets, opts)
+    def init(self, clobber, opts):
+        X11ServerBase.init(self, clobber, opts)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)

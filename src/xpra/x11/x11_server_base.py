@@ -60,10 +60,10 @@ class X11ServerBase(GTKServerBase):
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 
-    def init(self, clobber, sockets, opts):
+    def init(self, clobber, opts):
         self.clobber = clobber
         self.x11_init()
-        GTKServerBase.init(self, sockets, opts)
+        GTKServerBase.init(self, opts)
 
 
     def x11_init(self):

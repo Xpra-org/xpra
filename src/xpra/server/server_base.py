@@ -9,24 +9,19 @@
 import os.path
 import threading
 import sys
-import hmac
 import time
 import socket
-import signal
 
 from xpra.log import Logger
 log = Logger()
 
-import xpra
-from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, python_platform, get_codecs, codec_versions, \
+from xpra.scripts.config import PREFERED_ENCODING_ORDER, python_platform, get_codecs, codec_versions, \
         has_PIL, has_enc_vpx, has_enc_x264, has_enc_nvenc, has_enc_webp, has_enc_webp_lossless
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
-from xpra.scripts.server import deadly_signal
-from xpra.net.bytestreams import SocketConnection
-from xpra.os_util import set_application_name, thread, get_hex_uuid, platform_name, SIGNAMES
-from xpra.version_util import version_compat_check, add_version_info
-from xpra.net.protocol import Protocol, has_rencode, has_lz4, rencode_version, use_rencode
-from xpra.util import typedict, alnum
+from xpra.server.server_core import ServerCore
+from xpra.os_util import thread, get_hex_uuid, platform_name
+from xpra.version_util import add_version_info
+from xpra.util import alnum
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
@@ -60,7 +55,7 @@ if has_enc_webp_lossless:
 DEFAULT_ENCODING = [x for x in PREFERED_ENCODING_ORDER if x in SERVER_ENCODINGS][0]
 
 
-class ServerBase(object):
+class ServerBase(ServerCore):
     """
         This is the base class for servers.
         It provides all the generic functions but is not tied
@@ -69,38 +64,24 @@ class ServerBase(object):
     """
 
     def __init__(self):
+        ServerCore.__init__(self)
         log("ServerBase.__init__()")
         self.init_uuid()
-        self.start_time = time.time()
 
         # This must happen early, before loading in windows at least:
-        self._potential_protocols = []
         self._server_sources = {}
-        self._aliases = {}
-        self._reverse_aliases = {}
-
-        #maps sockets to type
-        self.socket_types = {}
 
         #so clients can store persistent attributes on windows:
         self.client_properties = {}
 
         self.supports_mmap = False
         self.default_encoding = DEFAULT_ENCODING
-        self.session_name = "Xpra"
         self.randr = False
 
         self._window_to_id = {}
         self._id_to_window = {}
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
-
-        ### Misc. state:
-        self._upgrading = False
-
-        #Features:
-        self.compression_level = 1
-        self.password_file = ""
 
         self.default_quality = -1
         self.default_min_quality = 0
@@ -127,9 +108,9 @@ class ServerBase(object):
     def source_remove(self, timer):
         raise NotImplementedError()
 
-    def init(self, sockets, opts):
-        log("ServerBase.init(%s, %s)", sockets, opts)
-
+    def init(self, opts):
+        ServerCore.init(self, opts)
+        log("ServerBase.init(%s)", opts)
         self.supports_mmap = opts.mmap
         if opts.encoding and opts.encoding not in SERVER_ENCODINGS:
             log.warn("ignored invalid default encoding option: %s", opts.encoding)
@@ -137,12 +118,6 @@ class ServerBase(object):
             self.default_encoding = opts.encoding
         if not self.default_encoding:
             self.default_encoding = DEFAULT_ENCODING
-        self.session_name = opts.session_name
-        set_application_name(self.session_name)
-
-        #Features:
-        self.compression_level = opts.compression_level
-        self.password_file = opts.password_file
 
         self.default_quality = opts.quality
         self.default_min_quality = opts.min_quality
@@ -163,10 +138,6 @@ class ServerBase(object):
         self.init_notification_forwarder(opts.notifications)
 
         self.load_existing_windows(opts.system_tray)
-
-        ### All right, we're ready to accept customers:
-        for socktype, sock in sockets:
-            self.idle_add(self.add_listen_socket, socktype, sock)
 
         if opts.pings:
             self.timeout_add(1000, self.send_ping)
@@ -282,12 +253,7 @@ class ServerBase(object):
         return True
 
     def init_packet_handlers(self):
-        log("initializing packet handlers")
-        self._default_packet_handlers = {
-            "hello":                                self._process_hello,
-            Protocol.CONNECTION_LOST:               self._process_connection_lost,
-            Protocol.GIBBERISH:                     self._process_gibberish,
-            }
+        ServerCore.init_packet_handlers(self)
         self._authenticated_packet_handlers = {
             "set-clipboard-enabled":                self._process_clipboard_enabled_status,
             "set-keyboard-sync-enabled":            self._process_keyboard_sync_enabled_status,
@@ -344,97 +310,17 @@ class ServerBase(object):
         packet_types = list(self._default_packet_handlers.keys())
         packet_types += list(self._authenticated_packet_handlers.keys())
         packet_types += list(self._authenticated_ui_packet_handlers.keys())
-        i = 1
-        for key in packet_types:
-            self._aliases[i] = key
-            self._reverse_aliases[key] = i
-            i += 1
+        self.do_init_aliases(packet_types)
 
-    def signal_quit(self, signum, frame):
-        log.info("")
-        log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
-        signal.signal(signal.SIGINT, deadly_signal)
-        signal.signal(signal.SIGTERM, deadly_signal)
-        self.clean_quit()
-
-    def clean_quit(self):
-        self.cleanup()
-        def quit_timer(*args):
-            log.debug("quit_timer()")
-            self.quit(False)
-        self.timeout_add(500, quit_timer)
-        def force_quit(*args):
-            log.debug("force_quit()")
-            os._exit(1)
-        self.timeout_add(5000, force_quit)
-
-    def quit(self, upgrading):
-        log("quit(%s)", upgrading)
-        self._upgrading = upgrading
-        log.info("xpra is terminating.")
-        sys.stdout.flush()
-        self.do_quit()
-
-    def do_quit(self):
-        raise NotImplementedError()
-
-    def run(self):
-        log.info("xpra server version %s" % xpra.__version__)
-        log.info("running with pid %s" % os.getpid())
-        def print_ready():
-            log.info("xpra is ready.")
-            sys.stdout.flush()
-        self.idle_add(print_ready)
-        self.do_run()
-        return self._upgrading
-
-    def do_run(self):
-        raise NotImplementedError()
 
     def cleanup(self, *args):
         if self.notifications_forwarder:
             thread.start_new_thread(self.notifications_forwarder.release, ())
             self.notifications_forwarder = None
-        log("cleanup will disconnect: %s", self._potential_protocols)
-        for proto in self._potential_protocols:
-            if self._upgrading:
-                reason = "upgrading"
-            else:
-                reason = "shutting down"
-            self.disconnect_client(proto, reason)
-        self._potential_protocols = []
+        ServerCore.cleanup(self)
 
     def add_listen_socket(self, socktype, socket):
         raise NotImplementedError()
-
-    def _new_connection(self, listener, *args):
-        socktype = self.socket_types.get(listener, "")
-        sock, address = listener.accept()
-        if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
-            log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
-            sock.close()
-            return  True
-        try:
-            peername = sock.getpeername()
-        except:
-            peername = str(address)
-        sockname = sock.getsockname()
-        target = peername or sockname
-        log("new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", args, sock, sockname, address, peername)
-        sc = SocketConnection(sock, sockname, address, target, socktype)
-        log.info("New connection received: %s", sc)
-        protocol = Protocol(sc, self.process_packet)
-        protocol.large_packets.append("info-response")
-        protocol.salt = None
-        protocol.set_compression_level(self.compression_level)
-        self._potential_protocols.append(protocol)
-        protocol.start()
-        def verify_connection_accepted(protocol):
-            if not protocol._closed and protocol in self._potential_protocols and protocol not in self._server_sources:
-                log.error("connection timedout: %s", protocol)
-                self.send_disconnect(protocol, "login timeout")
-        self.timeout_add(10*1000, verify_connection_accepted, protocol)
-        return True
 
     def _process_shutdown_server(self, proto, packet):
         log.info("Shutting down in response to request")
@@ -445,15 +331,13 @@ class ServerBase(object):
                 pass
         self.timeout_add(1000, self.clean_quit)
 
-    def send_disconnect(self, proto, reason):
-        log("send_disconnect(%s, %s)", proto, reason)
-        if proto._closed:
-            return
-        def force_disconnect(*args):
-            self.cleanup_source(proto)
-            proto.close()
-        proto.send_now(["disconnect", reason])
-        self.timeout_add(1000, force_disconnect)
+    def force_disconnect(self, proto):
+        self.cleanup_source(proto)
+        ServerCore.force_disconnect(self, proto)
+
+    def disconnect_protocol(self, protocol, reason):
+        ServerCore.disconnect_protocol(self, protocol, reason)
+        self.cleanup_source(protocol)
 
     def cleanup_source(self, protocol):
         #this ensures that from now on we ignore any incoming packets coming
@@ -467,15 +351,6 @@ class ServerBase(object):
             self._potential_protocols.remove(protocol)
         return source
 
-    def disconnect_client(self, protocol, reason):
-        if protocol:
-            log.info("Disconnecting existing client %s, reason is: %s", protocol, reason)
-            # send message asking client to disconnect (politely):
-            protocol.flush_then_close(["disconnect", reason])
-            self.cleanup_source(protocol)
-        if len(self._server_sources)==0:
-            self.idle_add(self.no_more_clients)
-        log.info("Connection lost")
 
     def no_more_clients(self):
         #so it is now safe to clear them:
@@ -500,119 +375,8 @@ class ServerBase(object):
             self._focus(source, 0, [])
         sys.stdout.flush()
 
-    def _process_gibberish(self, proto, packet):
-        data = packet[1]
-        log.info("Received uninterpretable nonsense: %s", repr(data))
-        self.disconnect_client(proto, "invalid packet format")
 
-    def _send_password_challenge(self, proto, server_cipher):
-        proto.salt = get_hex_uuid()
-        log.info("Password required, sending challenge")
-        proto.send_now(("challenge", proto.salt, server_cipher))
-
-    def _verify_password(self, proto, client_hash, password):
-        salt = proto.salt
-        proto.salt = None
-        if not salt:
-            self.send_disconnect(proto, "illegal challenge response received - salt cleared or unset")
-            return
-        password_hash = hmac.HMAC(password, salt)
-        if client_hash != password_hash.hexdigest():
-            def login_failed(*args):
-                log.error("Password supplied does not match! dropping the connection.")
-                self.send_disconnect(proto, "invalid password")
-            self.timeout_add(1000, login_failed)
-            return False
-        log.info("Password matches!")
-        sys.stdout.flush()
-        return True
-
-    def get_password(self):
-        if not self.password_file:
-            return None
-        filename = os.path.expanduser(self.password_file)
-        if not filename:
-            return  None
-        try:
-            passwordFile = open(filename, "rU")
-            password  = passwordFile.read()
-            passwordFile.close()
-            while password.endswith("\n") or password.endswith("\r"):
-                password = password[:-1]
-            return password
-        except IOError, e:
-            log.error("cannot open password file %s: %s", filename, e)
-            return  None
-
-
-    def _process_hello(self, proto, packet):
-        capabilities = packet[1]
-        c = typedict(capabilities)
-
-        proto.chunked_compression = c.boolget("chunked_compression")
-        if use_rencode and c.boolget("rencode"):
-            proto.enable_rencode()
-        if c.boolget("lz4") and proto.chunked_compression and self.compression_level>0 and self.compression_level<3:
-            proto.enable_lz4()
-
-        log("process_hello: capabilities=%s", capabilities)
-        if c.boolget("version_request"):
-            response = {"version" : xpra.__version__}
-            proto.send_now(("hello", response))
-            self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
-            return
-        if not self.sanity_checks(proto, c):
-            return
-        remote_version = c.strget("version")
-        verr = version_compat_check(remote_version)
-        if verr is not None:
-            self.disconnect_client(proto, "incompatible version: %s" % verr)
-            proto.close()
-            return
-
-        #client may have requested encryption:
-        cipher = c.strget("cipher")
-        cipher_iv = c.strget("cipher.iv")
-        key_salt = c.strget("cipher.key_salt")
-        iterations = c.intget("cipher.key_stretch_iterations")
-        password = None
-        if bool(self.password_file) or (cipher is not None and cipher_iv is not None):
-            #we will need the password:
-            log("process_hello password is required!")
-            password = self.get_password()
-            if not password:
-                self.send_disconnect(proto, "password not found")
-                return
-        server_cipher = None
-        if cipher and cipher_iv:
-            if cipher not in ENCRYPTION_CIPHERS:
-                log.warn("unsupported cipher: %s", cipher)
-                self.send_disconnect(proto, "unsupported cipher")
-                return
-            proto.set_cipher_out(cipher, cipher_iv, password, key_salt, iterations)
-            #use the same cipher as used by the client:
-            iv = get_hex_uuid()[:16]
-            key_salt = get_hex_uuid()
-            iterations = 1000
-            proto.set_cipher_in(cipher, iv, password, key_salt, iterations)
-            server_cipher = {
-                             "cipher"           : cipher,
-                             "cipher.iv"        : iv,
-                             "cipher.key_salt"  : key_salt,
-                             "cipher.key_stretch_iterations" : iterations
-                             }
-            log("server cipher=%s", server_cipher)
-
-        if self.password_file:
-            log("password auth required")
-            #send challenge if this is not a response:
-            client_hash = c.strget("challenge_response")
-            if not client_hash or not proto.salt:
-                self._send_password_challenge(proto, server_cipher or "")
-                return
-            if not self._verify_password(proto, client_hash, password):
-                return
-
+    def hello_oked(self, auth_caps, proto, c):
         screenshot_req = c.boolget("screenshot_request")
         info_req = c.boolget("info_request", False)
         if not screenshot_req and not info_req:
@@ -684,7 +448,7 @@ class ServerBase(object):
             (self._clipboard_client is None or self._clipboard_client.is_closed()):
             self._clipboard_client = ss
             #deal with buggy win32 clipboards:
-            if "clipboard.greedy" not in capabilities:
+            if "clipboard.greedy" not in c:
                 #old clients without the flag: take a guess based on platform:
                 client_platform = c.strget("platform")
                 greedy = client_platform is not None and \
@@ -704,7 +468,7 @@ class ServerBase(object):
         self.set_keymap(ss)
 
         #send_hello will take care of sending the current and max screen resolutions
-        self.send_hello(ss, root_w, root_h, key_repeat, server_cipher)
+        self.send_hello(ss, root_w, root_h, key_repeat, auth_caps)
 
         # now we can set the modifiers to match the client
         self.send_windows_and_cursors(ss)
@@ -734,16 +498,8 @@ class ServerBase(object):
         return True
 
     def make_hello(self):
-        capabilities = {}
-        capabilities["hostname"] = socket.gethostname()
+        capabilities = ServerCore.make_hello(self)
         capabilities["max_desktop_size"] = self.get_max_screen_size()
-        capabilities["version"] = xpra.__version__
-        capabilities["platform"] = sys.platform
-        capabilities["platform.release"] = python_platform.release()
-        capabilities["platform.platform"] = python_platform.platform()
-        if sys.platform.startswith("linux"):
-            capabilities["platform.linux_distribution"] = python_platform.linux_distribution()
-        capabilities["python_version"] = python_platform.python_version()
         encs = SERVER_ENCODINGS[:]
         if not self.generic_rgb_encodings:
             encs.append("rgb24")
@@ -751,23 +507,11 @@ class ServerBase(object):
         capabilities["encodings"] = encs
         self.add_encoding_info(capabilities)
         capabilities["clipboards"] = self._clipboards
-        if self.session_name:
-            capabilities["session_name"] = self.session_name
-        capabilities["start_time"] = int(self.start_time)
-        now = time.time()
-        capabilities["current_time"] = int(now)
-        capabilities["elapsed_time"] = int(now - self.start_time)
         capabilities["notifications"] = self.notifications_forwarder is not None
         capabilities["toggle_cursors_bell_notify"] = True
         capabilities["toggle_keyboard_sync"] = True
         capabilities["bell"] = self.bell
         capabilities["cursors"] = self.cursors
-        capabilities["raw_packets"] = True
-        capabilities["chunked_compression"] = True
-        capabilities["rencode"] = has_rencode
-        capabilities["lz4"] = has_lz4
-        if has_rencode:
-            capabilities["rencode.version"] = rencode_version
         capabilities["window_configure"] = True
         capabilities["window_unmap"] = True
         capabilities["xsettings-tuple"] = True
@@ -777,11 +521,8 @@ class ServerBase(object):
         capabilities["change-min-speed"] = True
         capabilities["client_window_properties"] = True
         capabilities["sound_sequence"] = True
-        capabilities["info-request"] = True
         capabilities["notify-startup-complete"] = True
         capabilities["suspend-resume"] = True
-        if self._reverse_aliases:
-            capabilities["aliases"] = self._reverse_aliases
         capabilities["server_type"] = "base"
         add_version_info(capabilities)
         for k,v in codec_versions.items():
