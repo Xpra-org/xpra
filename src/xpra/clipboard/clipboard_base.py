@@ -24,7 +24,7 @@ debug = debug_if_env(log, "XPRA_CLIPBOARD_DEBUG")
 
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gtk_common.nested_main import NestedMainLoop
-from xpra.net.protocol import zlib_compress
+from xpra.net.protocol import compressed_wrapper
 
 
 MAX_CLIPBOARD_PACKET_SIZE = 256*1024
@@ -282,7 +282,7 @@ class ClipboardProtocolHelperBase(object):
                 no_contents()
                 return
             if len(wire_data)>256:
-                wire_data = zlib_compress("clipboard: %s / %s" % (dtype, dformat), wire_data)
+                wire_data = compressed_wrapper("clipboard: %s / %s" % (dtype, dformat), wire_data)
                 if len(wire_data)>self.max_clipboard_packet_size:
                     log.warn("even compressed, clipboard contents are too big and have not been sent:"
                              " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)

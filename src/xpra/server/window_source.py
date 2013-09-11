@@ -45,7 +45,7 @@ else:
     rgblog = noop
 
 from xpra.deque import maxdeque
-from xpra.net.protocol import zlib_compress, Compressed
+from xpra.net.protocol import compressed_wrapper, Compressed
 from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
@@ -101,8 +101,9 @@ class WindowSource(object):
         self.encoding_client_options = encoding_options.get("client_options", False)
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
-                                                        #supports rgb24 compression outside network layer (unwrapped)
+                                                        #supports rgb (both rgb24 and rgb32..) compression outside network layer (unwrapped)
         self.supports_transparency = ALLOW_ALPHA and encoding_options.get("transparency", False)
+        self.rgb_lz4 = encoding_options.get("rgb_lz4", False)
         self.full_frames_only = encoding_options.get("full_frames_only", False)
         self.supports_delta = []
         if xor_str is not None and not window.is_tray():
@@ -960,14 +961,22 @@ class WindowSource(object):
         level = max(min_level, min(5, int(110-self.get_current_speed())/20))
         zlib = str(pixels)
         cdata = zlib
+        options = {}
         if level>0:
-            zlib = zlib_compress(coding, pixels, level=level)
+            zlib = compressed_wrapper(coding, pixels, level=level, lz4=self.rgb_lz4)
             cdata = zlib.data
+            #debug("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
+            #         coding, pixel_format, len(pixels), len(cdata), int(100.0*len(cdata)/len(pixels)), self.rgb_lz4)
             if len(cdata)>=(len(pixels)-32):
                 #compressed is actually bigger! (use uncompressed)
                 level = 0
                 zlib = str(pixels)
                 cdata = zlib
+            else:
+                if self.rgb_lz4:
+                    options["lz4"] = True
+                else:
+                    options["zlib"] = level
         if pixel_format.upper().find("A")>=0:
             bpp = 32
         else:
@@ -977,7 +986,7 @@ class WindowSource(object):
             return  zlib, {}, image.get_rowstride(), bpp
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
-        return Compressed(coding, cdata), {"zlib" : level}, image.get_width(), image.get_height(), image.get_rowstride(), bpp
+        return Compressed(coding, cdata), options, image.get_width(), image.get_height(), image.get_rowstride(), bpp
 
     def PIL_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:

@@ -23,7 +23,7 @@ from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBO
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
 from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs, codec_versions
 from xpra.simple_stats import std_unit
-from xpra.net.protocol import Compressed
+from xpra.net.protocol import Compressed, has_lz4
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import set_application_name, thread, Queue, os_info
 from xpra.util import nn
@@ -591,6 +591,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["encoding.csc_atoms"] = True
         #TODO: check for csc support (swscale only?)
         capabilities["encoding.video_scaling"] = True
+        capabilities["encoding.rgb_lz4"] = has_lz4 and self.compression_level>0 and self.compression_level<3
         capabilities["encoding.transparency"] = self.has_transparency()
         #TODO: check for csc support (swscale only?)
         capabilities["encoding.csc_modes"] = ("YUV420P", "YUV422P", "YUV444P", "BGRA", "BGRX")

@@ -25,7 +25,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import set_application_name, thread, get_hex_uuid, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info
-from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
+from xpra.net.protocol import Protocol, has_rencode, has_lz4, rencode_version, use_rencode
 from xpra.util import typedict, alnum
 
 if sys.version > '3':
@@ -548,8 +548,13 @@ class ServerBase(object):
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
         c = typedict(capabilities)
+
+        proto.chunked_compression = c.boolget("chunked_compression")
         if use_rencode and c.boolget("rencode"):
             proto.enable_rencode()
+        if c.boolget("lz4") and proto.chunked_compression and self.compression_level>0 and self.compression_level<3:
+            proto.enable_lz4()
+
         log("process_hello: capabilities=%s", capabilities)
         if c.boolget("version_request"):
             response = {"version" : xpra.__version__}
@@ -652,7 +657,6 @@ class ServerBase(object):
             self.update_server_settings({'resource-manager' : ""})
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
-        proto.chunked_compression = c.boolget("chunked_compression")
         proto.aliases = c.dictget("aliases")
         def drop_client(reason="unknown"):
             self.disconnect_client(proto, reason)
@@ -761,6 +765,7 @@ class ServerBase(object):
         capabilities["raw_packets"] = True
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
+        capabilities["lz4"] = has_lz4
         if has_rencode:
             capabilities["rencode.version"] = rencode_version
         capabilities["window_configure"] = True

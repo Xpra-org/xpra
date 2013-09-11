@@ -14,7 +14,7 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger()
 
-from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
+from xpra.net.protocol import Protocol, has_rencode, has_lz4, rencode_version, use_rencode
 from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import version_compat_check, add_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
@@ -176,6 +176,7 @@ class XpraClientBase(object):
         capabilities["raw_packets"] = True
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
+        capabilities["lz4"] = has_lz4
         if has_rencode:
             capabilities["rencode.version"] = rencode_version
         capabilities["hostname"] = socket.gethostname()
@@ -370,12 +371,15 @@ class XpraClientBase(object):
         if verr is not None:
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version %s: %s" % (self._remote_version, verr))
             return False
+
+        self._protocol.chunked_compression = c.boolget("chunked_compression")
         if use_rencode and c.boolget("rencode"):
             self._protocol.enable_rencode()
+        if c.boolget("lz4") and self._protocol.chunked_compression and self.compression_level>0 and self.compression_level<3:
+            self._protocol.enable_lz4()
         if self.encryption:
             #server uses a new cipher after second hello:
             self.set_server_encryption(c)
-        self._protocol.chunked_compression = c.boolget("chunked_compression")
         self._protocol.aliases = c.dictget("aliases", {})
         if self.pings:
             self.timeout_add(1000, self.send_ping)

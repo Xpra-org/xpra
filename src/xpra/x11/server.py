@@ -36,7 +36,7 @@ log = Logger()
 import xpra
 from xpra.os_util import StringIOClass
 from xpra.x11.x11_server_base import X11ServerBase
-from xpra.net.protocol import zlib_compress, Compressed
+from xpra.net.protocol import compressed_wrapper, Compressed
 
 
 class DesktopManager(gtk.Widget):
@@ -405,7 +405,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 if len(pixels)<64:
                     self.cursor_data[7] = str(pixels)
                 else:
-                    self.cursor_data[7] = zlib_compress("cursor", pixels)
+                    self.cursor_data[7] = compressed_wrapper("cursor", pixels)
         else:
             log("send_cursor() failed to get cursor image")
         for ss in self._server_sources.values():

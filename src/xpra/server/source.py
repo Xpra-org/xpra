@@ -21,7 +21,7 @@ from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.scripts.config import HAS_SOUND, python_platform
-from xpra.net.protocol import zlib_compress, Compressed
+from xpra.net.protocol import compressed_wrapper, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue
 from xpra.util import std
@@ -443,6 +443,7 @@ class ServerSource(object):
         self.client_release = c.strget("platform.release")
         self.client_version = c.strget("version")
         #general features:
+        self.lz4 = c.boolget("lz4", False)
         self.send_windows = c.boolget("windows", True)
         self.server_window_resize = c.boolget("server-window-resize")
         self.send_cursors = self.send_windows and c.boolget("cursors")
@@ -899,7 +900,7 @@ class ServerSource(object):
                 i += 1
         for prop in ("png_window_icons", "named_cursors", "server_window_resize", "share", "randr_notify",
                      "clipboard_notifications", "raw_window_icons", "system_tray", "generic_window_types",
-                     "notify_startup_complete", "namespace"):
+                     "notify_startup_complete", "namespace", "lz4"):
             addattr("features."+prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
                            "send_windows"       : "windows",
@@ -1066,7 +1067,7 @@ class ServerSource(object):
             w, h, pixel_format, pixel_data = make_window_icon(surf, self.png_window_icons)
             assert pixel_format in ("premult_argb32", "png")
             if pixel_format=="premult_argb32":
-                data = zlib_compress("rgb24", pixel_data)
+                data = compressed_wrapper("rgb24", pixel_data)
             else:
                 data = Compressed("png", pixel_data)
             self.send("window-icon", wid, w, h, pixel_format, data)

@@ -11,7 +11,6 @@
 import time
 import sys
 from socket import error as socket_error
-from zlib import compress, decompress, decompressobj
 import struct
 import os
 import threading
@@ -19,15 +18,31 @@ import errno
 import binascii
 from threading import Lock
 
+ZLIB_FLAG = 0x00
+LZ4_FLAG = 0x10
+
 
 from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_NETWORK_DEBUG")
-
 from xpra.os_util import Queue, strtobytes
 from xpra.daemon_thread import make_daemon_thread
 from xpra.net.bencode import bencode, bdecode
 from xpra.simple_stats import std_unit, std_unit_dec
+
+
+from zlib import compress, decompress, decompressobj
+try:
+    from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
+    has_lz4 = True
+    def lz4_compress(packet, level):
+        return level + LZ4_FLAG, LZ4_compress(packet)
+except:
+    LZ4_compress, LZ4_uncompress = None, None
+    has_lz4 = False
+    def lz4_compress(packet, level):
+        raise Exception("lz4 is not supported!")
+
 rencode_dumps, rencode_loads, rencode_version = None, None, None
 try:
     try:
@@ -41,17 +56,17 @@ try:
 except Exception, e:
     log.error("xpra.rencode is missing: %s", e)
 has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
-use_rencode = has_rencode and not os.environ.get("XPRA_USE_BENCODER", "0")=="1"
+use_rencode = has_rencode and not os.environ.get("XPRA_USE_BENCODER", "0")=="1" 
 
 #stupid python version breakage:
 if sys.version > '3':
     long = int          #@ReservedAssignment
     unicode = str           #@ReservedAssignment
     def zcompress(packet, level):
-        return compress(bytes(packet, 'UTF-8'), level)
+        return level + ZLIB_FLAG, compress(bytes(packet, 'UTF-8'), level)
 else:
     def zcompress(packet, level):
-        return compress(packet, level)
+        return level + ZLIB_FLAG, compress(packet, level)
 
 if sys.version_info[:2]>=(2,5):
     def unpack_header(buf):
@@ -100,19 +115,24 @@ class Compressed(object):
     def __str__(self):
         return  "Compressed(%s: %s bytes)" % (self.datatype, len(self.data))
 
-class ZLibCompressed(object):
-    def __init__(self, datatype, data, level):
-        self.datatype = datatype
-        self.data = data
+class LevelCompressed(Compressed):
+    def __init__(self, datatype, data, level, algo):
+        Compressed.__init__(self, datatype, data)
+        self.algorithm = algo
         self.level = level
     def __len__(self):
         return len(self.data)
     def __str__(self):
-        return  "ZLibCompressed(%s: %s bytes)" % (self.datatype, len(self.data))
+        return  "LevelCompressed(%s: %s bytes as %s/%s)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
-def zlib_compress(datatype, data, level=5):
-    cdata = zcompress(data, level)
-    return ZLibCompressed(datatype, cdata, level)
+def compressed_wrapper(datatype, data, level=5, lz4=False):
+    if lz4:
+        algo = "lz4"
+        cl, cdata = lz4_compress(data, level & LZ4_FLAG)
+    else:
+        algo = "zlib"
+        cl, cdata = zcompress(data, level)
+    return LevelCompressed(datatype, cdata, cl, algo)
 
 
 #The 'scheduler' instance will generally be gobject
@@ -157,6 +177,7 @@ class Protocol(object):
         self.chunked_compression = True
         self._closed = False
         self._encoder = self.bencode
+        self._compress = zcompress
         self._decompressor = decompressobj()
         self._compression_level = 0
         self.cipher_in = None
@@ -357,6 +378,12 @@ class Protocol(object):
         debug("enable_rencode()")
         self._encoder = self.rencode
 
+    def enable_lz4(self):
+        assert has_lz4 is not None, "lz4 cannot be enabled: the module failed to load!"
+        assert self.chunked_compression, "cannot enable lz4 without chunked compression"
+        debug("enable_lz4()")
+        self._compress = lz4_compress
+
     def bencode(self, data):
         return bencode(data), 0
 
@@ -389,7 +416,7 @@ class Protocol(object):
                 #already compressed data (but not using zlib), send as-is
                 packets.append((i, 0, item.data))
                 packet[i] = ''
-            elif ti==ZLibCompressed:
+            elif ti==LevelCompressed:
                 #already compressed data as zlib, send as-is with zlib level marker
                 assert item.level>0
                 packets.append((i, item.level, item.data))
@@ -397,9 +424,8 @@ class Protocol(object):
             elif ti==str and level>0 and len(item)>=4096:
                 log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
-                if sys.version>='3':
-                    item = item.encode("latin1")
-                packets.append((i, level, zcompress(item, level)))
+                cl, cdata = self._compress(item, level)
+                packets.append((i, cl, cdata))
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
             elif ti!=str:
@@ -421,8 +447,8 @@ class Protocol(object):
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         if level>0:
-            data = zcompress(main_packet, level)
-            packets.append((0, level, data))
+            cl, cdata = self._compress(main_packet, level)
+            packets.append((0, cl, cdata))
         else:
             packets.append((0, 0, main_packet))
         return packets, proto_version
@@ -613,7 +639,11 @@ class Protocol(object):
                 #uncompress if needed:
                 if compression_level>0:
                     if self.chunked_compression:
-                        data = decompress(data)
+                        if compression_level & LZ4_FLAG:
+                            assert has_lz4
+                            data = LZ4_uncompress(data)
+                        else:
+                            data = decompress(data)
                     else:
                         data = self._decompressor.decompress(data)
 
