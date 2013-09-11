@@ -72,7 +72,7 @@ class VideoPipelineHelper(object):
         except:
             log.warn("init_csc_options() cannot add nvcuda csc", exc_info=True)
         debug("init_csc_options() csc specs: %s", self._csc_encoder_specs)
-        for src_format, specs in self._csc_encoder_specs.items():
+        for src_format, specs in sorted(self._csc_encoder_specs.items()):
             debug("%s - %s options:", src_format, len(specs))
             d = {}
             for dst_format, spec in specs:
