@@ -234,7 +234,7 @@ def gen_yuv_to_rgb():
                 continue
     debug("YUV 2 RGB conversions=%s", sorted(YUV_to_RGB_KERNELS.keys()))
     #debug("YUV 2 RGB kernels=%s", YUV_to_RGB_KERNELS)
-    debug("YUV 2 RGB kernels=%s", set([x[0] for x in YUV_to_RGB_KERNELS.values()]))
+    debug("YUV 2 RGB kernels=%s", sorted(list(set([x[0] for x in YUV_to_RGB_KERNELS.values()]))))
     return YUV_to_RGB_KERNELS
 
 
@@ -314,7 +314,7 @@ def gen_rgb_to_yuv():
 
     debug("RGB 2 YUV conversions=%s", sorted(RGB_to_YUV_KERNELS.keys()))
     #debug("RGB 2 YUV kernels=%s", RGB_to_YUV_KERNELS)
-    debug("RGB 2 YUV kernels=%s", set([x[0] for x in RGB_to_YUV_KERNELS.values()]))
+    debug("RGB 2 YUV kernels=%s", sorted(list(set([x[0] for x in RGB_to_YUV_KERNELS.values()]))))
     return RGB_to_YUV_KERNELS
 
 
@@ -332,7 +332,7 @@ def gen_kernels():
 
     KERNELS_DEFS = RGB_to_YUV_KERNELS.copy()
     KERNELS_DEFS.update(YUV_to_RGB_KERNELS)
-    debug("all supported conversions=%s", KERNELS_DEFS.keys())
+    debug("all supported conversions=%s", sorted(KERNELS_DEFS.keys()))
     #work out the unique kernels we have generated (kname -> ksrc)
     NAMES_TO_KERNELS = {}
     for name, _, _, kernel in KERNELS_DEFS.values():
@@ -389,11 +389,11 @@ def get_version():
 
 def get_input_colorspaces():
     build_kernels()
-    return [src for (src, _) in KERNELS_DEFS.keys()]
+    return sorted(list(set([src for (src, _) in KERNELS_DEFS.keys()])))
 
 def get_output_colorspaces(input_colorspace):
     build_kernels()
-    return [dst for (src, dst) in KERNELS_DEFS.keys() if src==input_colorspace]
+    return sorted(list(set([dst for (src, dst) in KERNELS_DEFS.keys() if src==input_colorspace])))
 
 def validate_in_out(in_colorspace, out_colorspace):
     assert in_colorspace in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())

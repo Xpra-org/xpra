@@ -75,19 +75,20 @@ class VideoPipelineHelper(object):
         for src_format, specs in sorted(self._csc_encoder_specs.items()):
             debug("%s - %s options:", src_format, len(specs))
             d = {}
-            for dst_format, spec in specs:
+            for dst_format, spec in sorted(specs):
                 d.setdefault(dst_format, set()).add(spec.info())
-            for dst_format, specs in d.items():
-                debug(" * %s via: %s", dst_format, list(specs))
+            for dst_format, specs in sorted(d.items()):
+                debug(" * %s via: %s", dst_format, sorted(list(specs)))
 
     def init_csc_option(self, csc_module):
-        debug("init_csc_option(%s)", csc_module)
+        debug("init_csc_option(%s) type=%s", csc_module, csc_module.get_type())
         if csc_module is None:
             return
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
             csc_specs = VideoPipelineHelper._csc_encoder_specs.setdefault(in_csc, [])
             out_cscs = csc_module.get_output_colorspaces(in_csc)
+            debug("init_csc_option(..) %s.get_output_colorspaces(%s)=%s", csc_module.get_type(), in_csc, out_cscs)
             for out_csc in out_cscs:
                 spec = csc_module.get_spec(in_csc, out_csc)
                 item = out_csc, spec
