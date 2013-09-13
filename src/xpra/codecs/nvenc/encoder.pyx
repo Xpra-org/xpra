@@ -21,6 +21,10 @@ cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
     void * memset ( void * ptr, int value, size_t num )
 
+cdef extern from "stdlib.h":
+    void* malloc(size_t __size)
+    void free(void* mem)
+
 #could also use pycuda...
 cdef extern from "cuda.h":
     ctypedef int CUdevice
@@ -372,8 +376,8 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved        #[in]: Reserved and should be set to 0.
         PNVENCOPENENCODESESSION         nvEncOpenEncodeSession          #[out]: Client should access ::NvEncOpenEncodeSession() API through this pointer.
         PNVENCGETENCODEGUIDCOUNT        nvEncGetEncodeGUIDCount         #[out]: Client should access ::NvEncGetEncodeGUIDCount() API through this pointer.
-        PNVENCGETENCODEPRESETCOUNT      nvEncGetEncodeProfileGUIDCount  #[out]: Client should access ::NvEncGetEncodeProfileGUIDCount() API through this pointer.*/
-        PNVENCGETENCODEPRESETGUIDS      nvEncGetEncodeProfileGUIDs      #[out]: Client should access ::NvEncGetEncodeProfileGUIDs() API through this pointer.     */
+        PNVENCGETENCODEPROFILEGUIDCOUNT nvEncGetEncodeProfileGUIDCount  #[out]: Client should access ::NvEncGetEncodeProfileGUIDCount() API through this pointer.*/
+        PNVENCGETENCODEPROFILEGUIDS     nvEncGetEncodeProfileGUIDs      #[out]: Client should access ::NvEncGetEncodeProfileGUIDs() API through this pointer.     */
         PNVENCGETENCODEGUIDS            nvEncGetEncodeGUIDs	            #[out]: Client should access ::NvEncGetEncodeGUIDs() API through this pointer.           */
         PNVENCGETINPUTFORMATCOUNT       nvEncGetInputFormatCount	    #[out]: Client should access ::NvEncGetInputFormatCount() API through this pointer.      */
         PNVENCGETINPUTFORMATS           nvEncGetInputFormats	        #[out]: Client should access ::NvEncGetInputFormats() API through this pointer.          */
@@ -571,6 +575,9 @@ cdef void *open_encode_session():
     functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
     raiseCuda(NvEncodeAPICreateInstance(&functionList), "getting API function list")
 
+
+    assert functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
+
     #NVENC init:
     memset(&params, 0, sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
     params.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
@@ -578,13 +585,91 @@ cdef void *open_encode_session():
     params.device = <void*> cuda_context
     params.clientKeyPtr = &clientKeyPtr
     params.apiVersion = NVENCAPI_VERSION
-    log.info("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> functionList.nvEncOpenEncodeSessionEx))
+    debug("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> functionList.nvEncOpenEncodeSessionEx))
     raiseCuda(functionList.nvEncOpenEncodeSessionEx(&params, &encoder), "opening session")
-    log.info("success, encoder=%s", hex(<long> encoder))
+    log.info("success, encoder context=%s", hex(<long> encoder))
 
     cdef uint32_t GUIDCount
+    cdef uint32_t GUIDRetCount
+    cdef GUID* encode_GUIDs
+    cdef GUID encode_GUID
+    cdef uint32_t presetCount
+    cdef uint32_t presetsRetCount
+    cdef GUID* preset_GUIDs
+    cdef GUID preset_GUID
+    cdef NV_ENC_PRESET_CONFIG presetConfig
+    cdef NV_ENC_CONFIG encConfig
+    cdef uint32_t profileCount
+    cdef uint32_t profilesRetCount
+    cdef GUID* profile_GUIDs
+    cdef GUID profile_GUID
+    cdef uint32_t inputFmtCount
+    cdef int* inputFmts
+    cdef uint32_t inputFmtsRetCount
+
     raiseCuda(functionList.nvEncGetEncodeGUIDCount(encoder, &GUIDCount))
     log.info("found %s encode GUIDs", GUIDCount)
+    assert GUIDCount<2**8
+    encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
+    assert encode_GUIDs!=NULL, "could not allocate memory for %s encode GUIDs!" % (GUIDCount)
+    try:
+        raiseCuda(functionList.nvEncGetEncodeGUIDs(encoder, encode_GUIDs, GUIDCount, &GUIDRetCount), "getting list of encode GUIDs")
+        assert GUIDRetCount==GUIDCount, "expected %s items but got %s" % (GUIDCount, GUIDRetCount)
+        guids = []
+        for x in range(GUIDRetCount):
+            encode_GUID = encode_GUIDs[x]
+            log.info("EncodeGUID[%s]=%s", x, guidstr(encode_GUID))
+            #TODO compare with:
+            log.info("NV_ENC_CODEC_H264_GUID=%s", guidstr(NV_ENC_CODEC_H264_GUID))
+
+            raiseCuda(functionList.nvEncGetEncodePresetCount(encoder, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
+            log.info("%s presets:", presetCount)
+            assert presetCount<2**8
+            preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
+            assert encode_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
+            try:
+                raiseCuda(functionList.nvEncGetEncodePresetGUIDs(encoder, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount))
+                assert presetsRetCount==presetCount
+                for x in range(presetCount):
+                    preset_GUID = preset_GUIDs[x]
+                    log.info("* %s", guidstr(preset_GUID))
+                    memset(&presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
+                    presetConfig.version = NV_ENC_PRESET_CONFIG_VER
+                    raiseCuda(functionList.nvEncGetEncodePresetConfig(encoder, encode_GUID, preset_GUID, &presetConfig), "getting preset config for %s" % guidstr(preset_GUID))
+                    encConfig = presetConfig.presetCfg
+                    log.info("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
+            finally:
+                free(preset_GUIDs)
+
+            raiseCuda(functionList.nvEncGetEncodeProfileGUIDCount(encoder, encode_GUID, &profileCount), "getting profile count")
+            log.info("%s profiles:", profileCount)
+            assert profileCount<2**8
+            profile_GUIDs = <GUID*> malloc(sizeof(GUID) * profileCount)
+            assert encode_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
+            try:
+                raiseCuda(functionList.nvEncGetEncodeProfileGUIDs(encoder, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount))
+                #(void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
+                assert profilesRetCount==profileCount
+                for x in range(profileCount):
+                    profile_GUID = profile_GUIDs[x]
+                    log.info("* %s", guidstr(profile_GUID))
+            finally:
+                free(profile_GUIDs)
+
+            raiseCuda(functionList.nvEncGetInputFormatCount(encoder, encode_GUID, &inputFmtCount), "getting input format count")
+            log.info("%s input formats:", inputFmtCount)
+            assert inputFmtCount>0 and inputFmtCount<2**8
+            inputFmts = <int*> malloc(sizeof(int) * inputFmtCount)
+            assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
+            try:
+                raiseCuda(functionList.nvEncGetInputFormats(encoder, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount), "getting input formats")
+                assert inputFmtsRetCount==inputFmtCount
+                for x in range(inputFmtCount):
+                    log.info("* %s", hex(inputFmts[x]))
+            finally:
+                free(inputFmts)
+    finally:
+        free(encode_GUIDs)
     return encoder
 
 cdef closeEncoder(void *encoder):
@@ -593,7 +678,11 @@ cdef closeEncoder(void *encoder):
 
 #create one to ensure we can:
 cdef void *test_encoder = NULL
-test_encoder = open_encode_session()
+try:
+    test_encoder = open_encode_session()
+except:
+    log.error("open_encode_session() failed", exc_info=True)
+    raise
 closeEncoder(test_encoder)
 
 
