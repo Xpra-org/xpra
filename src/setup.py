@@ -471,6 +471,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/net/rencode/rencode.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
+                   "xpra/codecs/nvenc/encoder.c",
+                   "xpra/codecs/nvenc/constants.pxi",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x264/constants.pxi",
                    "xpra/codecs/dec_avcodec/decoder.c",
@@ -954,9 +956,16 @@ if cymaths_ENABLED:
 
 
 
-toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
 toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
+
+toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
+if nvenc_ENABLED:
+    make_constants("xpra", "codecs", "nvenc", "constants")
+    nvenc_pkgconfig = pkgconfig("nvenc", "cuda")
+    cython_add(Extension("xpra.codecs.nvenc.encoder",
+                         ["xpra/codecs/nvenc/encoder.pyx"],
+                         **nvenc_pkgconfig), min_version=(0, 16))
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
