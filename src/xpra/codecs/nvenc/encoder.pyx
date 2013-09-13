@@ -482,6 +482,8 @@ def get_version():
 def get_type():
     return "nvenc"
 
+def roundup(n, m):
+    return (n + m - 1) & ~(m - 1)
 
 def statusInfo(ret):
     if ret in STATUS_TXT:
@@ -700,9 +702,12 @@ cdef class Encoder:
     cdef int height
     cdef object src_format
     cdef void *context
+    cdef void *inputBuffer
+    cdef void *bitstreamBuffer
 
     def init_context(self, int width, int height, src_format, int quality, int speed, options):    #@DuplicatedSignature
         global functionList
+        log.info("init_context%s", (width, height, src_format, quality, speed, options))
         self.width = width
         self.height = height
         self.src_format = src_format
@@ -716,6 +721,29 @@ cdef class Encoder:
         params.encodeHeight = height
         params.enableEncodeAsync = 0
         raiseCuda(functionList.nvEncInitializeEncoder(self.context, &params))
+        log.info("encoder initialized")
+
+        #allocate input buffer:
+        cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
+        memset(&createInputBufferParams, 0, sizeof(NV_ENC_CREATE_INPUT_BUFFER))
+        createInputBufferParams.version = NV_ENC_CREATE_INPUT_BUFFER_VER
+        createInputBufferParams.width = roundup(width, 32)
+        createInputBufferParams.height = roundup(height, 32)
+        createInputBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED     #NV_ENC_MEMORY_HEAP_AUTOSELECT
+        createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_YV12_PL
+        raiseCuda(functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
+        self.inputBuffer = createInputBufferParams.inputBuffer
+        log.info("inputBuffer=%s", hex(<long> self.inputBuffer))
+
+        #allocate output buffer:
+        cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
+        memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
+        createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
+        createBitstreamBufferParams.size = 1024*1024
+        createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
+        raiseCuda(functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
+        self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
+        log.info("bitstreamBuffer=%s", hex(<long> self.bitstreamBuffer))
 
     def get_info(self):
         cdef float pps
@@ -754,4 +782,5 @@ cdef class Encoder:
         return {}
 
     def compress_image(self, image, options={}):
+        assert self.context!=NULL, "context is not initialized"
         return None
