@@ -45,16 +45,6 @@ cdef extern from "NvTypes.h":
     pass
 
 
-CODEC_PROFILES = {
-                  #NV_ENC_H264_PROFILE_BASELINE_GUID
-                  "baseline"    : 66,
-                  #NV_ENC_H264_PROFILE_MAIN_GUID
-                  "main"        : 77,
-                  #NV_ENC_H264_PROFILE_HIGH_GUID
-                  "high"        : 100,
-                  #NV_ENC_H264_PROFILE_STEREO_GUID
-                  "stereo"      : 128,
-                  }
 #cdef extern from "videoFormats.h":
 #    const char *getVideoFormatString(unsigned int dwFormat)
 
@@ -66,6 +56,20 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef void* NV_ENC_INPUT_PTR
     ctypedef void* NV_ENC_OUTPUT_PTR
     ctypedef void* NV_ENC_REGISTERED_PTR
+    ctypedef enum NV_ENC_BUFFER_FORMAT:
+        NV_ENC_BUFFER_FORMAT_UNDEFINED
+        NV_ENC_BUFFER_FORMAT_NV12_PL
+        NV_ENC_BUFFER_FORMAT_NV12_TILED16x16
+        NV_ENC_BUFFER_FORMAT_NV12_TILED64x16
+        NV_ENC_BUFFER_FORMAT_YV12_PL
+        NV_ENC_BUFFER_FORMAT_YV12_TILED16x16
+        NV_ENC_BUFFER_FORMAT_YV12_TILED64x16
+        NV_ENC_BUFFER_FORMAT_IYUV_PL
+        NV_ENC_BUFFER_FORMAT_IYUV_TILED16x16
+        NV_ENC_BUFFER_FORMAT_IYUV_TILED64x16
+        NV_ENC_BUFFER_FORMAT_YUV444_PL
+        NV_ENC_BUFFER_FORMAT_YUV444_TILED16x16
+        NV_ENC_BUFFER_FORMAT_YUV444_TILED64x16
 
     ctypedef struct NV_ENC_PIC_PARAMS:
         pass
@@ -92,27 +96,37 @@ cdef extern from "nvEncodeAPI.h":
 
     #Encode Codec GUIDS supported by the NvEncodeAPI interface.
     GUID NV_ENC_CODEC_H264_GUID
-    #NV_ENC_CODEC_MPEG2_GUID, etc..
+    GUID NV_ENC_CODEC_MPEG2_GUID
+    GUID NV_ENC_CODEC_VC1_GUID
+    GUID NV_ENC_CODEC_JPEG_GUID
+    GUID NV_ENC_CODEC_VP8_GUID
 
-    #Encode Profile GUIDS supported by the NvEncodeAPI interface.
-    GUID NV_ENC_H264_PROFILE_BASELINE_GUID
+    #Profiles:
+    GUID NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID
     GUID NV_ENC_H264_PROFILE_BASELINE_GUID
     GUID NV_ENC_H264_PROFILE_MAIN_GUID
     GUID NV_ENC_H264_PROFILE_HIGH_GUID
     GUID NV_ENC_H264_PROFILE_STEREO_GUID
     GUID NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY
     GUID NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID
-    #GUID NV_ENC_MPEG2_PROFILE_SIMPLE_GUID etc..
+    GUID NV_ENC_MPEG2_PROFILE_SIMPLE_GUID
+    GUID NV_ENC_MPEG2_PROFILE_MAIN_GUID
+    GUID NV_ENC_MPEG2_PROFILE_HIGH_GUID
+    GUID NV_ENC_VP8_GUID
+    GUID NV_ENC_VC1_PROFILE_SIMPLE_GUID
+    GUID NV_ENC_VC1_PROFILE_MAIN_GUID
+    GUID NV_ENC_VC1_PROFILE_ADVANCED_GUID
+    GUID NV_ENC_JPEG_PROFILE_BASELINE_GUID
 
-    #Preset GUIDS supported by the NvEncodeAPI interface.
+    #Presets:
     GUID NV_ENC_PRESET_DEFAULT_GUID
     GUID NV_ENC_PRESET_HP_GUID
     GUID NV_ENC_PRESET_HQ_GUID
-    GUID NV_ENC_PRESET_HQ_GUID
+    GUID NV_ENC_PRESET_BD_GUID
     GUID NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID
     GUID NV_ENC_PRESET_LOW_LATENCY_HQ_GUID
-    GUID NV_ENC_PRESET_LOW_LATENCY_HQ_GUID
-    GUID NV_ENC_PRESET_LOW_LATENCY_HQ_GUID
+    GUID NV_ENC_PRESET_LOW_LATENCY_HP_GUID
+    #NV_ENC_CODEC_MPEG2_GUID, etc..
 
     ctypedef struct NV_ENC_CAPS_PARAM:
         uint32_t    version
@@ -343,7 +357,7 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPROFILEGUIDCOUNT) (void* encoder, GUID encodeGUID, uint32_t* encodeProfileGUIDCount)
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPROFILEGUIDS)     (void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
     ctypedef NVENCSTATUS (*PNVENCGETINPUTFORMATCOUNT)       (void* encoder, GUID encodeGUID, uint32_t* inputFmtCount)
-    ctypedef NVENCSTATUS (*PNVENCGETINPUTFORMATS)           (void* encoder, GUID encodeGUID, int* inputFmts, uint32_t inputFmtArraySize, uint32_t* inputFmtCount)
+    ctypedef NVENCSTATUS (*PNVENCGETINPUTFORMATS)           (void* encoder, GUID encodeGUID, NV_ENC_BUFFER_FORMAT* inputFmts, uint32_t inputFmtArraySize, uint32_t* inputFmtCount)
     ctypedef NVENCSTATUS (*PNVENCGETENCODECAPS)             (void* encoder, GUID encodeGUID, NV_ENC_CAPS_PARAM* capsParam, int* capsVal)
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCOUNT)      (void* encoder, GUID encodeGUID, uint32_t* encodePresetGUIDCount)
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETGUIDS)      (void* encoder, GUID encodeGUID, GUID* presetGUIDs, uint32_t guidArraySize, uint32_t* encodePresetGUIDCount)
@@ -465,6 +479,98 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfuly mapped.",
       }
 
+CODEC_PROFILES = {
+                  #NV_ENC_H264_PROFILE_BASELINE_GUID
+                  "baseline"    : 66,
+                  #NV_ENC_H264_PROFILE_MAIN_GUID
+                  "main"        : 77,
+                  #NV_ENC_H264_PROFILE_HIGH_GUID
+                  "high"        : 100,
+                  #NV_ENC_H264_PROFILE_STEREO_GUID
+                  "stereo"      : 128,
+                  }
+
+def guidstr(guid):
+    #really ugly!
+    b = bytearray((4+2+2+1))
+    i = 0
+    vi = 0
+    for s in (4, 2, 2, 1):
+        v = bytearray(guid.values()[vi])
+        vi += 1
+        for j in range(s):
+            b[i] = v[j]
+            i += 1
+    return binascii.hexlify(b).upper()
+
+
+CODEC_GUIDS = {
+    guidstr(NV_ENC_CODEC_H264_GUID)     : "H264",
+    guidstr(NV_ENC_CODEC_MPEG2_GUID)    : "MPEG2",
+    guidstr(NV_ENC_CODEC_VC1_GUID)      : "VC1",
+    guidstr(NV_ENC_CODEC_JPEG_GUID)     : "JPEG",
+    guidstr(NV_ENC_CODEC_VP8_GUID)      : "VP8",
+    }
+
+CODEC_PROFILES_GUIDS = { 
+    guidstr(NV_ENC_CODEC_H264_GUID) : {
+        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+        guidstr(NV_ENC_H264_PROFILE_BASELINE_GUID)          : "baseline",
+        guidstr(NV_ENC_H264_PROFILE_MAIN_GUID)              : "main",
+        guidstr(NV_ENC_H264_PROFILE_HIGH_GUID)              : "high",
+        guidstr(NV_ENC_H264_PROFILE_STEREO_GUID)            : "stereo",
+        guidstr(NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY): "temporal",
+        guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)  : "constrained-high",
+        },
+    guidstr(NV_ENC_CODEC_MPEG2_GUID) : {
+        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+        guidstr(NV_ENC_MPEG2_PROFILE_SIMPLE_GUID)           : "simple",
+        guidstr(NV_ENC_MPEG2_PROFILE_MAIN_GUID)             : "main",
+        guidstr(NV_ENC_MPEG2_PROFILE_HIGH_GUID)             : "high",
+        },
+    guidstr(NV_ENC_CODEC_VC1_GUID) : {
+        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+        guidstr(NV_ENC_VC1_PROFILE_SIMPLE_GUID)             : "simple",
+        guidstr(NV_ENC_VC1_PROFILE_MAIN_GUID)               : "main",
+        guidstr(NV_ENC_VC1_PROFILE_ADVANCED_GUID)           : "advanced",
+        },
+    guidstr(NV_ENC_CODEC_JPEG_GUID) : {
+        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+        guidstr(NV_ENC_JPEG_PROFILE_BASELINE_GUID)          : "baseline"
+        },
+    guidstr(NV_ENC_CODEC_VP8_GUID) : {
+        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+        },
+    }
+
+CODEC_PRESETS_GUIDS = {
+    guidstr(NV_ENC_PRESET_DEFAULT_GUID)                     : "default",
+    guidstr(NV_ENC_PRESET_HP_GUID)                          : "hp",
+    guidstr(NV_ENC_PRESET_HQ_GUID)                          : "hq",
+    guidstr(NV_ENC_PRESET_BD_GUID)                          : "bd",
+    guidstr(NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID)         : "low-latency",
+    guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
+    guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
+    }
+
+BUFFER_FORMAT = {
+        NV_ENC_BUFFER_FORMAT_UNDEFINED              : "undefined",
+        NV_ENC_BUFFER_FORMAT_NV12_PL                : "NV12_PL",
+        NV_ENC_BUFFER_FORMAT_NV12_TILED16x16        : "NV12_TILED16x16",
+        NV_ENC_BUFFER_FORMAT_NV12_TILED64x16        : "NV12_TILED64x16",
+        NV_ENC_BUFFER_FORMAT_YV12_PL                : "YV12_PL",
+        NV_ENC_BUFFER_FORMAT_YV12_TILED16x16        : "YV12_TILED16x16",
+        NV_ENC_BUFFER_FORMAT_YV12_TILED64x16        : "YV12_TILED64x16",
+        NV_ENC_BUFFER_FORMAT_IYUV_PL                : "IYUV_PL",
+        NV_ENC_BUFFER_FORMAT_IYUV_TILED16x16        : "IYUV_TILED16x16",
+        NV_ENC_BUFFER_FORMAT_IYUV_TILED64x16        : "IYUV_TILED64x16",
+        NV_ENC_BUFFER_FORMAT_YUV444_PL              : "YUV444_PL",
+        NV_ENC_BUFFER_FORMAT_YUV444_TILED16x16      : "YUV444_TILED16x16",
+        NV_ENC_BUFFER_FORMAT_YUV444_TILED64x16      : "YUV444_TILED64x16",
+        }
+
+
+
 
 COLORSPACES = ("YUV444P", )
 def get_colorspaces():
@@ -528,19 +634,6 @@ cdef cuda_init(deviceId=0):
         assert has_nvenc, "selected device %s does not have NVENC capability!" % gpu_name
     return cuDevice
 
-def guidstr(guid):
-    #really ugly!
-    b = bytearray((4+2+2+1))
-    i = 0
-    vi = 0
-    for s in (4, 2, 2, 1):
-        v = bytearray(guid.values()[vi])
-        vi += 1
-        for j in range(s):
-            b[i] = v[j]
-            i += 1
-    return binascii.hexlify(b)
-
 
 def cuda_check():
     cdef CUcontext context
@@ -557,6 +650,89 @@ cuda_check()
 cdef NV_ENCODE_API_FUNCTION_LIST functionList
 cdef CUcontext cuda_context          #@DuplicatedSignature
 
+
+cdef object query_presets(void *encoder, GUID encode_GUID):
+    cdef uint32_t presetCount
+    cdef uint32_t presetsRetCount
+    cdef GUID* preset_GUIDs
+    cdef GUID preset_GUID
+    cdef NV_ENC_PRESET_CONFIG presetConfig
+    cdef NV_ENC_CONFIG encConfig
+
+    presets = {}
+    raiseCuda(functionList.nvEncGetEncodePresetCount(encoder, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
+    debug("%s presets:", presetCount)
+    assert presetCount<2**8
+    preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
+    assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
+    try:
+        raiseCuda(functionList.nvEncGetEncodePresetGUIDs(encoder, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount))
+        assert presetsRetCount==presetCount
+        for x in range(presetCount):
+            preset_GUID = preset_GUIDs[x]
+            preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset_GUID))
+            debug("* %s : %s", guidstr(preset_GUID), preset_name)
+            memset(&presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
+            presetConfig.version = NV_ENC_PRESET_CONFIG_VER
+            raiseCuda(functionList.nvEncGetEncodePresetConfig(encoder, encode_GUID, preset_GUID, &presetConfig), "getting preset config for %s" % guidstr(preset_GUID))
+            encConfig = presetConfig.presetCfg
+            debug("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
+            presets[preset_name] = guidstr(preset_GUID)
+    finally:
+        free(preset_GUIDs)
+    return presets
+
+cdef object query_profiles(void *encoder, GUID encode_GUID):
+    cdef uint32_t profileCount
+    cdef uint32_t profilesRetCount
+    cdef GUID* profile_GUIDs
+    cdef GUID profile_GUID
+
+    profiles = {}
+    raiseCuda(functionList.nvEncGetEncodeProfileGUIDCount(encoder, encode_GUID, &profileCount), "getting profile count")
+    debug("%s profiles:", profileCount)
+    assert profileCount<2**8
+    profile_GUIDs = <GUID*> malloc(sizeof(GUID) * profileCount)
+    assert profile_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
+    PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
+    try:
+        raiseCuda(functionList.nvEncGetEncodeProfileGUIDs(encoder, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount))
+        #(void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
+        assert profilesRetCount==profileCount
+        for x in range(profileCount):
+            profile_GUID = profile_GUIDs[x]
+            profile_name = PROFILES_GUIDS.get(guidstr(profile_GUID))
+            debug("* %s : %s", guidstr(profile_GUID), profile_name)
+            profiles[profile_name] = guidstr(profile_GUID)
+    finally:
+        free(profile_GUIDs)
+    return profiles
+
+cdef object query_input_formats(void *encoder, GUID encode_GUID):
+    cdef uint32_t inputFmtCount
+    cdef NV_ENC_BUFFER_FORMAT* inputFmts
+    cdef uint32_t inputFmtsRetCount
+    cdef NV_ENC_BUFFER_FORMAT inputFmt
+
+    input_formats = {}
+    raiseCuda(functionList.nvEncGetInputFormatCount(encoder, encode_GUID, &inputFmtCount), "getting input format count")
+    debug("%s input formats:", inputFmtCount)
+    assert inputFmtCount>0 and inputFmtCount<2**8
+    inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
+    assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
+    try:
+        raiseCuda(functionList.nvEncGetInputFormats(encoder, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount), "getting input formats")
+        assert inputFmtsRetCount==inputFmtCount
+        for x in range(inputFmtCount):
+            inputFmt = inputFmts[x]
+            format_name = BUFFER_FORMAT.get(inputFmt)
+            debug("* %s : %s", hex(inputFmts[x]), format_name)
+            input_formats[format_name] = hex(inputFmts[x])
+    finally:
+        free(inputFmts)
+    return input_formats
+
+
 cdef void *open_encode_session():
     global cuda_context
     cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
@@ -568,7 +744,7 @@ cdef void *open_encode_session():
     #cuda init:
     cuDevice = cuda_init()
     raiseCuda(cuCtxCreate(&cuda_context, 0, cuDevice))
-    log.info("CUContext(%s)=%s", cuDevice, hex(<long> cuda_context))
+    debug("CUContext(%s)=%s", cuDevice, hex(<long> cuda_context))
     #raiseCuda(cuCtxPopCurrent(&cuda_context))
     #raiseCuda(cuCtxPushCurrent(&cuda_context))
 
@@ -589,87 +765,36 @@ cdef void *open_encode_session():
     params.apiVersion = NVENCAPI_VERSION
     debug("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> functionList.nvEncOpenEncodeSessionEx))
     raiseCuda(functionList.nvEncOpenEncodeSessionEx(&params, &encoder), "opening session")
-    log.info("success, encoder context=%s", hex(<long> encoder))
+    debug("success, encoder context=%s", hex(<long> encoder))
 
     cdef uint32_t GUIDCount
     cdef uint32_t GUIDRetCount
     cdef GUID* encode_GUIDs
     cdef GUID encode_GUID
-    cdef uint32_t presetCount
-    cdef uint32_t presetsRetCount
-    cdef GUID* preset_GUIDs
-    cdef GUID preset_GUID
-    cdef NV_ENC_PRESET_CONFIG presetConfig
-    cdef NV_ENC_CONFIG encConfig
-    cdef uint32_t profileCount
-    cdef uint32_t profilesRetCount
-    cdef GUID* profile_GUIDs
-    cdef GUID profile_GUID
-    cdef uint32_t inputFmtCount
-    cdef int* inputFmts
-    cdef uint32_t inputFmtsRetCount
 
     raiseCuda(functionList.nvEncGetEncodeGUIDCount(encoder, &GUIDCount))
-    log.info("found %s encode GUIDs", GUIDCount)
+    debug("found %s encode GUIDs", GUIDCount)
     assert GUIDCount<2**8
     encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
     assert encode_GUIDs!=NULL, "could not allocate memory for %s encode GUIDs!" % (GUIDCount)
+    encoders = {}
     try:
         raiseCuda(functionList.nvEncGetEncodeGUIDs(encoder, encode_GUIDs, GUIDCount, &GUIDRetCount), "getting list of encode GUIDs")
         assert GUIDRetCount==GUIDCount, "expected %s items but got %s" % (GUIDCount, GUIDRetCount)
-        guids = []
         for x in range(GUIDRetCount):
             encode_GUID = encode_GUIDs[x]
-            log.info("EncodeGUID[%s]=%s", x, guidstr(encode_GUID))
-            #TODO compare with:
-            log.info("NV_ENC_CODEC_H264_GUID=%s", guidstr(NV_ENC_CODEC_H264_GUID))
+            codec_name = CODEC_GUIDS.get(guidstr(encode_GUID))
+            log.info("[%s] %s : %s", x, codec_name, guidstr(encode_GUID))
+            encoders[codec_name] = guidstr(encode_GUID)
 
-            raiseCuda(functionList.nvEncGetEncodePresetCount(encoder, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
-            log.info("%s presets:", presetCount)
-            assert presetCount<2**8
-            preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
-            assert encode_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
-            try:
-                raiseCuda(functionList.nvEncGetEncodePresetGUIDs(encoder, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount))
-                assert presetsRetCount==presetCount
-                for x in range(presetCount):
-                    preset_GUID = preset_GUIDs[x]
-                    log.info("* %s", guidstr(preset_GUID))
-                    memset(&presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
-                    presetConfig.version = NV_ENC_PRESET_CONFIG_VER
-                    raiseCuda(functionList.nvEncGetEncodePresetConfig(encoder, encode_GUID, preset_GUID, &presetConfig), "getting preset config for %s" % guidstr(preset_GUID))
-                    encConfig = presetConfig.presetCfg
-                    log.info("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
-            finally:
-                free(preset_GUIDs)
+            presets = query_presets(encoder, encode_GUID)
+            log.info("  presets=%s", presets)
 
-            raiseCuda(functionList.nvEncGetEncodeProfileGUIDCount(encoder, encode_GUID, &profileCount), "getting profile count")
-            log.info("%s profiles:", profileCount)
-            assert profileCount<2**8
-            profile_GUIDs = <GUID*> malloc(sizeof(GUID) * profileCount)
-            assert encode_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
-            try:
-                raiseCuda(functionList.nvEncGetEncodeProfileGUIDs(encoder, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount))
-                #(void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
-                assert profilesRetCount==profileCount
-                for x in range(profileCount):
-                    profile_GUID = profile_GUIDs[x]
-                    log.info("* %s", guidstr(profile_GUID))
-            finally:
-                free(profile_GUIDs)
+            profiles = query_profiles(encoder, encode_GUID)
+            log.info("  profiles=%s", profiles)
 
-            raiseCuda(functionList.nvEncGetInputFormatCount(encoder, encode_GUID, &inputFmtCount), "getting input format count")
-            log.info("%s input formats:", inputFmtCount)
-            assert inputFmtCount>0 and inputFmtCount<2**8
-            inputFmts = <int*> malloc(sizeof(int) * inputFmtCount)
-            assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
-            try:
-                raiseCuda(functionList.nvEncGetInputFormats(encoder, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount), "getting input formats")
-                assert inputFmtsRetCount==inputFmtCount
-                for x in range(inputFmtCount):
-                    log.info("* %s", hex(inputFmts[x]))
-            finally:
-                free(inputFmts)
+            input_formats = query_input_formats(encoder, encode_GUID)
+            log.info("  input formats=%s", input_formats)
     finally:
         free(encode_GUIDs)
     return encoder
