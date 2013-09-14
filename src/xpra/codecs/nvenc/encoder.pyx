@@ -41,11 +41,23 @@ cdef extern from "cuda.h":
     ctypedef int CUresult
     ctypedef void* CUdeviceptr
     ctypedef void* CUcontext
+    ctypedef enum CUdevice_attribute:
+        CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT
+        CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_WIDTH
+        CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_HEIGHT
+        CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY
+        CU_DEVICE_ATTRIBUTE_PCI_BUS_ID
+        CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID
+        CU_DEVICE_ATTRIBUTE_COMPUTE_MODE
+
     CUresult cuInit(unsigned int flags)
     CUresult cuDeviceGet(CUdevice *device, int ordinal)
     CUresult cuDeviceGetCount(int *count)
     CUresult cuDeviceGetName(char *name, int len, CUdevice dev)
     CUresult cuDeviceComputeCapability(int *major, int *minor, CUdevice dev)
+
+    CUresult cuDeviceTotalMem(size_t *bytes, CUdevice dev)
+    CUresult cuDeviceGetAttribute(int *pi, CUdevice_attribute attrib, CUdevice dev)
 
     CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
     CUresult cuCtxPopCurrent(CUcontext *pctx)
@@ -614,33 +626,68 @@ def statusInfo(ret):
 def checkCuda(ret, msg=""):
     if ret!=0:
         log.warn("error during %s: %s", msg, statusInfo(ret))
+    return ret
 def raiseCuda(ret, msg=""):
     if ret!=0:
         raise Exception("%s - returned %s" % (msg, statusInfo(ret)))
 
-cdef cuda_init(deviceId=0):
+cdef cuda_init_devices():
     cdef int deviceCount, i
     cdef CUdevice cuDevice
     cdef char gpu_name[100]
     cdef int SMminor, SMmajor
+    cdef size_t totalMem
+    cdef int multiProcessorCount
+    cdef int max_width, max_height
+    cdef int canMapHostMemory
+    cdef int computeMode
+    cdef int pciBusID, pciDeviceID
+    cdef CUresult r
     raiseCuda(cuInit(0), "cuInit")
     raiseCuda(cuDeviceGetCount(&deviceCount), "failed to get device count")
-    log.info("cuda_init() found %s devices", deviceCount)
+    debug("cuda_init() found %s devices", deviceCount)
+    devices = {}
     for i in range(deviceCount):
-        checkCuda(cuDeviceGet(&cuDevice, i), "cuDeviceGet")
+        r = cuDeviceGet(&cuDevice, i)
+        checkCuda(r, "cuDeviceGet")
+        if r!=0:
+            continue
         checkCuda(cuDeviceGetName(gpu_name, 100, cuDevice), "cuDeviceGetName")
-        log.info("device[%s]=%s", i, gpu_name)
-        checkCuda(cuDeviceComputeCapability(&SMmajor, &SMminor, i))
+        checkCuda(cuDeviceComputeCapability(&SMmajor, &SMminor, i), "cuDeviceComputeCapability")
         has_nvenc = ((SMmajor<<4) + SMminor) >= 0x30
-        log.info("capability: %s.%s (nvenc=%s)", SMmajor, SMminor, has_nvenc)
+        cuDeviceGetAttribute(&pciBusID, CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, cuDevice)
+        cuDeviceGetAttribute(&pciDeviceID, CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, cuDevice)
+        raiseCuda(cuDeviceTotalMem(&totalMem, cuDevice), "cuDeviceTotalMem")
+        debug("device[%s]=%s (%sMB) - PCI: %s / %s - compute %s.%s (nvenc=%s)",
+                i, gpu_name, int(totalMem/1024/1024), pciBusID, pciDeviceID, SMmajor, SMminor, has_nvenc)
+        devices[i] = str(gpu_name)
+        cuDeviceGetAttribute(&multiProcessorCount, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, cuDevice)
+        #log.info("multiProcessorCount=%s", multiProcessorCount)
+        #printf("  (%2d) Multiprocessors x (%3d) CUDA Cores/MP:    %d CUDA Cores\n",
+                #multiProcessorCount, _ConvertSMVer2CoresDRV(major, minor),
+                #_ConvertSMVer2CoresDRV(major, minor) * multiProcessorCount);
+        cuDeviceGetAttribute(&max_width, CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_WIDTH, cuDevice)
+        cuDeviceGetAttribute(&max_height, CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_HEIGHT, cuDevice)
+        cuDeviceGetAttribute(&canMapHostMemory, CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY, cuDevice)
+        cuDeviceGetAttribute(&computeMode, CU_DEVICE_ATTRIBUTE_COMPUTE_MODE, cuDevice)
+        debug(" Can Map Host Memory: %s, Compute Mode: %s, MultiProcessor Count: %s, max dimensions: %sx%s", canMapHostMemory, computeMode, max_width, max_height)
+
+    return devices
+cuda_devices = cuda_init_devices()
+log.info("found %s CUDA devices: %s", len(cuda_devices), cuda_devices)
+
+cdef CUdevice get_cuda_device(deviceId=0):
+    global cuda_devices
+    cdef CUdevice cuDevice            #@DuplicatedSignature
+    cdef char gpu_name[100]           #@DuplicatedSignature
+    cdef int SMminor, SMmajor         #@DuplicatedSignature
     if deviceId<0:
         deviceId = 0
-    if deviceId>=deviceCount:
-        raise Exception("invalid deviceId %s: only %s devices found" % (deviceId, deviceCount))
-
+    if deviceId not in cuda_devices:
+        raise Exception("invalid deviceId %s: only %s devices found" % (deviceId, len(cuda_devices)))
     raiseCuda(cuDeviceGet(&cuDevice, deviceId), "cuDeviceGet")
     raiseCuda(cuDeviceGetName(gpu_name, 100, cuDevice), "cuDeviceGetName")
-    log.info("using device %s: %s", deviceId, gpu_name)
+    log.info("using CUDA device %s: %s", deviceId, gpu_name)
     raiseCuda(cuDeviceComputeCapability(&SMmajor, &SMminor, deviceId))
     has_nvenc = ((SMmajor<<4) + SMminor) >= 0x30
     if FORCE and not has_nvenc:
@@ -651,22 +698,18 @@ cdef cuda_init(deviceId=0):
 
 
 def cuda_check():
+    global cuda_devices
     cdef CUcontext context
     cdef int cuDevice
-    cuDevice = cuda_init()
+    cuDevice = get_cuda_device(cuda_devices.keys()[0])
 
     raiseCuda(cuCtxCreate(&context, 0, cuDevice), "creating CUDA context")
-    raiseCuda(cuCtxPopCurrent(&context), "Popping current context")
+    raiseCuda(cuCtxPopCurrent(&context), "popping current context")
     raiseCuda(cuCtxDestroy(context), "destroying current context")
-    debug("NV_ENC_CODEC_H264_GUID=%s" % guidstr(NV_ENC_CODEC_H264_GUID))
 cuda_check()
 
-#we keep these as globals for now
-cdef NV_ENCODE_API_FUNCTION_LIST functionList
-cdef CUcontext cuda_context          #@DuplicatedSignature
 
-
-cdef object query_presets(void *encoder, GUID encode_GUID):
+cdef object query_presets(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encode_GUID):
     cdef uint32_t presetCount
     cdef uint32_t presetsRetCount
     cdef GUID* preset_GUIDs
@@ -697,7 +740,7 @@ cdef object query_presets(void *encoder, GUID encode_GUID):
         free(preset_GUIDs)
     return presets
 
-cdef object query_profiles(void *encoder, GUID encode_GUID):
+cdef object query_profiles(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encode_GUID):
     cdef uint32_t profileCount
     cdef uint32_t profilesRetCount
     cdef GUID* profile_GUIDs
@@ -723,7 +766,7 @@ cdef object query_profiles(void *encoder, GUID encode_GUID):
         free(profile_GUIDs)
     return profiles
 
-cdef object query_input_formats(void *encoder, GUID encode_GUID):
+cdef object query_input_formats(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encode_GUID):
     cdef uint32_t inputFmtCount
     cdef NV_ENC_BUFFER_FORMAT* inputFmts
     cdef uint32_t inputFmtsRetCount
@@ -748,24 +791,19 @@ cdef object query_input_formats(void *encoder, GUID encode_GUID):
     return input_formats
 
 
-cdef void *open_encode_session(CUcontext cuda_context):
+cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcontext cuda_context, CUdevice cuda_device):
     cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
-    cdef int cuDevice               #@DuplicatedSignature
     cdef GUID clientKeyPtr
     cdef void *encoder = NULL
-    log.info("open_encode_session()")
+    log.info("open_encode_session(%s, %s)", hex(<long> cuda_context), cuda_device)
 
-    #cuda init:
-    cuDevice = cuda_init()
-    raiseCuda(cuCtxCreate(&cuda_context, 0, cuDevice))
-    debug("CUContext(%s)=%s", cuDevice, hex(<long> cuda_context))
+    raiseCuda(cuCtxCreate(&cuda_context, 0, cuda_device))
+    debug("CUContext(%s)=%s", cuda_device, hex(<long> cuda_context))
 
     #get NVENC function pointers:
-    memset(&functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
+    memset(functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
     functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
-    raiseCuda(NvEncodeAPICreateInstance(&functionList), "getting API function list")
-
-
+    raiseCuda(NvEncodeAPICreateInstance(functionList), "getting API function list")
     assert functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
     #NVENC init:
@@ -799,30 +837,29 @@ cdef void *open_encode_session(CUcontext cuda_context):
             log.info("[%s] %s : %s", x, codec_name, guidstr(encode_GUID))
             encoders[codec_name] = guidstr(encode_GUID)
 
-            presets = query_presets(encoder, encode_GUID)
+            presets = query_presets(functionList, encoder, encode_GUID)
             log.info("  presets=%s", presets)
 
-            profiles = query_profiles(encoder, encode_GUID)
+            profiles = query_profiles(functionList, encoder, encode_GUID)
             log.info("  profiles=%s", profiles)
 
-            input_formats = query_input_formats(encoder, encode_GUID)
+            input_formats = query_input_formats(functionList, encoder, encode_GUID)
             log.info("  input formats=%s", input_formats)
     finally:
         free(encode_GUIDs)
     return encoder
 
-cdef closeEncoder(void *encoder):
-    global functionList
-    functionList.nvEncDestroyEncoder(encoder)
 
 #create one to ensure we can:
 cdef void *test_encoder = NULL
+cdef CUcontext test_cuda_context
+cdef NV_ENCODE_API_FUNCTION_LIST testFunctionList
 try:
-    test_encoder = open_encode_session(cuda_context)
+    test_encoder = open_encode_session(&testFunctionList, test_cuda_context, cuda_devices.keys()[0])
+    testFunctionList.nvEncDestroyEncoder(test_encoder)
 except:
     log.error("open_encode_session() failed", exc_info=True)
     raise
-closeEncoder(test_encoder)
 
 
 """cdef query_encoder_caps(CNvEncoder *encoder):
@@ -839,18 +876,18 @@ cdef class Encoder:
     cdef int height
     cdef object src_format
     cdef CUcontext cuda_context
+    cdef NV_ENCODE_API_FUNCTION_LIST functionList               #@DuplicatedSignature
     cdef void *context
     cdef void *inputBuffer
     cdef void *bitstreamBuffer
 
     def init_context(self, int width, int height, src_format, int quality, int speed, options):    #@DuplicatedSignature
-        global functionList, cuda_context
-        log.info("init_context%s", (width, height, src_format, quality, speed, options))
+        global cuda_devices
+        debug("init_context%s", (width, height, src_format, quality, speed, options))
         self.width = width
         self.height = height
         self.src_format = src_format
-        self.cuda_context = cuda_context
-        self.context = open_encode_session(self.cuda_context)
+        self.context = open_encode_session(&self.functionList, self.cuda_context, cuda_devices.keys()[0])
 
         cdef NV_ENC_INITIALIZE_PARAMS params
         memset(&params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))
@@ -859,8 +896,8 @@ cdef class Encoder:
         params.encodeWidth = width
         params.encodeHeight = height
         params.enableEncodeAsync = 0
-        raiseCuda(functionList.nvEncInitializeEncoder(self.context, &params))
-        log.info("encoder initialized")
+        raiseCuda(self.functionList.nvEncInitializeEncoder(self.context, &params))
+        debug("encoder initialized")
 
         #allocate input buffer:
         cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
@@ -870,9 +907,9 @@ cdef class Encoder:
         createInputBufferParams.height = roundup(height, 32)
         createInputBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED     #NV_ENC_MEMORY_HEAP_AUTOSELECT
         createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_TILED64x16
-        raiseCuda(functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
+        raiseCuda(self.functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
         self.inputBuffer = createInputBufferParams.inputBuffer
-        log.info("inputBuffer=%s", hex(<long> self.inputBuffer))
+        debug("inputBuffer=%s", hex(<long> self.inputBuffer))
 
         #allocate output buffer:
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
@@ -880,9 +917,12 @@ cdef class Encoder:
         createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
         createBitstreamBufferParams.size = 1024*1024
         createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
-        raiseCuda(functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
+        raiseCuda(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
         self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
-        log.info("bitstreamBuffer=%s", hex(<long> self.bitstreamBuffer))
+        debug("bitstreamBuffer=%s", hex(<long> self.bitstreamBuffer))
+
+        raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
+        
 
     def get_info(self):
         cdef float pps
@@ -902,7 +942,7 @@ cdef class Encoder:
 
     def clean(self):                        #@DuplicatedSignature
         if self.context!=NULL:
-            closeEncoder(self.context)
+            self.functionList.nvEncDestroyEncoder(self.context)
             self.context = NULL
 
     def get_width(self):
@@ -922,6 +962,7 @@ cdef class Encoder:
 
     def compress_image(self, image, options={}):
         assert self.context!=NULL, "context is not initialized"
+        log.info("compress_image(%s, %s)", image, options)
         raiseCuda(cuCtxPushCurrent(self.cuda_context), "failed to push context")
         cdef const void* cbuf = NULL
         cdef Py_ssize_t cbuf_len = 0
