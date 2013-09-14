@@ -7,6 +7,7 @@ import binascii
 import time
 import os
 
+from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_NVENC_DEBUG")
@@ -16,6 +17,15 @@ from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
 FORCE = True
 
+
+cdef extern from "Python.h":
+    ctypedef int Py_ssize_t
+    int PyObject_AsWriteBuffer(object obj,
+                               void ** buffer,
+                               Py_ssize_t * buffer_len) except -1
+    int PyObject_AsReadBuffer(object obj,
+                              void ** buffer,
+                              Py_ssize_t * buffer_len) except -1
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
@@ -28,17 +38,22 @@ cdef extern from "stdlib.h":
 #could also use pycuda...
 cdef extern from "cuda.h":
     ctypedef int CUdevice
-    ctypedef struct CUcontext:
-        pass
-    int cuInit(unsigned int flags)
-    int cuDeviceGet(CUdevice *device, int ordinal)
-    int cuDeviceGetCount(int *count)
-    int cuDeviceGetName(char *name, int len, CUdevice dev)
-    int cuDeviceComputeCapability(int *major, int *minor, CUdevice dev)
+    ctypedef int CUresult
+    ctypedef void* CUdeviceptr
+    ctypedef void* CUcontext
+    CUresult cuInit(unsigned int flags)
+    CUresult cuDeviceGet(CUdevice *device, int ordinal)
+    CUresult cuDeviceGetCount(int *count)
+    CUresult cuDeviceGetName(char *name, int len, CUdevice dev)
+    CUresult cuDeviceComputeCapability(int *major, int *minor, CUdevice dev)
 
-    int cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
-    int cuCtxPopCurrent(CUcontext *pctx)
-    int cuCtxPushCurrent(CUcontext pctx)
+    CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
+    CUresult cuCtxPopCurrent(CUcontext *pctx)
+    CUresult cuCtxPushCurrent(CUcontext ctx)
+    CUresult cuCtxDestroy(CUcontext ctx)
+
+    CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount)
+
 
 
 cdef extern from "NvTypes.h":
@@ -640,9 +655,9 @@ def cuda_check():
     cdef int cuDevice
     cuDevice = cuda_init()
 
-    raiseCuda(cuCtxCreate(&context, 0, cuDevice))
-    raiseCuda(cuCtxPopCurrent(&context))
-
+    raiseCuda(cuCtxCreate(&context, 0, cuDevice), "creating CUDA context")
+    raiseCuda(cuCtxPopCurrent(&context), "Popping current context")
+    raiseCuda(cuCtxDestroy(context), "destroying current context")
     debug("NV_ENC_CODEC_H264_GUID=%s" % guidstr(NV_ENC_CODEC_H264_GUID))
 cuda_check()
 
@@ -733,8 +748,7 @@ cdef object query_input_formats(void *encoder, GUID encode_GUID):
     return input_formats
 
 
-cdef void *open_encode_session():
-    global cuda_context
+cdef void *open_encode_session(CUcontext cuda_context):
     cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
     cdef int cuDevice               #@DuplicatedSignature
     cdef GUID clientKeyPtr
@@ -745,8 +759,6 @@ cdef void *open_encode_session():
     cuDevice = cuda_init()
     raiseCuda(cuCtxCreate(&cuda_context, 0, cuDevice))
     debug("CUContext(%s)=%s", cuDevice, hex(<long> cuda_context))
-    #raiseCuda(cuCtxPopCurrent(&cuda_context))
-    #raiseCuda(cuCtxPushCurrent(&cuda_context))
 
     #get NVENC function pointers:
     memset(&functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
@@ -806,7 +818,7 @@ cdef closeEncoder(void *encoder):
 #create one to ensure we can:
 cdef void *test_encoder = NULL
 try:
-    test_encoder = open_encode_session()
+    test_encoder = open_encode_session(cuda_context)
 except:
     log.error("open_encode_session() failed", exc_info=True)
     raise
@@ -826,17 +838,19 @@ cdef class Encoder:
     cdef int width
     cdef int height
     cdef object src_format
+    cdef CUcontext cuda_context
     cdef void *context
     cdef void *inputBuffer
     cdef void *bitstreamBuffer
 
     def init_context(self, int width, int height, src_format, int quality, int speed, options):    #@DuplicatedSignature
-        global functionList
+        global functionList, cuda_context
         log.info("init_context%s", (width, height, src_format, quality, speed, options))
         self.width = width
         self.height = height
         self.src_format = src_format
-        self.context = open_encode_session()
+        self.cuda_context = cuda_context
+        self.context = open_encode_session(self.cuda_context)
 
         cdef NV_ENC_INITIALIZE_PARAMS params
         memset(&params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))
@@ -855,7 +869,7 @@ cdef class Encoder:
         createInputBufferParams.width = roundup(width, 32)
         createInputBufferParams.height = roundup(height, 32)
         createInputBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED     #NV_ENC_MEMORY_HEAP_AUTOSELECT
-        createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_YV12_PL
+        createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_TILED64x16
         raiseCuda(functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
         self.inputBuffer = createInputBufferParams.inputBuffer
         log.info("inputBuffer=%s", hex(<long> self.inputBuffer))
@@ -908,4 +922,17 @@ cdef class Encoder:
 
     def compress_image(self, image, options={}):
         assert self.context!=NULL, "context is not initialized"
+        raiseCuda(cuCtxPushCurrent(self.cuda_context), "failed to push context")
+        cdef const void* cbuf = NULL
+        cdef Py_ssize_t cbuf_len = 0
+        assert image.get_planes()==ImageWrapper._3_PLANES
+        planes = image.get_pixels()
+        assert PyObject_AsReadBuffer(planes[0], &cbuf, &cbuf_len)==0
+        cdef size_t size = len(planes[0])
+        try:
+            raiseCuda(cuMemcpyHtoD(<CUdeviceptr> NULL, cbuf, size), "copy from host to device")
+        finally:
+            raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
+        #NV_ENC_PIC_PARAMS
+        #nvEncEncodePicture(self.encoder, &picParams)
         return None
