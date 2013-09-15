@@ -83,6 +83,92 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef void* NV_ENC_INPUT_PTR
     ctypedef void* NV_ENC_OUTPUT_PTR
     ctypedef void* NV_ENC_REGISTERED_PTR
+
+    ctypedef enum NV_ENC_CAPS:
+        NV_ENC_CAPS_NUM_MAX_BFRAMES
+        NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES
+        NV_ENC_CAPS_SUPPORT_FIELD_ENCODING
+        NV_ENC_CAPS_SUPPORT_MONOCHROME
+        NV_ENC_CAPS_SUPPORT_FMO
+        NV_ENC_CAPS_SUPPORT_QPELMV
+        NV_ENC_CAPS_SUPPORT_BDIRECT_MODE
+        NV_ENC_CAPS_SUPPORT_CABAC
+        NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM
+        NV_ENC_CAPS_SUPPORT_STEREO_MVC
+        NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS
+        NV_ENC_CAPS_SUPPORT_HIERARCHICAL_PFRAMES
+        NV_ENC_CAPS_SUPPORT_HIERARCHICAL_BFRAMES
+        NV_ENC_CAPS_LEVEL_MAX
+        NV_ENC_CAPS_LEVEL_MIN
+        NV_ENC_CAPS_SEPARATE_COLOUR_PLANE
+        NV_ENC_CAPS_WIDTH_MAX
+        NV_ENC_CAPS_HEIGHT_MAX
+        NV_ENC_CAPS_SUPPORT_TEMPORAL_SVC
+        NV_ENC_CAPS_SUPPORT_DYN_RES_CHANGE
+        NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE
+        NV_ENC_CAPS_SUPPORT_DYN_FORCE_CONSTQP
+        NV_ENC_CAPS_SUPPORT_DYN_RCMODE_CHANGE
+        NV_ENC_CAPS_SUPPORT_SUBFRAME_READBACK
+        NV_ENC_CAPS_SUPPORT_CONSTRAINED_ENCODING
+        NV_ENC_CAPS_SUPPORT_INTRA_REFRESH
+        NV_ENC_CAPS_SUPPORT_CUSTOM_VBV_BUF_SIZE
+        NV_ENC_CAPS_SUPPORT_DYNAMIC_SLICE_MODE
+        NV_ENC_CAPS_SUPPORT_REF_PIC_INVALIDATION
+        NV_ENC_CAPS_PREPROC_SUPPORT
+        NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT
+        NV_ENC_CAPS_MB_NUM_MAX
+        NV_ENC_CAPS_EXPOSED_COUNT
+
+    ctypedef enum NV_ENC_DEVICE_TYPE:
+        NV_ENC_DEVICE_TYPE_DIRECTX
+        NV_ENC_DEVICE_TYPE_CUDA
+
+    ctypedef enum NV_ENC_INPUT_RESOURCE_TYPE:
+        NV_ENC_INPUT_RESOURCE_TYPE_DIRECTX
+        NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
+        NV_ENC_INPUT_RESOURCE_TYPE_CUDAARRAY
+
+    ctypedef enum NV_ENC_MEMORY_HEAP:
+        NV_ENC_MEMORY_HEAP_AUTOSELECT
+        NV_ENC_MEMORY_HEAP_VID
+        NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
+        NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED
+
+    ctypedef enum NV_ENC_H264_ENTROPY_CODING_MODE:
+        NV_ENC_H264_ENTROPY_CODING_MODE_AUTOSELECT
+        NV_ENC_H264_ENTROPY_CODING_MODE_CABAC
+        NV_ENC_H264_ENTROPY_CODING_MODE_CAVLC
+
+    ctypedef enum NV_ENC_STEREO_PACKING_MODE:
+        NV_ENC_STEREO_PACKING_MODE_NONE
+        NV_ENC_STEREO_PACKING_MODE_CHECKERBOARD
+        NV_ENC_STEREO_PACKING_MODE_COLINTERLEAVE
+        NV_ENC_STEREO_PACKING_MODE_ROWINTERLEAVE
+        NV_ENC_STEREO_PACKING_MODE_SIDEBYSIDE
+        NV_ENC_STEREO_PACKING_MODE_TOPBOTTOM
+        NV_ENC_STEREO_PACKING_MODE_FRAMESEQ
+
+    ctypedef enum NV_ENC_H264_FMO_MODE:
+        NV_ENC_H264_FMO_AUTOSELECT
+        NV_ENC_H264_FMO_ENABLE
+        NV_ENC_H264_FMO_DISABLE
+
+    ctypedef enum NV_ENC_H264_BDIRECT_MODE:
+        NV_ENC_H264_BDIRECT_MODE_AUTOSELECT
+        NV_ENC_H264_BDIRECT_MODE_DISABLE
+        NV_ENC_H264_BDIRECT_MODE_TEMPORAL
+        NV_ENC_H264_BDIRECT_MODE_SPATIAL
+
+    ctypedef enum NV_ENC_H264_ADAPTIVE_TRANSFORM_MODE:
+        NV_ENC_H264_ADAPTIVE_TRANSFORM_AUTOSELECT
+        NV_ENC_H264_ADAPTIVE_TRANSFORM_DISABLE
+        NV_ENC_H264_ADAPTIVE_TRANSFORM_ENABLE
+
+    ctypedef enum NV_ENC_PARAMS_FRAME_FIELD_MODE:
+        NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
+        NV_ENC_PARAMS_FRAME_FIELD_MODE_FIELD
+        NV_ENC_PARAMS_FRAME_FIELD_MODE_MBAFF
+
     ctypedef enum NV_ENC_BUFFER_FORMAT:
         NV_ENC_BUFFER_FORMAT_UNDEFINED
         NV_ENC_BUFFER_FORMAT_NV12_PL
@@ -98,14 +184,128 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_BUFFER_FORMAT_YUV444_TILED16x16
         NV_ENC_BUFFER_FORMAT_YUV444_TILED64x16
 
-    ctypedef struct NV_ENC_PIC_PARAMS:
-        pass
+    ctypedef enum NV_ENC_PIC_FLAGS:
+        NV_ENC_PIC_FLAG_FORCEINTRA
+        NV_ENC_PIC_FLAG_FORCEIDR 
+        NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
+        NV_ENC_PIC_FLAG_EOS 
+        NV_ENC_PIC_FLAG_DYN_RES_CHANGE
+        NV_ENC_PIC_FLAG_DYN_BITRATE_CHANGE
+        NV_ENC_PIC_FLAG_USER_FORCE_CONSTQP
+        NV_ENC_PIC_FLAG_DYN_RCMODE_CHANGE
+        NV_ENC_PIC_FLAG_REINIT_ENCODER
+
+    ctypedef enum NV_ENC_PIC_STRUCT:
+        NV_ENC_PIC_STRUCT_FRAME
+        NV_ENC_PIC_STRUCT_FIELD_TOP_BOTTOM
+        NV_ENC_PIC_STRUCT_FIELD_BOTTOM_TOP
+
+    ctypedef enum NV_ENC_PIC_TYPE:
+        NV_ENC_PIC_TYPE_P
+        NV_ENC_PIC_TYPE_B
+        NV_ENC_PIC_TYPE_I
+        NV_ENC_PIC_TYPE_IDR
+        NV_ENC_PIC_TYPE_BI
+        NV_ENC_PIC_TYPE_SKIPPED
+        NV_ENC_PIC_TYPE_INTRA_REFRESH
+        NV_ENC_PIC_TYPE_UNKNOWN
+
+    ctypedef enum NV_ENC_SLICE_TYPE:
+        NV_ENC_SLICE_TYPE_DEFAULT
+        NV_ENC_SLICE_TYPE_I
+        NV_ENC_SLICE_TYPE_UNKNOWN
+
+    ctypedef enum  NV_ENC_MV_PRECISION:
+        NV_ENC_MV_PRECISION_FULL_PEL
+        NV_ENC_MV_PRECISION_HALF_PEL
+        NV_ENC_MV_PRECISION_QUARTER_PEL
+    
+    ctypedef enum NV_ENC_LEVEL:
+        NV_ENC_LEVEL_AUTOSELECT
+        NV_ENC_LEVEL_H264_1
+        NV_ENC_LEVEL_H264_1b
+        NV_ENC_LEVEL_H264_11
+        NV_ENC_LEVEL_H264_12
+        NV_ENC_LEVEL_H264_13
+        NV_ENC_LEVEL_H264_2
+        NV_ENC_LEVEL_H264_21
+        NV_ENC_LEVEL_H264_22
+        NV_ENC_LEVEL_H264_3
+        NV_ENC_LEVEL_H264_31
+        NV_ENC_LEVEL_H264_32
+        NV_ENC_LEVEL_H264_4
+        NV_ENC_LEVEL_H264_41
+        NV_ENC_LEVEL_H264_42
+        NV_ENC_LEVEL_H264_5
+        NV_ENC_LEVEL_H264_51
+        NV_ENC_LEVEL_MPEG2_LOW
+        NV_ENC_LEVEL_MPEG2_MAIN
+        NV_ENC_LEVEL_MPEG2_HIGH
+        NV_ENC_LEVEL_MPEG2_HIGH1440
+        NV_ENC_LEVEL_VC1_LOW
+        NV_ENC_LEVEL_VC1_MEDIAN
+        NV_ENC_LEVEL_VC1_HIGH
+        NV_ENC_LEVEL_VC1_0
+        NV_ENC_LEVEL_VC1_1
+        NV_ENC_LEVEL_VC1_2
+        NV_ENC_LEVEL_VC1_3
+        NV_ENC_LEVEL_VC1_4
+  
+    ctypedef enum NV_ENC_PARAMS_RC_MODE:
+        NV_ENC_PARAMS_RC_CONSTQP            #Constant QP mode
+        NV_ENC_PARAMS_RC_VBR                #Variable bitrate mode
+        NV_ENC_PARAMS_RC_CBR                #Constant bitrate mode
+        NV_ENC_PARAMS_RC_VBR_MINQP          #Variable bitrate mode with MinQP
+        NV_ENC_PARAMS_RC_2_PASS_QUALITY     #Multi pass encoding optimized for image quality and works only with low latency mode
+        NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP   #Multi pass encoding optimized for maintaining frame size and works only with low latency mode
+        NV_ENC_PARAMS_RC_CBR2               #Constant bitrate mode using two pass for IDR frame only
+
+  
     ctypedef struct NV_ENC_LOCK_BITSTREAM:
-        pass
+        uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_LOCK_BITSTREAM_VER.
+        uint32_t    doNotWait           #[in]: If this flag is set, the NvEncodeAPI interface will return buffer pointer even if operation is not completed. If not set, the call will block until operation completes.
+        uint32_t    ltrFrame            #[out]: Flag indicating this frame is marked as LTR frame
+        uint32_t    reservedBitFields   #[in]: Reserved bit fields and must be set to 0
+        void*       outputBitstream     #[in]: Pointer to the bitstream buffer being locked.
+        uint32_t*   sliceOffsets        #[in,out]: Array which receives the slice offsets. Currently used only when NV_ENC_CONFIG_H264::sliceMode == 3. Array size must be equal to NV_ENC_CONFIG_H264::sliceModeData.
+        uint32_t    frameIdx            #[out]: Frame no. for which the bitstream is being retrieved.
+        uint32_t    hwEncodeStatus      #[out]: The NvEncodeAPI interface status for the locked picture.
+        uint32_t    numSlices           #[out]: Number of slices in the encoded picture. Will be reported only if NV_ENC_INITIALIZE_PARAMS::reportSliceOffsets set to 1.
+        uint32_t    bitstreamSizeInBytes#[out]: Actual number of bytes generated and copied to the memory pointed by bitstreamBufferPtr.
+        uint64_t    outputTimeStamp     #[out]: Presentation timestamp associated with the encoded output.
+        uint64_t    outputDuration      #[out]: Presentation duration associates with the encoded output.
+        void*       bitstreamBufferPtr  #[out]: Pointer to the generated output bitstream. Client should allocate sufficiently large buffer to hold the encoded output. Client is responsible for managing this memory.
+        NV_ENC_PIC_TYPE     pictureType #[out]: Picture type of the encoded picture.
+        NV_ENC_PIC_STRUCT   pictureStruct   #[out]: Structure of the generated output picture.
+        uint32_t    frameAvgQP          #[out]: Average QP of the frame.
+        uint32_t    frameSatd           #[out]: Total SATD cost for whole frame.
+        uint32_t    ltrFrameIdx         #[out]: Frame index associated with this LTR frame.
+        uint32_t    ltrFrameBitmap      #[out]: Bitmap of LTR frames indices which were used for encoding this frame. Value of 0 if no LTR frames were used.
+        uint32_t    reserved[236]       #[in]: Reserved and must be set to 0
+        void*       reserved2[64]       #[in]: Reserved and must be set to NULL
+
     ctypedef struct NV_ENC_LOCK_INPUT_BUFFER:
-        pass
+        uint32_t    version             #[in]:  Struct version. Must be set to ::NV_ENC_LOCK_INPUT_BUFFER_VER.
+        uint32_t    doNotWait           #[in]:  Set to 1 to make ::NvEncLockInputBuffer() a unblocking call. If the encoding is not completed, driver will return ::NV_ENC_ERR_ENCODER_BUSY error code.
+        uint32_t    reservedBitFields   #[in]:  Reserved bitfields and must be set to 0
+        NV_ENC_INPUT_PTR inputBuffer    #[in]:  Pointer to the input buffer to be locked, client should pass the pointer obtained from ::NvEncCreateInputBuffer() or ::NvEncMapInputResource API.
+        void*       bufferDataPtr       #[out]: Pointed to the locked input buffer data. Client can only access input buffer using the \p bufferDataPtr.
+        uint32_t    pitch               #[out]: Pitch of the locked input buffer.
+        uint32_t    reserved1[251]      #[in]:  Reserved and must be set to 0
+        void*       reserved2[64]       #[in]:  Reserved and must be set to NULL
+
     ctypedef struct NV_ENC_STAT:
-        pass
+        uint32_t    version             #[in]:  Struct version. Must be set to ::NV_ENC_STAT_VER.
+        uint32_t    reserved            #[in]:  Reserved and must be set to 0
+        NV_ENC_OUTPUT_PTR outputBitStream   #[out]: Specifies the pointer to output bitstream.
+        uint32_t    bitStreamSize       #[out]: Size of generated bitstream in bytes.
+        uint32_t    picType             #[out]: Picture type of encoded picture. See ::NV_ENC_PIC_TYPE.
+        uint32_t    lastValidByteOffset #[out]: Offset of last valid bytes of completed bitstream
+        uint32_t    sliceOffsets[16]    #[out]: Offsets of each slice
+        uint32_t    picIdx              #[out]: Picture number
+        uint32_t    reserved1[233]      #[in]:  Reserved and must be set to 0
+        void*       reserved2[64]       #[in]:  Reserved and must be set to NULL
+
     ctypedef struct NV_ENC_SEQUENCE_PARAM_PAYLOAD:
         pass
     ctypedef struct NV_ENC_EVENT_PARAMS:
@@ -162,7 +362,7 @@ cdef extern from "nvEncodeAPI.h":
 
     ctypedef struct NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS:
         uint32_t    version         #[in]: Struct version. Must be set to ::NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER.
-        int         deviceType      #[in]: (NV_ENC_DEVICE_TYPE) Specified the device Type
+        NV_ENC_DEVICE_TYPE deviceType   #[in]: (NV_ENC_DEVICE_TYPE) Specified the device Type
         void        *device         #[in]: Pointer to client device.
         GUID        *clientKeyPtr   #[in]: Pointer to a GUID key issued to the client.
         uint32_t    apiVersion      #[in]: API version. Should be set to NVENCAPI_VERSION.
@@ -173,8 +373,8 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    version         #[in]: Struct version. Must be set to ::NV_ENC_CREATE_INPUT_BUFFER_VER
         uint32_t    width           #[in]: Input buffer width
         uint32_t    height          #[in]: Input buffer width
-        CONSTANT    memoryHeap      #[in]: Input buffer memory heap (NV_ENC_MEMORY_HEAP)
-        CONSTANT    bufferFmt       #[in]: Input buffer format (NV_ENC_BUFFER_FORMAT)
+        NV_ENC_MEMORY_HEAP memoryHeap       #[in]: Input buffer memory heap
+        NV_ENC_BUFFER_FORMAT bufferFmt      #[in]: Input buffer format
         uint32_t    reserved        #[in]: Reserved and must be set to 0
         void        *inputBuffer    #[out]: Pointer to input buffer
         void        *pSysMemBuffer  #[in]: Pointer to existing sysmem buffer
@@ -195,6 +395,22 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    qpInterP
         uint32_t    qpInterB
         uint32_t    qpIntra
+
+    ctypedef struct NV_ENC_CONFIG_SVC_TEMPORAL:
+        uint32_t    numTemporalLayers   #[in]: Max temporal layers. Valid value range is [1,::NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS]
+        uint32_t    basePriorityID      #[in]: Priority id of the base layer. Default is 0. Priority Id is increased by 1 for each consecutive temporal layers.
+        uint32_t    reserved1[254]      #[in]: Reserved and should be set to 0
+        void*       reserved2[64]       #[in]: Reserved and should be set to NULL
+
+    ctypedef struct NV_ENC_CONFIG_MVC:
+        uint32_t    reserved1[256]      #[in]: Reserved and should be set to 0
+        void*       reserved2[64]       #[in]: Reserved and should be set to NULL
+
+    ctypedef union NV_ENC_CONFIG_H264_EXT:
+        NV_ENC_CONFIG_SVC_TEMPORAL  svcTemporalConfig   #[in]: SVC encode config
+        NV_ENC_CONFIG_MVC           mvcConfig           #[in]: MVC encode config
+        uint32_t                    reserved1[254]      #[in]: Reserved and should be set to 0
+        void*                       reserved2[64]       #[in]: Reserved and should be set to NULL
 
     ctypedef struct NV_ENC_CONFIG_H264:
         uint32_t    enableTemporalSVC   #[in]: Set to 1 to enable SVC temporal
@@ -221,12 +437,12 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    numTemporalLayers   #[in]: Specifies max temporal layers to be used for hierarchical coding. Valid value range is [1,::NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS]
         uint32_t    spsId               #[in]: Specifies the SPS id of the sequence header. Currently reserved and must be set to 0.
         uint32_t    ppsId               #[in]: Specifies the PPS id of the picture header. Currently reserved and must be set to 0.
-        CONSTANT    adaptiveTransformMode       #[in]: (NV_ENC_H264_ADAPTIVE_TRANSFORM_MODE) Specifies the AdaptiveTransform Mode. Check support for AdaptiveTransform mode using ::NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM caps.
-        CONSTANT    fmoMode             #[in]: (NV_ENC_H264_FMO_MODE) Specified the FMO Mode. Check support for FMO using ::NV_ENC_CAPS_SUPPORT_FMO caps.
-        CONSTANT    bdirectMode         #[in]: (NV_ENC_H264_BDIRECT_MODE) Specifies the BDirect mode. Check support for BDirect mode using ::NV_ENC_CAPS_SUPPORT_BDIRECT_MODE caps.
-        CONSTANT    entropyCodingMode   #[in]: (NV_ENC_H264_ENTROPY_CODING_MODE) Specifies the entropy coding mode. Check support for CABAC mode using ::NV_ENC_CAPS_SUPPORT_CABAC caps.
-        CONSTANT    stereoMode          #[in]: (NV_ENC_STEREO_PACKING_MODE) Specifies the stereo frame packing mode which is to be signalled in frame packing arrangement SEI
-        CONSTANT    h264Extension       #[in]: (NV_ENC_CONFIG_H264_EXT) Specifies the H264 extension config
+        NV_ENC_H264_ADAPTIVE_TRANSFORM_MODE adaptiveTransformMode   #[in]: Specifies the AdaptiveTransform Mode. Check support for AdaptiveTransform mode using ::NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM caps.
+        NV_ENC_H264_FMO_MODE fmoMode    #[in]: Specified the FMO Mode. Check support for FMO using ::NV_ENC_CAPS_SUPPORT_FMO caps.
+        NV_ENC_H264_BDIRECT_MODE bdirectMode    #[in]: Specifies the BDirect mode. Check support for BDirect mode using ::NV_ENC_CAPS_SUPPORT_BDIRECT_MODE caps.
+        NV_ENC_H264_ENTROPY_CODING_MODE entropyCodingMode   #[in]: Specifies the entropy coding mode. Check support for CABAC mode using ::NV_ENC_CAPS_SUPPORT_CABAC caps.
+        NV_ENC_STEREO_PACKING_MODE stereoMode   #[in]: Specifies the stereo frame packing mode which is to be signalled in frame packing arrangement SEI
+        NV_ENC_CONFIG_H264_EXT h264Extension    #[in]: Specifies the H264 extension config
         uint32_t    intraRefreshPeriod  #[in]: Specifies the interval between successive intra refresh if enableIntrarefresh is set and one time intraRefresh configuration is desired.
                                         #When this is specified only first IDR will be encoded and no more key frames will be encoded. Client should set PIC_TYPE = NV_ENC_PIC_TYPE_INTRA_REFRESH
                                         #for first picture of every intra refresh period.
@@ -288,16 +504,35 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CONFIG_VP8   vp8Config   #[in]: Specifies the VP8-specific encoder configuration. Currently unsupported and must not to be used.
         uint32_t            reserved[256]       #[in]: Reserved and must be set to 0
 
+    ctypedef struct NV_ENC_RC_PARAMS:
+        uint32_t    version
+        NV_ENC_PARAMS_RC_MODE rateControlMode   #[in]: Specifies the rate control mode. Check support for various rate control modes using ::NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps.
+        NV_ENC_QP   constQP             #[in]: Specifies the initial QP to be used for encoding, these values would be used for all frames if in Constant QP mode.
+        uint32_t    averageBitRate      #[in]: Specifies the average bitrate(in bits/sec) used for encoding.
+        uint32_t    maxBitRate          #[in]: Specifies the maximum bitrate for the encoded output. This is used for VBR and ignored for CBR mode.
+        uint32_t    vbvBufferSize       #[in]: Specifies the VBV(HRD) buffer size. in bits. Set 0 to use the default VBV  buffer size.
+        uint32_t    vbvInitialDelay     #[in]: Specifies the VBV(HRD) initial delay in bits. Set 0 to use the default VBV  initial delay
+        uint32_t    enableMinQP         #[in]: Set this to 1 if minimum QP used for rate control.
+        uint32_t    enableMaxQP         #[in]: Set this to 1 if maximum QP used for rate control.
+        uint32_t    enableInitialRCQP   #[in]: Set this to 1 if user suppplied initial QP is used for rate control.
+        uint32_t    reservedBitFields   #[in]: Reserved bitfields and must be set to 0
+        NV_ENC_QP   minQP               #[in]: Specifies the minimum QP used for rate control. Client must set NV_ENC_CONFIG::enableMinQP to 1.
+        NV_ENC_QP   maxQP               #[in]: Specifies the maximum QP used for rate control. Client must set NV_ENC_CONFIG::enableMaxQP to 1.
+        NV_ENC_QP   initialRCQP         #[in]: Specifies the initial QP used for rate control. Client must set NV_ENC_CONFIG::enableInitialRCQP to 1.
+        uint32_t    temporallayerIdxMask#[in]: Specifies the temporal layers (as a bitmask) whose QPs have changed. Valid max bitmask is [2^NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS - 1]
+        uint8_t     temporalLayerQP[8]  #[in]: Specifies the temporal layer QPs used for rate control. Temporal layer index is used as as the array index
+        uint32_t    reserved[10]
+
     ctypedef struct NV_ENC_CONFIG:
         uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_CONFIG_VER.
         GUID        profileGUID         #[in]: Specifies the codec profile guid. If client specifies \p NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID the NvEncodeAPI interface will select the appropriate codec profile.
         uint32_t    gopLength           #[in]: Specifies the number of pictures in one GOP. Low latency application client can set goplength to NVENC_INFINITE_GOPLENGTH so that keyframes are not inserted automatically.
         int32_t     frameIntervalP      #[in]: Specifies the GOP pattern as follows: \p frameIntervalP = 0: I, 1: IPP, 2: IBP, 3: IBBP  If goplength is set to NVENC_INFINITE_GOPLENGTH \p frameIntervalP should be set to 1.
         uint32_t    monoChromeEncoding  #[in]: Set this to 1 to enable monochrome encoding for this session.
-        CONSTANT    frameFieldMode      #[in]: (NV_ENC_PARAMS_FRAME_FIELD_MODE) Specifies the frame/field mode. Check support for field encoding using ::NV_ENC_CAPS_SUPPORT_FIELD_ENCODING caps.
-        CONSTANT    mvPrecision         #[in]: (NV_ENC_MV_PRECISION) Specifies the desired motion vector prediction precision.
-        CONSTANT    rcParams            #[in]: (NV_ENC_RC_PARAMS) Specifies the rate control parameters for the current encoding session.
-        CONSTANT    encodeCodecConfig   #[in]: (NV_ENC_CODEC_CONFIG) Specifies the codec specific config parameters through this union.
+        NV_ENC_PARAMS_FRAME_FIELD_MODE  frameFieldMode      #[in]: Specifies the frame/field mode. Check support for field encoding using ::NV_ENC_CAPS_SUPPORT_FIELD_ENCODING caps.
+        NV_ENC_MV_PRECISION mvPrecision #[in]: Specifies the desired motion vector prediction precision.
+        NV_ENC_RC_PARAMS    rcParams    #[in]: Specifies the rate control parameters for the current encoding session.
+        NV_ENC_CODEC_CONFIG encodeCodecConfig   #[in]: Specifies the codec specific config parameters through this union.
         uint32_t    reserved[278]       #[in]: Reserved and must be set to 0
         void        *reserved2[64]      #[in]: Reserved and must be set to NULL
 
@@ -376,6 +611,126 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_PIC_PARAMS_SVC svcPicParams   #[in]: Specifies the SVC picture parameters.
         uint32_t    reserved1[256]      #[in]: Reserved and must be set to 0.
 
+    ctypedef struct NV_ENC_H264_SEI_PAYLOAD:
+        uint32_t    payloadSize         #[in] SEI payload size in bytes. SEI payload must be byte aligned, as described in Annex D
+        uint32_t    payloadType         #[in] SEI payload types and syntax can be found in Annex D of the H.264 Specification.
+        uint8_t     *payload            #[in] pointer to user data
+
+    ctypedef struct NV_ENC_PIC_PARAMS_H264:
+        uint32_t    displayPOCSyntax    #[in]: Specifies the display POC syntax This is required to be set if client is handling the picture type decision.
+        uint32_t    reserved3           #[in]: Reserved and must be set to 0
+        NV_ENC_PIC_PARAMS_H264_EXT h264ExtPicParams     #[in]: Specifies the H264 extension config parameters using this config.
+        uint32_t    refPicFlag          #[in]: Set to 1 for a reference picture. This is ignored if NV_ENC_INITIALIZE_PARAMS::enablePTD is set to 1.
+        uint32_t    colourPlaneId       #[in]: Specifies the colour plane ID associated with the current input.
+        uint32_t    forceIntraRefreshWithFrameCnt   #[in]: Forces an intra refresh with duration equal to intraRefreshFrameCnt.
+                                        #When outputRecoveryPointSEI is set this is value is used for recovery_frame_cnt in recovery point SEI message
+                                        #forceIntraRefreshWithFrameCnt cannot be used if B frames are used in the GOP structure specified
+        uint32_t    constrainedFrame    #[in]: Set to 1 if client wants to encode this frame with each slice completely independent of other slices in the frame.
+                                        #NV_ENC_INITIALIZE_PARAMS::enableConstrainedEncoding should be set to 1
+        uint32_t    sliceModeDataUpdate #[in]: Set to 1 if client wants to change the sliceModeData field to speficy new sliceSize Parameter
+                                        #When forceIntraRefreshWithFrameCnt is set it will have priority over sliceMode setting
+        uint32_t    ltrMarkFrame        #[in]: Set to 1 if client wants to mark this frame as LTR
+        uint32_t    ltrUseFrames        #[in]: Set to 1 if client allows encoding this frame using the LTR frames specified in ltrFrameBitmap
+        uint32_t    reservedBitFields   #[in]: Reserved bit fields and must be set to 0
+        uint8_t*    sliceTypeData       #[in]: Array which specifies the slice type used to force intra slice for a particular slice. Currently supported only for NV_ENC_CONFIG_H264::sliceMode == 3.
+                                        #Client should allocate array of size sliceModeData where sliceModeData is specified in field of ::_NV_ENC_CONFIG_H264
+                                        #Array element with index n corresponds to nth slice. To force a particular slice to intra client should set corresponding array element to NV_ENC_SLICE_TYPE_I
+                                        #all other array elements should be set to NV_ENC_SLICE_TYPE_DEFAULT
+        uint32_t    sliceTypeArrayCnt   #[in]: Client should set this to the number of elements allocated in sliceTypeData array. If sliceTypeData is NULL then this should be set to 0
+        uint32_t    seiPayloadArrayCnt  #[in]: Specifies the number of elements allocated in  seiPayloadArray array.
+        NV_ENC_H264_SEI_PAYLOAD *seiPayloadArray    #[in]: Array of SEI payloads which will be inserted for this frame.
+        uint32_t    sliceMode           #[in]: This parameter in conjunction with sliceModeData specifies the way in which the picture is divided into slices
+                                        #sliceMode = 0 MB based slices, sliceMode = 1 Byte based slices, sliceMode = 2 MB row based slices, sliceMode = 3, numSlices in Picture
+                                        #When forceIntraRefreshWithFrameCnt is set it will have priority over sliceMode setting
+                                        #When sliceMode == 0 and sliceModeData == 0 whole picture will be coded with one slice
+        uint32_t    sliceModeData       #[in]: Specifies the parameter needed for sliceMode. For:
+                                        #sliceMode = 0, sliceModeData specifies # of MBs in each slice (except last slice)
+                                        #sliceMode = 1, sliceModeData specifies maximum # of bytes in each slice (except last slice)
+                                        #sliceMode = 2, sliceModeData specifies # of MB rows in each slice (except last slice)
+                                        #sliceMode = 3, sliceModeData specifies number of slices in the picture. Driver will divide picture into slices optimally
+        uint32_t    ltrMarkFrameIdx     #[in]: Specifies the long term referenceframe index to use for marking this frame as LTR.
+        uint32_t    ltrUseFrameBitmap   #[in]: Specifies the the associated bitmap of LTR frame indices when encoding this frame.
+        uint32_t    ltrUsageMode        #[in]: Specifies additional usage constraints for encoding using LTR frames from this point further. 0: no constraints, 1: no short term refs older than current, no previous LTR frames.
+        uint32_t    reserved[243]       #[in]: Reserved and must be set to 0.
+        void*       reserved2[62]       #[in]: Reserved and must be set to NULL.
+
+    ctypedef struct NV_ENC_PIC_PARAMS_MPEG:
+        uint32_t    displayPOC          #[in]: Specifies the input display POC for current picture.
+        uint32_t    reserved[255]       #[in]: Reserved and must be set to 0.
+        void*       reserved2[64]       #[in]: Reserved and must be set to NULL.
+
+    ctypedef struct NV_ENC_PIC_PARAMS_VC1:
+        uint32_t    gopUserDataSize     #[in]: Specifies the size of the private data to be inserted in GOP header.
+        uint8_t*    gopUserData         #[in]: Specifies the private data to be inserted in GOP header. It is the client's responsibility to allocate and manage the struct memory.         
+        uint8_t*    picUserData         #[in]: Specifies the private data to be inserted in picture header. It is the client's responsibility to allocate and manage the struct memory.     
+        uint32_t    picUserDataSize     #[in]: Specifies the size of the private data to be inserted in picture header.
+        uint32_t    reserved[252]       #[in]: Reserved and must be set to 0.
+        void*       reserved2[64]       #[in]: Reserved and must be set to NULL.
+
+    ctypedef struct NV_ENC_PIC_PARAMS_VP8:
+        uint32_t    reserved[256]       #[in]: Reserved and must be set to 0
+        void*       reserved2[64]       #[in]: Reserved and must be set to NULL
+
+    ctypedef struct NV_ENC_PIC_PARAMS_JPEG:
+        uint32_t    exifBlobSize        #[in]: Specifies the size of the EXIF data blob to be added
+        uint8_t*    exifBlob            #[in]: Specifies the EXIF data blob to be added. It is the client's responsibility to allocate and manage the struct memory.
+        uint32_t    reserved[255]       #[in]: Reserved and must be set to 0
+        void*       reserved2[63]       #[in]: Reserved and must be set to NULL
+
+    ctypedef struct NV_ENC_CODEC_PIC_PARAMS:
+        NV_ENC_PIC_PARAMS_H264 h264PicParams    #[in]: H264 encode picture params.
+        NV_ENC_PIC_PARAMS_MPEG mpegPicParams    #[in]: MPEG2 encode picture params. Currently unsupported and must not to be used.
+        NV_ENC_PIC_PARAMS_VC1  vc1PicParams     #[in]: VC1 encode picture params. Currently unsupported and must not to be used.
+        NV_ENC_PIC_PARAMS_JPEG jpegPicParams    #[in]: JPEG encode picture params. Currently unsupported and must not to be used.
+        NV_ENC_PIC_PARAMS_VP8  vp8PicParams     #[in]: VP8 encode picture params. Currently unsupported and must not to be used.
+        uint32_t               reserved[256]    #[in]: Reserved and must be set to 0.
+
+    ctypedef struct NVENC_EXTERNAL_ME_HINT:
+        int32_t     mvx                 #[in]: Specifies the x component of integer pixel MV (relative to current MB) S12.0.
+        int32_t     mvy                 #[in]: Specifies the y component of integer pixel MV (relative to current MB) S10.0
+        int32_t     refidx              #[in]: Specifies the reference index (31=invalid). Current we support only 1 reference frame per direction for external hints, so \p refidx must be 0.
+        int32_t     dir                 #[in]: Specifies the direction of motion estimation . 0=L0 1=L1.
+        int32_t     partType            #[in]: Specifies the bloack partition type.0=16x16 1=16x8 2=8x16 3=8x8 (blocks in partition must be consecutive).
+        int32_t     lastofPart          #[in]: Set to 1 for the last MV of (sub) partition
+        int32_t     lastOfMB            #[in]: Set to 1 for the last MV of macroblock.
+
+
+    ctypedef struct NV_ENC_PIC_PARAMS:
+        uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_PIC_PARAMS_VER.
+        uint32_t    inputWidth          #[in]: Specifies the input buffer width
+        uint32_t    inputHeight         #[in]: Specifies the input buffer height
+        uint32_t    inputPitch          #[in]: Specifies the input buffer pitch. If pitch value is not known, set this to inputWidth.
+        uint32_t    encodePicFlags      #[in]: Specifies bit-wise OR`ed encode pic flags. See ::NV_ENC_PIC_FLAGS enum.
+        uint32_t    frameIdx            #[in]: Specifies the frame index associated with the input frame [optional].
+        uint64_t    inputTimeStamp      #[in]: Specifies presentation timestamp associated with the input picture.
+        uint64_t    inputDuration       #[in]: Specifies duration of the input picture
+        NV_ENC_INPUT_PTR  inputBuffer   #[in]: Specifies the input buffer pointer. Client must use a pointer obtained from ::NvEncCreateInputBuffer() or ::NvEncMapInputResource() APIs.
+        NV_ENC_OUTPUT_PTR outputBitstream #[in]: Specifies the pointer to output buffer. Client should use a pointer obtained from ::NvEncCreateBitstreamBuffer() API.
+        void*       completionEvent     #[in]: Specifies an event to be signalled on completion of encoding of this Frame [only if operating in Asynchronous mode]. Each output buffer should be associated with a distinct event pointer.
+        NV_ENC_BUFFER_FORMAT bufferFmt  #[in]: Specifies the input buffer format.
+        NV_ENC_PIC_STRUCT pictureStruct #[in]: Specifies structure of the input picture.
+        NV_ENC_PIC_TYPE pictureType     #[in]: Specifies input picture type. Client required to be set explicitly by the client if the client has not set NV_ENC_INITALIZE_PARAMS::enablePTD to 1 while calling NvInitializeEncoder.
+        NV_ENC_CODEC_PIC_PARAMS codecPicParams  #[in]: Specifies the codec specific per-picture encoding parameters.
+        uint32_t    newEncodeWidth      #[in]: Specifies the new output width for current Encoding session, in case of dynamic resolution change. Client should only set this in combination with NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_DYN_RES_CHANGE.
+                                        #Additionally, if Picture Type decision is handled by the Client [_NV_ENC_INITIALIZE_PARAMS::enablePTD == 0], the client should set the _NV_ENC_PIC_PARAMS::pictureType as ::NV_ENC_PIC_TYPE_IDR.
+                                        #If _NV_ENC_INITIALIZE_PARAMS::enablePTD == 1, then the Encoder will generate an IDR frame corresponding to this input.
+        uint32_t    newEncodeHeight     #[in]: Specifies the new output width for current Encoding session, in case of dynamic resolution change. Client should only set this in combination with NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_DYN_RES_CHANGE.
+                                        #Additionally, if Picture Type decision is handled by the Client [_NV_ENC_INITIALIZE_PARAMS::enablePTD == 0], the client should set the _NV_ENC_PIC_PARAMS::pictureType as ::NV_ENC_PIC_TYPE_IDR.
+                                        #If _NV_ENC_INITIALIZE_PARAMS::enablePTD == 1, then the Encoder will generate an IDR frame corresponding to this input.
+        NV_ENC_RC_PARAMS rcParams       #[in]: Specifies the rate control parameters for the current encoding session.
+        NVENC_EXTERNAL_ME_HINT_COUNTS_PER_BLOCKTYPE meHintCountsPerBlock[2] #[in]: Specifies the number of hint candidates per block per direction for the current frame. meHintCountsPerBlock[0] is for L0 predictors and meHintCountsPerBlock[1] is for L1 predictors.
+                                        #The candidate count in NV_ENC_PIC_PARAMS::meHintCountsPerBlock[lx] must never exceed NV_ENC_INITIALIZE_PARAMS::maxMEHintCountsPerBlock[lx] provided during encoder intialization.
+        NVENC_EXTERNAL_ME_HINT *meExternalHints     #[in]: Specifies the pointer to ME external hints for the current frame. The size of ME hint buffer should be equal to number of macroblocks multiplied by the total number of candidates per macroblock.
+                                        #The total number of candidates per MB per direction = 1*meHintCountsPerBlock[Lx].numCandsPerBlk16x16 + 2*meHintCountsPerBlock[Lx].numCandsPerBlk16x8 + 2*meHintCountsPerBlock[Lx].numCandsPerBlk8x8
+                                        # + 4*meHintCountsPerBlock[Lx].numCandsPerBlk8x8. For frames using bidirectional ME , the total number of candidates for single macroblock is sum of total number of candidates per MB for each direction (L0 and L1)
+        uint32_t    newDarWidth         #[in]: Specifies the new disalay aspect ratio width for current Encoding session, in case of dynamic resolution change. Client should only set this in combination with NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_DYN_RES_CHANGE.
+                                        #Additionally, if Picture Type decision is handled by the Client [_NV_ENC_INITIALIZE_PARAMS::enablePTD == 0], the client should set the _NV_ENC_PIC_PARAMS::pictureType as ::NV_ENC_PIC_TYPE_IDR.
+                                        #If _NV_ENC_INITIALIZE_PARAMS::enablePTD == 1, then the Encoder will generate an IDR frame corresponding to this input.
+        uint32_t    newDarHeight        #[in]: Specifies the new disalay aspect ratio height for current Encoding session, in case of dynamic resolution change. Client should only set this in combination with NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_DYN_RES_CHANGE.
+                                        #If _NV_ENC_INITIALIZE_PARAMS::enablePTD == 1, then the Encoder will generate an IDR frame corresponding to this input.
+        uint32_t    reserved1[259]      #[in]: Reserved and must be set to 0
+        void*       reserved2[63]       #[in]: Reserved and must be set to NULL
+
     NVENCSTATUS NvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList)
 
     ctypedef NVENCSTATUS (*PNVENCOPENENCODESESSION)         (void* device, uint32_t deviceType, void** encoder)
@@ -417,43 +772,43 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved        #[in]: Reserved and should be set to 0.
         PNVENCOPENENCODESESSION         nvEncOpenEncodeSession          #[out]: Client should access ::NvEncOpenEncodeSession() API through this pointer.
         PNVENCGETENCODEGUIDCOUNT        nvEncGetEncodeGUIDCount         #[out]: Client should access ::NvEncGetEncodeGUIDCount() API through this pointer.
-        PNVENCGETENCODEPROFILEGUIDCOUNT nvEncGetEncodeProfileGUIDCount  #[out]: Client should access ::NvEncGetEncodeProfileGUIDCount() API through this pointer.*/
-        PNVENCGETENCODEPROFILEGUIDS     nvEncGetEncodeProfileGUIDs      #[out]: Client should access ::NvEncGetEncodeProfileGUIDs() API through this pointer.     */
-        PNVENCGETENCODEGUIDS            nvEncGetEncodeGUIDs	            #[out]: Client should access ::NvEncGetEncodeGUIDs() API through this pointer.           */
-        PNVENCGETINPUTFORMATCOUNT       nvEncGetInputFormatCount	    #[out]: Client should access ::NvEncGetInputFormatCount() API through this pointer.      */
-        PNVENCGETINPUTFORMATS           nvEncGetInputFormats	        #[out]: Client should access ::NvEncGetInputFormats() API through this pointer.          */
-        PNVENCGETENCODECAPS             nvEncGetEncodeCaps	            #[out]: Client should access ::NvEncGetEncodeCaps() API through this pointer.            */
-        PNVENCGETENCODEPRESETCOUNT      nvEncGetEncodePresetCount	    #[out]: Client should access ::NvEncGetEncodePresetCount() API through this pointer.     */
-        PNVENCGETENCODEPRESETGUIDS      nvEncGetEncodePresetGUIDs	    #[out]: Client should access ::NvEncGetEncodePresetGUIDs() API through this pointer.     */
-        PNVENCGETENCODEPRESETCONFIG     nvEncGetEncodePresetConfig	    #[out]: Client should access ::NvEncGetEncodePresetConfig() API through this pointer.    */
-        PNVENCINITIALIZEENCODER         nvEncInitializeEncoder	        #[out]: Client should access ::NvEncInitializeEncoder() API through this pointer.        */
-        PNVENCCREATEINPUTBUFFER         nvEncCreateInputBuffer	        #[out]: Client should access ::NvEncCreateInputBuffer() API through this pointer.        */
-        PNVENCDESTROYINPUTBUFFER        nvEncDestroyInputBuffer	        #[out]: Client should access ::NvEncDestroyInputBuffer() API through this pointer.       */
-        PNVENCCREATEBITSTREAMBUFFER     nvEncCreateBitstreamBuffer	    #[out]: Client should access ::NvEncCreateBitstreamBuffer() API through this pointer.    */
-        PNVENCDESTROYBITSTREAMBUFFER    nvEncDestroyBitstreamBuffer	    #[out]: Client should access ::NvEncDestroyBitstreamBuffer() API through this pointer.   */
-        PNVENCENCODEPICTURE             nvEncEncodePicture	            #[out]: Client should access ::NvEncEncodePicture() API through this pointer.            */
-        PNVENCLOCKBITSTREAM             nvEncLockBitstream	            #[out]: Client should access ::NvEncLockBitstream() API through this pointer.            */
-        PNVENCUNLOCKBITSTREAM           nvEncUnlockBitstream	        #[out]: Client should access ::NvEncUnlockBitstream() API through this pointer.          */
-        PNVENCLOCKINPUTBUFFER           nvEncLockInputBuffer	        #[out]: Client should access ::NvEncLockInputBuffer() API through this pointer.          */
-        PNVENCUNLOCKINPUTBUFFER         nvEncUnlockInputBuffer	        #[out]: Client should access ::NvEncUnlockInputBuffer() API through this pointer.        */
-        PNVENCGETENCODESTATS            nvEncGetEncodeStats	            #[out]: Client should access ::NvEncGetEncodeStats() API through this pointer.           */
-        PNVENCGETSEQUENCEPARAMS         nvEncGetSequenceParams	        #[out]: Client should access ::NvEncGetSequenceParams() API through this pointer.        */
-        PNVENCREGISTERASYNCEVENT        nvEncRegisterAsyncEvent	        #[out]: Client should access ::NvEncRegisterAsyncEvent() API through this pointer.       */
-        PNVENCUNREGISTERASYNCEVENT      nvEncUnregisterAsyncEvent	    #[out]: Client should access ::NvEncUnregisterAsyncEvent() API through this pointer.     */
-        PNVENCMAPINPUTRESOURCE          nvEncMapInputResource	        #[out]: Client should access ::NvEncMapInputResource() API through this pointer.         */
-        PNVENCUNMAPINPUTRESOURCE        nvEncUnmapInputResource	        #[out]: Client should access ::NvEncUnmapInputResource() API through this pointer.       */
-        PNVENCDESTROYENCODER            nvEncDestroyEncoder	            #[out]: Client should access ::NvEncDestroyEncoder() API through this pointer.           */
-        PNVENCINVALIDATEREFFRAMES       nvEncInvalidateRefFrames	    #[out]: Client should access ::NvEncInvalidateRefFrames() API through this pointer.      */
-        PNVENCOPENENCODESESSIONEX       nvEncOpenEncodeSessionEx	    #[out]: Client should access ::NvEncOpenEncodeSession() API through this pointer.        */
-        PNVENCREGISTERRESOURCE          nvEncRegisterResource	        #[out]: Client should access ::NvEncRegisterResource() API through this pointer.         */
-        PNVENCUNREGISTERRESOURCE        nvEncUnregisterResource	        #[out]: Client should access ::NvEncUnregisterResource() API through this pointer.       */
-        PNVENCRECONFIGUREENCODER        nvEncReconfigureEncoder	        #[out]: Client should access ::NvEncReconfigureEncoder() API through this pointer.       */
+        PNVENCGETENCODEPROFILEGUIDCOUNT nvEncGetEncodeProfileGUIDCount  #[out]: Client should access ::NvEncGetEncodeProfileGUIDCount() API through this pointer.
+        PNVENCGETENCODEPROFILEGUIDS     nvEncGetEncodeProfileGUIDs      #[out]: Client should access ::NvEncGetEncodeProfileGUIDs() API through this pointer.
+        PNVENCGETENCODEGUIDS            nvEncGetEncodeGUIDs	            #[out]: Client should access ::NvEncGetEncodeGUIDs() API through this pointer.
+        PNVENCGETINPUTFORMATCOUNT       nvEncGetInputFormatCount	    #[out]: Client should access ::NvEncGetInputFormatCount() API through this pointer.
+        PNVENCGETINPUTFORMATS           nvEncGetInputFormats	        #[out]: Client should access ::NvEncGetInputFormats() API through this pointer.
+        PNVENCGETENCODECAPS             nvEncGetEncodeCaps	            #[out]: Client should access ::NvEncGetEncodeCaps() API through this pointer.
+        PNVENCGETENCODEPRESETCOUNT      nvEncGetEncodePresetCount	    #[out]: Client should access ::NvEncGetEncodePresetCount() API through this pointer.
+        PNVENCGETENCODEPRESETGUIDS      nvEncGetEncodePresetGUIDs	    #[out]: Client should access ::NvEncGetEncodePresetGUIDs() API through this pointer.
+        PNVENCGETENCODEPRESETCONFIG     nvEncGetEncodePresetConfig	    #[out]: Client should access ::NvEncGetEncodePresetConfig() API through this pointer.
+        PNVENCINITIALIZEENCODER         nvEncInitializeEncoder	        #[out]: Client should access ::NvEncInitializeEncoder() API through this pointer.
+        PNVENCCREATEINPUTBUFFER         nvEncCreateInputBuffer	        #[out]: Client should access ::NvEncCreateInputBuffer() API through this pointer.
+        PNVENCDESTROYINPUTBUFFER        nvEncDestroyInputBuffer	        #[out]: Client should access ::NvEncDestroyInputBuffer() API through this pointer.
+        PNVENCCREATEBITSTREAMBUFFER     nvEncCreateBitstreamBuffer	    #[out]: Client should access ::NvEncCreateBitstreamBuffer() API through this pointer.
+        PNVENCDESTROYBITSTREAMBUFFER    nvEncDestroyBitstreamBuffer	    #[out]: Client should access ::NvEncDestroyBitstreamBuffer() API through this pointer.
+        PNVENCENCODEPICTURE             nvEncEncodePicture	            #[out]: Client should access ::NvEncEncodePicture() API through this pointer.
+        PNVENCLOCKBITSTREAM             nvEncLockBitstream	            #[out]: Client should access ::NvEncLockBitstream() API through this pointer.
+        PNVENCUNLOCKBITSTREAM           nvEncUnlockBitstream	        #[out]: Client should access ::NvEncUnlockBitstream() API through this pointer.
+        PNVENCLOCKINPUTBUFFER           nvEncLockInputBuffer	        #[out]: Client should access ::NvEncLockInputBuffer() API through this pointer.
+        PNVENCUNLOCKINPUTBUFFER         nvEncUnlockInputBuffer	        #[out]: Client should access ::NvEncUnlockInputBuffer() API through this pointer.
+        PNVENCGETENCODESTATS            nvEncGetEncodeStats	            #[out]: Client should access ::NvEncGetEncodeStats() API through this pointer.
+        PNVENCGETSEQUENCEPARAMS         nvEncGetSequenceParams	        #[out]: Client should access ::NvEncGetSequenceParams() API through this pointer.
+        PNVENCREGISTERASYNCEVENT        nvEncRegisterAsyncEvent	        #[out]: Client should access ::NvEncRegisterAsyncEvent() API through this pointer.
+        PNVENCUNREGISTERASYNCEVENT      nvEncUnregisterAsyncEvent	    #[out]: Client should access ::NvEncUnregisterAsyncEvent() API through this pointer.
+        PNVENCMAPINPUTRESOURCE          nvEncMapInputResource	        #[out]: Client should access ::NvEncMapInputResource() API through this pointer.
+        PNVENCUNMAPINPUTRESOURCE        nvEncUnmapInputResource	        #[out]: Client should access ::NvEncUnmapInputResource() API through this pointer.
+        PNVENCDESTROYENCODER            nvEncDestroyEncoder	            #[out]: Client should access ::NvEncDestroyEncoder() API through this pointer.
+        PNVENCINVALIDATEREFFRAMES       nvEncInvalidateRefFrames	    #[out]: Client should access ::NvEncInvalidateRefFrames() API through this pointer.
+        PNVENCOPENENCODESESSIONEX       nvEncOpenEncodeSessionEx	    #[out]: Client should access ::NvEncOpenEncodeSession() API through this pointer.
+        PNVENCREGISTERRESOURCE          nvEncRegisterResource	        #[out]: Client should access ::NvEncRegisterResource() API through this pointer.
+        PNVENCUNREGISTERRESOURCE        nvEncUnregisterResource	        #[out]: Client should access ::NvEncUnregisterResource() API through this pointer.
+        PNVENCRECONFIGUREENCODER        nvEncReconfigureEncoder	        #[out]: Client should access ::NvEncReconfigureEncoder() API through this pointer.
         void*                           reserved2[285]	                #[in]:  Reserved and must be set to NULL          	#[
 
 include "constants.pxi"
 from xpra.codecs.codec_constants import codec_spec
 
-STATUS_TXT = {
+NV_ENC_STATUS_TXT = {
     NV_ENC_SUCCESS : "This indicates that API call returned with no errors.",
     NV_ENC_ERR_NO_ENCODE_DEVICE       : "This indicates that no encode capable devices were detected",
     NV_ENC_ERR_UNSUPPORTED_DEVICE     : "This indicates that devices pass by the client is not supported.",
@@ -618,18 +973,20 @@ def get_type():
 def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
 
-def statusInfo(ret):
-    if ret in STATUS_TXT:
-        return "%s: %s" % (ret, STATUS_TXT[ret])
+
+CUDA_STATUS_TXT = {}
+cdef cudaStatusInfo(CUresult ret):
+    if ret in CUDA_STATUS_TXT:
+        return "%s: %s" % (ret, CUDA_STATUS_TXT[ret])
     return str(ret)
 
-def checkCuda(ret, msg=""):
+cdef checkCuda(CUresult ret, msg=""):
     if ret!=0:
-        log.warn("error during %s: %s", msg, statusInfo(ret))
+        log.warn("error during %s: %s", msg, cudaStatusInfo(ret))
     return ret
-def raiseCuda(ret, msg=""):
+cdef raiseCuda(CUresult ret, msg=""):
     if ret!=0:
-        raise Exception("%s - returned %s" % (msg, statusInfo(ret)))
+        raise Exception("%s - returned %s" % (msg, cudaStatusInfo(ret)))
 
 cdef cuda_init_devices():
     cdef int deviceCount, i
@@ -670,7 +1027,7 @@ cdef cuda_init_devices():
         cuDeviceGetAttribute(&max_height, CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_HEIGHT, cuDevice)
         cuDeviceGetAttribute(&canMapHostMemory, CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY, cuDevice)
         cuDeviceGetAttribute(&computeMode, CU_DEVICE_ATTRIBUTE_COMPUTE_MODE, cuDevice)
-        debug(" Can Map Host Memory: %s, Compute Mode: %s, MultiProcessor Count: %s, max dimensions: %sx%s", canMapHostMemory, computeMode, max_width, max_height)
+        debug(" Can Map Host Memory: %s, Compute Mode: %s, MultiProcessor Count: %s, max dimensions: %sx%s", canMapHostMemory, computeMode, multiProcessorCount, max_width, max_height)
 
     return devices
 cuda_devices = cuda_init_devices()
@@ -709,6 +1066,15 @@ def cuda_check():
 cuda_check()
 
 
+cdef nvencStatusInfo(NVENCSTATUS ret):
+    if ret in NV_ENC_STATUS_TXT:
+        return "%s: %s" % (ret, NV_ENC_STATUS_TXT[ret])
+    return str(ret)
+
+cdef raiseNVENC(NVENCSTATUS ret, msg=""):
+    if ret!=0:
+        raise Exception("%s - returned %s" % (msg, nvencStatusInfo(ret)))
+
 cdef object query_presets(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encode_GUID):
     cdef uint32_t presetCount
     cdef uint32_t presetsRetCount
@@ -718,13 +1084,13 @@ cdef object query_presets(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encod
     cdef NV_ENC_CONFIG encConfig
 
     presets = {}
-    raiseCuda(functionList.nvEncGetEncodePresetCount(encoder, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
+    raiseNVENC(functionList.nvEncGetEncodePresetCount(encoder, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
     debug("%s presets:", presetCount)
     assert presetCount<2**8
     preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
     assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
     try:
-        raiseCuda(functionList.nvEncGetEncodePresetGUIDs(encoder, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount))
+        raiseNVENC(functionList.nvEncGetEncodePresetGUIDs(encoder, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount))
         assert presetsRetCount==presetCount
         for x in range(presetCount):
             preset_GUID = preset_GUIDs[x]
@@ -732,7 +1098,7 @@ cdef object query_presets(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encod
             debug("* %s : %s", guidstr(preset_GUID), preset_name)
             memset(&presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
             presetConfig.version = NV_ENC_PRESET_CONFIG_VER
-            raiseCuda(functionList.nvEncGetEncodePresetConfig(encoder, encode_GUID, preset_GUID, &presetConfig), "getting preset config for %s" % guidstr(preset_GUID))
+            raiseNVENC(functionList.nvEncGetEncodePresetConfig(encoder, encode_GUID, preset_GUID, &presetConfig), "getting preset config for %s" % guidstr(preset_GUID))
             encConfig = presetConfig.presetCfg
             debug("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
             presets[preset_name] = guidstr(preset_GUID)
@@ -747,14 +1113,14 @@ cdef object query_profiles(NV_ENCODE_API_FUNCTION_LIST *functionList, void *enco
     cdef GUID profile_GUID
 
     profiles = {}
-    raiseCuda(functionList.nvEncGetEncodeProfileGUIDCount(encoder, encode_GUID, &profileCount), "getting profile count")
+    raiseNVENC(functionList.nvEncGetEncodeProfileGUIDCount(encoder, encode_GUID, &profileCount), "getting profile count")
     debug("%s profiles:", profileCount)
     assert profileCount<2**8
     profile_GUIDs = <GUID*> malloc(sizeof(GUID) * profileCount)
     assert profile_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
     PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
     try:
-        raiseCuda(functionList.nvEncGetEncodeProfileGUIDs(encoder, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount))
+        raiseNVENC(functionList.nvEncGetEncodeProfileGUIDs(encoder, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount))
         #(void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
         assert profilesRetCount==profileCount
         for x in range(profileCount):
@@ -773,13 +1139,13 @@ cdef object query_input_formats(NV_ENCODE_API_FUNCTION_LIST *functionList, void 
     cdef NV_ENC_BUFFER_FORMAT inputFmt
 
     input_formats = {}
-    raiseCuda(functionList.nvEncGetInputFormatCount(encoder, encode_GUID, &inputFmtCount), "getting input format count")
+    raiseNVENC(functionList.nvEncGetInputFormatCount(encoder, encode_GUID, &inputFmtCount), "getting input format count")
     debug("%s input formats:", inputFmtCount)
     assert inputFmtCount>0 and inputFmtCount<2**8
     inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
     assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
     try:
-        raiseCuda(functionList.nvEncGetInputFormats(encoder, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount), "getting input formats")
+        raiseNVENC(functionList.nvEncGetInputFormats(encoder, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount), "getting input formats")
         assert inputFmtsRetCount==inputFmtCount
         for x in range(inputFmtCount):
             inputFmt = inputFmts[x]
@@ -790,20 +1156,30 @@ cdef object query_input_formats(NV_ENCODE_API_FUNCTION_LIST *functionList, void 
         free(inputFmts)
     return input_formats
 
+cdef int query_encoder_caps(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encodeGUID, NV_ENC_CAPS caps_type):
+    cdef int val
+    cdef NV_ENC_CAPS_PARAM encCaps
+    memset(&encCaps, 0, sizeof(NV_ENC_CAPS_PARAM))
+    encCaps.version = NV_ENC_CAPS_PARAM_VER
+    encCaps.capsToQuery = caps_type
+
+    raiseNVENC(functionList.nvEncGetEncodeCaps(encoder, encodeGUID, &encCaps, &val))
+    return val
+
 
 cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcontext cuda_context, CUdevice cuda_device):
     cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
     cdef GUID clientKeyPtr
     cdef void *encoder = NULL
-    log.info("open_encode_session(%s, %s)", hex(<long> cuda_context), cuda_device)
+    debug("open_encode_session(%s, %s)", hex(<long> cuda_context), cuda_device)
 
-    raiseCuda(cuCtxCreate(&cuda_context, 0, cuda_device))
+    raiseNVENC(cuCtxCreate(&cuda_context, 0, cuda_device))
     debug("CUContext(%s)=%s", cuda_device, hex(<long> cuda_context))
 
     #get NVENC function pointers:
     memset(functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
     functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
-    raiseCuda(NvEncodeAPICreateInstance(functionList), "getting API function list")
+    raiseNVENC(NvEncodeAPICreateInstance(functionList), "getting API function list")
     assert functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
     #NVENC init:
@@ -814,7 +1190,7 @@ cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcont
     params.clientKeyPtr = &clientKeyPtr
     params.apiVersion = NVENCAPI_VERSION
     debug("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> functionList.nvEncOpenEncodeSessionEx))
-    raiseCuda(functionList.nvEncOpenEncodeSessionEx(&params, &encoder), "opening session")
+    raiseNVENC(functionList.nvEncOpenEncodeSessionEx(&params, &encoder), "opening session")
     debug("success, encoder context=%s", hex(<long> encoder))
 
     cdef uint32_t GUIDCount
@@ -822,14 +1198,14 @@ cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcont
     cdef GUID* encode_GUIDs
     cdef GUID encode_GUID
 
-    raiseCuda(functionList.nvEncGetEncodeGUIDCount(encoder, &GUIDCount))
+    raiseNVENC(functionList.nvEncGetEncodeGUIDCount(encoder, &GUIDCount))
     debug("found %s encode GUIDs", GUIDCount)
     assert GUIDCount<2**8
     encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
     assert encode_GUIDs!=NULL, "could not allocate memory for %s encode GUIDs!" % (GUIDCount)
     encoders = {}
     try:
-        raiseCuda(functionList.nvEncGetEncodeGUIDs(encoder, encode_GUIDs, GUIDCount, &GUIDRetCount), "getting list of encode GUIDs")
+        raiseNVENC(functionList.nvEncGetEncodeGUIDs(encoder, encode_GUIDs, GUIDCount, &GUIDRetCount), "getting list of encode GUIDs")
         assert GUIDRetCount==GUIDCount, "expected %s items but got %s" % (GUIDCount, GUIDRetCount)
         for x in range(GUIDRetCount):
             encode_GUID = encode_GUIDs[x]
@@ -845,6 +1221,11 @@ cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcont
 
             input_formats = query_input_formats(functionList, encoder, encode_GUID)
             log.info("  input formats=%s", input_formats)
+
+            maxw = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
+            maxh = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_HEIGHT_MAX)
+            async = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
+            log.info(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
     finally:
         free(encode_GUIDs)
     return encoder
@@ -860,15 +1241,6 @@ try:
 except:
     log.error("open_encode_session() failed", exc_info=True)
     raise
-
-
-"""cdef query_encoder_caps(CNvEncoder *encoder):
-    cdef int val
-    for k in {}.items():
-        #NvEncGetEncodeCaps
-        pass
-    pass
-"""
 
 
 cdef class Encoder:
@@ -896,7 +1268,7 @@ cdef class Encoder:
         params.encodeWidth = width
         params.encodeHeight = height
         params.enableEncodeAsync = 0
-        raiseCuda(self.functionList.nvEncInitializeEncoder(self.context, &params))
+        raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params))
         debug("encoder initialized")
 
         #allocate input buffer:
@@ -907,7 +1279,7 @@ cdef class Encoder:
         createInputBufferParams.height = roundup(height, 32)
         createInputBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED     #NV_ENC_MEMORY_HEAP_AUTOSELECT
         createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_TILED64x16
-        raiseCuda(self.functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
+        raiseNVENC(self.functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
         self.inputBuffer = createInputBufferParams.inputBuffer
         debug("inputBuffer=%s", hex(<long> self.inputBuffer))
 
@@ -917,7 +1289,7 @@ cdef class Encoder:
         createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
         createBitstreamBufferParams.size = 1024*1024
         createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
-        raiseCuda(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
+        raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
         self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
         debug("bitstreamBuffer=%s", hex(<long> self.bitstreamBuffer))
 
@@ -960,6 +1332,12 @@ cdef class Encoder:
     def get_client_options(self, options):
         return {}
 
+    def flushEncoder(self):
+        cdef NV_ENC_PIC_PARAMS picParams
+        memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
+        picParams.encodePicFlags = NV_ENC_PIC_FLAG_EOS
+        self.functionList.nvEncEncodePicture(self.context, &picParams)
+
     def compress_image(self, image, options={}):
         assert self.context!=NULL, "context is not initialized"
         log.info("compress_image(%s, %s)", image, options)
@@ -972,8 +1350,17 @@ cdef class Encoder:
         cdef size_t size = len(planes[0])
         try:
             raiseCuda(cuMemcpyHtoD(<CUdeviceptr> NULL, cbuf, size), "copy from host to device")
+            
+            #nvEncEncodePicture(self.encoder, &picParams)
+
+            #lock buffer:
+            try:
+                #self.functionList.nvEncLockBitstream(self.encoder, NV_ENC_LOCK_BITSTREAM* lockBitstreamBufferParams)
+                pass
+            finally:
+                #self.functionList.NvUnlcokBitstreamBuffer(self.encoder, NV_ENC_LOCK_BITSTREAM* lockBitstreamBufferParams)
+                pass
         finally:
             raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
         #NV_ENC_PIC_PARAMS
-        #nvEncEncodePicture(self.encoder, &picParams)
         return None
