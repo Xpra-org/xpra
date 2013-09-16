@@ -257,6 +257,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         }
     __gsignals__ = {
         "client-contents-changed": one_arg_signal,
+        "raised": one_arg_signal,
         "unmanaged": one_arg_signal,
 
 # this signal must be defined in the subclasses to be seen by the event stuff:
@@ -518,7 +519,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         # FIXME
         # Need to listen for:
         #   _NET_CLOSE_WINDOW
-        #   _NET_ACTIVE_WINDOW
         #   _NET_CURRENT_DESKTOP
         #   _NET_REQUEST_FRAME_EXTENTS
         #   _NET_WM_PING responses
@@ -545,6 +545,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 self.set_property("maximized", maximized)
             else:
                 log("do_xpra_client_message_event(%s) atom=%s", event, atom1)
+        if event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0]==1:
+            self.emit("raised", event)
         else:
             log("do_xpra_client_message_event(%s)", event)
         self._last_wm_state_serial = event.serial

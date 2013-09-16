@@ -601,6 +601,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["share"] = self.client_supports_sharing
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
         capabilities["windows"] = self.windows_enabled
+        capabilities["window.raise"] = True
         capabilities["raw_window_icons"] = True
         capabilities["system_tray"] = self.client_supports_system_tray
         capabilities["xsettings-tuple"] = True
@@ -1334,6 +1335,14 @@ class UIXpraClient(XpraClientBase):
         self.notifier.close_notify(nid)
 
 
+    def _process_raise_window(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        if window:
+            #TODO: this is gtk2 only... other backends should implement present..
+            window.present()
+
+
     def _process_window_metadata(self, packet):
         wid, metadata = packet[1:3]
         window = self._id_to_window.get(wid)
@@ -1396,6 +1405,7 @@ class UIXpraClient(XpraClientBase):
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
             "new-tray":             self._process_new_tray,
+            "raise-window":         self._process_raise_window,
             "window-resized":       self._process_window_resized,
             "cursor":               self._process_cursor,
             "bell":                 self._process_bell,

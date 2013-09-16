@@ -243,6 +243,7 @@ class ServerSource(object):
         self.send_bell = False
         self.send_notifications = False
         self.send_windows = True
+        self.window_raise = False
         self.randr_notify = False
         self.named_cursors = False
         self.clipboard_enabled = False
@@ -445,6 +446,7 @@ class ServerSource(object):
         #general features:
         self.lz4 = c.boolget("lz4", False)
         self.send_windows = c.boolget("windows", True)
+        self.window_raise = c.boolget("window.raise")
         self.server_window_resize = c.boolget("server-window-resize")
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.send_bell = c.boolget("bell")
@@ -1103,6 +1105,9 @@ class ServerSource(object):
         if ws:
             ws.unmap()
 
+    def raise_window(self, wid, window):
+        if self.window_raise:
+            self.send("raise-window", wid)
 
     def remove_window(self, wid, window):
         """ The given window is gone, ensure we free all the related resources """
