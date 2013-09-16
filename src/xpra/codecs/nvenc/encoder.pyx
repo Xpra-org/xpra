@@ -15,7 +15,7 @@ error = log.error
 
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
-FORCE = True
+FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 
 
 cdef extern from "Python.h":
@@ -677,7 +677,7 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved[255]       #[in]: Reserved and must be set to 0
         void*       reserved2[63]       #[in]: Reserved and must be set to NULL
 
-    ctypedef struct NV_ENC_CODEC_PIC_PARAMS:
+    ctypedef union NV_ENC_CODEC_PIC_PARAMS:
         NV_ENC_PIC_PARAMS_H264 h264PicParams    #[in]: H264 encode picture params.
         NV_ENC_PIC_PARAMS_MPEG mpegPicParams    #[in]: MPEG2 encode picture params. Currently unsupported and must not to be used.
         NV_ENC_PIC_PARAMS_VC1  vc1PicParams     #[in]: VC1 encode picture params. Currently unsupported and must not to be used.
@@ -873,17 +873,60 @@ CODEC_PROFILES = {
                   }
 
 def guidstr(guid):
-    #really ugly!
-    b = bytearray((4+2+2+1))
-    i = 0
-    vi = 0
-    for s in (4, 2, 2, 1):
-        v = bytearray(guid.values()[vi])
-        vi += 1
+    #really ugly! (surely there's a way using struct.unpack ?)
+    #is this even endian safe? do we care? (always on the same system)
+    parts = []
+    for fname, s in (("Data1", 4), ("Data2", 2), ("Data3", 2)):
+        v = guid.get(fname)
+        b = bytearray(s)
         for j in range(s):
-            b[i] = v[j]
-            i += 1
-    return binascii.hexlify(b).upper()
+            b[s-j-1] = v % 256
+            v = v / 256
+        parts.append(b)
+    parts.append(bytearray(guid.get("Data4")[:2]))
+    parts.append(bytearray(guid.get("Data4")[2:8]))
+    s = "-".join([binascii.hexlify(b).upper() for b in parts])
+    #log.info("guidstr(%s)=%s", guid, s)
+    return s
+
+def parseguid(s):
+    #just as ugly as above - shoot me now
+    #only this format is allowed:
+    sample_key = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
+    if len(s)!=len(sample_key):
+        return None
+    for i in range(len(sample_key)):
+        if sample_key[i]=="-":
+            #dash must be in the same place:
+            if s[i]!="-":
+                return None
+        else:
+            #must be an hex number:
+            if s.upper()[i] not in ("0123456789ABCDEF"):
+                return None
+    parts = s.split("-")    #ie: ["CE788D20", "AAA9", ...]
+    nparts = []
+    for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
+        b = bytearray(binascii.unhexlify(parts[i]))
+        v = 0
+        for j in range(s):
+            v += b[j]<<((s-j-1)*8)
+        nparts.append(v)
+    cdef GUID guid
+    guid.Data1 = nparts[0]
+    guid.Data2 = nparts[1]
+    guid.Data3 = nparts[2]
+    v = (nparts[3]<<48) + nparts[4]
+    for i in range(8):
+        guid.Data4[i] = (v>>((7-i)*8)) % 256
+    return guid
+
+def test_parse():
+    sample_key = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
+    x = parseguid(sample_key)
+    v = guidstr(x)
+    assert v==sample_key, "expected %s but got %s" % (sample_key, v)
+test_parse()
 
 
 CODEC_GUIDS = {
@@ -1189,6 +1232,7 @@ cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcont
     params.device = <void*> cuda_context
     params.clientKeyPtr = &clientKeyPtr
     params.apiVersion = NVENCAPI_VERSION
+    #params.clientKeyPtr = client_key
     debug("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> functionList.nvEncOpenEncodeSessionEx))
     raiseNVENC(functionList.nvEncOpenEncodeSessionEx(&params, &encoder), "opening session")
     debug("success, encoder context=%s", hex(<long> encoder))
@@ -1226,6 +1270,8 @@ cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcont
             maxh = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_HEIGHT_MAX)
             async = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
             log.info(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
+            rate_countrol = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
+            log.info(" rate control: %s", rate_countrol)
     finally:
         free(encode_GUIDs)
     return encoder
@@ -1268,6 +1314,7 @@ cdef class Encoder:
         params.encodeWidth = width
         params.encodeHeight = height
         params.enableEncodeAsync = 0
+        params.enablePTD = 1
         raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params))
         debug("encoder initialized")
 
@@ -1339,28 +1386,87 @@ cdef class Encoder:
         self.functionList.nvEncEncodePicture(self.context, &picParams)
 
     def compress_image(self, image, options={}):
-        assert self.context!=NULL, "context is not initialized"
-        log.info("compress_image(%s, %s)", image, options)
-        raiseCuda(cuCtxPushCurrent(self.cuda_context), "failed to push context")
         cdef const void* cbuf = NULL
         cdef Py_ssize_t cbuf_len = 0
+        cdef NV_ENC_LOCK_INPUT_BUFFER lockInputBuffer
+        cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
+        cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
+
+        log.info("compress_image(%s, %s)", image, options)
+        assert self.context!=NULL, "context is not initialized"
         assert image.get_planes()==ImageWrapper._3_PLANES
         planes = image.get_pixels()
-        assert PyObject_AsReadBuffer(planes[0], &cbuf, &cbuf_len)==0
         cdef size_t size = len(planes[0])
-        try:
-            raiseCuda(cuMemcpyHtoD(<CUdeviceptr> NULL, cbuf, size), "copy from host to device")
-            
-            #nvEncEncodePicture(self.encoder, &picParams)
 
-            #lock buffer:
+        raiseCuda(cuCtxPushCurrent(self.cuda_context), "failed to push context")
+        try:
+            assert PyObject_AsReadBuffer(planes[0], &cbuf, &cbuf_len)==0
+
+            #lock input buffer:
+            memset(&lockInputBuffer, 0, sizeof(NV_ENC_LOCK_INPUT_BUFFER))
+            lockInputBuffer.version = NV_ENC_LOCK_INPUT_BUFFER_VER
+            lockInputBuffer.doNotWait = 1
+            lockInputBuffer.inputBuffer = self.inputBuffer
+
+            #lock output buffer:
+            memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
+            lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
+            lockOutputBuffer.doNotWait = 1
+            lockOutputBuffer.outputBitstream = self.bitstreamBuffer
+            """
+            #uint32_t*   sliceOffsets        #[in,out]: Array which receives the slice offsets. Currently used only when NV_ENC_CONFIG_H264::sliceMode == 3. Array size must be equal to NV_ENC_CONFIG_H264::sliceModeData.
+            uint32_t    bitstreamSizeInBytes#[out]: Actual number of bytes generated and copied to the memory pointed by bitstreamBufferPtr.
+            void*       bitstreamBufferPtr  #[out]: Pointer to the generated output bitstream. Client should allocate sufficiently large buffer to hold the encoded output. Client is responsible for managing this memory.
+            NV_ENC_PIC_TYPE     pictureType #[out]: Picture type of the encoded picture.
+            NV_ENC_PIC_STRUCT   pictureStruct   #[out]: Structure of the generated output picture.
+            """
             try:
-                #self.functionList.nvEncLockBitstream(self.encoder, NV_ENC_LOCK_BITSTREAM* lockBitstreamBufferParams)
-                pass
+                raiseNVENC(self.functionList.nvEncLockInputBuffer(self.context, &lockInputBuffer))
+                raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer))
+                #alternatively, to use our own buffers: nvEncRegisterResource
+                log.info("buffers locked")
+
+                #copy to input buffer:
+                #memcpy(self.inputBuffer, cbuf, cbuf_len)
+
+                memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
+                picParams.version = NV_ENC_PIC_PARAMS_VER
+                picParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_TILED64x16
+                picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
+                #picParams.pictureType = NV_ENC_PIC_TYPE_UNKNOWN    #not needed since enablePTD is enabled
+                picParams.inputWidth = self.width
+                picParams.inputHeight = self.height
+                picParams.inputBuffer = self.inputBuffer
+                picParams.outputBitstream = self.bitstreamBuffer
+                #picParams.encodePicFlags = NV_ENC_PIC_FLAG_FORCEINTRA
+                #inputTimeStamp = 0     #FIXME: use damage time!
+                #inputDuration = 0      #FIXME: use frame delay?
+                picParams.rcParams.version = NV_ENC_RC_PARAMS_VER
+                picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
+                picParams.rcParams.averageBitRate = 5000000   #5Mbits/s
+                picParams.rcParams.maxBitRate = 10000000      #10Mbits/s
+
+                raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
+                size = lockOutputBuffer.bitstreamSizeInBytes
+                log.info("encoded!")
+                
+                #copy to python buffer:
+                pixels = (<char *> self.bitstreamBuffer)[:size]
+                log.info("returning %s bytes", size)
+                return pixels, {}
+            except:
+                log.error("error during encoding", exc_info=True)
+                return None
             finally:
-                #self.functionList.NvUnlcokBitstreamBuffer(self.encoder, NV_ENC_LOCK_BITSTREAM* lockBitstreamBufferParams)
-                pass
+                try:
+                    raiseNVENC(self.functionList.nvEncUnlockInputBuffer(self.context, self.inputBuffer))
+                    raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer))
+                except:
+                    log.error("error during unlocking", exc_info=True)
+
+            #raiseCuda(cuMemcpyHtoD(<CUdeviceptr> NULL, cbuf, size), "copy from host to device")
+            #void*       bufferDataPtr       #[out]: Pointed to the locked input buffer data. Client can only access input buffer using the \p bufferDataPtr.
+            #uint32_t    pitch               #[out]: Pitch of the locked input buffer.
+            #nvEncEncodePicture(self.encoder, &picParams)
         finally:
             raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
-        #NV_ENC_PIC_PARAMS
-        return None
