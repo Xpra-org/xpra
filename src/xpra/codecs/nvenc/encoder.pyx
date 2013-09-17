@@ -1338,8 +1338,11 @@ cdef class Encoder:
     cdef void *inputBuffer
     cdef void *inputBufferPtr
     cdef void *bitstreamBuffer
+    cdef void *bitstreamBufferPtr
     cdef object codec_name
     cdef object preset_name
+    cdef int frames
+    cdef int gopLength
 
     cdef GUID get_codec(self):
         codecs = query_codecs(&self.functionList, self.context)
@@ -1367,15 +1370,14 @@ cdef class Encoder:
         self.src_format = src_format
         self.codec_name = "H264"
         self.preset_name = None
+        self.frames = 0
 
-        try:
-            cuda_device = cuda_devices.keys()[0]
-            debug("cuCtxCreate(%s, %s, %s)", hex(<long> self.cuda_context), 0, cuda_device)
-            raiseCuda(cuCtxCreate(&self.cuda_context, 0, cuda_device))
-    
-            self.init_nvenc()
-        finally:
-            raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
+        cuda_device = cuda_devices.keys()[0]
+        debug("cuCtxCreate(%s, %s, %s)", hex(<long> self.cuda_context), 0, cuda_device)
+        raiseCuda(cuCtxCreate(&self.cuda_context, 0, cuda_device))
+        raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
+
+        self.init_nvenc()
 
     def init_nvenc(self):
         cdef GUID codec
@@ -1383,9 +1385,6 @@ cdef class Encoder:
         cdef GUID profile
         cdef NV_ENC_INITIALIZE_PARAMS params
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
-        cdef NV_ENC_CONFIG encodeConfig
-        cdef NV_ENC_CODEC_CONFIG encodeCodecConfig
-        cdef NV_ENC_CONFIG_H264 h264Config
         self.context = open_encode_session(&self.functionList, self.cuda_context)
 
         codec = self.get_codec()
@@ -1393,16 +1392,13 @@ cdef class Encoder:
 
         cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
-        #NV_ENC_CONFIG
         try:
             presetConfig = get_preset_config(&self.functionList, self.context, codec, preset)
 
             #PROFILE
             profiles = query_profiles(&self.functionList, self.context, NV_ENC_CODEC_H264_GUID)
-            encodeConfig = presetConfig.presetCfg
-            encodeCodecConfig = encodeConfig.encodeCodecConfig
-            h264Config = encodeCodecConfig.h264Config
-            h264Config.enableVFR = 1
+            presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
+            self.gopLength = presetConfig.presetCfg.gopLength
 
             memset(&params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))
             params.version = NV_ENC_INITIALIZE_PARAMS_VER
@@ -1413,7 +1409,7 @@ cdef class Encoder:
             params.darWidth = self.width
             params.darHeight = self.height
             params.enableEncodeAsync = 0            #not supported on Linux
-            params.enablePTD = 1
+            params.enablePTD = 0                    #not supported in sync mode!?
             params.encodeConfig = &presetConfig.presetCfg
             raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params))
             debug("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
@@ -1433,7 +1429,7 @@ cdef class Encoder:
             memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
             createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
             createBitstreamBufferParams.size = 1024*1024
-            createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED
+            createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
             raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
             debug("bitstreamBuffer=%s", hex(<long> self.bitstreamBuffer))
@@ -1499,7 +1495,6 @@ cdef class Encoder:
         cdef const void* cbuf = NULL
         cdef Py_ssize_t cbuf_len = 0
         cdef NV_ENC_LOCK_INPUT_BUFFER lockInputBuffer
-        cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
 
         debug("compress_image(%s, %s)", image, options)
@@ -1509,26 +1504,20 @@ cdef class Encoder:
         cdef size_t size = len(planes[0])
 
         assert PyObject_AsReadBuffer(planes[0], &cbuf, &cbuf_len)==0
-
-        #lock input buffer:
-        memset(&lockInputBuffer, 0, sizeof(NV_ENC_LOCK_INPUT_BUFFER))
-        lockInputBuffer.version = NV_ENC_LOCK_INPUT_BUFFER_VER
-        lockInputBuffer.doNotWait = 1
-        lockInputBuffer.inputBuffer = self.inputBuffer
-
-        #lock output buffer:
-        memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
-        lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
-        lockOutputBuffer.doNotWait = 1
-        lockOutputBuffer.outputBitstream = self.bitstreamBuffer
         try:
+            #lock input buffer:
+            memset(&lockInputBuffer, 0, sizeof(NV_ENC_LOCK_INPUT_BUFFER))
+            lockInputBuffer.version = NV_ENC_LOCK_INPUT_BUFFER_VER
+            lockInputBuffer.doNotWait = 1
+            lockInputBuffer.inputBuffer = self.inputBuffer
+
             raiseNVENC(self.functionList.nvEncLockInputBuffer(self.context, &lockInputBuffer))
             #alternatively, to use our own buffers: nvEncRegisterResource
             self.inputBufferPtr = lockInputBuffer.bufferDataPtr
             debug("input buffer locked, inputBufferPtr=%s, pitch=%s", hex(<long> self.inputBufferPtr), lockInputBuffer.pitch)
             #copy to input buffer:
-            #memcpy(self.inputBufferPtr, cbuf, cbuf_len)
             memset(self.inputBufferPtr, 0, self.width*self.height)
+            memcpy(self.inputBufferPtr, cbuf, min(self.width*self.height, cbuf_len))
 
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
             picParams.version = NV_ENC_PIC_PARAMS_VER
@@ -1539,36 +1528,52 @@ cdef class Encoder:
             picParams.inputPitch = lockInputBuffer.pitch
             picParams.inputBuffer = self.inputBuffer
             picParams.outputBitstream = self.bitstreamBuffer
-            #picParams.pictureType = NV_ENC_PIC_TYPE_INTRA_REFRESH    #not needed when enablePTD is enabled
-            #NV_ENC_CODEC_PIC_PARAMS codecPicParams
-            #picParams.codecPicParams = codecPicParams
+            #picParams.pictureType: required when enablePTD is disabled
+            if (self.frames % self.gopLength)==0:
+                picParams.pictureType = NV_ENC_PIC_TYPE_IDR
+            else:
+                picParams.pictureType = NV_ENC_PIC_TYPE_P
+            picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
+            picParams.codecPicParams.h264PicParams.refPicFlag = 1
+            picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
+            picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
             #picParams.encodePicFlags = NV_ENC_PIC_FLAG_FORCEINTRA
-            #inputTimeStamp = 0     #FIXME: use damage time!
+            #picParams.inputTimeStamp = int(1000.0 * time.time())
             #inputDuration = 0      #FIXME: use frame delay?
             picParams.rcParams.version = NV_ENC_RC_PARAMS_VER
             picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
             picParams.rcParams.averageBitRate = 5000000   #5Mbits/s
             picParams.rcParams.maxBitRate = 10000000      #10Mbits/s
-
-            raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
-            debug("encoded!")
-        except:
-            log.error("error during encoding", exc_info=True)
-            return None
         finally:
             try:
                 raiseNVENC(self.functionList.nvEncUnlockInputBuffer(self.context, self.inputBuffer))
             except:
                 log.error("error during unlocking", exc_info=True)
+
         try:
-            #lock output buffer
+            raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
+            debug("encoded!")
+        except:
+            log.error("error during encoding", exc_info=True)
+            return None
+
+        self.frames += 1
+
+        #lock output buffer:
+        cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
+        try:
+            memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
+            lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
+            lockOutputBuffer.doNotWait = 1
+            lockOutputBuffer.outputBitstream = self.bitstreamBuffer
             raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer))
-            debug("output buffer locked")
+            self.bitstreamBufferPtr = lockOutputBuffer.bitstreamBufferPtr
+            debug("output buffer locked, bitstreamBufferPtr=%s", hex(<long> self.bitstreamBufferPtr))
 
             #copy to python buffer:
             size = lockOutputBuffer.bitstreamSizeInBytes
-            pixels = (<char *> self.bitstreamBuffer)[:size]
             debug("returning %s bytes", size)
+            pixels = (<char *> self.bitstreamBufferPtr)[:size]
             return pixels, {}
         except:
             raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer))
