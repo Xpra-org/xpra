@@ -54,7 +54,7 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_st
         return str(pixels)
     return pixels
 
-def make_planar_input(src_format, w, h, use_strings=False, populate=False):
+def make_planar_input(src_format, w, h, use_strings=False, populate=False, seed=0):
     assert src_format in ("YUV420P", "YUV422P", "YUV444P"), "invalid source format %s" % src_format
     start = time.time()
     Ydivs, Udivs, Vdivs = get_subsampling_divs(src_format)
@@ -70,7 +70,7 @@ def make_planar_input(src_format, w, h, use_strings=False, populate=False):
     if populate:
         for y in range(h):
             for x in range(w):
-                i = y*x
+                i = seed + y*x
                 Ydata[i/Yxd/Yyd] = i % 256
                 Udata[i/Uxd/Uyd] = i % 256
                 Vdata[i/Vxd/Vyd] = i % 256
