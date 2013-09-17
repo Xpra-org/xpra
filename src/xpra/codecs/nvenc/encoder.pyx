@@ -16,6 +16,7 @@ error = log.error
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
+CLIENT_KEY = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
 
 
 cdef extern from "Python.h":
@@ -74,8 +75,6 @@ cdef extern from "NvTypes.h":
 
 #cdef extern from "videoFormats.h":
 #    const char *getVideoFormatString(unsigned int dwFormat)
-
-ctypedef uint32_t CONSTANT
 
 cdef extern from "nvEncodeAPI.h":
 
@@ -384,7 +383,7 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef struct NV_ENC_CREATE_BITSTREAM_BUFFER:
         uint32_t    version         #[in]: Struct version. Must be set to ::NV_ENC_CREATE_BITSTREAM_BUFFER_VER
         uint32_t    size            #[in]: Size of the bitstream buffer to be created
-        CONSTANT    memoryHeap      #[in]: Output buffer memory heap
+        NV_ENC_MEMORY_HEAP memoryHeap      #[in]: Output buffer memory heap
         uint32_t    reserved        #[in]: Reserved and must be set to 0
         void        *bitstreamBuffer#[out]: Pointer to the output bitstream buffer
         void        *bitstreamBufferPtr #[out]: Reserved and should not be used
@@ -405,6 +404,22 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef struct NV_ENC_CONFIG_MVC:
         uint32_t    reserved1[256]      #[in]: Reserved and should be set to 0
         void*       reserved2[64]       #[in]: Reserved and should be set to NULL
+
+    ctypedef struct NV_ENC_CONFIG_H264_VUI_PARAMETERS:
+        uint32_t    overscanInfoPresentFlag         #[in]: if set to 1 , it specifies that the overscanInfo is present
+        uint32_t    overscanInfo                    #[in]: Specifies the overscan info(as defined in Annex E of the ITU-T Specification).
+        uint32_t    videoSignalTypePresentFlag      #[in]: If set to 1, it specifies  that the videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present.
+        uint32_t    videoFormat                     #[in]: Specifies the source video format(as defined in Annex E of the ITU-T Specification).
+        uint32_t    videoFullRangeFlag              #[in]: Specifies the output range of the luma and chroma samples(as defined in Annex E of the ITU-T Specification).
+        uint32_t    colourDescriptionPresentFlag    #[in]: If set to 1, it specifies that the colourPrimaries, transferCharacteristics and colourMatrix are present.
+        uint32_t    colourPrimaries                 #[in]: Specifies color primaries for converting to RGB(as defined in Annex E of the ITU-T Specification)
+        uint32_t    transferCharacteristics         #[in]: Specifies the opto-electronic transfer characteristics to use (as defined in Annex E of the ITU-T Specification)
+        uint32_t    colourMatrix                    #[in]: Specifies the matrix coefficients used in deriving the luma and chroma from the RGB primaries (as defined in Annex E of the ITU-T Specification).
+        uint32_t    chromaSampleLocationFlag        #[in]: if set to 1 , it specifies that thechromaSampleLocationTop and chromaSampleLocationBot are present.
+        uint32_t    chromaSampleLocationTop         #[in]: Specifies the chroma sample location for top field(as defined in Annex E of the ITU-T Specification)
+        uint32_t    chromaSampleLocationBot         #[in]: Specifies the chroma sample location for bottom field(as defined in Annex E of the ITU-T Specification)
+        uint32_t    bitstreamRestrictionFlag        #[in]: if set to 1, it speficies the bitstream restriction parameters are present in the bitstream.
+        uint32_t    reserved[15]
 
     ctypedef union NV_ENC_CONFIG_H264_EXT:
         NV_ENC_CONFIG_SVC_TEMPORAL  svcTemporalConfig   #[in]: SVC encode config
@@ -460,7 +475,7 @@ cdef extern from "nvEncodeAPI.h":
                                         #sliceMode = 1, sliceModeData specifies maximum # of bytes in each slice (except last slice)
                                         #sliceMode = 2, sliceModeData specifies # of MB rows in each slice (except last slice)
                                         #sliceMode = 3, sliceModeData specifies number of slices in the picture. Driver will divide picture into slices optimally
-        CONSTANT    h264VUIParameters   #[in]: (NV_ENC_CONFIG_H264_VUI_PARAMETERS) Specifies the H264 video usability info pamameters
+        NV_ENC_CONFIG_H264_VUI_PARAMETERS h264VUIParameters   #[in]: Specifies the H264 video usability info pamameters
         uint32_t    ltrNumFrames        #[in]: Specifies the number of LTR frames used. Additionally, encoder will mark the first numLTRFrames base layer reference frames within each IDR interval as LTR
         uint32_t    ltrTrustMode        #[in]: Specifies the LTR operating mode. Set to 0 to disallow encoding using LTR frames until later specified. Set to 1 to allow encoding using LTR frames unless later invalidated.
         uint32_t    reserved1[272]      #[in]: Reserved and must be set to 0
@@ -928,6 +943,14 @@ def test_parse():
     assert v==sample_key, "expected %s but got %s" % (sample_key, v)
 test_parse()
 
+cdef GUID CLIENT_KEY_GUID
+memset(&CLIENT_KEY_GUID, 0, sizeof(GUID))
+if CLIENT_KEY:
+    try:
+        CLIENT_KEY_GUID = parseguid(CLIENT_KEY)
+    except Exception, e:
+        log.error("invalid client key specified: %s", e)
+
 
 CODEC_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID)     : "H264",
@@ -1265,7 +1288,6 @@ cdef query_codecs(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder):
 
 cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcontext cuda_context):
     cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
-    cdef GUID clientKeyPtr
     cdef void *encoder = NULL
     debug("open_encode_session(%s, %s)", hex(<long> functionList), hex(<long> cuda_context))
 
@@ -1276,12 +1298,11 @@ cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcont
     assert functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
     #NVENC init:
-    memset(&clientKeyPtr, 0, sizeof(GUID))
     memset(&params, 0, sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
     params.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
     params.deviceType = NV_ENC_DEVICE_TYPE_CUDA
     params.device = <void*> cuda_context
-    params.clientKeyPtr = &clientKeyPtr
+    params.clientKeyPtr = &CLIENT_KEY_GUID
     params.apiVersion = NVENCAPI_VERSION
     #params.clientKeyPtr = client_key
     debug("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> functionList.nvEncOpenEncodeSessionEx))
@@ -1315,6 +1336,7 @@ cdef class Encoder:
     cdef NV_ENCODE_API_FUNCTION_LIST functionList               #@DuplicatedSignature
     cdef void *context
     cdef void *inputBuffer
+    cdef void *inputBufferPtr
     cdef void *bitstreamBuffer
     cdef object codec_name
     cdef object preset_name
@@ -1356,12 +1378,14 @@ cdef class Encoder:
             raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
 
     def init_nvenc(self):
-        cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
-        #cdef NV_ENC_CONFIG encodeConfig
         cdef GUID codec
         cdef GUID preset
         cdef GUID profile
         cdef NV_ENC_INITIALIZE_PARAMS params
+        cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
+        cdef NV_ENC_CONFIG encodeConfig
+        cdef NV_ENC_CODEC_CONFIG encodeCodecConfig
+        cdef NV_ENC_CONFIG_H264 h264Config
         self.context = open_encode_session(&self.functionList, self.cuda_context)
 
         codec = self.get_codec()
@@ -1375,7 +1399,10 @@ cdef class Encoder:
 
             #PROFILE
             profiles = query_profiles(&self.functionList, self.context, NV_ENC_CODEC_H264_GUID)
-            #encodeConfig = presetConfig.presetCfg
+            encodeConfig = presetConfig.presetCfg
+            encodeCodecConfig = encodeConfig.encodeCodecConfig
+            h264Config = encodeCodecConfig.h264Config
+            h264Config.enableVFR = 1
 
             memset(&params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))
             params.version = NV_ENC_INITIALIZE_PARAMS_VER
@@ -1383,8 +1410,11 @@ cdef class Encoder:
             params.presetGUID = preset
             params.encodeWidth = self.width
             params.encodeHeight = self.height
-            params.enableEncodeAsync = 0
+            params.darWidth = self.width
+            params.darHeight = self.height
+            params.enableEncodeAsync = 0            #not supported on Linux
             params.enablePTD = 1
+            params.encodeConfig = &presetConfig.presetCfg
             raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params))
             debug("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
     
@@ -1403,7 +1433,7 @@ cdef class Encoder:
             memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
             createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
             createBitstreamBufferParams.size = 1024*1024
-            createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
+            createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED
             raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
             debug("bitstreamBuffer=%s", hex(<long> self.bitstreamBuffer))
@@ -1428,6 +1458,12 @@ cdef class Encoder:
 
     def clean(self):                        #@DuplicatedSignature
         if self.context!=NULL:
+            if self.inputBuffer!=NULL:
+                self.functionList.nvEncDestroyInputBuffer(self.context, self.inputBuffer)
+                self.inputBuffer = NULL
+            if self.bitstreamBuffer!=NULL:
+                self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer)
+                self.bitstreamBuffer = NULL
             self.functionList.nvEncDestroyEncoder(self.context)
             self.context = NULL
 
@@ -1485,30 +1521,27 @@ cdef class Encoder:
         lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
         lockOutputBuffer.doNotWait = 1
         lockOutputBuffer.outputBitstream = self.bitstreamBuffer
-        """
-        #uint32_t*   sliceOffsets        #[in,out]: Array which receives the slice offsets. Currently used only when NV_ENC_CONFIG_H264::sliceMode == 3. Array size must be equal to NV_ENC_CONFIG_H264::sliceModeData.
-        uint32_t    bitstreamSizeInBytes#[out]: Actual number of bytes generated and copied to the memory pointed by bitstreamBufferPtr.
-        void*       bitstreamBufferPtr  #[out]: Pointer to the generated output bitstream. Client should allocate sufficiently large buffer to hold the encoded output. Client is responsible for managing this memory.
-        NV_ENC_PIC_TYPE     pictureType #[out]: Picture type of the encoded picture.
-        NV_ENC_PIC_STRUCT   pictureStruct   #[out]: Structure of the generated output picture.
-        """
         try:
             raiseNVENC(self.functionList.nvEncLockInputBuffer(self.context, &lockInputBuffer))
             #alternatively, to use our own buffers: nvEncRegisterResource
-            debug("input buffer locked")
-
+            self.inputBufferPtr = lockInputBuffer.bufferDataPtr
+            debug("input buffer locked, inputBufferPtr=%s, pitch=%s", hex(<long> self.inputBufferPtr), lockInputBuffer.pitch)
             #copy to input buffer:
-            #memcpy(self.inputBuffer, cbuf, cbuf_len)
+            #memcpy(self.inputBufferPtr, cbuf, cbuf_len)
+            memset(self.inputBufferPtr, 0, self.width*self.height)
 
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
             picParams.version = NV_ENC_PIC_PARAMS_VER
             picParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_TILED64x16
             picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
-            #picParams.pictureType = NV_ENC_PIC_TYPE_INTRA_REFRESH    #not needed since enablePTD is enabled
             picParams.inputWidth = self.width
             picParams.inputHeight = self.height
+            picParams.inputPitch = lockInputBuffer.pitch
             picParams.inputBuffer = self.inputBuffer
             picParams.outputBitstream = self.bitstreamBuffer
+            #picParams.pictureType = NV_ENC_PIC_TYPE_INTRA_REFRESH    #not needed when enablePTD is enabled
+            #NV_ENC_CODEC_PIC_PARAMS codecPicParams
+            #picParams.codecPicParams = codecPicParams
             #picParams.encodePicFlags = NV_ENC_PIC_FLAG_FORCEINTRA
             #inputTimeStamp = 0     #FIXME: use damage time!
             #inputDuration = 0      #FIXME: use frame delay?
