@@ -38,8 +38,7 @@ def test_nvenc():
                 image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=ImageWrapper._3_PLANES)
                 print("calling %s(%s)" % (e.compress_image, image))
                 c = e.compress_image(image)
-                print("output=%s" % str(c))
-                assert c is not None
+                assert c is not None, "no image!"
                 data, _ = c
                 print("data size: %s" % len(data))
                 print("data head: %s" % binascii.hexlify(data[:128]))

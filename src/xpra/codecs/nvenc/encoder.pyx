@@ -1510,15 +1510,21 @@ cdef class Encoder:
             lockInputBuffer.version = NV_ENC_LOCK_INPUT_BUFFER_VER
             lockInputBuffer.doNotWait = 1
             lockInputBuffer.inputBuffer = self.inputBuffer
-
             raiseNVENC(self.functionList.nvEncLockInputBuffer(self.context, &lockInputBuffer))
             #alternatively, to use our own buffers: nvEncRegisterResource
             self.inputBufferPtr = lockInputBuffer.bufferDataPtr
             debug("input buffer locked, inputBufferPtr=%s, pitch=%s", hex(<long> self.inputBufferPtr), lockInputBuffer.pitch)
+
             #copy to input buffer:
             memset(self.inputBufferPtr, 0, self.width*self.height)
             memcpy(self.inputBufferPtr, cbuf, min(self.width*self.height, cbuf_len))
+        finally:
+            try:
+                raiseNVENC(self.functionList.nvEncUnlockInputBuffer(self.context, self.inputBuffer))
+            except:
+                log.error("error during unlocking", exc_info=True)
 
+        try:
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
             picParams.version = NV_ENC_PIC_PARAMS_VER
             picParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_TILED64x16
@@ -1544,27 +1550,20 @@ cdef class Encoder:
             picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
             picParams.rcParams.averageBitRate = 5000000   #5Mbits/s
             picParams.rcParams.maxBitRate = 10000000      #10Mbits/s
-        finally:
-            try:
-                raiseNVENC(self.functionList.nvEncUnlockInputBuffer(self.context, self.inputBuffer))
-            except:
-                log.error("error during unlocking", exc_info=True)
 
-        try:
             raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
             debug("encoded!")
+            self.frames += 1
         except:
             log.error("error during encoding", exc_info=True)
             return None
-
-        self.frames += 1
 
         #lock output buffer:
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         try:
             memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
             lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
-            lockOutputBuffer.doNotWait = 1
+            lockOutputBuffer.doNotWait = 0
             lockOutputBuffer.outputBitstream = self.bitstreamBuffer
             raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer))
             self.bitstreamBufferPtr = lockOutputBuffer.bitstreamBufferPtr
