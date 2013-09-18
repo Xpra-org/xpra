@@ -22,6 +22,7 @@ def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS)
     ec = getattr(encoder_module, "Encoder")
     print("encoder class=%s" % ec)
 
+    N_IMAGES = 2
     for src_format in encoder_module.get_colorspaces():
         for w,h in dimensions:
             print("")
@@ -30,7 +31,7 @@ def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS)
             print("instance=%s" % e)
             e.init_context(w, h, src_format, 20, 0, options)
             print("initialiazed instance=%s" % e)
-            images = gen_src_images(src_format, w, h)
+            images = gen_src_images(src_format, w, h, N_IMAGES)
             print("test images generated - starting compression")
             do_test_encoder(e, src_format, w, h, images)
 
