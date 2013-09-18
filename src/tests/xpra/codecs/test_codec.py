@@ -34,7 +34,7 @@ def hextobytes(s):
     return bytearray(binascii.unhexlify(s))
 
 
-def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_strings=False, populate=False):
+def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_strings=False, populate=False, seed=0):
     start = time.time()
     bpp = len(src_format)
     assert bpp==3 or bpp==4
@@ -45,7 +45,7 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_st
                 i = (y*w+x)*bpp
                 v = (y*yratio*w+x*xratio)*bpp
                 for j in range(3):
-                    pixels[i+j] = (v+j*channelratio) % 256
+                    pixels[i+j] = (v+j*channelratio + seed) % 256
                 pixels[i+3] = 0
     end = time.time()
     if DEBUG:
