@@ -1066,9 +1066,11 @@ cdef cuda_init_devices():
     cdef int computeMode
     cdef int pciBusID, pciDeviceID
     cdef CUresult r
+    start = time.time()
     raiseCuda(cuInit(0), "cuInit")
+    debug("cuda_init_devices() cuInit() took %.1fms", 1000.0*(time.time()-start))
     raiseCuda(cuDeviceGetCount(&deviceCount), "failed to get device count")
-    debug("cuda_init() found %s devices", deviceCount)
+    debug("cuda_init_devices() found %s devices", deviceCount)
     devices = {}
     for i in range(deviceCount):
         r = cuDeviceGet(&cuDevice, i)
@@ -1094,10 +1096,15 @@ cdef cuda_init_devices():
         cuDeviceGetAttribute(&canMapHostMemory, CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY, cuDevice)
         cuDeviceGetAttribute(&computeMode, CU_DEVICE_ATTRIBUTE_COMPUTE_MODE, cuDevice)
         debug(" Can Map Host Memory: %s, Compute Mode: %s, MultiProcessor Count: %s, max dimensions: %sx%s", canMapHostMemory, computeMode, multiProcessorCount, max_width, max_height)
-
+    end = time.time()
+    debug("cuda_init_devices() took %.1fms", 1000.0*(end-start))
     return devices
 cuda_devices = cuda_init_devices()
 log.info("found %s CUDA devices: %s", len(cuda_devices), cuda_devices)
+def get_cuda_devices():
+    global cuda_devices
+    return cuda_devices
+
 
 cdef CUdevice get_cuda_device(deviceId=0):
     global cuda_devices
@@ -1119,12 +1126,14 @@ cdef CUdevice get_cuda_device(deviceId=0):
         assert has_nvenc, "selected device %s does not have NVENC capability!" % gpu_name
     return cuDevice
 
+DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "0"))
 
 def cuda_check():
     global cuda_devices
     cdef CUcontext context
-    cdef int cuDevice
-    cuDevice = get_cuda_device(cuda_devices.keys()[0])
+    cdef CUdevice cuDevice              #@DuplicatedSignature
+    assert DEFAULT_CUDA_DEVICE_ID in cuda_devices.keys()
+    cuDevice = get_cuda_device(DEFAULT_CUDA_DEVICE_ID)
 
     raiseCuda(cuCtxCreate(&context, 0, cuDevice), "creating CUDA context")
     raiseCuda(cuCtxPopCurrent(&context), "popping current context")
@@ -1314,11 +1323,13 @@ cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcont
 #create one to ensure we can:
 cdef void *test_encoder = NULL
 cdef CUcontext test_cuda_context
+cdef CUdevice test_cuda_device
 cdef NV_ENCODE_API_FUNCTION_LIST testFunctionList
 try:
-    cuda_device = cuda_devices.keys()[0]
-    debug("cuCtxCreate(%s, %s, %s)", hex(<long> test_cuda_context), 0, cuda_device)
-    raiseCuda(cuCtxCreate(&test_cuda_context, 0, cuda_device))
+    assert DEFAULT_CUDA_DEVICE_ID in cuda_devices.keys()
+    test_cuda_device = get_cuda_device(DEFAULT_CUDA_DEVICE_ID)
+    debug("cuCtxCreate(%s, %s, %s)", hex(<long> test_cuda_context), 0, test_cuda_device)
+    raiseCuda(cuCtxCreate(&test_cuda_context, 0, test_cuda_device))
     test_encoder = open_encode_session(&testFunctionList, test_cuda_context)
     query_codecs(&testFunctionList, test_encoder)
     testFunctionList.nvEncDestroyEncoder(test_encoder)
@@ -1341,8 +1352,8 @@ cdef class Encoder:
     cdef void *bitstreamBufferPtr
     cdef object codec_name
     cdef object preset_name
+    cdef double time
     cdef int frames
-    cdef int gopLength
 
     cdef GUID get_codec(self):
         codecs = query_codecs(&self.functionList, self.context)
@@ -1362,7 +1373,7 @@ cdef class Encoder:
         raise Exception("no low-latency presets available for '%s'!?" % self.codec_name)
 
 
-    def init_context(self, int width, int height, src_format, int quality, int speed, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, int quality, int speed, options={}):    #@DuplicatedSignature
         global cuda_devices
         debug("init_context%s", (width, height, src_format, quality, speed, options))
         self.width = width
@@ -1371,13 +1382,19 @@ cdef class Encoder:
         self.codec_name = "H264"
         self.preset_name = None
         self.frames = 0
+        start = time.time()
 
-        cuda_device = cuda_devices.keys()[0]
-        debug("cuCtxCreate(%s, %s, %s)", hex(<long> self.cuda_context), 0, cuda_device)
+        device_id = options.get("cuda_device", DEFAULT_CUDA_DEVICE_ID)
+        assert device_id in cuda_devices.keys(), "invalid device_id '%s' (available: %s)" % (device_id, cuda_devices)
+        cdef CUdevice cuda_device              #@DuplicatedSignature
+        cuda_device = get_cuda_device(DEFAULT_CUDA_DEVICE_ID)
+        debug("cuCtxCreate(%s, %s, %s) device_id=%s", hex(<long> self.cuda_context), 0, cuda_device, device_id)
         raiseCuda(cuCtxCreate(&self.cuda_context, 0, cuda_device))
         raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
 
         self.init_nvenc()
+        end = time.time()
+        debug("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
 
     def init_nvenc(self):
         cdef GUID codec
@@ -1398,7 +1415,7 @@ cdef class Encoder:
             #PROFILE
             profiles = query_profiles(&self.functionList, self.context, NV_ENC_CODEC_H264_GUID)
             presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
-            self.gopLength = presetConfig.presetCfg.gopLength
+            #self.gopLength = presetConfig.presetCfg.gopLength
 
             memset(&params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))
             params.version = NV_ENC_INITIALIZE_PARAMS_VER
@@ -1497,6 +1514,7 @@ cdef class Encoder:
         cdef NV_ENC_LOCK_INPUT_BUFFER lockInputBuffer
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
 
+        start = time.time()
         debug("compress_image(%s, %s)", image, options)
         assert self.context!=NULL, "context is not initialized"
         assert image.get_planes()==ImageWrapper._3_PLANES
@@ -1535,7 +1553,8 @@ cdef class Encoder:
             picParams.inputBuffer = self.inputBuffer
             picParams.outputBitstream = self.bitstreamBuffer
             #picParams.pictureType: required when enablePTD is disabled
-            if (self.frames % self.gopLength)==0:
+            if self.frames==0:
+                #only the first frame needs to be IDR (as we never lose frames)
                 picParams.pictureType = NV_ENC_PIC_TYPE_IDR
             else:
                 picParams.pictureType = NV_ENC_PIC_TYPE_P
@@ -1553,7 +1572,6 @@ cdef class Encoder:
 
             raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
             debug("encoded!")
-            self.frames += 1
         except:
             log.error("error during encoding", exc_info=True)
             return None
@@ -1571,8 +1589,12 @@ cdef class Encoder:
 
             #copy to python buffer:
             size = lockOutputBuffer.bitstreamSizeInBytes
-            debug("returning %s bytes", size)
             pixels = (<char *> self.bitstreamBufferPtr)[:size]
+
+            end = time.time()
+            self.frames += 1
+            self.time += end-start
+            debug("returning %s bytes, compression took %.1fms", size, 1000.0*(end-start))
             return pixels, {}
         except:
             raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer))
