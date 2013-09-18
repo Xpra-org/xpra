@@ -70,10 +70,11 @@ def make_planar_input(src_format, w, h, use_strings=False, populate=False, seed=
     if populate:
         for y in range(h):
             for x in range(w):
-                i = seed + y*x
-                Ydata[i/Yxd/Yyd] = i % 256
-                Udata[i/Uxd/Uyd] = i % 256
-                Vdata[i/Vxd/Vyd] = i % 256
+                i = y*x
+                v = seed + i
+                Ydata[i/Yxd/Yyd] = v % 256
+                Udata[i/Uxd/Uyd] = v % 256
+                Vdata[i/Vxd/Vyd] = v % 256
     if use_strings:
         pixels = (str(Ydata), str(Udata), str(Vdata))
     else:
