@@ -1117,7 +1117,7 @@ cdef CUdevice get_cuda_device(deviceId=0):
         raise Exception("invalid deviceId %s: only %s devices found" % (deviceId, len(cuda_devices)))
     raiseCuda(cuDeviceGet(&cuDevice, deviceId), "cuDeviceGet")
     raiseCuda(cuDeviceGetName(gpu_name, 100, cuDevice), "cuDeviceGetName")
-    log.info("using CUDA device %s: %s", deviceId, gpu_name)
+    debug("using CUDA device %s: %s", deviceId, gpu_name)
     raiseCuda(cuDeviceComputeCapability(&SMmajor, &SMminor, deviceId))
     has_nvenc = ((SMmajor<<4) + SMminor) >= 0x30
     if FORCE and not has_nvenc:
@@ -1270,25 +1270,25 @@ cdef query_codecs(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder):
         for x in range(GUIDRetCount):
             encode_GUID = encode_GUIDs[x]
             codec_name = CODEC_GUIDS.get(guidstr(encode_GUID))
-            log.info("[%s] %s : %s", x, codec_name, guidstr(encode_GUID))
+            debug("[%s] %s : %s", x, codec_name, guidstr(encode_GUID))
             codecs[codec_name] = guidstr(encode_GUID)
 
             maxw = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
             maxh = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_HEIGHT_MAX)
             async = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
             sep_plane = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_SEPARATE_COLOUR_PLANE)
-            log.info(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
+            debug(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
             rate_countrol = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
-            log.info(" rate control: %s, separate colour plane: %s", rate_countrol, sep_plane)
+            debug(" rate control: %s, separate colour plane: %s", rate_countrol, sep_plane)
 
             presets = query_presets(functionList, encoder, encode_GUID)
-            log.info("  presets=%s", presets)
+            debug("  presets=%s", presets)
 
             profiles = query_profiles(functionList, encoder, encode_GUID)
-            log.info("  profiles=%s", profiles)
+            debug("  profiles=%s", profiles)
 
             input_formats = query_input_formats(functionList, encoder, encode_GUID)
-            log.info("  input formats=%s", input_formats)
+            debug("  input formats=%s", input_formats)
     finally:
         free(encode_GUIDs)
     debug("codecs=%s", codecs)
