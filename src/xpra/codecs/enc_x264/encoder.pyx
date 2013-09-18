@@ -122,15 +122,13 @@ cdef extern from "x264.h":
 
 cdef extern from "enc_x264.h":
 
-    int get_x264_build_no()
-
     const char * const *const get_preset_names()
 
     void set_f_rf(x264_param_t *param, float v)
 
 
 def get_version():
-    return get_x264_build_no()
+    return constants["X264_BUILD"]
 
 def get_type():
     return "x264"
@@ -172,7 +170,6 @@ for x264_enum, colorspace, default_profile, profiles in \
     enum_val = constants.get(x264_enum)
     if enum_val is None:
         debug("enc_x264: this build does not support %s / %s", x264_enum, colorspace)
-        #not supported by this build
         continue
     COLORSPACES[colorspace] = (enum_val, default_profile, profiles)
 
@@ -246,6 +243,8 @@ cdef class Encoder:
 
     def get_info(self):
         cdef float pps
+        if self.profile is None:
+            return {}
         info = {"profile"   : self.profile,
                 "preset"    : get_preset_names()[self.preset],
                 "frames"    : self.frames,
@@ -261,6 +260,8 @@ cdef class Encoder:
         return info
 
     def __str__(self):
+        if self.src_format is None:
+            return "x264_encoder(uninitialized)"
         return "x264_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
 
     def is_closed(self):
@@ -313,7 +314,7 @@ cdef class Encoder:
                 "speed"     : s,
                 }
 
-    def compress_image(self, image, options):
+    def compress_image(self, image, options={}):
         cdef x264_nal_t *nals = NULL
         cdef int i_nals = 0
         cdef x264_picture_t pic_out
@@ -329,6 +330,8 @@ cdef class Encoder:
         cdef int saved_quality = self.quality
         cdef int saved_speed = self.speed
         cdef int i                        #@DuplicatedSignature
+        start = time.time()
+
         if speed_override>=0 and saved_speed!=speed_override:
             self.set_encoding_speed(speed_override)
         if quality_override>=0 and saved_quality!=quality_override:
@@ -360,7 +363,6 @@ cdef class Encoder:
         pic_in.i_pts = 1
 
         try:
-            start = time.time()
             with nogil:
                 frame_size = x264_encoder_encode(self.context, &nals, &i_nals, &pic_in, &pic_out)
             if frame_size < 0:

@@ -6,8 +6,6 @@
  */
 
 
-int get_x264_build_no(void);
-
 const char * const *get_preset_names(void);
 
 void set_f_rf(x264_param_t *param, float v);

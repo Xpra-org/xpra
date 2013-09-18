@@ -10,6 +10,8 @@
 ## dictionary through which the constants can be accessed like
 ## constants["AV_..."].
 
+X264_BUILD
+
 X264_LOG_ERROR
 
 X264_CSP_I420

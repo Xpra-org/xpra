@@ -5,16 +5,14 @@
  * later version. See the file COPYING for details.
  */
 
+//NOTE: this file is only here because accessing those structures
+//from Cython would be too tedious!
+
 #include <stdint.h>
 #include <inttypes.h>
 
 #include <x264.h>
 
-
-int get_x264_build_no(void)
-{
-	return X264_BUILD;
-}
 
 const char * const *get_preset_names(void) {
 	return x264_preset_names;
