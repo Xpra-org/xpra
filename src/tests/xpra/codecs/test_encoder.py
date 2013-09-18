@@ -49,7 +49,7 @@ def gen_src_images(src_format, w, h, nframes):
         seed += 10
     return images
 
-def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log_data=True):
+def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log_data=True, pause=0):
     start = time.time()
     for image in images:
         if log_data:
@@ -60,5 +60,7 @@ def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log_data=
         if log_data:
             print("data size: %s" % len(data))
             print("data head: %s" % binascii.hexlify(data[:2048]))
+        if pause>0:
+            time.sleep(pause)
     end = time.time()
     print("%s finished encoding %s frames at %sx%s, total encoding time: %.1fms" % (name, len(images), w, h, 1000.0*(end-start)))

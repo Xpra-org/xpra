@@ -38,21 +38,25 @@ def test_parallel_encode():
     print("")
     print("test_parallel_encode() will test one %s encoder on each of %s in parallel" % (ec, cuda_devices))
     w, h = 1920, 1080
-    COUNT = 100
+    IMAGE_COUNT = 20
+    ENCODER_CONTEXTS_PER_DEVICE = 4
     src_format = encoder_module.get_colorspaces()[0]
-    print("generating %s images..." % COUNT)
+    print("generating %s images..." % IMAGE_COUNT)
     images = []
-    for _ in range(COUNT):
+    for _ in range(IMAGE_COUNT):
         images += gen_src_images(src_format, w, h, 1)
         sys.stdout.write(".")
-    print("%s images generated" % COUNT)
+        sys.stdout.flush()
+    print("%s images generated" % IMAGE_COUNT)
     encoders = []
-    for device_id, info in cuda_devices.items():
+    for device_id, device_info in cuda_devices.items():
         options = {"cuda_device" : device_id}
-        e = ec()
-        e.init_context(w, h, src_format, 20, 0, options)
-        print("encoder for device %s initialized" % device_id)
-        encoders.append((info, e, images))
+        for i in range(ENCODER_CONTEXTS_PER_DEVICE):
+            e = ec()
+            e.init_context(w, h, src_format, 20, 0, options)
+            print("encoder %s for device %s initialized" % (i, device_id))
+            info = "%s / encoder %s" % (device_info, i)
+            encoders.append((info, e, images))
     print("%s encoders initialized: %s" % (len(encoders), [e[1] for e in encoders]))
     threads = []
     i = 0
@@ -62,17 +66,22 @@ def test_parallel_encode():
         threads.append(thread)
         i += 1
     print("%s threads created: %s" % (len(threads), threads))
+    print("starting all threads")
+    print("")
     for thread in threads:
         thread.start()
     print("%s threads started - waiting for completion" % len(threads))
     for thread in threads:
         thread.join()
     print("all threads ended")
+    for _, encoder, _ in encoders:
+        encoder.clean()
+
 
 def encoding_thread(encoder, src_format, w, h, images, info):
     #print("encoding_thread(%s, %s, %s, %s, %s, %s)" % (encoder, src_format, w, h, images, info))
     print("%s started" % info)
-    do_test_encoder(encoder, src_format, w, h, images, name=info, log_data=False)
+    do_test_encoder(encoder, src_format, w, h, images, name=info, log_data=False, pause=0.25)
 
 def main():
     import logging
