@@ -404,8 +404,9 @@ cdef class Decoder:
         info = {
                 "type"      : self.get_type(),
                 "frames"    : self.frames,
-                "buffers"   : len(self.framewrappers),
                 }
+        if self.framewrappers:
+            info["buffers"] = len(self.framewrappers)
         if self.colorspace:
             info["colorspace"] = self.colorspace
             info["actual_colorspace"] = self.get_actual_colorspace()
