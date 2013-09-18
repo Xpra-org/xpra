@@ -37,7 +37,7 @@ def test_context_limits():
     from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     cuda_devices = encoder_module.get_cuda_devices()
     ec = getattr(encoder_module, "Encoder")
-    MAX_ENCODER_CONTEXTS_PER_DEVICE = 32
+    MAX_ENCODER_CONTEXTS_PER_DEVICE = 64
     print("")
     for w,h in TEST_DIMENSIONS:
         print("test_context_limits() %sx%s" % (w, h))
@@ -47,13 +47,13 @@ def test_context_limits():
             encoders = []
             for i in range(MAX_ENCODER_CONTEXTS_PER_DEVICE):
                 e = ec()
+                encoders.append(e)
                 try:
                     e.init_context(w, h, src_format, 20, 0, options)
-                    encoders.append(e)
                 except Exception, e:
                     print("failed to created context %s on %s: %s" % (i, device_info, e))
                     break
-            print("device %s managed %s contexts at %sx%s" % (device_info, len(encoders), w, h))
+            print("device %s managed %s contexts at %sx%s" % (device_info, len(encoders)-1, w, h))
             for encoder in encoders:
                 try:
                     encoder.clean()
@@ -119,10 +119,10 @@ def main():
     logging.root.setLevel(logging.INFO)
     logging.root.addHandler(logging.StreamHandler(sys.stdout))
     print("main()")
-    test_encode_one()
-    test_encode_all_GPUs()
+    #test_encode_one()
+    #test_encode_all_GPUs()
     test_context_limits()
-    test_parallel_encode()
+    #test_parallel_encode()
 
 
 if __name__ == "__main__":

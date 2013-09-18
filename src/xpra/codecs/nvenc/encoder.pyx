@@ -1382,6 +1382,7 @@ cdef class Encoder:
         self.codec_name = "H264"
         self.preset_name = None
         self.frames = 0
+        self.cuda_context = NULL
         start = time.time()
 
         device_id = options.get("cuda_device", DEFAULT_CUDA_DEVICE_ID)
@@ -1479,6 +1480,9 @@ cdef class Encoder:
                 self.bitstreamBuffer = NULL
             self.functionList.nvEncDestroyEncoder(self.context)
             self.context = NULL
+        if self.cuda_context != NULL:
+            cuCtxDestroy(self.cuda_context)
+            self.cuda_context = NULL
 
     def get_width(self):
         return self.width
