@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import gtk
 from gtk import gdk
 import cairo
@@ -12,6 +13,9 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
+#make it easier to workaround buggy drivers:
+BACKING_COPY = os.environ.get("XPRA_BACKING_COPY", "1")=="1"
+
 
 """
 Backing using a gdk.Pixmap
@@ -38,7 +42,7 @@ class PixmapBacking(GTK2WindowBacking):
             self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         cr = self._backing.cairo_create()
         cr.set_source_rgb(1, 1, 1)
-        if old_backing is not None:
+        if old_backing is not None and BACKING_COPY:
             # Really we should respect bit-gravity here but... meh.
             cr.set_operator(cairo.OPERATOR_SOURCE)
             cr.set_source_pixmap(old_backing, 0, 0)
