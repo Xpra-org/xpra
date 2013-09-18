@@ -8,10 +8,10 @@ import binascii
 from tests.xpra.codecs.test_codec import make_planar_input, make_rgb_input
 from xpra.codecs.image_wrapper import ImageWrapper
 
-DEFAULT_TEST_DIMENSIONS = ((32, 32), (1920, 1080), (512, 512))
+DEFAULT_TEST_DIMENSIONS = [(32, 32), (1920, 1080), (512, 512)]
 
 
-def test_encoder(encoder_module, dimensions=DEFAULT_TEST_DIMENSIONS, options={}):
+def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS):
     print("test_encoder(%s, %s)" % (encoder_module, dimensions))
     print("colorspaces=%s" % encoder_module.get_colorspaces())
     for c in encoder_module.get_colorspaces():

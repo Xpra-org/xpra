@@ -1085,7 +1085,7 @@ cdef cuda_init_devices():
         raiseCuda(cuDeviceTotalMem(&totalMem, cuDevice), "cuDeviceTotalMem")
         debug("device[%s]=%s (%sMB) - PCI: %s / %s - compute %s.%s (nvenc=%s)",
                 i, gpu_name, int(totalMem/1024/1024), pciBusID, pciDeviceID, SMmajor, SMminor, has_nvenc)
-        devices[i] = str(gpu_name)
+        devices[i] = "%s - PCI: %s / %s" % (gpu_name, pciBusID, pciDeviceID)
         cuDeviceGetAttribute(&multiProcessorCount, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, cuDevice)
         #log.info("multiProcessorCount=%s", multiProcessorCount)
         #printf("  (%2d) Multiprocessors x (%3d) CUDA Cores/MP:    %d CUDA Cores\n",
