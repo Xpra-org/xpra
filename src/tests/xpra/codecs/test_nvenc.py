@@ -6,27 +6,20 @@
 
 import sys
 import threading
-from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test_encoder
+from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test_encoder, test_encoder_dimensions
 #TEST_DIMENSIONS = ((32, 32), (1920, 1080), (512, 512))
 TEST_DIMENSIONS = ((1920, 1080), (512, 512), (32, 32))
 
 def test_encode_one():
-    from xpra.codecs.nvenc import encoder   #@UnresolvedImport
+    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     print("")
     print("test_nvenc()")
-    test_encoder(encoder)
+    test_encoder(encoder_module)
     print("")
 
 def test_dimensions():
-    from xpra.codecs.nvenc import encoder   #@UnresolvedImport
-    print("")
-    print("test_nvenc()")
-    dims = []
-    for w in (32, 100, 499, 769, 999, 4096):
-        for h in (32, 100, 499, 769, 999, 4096):
-            dims.append((w, h))
-    test_encoder(encoder, dimensions=dims)
-    print("")
+    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
+    test_encoder_dimensions(encoder_module)
 
 def test_encode_all_GPUs():
     from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
@@ -133,10 +126,10 @@ def main():
     logging.root.addHandler(logging.StreamHandler(sys.stdout))
     print("main()")
     test_encode_one()
-    #test_dimensions()
-    test_encode_all_GPUs()
-    test_context_limits()
-    test_parallel_encode()
+    test_dimensions()
+    #test_encode_all_GPUs()
+    #test_context_limits()
+    #test_parallel_encode()
 
 
 if __name__ == "__main__":

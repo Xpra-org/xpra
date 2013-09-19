@@ -1020,7 +1020,10 @@ def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (format, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    return codec_spec(Encoder, codec_type=get_type(), encoding=encoding, quality=60, setup_cost=100, cpu_cost=10, gpu_cost=100)
+    return codec_spec(Encoder, codec_type=get_type(), encoding=encoding,
+                      quality=60, setup_cost=100, cpu_cost=10, gpu_cost=100,
+                      min_w=2, min_h=2, max_w=4096, max_h=4096,
+                      width_mask=0xFFFE, height_mask=0xFFFE)
 
 
 def get_version():
@@ -1350,7 +1353,8 @@ cdef class Encoder:
             #FIXME: we just pick one plane for now!
             pixels = image.get_pixels()[0]
         else:
-            pixels = image.get_pixels()[0]
+            pixels = image.get_pixels()
+        debug("compress_image(..) pixels=%s", type(pixels))
         size = len(pixels)
 
         assert PyObject_AsReadBuffer(pixels, &cbuf, &cbuf_len)==0
