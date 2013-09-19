@@ -14,26 +14,28 @@ DEFAULT_TEST_DIMENSIONS = [(32, 32), (1920, 1080), (512, 512)]
 
 def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS):
     print("test_encoder(%s, %s)" % (encoder_module, dimensions))
-    print("colorspaces=%s" % encoder_module.get_colorspaces())
-    for c in encoder_module.get_colorspaces():
-        print("spec(%s)=%s" % (c, encoder_module.get_spec(c)))
+    print("colorspaces=%s" % str(encoder_module.get_colorspaces()))
+    for encoding in encoder_module.get_encodings():
+        for c in encoder_module.get_colorspaces():
+            print("spec(%s)=%s" % (c, encoder_module.get_spec(encoding, c)))
     print("version=%s" % str(encoder_module.get_version()))
     print("type=%s" % encoder_module.get_type())
     ec = getattr(encoder_module, "Encoder")
     print("encoder class=%s" % ec)
 
     N_IMAGES = 2
-    for src_format in encoder_module.get_colorspaces():
-        for w,h in dimensions:
-            print("")
-            print("* %s @ %sx%s" % (src_format, w, h))
-            e = ec()
-            print("instance=%s" % e)
-            e.init_context(w, h, src_format, 20, 0, options)
-            print("initialiazed instance=%s" % e)
-            images = gen_src_images(src_format, w, h, N_IMAGES)
-            print("test images generated - starting compression")
-            do_test_encoder(e, src_format, w, h, images)
+    for encoding in encoder_module.get_encodings():
+        for src_format in encoder_module.get_colorspaces():
+            for w,h in dimensions:
+                print("")
+                print("* %s @ %sx%s to %s" % (src_format, w, h, encoding))
+                e = ec()
+                print("instance=%s" % e)
+                e.init_context(w, h, src_format, encoding, 20, 0, options)
+                print("initialiazed instance=%s" % e)
+                images = gen_src_images(src_format, w, h, N_IMAGES)
+                print("test images generated - starting compression")
+                do_test_encoder(e, src_format, w, h, images)
 
 def gen_src_images(src_format, w, h, nframes):
     seed = 0

@@ -54,14 +54,18 @@ class VideoPipelineHelper(object):
         try:
             encoder_module.init_module()
         except Exception, e:
-            log.warn("cannot use %s: %s", encoder_type, e)
+            log.warn("cannot use %s module %s: %s", encoder_type, encoder_module, e, exc_info=True)
+            return
         colorspaces = encoder_module.get_colorspaces()
-        debug("init_video_encoder_option(%s) %s colorspaces=%s", encoder_type, encoder_module, colorspaces)
-        encoder_specs = VideoPipelineHelper._video_encoder_specs.setdefault(encoder_type, {})
-        for colorspace in colorspaces:
-            colorspace_specs = encoder_specs.setdefault(colorspace, [])
-            spec = encoder_module.get_spec(colorspace)
-            colorspace_specs.append(spec)
+        debug("init_video_encoder_option(%s) %s input colorspaces=%s", encoder_module, encoder_type, colorspaces)
+        encodings = encoder_module.get_encodings()
+        debug("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
+        for encoding in encodings:
+            encoder_specs = VideoPipelineHelper._video_encoder_specs.setdefault(encoding, {})
+            for colorspace in colorspaces:
+                colorspace_specs = encoder_specs.setdefault(colorspace, [])
+                spec = encoder_module.get_spec(encoding, colorspace)
+                colorspace_specs.append(spec)
 
     def init_csc_options(self):
         try:

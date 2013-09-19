@@ -1012,14 +1012,15 @@ BUFFER_FORMAT = {
         }
 
 
-COLORSPACES = ("YUV444P", )
+COLORSPACES = ("YUV444P", "BGRA")
 def get_colorspaces():
     return COLORSPACES
 
-def get_spec(colorspace):
+def get_spec(encoding, colorspace):
+    assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (format, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    return codec_spec(Encoder, quality=60, setup_cost=100, cpu_cost=10, gpu_cost=100)
+    return codec_spec(Encoder, codec_type=get_type(), encoding=encoding, quality=60, setup_cost=100, cpu_cost=10, gpu_cost=100)
 
 
 def get_version():
@@ -1027,6 +1028,10 @@ def get_version():
 
 def get_type():
     return "nvenc"
+
+def get_encodings():
+    #FIXME: should be renamed to "h264" since we are talking about the format...
+    return ["x264"]
 
 def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
@@ -1059,6 +1064,7 @@ cdef cuda_init_devices():
     cdef int pciBusID, pciDeviceID
     cdef CUresult r
     start = time.time()
+    log.info("CUDA initialization (this may take a few seconds)")
     raiseCuda(cuInit(0), "cuInit")
     debug("cuda_init_devices() cuInit() took %.1fms", 1000.0*(time.time()-start))
     raiseCuda(cuDeviceGetCount(&deviceCount), "failed to get device count")
@@ -1096,7 +1102,9 @@ def get_cuda_devices():
     global cuda_devices
     if cuda_devices is None:
         cuda_devices = cuda_init_devices()
-        log.info("found %s CUDA devices: %s", len(cuda_devices), cuda_devices)
+        log.info("found %s CUDA devices:", len(cuda_devices))
+        for device_id in sorted(cuda_devices.keys()):
+            log.info(" + %s", cuda_devices.get(device_id))
     return cuda_devices
 
 cdef CUdevice get_cuda_device(deviceId=0):
@@ -1179,9 +1187,9 @@ cdef class Encoder:
         raise Exception("no low-latency presets available for '%s'!?" % self.codec_name)
 
 
-    def init_context(self, int width, int height, src_format, int quality, int speed, options={}):    #@DuplicatedSignature
-        global cuda_devices
-        debug("init_context%s", (width, height, src_format, quality, speed, options))
+    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options={}):    #@DuplicatedSignature
+        assert encoding in get_encodings(), "invalid encoding %s" % encoding
+        debug("init_context%s", (width, height, src_format, encoding, quality, speed, options))
         self.width = width
         self.height = height
         self.src_format = src_format
@@ -1192,11 +1200,11 @@ cdef class Encoder:
         start = time.time()
 
         device_id = options.get("cuda_device", DEFAULT_CUDA_DEVICE_ID)
-        assert device_id in cuda_devices.keys(), "invalid device_id '%s' (available: %s)" % (device_id, cuda_devices)
+        assert device_id in get_cuda_devices().keys(), "invalid device_id '%s' (available: %s)" % (device_id, cuda_devices)
         cdef CUdevice cuda_device              #@DuplicatedSignature
         cuda_device = get_cuda_device(DEFAULT_CUDA_DEVICE_ID)
-        debug("cuCtxCreate(%s, %s, %s) device_id=%s", hex(<long> self.cuda_context), 0, cuda_device, device_id)
         raiseCuda(cuCtxCreate(&self.cuda_context, 0, cuda_device))
+        debug("cuCtxCreate: device_id=%s, cuda_device=%s, cuda_context=%s", device_id, cuda_device, hex(<long> self.cuda_context))
         raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
 
         self.init_nvenc()
@@ -1210,7 +1218,7 @@ cdef class Encoder:
         cdef NV_ENC_INITIALIZE_PARAMS params
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
 
-        self.open_encode_session(self.cuda_context)
+        self.open_encode_session()
         codec = self.get_codec()
         preset = self.get_preset(codec)
 
@@ -1299,11 +1307,21 @@ cdef class Encoder:
     def get_type(self):                     #@DuplicatedSignature
         return  "nvenc"
 
+    def get_encoding(self):                     #@DuplicatedSignature
+        return  "x264"
+
     def get_src_format(self):
         return self.src_format
 
     def get_client_options(self, options):
         return {}
+
+    def set_encoding_speed(self, speed):
+        pass
+
+    def set_encoding_quality(self, quality):
+        pass
+
 
     def flushEncoder(self):
         cdef NV_ENC_PIC_PARAMS picParams
@@ -1323,15 +1341,19 @@ cdef class Encoder:
         cdef Py_ssize_t cbuf_len = 0
         cdef NV_ENC_LOCK_INPUT_BUFFER lockInputBuffer
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
+        cdef size_t size
 
         start = time.time()
         debug("compress_image(%s, %s)", image, options)
         assert self.context!=NULL, "context is not initialized"
-        assert image.get_planes()==ImageWrapper._3_PLANES
-        planes = image.get_pixels()
-        cdef size_t size = len(planes[0])
+        if image.get_planes()==ImageWrapper._3_PLANES:
+            #FIXME: we just pick one plane for now!
+            pixels = image.get_pixels()[0]
+        else:
+            pixels = image.get_pixels()[0]
+        size = len(pixels)
 
-        assert PyObject_AsReadBuffer(planes[0], &cbuf, &cbuf_len)==0
+        assert PyObject_AsReadBuffer(pixels, &cbuf, &cbuf_len)==0
         try:
             #lock input buffer:
             memset(&lockInputBuffer, 0, sizeof(NV_ENC_LOCK_INPUT_BUFFER))
@@ -1559,9 +1581,9 @@ cdef class Encoder:
         return codecs
     
     
-    cdef open_encode_session(self, CUcontext cuda_context):
+    cdef open_encode_session(self):
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
-        debug("open_encode_session(%s)", hex(<long> cuda_context))
+        debug("open_encode_session(%s)", hex(<long> self.cuda_context))
     
         #get NVENC function pointers:
         memset(&self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
@@ -1573,7 +1595,7 @@ cdef class Encoder:
         memset(&params, 0, sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
         params.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
         params.deviceType = NV_ENC_DEVICE_TYPE_CUDA
-        params.device = <void*> cuda_context
+        params.device = <void*> self.cuda_context
         params.clientKeyPtr = &CLIENT_KEY_GUID
         params.apiVersion = NVENCAPI_VERSION
         #params.clientKeyPtr = client_key
@@ -1593,8 +1615,9 @@ def init_module():
     if len(colorspaces)==0:
         raise ImportError("cannot use NVENC: no colorspaces available")
     test_encoder = Encoder()
-    src_format = colorspaces[0]
-    try:
-        test_encoder.init_context(1920, 1080, src_format, 50, 50, {})
-    finally:
-        test_encoder.clean()
+    for encoding in get_encodings():
+        src_format = colorspaces[0]
+        try:
+            test_encoder.init_context(1920, 1080, src_format, encoding, 50, 50, {})
+        finally:
+            test_encoder.clean()

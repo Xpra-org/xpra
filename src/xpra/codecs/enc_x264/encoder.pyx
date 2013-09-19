@@ -133,6 +133,10 @@ def get_version():
 def get_type():
     return "x264"
 
+def get_encodings():
+    #FIXME: should be renamed to "h264" since we are talking about the format...
+    return ["x264"]
+
 def init_module():
     #nothing to do!
     pass
@@ -182,12 +186,13 @@ def get_colorspaces():
     global COLORSPACES
     return  COLORSPACES.keys()
 
-def get_spec(colorspace):
+def get_spec(encoding, colorspace):
+    assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
-    return codec_spec(Encoder, setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
+    return codec_spec(Encoder, codec_type=get_type(), encoding=encoding, setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
 
 
 cdef class Encoder:
@@ -203,10 +208,11 @@ cdef class Encoder:
     cdef int quality
     cdef int speed
 
-    def init_context(self, int width, int height, src_format, int quality, int speed, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options):    #@DuplicatedSignature
         global COLORSPACES
         cs_info = COLORSPACES.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACES.keys())
+        assert encoding=="x264", "invalid encoding: %s" % encoding
         self.width = width
         self.height = height
         self.quality = quality
@@ -270,6 +276,9 @@ cdef class Encoder:
 
     def is_closed(self):
         return self.context==NULL
+
+    def get_encoding(self):
+        return "x264"
 
     def __dealloc__(self):
         self.clean()

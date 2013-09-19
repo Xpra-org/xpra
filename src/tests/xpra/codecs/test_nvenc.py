@@ -17,6 +17,17 @@ def test_encode_one():
     test_encoder(encoder)
     print("")
 
+def test_dimensions():
+    from xpra.codecs.nvenc import encoder   #@UnresolvedImport
+    print("")
+    print("test_nvenc()")
+    dims = []
+    for w in (32, 100, 499, 769, 999, 4096):
+        for h in (32, 100, 499, 769, 999, 4096):
+            dims.append((w, h))
+    test_encoder(encoder, dimensions=dims)
+    print("")
+
 def test_encode_all_GPUs():
     from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     cuda_devices = encoder_module.get_cuda_devices()
@@ -39,34 +50,36 @@ def test_context_limits():
     ec = getattr(encoder_module, "Encoder")
     MAX_ENCODER_CONTEXTS_PER_DEVICE = 64
     print("")
-    for w,h in TEST_DIMENSIONS:
-        print("test_context_limits() %sx%s" % (w, h))
-        src_format = encoder_module.get_colorspaces()[0]
-        for device_id, device_info in cuda_devices.items():
-            options = {"cuda_device" : device_id}
-            encoders = []
-            for i in range(MAX_ENCODER_CONTEXTS_PER_DEVICE):
-                e = ec()
-                encoders.append(e)
-                try:
-                    e.init_context(w, h, src_format, 20, 0, options)
-                except Exception, e:
-                    print("failed to created context %s on %s: %s" % (i, device_info, e))
-                    break
-            print("device %s managed %s contexts at %sx%s" % (device_info, len(encoders)-1, w, h))
-            for encoder in encoders:
-                try:
-                    encoder.clean()
-                except Exception, e:
-                    print("encoder cleanup error: %s" % e)
+    for encoding in encoder_module.get_encodings():
+        for w,h in TEST_DIMENSIONS:
+            print("test_context_limits() %s @ %sx%s" % (encoding, w, h))
+            src_format = encoder_module.get_colorspaces()[0]
+            for device_id, device_info in cuda_devices.items():
+                options = {"cuda_device" : device_id}
+                encoders = []
+                for i in range(MAX_ENCODER_CONTEXTS_PER_DEVICE):
+                    e = ec()
+                    encoders.append(e)
+                    try:
+                        e.init_context(w, h, src_format, encoding, 20, 0, options)
+                    except Exception, e:
+                        print("failed to created context %s on %s: %s" % (i, device_info, e))
+                        break
+                print("device %s managed %s contexts at %sx%s" % (device_info, len(encoders)-1, w, h))
+                for encoder in encoders:
+                    try:
+                        encoder.clean()
+                    except Exception, e:
+                        print("encoder cleanup error: %s" % e)
     print("")
 
 def test_parallel_encode():
     from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     cuda_devices = encoder_module.get_cuda_devices()
     ec = getattr(encoder_module, "Encoder")
+    encoding = encoder_module.get_encodings()[0]
     print("")
-    print("test_parallel_encode() will test one %s encoder on each of %s in parallel" % (ec, cuda_devices))
+    print("test_parallel_encode() will test one %s encoder using %s encoding on each of %s in parallel" % (ec, encoding, cuda_devices))
     w, h = 1920, 1080
     IMAGE_COUNT = 20
     ENCODER_CONTEXTS_PER_DEVICE = 4
@@ -83,7 +96,7 @@ def test_parallel_encode():
         options = {"cuda_device" : device_id}
         for i in range(ENCODER_CONTEXTS_PER_DEVICE):
             e = ec()
-            e.init_context(w, h, src_format, 20, 0, options)
+            e.init_context(w, h, src_format, encoding, 20, 0, options)
             print("encoder %s for device %s initialized" % (i, device_id))
             info = "%s / encoder %s" % (device_info, i)
             encoders.append((info, e, images))
@@ -119,10 +132,11 @@ def main():
     logging.root.setLevel(logging.INFO)
     logging.root.addHandler(logging.StreamHandler(sys.stdout))
     print("main()")
-    #test_encode_one()
-    #test_encode_all_GPUs()
+    test_encode_one()
+    #test_dimensions()
+    test_encode_all_GPUs()
     test_context_limits()
-    #test_parallel_encode()
+    test_parallel_encode()
 
 
 if __name__ == "__main__":

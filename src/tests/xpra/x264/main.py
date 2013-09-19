@@ -30,7 +30,7 @@ def main():
     from xpra.codecs.x264.codec import Encoder     #@UnresolvedImport
     encoder = Encoder()
     print("encoder.init_context(%s,%s,{})" % (w, h))
-    encoder.init_context(w, h, {})
+    encoder.init_context(w, h, "BGRA", "x264", {})
     stride = w*3
     try:
         err, size, compressed = encoder.compress_image(data, stride)
@@ -44,7 +44,7 @@ def main():
     from xpra.codecs.x264.codec import Decoder     #@UnresolvedImport
     decoder = Decoder()
     print("decoder.init_context(%s,%s,{})" % (w, h))
-    decoder.init_context(w, h, {})
+    decoder.init_context(w, h, "BGRA", "x264", {})
     try:
         err, outstride, decompressed = decoder.decompress_image(compressed)
         print("decoder.decompress_image(%s bytes)=%s" % (len(compressed), (err, outstride, len(decompressed))))

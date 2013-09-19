@@ -200,7 +200,7 @@ class WindowVideoSource(WindowSource):
             quality = self.get_current_quality()
             speed = self.get_current_speed()
 
-            scores = self.get_video_pipeline_options(ve.get_type(), width, height, pixel_format)
+            scores = self.get_video_pipeline_options(ve.get_encoding(), width, height, pixel_format)
             if len(scores)>0:
                 debug("reconfigure(%s) best=%s", force_reload, scores[0])
                 _, csc_spec, enc_in_format, encoder_spec = scores[0]
@@ -237,7 +237,7 @@ class WindowVideoSource(WindowSource):
             score (best solution comes first).
         """
         encoder_specs = self._video_pipeline_helper.get_encoder_specs(encoding)
-        assert len(encoder_specs)>0, "cannot handle %s encoding!" % encoding
+        assert len(encoder_specs)>0, "no encoders found for '%s'" % encoding
         scores = []
         def add_scores(info, csc_spec, enc_in_format):
             colorspace_specs = encoder_specs.get(enc_in_format)
@@ -468,9 +468,9 @@ class WindowVideoSource(WindowSource):
             debug("check_pipeline video: invalid source format %s, expected %s",
                                             self._video_encoder.get_src_format(), encoder_src_format)
             return False
-        elif self._video_encoder.get_type()!=encoding:
+        elif self._video_encoder.get_encoding()!=encoding:
             debug("check_pipeline video: invalid encoding %s, expected %s",
-                                            self._video_encoder.get_type(), encoding)
+                                            self._video_encoder.get_encoding(), encoding)
             return False
         elif self._video_encoder.get_width()!=encoder_src_width or self._video_encoder.get_height()!=encoder_src_height:
             debug("check_pipeline video: window dimensions have changed from %sx%s to %sx%s",
@@ -519,7 +519,7 @@ class WindowVideoSource(WindowSource):
                     enc_height = height & self.height_mask
                 enc_start = time.time()
                 self._video_encoder = encoder_spec.codec_class()
-                self._video_encoder.init_context(enc_width, enc_height, enc_in_format, quality, speed, self.encoding_options)
+                self._video_encoder.init_context(enc_width, enc_height, enc_in_format, encoder_spec.encoding, quality, speed, self.encoding_options)
                 enc_end = time.time()
                 debug("setup_pipeline: video encoder=%s, info: %s, setup took %.2fms",
                         self._video_encoder, self._video_encoder.get_info(), (enc_end-enc_start)*1000.0)

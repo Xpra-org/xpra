@@ -98,6 +98,10 @@ def get_version():
 def get_type():
     return "vpx"
 
+def get_encodings():
+    #FIXME: should be renamed to "h264" since we are talking about the format...
+    return ["vpx"]
+
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
@@ -105,12 +109,13 @@ COLORSPACES = ["YUV420P"]
 def get_colorspaces():
     return COLORSPACES
 
-def get_spec(colorspace):
+def get_spec(encoding, colorspace):
+    assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
     #setup cost is reasonable (usually about 5ms)
-    return codec_spec(Encoder, codec_type="vpx", setup_cost=40)
+    return codec_spec(Encoder, codec_type=get_type(), encoding=encoding, setup_cost=40)
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
@@ -130,7 +135,8 @@ cdef class Encoder:
     cdef int height
     cdef char* src_format
 
-    def init_context(self, int width, int height, src_format, int quality, int speed, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options):    #@DuplicatedSignature
+        assert encoding=="vpx", "invalid encoding: %s" % encoding
         cdef const vpx_codec_iface_t *codec_iface
         self.width = width
         self.height = height
@@ -170,6 +176,9 @@ cdef class Encoder:
                 "width"     : self.width,
                 "height"    : self.height,
                 "src_format": self.src_format}
+
+    def get_encoding(self):
+        return "vpx"
 
     def get_width(self):
         return self.width
