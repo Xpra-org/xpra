@@ -375,7 +375,7 @@ class XpraClientBase(object):
         self._protocol.chunked_compression = c.boolget("chunked_compression")
         if use_rencode and c.boolget("rencode"):
             self._protocol.enable_rencode()
-        if c.boolget("lz4") and self._protocol.chunked_compression and self.compression_level>0 and self.compression_level<3:
+        if c.boolget("lz4") and has_lz4 and self._protocol.chunked_compression and self.compression_level>0 and self.compression_level<3:
             self._protocol.enable_lz4()
         if self.encryption:
             #server uses a new cipher after second hello:

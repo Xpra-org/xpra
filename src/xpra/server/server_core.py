@@ -255,7 +255,7 @@ class ServerCore(object):
         proto.chunked_compression = c.boolget("chunked_compression")
         if use_rencode and c.boolget("rencode"):
             proto.enable_rencode()
-        if c.boolget("lz4") and proto.chunked_compression and self.compression_level>0 and self.compression_level<3:
+        if c.boolget("lz4") and has_lz4 and proto.chunked_compression and self.compression_level>0 and self.compression_level<3:
             proto.enable_lz4()
 
         log("process_hello: capabilities=%s", capabilities)
