@@ -18,8 +18,8 @@ def test_encode_one():
     print("")
 
 def test_encode_all_GPUs():
-    from xpra.codecs.nvenc import encoder   #@UnresolvedImport
-    cuda_devices = encoder.get_cuda_devices()
+    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
+    cuda_devices = encoder_module.get_cuda_devices()
     print("")
     print("test_parallel_encode() will test one encoder on each of %s sequentially" % cuda_devices)
     TEST_DIMENSIONS = [(32, 32)]
@@ -29,7 +29,7 @@ def test_encode_all_GPUs():
         print("**********************************")
         print("**********************************")
         print("testing on  %s : %s" % (device_id, info))
-        test_encoder(encoder, options, TEST_DIMENSIONS)
+        test_encoder(encoder_module, options, TEST_DIMENSIONS)
     print("")
 
 def test_context_limits():
