@@ -11,6 +11,9 @@ class ImageWrapper(object):
     _3_PLANES = 3
     _4_PLANES = 4
     PLANE_OPTIONS = (PACKED_RGB, _3_PLANES, _4_PLANES)
+    PLANE_NAMES = {PACKED_RGB   : "PACKED_RGB",
+                   _3_PLANES    : "3_PLANES",
+                   _4_PLANES    : "4_PLANES"}
 
     def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, planes=PACKED_RGB):
         self.x = x
@@ -25,7 +28,7 @@ class ImageWrapper(object):
         self.freed = False
 
     def __str__(self):
-        return "%s(%s:%s)" % (type(self), self.pixel_format, self.get_geometry())
+        return "%s(%s:%s:%s)" % (type(self), self.pixel_format, self.get_geometry(), ImageWrapper.PLANE_NAMES.get(self.planes))
 
     def get_geometry(self):
         return self.x, self.y, self.width, self.height, self.depth
