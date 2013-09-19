@@ -116,6 +116,10 @@ cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
     return VPX_IMG_FMT_I420
 
+def init_module():
+    #nothing to do!
+    pass
+
 
 cdef class Encoder:
     cdef int frames

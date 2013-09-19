@@ -133,6 +133,10 @@ def get_version():
 def get_type():
     return "x264"
 
+def init_module():
+    #nothing to do!
+    pass
+
 
 #we choose presets from 1 to 7
 #(we exclude placebo)

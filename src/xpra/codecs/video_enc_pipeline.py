@@ -8,7 +8,7 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_VIDEOPIPELINE_DEBUG")
 
-from xpra.scripts.config import csc_swscale, csc_opencl, csc_nvcuda, enc_vpx, enc_x264
+from xpra.scripts.config import csc_swscale, csc_opencl, csc_nvcuda, enc_vpx, enc_x264, enc_nvenc
 
 
 class VideoPipelineHelper(object):
@@ -34,25 +34,30 @@ class VideoPipelineHelper(object):
 
     def init_video_encoders_options(self):
         try:
-            self.init_video_encoder_option("vpx", enc_vpx)
+            self.init_video_encoder_option(enc_vpx)
         except:
             log.warn("init_video_encoders_options() cannot add vpx encoder", exc_info=True)
         try:
-            self.init_video_encoder_option("x264", enc_x264)
+            self.init_video_encoder_option(enc_x264)
         except:
             log.warn("init_video_encoders_options() cannot add x264 encoder", exc_info=True)
-        #try:
-        #    self.init_video_encoder_option("nvenc", enc_nvenc)
-        #except:
-        #    log.warn("init_video_encoders_options() cannot add nvenc encoder", exc_info=True)
+        try:
+            self.init_video_encoder_option(enc_nvenc)
+        except:
+            log.warn("init_video_encoders_options() cannot add nvenc encoder", exc_info=True)
         debug("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)
 
-    def init_video_encoder_option(self, encoding, encoder_module):
+    def init_video_encoder_option(self, encoder_module):
         if not encoder_module:
             return
+        encoder_type = encoder_module.get_type()
+        try:
+            encoder_module.init_module()
+        except Exception, e:
+            log.warn("cannot use %s: %s", encoder_type, e)
         colorspaces = encoder_module.get_colorspaces()
-        debug("init_video_encoder_option(%s, %s) colorspaces=%s", encoding, encoder_module, colorspaces)
-        encoder_specs = VideoPipelineHelper._video_encoder_specs.setdefault(encoding, {})
+        debug("init_video_encoder_option(%s) %s colorspaces=%s", encoder_type, encoder_module, colorspaces)
+        encoder_specs = VideoPipelineHelper._video_encoder_specs.setdefault(encoder_type, {})
         for colorspace in colorspaces:
             colorspace_specs = encoder_specs.setdefault(colorspace, [])
             spec = encoder_module.get_spec(colorspace)
@@ -81,7 +86,7 @@ class VideoPipelineHelper(object):
                 debug(" * %s via: %s", dst_format, sorted(list(specs)))
 
     def init_csc_option(self, csc_module):
-        debug("init_csc_option(%s) type=%s", csc_module, csc_module.get_type())
+        debug("init_csc_option(%s)", csc_module)
         if csc_module is None:
             return
         in_cscs = csc_module.get_input_colorspaces()

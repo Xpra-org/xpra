@@ -68,13 +68,9 @@ cdef extern from "cuda.h":
     CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount)
 
 
-
 cdef extern from "NvTypes.h":
     pass
 
-
-#cdef extern from "videoFormats.h":
-#    const char *getVideoFormatString(unsigned int dwFormat)
 
 cdef extern from "nvEncodeAPI.h":
 
@@ -258,7 +254,6 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_PARAMS_RC_2_PASS_QUALITY     #Multi pass encoding optimized for image quality and works only with low latency mode
         NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP   #Multi pass encoding optimized for maintaining frame size and works only with low latency mode
         NV_ENC_PARAMS_RC_CBR2               #Constant bitrate mode using two pass for IDR frame only
-
   
     ctypedef struct NV_ENC_LOCK_BITSTREAM:
         uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_LOCK_BITSTREAM_VER.
@@ -709,7 +704,6 @@ cdef extern from "nvEncodeAPI.h":
         int32_t     lastofPart          #[in]: Set to 1 for the last MV of (sub) partition
         int32_t     lastOfMB            #[in]: Set to 1 for the last MV of macroblock.
 
-
     ctypedef struct NV_ENC_PIC_PARAMS:
         uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_PIC_PARAMS_VER.
         uint32_t    inputWidth          #[in]: Specifies the input buffer width
@@ -1018,8 +1012,6 @@ BUFFER_FORMAT = {
         }
 
 
-
-
 COLORSPACES = ("YUV444P", )
 def get_colorspaces():
     return COLORSPACES
@@ -1099,12 +1091,13 @@ cdef cuda_init_devices():
     end = time.time()
     debug("cuda_init_devices() took %.1fms", 1000.0*(end-start))
     return devices
-cuda_devices = cuda_init_devices()
-log.info("found %s CUDA devices: %s", len(cuda_devices), cuda_devices)
+cuda_devices = None
 def get_cuda_devices():
     global cuda_devices
+    if cuda_devices is None:
+        cuda_devices = cuda_init_devices()
+        log.info("found %s CUDA devices: %s", len(cuda_devices), cuda_devices)
     return cuda_devices
-
 
 cdef CUdevice get_cuda_device(deviceId=0):
     global cuda_devices
@@ -1129,16 +1122,17 @@ cdef CUdevice get_cuda_device(deviceId=0):
 DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "0"))
 
 def cuda_check():
-    global cuda_devices
     cdef CUcontext context
     cdef CUdevice cuDevice              #@DuplicatedSignature
-    assert DEFAULT_CUDA_DEVICE_ID in cuda_devices.keys()
+    cuda_devices = get_cuda_devices()
+    if len(cuda_devices)==0:
+        raise ImportError("no CUDA devices found!")
+    assert DEFAULT_CUDA_DEVICE_ID in cuda_devices.keys(), "specified CUDA device ID %s not found in %s" % (DEFAULT_CUDA_DEVICE_ID, cuda_devices)
     cuDevice = get_cuda_device(DEFAULT_CUDA_DEVICE_ID)
 
     raiseCuda(cuCtxCreate(&context, 0, cuDevice), "creating CUDA context")
     raiseCuda(cuCtxPopCurrent(&context), "popping current context")
     raiseCuda(cuCtxDestroy(context), "destroying current context")
-cuda_check()
 
 
 cdef nvencStatusInfo(NVENCSTATUS ret):
@@ -1149,194 +1143,6 @@ cdef nvencStatusInfo(NVENCSTATUS ret):
 cdef raiseNVENC(NVENCSTATUS ret, msg=""):
     if ret!=0:
         raise Exception("%s - returned %s" % (msg, nvencStatusInfo(ret)))
-
-cdef NV_ENC_PRESET_CONFIG *get_preset_config(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encode_GUID, GUID preset_GUID):
-    """ you must free it after use! """
-    cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
-    presetConfig = <NV_ENC_PRESET_CONFIG*> malloc(sizeof(NV_ENC_PRESET_CONFIG))
-    assert presetConfig!=NULL, "failed to allocate memory for preset config"
-    memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
-    presetConfig.version = NV_ENC_PRESET_CONFIG_VER
-    raiseNVENC(functionList.nvEncGetEncodePresetConfig(encoder, encode_GUID, preset_GUID, presetConfig), "getting preset config for %s" % guidstr(preset_GUID))
-    return presetConfig
-
-cdef object query_presets(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encode_GUID):
-    cdef uint32_t presetCount
-    cdef uint32_t presetsRetCount
-    cdef GUID* preset_GUIDs
-    cdef GUID preset_GUID
-    cdef NV_ENC_PRESET_CONFIG *presetConfig
-    cdef NV_ENC_CONFIG encConfig
-
-    presets = {}
-    raiseNVENC(functionList.nvEncGetEncodePresetCount(encoder, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
-    debug("%s presets:", presetCount)
-    assert presetCount<2**8
-    preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
-    assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
-    try:
-        raiseNVENC(functionList.nvEncGetEncodePresetGUIDs(encoder, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount))
-        assert presetsRetCount==presetCount
-        for x in range(presetCount):
-            preset_GUID = preset_GUIDs[x]
-            preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset_GUID))
-            debug("* %s : %s", guidstr(preset_GUID), preset_name)
-            try:
-                presetConfig = get_preset_config(functionList, encoder, encode_GUID, preset_GUID)
-                encConfig = presetConfig.presetCfg
-                debug("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
-            finally:
-                free(presetConfig)
-            presets[preset_name] = guidstr(preset_GUID)
-    finally:
-        free(preset_GUIDs)
-    return presets
-
-cdef object query_profiles(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encode_GUID):
-    cdef uint32_t profileCount
-    cdef uint32_t profilesRetCount
-    cdef GUID* profile_GUIDs
-    cdef GUID profile_GUID
-
-    profiles = {}
-    raiseNVENC(functionList.nvEncGetEncodeProfileGUIDCount(encoder, encode_GUID, &profileCount), "getting profile count")
-    debug("%s profiles:", profileCount)
-    assert profileCount<2**8
-    profile_GUIDs = <GUID*> malloc(sizeof(GUID) * profileCount)
-    assert profile_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
-    PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
-    try:
-        raiseNVENC(functionList.nvEncGetEncodeProfileGUIDs(encoder, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount))
-        #(void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
-        assert profilesRetCount==profileCount
-        for x in range(profileCount):
-            profile_GUID = profile_GUIDs[x]
-            profile_name = PROFILES_GUIDS.get(guidstr(profile_GUID))
-            debug("* %s : %s", guidstr(profile_GUID), profile_name)
-            profiles[profile_name] = guidstr(profile_GUID)
-    finally:
-        free(profile_GUIDs)
-    return profiles
-
-cdef object query_input_formats(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encode_GUID):
-    cdef uint32_t inputFmtCount
-    cdef NV_ENC_BUFFER_FORMAT* inputFmts
-    cdef uint32_t inputFmtsRetCount
-    cdef NV_ENC_BUFFER_FORMAT inputFmt
-
-    input_formats = {}
-    raiseNVENC(functionList.nvEncGetInputFormatCount(encoder, encode_GUID, &inputFmtCount), "getting input format count")
-    debug("%s input formats:", inputFmtCount)
-    assert inputFmtCount>0 and inputFmtCount<2**8
-    inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
-    assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
-    try:
-        raiseNVENC(functionList.nvEncGetInputFormats(encoder, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount), "getting input formats")
-        assert inputFmtsRetCount==inputFmtCount
-        for x in range(inputFmtCount):
-            inputFmt = inputFmts[x]
-            format_name = BUFFER_FORMAT.get(inputFmt)
-            debug("* %s : %s", hex(inputFmts[x]), format_name)
-            input_formats[format_name] = hex(inputFmts[x])
-    finally:
-        free(inputFmts)
-    return input_formats
-
-cdef int query_encoder_caps(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder, GUID encodeGUID, NV_ENC_CAPS caps_type):
-    cdef int val
-    cdef NV_ENC_CAPS_PARAM encCaps
-    memset(&encCaps, 0, sizeof(NV_ENC_CAPS_PARAM))
-    encCaps.version = NV_ENC_CAPS_PARAM_VER
-    encCaps.capsToQuery = caps_type
-
-    raiseNVENC(functionList.nvEncGetEncodeCaps(encoder, encodeGUID, &encCaps, &val))
-    return val
-
-cdef query_codecs(NV_ENCODE_API_FUNCTION_LIST *functionList, void *encoder):
-    cdef uint32_t GUIDCount
-    cdef uint32_t GUIDRetCount
-    cdef GUID* encode_GUIDs
-    cdef GUID encode_GUID
-
-    raiseNVENC(functionList.nvEncGetEncodeGUIDCount(encoder, &GUIDCount))
-    debug("found %s encode GUIDs", GUIDCount)
-    assert GUIDCount<2**8
-    encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
-    assert encode_GUIDs!=NULL, "could not allocate memory for %s encode GUIDs!" % (GUIDCount)
-    codecs = {}
-    try:
-        raiseNVENC(functionList.nvEncGetEncodeGUIDs(encoder, encode_GUIDs, GUIDCount, &GUIDRetCount), "getting list of encode GUIDs")
-        assert GUIDRetCount==GUIDCount, "expected %s items but got %s" % (GUIDCount, GUIDRetCount)
-        for x in range(GUIDRetCount):
-            encode_GUID = encode_GUIDs[x]
-            codec_name = CODEC_GUIDS.get(guidstr(encode_GUID))
-            debug("[%s] %s : %s", x, codec_name, guidstr(encode_GUID))
-            codecs[codec_name] = guidstr(encode_GUID)
-
-            maxw = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
-            maxh = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_HEIGHT_MAX)
-            async = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
-            sep_plane = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_SEPARATE_COLOUR_PLANE)
-            debug(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
-            rate_countrol = query_encoder_caps(functionList, encoder, encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
-            debug(" rate control: %s, separate colour plane: %s", rate_countrol, sep_plane)
-
-            presets = query_presets(functionList, encoder, encode_GUID)
-            debug("  presets=%s", presets)
-
-            profiles = query_profiles(functionList, encoder, encode_GUID)
-            debug("  profiles=%s", profiles)
-
-            input_formats = query_input_formats(functionList, encoder, encode_GUID)
-            debug("  input formats=%s", input_formats)
-    finally:
-        free(encode_GUIDs)
-    debug("codecs=%s", codecs)
-    return codecs
-
-
-cdef void *open_encode_session(NV_ENCODE_API_FUNCTION_LIST *functionList, CUcontext cuda_context):
-    cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
-    cdef void *encoder = NULL
-    debug("open_encode_session(%s, %s)", hex(<long> functionList), hex(<long> cuda_context))
-
-    #get NVENC function pointers:
-    memset(functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
-    functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
-    raiseNVENC(NvEncodeAPICreateInstance(functionList), "getting API function list")
-    assert functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
-
-    #NVENC init:
-    memset(&params, 0, sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
-    params.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
-    params.deviceType = NV_ENC_DEVICE_TYPE_CUDA
-    params.device = <void*> cuda_context
-    params.clientKeyPtr = &CLIENT_KEY_GUID
-    params.apiVersion = NVENCAPI_VERSION
-    #params.clientKeyPtr = client_key
-    debug("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> functionList.nvEncOpenEncodeSessionEx))
-    raiseNVENC(functionList.nvEncOpenEncodeSessionEx(&params, &encoder), "opening session")
-    debug("success, encoder context=%s", hex(<long> encoder))
-    return encoder
-
-
-#create one to ensure we can:
-cdef void *test_encoder = NULL
-cdef CUcontext test_cuda_context
-cdef CUdevice test_cuda_device
-cdef NV_ENCODE_API_FUNCTION_LIST testFunctionList
-try:
-    assert DEFAULT_CUDA_DEVICE_ID in cuda_devices.keys()
-    test_cuda_device = get_cuda_device(DEFAULT_CUDA_DEVICE_ID)
-    debug("cuCtxCreate(%s, %s, %s)", hex(<long> test_cuda_context), 0, test_cuda_device)
-    raiseCuda(cuCtxCreate(&test_cuda_context, 0, test_cuda_device))
-    test_encoder = open_encode_session(&testFunctionList, test_cuda_context)
-    query_codecs(&testFunctionList, test_encoder)
-    testFunctionList.nvEncDestroyEncoder(test_encoder)
-except:
-    raiseCuda(cuCtxPopCurrent(&test_cuda_context), "failed to pop context")
-    log.error("open_encode_session() failed", exc_info=True)
-    raise
 
 
 cdef class Encoder:
@@ -1356,14 +1162,14 @@ cdef class Encoder:
     cdef int frames
 
     cdef GUID get_codec(self):
-        codecs = query_codecs(&self.functionList, self.context)
+        codecs = self.query_codecs()
         #codecs={'H264': '6BC82762-4E63-4CA4-AA85-1E50F321F6BF'}
         assert self.codec_name in codecs, "%s not supported!?" % self.codec_name
         return parseguid(codecs.get(self.codec_name))
 
     cdef GUID get_preset(self, GUID codec):
         #PRESET:
-        presets = query_presets(&self.functionList, self.context, codec)
+        presets = self.query_presets(codec)
         #presets={'low-latency': '49DF21C5-6DFA-4FEB-9787-6ACC9EFFB726', 'bd': '82E3E450-BDBB-4E40-989C-82A90DF9EF32', 'default': 'B2DFB705-4EBD-4C49-9B5F-24A777D3E587', 'hp': '60E4C59F-E846-4484-A56D-CD45BE9FDDF6', 'hq': '34DBA71D-A77B-4B8F-9C3E-B6D5DA24C012', 'low-latency-hp': '67082A44-4BAD-48FA-98EA-93056D150A58', 'low-latency-hq': 'C5F733B9-EA97-4CF9-BEC2-BF78A74FD105'}
         self.preset_name = None
         for x in ("low-latency-hq", "low-latency", "low-latency-hp"):
@@ -1403,18 +1209,18 @@ cdef class Encoder:
         cdef GUID profile
         cdef NV_ENC_INITIALIZE_PARAMS params
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
-        self.context = open_encode_session(&self.functionList, self.cuda_context)
 
+        self.open_encode_session(self.cuda_context)
         codec = self.get_codec()
         preset = self.get_preset(codec)
 
         cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
         try:
-            presetConfig = get_preset_config(&self.functionList, self.context, codec, preset)
+            presetConfig = self.get_preset_config(codec, preset)
 
             #PROFILE
-            profiles = query_profiles(&self.functionList, self.context, NV_ENC_CODEC_H264_GUID)
+            profiles = self.query_profiles(NV_ENC_CODEC_H264_GUID)
             presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
             #self.gopLength = presetConfig.presetCfg.gopLength
 
@@ -1606,3 +1412,189 @@ cdef class Encoder:
         #void*       bufferDataPtr       #[out]: Pointed to the locked input buffer data. Client can only access input buffer using the \p bufferDataPtr.
         #uint32_t    pitch               #[out]: Pitch of the locked input buffer.
         #nvEncEncodePicture(self.encoder, &picParams)
+
+
+    cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, GUID encode_GUID, GUID preset_GUID):
+        """ you must free it after use! """
+        cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
+        presetConfig = <NV_ENC_PRESET_CONFIG*> malloc(sizeof(NV_ENC_PRESET_CONFIG))
+        assert presetConfig!=NULL, "failed to allocate memory for preset config"
+        memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
+        presetConfig.version = NV_ENC_PRESET_CONFIG_VER
+        raiseNVENC(self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig), "getting preset config for %s" % guidstr(preset_GUID))
+        return presetConfig
+
+    cdef object query_presets(self, GUID encode_GUID):
+        cdef uint32_t presetCount
+        cdef uint32_t presetsRetCount
+        cdef GUID* preset_GUIDs
+        cdef GUID preset_GUID
+        cdef NV_ENC_PRESET_CONFIG *presetConfig
+        cdef NV_ENC_CONFIG encConfig
+    
+        presets = {}
+        raiseNVENC(self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
+        debug("%s presets:", presetCount)
+        assert presetCount<2**8
+        preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
+        assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
+        try:
+            raiseNVENC(self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount))
+            assert presetsRetCount==presetCount
+            for x in range(presetCount):
+                preset_GUID = preset_GUIDs[x]
+                preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset_GUID))
+                debug("* %s : %s", guidstr(preset_GUID), preset_name)
+                try:
+                    presetConfig = self.get_preset_config(encode_GUID, preset_GUID)
+                    encConfig = presetConfig.presetCfg
+                    debug("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
+                finally:
+                    free(presetConfig)
+                presets[preset_name] = guidstr(preset_GUID)
+        finally:
+            free(preset_GUIDs)
+        return presets
+    
+    cdef object query_profiles(self, GUID encode_GUID):
+        cdef uint32_t profileCount
+        cdef uint32_t profilesRetCount
+        cdef GUID* profile_GUIDs
+        cdef GUID profile_GUID
+    
+        profiles = {}
+        raiseNVENC(self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount), "getting profile count")
+        debug("%s profiles:", profileCount)
+        assert profileCount<2**8
+        profile_GUIDs = <GUID*> malloc(sizeof(GUID) * profileCount)
+        assert profile_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
+        PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
+        try:
+            raiseNVENC(self.functionList.nvEncGetEncodeProfileGUIDs(self.context, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount))
+            #(void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
+            assert profilesRetCount==profileCount
+            for x in range(profileCount):
+                profile_GUID = profile_GUIDs[x]
+                profile_name = PROFILES_GUIDS.get(guidstr(profile_GUID))
+                debug("* %s : %s", guidstr(profile_GUID), profile_name)
+                profiles[profile_name] = guidstr(profile_GUID)
+        finally:
+            free(profile_GUIDs)
+        return profiles
+    
+    cdef object query_input_formats(self, GUID encode_GUID):
+        cdef uint32_t inputFmtCount
+        cdef NV_ENC_BUFFER_FORMAT* inputFmts
+        cdef uint32_t inputFmtsRetCount
+        cdef NV_ENC_BUFFER_FORMAT inputFmt
+    
+        input_formats = {}
+        raiseNVENC(self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount), "getting input format count")
+        debug("%s input formats:", inputFmtCount)
+        assert inputFmtCount>0 and inputFmtCount<2**8
+        inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
+        assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
+        try:
+            raiseNVENC(self.functionList.nvEncGetInputFormats(self.context, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount), "getting input formats")
+            assert inputFmtsRetCount==inputFmtCount
+            for x in range(inputFmtCount):
+                inputFmt = inputFmts[x]
+                format_name = BUFFER_FORMAT.get(inputFmt)
+                debug("* %s : %s", hex(inputFmts[x]), format_name)
+                input_formats[format_name] = hex(inputFmts[x])
+        finally:
+            free(inputFmts)
+        return input_formats
+    
+    cdef int query_encoder_caps(self, GUID encodeGUID, NV_ENC_CAPS caps_type):
+        cdef int val
+        cdef NV_ENC_CAPS_PARAM encCaps
+        memset(&encCaps, 0, sizeof(NV_ENC_CAPS_PARAM))
+        encCaps.version = NV_ENC_CAPS_PARAM_VER
+        encCaps.capsToQuery = caps_type
+    
+        raiseNVENC(self.functionList.nvEncGetEncodeCaps(self.context, encodeGUID, &encCaps, &val))
+        return val
+    
+    cdef query_codecs(self):
+        cdef uint32_t GUIDCount
+        cdef uint32_t GUIDRetCount
+        cdef GUID* encode_GUIDs
+        cdef GUID encode_GUID
+    
+        raiseNVENC(self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount))
+        debug("found %s encode GUIDs", GUIDCount)
+        assert GUIDCount<2**8
+        encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
+        assert encode_GUIDs!=NULL, "could not allocate memory for %s encode GUIDs!" % (GUIDCount)
+        codecs = {}
+        try:
+            raiseNVENC(self.functionList.nvEncGetEncodeGUIDs(self.context, encode_GUIDs, GUIDCount, &GUIDRetCount), "getting list of encode GUIDs")
+            assert GUIDRetCount==GUIDCount, "expected %s items but got %s" % (GUIDCount, GUIDRetCount)
+            for x in range(GUIDRetCount):
+                encode_GUID = encode_GUIDs[x]
+                codec_name = CODEC_GUIDS.get(guidstr(encode_GUID))
+                debug("[%s] %s : %s", x, codec_name, guidstr(encode_GUID))
+                codecs[codec_name] = guidstr(encode_GUID)
+    
+                maxw = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
+                maxh = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_HEIGHT_MAX)
+                async = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
+                sep_plane = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_SEPARATE_COLOUR_PLANE)
+                debug(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
+                rate_countrol = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
+                debug(" rate control: %s, separate colour plane: %s", rate_countrol, sep_plane)
+    
+                presets = self.query_presets(encode_GUID)
+                debug("  presets=%s", presets)
+    
+                profiles = self.query_profiles(encode_GUID)
+                debug("  profiles=%s", profiles)
+    
+                input_formats = self.query_input_formats(encode_GUID)
+                debug("  input formats=%s", input_formats)
+        finally:
+            free(encode_GUIDs)
+        debug("codecs=%s", codecs)
+        return codecs
+    
+    
+    cdef open_encode_session(self, CUcontext cuda_context):
+        cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
+        debug("open_encode_session(%s)", hex(<long> cuda_context))
+    
+        #get NVENC function pointers:
+        memset(&self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
+        self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
+        raiseNVENC(NvEncodeAPICreateInstance(&self.functionList), "getting API function list")
+        assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
+    
+        #NVENC init:
+        memset(&params, 0, sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
+        params.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
+        params.deviceType = NV_ENC_DEVICE_TYPE_CUDA
+        params.device = <void*> cuda_context
+        params.clientKeyPtr = &CLIENT_KEY_GUID
+        params.apiVersion = NVENCAPI_VERSION
+        #params.clientKeyPtr = client_key
+        debug("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> self.functionList.nvEncOpenEncodeSessionEx))
+        raiseNVENC(self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context), "opening session")
+        debug("success, encoder context=%s", hex(<long> self.context))
+
+
+def init_module():
+    #check for module availibility:
+
+    #check that we have CUDA device(s):
+    cuda_check()
+    
+    #check NVENC availibility:
+    colorspaces = get_colorspaces()
+    if len(colorspaces)==0:
+        raise ImportError("cannot use NVENC: no colorspaces available")
+    test_encoder = Encoder()
+    src_format = colorspaces[0]
+    try:
+        test_encoder.init_context(1920, 1080, src_format, 50, 50, {})
+    finally:
+        test_encoder.clean()
