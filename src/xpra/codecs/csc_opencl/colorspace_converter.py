@@ -588,7 +588,7 @@ class ColorspaceConverter(object):
         debug("readback using %s took %.1fms", CHANNEL_ORDER_TO_STR.get(self.channel_order), 1000.0*(time.time()-kend))
         self.time += time.time()-start
         self.frames += 1
-        return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, strides, planes=ImageWrapper.PACKED_RGB)
+        return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, strides, planes=ImageWrapper.PACKED)
 
 
     def convert_image_rgb(self, image):
@@ -600,7 +600,7 @@ class ColorspaceConverter(object):
         stride = image.get_rowstride()
         pixels = image.get_pixels()
         #debug("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
-        assert iplanes==ImageWrapper.PACKED_RGB, "we only handle packed rgb as input!"
+        assert iplanes==ImageWrapper.PACKED, "we only handle packed data as input!"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
         assert width>=self.src_width and height>=self.src_height, "expected source image with dimensions of at least %sx%s but got %sx%s" % (self.src_width, self.src_height, width, height)
 

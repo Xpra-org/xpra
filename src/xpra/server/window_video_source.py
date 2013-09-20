@@ -271,11 +271,19 @@ class WindowVideoSource(WindowSource):
             #debug("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
             #we have csc module(s) that can get us from pixel_format to out_csc:
             for out_csc, csc_spec in csc_specs:
-                if out_csc in self.csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
+                actual_csc = self.csc_equiv(out_csc)
+                if actual_csc in self.csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
                     add_scores("via %s" % out_csc, csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
         debug("get_video_pipeline_options%s scores=%s", (encoding, width, height, src_format), s)
         return s
+
+    def csc_equiv(self, csc_mode):
+        #in some places, we want to check against the subsampling used
+        #and not the colorspace itself.
+        #and NV12 uses the same subsampling as YUV420P...
+        return {"NV12" : "YUV420P"}.get(csc_mode, csc_mode)
+
 
     def get_score(self, csc_format, csc_spec, encoder_spec, width, height):
         """
@@ -552,7 +560,7 @@ class WindowVideoSource(WindowSource):
             #dw and dh are the edges we don't handle here
             width = w & self.width_mask
             height = h & self.height_mask
-            debug("video_encode%s w-h=%s-%s, width-height=%s-%s", (encoding, image, options), w, h, width, height)
+            debug("video_encode%s wxh=%s-%s, widthxheight=%sx%s", (encoding, image, options), w, h, width, height)
 
             csc_image, csc, enc_width, enc_height = self.csc_image(image, width, height)
 
@@ -566,9 +574,10 @@ class WindowVideoSource(WindowSource):
                 log.error("video_encode: ouch, %s compression failed", encoding)
                 return None, None, 0
             if self.encoding_client_options:
-                #tell the client which pixel encoding we used:
+                #tell the client which colour subsampling we used:
+                #(note: see csc_equiv!)
                 if self.uses_csc_atoms:
-                    client_options["csc"] = csc
+                    client_options["csc"] = self.csc_equiv(csc)
                 else:
                     #ugly hack: expose internal ffmpeg/libav constant
                     #for old versions without the "csc_atoms" feature:

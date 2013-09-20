@@ -111,7 +111,7 @@ def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(),
         print("    %s" % cc.get_info())
         print("do_test_csc_rgb() input pixels=%s" % dump_pixels(pixels))
     bpp = len(src_format)
-    image = ImageWrapper(0, 0, w, h, pixels, src_format, 32, w*bpp, planes=ImageWrapper.PACKED_RGB)
+    image = ImageWrapper(0, 0, w, h, pixels, src_format, 32, w*bpp, planes=ImageWrapper.PACKED)
     for _ in range(count):
         out = cc.convert_image(image)
     if DEBUG:
@@ -199,7 +199,7 @@ def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels
     if DEBUG:
         print("do_test_csc_planar() output=%s" % out)
     assert out is not None, "convert_image returned None!"
-    assert out.get_planes()==ImageWrapper.PACKED_RGB, "output image %s is not in packed RGB: it has %s planes" % (out, out.get_planes())
+    assert out.get_planes()==ImageWrapper.PACKED, "output image %s is not in packed format: it has %s planes" % (out, out.get_planes())
     #clone the pixels before the wrapper falls out of scope!
     out.clone_pixel_data()
     cc.clean()
