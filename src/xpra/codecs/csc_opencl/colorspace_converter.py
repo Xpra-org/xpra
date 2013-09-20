@@ -129,11 +129,9 @@ def init_context():
 #This tries to map our standard RGB representation
 #to the channel_order types that OpenCL may support
 IN_CHANNEL_ORDER = (
-                  ("RGBA",  pyopencl.channel_order.RGBA),
-                  ("RGBX",  pyopencl.channel_order.RGBA),
-                  ("BGRA",  pyopencl.channel_order.BGRA),
-                  ("BGRX",  pyopencl.channel_order.BGRA),
                   ("RGBX",  pyopencl.channel_order.RGBx),
+                  ("RGBX",  pyopencl.channel_order.RGBA),
+                  ("BGRX",  pyopencl.channel_order.BGRA),
                   ("RGB" ,  pyopencl.channel_order.RGB),
                   )
 CHANNEL_ORDER_TO_STR = {
