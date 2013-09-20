@@ -56,7 +56,7 @@ class CudaContextWrapper(object):
 
     def __del__(self):
         self.cleanup()
-    
+
     def cleanup(self):
         if self.context:
             self.context.detach()
@@ -142,7 +142,6 @@ COLORSPACES_MAP_STR  = {
         #("RGBX",    "YUV422P")  : ("nppiRGBToYCbCr422_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
         #("BGRX",    "YUV422P")  : ("nppiBGRToYCbCr422_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
         ("BGRX",    "YUV422P")  : ("nppiBGRToYCbCr422_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
-        
         #("YUV422P", "RGB")      : ("nppiYCbCr422ToRGB_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
         #("YUV422P", "BGR")      : ("nppiYCbCr422ToBGR_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
         #YUV420P:

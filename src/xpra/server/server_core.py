@@ -264,7 +264,7 @@ class ServerCore(object):
             proto.send_now(("hello", response))
             self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return False
-    
+
         auth_caps = self.verify_hello(proto, c)
         if auth_caps is not False:
             #continue processing hello packet:

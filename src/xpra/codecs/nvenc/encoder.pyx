@@ -181,9 +181,9 @@ cdef extern from "nvEncodeAPI.h":
 
     ctypedef enum NV_ENC_PIC_FLAGS:
         NV_ENC_PIC_FLAG_FORCEINTRA
-        NV_ENC_PIC_FLAG_FORCEIDR 
+        NV_ENC_PIC_FLAG_FORCEIDR
         NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
-        NV_ENC_PIC_FLAG_EOS 
+        NV_ENC_PIC_FLAG_EOS
         NV_ENC_PIC_FLAG_DYN_RES_CHANGE
         NV_ENC_PIC_FLAG_DYN_BITRATE_CHANGE
         NV_ENC_PIC_FLAG_USER_FORCE_CONSTQP
@@ -214,7 +214,7 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_MV_PRECISION_FULL_PEL
         NV_ENC_MV_PRECISION_HALF_PEL
         NV_ENC_MV_PRECISION_QUARTER_PEL
-    
+
     ctypedef enum NV_ENC_LEVEL:
         NV_ENC_LEVEL_AUTOSELECT
         NV_ENC_LEVEL_H264_1
@@ -245,7 +245,7 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_LEVEL_VC1_2
         NV_ENC_LEVEL_VC1_3
         NV_ENC_LEVEL_VC1_4
-  
+
     ctypedef enum NV_ENC_PARAMS_RC_MODE:
         NV_ENC_PARAMS_RC_CONSTQP            #Constant QP mode
         NV_ENC_PARAMS_RC_VBR                #Variable bitrate mode
@@ -254,7 +254,7 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_PARAMS_RC_2_PASS_QUALITY     #Multi pass encoding optimized for image quality and works only with low latency mode
         NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP   #Multi pass encoding optimized for maintaining frame size and works only with low latency mode
         NV_ENC_PARAMS_RC_CBR2               #Constant bitrate mode using two pass for IDR frame only
-  
+
     ctypedef struct NV_ENC_LOCK_BITSTREAM:
         uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_LOCK_BITSTREAM_VER.
         uint32_t    doNotWait           #[in]: If this flag is set, the NvEncodeAPI interface will return buffer pointer even if operation is not completed. If not set, the call will block until operation completes.
@@ -671,8 +671,8 @@ cdef extern from "nvEncodeAPI.h":
 
     ctypedef struct NV_ENC_PIC_PARAMS_VC1:
         uint32_t    gopUserDataSize     #[in]: Specifies the size of the private data to be inserted in GOP header.
-        uint8_t*    gopUserData         #[in]: Specifies the private data to be inserted in GOP header. It is the client's responsibility to allocate and manage the struct memory.         
-        uint8_t*    picUserData         #[in]: Specifies the private data to be inserted in picture header. It is the client's responsibility to allocate and manage the struct memory.     
+        uint8_t*    gopUserData         #[in]: Specifies the private data to be inserted in GOP header. It is the client's responsibility to allocate and manage the struct memory.
+        uint8_t*    picUserData         #[in]: Specifies the private data to be inserted in picture header. It is the client's responsibility to allocate and manage the struct memory.
         uint32_t    picUserDataSize     #[in]: Specifies the size of the private data to be inserted in picture header.
         uint32_t    reserved[252]       #[in]: Reserved and must be set to 0.
         void*       reserved2[64]       #[in]: Reserved and must be set to NULL.
@@ -954,7 +954,7 @@ CODEC_GUIDS = {
     guidstr(NV_ENC_CODEC_VP8_GUID)      : "VP8",
     }
 
-CODEC_PROFILES_GUIDS = { 
+CODEC_PROFILES_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID) : {
         guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
         guidstr(NV_ENC_H264_PROFILE_BASELINE_GUID)          : "baseline",
@@ -1248,7 +1248,7 @@ cdef class Encoder:
             params.encodeConfig = &presetConfig.presetCfg
             raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params))
             debug("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
-    
+
             #allocate input buffer:
             memset(&createInputBufferParams, 0, sizeof(NV_ENC_CREATE_INPUT_BUFFER))
             createInputBufferParams.version = NV_ENC_CREATE_INPUT_BUFFER_VER
@@ -1259,7 +1259,7 @@ cdef class Encoder:
             raiseNVENC(self.functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
             self.inputBuffer = createInputBufferParams.inputBuffer
             debug("inputBuffer=%s", hex(<long> self.inputBuffer))
-    
+
             #allocate output buffer:
             memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
             createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
@@ -1457,7 +1457,7 @@ cdef class Encoder:
         cdef GUID preset_GUID
         cdef NV_ENC_PRESET_CONFIG *presetConfig
         cdef NV_ENC_CONFIG encConfig
-    
+
         presets = {}
         raiseNVENC(self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
         debug("%s presets:", presetCount)
@@ -1481,13 +1481,13 @@ cdef class Encoder:
         finally:
             free(preset_GUIDs)
         return presets
-    
+
     cdef object query_profiles(self, GUID encode_GUID):
         cdef uint32_t profileCount
         cdef uint32_t profilesRetCount
         cdef GUID* profile_GUIDs
         cdef GUID profile_GUID
-    
+
         profiles = {}
         raiseNVENC(self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount), "getting profile count")
         debug("%s profiles:", profileCount)
@@ -1507,13 +1507,13 @@ cdef class Encoder:
         finally:
             free(profile_GUIDs)
         return profiles
-    
+
     cdef object query_input_formats(self, GUID encode_GUID):
         cdef uint32_t inputFmtCount
         cdef NV_ENC_BUFFER_FORMAT* inputFmts
         cdef uint32_t inputFmtsRetCount
         cdef NV_ENC_BUFFER_FORMAT inputFmt
-    
+
         input_formats = {}
         raiseNVENC(self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount), "getting input format count")
         debug("%s input formats:", inputFmtCount)
@@ -1531,23 +1531,23 @@ cdef class Encoder:
         finally:
             free(inputFmts)
         return input_formats
-    
+
     cdef int query_encoder_caps(self, GUID encodeGUID, NV_ENC_CAPS caps_type):
         cdef int val
         cdef NV_ENC_CAPS_PARAM encCaps
         memset(&encCaps, 0, sizeof(NV_ENC_CAPS_PARAM))
         encCaps.version = NV_ENC_CAPS_PARAM_VER
         encCaps.capsToQuery = caps_type
-    
+
         raiseNVENC(self.functionList.nvEncGetEncodeCaps(self.context, encodeGUID, &encCaps, &val))
         return val
-    
+
     cdef query_codecs(self):
         cdef uint32_t GUIDCount
         cdef uint32_t GUIDRetCount
         cdef GUID* encode_GUIDs
         cdef GUID encode_GUID
-    
+
         raiseNVENC(self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount))
         debug("found %s encode GUIDs", GUIDCount)
         assert GUIDCount<2**8
@@ -1562,7 +1562,7 @@ cdef class Encoder:
                 codec_name = CODEC_GUIDS.get(guidstr(encode_GUID))
                 debug("[%s] %s : %s", x, codec_name, guidstr(encode_GUID))
                 codecs[codec_name] = guidstr(encode_GUID)
-    
+
                 maxw = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
                 maxh = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_HEIGHT_MAX)
                 async = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
@@ -1570,31 +1570,31 @@ cdef class Encoder:
                 debug(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
                 rate_countrol = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
                 debug(" rate control: %s, separate colour plane: %s", rate_countrol, sep_plane)
-    
+
                 presets = self.query_presets(encode_GUID)
                 debug("  presets=%s", presets)
-    
+
                 profiles = self.query_profiles(encode_GUID)
                 debug("  profiles=%s", profiles)
-    
+
                 input_formats = self.query_input_formats(encode_GUID)
                 debug("  input formats=%s", input_formats)
         finally:
             free(encode_GUIDs)
         debug("codecs=%s", codecs)
         return codecs
-    
-    
+
+
     cdef open_encode_session(self):
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
         debug("open_encode_session(%s)", hex(<long> self.cuda_context))
-    
+
         #get NVENC function pointers:
         memset(&self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
         self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
         raiseNVENC(NvEncodeAPICreateInstance(&self.functionList), "getting API function list")
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
-    
+
         #NVENC init:
         memset(&params, 0, sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
         params.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
@@ -1613,7 +1613,7 @@ def init_module():
 
     #check that we have CUDA device(s):
     cuda_check()
-    
+
     #check NVENC availibility:
     colorspaces = get_colorspaces()
     if len(colorspaces)==0:

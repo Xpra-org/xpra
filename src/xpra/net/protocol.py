@@ -56,7 +56,7 @@ try:
 except Exception, e:
     log.error("xpra.rencode is missing: %s", e)
 has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
-use_rencode = has_rencode and not os.environ.get("XPRA_USE_BENCODER", "0")=="1" 
+use_rencode = has_rencode and not os.environ.get("XPRA_USE_BENCODER", "0")=="1"
 
 #stupid python version breakage:
 if sys.version > '3':

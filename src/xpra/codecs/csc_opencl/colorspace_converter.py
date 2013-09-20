@@ -31,7 +31,7 @@ def device_type(d):
         return pyopencl.device_type.to_string(d.type)
     except:
         return d.type
-    
+
 
 def device_info(d):
     dtype = device_type(d)

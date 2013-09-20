@@ -247,7 +247,7 @@ def gen_rgb_to_yuv444p_kernel(rgb_mode):
     kstr = """
 __kernel void %s(read_only image2d_t src,
               uint srcw, uint srch, uint w, uint h,
-              const sampler_t sampler, 
+              const sampler_t sampler,
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
               global uchar *dstV, uint strideV) {
@@ -278,7 +278,7 @@ def gen_rgb_to_yuv422p_kernel(rgb_mode):
     kstr = """
 __kernel void %s(read_only image2d_t src,
               uint srcw, uint srch, uint w, uint h,
-              const sampler_t sampler, 
+              const sampler_t sampler,
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
               global uchar *dstV, uint strideV) {
@@ -333,7 +333,7 @@ def gen_rgb_to_yuv420p_kernel(rgb_mode):
     kstr = """
 __kernel void %s(read_only image2d_t src,
               uint srcw, uint srch, uint w, uint h,
-              const sampler_t sampler, 
+              const sampler_t sampler,
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
               global uchar *dstV, uint strideV) {
