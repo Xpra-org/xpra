@@ -1012,7 +1012,8 @@ BUFFER_FORMAT = {
         }
 
 
-COLORSPACES = ("YUV444P", "BGRA")
+#"NV12", "YUV444P"
+COLORSPACES = ("YUV444P", )
 def get_colorspaces():
     return COLORSPACES
 
@@ -1036,7 +1037,7 @@ def get_encodings():
     #FIXME: should be renamed to "h264" since we are talking about the format...
     return ["x264"]
 
-def roundup(n, m):
+cdef int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 
@@ -1255,7 +1256,7 @@ cdef class Encoder:
             createInputBufferParams.width = roundup(self.width, 32)
             createInputBufferParams.height = roundup(self.height, 32)
             createInputBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED     #NV_ENC_MEMORY_HEAP_AUTOSELECT
-            createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_TILED64x16
+            createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_TILED64x16
             raiseNVENC(self.functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
             self.inputBuffer = createInputBufferParams.inputBuffer
             debug("inputBuffer=%s", hex(<long> self.inputBuffer))
@@ -1345,19 +1346,19 @@ cdef class Encoder:
         cdef NV_ENC_LOCK_INPUT_BUFFER lockInputBuffer
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
         cdef size_t size
+        cdef long offset = 0
+        cdef input_buf_len = 0
 
         start = time.time()
         debug("compress_image(%s, %s)", image, options)
         assert self.context!=NULL, "context is not initialized"
         if image.get_planes()==ImageWrapper._3_PLANES:
-            #FIXME: we just pick one plane for now!
-            pixels = image.get_pixels()[0]
-        else:
             pixels = image.get_pixels()
+        else:
+            pixels = [image.get_pixels()]
         debug("compress_image(..) pixels=%s", type(pixels))
         size = len(pixels)
 
-        assert PyObject_AsReadBuffer(pixels, &cbuf, &cbuf_len)==0
         try:
             #lock input buffer:
             memset(&lockInputBuffer, 0, sizeof(NV_ENC_LOCK_INPUT_BUFFER))
@@ -1371,7 +1372,15 @@ cdef class Encoder:
 
             #copy to input buffer:
             memset(self.inputBufferPtr, 0, self.width*self.height)
-            memcpy(self.inputBufferPtr, cbuf, min(self.width*self.height, cbuf_len))
+            offset = 0
+            input_buf_len = self.width*self.height*3
+            for plane in pixels:
+                assert PyObject_AsReadBuffer(plane, &cbuf, &cbuf_len)==0
+                debug("plane length=%s=%s, offset=%s, input buf len=%s", len(plane), cbuf_len, offset, input_buf_len)
+                memcpy(self.inputBufferPtr + offset, cbuf, min(cbuf_len, input_buf_len-offset))
+                offset += cbuf_len
+                if offset>=input_buf_len:
+                    break
         finally:
             try:
                 raiseNVENC(self.functionList.nvEncUnlockInputBuffer(self.context, self.inputBuffer))
@@ -1381,7 +1390,7 @@ cdef class Encoder:
         try:
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
             picParams.version = NV_ENC_PIC_PARAMS_VER
-            picParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_TILED64x16
+            picParams.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_TILED64x16
             picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
             picParams.inputWidth = self.width
             picParams.inputHeight = self.height
