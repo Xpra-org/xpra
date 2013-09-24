@@ -116,9 +116,10 @@ def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(),
         out = cc.convert_image(image)
     if DEBUG:
         print("do_test_csc_rgb() output=%s" % out)
-    assert out.get_planes()==ImageWrapper._3_PLANES, "expected 3 planes as output but got: %s in %s" % (out.get_planes(), out)
     pixels = out.get_pixels()
-    assert len(pixels)==3, "expected 3 planes but found: %s" % len(pixels)
+    if dst_format.endswith("P"):
+        assert out.get_planes()==ImageWrapper._3_PLANES, "expected 3 planes as output but got: %s in %s" % (out.get_planes(), out)
+        assert len(pixels)==3, "expected 3 planes but found: %s" % len(pixels)
     #for i in range(3):
     #    print("do_test_csc_rgb() plane data[%s]=%s" % (i, dump_pixels(pixels[i])))
     ok = True
