@@ -81,7 +81,7 @@ cdef class CSCPixelFormat:
 COLORSPACES = []
 #keeping this array in scope ensures the strings don't go away!
 FORMAT_OPTIONS = [
-    ("AV_PIX_FMT_NV12",     (1, 1, 0, 0),       (1, 0.5, 0, 0),     "NV12"),
+#    ("AV_PIX_FMT_NV12",     (1, 1, 0, 0),       (1, 0.5, 0, 0),     "NV12"),
     ("AV_PIX_FMT_RGB24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "RGB"   ),
     ("AV_PIX_FMT_BGR24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "BGR"   ),
     ("AV_PIX_FMT_0RGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
@@ -367,8 +367,11 @@ cdef class ColorspaceConverter:
                 input_stride[i] = strides[i]
                 PyObject_AsReadBuffer(input[i], <const void**> &input_image[i], &pic_buf_len)
             else:
-                input_stride[i] = 0
-                input_image[i] = NULL
+                #some versions of swscale check all 4 planes
+                #even when we only pass 1! see "check_image_pointers"
+                #(so we just copy the last valid plane in the remaining slots - ugly!)
+                input_stride[i] = input_stride[iplanes-1]
+                input_image[i] = input_image[iplanes-1]
         with nogil:
             output_image[0] = <uint8_t*> xmemalign(self.buffer_size)
             for i in xrange(3):
