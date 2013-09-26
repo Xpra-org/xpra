@@ -1013,7 +1013,7 @@ BUFFER_FORMAT = {
 
 
 #"NV12", "YUV444P"
-COLORSPACES = ("YUV444P", )
+COLORSPACES = ("YUV420P", )
 def get_colorspaces():
     return COLORSPACES
 
@@ -1256,7 +1256,7 @@ cdef class Encoder:
             createInputBufferParams.width = roundup(self.width, 32)
             createInputBufferParams.height = roundup(self.height, 32)
             createInputBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED     #NV_ENC_MEMORY_HEAP_AUTOSELECT
-            createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_TILED64x16
+            createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
             raiseNVENC(self.functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
             self.inputBuffer = createInputBufferParams.inputBuffer
             debug("inputBuffer=%s", hex(<long> self.inputBuffer))
@@ -1341,21 +1341,25 @@ cdef class Encoder:
             raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
 
     def do_compress_image(self, image, options={}):
-        cdef const void* cbuf = NULL
-        cdef Py_ssize_t cbuf_len = 0
+        cdef const void* Y = NULL
+        cdef const void* Cb = NULL
+        cdef const void* Cr = NULL
+        cdef Py_ssize_t Y_len = 0
+        cdef Py_ssize_t Cb_len = 0
+        cdef Py_ssize_t Cr_len = 0
         cdef NV_ENC_LOCK_INPUT_BUFFER lockInputBuffer
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
         cdef size_t size
         cdef long offset = 0
         cdef input_buf_len = 0
+        cdef int x, y, stride, Yheight
 
         start = time.time()
         debug("compress_image(%s, %s)", image, options)
         assert self.context!=NULL, "context is not initialized"
-        if image.get_planes()==ImageWrapper._3_PLANES:
-            pixels = image.get_pixels()
-        else:
-            pixels = [image.get_pixels()]
+        assert image.get_planes()==ImageWrapper._3_PLANES
+        pixels = image.get_pixels()
+        strides = image.get_rowstride()
         debug("compress_image(..) pixels=%s", type(pixels))
         size = len(pixels)
 
@@ -1371,16 +1375,24 @@ cdef class Encoder:
             debug("input buffer locked, inputBufferPtr=%s, pitch=%s", hex(<long> self.inputBufferPtr), lockInputBuffer.pitch)
 
             #copy to input buffer:
-            memset(self.inputBufferPtr, 0, self.width*self.height)
-            offset = 0
-            input_buf_len = self.width*self.height*3
-            for plane in pixels:
-                assert PyObject_AsReadBuffer(plane, &cbuf, &cbuf_len)==0
-                debug("plane length=%s=%s, offset=%s, input buf len=%s", len(plane), cbuf_len, offset, input_buf_len)
-                memcpy(self.inputBufferPtr + offset, cbuf, min(cbuf_len, input_buf_len-offset))
-                offset += cbuf_len
-                if offset>=input_buf_len:
-                    break
+            memset(self.inputBufferPtr, 0, lockInputBuffer.pitch*self.height*3/2)
+            #copy luma:
+            assert PyObject_AsReadBuffer(pixels[0], &Y, &Y_len)==0
+            assert PyObject_AsReadBuffer(pixels[1], &Cb, &Cb_len)==0
+            assert PyObject_AsReadBuffer(pixels[2], &Cr, &Cr_len)==0
+            stride = strides[0]
+            for y in range(self.height):
+                memcpy(self.inputBufferPtr + y*lockInputBuffer.pitch, Y + stride*y, self.width)
+            #copy chroma packed:
+            assert strides[1]==strides[2], "U and V strides differ: %s vs %s" % (strides[1], strides[2])
+            stride = strides[1]
+            #round height to 8 before starting UV plane:
+            Yheight = (self.height+7) & ~0x7
+            for y in range(self.height/2):
+                offset = (Yheight + y) * lockInputBuffer.pitch
+                for x in range(self.width/2):
+                    (<char*> self.inputBufferPtr)[offset + (x*2)] = (<char *> Cb)[stride*y + x]
+                    (<char*> self.inputBufferPtr)[offset + (x*2)+1] = (<char *> Cr)[stride*y + x]
         finally:
             try:
                 raiseNVENC(self.functionList.nvEncUnlockInputBuffer(self.context, self.inputBuffer))
@@ -1390,7 +1402,7 @@ cdef class Encoder:
         try:
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
             picParams.version = NV_ENC_PIC_PARAMS_VER
-            picParams.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_TILED64x16
+            picParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
             picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
             picParams.inputWidth = self.width
             picParams.inputHeight = self.height
@@ -1534,9 +1546,10 @@ cdef class Encoder:
             assert inputFmtsRetCount==inputFmtCount
             for x in range(inputFmtCount):
                 inputFmt = inputFmts[x]
-                format_name = BUFFER_FORMAT.get(inputFmt)
-                debug("* %s : %s", hex(inputFmts[x]), format_name)
-                input_formats[format_name] = hex(inputFmts[x])
+                for format_mask, format_name in BUFFER_FORMAT.items():
+                    if format_mask>0 and (format_mask & inputFmt)>0:
+                        debug("* %s : %s", hex(inputFmts[x]), format_name)
+                        input_formats[format_name] = hex(inputFmts[x])
         finally:
             free(inputFmts)
         return input_formats
