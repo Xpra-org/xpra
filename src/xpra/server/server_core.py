@@ -66,7 +66,7 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def init(self, opts):
-        log("ServerCore.init(%s, %s)", opts)
+        log("ServerCore.init(%s)", opts)
         self.session_name = opts.session_name
         set_application_name(self.session_name)
 
