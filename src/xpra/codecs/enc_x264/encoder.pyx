@@ -237,6 +237,8 @@ cdef class Encoder:
         preset = get_preset_names()[self.preset]
         x264_param_default_preset(&param, preset, "zerolatency")
         param.i_threads = X264_THREADS
+        if X264_THREADS!=1:
+            param.b_sliced_threads = 1
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
