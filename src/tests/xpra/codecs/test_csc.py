@@ -120,6 +120,7 @@ def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(),
     if dst_format.endswith("P"):
         assert out.get_planes()==ImageWrapper._3_PLANES, "expected 3 planes as output but got: %s in %s" % (out.get_planes(), out)
         assert len(pixels)==3, "expected 3 planes but found: %s" % len(pixels)
+        assert len(out.get_rowstride())==3, "expected 3 rowstrides but got: %s" % str(out.get_rowstride())
     #for i in range(3):
     #    print("do_test_csc_rgb() plane data[%s]=%s" % (i, dump_pixels(pixels[i])))
     ok = True
@@ -201,6 +202,8 @@ def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels
         print("do_test_csc_planar() output=%s" % out)
     assert out is not None, "convert_image returned None!"
     assert out.get_planes()==ImageWrapper.PACKED, "output image %s is not in packed format: it has %s planes" % (out, out.get_planes())
+    outw = out.get_width()
+    assert out.get_rowstride()>=outw*3, "output stride is too small: expected at least 3*%s=%s, but got %s" % (outw, 3*outw, out.get_rowstride())
     #clone the pixels before the wrapper falls out of scope!
     out.clone_pixel_data()
     cc.clean()

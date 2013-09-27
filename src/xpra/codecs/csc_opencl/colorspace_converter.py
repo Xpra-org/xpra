@@ -588,7 +588,7 @@ class ColorspaceConverter(object):
         debug("readback using %s took %.1fms", CHANNEL_ORDER_TO_STR.get(self.channel_order), 1000.0*(time.time()-kend))
         self.time += time.time()-start
         self.frames += 1
-        return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, strides, planes=ImageWrapper.PACKED)
+        return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, self.dst_width*4, planes=ImageWrapper.PACKED)
 
 
     def convert_image_rgb(self, image):
