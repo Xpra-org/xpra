@@ -10,6 +10,7 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_X264_DEBUG")
 error = log.error
+X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 
 include "constants.pxi"
 
@@ -235,7 +236,7 @@ cdef class Encoder:
         cdef const char *preset
         preset = get_preset_names()[self.preset]
         x264_param_default_preset(&param, preset, "zerolatency")
-        param.i_threads = 0
+        param.i_threads = X264_THREADS
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
