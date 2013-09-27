@@ -1364,7 +1364,7 @@ cdef class Encoder:
         cdef size_t size
         cdef long offset = 0
         cdef input_buf_len = 0
-        cdef int x, y, stride, Yheight
+        cdef int x, y, stride
         cdef int w, h
 
         start = time.time()
@@ -1391,8 +1391,7 @@ cdef class Encoder:
             debug("input buffer locked, inputBufferPtr=%s, pitch=%s", hex(<long> self.inputBufferPtr), lockInputBuffer.pitch)
 
             #copy to input buffer:
-            Yheight = roundup(self.height, 32)
-            memset(self.inputBufferPtr, 0, lockInputBuffer.pitch * Yheight * 3/2)
+            memset(self.inputBufferPtr, 0, lockInputBuffer.pitch * self.encoder_height * 3/2)
             #copy luma:
             assert PyObject_AsReadBuffer(pixels[0], &Y, &Y_len)==0
             assert PyObject_AsReadBuffer(pixels[1], &Cb, &Cb_len)==0
@@ -1404,7 +1403,7 @@ cdef class Encoder:
             assert strides[1]==strides[2], "U and V strides differ: %s vs %s" % (strides[1], strides[2])
             stride = strides[1]
             for y in range(h/2):
-                offset = (Yheight + y) * lockInputBuffer.pitch
+                offset = (self.encoder_height + y) * lockInputBuffer.pitch
                 for x in range(w/2):
                     (<char*> self.inputBufferPtr)[offset + (x*2)] = (<char *> Cb)[stride*y + x]
                     (<char*> self.inputBufferPtr)[offset + (x*2)+1] = (<char *> Cr)[stride*y + x]
