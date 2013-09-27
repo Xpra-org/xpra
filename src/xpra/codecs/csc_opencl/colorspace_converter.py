@@ -161,7 +161,7 @@ def has_same_channels(src, dst):
 
 KERNELS_DEFS = {}
 def gen_yuv_to_rgb():
-    global context, KERNELS_DEFS
+    global context
     from xpra.codecs.csc_opencl.opencl_kernels import gen_yuv_to_rgb_kernels, rgb_mode_to_indexes, indexes_to_rgb_mode
 
     YUV_to_RGB_KERNELS = {}
@@ -237,7 +237,7 @@ def gen_yuv_to_rgb():
 
 
 def gen_rgb_to_yuv():
-    global context, KERNELS_DEFS
+    global context
     from xpra.codecs.csc_opencl.opencl_kernels import gen_rgb_to_yuv_kernels, rgb_mode_to_indexes, indexes_to_rgb_mode
     #for RGB to YUV support we need to be able to handle the channel_order,
     #with READ_ONLY and both with COPY_HOST_PTR and USE_HOST_PTR since we
