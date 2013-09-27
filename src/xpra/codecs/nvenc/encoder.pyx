@@ -1168,6 +1168,7 @@ cdef class Encoder:
     cdef void *inputBufferPtr
     cdef void *bitstreamBuffer
     cdef void *bitstreamBufferPtr
+    cdef NV_ENC_BUFFER_FORMAT bufferFmt
     cdef object codec_name
     cdef object preset_name
     cdef double time
@@ -1226,6 +1227,11 @@ cdef class Encoder:
         codec = self.get_codec()
         preset = self.get_preset(codec)
 
+        self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
+        input_format = BUFFER_FORMAT[self.bufferFmt]
+        input_formats = self.query_input_formats(codec)
+        assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
+
         cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
         try:
@@ -1256,7 +1262,7 @@ cdef class Encoder:
             createInputBufferParams.width = roundup(self.width, 32)
             createInputBufferParams.height = roundup(self.height, 32)
             createInputBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED     #NV_ENC_MEMORY_HEAP_AUTOSELECT
-            createInputBufferParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
+            createInputBufferParams.bufferFmt = self.bufferFmt
             raiseNVENC(self.functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
             self.inputBuffer = createInputBufferParams.inputBuffer
             debug("inputBuffer=%s", hex(<long> self.inputBuffer))
@@ -1375,7 +1381,8 @@ cdef class Encoder:
             debug("input buffer locked, inputBufferPtr=%s, pitch=%s", hex(<long> self.inputBufferPtr), lockInputBuffer.pitch)
 
             #copy to input buffer:
-            memset(self.inputBufferPtr, 0, lockInputBuffer.pitch*self.height*3/2)
+            Yheight = roundup(self.height, 8)
+            memset(self.inputBufferPtr, 0, lockInputBuffer.pitch * Yheight * 3/2)
             #copy luma:
             assert PyObject_AsReadBuffer(pixels[0], &Y, &Y_len)==0
             assert PyObject_AsReadBuffer(pixels[1], &Cb, &Cb_len)==0
@@ -1386,8 +1393,6 @@ cdef class Encoder:
             #copy chroma packed:
             assert strides[1]==strides[2], "U and V strides differ: %s vs %s" % (strides[1], strides[2])
             stride = strides[1]
-            #round height to 8 before starting UV plane:
-            Yheight = (self.height+7) & ~0x7
             for y in range(self.height/2):
                 offset = (Yheight + y) * lockInputBuffer.pitch
                 for x in range(self.width/2):
@@ -1402,7 +1407,7 @@ cdef class Encoder:
         try:
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
             picParams.version = NV_ENC_PIC_PARAMS_VER
-            picParams.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
+            picParams.bufferFmt = self.bufferFmt
             picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
             picParams.inputWidth = self.width
             picParams.inputHeight = self.height
