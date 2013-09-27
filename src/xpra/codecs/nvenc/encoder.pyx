@@ -1160,6 +1160,8 @@ cdef raiseNVENC(NVENCSTATUS ret, msg=""):
 cdef class Encoder:
     cdef int width
     cdef int height
+    cdef int encoder_width
+    cdef int encoder_height
     cdef object src_format
     cdef CUcontext cuda_context
     cdef NV_ENCODE_API_FUNCTION_LIST functionList               #@DuplicatedSignature
@@ -1197,6 +1199,8 @@ cdef class Encoder:
         debug("init_context%s", (width, height, src_format, encoding, quality, speed, options))
         self.width = width
         self.height = height
+        self.encoder_width = roundup(width, 32)
+        self.encoder_height = roundup(height, 32)
         self.src_format = src_format
         self.codec_name = "H264"
         self.preset_name = None
@@ -1246,10 +1250,10 @@ cdef class Encoder:
             params.version = NV_ENC_INITIALIZE_PARAMS_VER
             params.encodeGUID = codec    #ie: NV_ENC_CODEC_H264_GUID
             params.presetGUID = preset
-            params.encodeWidth = self.width
-            params.encodeHeight = self.height
-            params.darWidth = self.width
-            params.darHeight = self.height
+            params.encodeWidth = self.encoder_width
+            params.encodeHeight = self.encoder_height
+            params.darWidth = self.encoder_width
+            params.darHeight = self.encoder_height
             params.enableEncodeAsync = 0            #not supported on Linux
             params.enablePTD = 0                    #not supported in sync mode!?
             params.encodeConfig = &presetConfig.presetCfg
@@ -1259,8 +1263,8 @@ cdef class Encoder:
             #allocate input buffer:
             memset(&createInputBufferParams, 0, sizeof(NV_ENC_CREATE_INPUT_BUFFER))
             createInputBufferParams.version = NV_ENC_CREATE_INPUT_BUFFER_VER
-            createInputBufferParams.width = roundup(self.width, 32)
-            createInputBufferParams.height = roundup(self.height, 32)
+            createInputBufferParams.width = self.encoder_width
+            createInputBufferParams.height = self.encoder_height
             createInputBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED     #NV_ENC_MEMORY_HEAP_AUTOSELECT
             createInputBufferParams.bufferFmt = self.bufferFmt
             raiseNVENC(self.functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
@@ -1282,6 +1286,8 @@ cdef class Encoder:
         cdef float pps
         info = {"width"     : self.width,
                 "height"    : self.height,
+                "encoder_width" : self.encoder_width,
+                "encoder_height" : self.encoder_height,
                 "src_format": self.src_format}
         return info
 
@@ -1359,13 +1365,17 @@ cdef class Encoder:
         cdef long offset = 0
         cdef input_buf_len = 0
         cdef int x, y, stride, Yheight
+        cdef int w, h
 
         start = time.time()
         debug("compress_image(%s, %s)", image, options)
         assert self.context!=NULL, "context is not initialized"
         assert image.get_planes()==ImageWrapper._3_PLANES
+        assert image.get_width()<=self.encoder_width, "invalid width: %s" % image.get_width()
         pixels = image.get_pixels()
         strides = image.get_rowstride()
+        w = image.get_width()
+        h = image.get_height()
         debug("compress_image(..) pixels=%s", type(pixels))
         size = len(pixels)
 
@@ -1381,21 +1391,21 @@ cdef class Encoder:
             debug("input buffer locked, inputBufferPtr=%s, pitch=%s", hex(<long> self.inputBufferPtr), lockInputBuffer.pitch)
 
             #copy to input buffer:
-            Yheight = roundup(self.height, 8)
+            Yheight = roundup(self.height, 32)
             memset(self.inputBufferPtr, 0, lockInputBuffer.pitch * Yheight * 3/2)
             #copy luma:
             assert PyObject_AsReadBuffer(pixels[0], &Y, &Y_len)==0
             assert PyObject_AsReadBuffer(pixels[1], &Cb, &Cb_len)==0
             assert PyObject_AsReadBuffer(pixels[2], &Cr, &Cr_len)==0
             stride = strides[0]
-            for y in range(self.height):
-                memcpy(self.inputBufferPtr + y*lockInputBuffer.pitch, Y + stride*y, self.width)
+            for y in range(h):
+                memcpy(self.inputBufferPtr + y*lockInputBuffer.pitch, Y + stride*y, w)
             #copy chroma packed:
             assert strides[1]==strides[2], "U and V strides differ: %s vs %s" % (strides[1], strides[2])
             stride = strides[1]
-            for y in range(self.height/2):
+            for y in range(h/2):
                 offset = (Yheight + y) * lockInputBuffer.pitch
-                for x in range(self.width/2):
+                for x in range(w/2):
                     (<char*> self.inputBufferPtr)[offset + (x*2)] = (<char *> Cb)[stride*y + x]
                     (<char*> self.inputBufferPtr)[offset + (x*2)+1] = (<char *> Cr)[stride*y + x]
         finally:
@@ -1409,8 +1419,8 @@ cdef class Encoder:
             picParams.version = NV_ENC_PIC_PARAMS_VER
             picParams.bufferFmt = self.bufferFmt
             picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
-            picParams.inputWidth = self.width
-            picParams.inputHeight = self.height
+            picParams.inputWidth = self.encoder_width
+            picParams.inputHeight = self.encoder_height
             picParams.inputPitch = lockInputBuffer.pitch
             picParams.inputBuffer = self.inputBuffer
             picParams.outputBitstream = self.bitstreamBuffer
