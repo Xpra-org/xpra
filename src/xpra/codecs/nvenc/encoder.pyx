@@ -66,6 +66,10 @@ cdef extern from "cuda.h":
     CUresult cuCtxDestroy(CUcontext ctx)
 
     CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount)
+    CUresult cuMemAllocPitch(CUdeviceptr *dptr, size_t *pPitch, size_t WidthInBytes, size_t Height, unsigned int ElementSizeBytes)
+    CUresult cuMemAllocHost(void **pp, size_t bytesize)
+    CUresult cuMemFree(CUdeviceptr dptr)
+    CUresult cuMemFreeHost(void *p)
 
 
 cdef extern from "NvTypes.h":
@@ -305,9 +309,25 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef struct NV_ENC_EVENT_PARAMS:
         pass
     ctypedef struct NV_ENC_MAP_INPUT_RESOURCE:
-        pass
+        uint32_t    version             #[in]:  Struct version. Must be set to ::NV_ENC_MAP_INPUT_RESOURCE_VER.
+        uint32_t    subResourceIndex    #[in]:  Deprecated. Do not use.
+        void*       inputResource       #[in]:  Deprecated. Do not use.
+        NV_ENC_REGISTERED_PTR registeredResource    #[in]:  The Registered resource handle obtained by calling NvEncRegisterInputResource.
+        NV_ENC_INPUT_PTR mappedResource #[out]: Mapped pointer corresponding to the registeredResource. This pointer must be used in NV_ENC_PIC_PARAMS::inputBuffer parameter in ::NvEncEncodePicture() API.
+        NV_ENC_BUFFER_FORMAT mappedBufferFmt    #[out]: Buffer format of the outputResource. This buffer format must be used in NV_ENC_PIC_PARAMS::bufferFmt if client using the above mapped resource pointer.
+        uint32_t    reserved1[251]      #[in]:  Reserved and must be set to 0.
+        void*       reserved2[63]       #[in]:  Reserved and must be set to NULL
     ctypedef struct NV_ENC_REGISTER_RESOURCE:
-        pass
+        uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_REGISTER_RESOURCE_VER.
+        NV_ENC_INPUT_RESOURCE_TYPE  resourceType    #[in]: Specifies the type of resource to be registered. Supported values are ::NV_ENC_INPUT_RESOURCE_TYPE_DIRECTX, ::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR.
+        uint32_t    width               #[in]: Input buffer Width.
+        uint32_t    height              #[in]: Input buffer Height.
+        uint32_t    pitch               #[in]: Input buffer Pitch.
+        uint32_t    subResourceIndex    #[in]: Subresource Index of the DirectX resource to be registered. Should eb set to 0 for other interfaces.
+        void*       resourceToRegister  #[in]: Handle to the resource that is being registered.
+        NV_ENC_REGISTERED_PTR   registeredResource  #[out]: Registered resource handle. This should be used in future interactions with the Nvidia Video Encoder Interface.
+        uint32_t    reserved1[249]      #[in]: Reserved and must be set to 0.
+        void*       reserved2[62]       #[in]: Reserved and must be set to NULL.
 
     ctypedef struct GUID:
         uint32_t Data1
@@ -1051,7 +1071,7 @@ cdef checkCuda(CUresult ret, msg=""):
     if ret!=0:
         log.warn("error during %s: %s", msg, cudaStatusInfo(ret))
     return ret
-cdef raiseCuda(CUresult ret, msg=""):
+cdef raiseCUDA(CUresult ret, msg=""):
     if ret!=0:
         raise Exception("%s - returned %s" % (msg, cudaStatusInfo(ret)))
 
@@ -1069,9 +1089,9 @@ cdef cuda_init_devices():
     cdef CUresult r
     start = time.time()
     log.info("CUDA initialization (this may take a few seconds)")
-    raiseCuda(cuInit(0), "cuInit")
+    raiseCUDA(cuInit(0), "cuInit")
     debug("cuda_init_devices() cuInit() took %.1fms", 1000.0*(time.time()-start))
-    raiseCuda(cuDeviceGetCount(&deviceCount), "failed to get device count")
+    raiseCUDA(cuDeviceGetCount(&deviceCount), "failed to get device count")
     debug("cuda_init_devices() found %s devices", deviceCount)
     devices = {}
     for i in range(deviceCount):
@@ -1084,10 +1104,10 @@ cdef cuda_init_devices():
         has_nvenc = ((SMmajor<<4) + SMminor) >= 0x30
         cuDeviceGetAttribute(&pciBusID, CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, cuDevice)
         cuDeviceGetAttribute(&pciDeviceID, CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, cuDevice)
-        raiseCuda(cuDeviceTotalMem(&totalMem, cuDevice), "cuDeviceTotalMem")
-        debug("device[%s]=%s (%sMB) - PCI: %s / %s - compute %s.%s (nvenc=%s)",
+        raiseCUDA(cuDeviceTotalMem(&totalMem, cuDevice), "cuDeviceTotalMem")
+        debug("device[%s]=%s (%sMB) - PCI: %02d:%02d - compute %s.%s (nvenc=%s)",
                 i, gpu_name, int(totalMem/1024/1024), pciBusID, pciDeviceID, SMmajor, SMminor, has_nvenc)
-        devices[i] = "%s - PCI: %s / %s" % (gpu_name, pciBusID, pciDeviceID)
+        devices[i] = "%s - PCI: %02d:%02d" % (gpu_name, pciBusID, pciDeviceID)
         cuDeviceGetAttribute(&multiProcessorCount, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, cuDevice)
         #log.info("multiProcessorCount=%s", multiProcessorCount)
         #printf("  (%2d) Multiprocessors x (%3d) CUDA Cores/MP:    %d CUDA Cores\n",
@@ -1120,10 +1140,10 @@ cdef CUdevice get_cuda_device(deviceId=0):
         deviceId = 0
     if deviceId not in cuda_devices:
         raise Exception("invalid deviceId %s: only %s devices found" % (deviceId, len(cuda_devices)))
-    raiseCuda(cuDeviceGet(&cuDevice, deviceId), "cuDeviceGet")
-    raiseCuda(cuDeviceGetName(gpu_name, 100, cuDevice), "cuDeviceGetName")
+    raiseCUDA(cuDeviceGet(&cuDevice, deviceId), "cuDeviceGet")
+    raiseCUDA(cuDeviceGetName(gpu_name, 100, cuDevice), "cuDeviceGetName")
     debug("using CUDA device %s: %s", deviceId, gpu_name)
-    raiseCuda(cuDeviceComputeCapability(&SMmajor, &SMminor, deviceId))
+    raiseCUDA(cuDeviceComputeCapability(&SMmajor, &SMminor, deviceId))
     has_nvenc = ((SMmajor<<4) + SMminor) >= 0x30
     if FORCE and not has_nvenc:
         log.warn("selected device %s does not have NVENC capability!" % gpu_name)
@@ -1142,9 +1162,9 @@ def cuda_check():
     assert DEFAULT_CUDA_DEVICE_ID in cuda_devices.keys(), "specified CUDA device ID %s not found in %s" % (DEFAULT_CUDA_DEVICE_ID, cuda_devices)
     cuDevice = get_cuda_device(DEFAULT_CUDA_DEVICE_ID)
 
-    raiseCuda(cuCtxCreate(&context, 0, cuDevice), "creating CUDA context")
-    raiseCuda(cuCtxPopCurrent(&context), "popping current context")
-    raiseCuda(cuCtxDestroy(context), "destroying current context")
+    raiseCUDA(cuCtxCreate(&context, 0, cuDevice), "creating CUDA context")
+    raiseCUDA(cuCtxPopCurrent(&context), "popping current context")
+    raiseCUDA(cuCtxDestroy(context), "destroying current context")
 
 
 cdef nvencStatusInfo(NVENCSTATUS ret):
@@ -1166,10 +1186,11 @@ cdef class Encoder:
     cdef CUcontext cuda_context
     cdef NV_ENCODE_API_FUNCTION_LIST functionList               #@DuplicatedSignature
     cdef void *context
+    cdef NV_ENC_REGISTERED_PTR inputHandle
+    cdef CUdeviceptr cudaBuffer
     cdef void *inputBuffer
-    cdef void *inputBufferPtr
+    cdef size_t pitch
     cdef void *bitstreamBuffer
-    cdef void *bitstreamBufferPtr
     cdef NV_ENC_BUFFER_FORMAT bufferFmt
     cdef object codec_name
     cdef object preset_name
@@ -1209,16 +1230,27 @@ cdef class Encoder:
         start = time.time()
 
         device_id = options.get("cuda_device", DEFAULT_CUDA_DEVICE_ID)
+        self.init_cuda(device_id)
+
+        end = time.time()
+        debug("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
+
+    def init_cuda(self, device_id):
         assert device_id in get_cuda_devices().keys(), "invalid device_id '%s' (available: %s)" % (device_id, cuda_devices)
         cdef CUdevice cuda_device              #@DuplicatedSignature
         cuda_device = get_cuda_device(DEFAULT_CUDA_DEVICE_ID)
-        raiseCuda(cuCtxCreate(&self.cuda_context, 0, cuda_device))
+        raiseCUDA(cuCtxCreate(&self.cuda_context, 0, cuda_device))
         debug("cuCtxCreate: device_id=%s, cuda_device=%s, cuda_context=%s", device_id, cuda_device, hex(<long> self.cuda_context))
-        raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
+        #allocate CUDA input buffer (on device):
+        raiseCUDA(cuMemAllocPitch(&self.cudaBuffer, &self.pitch, self.encoder_width, self.encoder_height*3/2, 16), "allocating CUDA input buffer on device")
+        debug("cudaBuffer=%s, pitch=%s", hex(<long> self.cudaBuffer), self.pitch)
+        #allocate buffer on host:
+        raiseCUDA(cuMemAllocHost(&self.inputBuffer, self.pitch*self.encoder_height*3/2), "allocating CUDA input buffer on host")
+        debug("inputBuffer=%s", hex(<long> self.inputBuffer))
 
         self.init_nvenc()
-        end = time.time()
-        debug("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
+
+        raiseCUDA(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
 
     def init_nvenc(self):
         cdef GUID codec
@@ -1226,6 +1258,7 @@ cdef class Encoder:
         cdef GUID profile
         cdef NV_ENC_INITIALIZE_PARAMS params
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
+        cdef NV_ENC_REGISTER_RESOURCE registerResource
 
         self.open_encode_session()
         codec = self.get_codec()
@@ -1257,24 +1290,26 @@ cdef class Encoder:
             params.enableEncodeAsync = 0            #not supported on Linux
             params.enablePTD = 0                    #not supported in sync mode!?
             params.encodeConfig = &presetConfig.presetCfg
-            raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params))
+            raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params), "initializing encoder")
             debug("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
-            #allocate input buffer:
-            memset(&createInputBufferParams, 0, sizeof(NV_ENC_CREATE_INPUT_BUFFER))
-            createInputBufferParams.version = NV_ENC_CREATE_INPUT_BUFFER_VER
-            createInputBufferParams.width = self.encoder_width
-            createInputBufferParams.height = self.encoder_height
-            createInputBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED     #NV_ENC_MEMORY_HEAP_AUTOSELECT
-            createInputBufferParams.bufferFmt = self.bufferFmt
-            raiseNVENC(self.functionList.nvEncCreateInputBuffer(self.context, &createInputBufferParams), "creating input buffer")
-            self.inputBuffer = createInputBufferParams.inputBuffer
-            debug("inputBuffer=%s", hex(<long> self.inputBuffer))
+            #register CUDA input buffer:
+            memset(&registerResource, 0, sizeof(NV_ENC_REGISTER_RESOURCE))
+            registerResource.version = NV_ENC_REGISTER_RESOURCE_VER
+            registerResource.resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
+            registerResource.resourceToRegister = <void *> self.cudaBuffer
+            registerResource.width = self.encoder_width
+            registerResource.height = self.encoder_height
+            registerResource.pitch = self.pitch
+            raiseNVENC(self.functionList.nvEncRegisterResource(self.context, &registerResource), "registering CUDA input buffer")
+            self.inputHandle = registerResource.registeredResource
+            debug("input handle for CUDA buffer: %s", hex(<long> self.inputHandle))
 
             #allocate output buffer:
             memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
             createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
-            createBitstreamBufferParams.size = 1024*1024
+            #this is the uncompressed size - must be big enough for the compressed stream:
+            createBitstreamBufferParams.size = self.encoder_width*self.encoder_height*3/2
             createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
             raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
@@ -1301,18 +1336,34 @@ cdef class Encoder:
         self.clean()
 
     def clean(self):                        #@DuplicatedSignature
-        if self.context!=NULL:
-            if self.inputBuffer!=NULL:
-                self.functionList.nvEncDestroyInputBuffer(self.context, self.inputBuffer)
-                self.inputBuffer = NULL
-            if self.bitstreamBuffer!=NULL:
-                self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer)
-                self.bitstreamBuffer = NULL
-            self.functionList.nvEncDestroyEncoder(self.context)
-            self.context = NULL
-        if self.cuda_context != NULL:
-            cuCtxDestroy(self.cuda_context)
-            self.cuda_context = NULL
+        debug("clean() context=%s", hex(<long> self.context))
+        if self.cuda_context!=NULL:
+            raiseCUDA(cuCtxPushCurrent(self.cuda_context), "failed to push context")
+            try:
+                self.cuda_clean()
+            finally:
+                raiseCUDA(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
+                cuCtxDestroy(self.cuda_context)
+                self.cuda_context = NULL
+
+    def cuda_clean(self):
+        if self.inputHandle!=NULL:
+            debug("clean() unregistering %s", hex(<long> self.inputHandle))
+            raiseNVENC(self.functionList.nvEncUnregisterResource(self.context, self.inputHandle), "unregistering CUDA input buffer")
+            self.inputHandle = NULL
+        if self.inputBuffer!=NULL:
+            debug("clean() freeing CUDA host buffer %s", hex(<long> self.inputBuffer))
+            raiseCUDA(cuMemFreeHost(self.inputBuffer), "freeing host buffer")
+            self.inputBuffer = NULL
+        if (<void *> self.cudaBuffer)!=NULL:
+            debug("clean() freeing CUDA device buffer %s", hex(<long> self.cudaBuffer))
+            raiseCUDA(cuMemFree(self.cudaBuffer), "freeing CUDA buffer")
+            self.cudaBuffer = <CUdeviceptr> NULL
+        if self.bitstreamBuffer!=NULL:
+            debug("clean() destroying bitstream buffer %s", hex(<long> self.bitstreamBuffer))
+            raiseNVENC(self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer), "destroying output buffer")
+            self.bitstreamBuffer = NULL
+        raiseNVENC(self.functionList.nvEncDestroyEncoder(self.context), "destroying context")
 
     def get_width(self):
         return self.width
@@ -1346,11 +1397,11 @@ cdef class Encoder:
         self.functionList.nvEncEncodePicture(self.context, &picParams)
 
     def compress_image(self, image, options={}):
-        raiseCuda(cuCtxPushCurrent(self.cuda_context), "failed to push context")
+        raiseCUDA(cuCtxPushCurrent(self.cuda_context), "failed to push context")
         try:
             return self.do_compress_image(image, options)
         finally:
-            raiseCuda(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
+            raiseCUDA(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
 
     def do_compress_image(self, image, options={}):
         cdef const void* Y = NULL
@@ -1359,8 +1410,9 @@ cdef class Encoder:
         cdef Py_ssize_t Y_len = 0
         cdef Py_ssize_t Cb_len = 0
         cdef Py_ssize_t Cr_len = 0
-        cdef NV_ENC_LOCK_INPUT_BUFFER lockInputBuffer
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
+        cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
+        cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         cdef size_t size
         cdef long offset = 0
         cdef input_buf_len = 0
@@ -1377,41 +1429,36 @@ cdef class Encoder:
         w = image.get_width()
         h = image.get_height()
         debug("compress_image(..) pixels=%s", type(pixels))
-        size = len(pixels)
 
-        try:
-            #lock input buffer:
-            memset(&lockInputBuffer, 0, sizeof(NV_ENC_LOCK_INPUT_BUFFER))
-            lockInputBuffer.version = NV_ENC_LOCK_INPUT_BUFFER_VER
-            lockInputBuffer.doNotWait = 1
-            lockInputBuffer.inputBuffer = self.inputBuffer
-            raiseNVENC(self.functionList.nvEncLockInputBuffer(self.context, &lockInputBuffer))
-            #alternatively, to use our own buffers: nvEncRegisterResource
-            self.inputBufferPtr = lockInputBuffer.bufferDataPtr
-            debug("input buffer locked, inputBufferPtr=%s, pitch=%s", hex(<long> self.inputBufferPtr), lockInputBuffer.pitch)
+        #copy to input buffer:
+        size = self.pitch * self.encoder_height * 3/2
+        memset(self.inputBuffer, 0, size)
+        #copy luma:
+        assert PyObject_AsReadBuffer(pixels[0], &Y, &Y_len)==0
+        assert PyObject_AsReadBuffer(pixels[1], &Cb, &Cb_len)==0
+        assert PyObject_AsReadBuffer(pixels[2], &Cr, &Cr_len)==0
+        stride = strides[0]
+        for y in range(h):
+            memcpy(self.inputBuffer + y*self.pitch, Y + stride*y, w)
+        #copy chroma packed:
+        assert strides[1]==strides[2], "U and V strides differ: %s vs %s" % (strides[1], strides[2])
+        stride = strides[1]
+        for y in range(h/2):
+            offset = (self.encoder_height + y) * self.pitch
+            for x in range(w/2):
+                (<char*> self.inputBuffer)[offset + (x*2)] = (<char *> Cb)[stride*y + x]
+                (<char*> self.inputBuffer)[offset + (x*2)+1] = (<char *> Cr)[stride*y + x]
 
-            #copy to input buffer:
-            memset(self.inputBufferPtr, 0, lockInputBuffer.pitch * self.encoder_height * 3/2)
-            #copy luma:
-            assert PyObject_AsReadBuffer(pixels[0], &Y, &Y_len)==0
-            assert PyObject_AsReadBuffer(pixels[1], &Cb, &Cb_len)==0
-            assert PyObject_AsReadBuffer(pixels[2], &Cr, &Cr_len)==0
-            stride = strides[0]
-            for y in range(h):
-                memcpy(self.inputBufferPtr + y*lockInputBuffer.pitch, Y + stride*y, w)
-            #copy chroma packed:
-            assert strides[1]==strides[2], "U and V strides differ: %s vs %s" % (strides[1], strides[2])
-            stride = strides[1]
-            for y in range(h/2):
-                offset = (self.encoder_height + y) * lockInputBuffer.pitch
-                for x in range(w/2):
-                    (<char*> self.inputBufferPtr)[offset + (x*2)] = (<char *> Cb)[stride*y + x]
-                    (<char*> self.inputBufferPtr)[offset + (x*2)+1] = (<char *> Cr)[stride*y + x]
-        finally:
-            try:
-                raiseNVENC(self.functionList.nvEncUnlockInputBuffer(self.context, self.inputBuffer))
-            except:
-                log.error("error during unlocking", exc_info=True)
+        #copy input buffer to CUDA buffer:
+        raiseCUDA(cuMemcpyHtoD(self.cudaBuffer, self.inputBuffer, size), "copy from host to device")
+        debug("compress_image(..) input buffer copied to device")
+
+        #map buffer so nvenc can access it:
+        memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
+        mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
+        mapInputResource.registeredResource  = self.inputHandle
+        raiseCUDA(self.functionList.nvEncMapInputResource(self.context, &mapInputResource), "mapping input resource")
+        debug("compress_image(..) device buffer mapped to %s", hex(<long> mapInputResource.mappedResource))
 
         try:
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
@@ -1420,8 +1467,8 @@ cdef class Encoder:
             picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
             picParams.inputWidth = self.encoder_width
             picParams.inputHeight = self.encoder_height
-            picParams.inputPitch = lockInputBuffer.pitch
-            picParams.inputBuffer = self.inputBuffer
+            picParams.inputPitch = self.pitch
+            picParams.inputBuffer = mapInputResource.mappedResource
             picParams.outputBitstream = self.bitstreamBuffer
             #picParams.pictureType: required when enablePTD is disabled
             if self.frames==0:
@@ -1436,43 +1483,33 @@ cdef class Encoder:
             #picParams.encodePicFlags = NV_ENC_PIC_FLAG_FORCEINTRA
             #picParams.inputTimeStamp = int(1000.0 * time.time())
             #inputDuration = 0      #FIXME: use frame delay?
-            picParams.rcParams.version = NV_ENC_RC_PARAMS_VER
             picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
             picParams.rcParams.averageBitRate = 5000000   #5Mbits/s
             picParams.rcParams.maxBitRate = 10000000      #10Mbits/s
 
             raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
             debug("encoded!")
-        except:
-            log.error("error during encoding", exc_info=True)
-            return None
 
-        #lock output buffer:
-        cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
-        try:
+            #lock output buffer:
             memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
             lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
             lockOutputBuffer.doNotWait = 0
             lockOutputBuffer.outputBitstream = self.bitstreamBuffer
-            raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer))
-            self.bitstreamBufferPtr = lockOutputBuffer.bitstreamBufferPtr
-            debug("output buffer locked, bitstreamBufferPtr=%s", hex(<long> self.bitstreamBufferPtr))
+            raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer), "locking output buffer")
+            debug("output buffer locked, bitstreamBufferPtr=%s", hex(<long> lockOutputBuffer.bitstreamBufferPtr))
 
             #copy to python buffer:
             size = lockOutputBuffer.bitstreamSizeInBytes
-            pixels = (<char *> self.bitstreamBufferPtr)[:size]
+            pixels = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
+        finally:
+            raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer), "unlocking output buffer")
+            raiseCUDA(self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource), "unmapping input resource")
 
-            end = time.time()
-            self.frames += 1
-            self.time += end-start
-            debug("returning %s bytes, compression took %.1fms", size, 1000.0*(end-start))
-            return pixels, {}
-        except:
-            raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer))
-        #raiseCuda(cuMemcpyHtoD(<CUdeviceptr> NULL, cbuf, size), "copy from host to device")
-        #void*       bufferDataPtr       #[out]: Pointed to the locked input buffer data. Client can only access input buffer using the \p bufferDataPtr.
-        #uint32_t    pitch               #[out]: Pitch of the locked input buffer.
-        #nvEncEncodePicture(self.encoder, &picParams)
+        end = time.time()
+        self.frames += 1
+        self.time += end-start
+        debug("returning %s bytes, compression took %.1fms", size, 1000.0*(end-start))
+        return pixels, {}
 
 
     cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, GUID encode_GUID, GUID preset_GUID):
@@ -1551,7 +1588,7 @@ cdef class Encoder:
 
         input_formats = {}
         raiseNVENC(self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount), "getting input format count")
-        debug("%s input formats:", inputFmtCount)
+        debug("%s input format types:", inputFmtCount)
         assert inputFmtCount>0 and inputFmtCount<2**8
         inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
         assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
@@ -1560,10 +1597,11 @@ cdef class Encoder:
             assert inputFmtsRetCount==inputFmtCount
             for x in range(inputFmtCount):
                 inputFmt = inputFmts[x]
+                debug("* %s", hex(inputFmt))
                 for format_mask, format_name in BUFFER_FORMAT.items():
                     if format_mask>0 and (format_mask & inputFmt)>0:
-                        debug("* %s : %s", hex(inputFmts[x]), format_name)
-                        input_formats[format_name] = hex(inputFmts[x])
+                        debug(" + %s : %s", hex(format_mask), format_name)
+                        input_formats[format_name] = hex(format_mask)
         finally:
             free(inputFmts)
         return input_formats
@@ -1578,7 +1616,7 @@ cdef class Encoder:
         raiseNVENC(self.functionList.nvEncGetEncodeCaps(self.context, encodeGUID, &encCaps, &val))
         return val
 
-    cdef query_codecs(self):
+    cdef query_codecs(self, full_query=False):
         cdef uint32_t GUIDCount
         cdef uint32_t GUIDRetCount
         cdef GUID* encode_GUIDs
@@ -1607,14 +1645,15 @@ cdef class Encoder:
                 rate_countrol = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
                 debug(" rate control: %s, separate colour plane: %s", rate_countrol, sep_plane)
 
-                presets = self.query_presets(encode_GUID)
-                debug("  presets=%s", presets)
-
-                profiles = self.query_profiles(encode_GUID)
-                debug("  profiles=%s", profiles)
-
-                input_formats = self.query_input_formats(encode_GUID)
-                debug("  input formats=%s", input_formats)
+                if full_query:
+                    presets = self.query_presets(encode_GUID)
+                    debug("  presets=%s", presets)
+    
+                    profiles = self.query_profiles(encode_GUID)
+                    debug("  profiles=%s", profiles)
+    
+                    input_formats = self.query_input_formats(encode_GUID)
+                    debug("  input formats=%s", input_formats)
         finally:
             free(encode_GUIDs)
         debug("codecs=%s", codecs)
