@@ -1143,7 +1143,7 @@ cdef CUdevice get_cuda_device(deviceId=0):
     raiseCUDA(cuDeviceGet(&cuDevice, deviceId), "cuDeviceGet")
     raiseCUDA(cuDeviceGetName(gpu_name, 100, cuDevice), "cuDeviceGetName")
     debug("using CUDA device %s: %s", deviceId, gpu_name)
-    raiseCUDA(cuDeviceComputeCapability(&SMmajor, &SMminor, deviceId))
+    raiseCUDA(cuDeviceComputeCapability(&SMmajor, &SMminor, deviceId), "cuDeviceComputeCapability")
     has_nvenc = ((SMmajor<<4) + SMminor) >= 0x30
     if FORCE and not has_nvenc:
         log.warn("selected device %s does not have NVENC capability!" % gpu_name)
@@ -1239,7 +1239,7 @@ cdef class Encoder:
         assert device_id in get_cuda_devices().keys(), "invalid device_id '%s' (available: %s)" % (device_id, cuda_devices)
         cdef CUdevice cuda_device              #@DuplicatedSignature
         cuda_device = get_cuda_device(DEFAULT_CUDA_DEVICE_ID)
-        raiseCUDA(cuCtxCreate(&self.cuda_context, 0, cuda_device))
+        raiseCUDA(cuCtxCreate(&self.cuda_context, 0, cuda_device), "cuCtxCreate")
         debug("cuCtxCreate: device_id=%s, cuda_device=%s, cuda_context=%s", device_id, cuda_device, hex(<long> self.cuda_context))
         #allocate CUDA input buffer (on device):
         raiseCUDA(cuMemAllocPitch(&self.cudaBuffer, &self.pitch, self.encoder_width, self.encoder_height*3/2, 16), "allocating CUDA input buffer on device")
@@ -1250,7 +1250,7 @@ cdef class Encoder:
 
         self.init_nvenc()
 
-        raiseCUDA(cuCtxPopCurrent(&self.cuda_context), "failed to pop context")
+        raiseCUDA(cuCtxPopCurrent(&self.cuda_context), "cuCtxPopCurrent")
 
     def init_nvenc(self):
         cdef GUID codec
@@ -1457,7 +1457,7 @@ cdef class Encoder:
         memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
         mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
         mapInputResource.registeredResource  = self.inputHandle
-        raiseCUDA(self.functionList.nvEncMapInputResource(self.context, &mapInputResource), "mapping input resource")
+        raiseNVENC(self.functionList.nvEncMapInputResource(self.context, &mapInputResource), "mapping input resource")
         debug("compress_image(..) device buffer mapped to %s", hex(<long> mapInputResource.mappedResource))
 
         try:
@@ -1503,7 +1503,7 @@ cdef class Encoder:
             pixels = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
         finally:
             raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer), "unlocking output buffer")
-            raiseCUDA(self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource), "unmapping input resource")
+            raiseNVENC(self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource), "unmapping input resource")
 
         end = time.time()
         self.frames += 1
@@ -1537,7 +1537,7 @@ cdef class Encoder:
         preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
         assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
         try:
-            raiseNVENC(self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount))
+            raiseNVENC(self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount), "getting encode presets")
             assert presetsRetCount==presetCount
             for x in range(presetCount):
                 preset_GUID = preset_GUIDs[x]
@@ -1568,7 +1568,7 @@ cdef class Encoder:
         assert profile_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
         PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
         try:
-            raiseNVENC(self.functionList.nvEncGetEncodeProfileGUIDs(self.context, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount))
+            raiseNVENC(self.functionList.nvEncGetEncodeProfileGUIDs(self.context, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount), "getting encode profiles")
             #(void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
             assert profilesRetCount==profileCount
             for x in range(profileCount):
@@ -1613,7 +1613,7 @@ cdef class Encoder:
         encCaps.version = NV_ENC_CAPS_PARAM_VER
         encCaps.capsToQuery = caps_type
 
-        raiseNVENC(self.functionList.nvEncGetEncodeCaps(self.context, encodeGUID, &encCaps, &val))
+        raiseNVENC(self.functionList.nvEncGetEncodeCaps(self.context, encodeGUID, &encCaps, &val), "getting encode caps")
         return val
 
     cdef query_codecs(self, full_query=False):
@@ -1622,7 +1622,7 @@ cdef class Encoder:
         cdef GUID* encode_GUIDs
         cdef GUID encode_GUID
 
-        raiseNVENC(self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount))
+        raiseNVENC(self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount), "getting encoder count")
         debug("found %s encode GUIDs", GUIDCount)
         assert GUIDCount<2**8
         encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
