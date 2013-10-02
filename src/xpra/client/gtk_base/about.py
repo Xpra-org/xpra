@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 """
-	about.py
+    about.py
 """
 
 import sys
@@ -29,86 +29,86 @@ SITE_URL = "http://%s/" % SITE_DOMAIN
 
 GPL2 = None
 def load_license():
-	global GPL2
-	if GPL2 is None:
-		from xpra.platform.paths import get_resources_dir
-		gpl2_file = os.path.join(get_resources_dir(), "COPYING")
-		if os.path.exists(gpl2_file):
-			try:
-				f = open(gpl2_file, mode='rb')
-				GPL2 = f.read()
-			finally:
-				if f:
-					f.close()
-	return GPL2
+    global GPL2
+    if GPL2 is None:
+        from xpra.platform.paths import get_resources_dir
+        gpl2_file = os.path.join(get_resources_dir(), "COPYING")
+        if os.path.exists(gpl2_file):
+            try:
+                f = open(gpl2_file, mode='rb')
+                GPL2 = f.read()
+            finally:
+                if f:
+                    f.close()
+    return GPL2
 
 
 global about_dialog
 about_dialog = None
 def about(on_close=None):
-	global about_dialog
-	if about_dialog:
-		about_dialog.show()
-		about_dialog.present()
-		return
-	from xpra.platform.paths import get_icon
-	xpra_icon = get_icon("xpra.png")
-	dialog = gtk.AboutDialog()
-	if not is_gtk3():
-		def on_website_hook(dialog, web, *args):
-			''' called when the website item is selected '''
-			webbrowser.open(SITE_URL)
-		def on_email_hook(dialog, mail, *args):
-			webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")
-		gtk.about_dialog_set_url_hook(on_website_hook)
-		gtk.about_dialog_set_email_hook(on_email_hook)
-		if xpra_icon:
-			dialog.set_icon(xpra_icon)
-	dialog.set_name("Xpra")
-	dialog.set_version(__version__)
-	dialog.set_authors(('Antoine Martin <antoine@devloop.org.uk>',
-						'Nathaniel Smith <njs@pobox.com>',
-						'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
-	_license = load_license()
-	dialog.set_license(_license or "Your installation may be corrupted,"
-					+ " the license text for GPL version 2 could not be found,"
-					+ "\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt")
-	dialog.set_comments("\n".join(get_build_info()))
-	dialog.set_website(SITE_URL)
-	dialog.set_website_label(SITE_DOMAIN)
-	if xpra_icon:
-		dialog.set_logo(xpra_icon)
-	if hasattr(dialog, "set_program_name"):
-		dialog.set_program_name(APPLICATION_NAME)
-	def close(*args):
-		close_about()
-		#the about function may be called as a widget callback
-		#so avoid calling the widget as if it was a function!
-		if on_close and hasattr(on_close, '__call__'):
-			on_close()
-	dialog.connect("response", close)
-	add_close_accel(dialog, close)
-	about_dialog = dialog
-	dialog.show()
+    global about_dialog
+    if about_dialog:
+        about_dialog.show()
+        about_dialog.present()
+        return
+    from xpra.platform.paths import get_icon
+    xpra_icon = get_icon("xpra.png")
+    dialog = gtk.AboutDialog()
+    if not is_gtk3():
+        def on_website_hook(dialog, web, *args):
+            ''' called when the website item is selected '''
+            webbrowser.open(SITE_URL)
+        def on_email_hook(dialog, mail, *args):
+            webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")
+        gtk.about_dialog_set_url_hook(on_website_hook)
+        gtk.about_dialog_set_email_hook(on_email_hook)
+        if xpra_icon:
+            dialog.set_icon(xpra_icon)
+    dialog.set_name("Xpra")
+    dialog.set_version(__version__)
+    dialog.set_authors(('Antoine Martin <antoine@devloop.org.uk>',
+                        'Nathaniel Smith <njs@pobox.com>',
+                        'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
+    _license = load_license()
+    dialog.set_license(_license or "Your installation may be corrupted,"
+                    + " the license text for GPL version 2 could not be found,"
+                    + "\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt")
+    dialog.set_comments("\n".join(get_build_info()))
+    dialog.set_website(SITE_URL)
+    dialog.set_website_label(SITE_DOMAIN)
+    if xpra_icon:
+        dialog.set_logo(xpra_icon)
+    if hasattr(dialog, "set_program_name"):
+        dialog.set_program_name(APPLICATION_NAME)
+    def close(*args):
+        close_about()
+        #the about function may be called as a widget callback
+        #so avoid calling the widget as if it was a function!
+        if on_close and hasattr(on_close, '__call__'):
+            on_close()
+    dialog.connect("response", close)
+    add_close_accel(dialog, close)
+    about_dialog = dialog
+    dialog.show()
 
 def close_about(*args):
-	global about_dialog
-	if about_dialog:
-		about_dialog.destroy()
-		about_dialog = None
+    global about_dialog
+    if about_dialog:
+        about_dialog.destroy()
+        about_dialog = None
 
 
 def main():
-	about(on_close=gtk.main_quit)
-	gtk.main()
+    about(on_close=gtk.main_quit)
+    gtk.main()
 
 
 if __name__ == "__main__":
-	import logging
-	logging.basicConfig(format="%(asctime)s %(message)s")
-	from xpra.platform import init
-	from xpra.platform.gui import init as gui_init
-	init()
-	gui_init()
-	v = main()
-	sys.exit(v)
+    import logging
+    logging.basicConfig(format="%(asctime)s %(message)s")
+    from xpra.platform import init
+    from xpra.platform.gui import init as gui_init
+    init()
+    gui_init()
+    v = main()
+    sys.exit(v)

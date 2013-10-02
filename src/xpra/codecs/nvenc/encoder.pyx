@@ -803,36 +803,36 @@ cdef extern from "nvEncodeAPI.h":
         PNVENCGETENCODEGUIDCOUNT        nvEncGetEncodeGUIDCount         #[out]: Client should access ::NvEncGetEncodeGUIDCount() API through this pointer.
         PNVENCGETENCODEPROFILEGUIDCOUNT nvEncGetEncodeProfileGUIDCount  #[out]: Client should access ::NvEncGetEncodeProfileGUIDCount() API through this pointer.
         PNVENCGETENCODEPROFILEGUIDS     nvEncGetEncodeProfileGUIDs      #[out]: Client should access ::NvEncGetEncodeProfileGUIDs() API through this pointer.
-        PNVENCGETENCODEGUIDS            nvEncGetEncodeGUIDs	            #[out]: Client should access ::NvEncGetEncodeGUIDs() API through this pointer.
-        PNVENCGETINPUTFORMATCOUNT       nvEncGetInputFormatCount	    #[out]: Client should access ::NvEncGetInputFormatCount() API through this pointer.
-        PNVENCGETINPUTFORMATS           nvEncGetInputFormats	        #[out]: Client should access ::NvEncGetInputFormats() API through this pointer.
-        PNVENCGETENCODECAPS             nvEncGetEncodeCaps	            #[out]: Client should access ::NvEncGetEncodeCaps() API through this pointer.
-        PNVENCGETENCODEPRESETCOUNT      nvEncGetEncodePresetCount	    #[out]: Client should access ::NvEncGetEncodePresetCount() API through this pointer.
-        PNVENCGETENCODEPRESETGUIDS      nvEncGetEncodePresetGUIDs	    #[out]: Client should access ::NvEncGetEncodePresetGUIDs() API through this pointer.
-        PNVENCGETENCODEPRESETCONFIG     nvEncGetEncodePresetConfig	    #[out]: Client should access ::NvEncGetEncodePresetConfig() API through this pointer.
-        PNVENCINITIALIZEENCODER         nvEncInitializeEncoder	        #[out]: Client should access ::NvEncInitializeEncoder() API through this pointer.
-        PNVENCCREATEINPUTBUFFER         nvEncCreateInputBuffer	        #[out]: Client should access ::NvEncCreateInputBuffer() API through this pointer.
-        PNVENCDESTROYINPUTBUFFER        nvEncDestroyInputBuffer	        #[out]: Client should access ::NvEncDestroyInputBuffer() API through this pointer.
-        PNVENCCREATEBITSTREAMBUFFER     nvEncCreateBitstreamBuffer	    #[out]: Client should access ::NvEncCreateBitstreamBuffer() API through this pointer.
-        PNVENCDESTROYBITSTREAMBUFFER    nvEncDestroyBitstreamBuffer	    #[out]: Client should access ::NvEncDestroyBitstreamBuffer() API through this pointer.
-        PNVENCENCODEPICTURE             nvEncEncodePicture	            #[out]: Client should access ::NvEncEncodePicture() API through this pointer.
-        PNVENCLOCKBITSTREAM             nvEncLockBitstream	            #[out]: Client should access ::NvEncLockBitstream() API through this pointer.
-        PNVENCUNLOCKBITSTREAM           nvEncUnlockBitstream	        #[out]: Client should access ::NvEncUnlockBitstream() API through this pointer.
-        PNVENCLOCKINPUTBUFFER           nvEncLockInputBuffer	        #[out]: Client should access ::NvEncLockInputBuffer() API through this pointer.
-        PNVENCUNLOCKINPUTBUFFER         nvEncUnlockInputBuffer	        #[out]: Client should access ::NvEncUnlockInputBuffer() API through this pointer.
-        PNVENCGETENCODESTATS            nvEncGetEncodeStats	            #[out]: Client should access ::NvEncGetEncodeStats() API through this pointer.
-        PNVENCGETSEQUENCEPARAMS         nvEncGetSequenceParams	        #[out]: Client should access ::NvEncGetSequenceParams() API through this pointer.
-        PNVENCREGISTERASYNCEVENT        nvEncRegisterAsyncEvent	        #[out]: Client should access ::NvEncRegisterAsyncEvent() API through this pointer.
-        PNVENCUNREGISTERASYNCEVENT      nvEncUnregisterAsyncEvent	    #[out]: Client should access ::NvEncUnregisterAsyncEvent() API through this pointer.
-        PNVENCMAPINPUTRESOURCE          nvEncMapInputResource	        #[out]: Client should access ::NvEncMapInputResource() API through this pointer.
-        PNVENCUNMAPINPUTRESOURCE        nvEncUnmapInputResource	        #[out]: Client should access ::NvEncUnmapInputResource() API through this pointer.
-        PNVENCDESTROYENCODER            nvEncDestroyEncoder	            #[out]: Client should access ::NvEncDestroyEncoder() API through this pointer.
-        PNVENCINVALIDATEREFFRAMES       nvEncInvalidateRefFrames	    #[out]: Client should access ::NvEncInvalidateRefFrames() API through this pointer.
-        PNVENCOPENENCODESESSIONEX       nvEncOpenEncodeSessionEx	    #[out]: Client should access ::NvEncOpenEncodeSession() API through this pointer.
-        PNVENCREGISTERRESOURCE          nvEncRegisterResource	        #[out]: Client should access ::NvEncRegisterResource() API through this pointer.
-        PNVENCUNREGISTERRESOURCE        nvEncUnregisterResource	        #[out]: Client should access ::NvEncUnregisterResource() API through this pointer.
-        PNVENCRECONFIGUREENCODER        nvEncReconfigureEncoder	        #[out]: Client should access ::NvEncReconfigureEncoder() API through this pointer.
-        void*                           reserved2[285]	                #[in]:  Reserved and must be set to NULL          	#[
+        PNVENCGETENCODEGUIDS            nvEncGetEncodeGUIDs             #[out]: Client should access ::NvEncGetEncodeGUIDs() API through this pointer.
+        PNVENCGETINPUTFORMATCOUNT       nvEncGetInputFormatCount        #[out]: Client should access ::NvEncGetInputFormatCount() API through this pointer.
+        PNVENCGETINPUTFORMATS           nvEncGetInputFormats            #[out]: Client should access ::NvEncGetInputFormats() API through this pointer.
+        PNVENCGETENCODECAPS             nvEncGetEncodeCaps              #[out]: Client should access ::NvEncGetEncodeCaps() API through this pointer.
+        PNVENCGETENCODEPRESETCOUNT      nvEncGetEncodePresetCount       #[out]: Client should access ::NvEncGetEncodePresetCount() API through this pointer.
+        PNVENCGETENCODEPRESETGUIDS      nvEncGetEncodePresetGUIDs       #[out]: Client should access ::NvEncGetEncodePresetGUIDs() API through this pointer.
+        PNVENCGETENCODEPRESETCONFIG     nvEncGetEncodePresetConfig      #[out]: Client should access ::NvEncGetEncodePresetConfig() API through this pointer.
+        PNVENCINITIALIZEENCODER         nvEncInitializeEncoder          #[out]: Client should access ::NvEncInitializeEncoder() API through this pointer.
+        PNVENCCREATEINPUTBUFFER         nvEncCreateInputBuffer          #[out]: Client should access ::NvEncCreateInputBuffer() API through this pointer.
+        PNVENCDESTROYINPUTBUFFER        nvEncDestroyInputBuffer         #[out]: Client should access ::NvEncDestroyInputBuffer() API through this pointer.
+        PNVENCCREATEBITSTREAMBUFFER     nvEncCreateBitstreamBuffer      #[out]: Client should access ::NvEncCreateBitstreamBuffer() API through this pointer.
+        PNVENCDESTROYBITSTREAMBUFFER    nvEncDestroyBitstreamBuffer     #[out]: Client should access ::NvEncDestroyBitstreamBuffer() API through this pointer.
+        PNVENCENCODEPICTURE             nvEncEncodePicture              #[out]: Client should access ::NvEncEncodePicture() API through this pointer.
+        PNVENCLOCKBITSTREAM             nvEncLockBitstream              #[out]: Client should access ::NvEncLockBitstream() API through this pointer.
+        PNVENCUNLOCKBITSTREAM           nvEncUnlockBitstream            #[out]: Client should access ::NvEncUnlockBitstream() API through this pointer.
+        PNVENCLOCKINPUTBUFFER           nvEncLockInputBuffer            #[out]: Client should access ::NvEncLockInputBuffer() API through this pointer.
+        PNVENCUNLOCKINPUTBUFFER         nvEncUnlockInputBuffer          #[out]: Client should access ::NvEncUnlockInputBuffer() API through this pointer.
+        PNVENCGETENCODESTATS            nvEncGetEncodeStats             #[out]: Client should access ::NvEncGetEncodeStats() API through this pointer.
+        PNVENCGETSEQUENCEPARAMS         nvEncGetSequenceParams          #[out]: Client should access ::NvEncGetSequenceParams() API through this pointer.
+        PNVENCREGISTERASYNCEVENT        nvEncRegisterAsyncEvent         #[out]: Client should access ::NvEncRegisterAsyncEvent() API through this pointer.
+        PNVENCUNREGISTERASYNCEVENT      nvEncUnregisterAsyncEvent       #[out]: Client should access ::NvEncUnregisterAsyncEvent() API through this pointer.
+        PNVENCMAPINPUTRESOURCE          nvEncMapInputResource           #[out]: Client should access ::NvEncMapInputResource() API through this pointer.
+        PNVENCUNMAPINPUTRESOURCE        nvEncUnmapInputResource         #[out]: Client should access ::NvEncUnmapInputResource() API through this pointer.
+        PNVENCDESTROYENCODER            nvEncDestroyEncoder             #[out]: Client should access ::NvEncDestroyEncoder() API through this pointer.
+        PNVENCINVALIDATEREFFRAMES       nvEncInvalidateRefFrames        #[out]: Client should access ::NvEncInvalidateRefFrames() API through this pointer.
+        PNVENCOPENENCODESESSIONEX       nvEncOpenEncodeSessionEx        #[out]: Client should access ::NvEncOpenEncodeSession() API through this pointer.
+        PNVENCREGISTERRESOURCE          nvEncRegisterResource           #[out]: Client should access ::NvEncRegisterResource() API through this pointer.
+        PNVENCUNREGISTERRESOURCE        nvEncUnregisterResource         #[out]: Client should access ::NvEncUnregisterResource() API through this pointer.
+        PNVENCRECONFIGUREENCODER        nvEncReconfigureEncoder         #[out]: Client should access ::NvEncReconfigureEncoder() API through this pointer.
+        void*                           reserved2[285]                  #[in]:  Reserved and must be set to NULL
 
 include "constants.pxi"
 from xpra.codecs.codec_constants import codec_spec

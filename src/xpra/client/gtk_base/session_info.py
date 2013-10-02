@@ -610,7 +610,7 @@ class SessionInfo(gtk.Window):
         set_sound_info(self.microphone_label, None, self.client.microphone_enabled, self.client.sound_source)
 
         self.connection_type_label.set_text(c.info)
-        self.compression_label.set_text(str(p._compression_level))
+        self.compression_label.set_text(str(p.compression_level))
         suffix = ""
         if c.info.lower()=="ssh":
             suffix = " (%s)" % c.info
