@@ -139,15 +139,18 @@ class ProxyServer(ServerCore):
         log.info("start_proxy(%s, {..}) client connection=%s", client_proto, client_conn)
         log.info("start_proxy(%s, {..}) client state=%s", client_proto, client_state)
 
-        process = ProxyProcess(uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, c, self.proxy_ended)
-        log.info("starting %s from pid=%s", process, os.getpid())
-        process.start()
-        log.info("process started")
-        #FIXME: remove processes that have terminated
-        self.processes.append(process)
-        #now we can close our handle on the connection:
-        client_conn.close()
-        server_conn.close()
+        assert uid!=0 and gid!=0
+        try:
+            process = ProxyProcess(uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, c, self.proxy_ended)
+            log.info("starting %s from pid=%s", process, os.getpid())
+            process.start()
+            log.info("process started")
+            #FIXME: remove processes that have terminated
+            self.processes.append(process)
+        finally:
+            #now we can close our handle on the connection:
+            client_conn.close()
+            server_conn.close()
 
     def proxy_ended(self, proxy_process):
         log.info("proxy_ended(%s)", proxy_process)
@@ -169,7 +172,6 @@ class ProxyProcess(Process):
 
     def __init__(self, uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, caps, exit_cb):
         Process.__init__(self, name=str(client_conn))
-        assert uid!=0 and gid!=0
         self.uid = uid
         self.gid = gid
         self.client_conn = client_conn
@@ -211,12 +213,13 @@ class ProxyProcess(Process):
         timer.start()
 
     def run(self):
-        log.info("ProxyProcess.run() pid=%s", os.getpid())
+        log.info("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), os.getuid(), os.getgid())
         #change uid and gid:
         if os.getgid()!=self.gid:
             os.setgid(self.gid)
         if os.getuid()!=self.uid:
             os.setuid(self.uid)
+        
         if not USE_THREADING:
             #signal.signal(signal.SIGTERM, self.signal_quit)
             #signal.signal(signal.SIGINT, self.signal_quit)
@@ -236,6 +239,7 @@ class ProxyProcess(Process):
         self.server_protocol.large_packets.append("server-settings")
         self.server_protocol.set_compression_level(0)
 
+        log.debug("starting network threads")
         self.server_protocol.start()
         self.client_protocol.start()
 
@@ -273,9 +277,12 @@ class ProxyProcess(Process):
 
 
     def run_queue(self):
+        log.debug("run_queue() queue has %s items already in it", self.main_queue.qsize())
         #process "idle_add"/"timeout_add" events in the main loop:
         while True:
+            log.debug("run_queue() size=%s", self.main_queue.qsize())
             v = self.main_queue.get()
+            log.debug("item=%s", v)
             if v is None:
                 break
             fn, args, kwargs = v
@@ -299,7 +306,7 @@ class ProxyProcess(Process):
 
 
     def queue_server_packet(self, packet):
-        self.client_packets.put(packet)
+        self.server_packets.put(packet)
         self.server_protocol.source_has_more()
 
     def get_server_packet(self):
