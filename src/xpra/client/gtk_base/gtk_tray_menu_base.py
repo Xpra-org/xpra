@@ -310,8 +310,11 @@ class GTKTrayMenuBase(object):
 
     def make_bellmenuitem(self):
         def bell_toggled(*args):
-            self.client.bell_enabled = self.bell_menuitem.get_active()
-            self.client.send_bell_enabled()
+            v = self.bell_menuitem.get_active()
+            changed = self.client.bell_enabled != v
+            self.client.bell_enabled = v
+            if changed and self.client.toggle_cursors_bell_notify:
+                self.client.send_bell_enabled()
             debug("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
         self.bell_menuitem = self.checkitem("Bell", bell_toggled)
         self.bell_menuitem.set_sensitive(False)
@@ -329,8 +332,11 @@ class GTKTrayMenuBase(object):
 
     def make_cursorsmenuitem(self):
         def cursors_toggled(*args):
-            self.client.cursors_enabled = self.cursors_menuitem.get_active()
-            self.client.send_cursors_enabled()
+            v = self.cursors_menuitem.get_active()
+            changed = self.client.cursors_enabled != v
+            self.client.cursors_enabled = v
+            if changed and self.client.toggle_cursors_bell_notify:
+                self.client.send_cursors_enabled()
             if not self.client.cursors_enabled:
                 self.client.reset_cursor()
             debug("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
@@ -350,8 +356,11 @@ class GTKTrayMenuBase(object):
 
     def make_notificationsmenuitem(self):
         def notifications_toggled(*args):
-            self.client.notifications_enabled = self.notifications_menuitem.get_active()
-            self.client.send_notify_enabled()
+            v = self.notifications_menuitem.get_active()
+            changed = self.client.notifications_enabled != v
+            self.client.notifications_enabled = v
+            if changed and self.client.toggle_cursors_bell_notify:
+                self.client.send_notify_enabled()
             debug("notifications_toggled(%s) notifications_enabled=%s", args, self.client.notifications_enabled)
         self.notifications_menuitem = self.checkitem("Notifications", notifications_toggled)
         self.notifications_menuitem.set_sensitive(False)
