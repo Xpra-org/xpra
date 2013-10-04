@@ -13,8 +13,6 @@ log = Logger()
 import re
 from xpra.util import nonl
 from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, EXIT_TIMEOUT, EXIT_OK
-from xpra.net.protocol import set_scheduler
-set_scheduler(gobject)
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
@@ -40,6 +38,9 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
 
     def source_remove(self, *args):
         return gobject.source_remove(*args)
+
+    def get_scheduler(self):
+        return gobject
 
 
     def client_type(self):
