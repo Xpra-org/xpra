@@ -368,7 +368,7 @@ class ServerBase(ServerCore):
 
 
     def _process_disconnect(self, proto, packet):
-        self.disconnect(proto, "on client request")
+        self.disconnect_protocol(proto, "on client request")
 
     def _process_connection_lost(self, proto, packet):
         log.info("Connection lost")
