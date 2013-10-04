@@ -16,7 +16,7 @@ import signal
 import shlex
 
 from xpra import __version__ as XPRA_VERSION
-from xpra.dotxpra import DotXpra
+from xpra.dotxpra import DotXpra, osexpand
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.platform.paths import get_default_socket_dir
@@ -40,8 +40,6 @@ def nox():
 
 def main(script_file, cmdline):
     platform_init()
-    if os.name=="posix" and os.getuid()==0:
-        warn("\nWarning: running as root")
     try:
         import glib
         glib.set_prgname("Xpra")
@@ -398,7 +396,10 @@ When unspecified, all the available codecs are allowed and the first one is used
 
     #configure default logging handler:
     mode = args.pop(0)
-    if mode in ("start", "upgrade", "attach", "shadow"):
+    if os.name=="posix" and os.getuid()==0 and mode!="proxy":
+        warn("\nWarning: running as root")
+
+    if mode in ("start", "upgrade", "attach", "shadow", "proxy"):
         if show_codec_help("attach" not in cmdline[1:],
                            options.speaker_codec, options.microphone_codec):
             return 0
@@ -723,13 +724,15 @@ def make_client(error_cb, opts):
         import gtk.gdk                      #@UnusedImport
         import xpra.client.gtk2             #@UnusedImport
         toolkits["gtk2"] = "xpra.client.gtk2.client"
-    except:
+    except Exception, e:
+        #print("cannot load gtk2: %s" % e)
         pass
     try:
         from gi.repository import Gtk       #@UnresolvedImport @UnusedImport
         import xpra.client.gtk3             #@UnusedImport
         toolkits["gtk3"] = "xpra.client.gtk3.client"
-    except:
+    except Exception, e:
+        #print("cannot load gtk3: %s" % e)
         pass
     try:
         from PyQt4 import QtCore, QtGui     #@UnresolvedImport @UnusedImport
