@@ -117,9 +117,12 @@ class XpraClientBase(object):
         #overriden in subclasses!
         return "Python"
 
+    def get_scheduler(self):
+        raise NotImplementedError()
+
     def setup_connection(self, conn):
         log.debug("setup_connection(%s)", conn)
-        self._protocol = Protocol(conn, self.process_packet, self.next_packet)
+        self._protocol = Protocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         self._protocol.large_packets.append("keymap-changed")
         self._protocol.large_packets.append("server-settings")
         self._protocol.set_compression_level(self.compression_level)
