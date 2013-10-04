@@ -72,3 +72,6 @@ def nonl(x):
     if x is None:
         return None
     return str(x).replace("\n", "\\n").replace("\r", "\\r")
+
+def xor(s1,s2):    
+    return ''.join(chr(ord(a) ^ ord(b)) for a,b in zip(s1,s2))

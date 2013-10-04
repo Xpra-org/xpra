@@ -59,13 +59,13 @@ class GTKServerBase(ServerBase):
         add_gtk_version_info(capabilities, gtk, "", True)
         return capabilities
 
-    def get_ui_info(self, proto, wids):
-        info = ServerBase.get_ui_info(self, proto, wids)
+    def get_ui_info(self, *args):
+        info = ServerBase.get_ui_info(self, *args)
         info["server.root_window_size"] = self.get_root_window_size()
         return info
 
-    def do_get_info(self, proto, server_sources, window_ids):
-        info = ServerBase.do_get_info(self, proto, server_sources, window_ids)
+    def do_get_info(self, proto, *args):
+        info = ServerBase.do_get_info(self, proto, *args)
         ss = self._server_sources.get(proto)
         add_gtk_version_info(info, gtk, "server.", (ss is None) or ss.namespace)
         info["server.type"] = "Python/gtk-x11"

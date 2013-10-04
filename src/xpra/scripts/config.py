@@ -24,6 +24,7 @@ def codec_import_check(name, top_module, class_module, *classnames):
                 #warn("codec_import_check(%s, ..)=%s" % (name, ic))
                 return ic
         except ImportError, e:
+            #warn("cannot import %s: %s" % (name, e))
             #the required module does not exist
             #xpra was probably built with the option: --without-${name}
             #warn("%s: %s" % (name, e))
@@ -43,7 +44,8 @@ def add_codec_version(name, top_module, fieldname, invoke=False):
             v = v()
         global codec_versions
         codec_versions[name] = v
-    except ImportError:
+    except ImportError, e:
+        #warn("cannot import %s: %s" % (name, e))
         #not present
         pass
     except Exception, e:
@@ -373,6 +375,7 @@ OPTION_TYPES = {
                     "title"             : str,
                     "host"              : str,
                     "username"          : str,
+                    "auth"              : str,
                     "remote-xpra"       : str,
                     "session-name"      : str,
                     "client-toolkit"    : str,
@@ -384,6 +387,7 @@ OPTION_TYPES = {
                     "clipboard-filter-file" : str,
                     "pulseaudio-command": str,
                     "encryption"        : str,
+                    "encryption_keyfile": str,
                     "mode"              : str,
                     "ssh"               : str,
                     "xvfb"              : str,
@@ -443,8 +447,8 @@ def get_defaults():
         return GLOBAL_DEFAULTS
     from xpra.platform.features import DEFAULT_SSH_CMD
     try:
-        import getpass
-        username = getpass.getuser()
+        from xpra.platform.info import get_username
+        username = get_username()
     except:
         username = ""
     GLOBAL_DEFAULTS = {
@@ -452,6 +456,7 @@ def get_defaults():
                     "title"             : "@title@ on @client-machine@",
                     "host"              : "",
                     "username"          : username,
+                    "auth"              : "",
                     "remote-xpra"       : ".xpra/run-xpra",
                     "session-name"      : "",
                     "client-toolkit"    : "",
@@ -466,6 +471,7 @@ def get_defaults():
                                             +" --load=module-null-sink --load=module-native-protocol-unix "
                                             +" --log-level=2 --log-target=stderr",
                     "encryption"        : "",
+                    "encryption_keyfile": "",
                     "mode"              : "tcp",
                     "ssh"               : DEFAULT_SSH_CMD,
                     "xvfb"              : "Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY",

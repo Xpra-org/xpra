@@ -299,6 +299,12 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",
                       help="How to run ssh (default: '%default')")
+    group.add_option("--username", action="store",
+                      dest="username", default=defaults.username,
+                      help="The username supplied by the client for authentication (default: '%default')")
+    group.add_option("--auth", action="store",
+                      dest="auth", default=defaults.auth,
+                      help="The authentication module (default: '%default')")
     group.add_option("--mmap-group", action="store_true",
                       dest="mmap_group", default=defaults.mmap_group,
                       help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
@@ -316,9 +322,14 @@ When unspecified, all the available codecs are allowed and the first one is used
         group.add_option("--encryption", action="store",
                           dest="encryption", default=defaults.encryption,
                           metavar="ALGO",
-                          help="Specifies the encryption cipher to use, only %s is currently supported. (default: None)" % (", ".join(ENCRYPTION_CIPHERS)))
+                          help="Specifies the encryption cipher to use, supported algorithms are: %s (default: None)" % (", ".join(ENCRYPTION_CIPHERS)))
+        group.add_option("--encryption-keyfile", action="store",
+                          dest="encryption_keyfile", default=defaults.encryption_keyfile,
+                          metavar="FILE",
+                          help="Specifies the file containing the encryption key. (default: '%default')")
     else:
         hidden_options["encryption"] = ''
+        hidden_options["encryption_keyfile"] = ''
 
     options, args = parser.parse_args(cmdline[1:])
     if not args:
@@ -365,8 +376,8 @@ When unspecified, all the available codecs are allowed and the first one is used
         assert len(ENCRYPTION_CIPHERS)>0, "cannot use encryption: no ciphers available"
         if options.encryption not in ENCRYPTION_CIPHERS:
             parser.error("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
-        if not options.password_file:
-            parser.error("encryption %s cannot be used without a password (see --password-file option)" % options.encryption)
+        if not options.password_file and not options.encryption_keyfile:
+            parser.error("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
     #ensure opengl is either True, False or None
     options.opengl = parse_bool("opengl", options.opengl)
 
@@ -500,7 +511,7 @@ def parse_display_name(error_cb, opts, display_name):
         desc["type"] = "unix-domain"
         desc["local"] = True
         desc["display"] = display_name
-        desc["socket_dir"] = opts.socket_dir or get_default_socket_dir()
+        desc["socket_dir"] = osexpand(opts.socket_dir or get_default_socket_dir(), opts.username)
         return desc
     elif display_name.startswith("tcp:") or display_name.startswith("tcp/"):
         separator = display_name[3] # ":" or "/"
@@ -725,15 +736,13 @@ def make_client(error_cb, opts):
         import xpra.client.gtk2             #@UnusedImport
         toolkits["gtk2"] = "xpra.client.gtk2.client"
     except Exception, e:
-        #print("cannot load gtk2: %s" % e)
-        pass
+        print("cannot load gtk2: %s" % e)
     try:
         from gi.repository import Gtk       #@UnresolvedImport @UnusedImport
         import xpra.client.gtk3             #@UnusedImport
         toolkits["gtk3"] = "xpra.client.gtk3.client"
     except Exception, e:
-        #print("cannot load gtk3: %s" % e)
-        pass
+        print("cannot load gtk3: %s" % e)
     try:
         from PyQt4 import QtCore, QtGui     #@UnresolvedImport @UnusedImport
         try:

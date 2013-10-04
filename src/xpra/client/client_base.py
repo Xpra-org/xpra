@@ -20,7 +20,7 @@ from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import version_compat_check, add_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
-from xpra.os_util import get_hex_uuid, get_machine_id, SIGNAMES, strtobytes, bytestostr
+from xpra.os_util import get_hex_uuid, get_machine_id, load_binary_file, SIGNAMES, strtobytes, bytestostr
 from xpra.util import typedict
 
 EXIT_OK = 0
@@ -36,6 +36,7 @@ EXIT_PACKET_FAILURE = 9
 EXIT_MMAP_TOKEN_FAILURE = 10
 
 DEFAULT_TIMEOUT = 20*1000
+ALLOW_UNENCRYPTED_PASSWORDS = os.environ.get("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", "0")=="1"
 
 
 class XpraClientBase(object):
@@ -52,10 +53,12 @@ class XpraClientBase(object):
     def __init__(self):
         self.exit_code = None
         self.compression_level = 0
+        self.username = None
         self.password = None
         self.password_file = None
         self.password_sent = False
         self.encryption = None
+        self.encryption_keyfile = None
         self.quality = -1
         self.min_quality = 0
         self.speed = 0
@@ -80,8 +83,10 @@ class XpraClientBase(object):
 
     def init(self, opts):
         self.compression_level = opts.compression_level
+        self.username = opts.username
         self.password_file = opts.password_file
         self.encryption = opts.encryption
+        self.encryption_keyfile = opts.encryption_keyfile
         self.quality = opts.quality
         self.min_quality = opts.min_quality
         self.speed = opts.speed
@@ -151,9 +156,9 @@ class XpraClientBase(object):
 
     def send_hello(self, challenge_response=None):
         hello = self.make_hello_base(challenge_response)
-        if challenge_response or not self.password_file:
-            #could be the real hello, so we need all the details:
-            hello.update(self.make_hello())
+        #we could avoid sending the full hello in some cases
+        #(ie: auth requested which will trigger a new hello)
+        hello.update(self.make_hello())
         log.debug("send_hello(%s) packet=%s", binascii.hexlify(challenge_response or ""), hello)
         self.send("hello", hello)
 
@@ -308,8 +313,9 @@ class XpraClientBase(object):
         self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
 
     def _process_challenge(self, packet):
+        log("processing challenge: %s", packet[1:])
         if not self.password_file and not self.password:
-            self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "password is required by the server")
+            self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requires authentication, please provide a password")
             return
         if not self.password:
             if not self.load_password():
@@ -319,14 +325,33 @@ class XpraClientBase(object):
         if self.encryption:
             assert len(packet)>=3, "challenge does not contain encryption details to use for the response"
             server_cipher = packet[2]
-            self.set_server_encryption(server_cipher)
-        import hmac
-        challenge_response = hmac.HMAC(self.password, salt)
-        password_hash = challenge_response.hexdigest()
+            key = self.get_encryption_key()
+            if key is None:
+                self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")
+                return
+            if not self.set_server_encryption(server_cipher, key):
+                return
+        digest = "hmac"
+        if len(packet)>=4:
+            digest = packet[3]
+        if digest=="hmac":
+            import hmac
+            challenge_response = hmac.HMAC(self.password, salt).hexdigest()
+            log("hmac(%s, %s)=%s", self.password, salt, challenge_response)
+        elif digest=="xor":
+            #don't send XORed password unencrypted:
+            if not self._protocol.cipher_out and not ALLOW_UNENCRYPTED_PASSWORDS:
+                self.warn_and_quit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest)
+                return
+            from xpra.util import xor
+            challenge_response = xor(self.password, salt)
+        else:
+            self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest)
+            return
         self.password_sent = True
-        self.send_hello(password_hash)
+        self.send_hello(challenge_response)
 
-    def set_server_encryption(self, capabilities):
+    def set_server_encryption(self, capabilities, key):
         def get(key, default=None):
             return capabilities.get(strtobytes(key), default)
         cipher = get("cipher")
@@ -339,32 +364,35 @@ class XpraClientBase(object):
         if cipher not in ENCRYPTION_CIPHERS:
             self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, ", ".join(ENCRYPTION_CIPHERS)))
             return False
-        self._protocol.set_cipher_out(cipher, cipher_iv, self.get_password(), key_salt, iterations)
+        self._protocol.set_cipher_out(cipher, cipher_iv, key, key_salt, iterations)
+        return True
 
 
-    def get_password(self):
-        if self.password is None:
-            self.load_password()
-        return self.password
+    def get_encryption_key(self):
+        key = load_binary_file(self.encryption_keyfile)
+        if key is None and self.password_file:
+            key = load_binary_file(self.password_file)
+            if key:
+                log("used password file as encryption key")
+        if key is None:
+            raise Exception("failed to load encryption keyfile %s" % self.encryption_keyfile)
+        return key.strip("\n\r")
 
     def load_password(self):
-        try:
-            filename = os.path.expanduser(self.password_file)
-            passwordFile = open(filename, "rU")
-            self.password = passwordFile.read()
-            passwordFile.close()
-            while self.password.endswith("\n") or self.password.endswith("\r"):
-                self.password = self.password[:-1]
-        except IOError, e:
-            self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to open password file %s: %s" % (self.password_file, e))
+        filename = os.path.expanduser(self.password_file)
+        self.password = load_binary_file(filename)
+        if self.password is None:
+            self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to open password file %s" % self.password_file)
             return False
-        log("password read from file %s is %s", self.password_file, self.password)
+        self.password = self.password.strip("\n\r")
+        log("password read from file %s is %s", self.password_file, "".join(["*" for _ in self.password]))
         return True
 
     def _process_hello(self, packet):
         if not self.password_sent and self.password_file:
             log.warn("Warning: the server did not request our password!")
         self.server_capabilities = packet[1]
+        log("processing hello from server: %s", self.server_capabilities)
         c = typedict(self.server_capabilities)
         self.parse_server_capabilities(c)
 
@@ -390,11 +418,14 @@ class XpraClientBase(object):
         self._protocol.chunked_compression = c.boolget("chunked_compression")
         if use_rencode and c.boolget("rencode"):
             self._protocol.enable_rencode()
-        if c.boolget("lz4") and has_lz4 and self._protocol.chunked_compression and self.compression_level>0 and self.compression_level<3:
+        if c.boolget("lz4") and has_lz4 and self._protocol.chunked_compression and self.compression_level==1:
             self._protocol.enable_lz4()
         if self.encryption:
             #server uses a new cipher after second hello:
-            self.set_server_encryption(c)
+            key = self.get_encryption_key()
+            assert key, "encryption key is missing"
+            if not self.set_server_encryption(c, key):
+                return False
         self._protocol.aliases = c.dictget("aliases", {})
         if self.pings:
             self.timeout_add(1000, self.send_ping)

@@ -7,19 +7,17 @@
 # later version. See the file COPYING for details.
 
 import os.path
-import threading
 import sys
 import time
-import socket
 
 from xpra.log import Logger
 log = Logger()
 
-from xpra.scripts.config import PREFERED_ENCODING_ORDER, python_platform, get_codecs, codec_versions, \
+from xpra.scripts.config import PREFERED_ENCODING_ORDER, get_codecs, codec_versions, \
         has_PIL, has_enc_vpx, has_enc_x264, has_enc_nvenc, has_enc_webp, has_enc_webp_lossless
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
-from xpra.os_util import thread, get_hex_uuid, platform_name
+from xpra.os_util import thread, get_hex_uuid
 from xpra.version_util import add_version_info
 from xpra.util import alnum
 
@@ -28,7 +26,7 @@ if sys.version > '3':
 
 
 MAX_CONCURRENT_CONNECTIONS = 20
-PLATFORM_NAME = platform_name(sys.platform, python_platform.release())
+
 
 SERVER_CORE_ENCODINGS = ["rgb24", "rgb32"]
 for test, formats in (
@@ -298,7 +296,6 @@ class ServerBase(ServerCore):
             "sound-control":                        self._process_sound_control,
             "sound-data":                           self._process_sound_data,
             #requests:
-            "info-request":                         self._process_info_request,
             "shutdown-server":                      self._process_shutdown_server,
             "buffer-refresh":                       self._process_buffer_refresh,
             "screenshot":                           self._process_screenshot,
@@ -554,71 +551,32 @@ class ServerBase(ServerCore):
             capabilities.update(server_cipher)
         server_source.hello(capabilities)
 
-    def send_hello_info(self, proto):
-        def send_info(info):
-            proto.send_now(("hello", self.get_info(proto)))
-        self.get_all_info(send_info, proto, self._server_sources.values(), self._id_to_window.keys())
-
-    def _process_info_request(self, proto, packet):
-        client_uuids, wids = packet[1:3]
-        ss = self._server_sources.get(proto)
-        assert ss, "cannot find server source for %s" % proto
-        sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
-        log("info-request: sources=%s, wids=%s", sources, wids)
-        self.get_all_info(ss.send_info_response, proto, sources, wids)
-
-    def get_all_info(self, callback, proto, sources, wids):
-        ui_info = self.get_ui_info(proto, wids)
-        def in_thread(*args):
-            try:
-                info = self.get_info(proto)
-                ui_info.update(info)
-            except Exception, e:
-                log.error("error during info collection: %s", e, exc_info=True)
-            callback(ui_info)
-        thread.start_new_thread(in_thread, ())
-
-    def get_ui_info(self, proto, window_ids):
+    def get_ui_info(self, proto, client_uuids, wids, *args):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
         info = {"server.max_desktop_size" : self.get_max_screen_size()}
         #window info:
-        self.add_windows_info(info, window_ids)
+        self.add_windows_info(info, wids)
         return info
 
-    def get_info(self, proto):
-        return self.do_get_info(proto, self._server_sources.values(), self._id_to_window.keys())
-
-    def do_get_info(self, proto, server_sources, window_ids):
+    def get_info(self, proto, client_uuids=None, wids=None, *args):
         start = time.time()
+        info = ServerCore.get_info(self, proto)
+        if client_uuids:
+            sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
+        else:
+            sources = self._server_sources.values()
+        if not wids:
+            wids = self._id_to_window.keys()
+        log("info-request: sources=%s, wids=%s", sources, wids)
+        ei = self.do_get_info(proto, sources, wids)
+        info.update(ei)
+        log("get_info took %.1fms", 1000.0*(time.time()-start))
+        return info
+
+    def do_get_info(self, proto, server_sources=None, window_ids=None):
         info = {}
-        add_version_info(info, "server.")
-        info["server.type"] = "Python"
-        info["server.byteorder"] = sys.byteorder
-        info["server.platform"] = PLATFORM_NAME
-        info["server.platform.release"] = python_platform.release()
-        info["server.platform.platform"] = python_platform.platform()
-        if sys.platform.startswith("linux"):
-            info["server.platform.linux_distribution"] = python_platform.linux_distribution()
-        info["server.pid"] = os.getpid()
-        for x in ("uid", "gid"):
-            if hasattr(os, "get%s" % x):
-                try:
-                    info["server."+x] = getattr(os, "get%s" % x)()
-                except:
-                    pass
-        info["server.hostname"] = socket.gethostname()
-        info["server.start_time"] = int(self.start_time)
-        try:
-            import Crypto
-            info["server.pycrypto.version"] = Crypto.__version__
-        except:
-            pass
-        info["server.python.full_version"] = sys.version
-        info["server.python.version"] = sys.version_info[:3]
-        info["session.name"] = self.session_name or ""
-        info["features.password_file"] = self.password_file or ""
         info["features.randr"] = self.randr
         info["features.cursors"] = self.cursors
         info["features.bell"] = self.bell
@@ -658,29 +616,6 @@ class ServerBase(ServerCore):
                 ss.add_info(info, suffix="{%s}" % i)
                 ss.add_stats(info, window_ids, suffix="{%s}" % i)
                 i += 1
-        #threads:
-        info_threads = proto.get_threads()
-        info["threads"] = threading.active_count() - len(info_threads)
-        info["info_threads"] = len(info_threads)
-        i = 0
-        #threads used by the "info" client:
-        for t in info_threads:
-            info["info_thread[%s]" % i] = t.name
-            i += 1
-        i = 0
-        #all non-info threads:
-        for t in threading.enumerate():
-            if t not in info_threads:
-                info["thread[%s]" % i] = t.name
-                i += 1
-        #platform specific bits:
-        try:
-            from xpra.platform.info import get_sys_info
-            for k,v in get_sys_info().items():
-                info[k] = v
-        except:
-            log.error("error getting system info", exc_info=True)
-        log("get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 
     def add_windows_info(self, info, window_ids):

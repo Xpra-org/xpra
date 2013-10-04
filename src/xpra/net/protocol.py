@@ -25,7 +25,7 @@ LZ4_FLAG = 0x10
 from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_NETWORK_DEBUG")
-from xpra.os_util import Queue, strtobytes
+from xpra.os_util import Queue, strtobytes, get_hex_uuid
 from xpra.daemon_thread import make_daemon_thread
 from xpra.net.bencode import bencode, bdecode
 from xpra.simple_stats import std_unit, std_unit_dec
@@ -91,6 +91,18 @@ USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
 PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 16384))
 FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
 
+
+def new_cipher_caps(proto, cipher, encryption_key):
+    iv = get_hex_uuid()[:16]
+    key_salt = get_hex_uuid()
+    iterations = 1000
+    proto.set_cipher_in(cipher, iv, encryption_key, key_salt, iterations)
+    return {
+                 "cipher"           : cipher,
+                 "cipher.iv"        : iv,
+                 "cipher.key_salt"  : key_salt,
+                 "cipher.key_stretch_iterations" : iterations
+                 }
 
 
 def repr_ellipsized(obj, limit=100):
@@ -186,6 +198,28 @@ class Protocol(object):
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
         self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
         self._source_has_more = threading.Event()
+
+    STATE_FIELDS = ("max_packet_size", "large_packets", "aliases",
+                    "chunked_compression",
+                    "cipher_in", "cipher_in_name", "cipher_in_block_size",
+                    "cipher_out", "cipher_out_name", "cipher_out_block_size",
+                    "compression_level")
+    def save_state(self):
+        state = {}
+        for x in Protocol.STATE_FIELDS:
+            state[x] = getattr(self, x)
+        state["zcompress"] = self._compress==zcompress
+        state["lz4"] = lz4_compress and self._compress==lz4_compress
+        #state["connection"] = self._conn
+        return state
+
+    def restore_state(self, state):
+        assert state is not None
+        for x in Protocol.STATE_FIELDS:
+            assert x in state, "field %s is missing" % x
+            setattr(self, x, state[x])
+        if state.get("lz4", False):
+            self.enable_lz4()
 
     def set_packet_source(self, get_packet_cb):
         self._get_packet_cb = get_packet_cb
@@ -759,6 +793,17 @@ class Protocol(object):
             self._conn = None
         self.terminate_io_threads()
         self.scheduler.idle_add(self.clean)
+
+    def steal_connection(self):
+        #so we can re-use this connection somewhere else
+        #(frees all protocol threads and resources)
+        assert not self._closed
+        conn = self._conn
+        self._closed = True
+        self._conn = None
+        self.terminate_io_threads()
+        self.scheduler.idle_add(self.clean)
+        return conn
 
     def clean(self):
         #clear all references to ensure we can get garbage collected quickly:

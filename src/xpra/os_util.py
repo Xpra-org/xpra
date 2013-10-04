@@ -157,6 +157,19 @@ def get_machine_id():
                 pass
     return  str(v).strip("\n\r")
 
+def load_binary_file(filename):
+    if not os.path.exists(filename):
+        return None
+    f = None
+    try:
+        f = open(filename, "rU")
+        try:
+            return f.read()
+        finally:
+            f.close()
+    except:
+        return None
+
 
 def main():
     import logging
