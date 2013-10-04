@@ -862,7 +862,7 @@ else:
 
 
 #*******************************************************************************
-toggle_packages(server_ENABLED, "xpra.server", "xpra.server.stats")
+toggle_packages(server_ENABLED, "xpra.server", "xpra.server.stats", "xpra.server.auth")
 if WIN32 and not server_ENABLED:
     #with py2exe, we have to remove the default packages and let it figure it out...
     #(otherwise, we can't remove specific files from those packages)
