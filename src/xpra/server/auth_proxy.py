@@ -136,8 +136,8 @@ class ProxyServer(ServerCore):
             cipher = auth_caps.get("cipher")
             if cipher:
                 encryption_key = self.get_encryption_key(client_proto.authenticator)
-        log.info("start_proxy(%s, {..}) client connection=%s", client_proto, client_conn)
-        log.info("start_proxy(%s, {..}) client state=%s", client_proto, client_state)
+        log.info("start_proxy(..) client connection=%s", client_conn)
+        log.info("start_proxy(..) client state=%s", client_state)
 
         assert uid!=0 and gid!=0
         try:
@@ -181,7 +181,7 @@ class ProxyProcess(Process):
         self.server_conn = server_conn
         self.caps = caps
         self.exit_cb = exit_cb
-        log.info("ProxyProcess%s pid=%s", (uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, "{..}"), os.getpid())
+        log.info("ProxyProcess%s", (uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, "{..}"))
         self.client_protocol = None
         self.server_protocol = None
         self.main_queue = None
@@ -235,6 +235,7 @@ class ProxyProcess(Process):
         self.server_protocol = Protocol(self, self.server_conn, self.process_server_packet, self.get_server_packet)
 
         #server connection tweaks:
+        self.server_protocol.large_packets.append("draw")
         self.server_protocol.large_packets.append("keymap-changed")
         self.server_protocol.large_packets.append("server-settings")
         self.server_protocol.set_compression_level(0)
@@ -306,6 +307,7 @@ class ProxyProcess(Process):
 
 
     def queue_server_packet(self, packet):
+        log.info("queueing server packet: %s", packet[0])
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
 
@@ -316,6 +318,7 @@ class ProxyProcess(Process):
         return p,
 
     def queue_client_packet(self, packet):
+        log.info("queueing client packet: %s", packet[0])
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
 
@@ -335,8 +338,9 @@ class ProxyProcess(Process):
         elif packet_type=="hello":
             caps = self.filter_server_caps(packet[1])
             #add new encryption caps:
-            auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key)
-            caps.update(auth_caps)
+            if self.cipher:
+                auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key)
+                caps.update(auth_caps)
             packet = ("hello", caps)
         self.queue_client_packet(packet)
 
