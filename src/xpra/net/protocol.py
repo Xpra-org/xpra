@@ -702,6 +702,8 @@ class Protocol(object):
             we wait again for the queue to flush,
             then no matter what, we close the connection and stop the threads.
         """
+        if self._closed:
+            return
         def wait_for_queue(timeout=10):
             #IMPORTANT: if we are here, we have the write lock held!
             if not self._write_queue.empty():
