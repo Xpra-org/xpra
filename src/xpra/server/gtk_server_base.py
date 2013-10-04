@@ -17,8 +17,6 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import add_gtk_version_info
-from xpra.net.protocol import set_scheduler
-set_scheduler(gobject)
 
 
 class GTKServerBase(ServerBase):

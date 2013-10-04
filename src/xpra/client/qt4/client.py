@@ -11,11 +11,9 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.client.ui_client_base import UIXpraClient
-from xpra.net.protocol import set_scheduler
 from xpra.client.qt4.qt_keyboard_helper import QtKeyboardHelper
 from xpra.client.qt4.scheduler import getQtScheduler
 from xpra.client.qt4.client_window import ClientWindow
-set_scheduler(getQtScheduler())
 
 sys.modules['gtk']=None
 sys.modules['pygtk']=None
@@ -45,6 +43,9 @@ class XpraClient(UIXpraClient):
 
     def client_toolkit(self):
         return "qt4"
+
+    def get_scheduler(self):
+        return getQtScheduler()
 
 
     def connect(self, *args):

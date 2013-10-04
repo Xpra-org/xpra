@@ -535,8 +535,8 @@ class UIXpraClient(XpraClientBase):
             self._focused = None
 
 
-    def make_hello(self, challenge_response=None):
-        capabilities = XpraClientBase.make_hello(self, challenge_response)
+    def make_hello(self):
+        capabilities = XpraClientBase.make_hello(self)
         if self.readonly:
             #don't bother sending keyboard info, as it won't be used
             capabilities["keyboard"] = False

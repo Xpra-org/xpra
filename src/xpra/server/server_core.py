@@ -167,7 +167,7 @@ class ServerCore(object):
         log("new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", args, sock, sockname, address, peername)
         sc = SocketConnection(sock, sockname, address, target, socktype)
         log.info("New connection received: %s", sc)
-        protocol = Protocol(sc, self.process_packet)
+        protocol = Protocol(self, sc, self.process_packet)
         protocol.large_packets.append("info-response")
         protocol.salt = None
         protocol.set_compression_level(self.compression_level)

@@ -135,14 +135,6 @@ def compressed_wrapper(datatype, data, level=5, lz4=False):
     return LevelCompressed(datatype, cdata, cl, algo)
 
 
-#The 'scheduler' instance will generally be gobject
-#but we don't want to depend on it, so we inject it here:
-scheduler = None
-def set_scheduler(s):
-    global scheduler
-    scheduler = s
-
-
 class Protocol(object):
     CONNECTION_LOST = "connection-lost"
     GIBBERISH = "gibberish"
@@ -150,14 +142,16 @@ class Protocol(object):
     FLAGS_RENCODE = 0x1
     FLAGS_CIPHER = 0x2
 
-    def __init__(self, conn, process_packet_cb, get_packet_cb=None):
+    def __init__(self, scheduler, conn, process_packet_cb, get_packet_cb=None):
         """
             You must call this constructor and source_has_more() from the main thread.
         """
+        assert scheduler is not None
         assert conn is not None
+        self.scheduler = scheduler
         self._conn = conn
         if FAKE_JITTER>0:
-            fj = FakeJitter(process_packet_cb)
+            fj = FakeJitter(self.scheduler, process_packet_cb)
             self._process_packet_cb =  fj.process_packet_cb
         else:
             self._process_packet_cb = process_packet_cb
@@ -179,7 +173,7 @@ class Protocol(object):
         self._encoder = self.bencode
         self._compress = zcompress
         self._decompressor = decompressobj()
-        self._compression_level = 0
+        self.compression_level = 0
         self.cipher_in = None
         self.cipher_in_name = None
         self.cipher_in_block_size = 0
@@ -197,7 +191,7 @@ class Protocol(object):
         self._get_packet_cb = get_packet_cb
 
     def get_cipher(self, ciphername, iv, password, key_salt, iterations):
-        debug("get_cipher_in(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
+        debug("get_cipher(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
         if not ciphername:
             return None, 0
         assert iterations>=100
@@ -208,20 +202,21 @@ class Protocol(object):
         #stretch the password:
         block_size = 32         #fixme: can we derive this?
         secret = PBKDF2(password, key_salt, dkLen=block_size, count=iterations)
-        #secret = (password+password+password+password+password+password+password+password)[:32]
-        debug("get_cipher(%s, %s, %s) secret=%s, block_size=%s", ciphername, iv, password, secret.encode('hex'), block_size)
+        debug("get_cipher(..) secret=%s, block_size=%s", secret.encode('hex'), block_size)
         return AES.new(secret, AES.MODE_CBC, iv), block_size
 
     def set_cipher_in(self, ciphername, iv, password, key_salt, iterations):
         if self.cipher_in_name!=ciphername:
             log.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
+        debug("set_cipher_in%s", (ciphername, iv, password, key_salt, iterations))
         self.cipher_in, self.cipher_in_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
 
     def set_cipher_out(self, ciphername, iv, password, key_salt, iterations):
         if self.cipher_out_name!=ciphername:
             log.info("sending data using %s encryption", ciphername)
             self.cipher_out_name = ciphername
+        debug("set_cipher_out%s", (ciphername, iv, password, key_salt, iterations))
         self.cipher_out, self.cipher_out_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
 
     def __str__(self):
@@ -241,7 +236,7 @@ class Protocol(object):
         info[prefix+"output.cipher" + suffix] = self.cipher_out_name or ""
         info[prefix+"chunked_compression" + suffix] = self.chunked_compression
         info[prefix+"large_packets" + suffix] = self.large_packets
-        info[prefix+"compression_level" + suffix] = self._compression_level
+        info[prefix+"compression_level" + suffix] = self.compression_level
         info[prefix+"max_packet_size" + suffix] = self.max_packet_size
         for k,v in self.aliases.items():
             info[prefix+"alias." + k + suffix] = v
@@ -264,7 +259,7 @@ class Protocol(object):
                 self._read_thread.start()
                 self._read_parser_thread.start()
                 self._write_format_thread.start()
-        scheduler.idle_add(do_start)
+        self.scheduler.idle_add(do_start)
 
     def send_now(self, packet):
         if self._closed:
@@ -406,7 +401,7 @@ class Protocol(object):
         """
         packets = []
         packet = list(packet_in)
-        level = self._compression_level
+        level = self.compression_level
         for i in range(1, len(packet)):
             item = packet[i]
             ti = type(item)
@@ -455,7 +450,7 @@ class Protocol(object):
 
     def set_compression_level(self, level):
         #this may be used next time encode() is called
-        self._compression_level = level
+        self.compression_level = level
 
     def _io_thread_loop(self, name, callback):
         try:
@@ -519,7 +514,7 @@ class Protocol(object):
 
     def _call_connection_lost(self, message="", exc_info=False):
         debug("will call connection lost: %s", message)
-        scheduler.idle_add(self._connection_lost, message, exc_info)
+        self.scheduler.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
         log.info("connection lost: %s", message, exc_info=exc_info)
@@ -527,9 +522,9 @@ class Protocol(object):
         return False
 
     def _gibberish(self, msg, data):
-        scheduler.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, data])
+        self.scheduler.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, data])
         # Then hang up:
-        scheduler.timeout_add(1000, self._connection_lost, msg)
+        self.scheduler.timeout_add(1000, self._connection_lost, msg)
 
 
     def _read_parse_thread_loop(self):
@@ -559,7 +554,7 @@ class Protocol(object):
             buf = self._read_queue.get()
             if not buf:
                 debug("read thread: empty marker, exiting")
-                scheduler.idle_add(self.close)
+                self.scheduler.idle_add(self.close)
                 return
             if read_buffer:
                 read_buffer = read_buffer + buf
@@ -609,7 +604,7 @@ class Protocol(object):
                                 self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
                                                               (size_to_check, self.max_packet_size, repr_ellipsized(packet_header)))
                         return False
-                    scheduler.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
+                    self.scheduler.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
 
                 if bl<payload_size:
                     # incomplete packet, wait for the rest to arrive
@@ -717,7 +712,7 @@ class Protocol(object):
                     self.close()
                 else:
                     debug("flush_then_close: still waiting for queue to flush")
-                    scheduler.timeout_add(100, wait_for_queue, timeout-1)
+                    self.scheduler.timeout_add(100, wait_for_queue, timeout-1)
             else:
                 debug("flush_then_close: queue is now empty, sending the last packet and closing")
                 chunks, proto_flags = self.encode(last_packet)
@@ -725,7 +720,7 @@ class Protocol(object):
                     self.close()
                 self._add_chunks_to_queue(chunks, proto_flags, start_send_cb=None, end_send_cb=close_cb)
                 self._write_lock.release()
-                scheduler.timeout_add(5*1000, self.close)
+                self.scheduler.timeout_add(5*1000, self.close)
 
         def wait_for_write_lock(timeout=100):
             if not self._write_lock.acquire(False):
@@ -734,7 +729,7 @@ class Protocol(object):
                     self.close()
                 else:
                     debug("flush_then_close: write lock is busy, will retry %s more times", timeout)
-                    scheduler.timeout_add(10, wait_for_write_lock, timeout-1)
+                    self.scheduler.timeout_add(10, wait_for_write_lock, timeout-1)
             else:
                 debug("flush_then_close: acquired the write lock")
                 #we have the write lock - we MUST free it!
@@ -747,10 +742,11 @@ class Protocol(object):
         wait_for_write_lock()
 
     def close(self):
+        debug("close() closed=%s", self._closed)
         if self._closed:
             return
         self._closed = True
-        scheduler.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
+        self.scheduler.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
         if self._conn:
             try:
                 self._conn.close()
@@ -762,7 +758,7 @@ class Protocol(object):
                 log.error("error closing %s", self._conn, exc_info=True)
             self._conn = None
         self.terminate_io_threads()
-        scheduler.idle_add(self.clean)
+        self.scheduler.idle_add(self.clean)
 
     def clean(self):
         #clear all references to ensure we can get garbage collected quickly:
@@ -789,7 +785,8 @@ class Protocol(object):
 
 class FakeJitter(object):
 
-    def __init__(self, process_packet_cb):
+    def __init__(self, scheduler, process_packet_cb):
+        self.scheduler = scheduler
         self.real_process_packet_cb = process_packet_cb
         self.delay = FAKE_JITTER
         self.ok_delay = 10*1000
@@ -802,7 +799,7 @@ class FakeJitter(object):
     def start_buffering(self):
         log.info("FakeJitter.start_buffering() will buffer for %s ms", FAKE_JITTER)
         self.delaying = True
-        scheduler.timeout_add(FAKE_JITTER, self.flush)
+        self.scheduler.timeout_add(FAKE_JITTER, self.flush)
 
     def flush(self):
         log.info("FakeJitter.flush() processing %s delayed packets", len(self.pending))
@@ -814,7 +811,7 @@ class FakeJitter(object):
             self.delaying = False
         finally:
             self.lock.release()
-        scheduler.timeout_add(self.ok_delay, self.start_buffering)
+        self.scheduler.timeout_add(self.ok_delay, self.start_buffering)
         log.info("FakeJitter.flush() will start buffering again in %s ms", self.ok_delay)
 
     def process_packet_cb(self, proto, packet):

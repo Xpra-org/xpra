@@ -15,9 +15,7 @@ from xpra.server.server_core import ServerCore
 from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.main import parse_display_name, connect_to
 from xpra.net.protocol import Protocol
-from xpra.net.protocol import set_scheduler
 from xpra.os_util import Queue
-set_scheduler(gobject)
 
 
 class ProxyServer(ServerCore):
@@ -83,7 +81,7 @@ class ProxyServer(ServerCore):
         log.info("display description(%s) = %s", target, disp_desc)
         conn = connect_to(disp_desc)
         log.info("server connection=%s", conn)
-        self.server_protocol = Protocol(conn, self.process_server_packet, self.get_server_packet)
+        self.server_protocol = Protocol(self, conn, self.process_server_packet, self.get_server_packet)
         log.info("server protocol=%s", self.server_protocol)
         self.server_protocol.large_packets.append("keymap-changed")
         self.server_protocol.large_packets.append("server-settings")
