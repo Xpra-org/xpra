@@ -205,8 +205,8 @@ class XpraClient(GTKXpraClient):
             self.tray.set_blinking(False)
 
 
-    def make_hello(self, challenge_response=None):
-        capabilities = GTKXpraClient.make_hello(self, challenge_response)
+    def make_hello(self):
+        capabilities = GTKXpraClient.make_hello(self)
         if xor_str is not None:
             capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()]
         return capabilities

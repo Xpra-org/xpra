@@ -81,8 +81,8 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
         self.gobject_mainloop.run()
         return  self.exit_code
 
-    def make_hello(self, challenge_response=None):
-        capabilities = XpraClientBase.make_hello(self, challenge_response)
+    def make_hello(self):
+        capabilities = XpraClientBase.make_hello(self)
         capabilities["keyboard"] = False
         return capabilities
 
@@ -134,8 +134,8 @@ class ScreenshotXpraClient(CommandConnectClient):
         GObjectXpraClient.init_packet_handlers(self)
         self._ui_packet_handlers["screenshot"] = self._process_screenshot
 
-    def make_hello(self, challenge_response=None):
-        capabilities = GObjectXpraClient.make_hello(self, challenge_response)
+    def make_hello(self):
+        capabilities = GObjectXpraClient.make_hello(self)
         capabilities["screenshot_request"] = True
         return capabilities
 
@@ -166,9 +166,9 @@ class InfoXpraClient(CommandConnectClient):
                 log.info("%s=%s", k, nonl(v))
         self.quit(0)
 
-    def make_hello(self, challenge_response=None):
-        capabilities = GObjectXpraClient.make_hello(self, challenge_response)
-        log.debug("make_hello(%s) adding info_request to %s", challenge_response, capabilities)
+    def make_hello(self):
+        capabilities = GObjectXpraClient.make_hello(self)
+        log.debug("make_hello() adding info_request to %s", capabilities)
         capabilities["info_request"] = True
         return capabilities
 
@@ -186,9 +186,9 @@ class VersionXpraClient(CommandConnectClient):
         props = packet[1]
         self.warn_and_quit(EXIT_OK, str(props.get("version")))
 
-    def make_hello(self, challenge_response=None):
-        capabilities = GObjectXpraClient.make_hello(self, challenge_response)
-        log.debug("make_hello(%s) adding version_request to %s", challenge_response, capabilities)
+    def make_hello(self):
+        capabilities = GObjectXpraClient.make_hello(self)
+        log.debug("make_hello() adding version_request to %s", capabilities)
         capabilities["version_request"] = True
         return capabilities
 

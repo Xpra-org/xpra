@@ -8,6 +8,7 @@ import signal
 import os
 import sys
 import socket
+import binascii
 from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
 
@@ -18,6 +19,7 @@ from xpra.net.protocol import Protocol, has_rencode, has_lz4, rencode_version, u
 from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import version_compat_check, add_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
+from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, SIGNAMES, strtobytes, bytestostr
 from xpra.util import typedict
 
@@ -145,14 +147,35 @@ class XpraClientBase(object):
             i += 1
 
     def send_hello(self, challenge_response=None):
-        hello = self.make_hello(challenge_response)
-        log.debug("send_hello(%s) packet=%s", challenge_response, hello)
+        hello = self.make_hello_base(challenge_response)
+        if challenge_response or not self.password_file:
+            #could be the real hello, so we need all the details:
+            hello.update(self.make_hello())
+        log.debug("send_hello(%s) packet=%s", binascii.hexlify(challenge_response or ""), hello)
         self.send("hello", hello)
 
-    def make_hello(self, challenge_response=None):
-        capabilities = {}
+    def make_hello_base(self, challenge_response=None):
+        capabilities = {"namespace"             : True,
+                        "raw_packets"           : True,
+                        "chunked_compression"   : True,
+                        "digest"                : ("hmac", "xor"),
+                        "rencode"               : has_rencode,
+                        "lz4"                   : has_lz4,
+                        "hostname"              : socket.gethostname(),
+                        "uuid"                  : self.uuid,
+                        "username"              : self.username,
+                        "name"                  : get_name(),
+                        "platform"              : sys.platform,
+                        "platform.release"      : python_platform.release(),
+                        "platform.machine"      : python_platform.machine(),
+                        "platform.processor"    : python_platform.processor(),
+                        "client_type"           : self.client_type(),
+                        "python.version"        : sys.version_info[:3],
+                        }
+        if has_rencode:
+            capabilities["rencode.version"] = rencode_version
         add_version_info(capabilities)
-        capabilities["python.version"] = sys.version_info[:3]
+
         if challenge_response:
             assert self.password
             capabilities["challenge_response"] = challenge_response
@@ -165,30 +188,19 @@ class XpraClientBase(object):
             capabilities["cipher.key_salt"] = key_salt
             iterations = 1000
             capabilities["cipher.key_stretch_iterations"] = iterations
-            self._protocol.set_cipher_in(self.encryption, iv, self.get_password(), key_salt, iterations)
+            key = self.get_encryption_key()
+            if key is None:
+                self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")
+                return
+            self._protocol.set_cipher_in(self.encryption, iv, key, key_salt, iterations)
             log("encryption capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("cipher")])
-        capabilities["platform"] = sys.platform
-        capabilities["platform.release"] = python_platform.release()
-        capabilities["platform.machine"] = python_platform.machine()
-        capabilities["platform.processor"] = python_platform.processor()
-        capabilities["client_type"] = self.client_type()
-        capabilities["namespace"] = True
-        capabilities["raw_packets"] = True
-        capabilities["chunked_compression"] = True
-        capabilities["rencode"] = has_rencode
-        capabilities["lz4"] = has_lz4
-        if has_rencode:
-            capabilities["rencode.version"] = rencode_version
-        capabilities["hostname"] = socket.gethostname()
-        capabilities["uuid"] = self.uuid
-        try:
-            from xpra.platform.info import get_username, get_name
-            capabilities["username"] = get_username()
-            capabilities["name"] = get_name()
-        except:
-            log.error("failed to get username/name", exc_info=True)
-        capabilities["randr_notify"] = False    #only client.py cares about this
-        capabilities["windows"] = False         #only client.py cares about this
+        return capabilities
+
+    def make_hello(self):
+        capabilities = {
+                        "randr_notify"        : False,        #only client.py cares about this
+                        "windows"            : False,        #only client.py cares about this
+                       }
         if self._reverse_aliases:
             capabilities["aliases"] = self._reverse_aliases
         return capabilities

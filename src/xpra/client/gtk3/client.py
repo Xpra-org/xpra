@@ -23,7 +23,7 @@ class XpraClient(GTKXpraClient):
     INPUT_ONLY = None #got moved again???? Gtk.WindowWindowClass.INPUT_ONLY
     ClientWindowClass = ClientWindow
 
-    def make_hello(self, challenge_response=None):
+    def make_hello(self):
         capabilities = GTKXpraClient.make_hello(self, challenge_response)
         if xor_str is not None:
             capabilities["encoding.supports_delta"] = [x for x in ("rgb24", "rgb32") if x in self.get_core_encodings()]
