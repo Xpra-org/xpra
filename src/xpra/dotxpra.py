@@ -18,13 +18,18 @@ o0700 = 448     #0o700
 class ServerSockInUse(Exception):
     pass
 
+def osexpand(s, actual_username=""):
+    if len(actual_username)>0 and s.startswith("~/"):
+        #replace "~/" with "~$actual_username/"
+        s = "~%s/%s" % (actual_username, s[2:])
+    return os.path.expandvars(os.path.expanduser(s))
+
+
 class DotXpra(object):
-    def __init__(self, sockdir=None, confdir=None):
+    def __init__(self, sockdir=None, confdir=None, actual_username=""):
         from xpra.platform.paths import get_default_socket_dir, get_default_conf_dir
-        def expand(s):
-            return os.path.expandvars(os.path.expanduser(s))
-        self._confdir = expand(confdir or get_default_conf_dir())
-        self._sockdir = expand(sockdir or get_default_socket_dir())
+        self._confdir = osexpand(confdir or get_default_conf_dir(), actual_username)
+        self._sockdir = osexpand(sockdir or get_default_socket_dir(), actual_username)
         if not os.path.exists(self._confdir):
             os.mkdir(self._confdir, o0700)
         if not os.path.exists(self._sockdir):
@@ -103,12 +108,17 @@ class DotXpra(object):
             os.unlink(socket_path)
         return socket_path
 
-    def sockets(self):
+    def sockets(self, check_uid=0):
         results = []
         base = os.path.join(self._sockdir, self._prefix)
         potential_sockets = glob.glob(base + "*")
         for path in potential_sockets:
-            if stat.S_ISSOCK(os.stat(path).st_mode):
+            s = os.stat(path)
+            if stat.S_ISSOCK(s.st_mode):
+                if check_uid>0:
+                    if s.st_uid!=check_uid:
+                        #socket uid does not match
+                        continue
                 local_display = ":" + path[len(base):]
                 state = self.server_state(local_display)
                 results.append((state, local_display))
