@@ -16,11 +16,10 @@ It is used by xpra.x11.gtk_x11.prop
 
 import sys
 import struct
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_XSETTINGS_DEBUG")
 
-#debug = log.info
-debug = log.debug
 
 #undocumented XSETTINGS endianess values:
 LITTLE_ENDIAN = 0
