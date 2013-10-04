@@ -311,6 +311,7 @@ class Protocol(object):
         self._source_has_more.set()
 
     def _write_format_thread_loop(self):
+        debug("write_format_thread_loop starting")
         try:
             while not self._closed:
                 self._source_has_more.wait()
@@ -488,6 +489,7 @@ class Protocol(object):
 
     def _io_thread_loop(self, name, callback):
         try:
+            debug("io_thread_loop(%s, %s) loop starting", name, callback)
             while not self._closed:
                 callback()
             debug("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
@@ -562,6 +564,7 @@ class Protocol(object):
 
 
     def _read_parse_thread_loop(self):
+        debug("read_parse_thread_loop starting")
         try:
             self.do_read_parse_thread_loop()
         except Exception, e:
