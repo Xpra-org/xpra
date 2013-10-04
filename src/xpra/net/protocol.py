@@ -628,13 +628,16 @@ class Protocol(object):
                     debug("received %s encrypted bytes with %s padding", payload_size, len(padding))
                     data = self.cipher_in.decrypt(raw_string)
                     if padding:
-                        def debug_str():
+                        def debug_str(s):
                             try:
-                                return list(bytearray(raw_string))
+                                return list(bytearray(s))
                             except:
-                                return list(str(raw_string))
-                        assert data.endswith(padding), "decryption failed: string does not end with '%s': %s (%s) -> %s (%s)" % \
-                            (padding, debug_str(raw_string), type(raw_string), debug_str(data), type(data))
+                                return list(str(s))
+                        if not data.endswith(padding):
+                            log("decryption failed: string does not end with '%s': %s (%s) -> %s (%s)",
+                            padding, debug_str(raw_string), type(raw_string), debug_str(data), type(data))
+                            self._connection_lost("encryption error (wrong key?)")
+                            return
                         data = data[:-len(padding)]
                 #uncompress if needed:
                 if compression_level>0:
