@@ -106,8 +106,8 @@ class XpraClient(UIXpraClient):
         return []
 
 
-    def make_hello(self, challenge_response=None):
-        capabilities = UIXpraClient.make_hello(self, challenge_response)
+    def make_hello(self):
+        capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = False
         #add_qt_version_info(capabilities, QtGui)
         return capabilities
