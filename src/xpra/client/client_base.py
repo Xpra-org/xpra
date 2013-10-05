@@ -54,6 +54,7 @@ class XpraClientBase(object):
     def __init__(self):
         self.exit_code = None
         self.compression_level = 0
+        self.display = None
         self.username = None
         self.password_file = None
         self.password_sent = False
@@ -83,6 +84,7 @@ class XpraClientBase(object):
 
     def init(self, opts):
         self.compression_level = opts.compression_level
+        self.display = opts.display
         self.username = opts.username
         self.password_file = opts.password_file
         self.encryption = opts.encryption
@@ -181,18 +183,22 @@ class XpraClientBase(object):
                         "client_type"           : self.client_type(),
                         "python.version"        : sys.version_info[:3],
                         })
+        if self.display:
+            capabilities["display"] = self.display
         capabilities.update(get_platform_info())
         add_version_info(capabilities)
 
         if self.encryption:
             assert self.encryption in ENCRYPTION_CIPHERS
-            capabilities["cipher"] = self.encryption
             iv = get_hex_uuid()[:16]
-            capabilities["cipher.iv"] = iv
             key_salt = get_hex_uuid()
-            capabilities["cipher.key_salt"] = key_salt
             iterations = 1000
-            capabilities["cipher.key_stretch_iterations"] = iterations
+            capabilities.update({
+                        "cipher"                       : self.encryption,
+                        "cipher.iv"                    : iv,
+                        "cipher.key_salt"              : key_salt,
+                        "cipher.key_stretch_iterations": iterations,
+                        })
             key = self.get_encryption_key()
             if key is None:
                 self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")

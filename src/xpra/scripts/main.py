@@ -462,7 +462,7 @@ When unspecified, all the available codecs are allowed and the first one is used
 
 def parse_display_name(error_cb, opts, display_name):
     desc = {"display_name" : display_name}
-    if display_name.startswith("ssh:") or display_name.startswith("ssh/"):
+    if display_name.lower().startswith("ssh:") or display_name.lower().startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
         desc["type"] = "ssh"
         desc["proxy_command"] = ["_proxy"]
@@ -470,8 +470,10 @@ def parse_display_name(error_cb, opts, display_name):
         parts = display_name.split(separator)
         if len(parts)>2:
             host = separator.join(parts[1:-1])
-            desc["display"] = ":" + parts[-1]
-            desc["display_as_args"] = [desc["display"]]
+            display = ":" + parts[-1]
+            desc["display"] = display
+            opts.display = display
+            desc["display_as_args"] = [display]
         else:
             host = parts[1]
             desc["display"] = None
@@ -487,10 +489,12 @@ def parse_display_name(error_cb, opts, display_name):
                 password = username[ppos+1:]
                 username = username[:ppos]
                 desc["password"] = password
-            desc["username"] = username
+            if username:
+                desc["username"] = username
+                opts.username = username
             full_ssh += ["-l", username]
         desc["host"] = host
-        full_ssh += ["-T", desc["host"]]
+        full_ssh += ["-T", host]
         desc["full_ssh"] = full_ssh
         remote_xpra = opts.remote_xpra.split()
         if opts.socket_dir:
@@ -511,6 +515,7 @@ def parse_display_name(error_cb, opts, display_name):
         desc["type"] = "unix-domain"
         desc["local"] = True
         desc["display"] = display_name
+        opts.display = display_name
         desc["socket_dir"] = osexpand(opts.socket_dir or get_default_socket_dir(), opts.username)
         return desc
     elif display_name.startswith("tcp:") or display_name.startswith("tcp/"):
@@ -518,15 +523,39 @@ def parse_display_name(error_cb, opts, display_name):
         desc["type"] = "tcp"
         desc["local"] = False
         parts = display_name.split(separator)
-        if len(parts)!=3:
-            error_cb("invalid tcp connection string, use tcp/HOST/PORT or tcp:host:port")
-        port = int(parts[-1])
+        if len(parts) not in (3, 4):
+            error_cb("invalid tcp connection string, use tcp/[username@]host/port[/display] or tcp:[username@]host:port[:display]")
+        #display (optional):
+        if len(parts)==4:
+            display = parts[3]
+            if display:
+                try:
+                    v = int(display)
+                    display = ":%s" % v
+                except:
+                    pass
+                desc["display"] = display
+                opts.display = display
+        #port:
+        port = parts[2]
+        try:
+            port = int(port)
+        except:
+            error_cb("invalid port, not a number: %s" % port)
         if port<=0 or port>=65536:
             error_cb("invalid port number: %s" % port)
         desc["port"] = port
-        desc["host"] = separator.join(parts[1:-1])
-        if desc["host"] == "":
-            desc["host"] = "127.0.0.1"
+        #host:
+        host = parts[1]
+        if host.find("@")>0:
+            username, host = host.split("@", 1)
+            if username:
+                desc["username"] = username
+                opts.username = username
+        if host == "":
+            host = "127.0.0.1"
+        desc["host"] = host
+        print("desc=%s" % desc)
         return desc
     else:
         error_cb("unknown format for display name: %s" % display_name)

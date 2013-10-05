@@ -395,6 +395,7 @@ OPTION_TYPES = {
                     "log-file"          : str,
                     "mode"              : str,
                     "window-layout"     : str,
+                    "display"           : str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -478,6 +479,7 @@ def get_defaults():
                     "socket-dir"        : "",
                     "log-file"          : "$DISPLAY.log",
                     "window-layout"     : "",
+                    "display"           : "",
                     "quality"           : -1,
                     "min-quality"       : 50,
                     "speed"             : -1,
