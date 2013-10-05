@@ -19,11 +19,11 @@ from xpra.log import Logger
 log = Logger()
 
 import xpra
-from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
+from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
-from xpra.os_util import set_application_name, load_binary_file, platform_name, SIGNAMES
-from xpra.version_util import version_compat_check, add_version_info
+from xpra.os_util import set_application_name, load_binary_file, SIGNAMES
+from xpra.version_util import version_compat_check, add_version_info, get_platform_info
 from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps
 from xpra.util import typedict
 
@@ -36,9 +36,6 @@ def get_server_info(prefix=""):
     info = {
             prefix+"pid"                : os.getpid(),
             prefix+"byteorder"          : sys.byteorder,
-            prefix+"platform"           : platform_name(sys.platform, python_platform.release()),
-            prefix+"platform.release"   : python_platform.release(),
-            prefix+"platform.platform"  : python_platform.platform(),
             prefix+"hostname"           : socket.gethostname(),
             prefix+"python.full_version": sys.version,
             prefix+"python.version"     : sys.version_info[:3],
@@ -49,13 +46,12 @@ def get_server_info(prefix=""):
                 info[prefix+x] = getattr(os, "get%s" % x)()
             except:
                 pass
-    if sys.platform.startswith("linux"):
-        info[prefix+"platform.linux_distribution"] = python_platform.linux_distribution()
     try:
         import Crypto
         info[prefix+"pycrypto.version"] = Crypto.__version__
     except:
         pass
+    info.update(get_platform_info(prefix))
     add_version_info(info, prefix)
     return info
 

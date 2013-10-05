@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 from xpra import __version__ as local_version
 from xpra.log import Logger
 log = Logger()
@@ -39,15 +40,30 @@ def add_version_info(props, version_prefix=""):
     try:
         from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
         from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU
-        props["build.local_modifications"] = LOCAL_MODIFICATIONS
-        props["build.date"] = BUILD_DATE
-        props["build.by"] = BUILT_BY
-        props["build.on"] = BUILT_ON
-        props["build.bit"] = BUILD_BIT
-        props["build.cpu"] = BUILD_CPU
-        props["build.revision"] = REVISION
+        props[version_prefix+"build.local_modifications"] = LOCAL_MODIFICATIONS
+        props[version_prefix+"build.date"] = BUILD_DATE
+        props[version_prefix+"build.by"] = BUILT_BY
+        props[version_prefix+"build.on"] = BUILT_ON
+        props[version_prefix+"build.bit"] = BUILD_BIT
+        props[version_prefix+"build.cpu"] = BUILD_CPU
+        props[version_prefix+"build.revision"] = REVISION
     except:
         pass
+
+def get_platform_info(prefix=""):
+    from xpra.scripts.config import python_platform
+    from xpra.os_util import platform_name
+    info = {
+            prefix+"platform"           : sys.platform,
+            prefix+"platform.name"      : platform_name(sys.platform, python_platform.release()),
+            prefix+"platform.release"   : python_platform.release(),
+            prefix+"platform.platform"  : python_platform.platform(),
+            prefix+"platform.machine"   : python_platform.machine(),
+            prefix+"platform.processor" : python_platform.processor(),
+            }
+    if sys.platform.startswith("linux"):
+        info[prefix+"platform.linux_distribution"] = python_platform.linux_distribution()
+    return info
 
 
 def main():

@@ -485,6 +485,19 @@ class ServerSource(object):
             if self.name:
                 msg += " ('%s')" % std(self.name)
         log.info(msg)
+        if c.boolget("proxy"):
+            proxy_hostname = c.strget("proxy.hostname")
+            proxy_platform = c.strget("proxy.platform")
+            proxy_release = c.strget("proxy.platform.release")
+            proxy_version = c.strget("proxy.version")
+            msg = "via %s proxy version %s" % (platform_name(proxy_platform, proxy_release), std(proxy_version))
+            if proxy_hostname:
+                msg += " on '%s'" % std(proxy_hostname)
+            log.info(msg)
+            from xpra.version_util import version_compat_check
+            msg = version_compat_check(proxy_version)
+            if msg:
+                log.warn("Warning: proxy version may not be compatible: %s", msg)
 
         #keyboard:
         try:

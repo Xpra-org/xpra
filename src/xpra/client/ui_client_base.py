@@ -23,10 +23,10 @@ from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBO
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
 from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs, codec_versions
 from xpra.simple_stats import std_unit
-from xpra.net.protocol import Compressed, has_lz4
+from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import set_application_name, thread, Queue, os_info
-from xpra.util import nn
+from xpra.os_util import set_application_name, thread, Queue, os_info, platform_name
+from xpra.util import nn, std
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -572,52 +572,60 @@ class UIXpraClient(XpraClientBase):
                 capabilities["server_uuid"] = get_uuid() or ""
             except:
                 pass
-        capabilities["randr_notify"] = True
-        capabilities["compressible_cursors"] = True
-        capabilities["dpi"] = self.dpi
-        capabilities["clipboard"] = self.client_supports_clipboard
-        capabilities["clipboard.notifications"] = self.client_supports_clipboard
-        #buggy osx clipboards:
-        capabilities["clipboard.want_targets"] = CLIPBOARD_WANT_TARGETS
-        #buggy osx and win32 clipboards:
-        capabilities["clipboard.greedy"] = CLIPBOARD_GREEDY
-        capabilities["notifications"] = self.client_supports_notifications
-        capabilities["cursors"] = self.client_supports_cursors
-        capabilities["bell"] = self.client_supports_bell
+        capabilities.update({
+                    "randr_notify"              : True,
+                    "compressible_cursors"      : True,
+                    "dpi"                       : self.dpi,
+                    "clipboard"                 : self.client_supports_clipboard,
+                    "clipboard.notifications"   : self.client_supports_clipboard,
+                    #buggy osx clipboards:
+                    "clipboard.want_targets"    : CLIPBOARD_WANT_TARGETS,
+                    #buggy osx and win32 clipboards:
+                    "clipboard.greedy"          : CLIPBOARD_GREEDY,
+                    "notifications"             : self.client_supports_notifications,
+                    "cursors"                   : self.client_supports_cursors,
+                    "bell"                      : self.client_supports_bell
+                    })
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
-        capabilities["encoding.client_options"] = True
-        capabilities["encoding_client_options"] = True
-        capabilities["encoding.csc_atoms"] = True
-        #TODO: check for csc support (swscale only?)
-        capabilities["encoding.video_scaling"] = True
-        capabilities["encoding.rgb_lz4"] = has_lz4 and self.compression_level>0 and self.compression_level<3
-        capabilities["encoding.transparency"] = self.has_transparency()
-        #TODO: check for csc support (swscale only?)
-        capabilities["encoding.csc_modes"] = ("YUV420P", "YUV422P", "YUV444P", "BGRA", "BGRX")
-        capabilities["rgb24zlib"] = True
-        capabilities["encoding.rgb24zlib"] = True
-        capabilities["named_cursors"] = False
-        capabilities["share"] = self.client_supports_sharing
-        capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
-        capabilities["windows"] = self.windows_enabled
-        capabilities["window.raise"] = True
-        capabilities["raw_window_icons"] = True
-        capabilities["system_tray"] = self.client_supports_system_tray
-        capabilities["xsettings-tuple"] = True
-        capabilities["generic_window_types"] = True
-        capabilities["server-window-resize"] = True
-        capabilities["notify-startup-complete"] = True
-        capabilities["generic-rgb-encodings"] = True
+        capabilities.update({
+                    "encoding.client_options"   : True,
+                    "encoding_client_options"   : True,
+                    "encoding.csc_atoms"        : True,
+                    #TODO: check for csc support (swscale only?)
+                    "encoding.video_scaling"    : True,
+                    "encoding.rgb_lz4"          : use_lz4 and self.compression_level==1,
+                    "encoding.transparency"     : self.has_transparency(),
+                    #TODO: check for csc support (swscale only?)
+                    "encoding.csc_modes"        : ("YUV420P", "YUV422P", "YUV444P", "BGRA", "BGRX"),
+                    "rgb24zlib"                 : True,
+                    "encoding.rgb24zlib"        : True,
+                    "named_cursors"             : False,
+                    "share"                     : self.client_supports_sharing,
+                    "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
+                    "windows"                   : self.windows_enabled,
+                    "window.raise"              : True,
+                    "raw_window_icons"          : True,
+                    "system_tray"               : self.client_supports_system_tray,
+                    "xsettings-tuple"           : True,
+                    "generic_window_types"      : True,
+                    "server-window-resize"      : True,
+                    "notify-startup-complete"   : True,
+                    "generic-rgb-encodings"     : True
+                    })
         if self.encoding:
             capabilities["encoding"] = self.encoding
-        capabilities["encodings"] = self.get_encodings()
-        capabilities["encodings.core"] = self.get_core_encodings()
-        capabilities["encodings.rgb_formats"] = ["RGB", "RGBA"]
+        capabilities.update({
+                    "encodings"                 : self.get_encodings(),
+                    "encodings.core"            : self.get_core_encodings(),
+                    "encodings.rgb_formats"     : ["RGB", "RGBA"]
+                    })
         if self.quality>0:
-            capabilities["jpeg"] = self.quality
-            capabilities["quality"] = self.quality
-            capabilities["encoding.quality"] = self.quality
+            capabilities.update({
+                         "jpeg"             : self.quality,
+                         "quality"          : self.quality,
+                         "encoding.quality" : self.quality
+                         })
         if self.min_quality>0:
             capabilities["encoding.min-quality"] = self.min_quality
         if self.speed>=0:
@@ -860,6 +868,15 @@ class UIXpraClient(XpraClientBase):
         if self._remote_revision:
             r += " (r%s)" % self._remote_revision
         log.info("server: %s, Xpra version %s", i, r)
+        if c.boolget("proxy"):
+            log.info("via %s proxy version %s")
+            proxy_hostname = c.strget("proxy.hostname")
+            proxy_platform = c.strget("proxy.platform")
+            proxy_release = c.strget("proxy.platform.release")
+            proxy_version = c.strget("proxy.version")
+            msg = "via %s proxy version %s" % (platform_name(proxy_platform, proxy_release), std(proxy_version))
+            if proxy_hostname:
+                msg += " on '%s'" % std(proxy_hostname)
         #process the rest from the UI thread:
         self.idle_add(self.process_ui_capabilities, c)
 

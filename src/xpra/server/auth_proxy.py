@@ -4,14 +4,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import socket
 import os
 import signal
 import gobject
 gobject.threads_init()
 from threading import Timer
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_PROXY_DEBUG")
 
 from xpra.server.server_core import ServerCore, get_server_info, get_thread_info
 from xpra.scripts.config import make_defaults_struct
@@ -86,9 +88,9 @@ class ProxyServer(ServerCore):
         if sessions is None:
             disconnect("no sessions found")
             return
-        log.info("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
+        debug("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         uid, gid, displays, env_options, session_options = sessions
-        #log.debug("unused options: %s, %s", env_options, session_options)
+        #debug("unused options: %s, %s", env_options, session_options)
         if len(displays)==0:
             disconnect("no displays found")
             return
@@ -110,7 +112,7 @@ class ProxyServer(ServerCore):
                 return
             display = displays[0]
 
-        log.info("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
+        debug("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
         def parse_error(*args):
             disconnect("invalid display string")
             log.warn("parse error on %s: %s", display, args)
@@ -118,14 +120,14 @@ class ProxyServer(ServerCore):
         opts = make_defaults_struct()
         opts.username = c.strget("username")
         disp_desc = parse_display_name(parse_error, opts, display)
-        log.info("display description(%s) = %s", display, disp_desc)
+        debug("display description(%s) = %s", display, disp_desc)
         try:
             server_conn = connect_to(disp_desc)
         except Exception, e:
             log.error("cannot start proxy connection to %s: %s", disp_desc, e)
             disconnect("failed to connect to display")
             return
-        log.info("server connection=%s", server_conn)
+        debug("server connection=%s", server_conn)
 
         #grab client connection so we can pass it to the ProxyProcess:
         client_conn = client_proto.steal_connection()
@@ -136,15 +138,15 @@ class ProxyServer(ServerCore):
             cipher = auth_caps.get("cipher")
             if cipher:
                 encryption_key = self.get_encryption_key(client_proto.authenticator)
-        log.info("start_proxy(..) client connection=%s", client_conn)
-        log.info("start_proxy(..) client state=%s", client_state)
+        debug("start_proxy(..) client connection=%s", client_conn)
+        debug("start_proxy(..) client state=%s", client_state)
 
         assert uid!=0 and gid!=0
         try:
             process = ProxyProcess(uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, c, self.proxy_ended)
-            log.info("starting %s from pid=%s", process, os.getpid())
+            debug("starting %s from pid=%s", process, os.getpid())
             process.start()
-            log.info("process started")
+            debug("process started")
             #FIXME: remove processes that have terminated
             self.processes.append(process)
         finally:
@@ -153,10 +155,10 @@ class ProxyServer(ServerCore):
             server_conn.close()
 
     def proxy_ended(self, proxy_process):
-        log.info("proxy_ended(%s)", proxy_process)
+        debug("proxy_ended(%s)", proxy_process)
         if proxy_process in self.processes:
             self.processes.remove(proxy_process)
-        log.info("processes: %s", self.processes)
+        debug("processes: %s", self.processes)
 
 
     def get_info(self, proto, *args):
@@ -182,14 +184,14 @@ class ProxyProcess(Process):
         self.server_conn = server_conn
         self.caps = caps
         self.exit_cb = exit_cb
-        log.info("ProxyProcess%s", (uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, "{..}"))
+        debug("ProxyProcess%s", (uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, "{..}"))
         self.client_protocol = None
         self.server_protocol = None
         self.main_queue = None
 
     def signal_quit(self, signum, frame):
         log.info("")
-        log.info("proxy process got signal %s, exiting", SIGNAMES.get(signum, signum))
+        log.info("proxy process pid %s got signal %s, exiting", os.getpid(), SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(SIGNAMES.get(signum, signum))
@@ -214,18 +216,18 @@ class ProxyProcess(Process):
         timer.start()
 
     def run(self):
-        log.info("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), os.getuid(), os.getgid())
+        debug("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), os.getuid(), os.getgid())
         #change uid and gid:
         if os.getgid()!=self.gid:
             os.setgid(self.gid)
         if os.getuid()!=self.uid:
             os.setuid(self.uid)
-        
+
+        log.info("new proxy started for client %s and server %s", self.client_conn, self.server_conn)
+
         if not USE_THREADING:
-            #signal.signal(signal.SIGTERM, self.signal_quit)
-            #signal.signal(signal.SIGINT, self.signal_quit)
-            pass
-            #assert os.getuid()!=0
+            signal.signal(signal.SIGTERM, self.signal_quit)
+            signal.signal(signal.SIGINT, self.signal_quit)
 
         self.main_queue = Queue()
         #setup protocol wrappers:
@@ -241,7 +243,7 @@ class ProxyProcess(Process):
         self.server_protocol.large_packets.append("server-settings")
         self.server_protocol.set_compression_level(0)
 
-        log.debug("starting network threads")
+        debug("starting network threads")
         self.server_protocol.start()
         self.client_protocol.start()
 
@@ -273,17 +275,20 @@ class ProxyProcess(Process):
                 pcaps[k] = v
         #replace the network caps with the proxy's own:
         pcaps.update(get_network_caps())
+        #then add the proxy info:
+        pcaps.update(get_server_info("proxy."))
         pcaps["proxy"] = True
+        pcaps["proxy.hostname"] = socket.gethostname()
         return pcaps
 
 
     def run_queue(self):
-        log.debug("run_queue() queue has %s items already in it", self.main_queue.qsize())
+        debug("run_queue() queue has %s items already in it", self.main_queue.qsize())
         #process "idle_add"/"timeout_add" events in the main loop:
         while True:
-            log.debug("run_queue() size=%s", self.main_queue.qsize())
+            debug("run_queue() size=%s", self.main_queue.qsize())
             v = self.main_queue.get()
-            log.debug("item=%s", v)
+            debug("item=%s", v)
             if v is None:
                 break
             fn, args, kwargs = v
@@ -296,7 +301,7 @@ class ProxyProcess(Process):
                 log.error("error during main loop callback %s", fn, exc_info=True)
 
     def stop(self, reason="proxy terminating", skip_proto=None):
-        log.info("stop(%s, %s)", reason, skip_proto)
+        debug("stop(%s, %s)", reason, skip_proto)
         #empty the main queue:
         q = Queue()
         q.put(None)
@@ -307,31 +312,30 @@ class ProxyProcess(Process):
 
 
     def queue_server_packet(self, packet):
-        log.info("queueing server packet: %s", packet[0])
+        debug("queueing server packet: %s", packet[0])
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
 
     def get_server_packet(self):
         #server wants a packet
         p = self.server_packets.get()
-        log.info("sending to server: %s", p[0])
+        debug("sending to server: %s", p[0])
         return p,
 
     def queue_client_packet(self, packet):
-        log.info("queueing client packet: %s", packet[0])
+        debug("queueing client packet: %s", packet[0])
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
 
     def get_client_packet(self):
         #server wants a packet
         p = self.client_packets.get()
-        log.info("sending to client: %s", p[0])
+        debug("sending to client: %s", p[0])
         return p,
 
     def process_server_packet(self, proto, packet):
         packet_type = packet[0]
-        log.info("process_server_packet: %s", packet_type)
-        #log.info("process_server_packet: %s", packet)
+        debug("process_server_packet: %s", packet_type)
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop("server connection lost", proto)
             return
@@ -351,7 +355,7 @@ class ProxyProcess(Process):
 
     def process_client_packet(self, proto, packet):
         packet_type = packet[0]
-        log.info("process_client_packet: %s", packet_type)
+        debug("process_client_packet: %s", packet_type)
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop("client connection lost", proto)
             return
