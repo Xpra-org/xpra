@@ -15,9 +15,9 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger()
 
-from xpra.net.protocol import Protocol, has_rencode, use_lz4, rencode_version, use_rencode, get_network_caps
-from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
-from xpra.version_util import version_compat_check, add_version_info
+from xpra.net.protocol import Protocol, use_lz4, use_rencode, get_network_caps
+from xpra.scripts.config import ENCRYPTION_CIPHERS
+from xpra.version_util import version_compat_check, add_version_info, get_platform_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, load_binary_file, SIGNAMES, strtobytes, bytestostr
@@ -178,15 +178,10 @@ class XpraClientBase(object):
                         "uuid"                  : self.uuid,
                         "username"              : self.username,
                         "name"                  : get_name(),
-                        "platform"              : sys.platform,
-                        "platform.release"      : python_platform.release(),
-                        "platform.machine"      : python_platform.machine(),
-                        "platform.processor"    : python_platform.processor(),
                         "client_type"           : self.client_type(),
                         "python.version"        : sys.version_info[:3],
                         })
-        if has_rencode:
-            capabilities["rencode.version"] = rencode_version
+        capabilities.update(get_platform_info())
         add_version_info(capabilities)
 
         if self.encryption:
