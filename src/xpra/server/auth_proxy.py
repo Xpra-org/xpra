@@ -13,7 +13,7 @@ from threading import Timer
 from xpra.log import Logger
 log = Logger()
 
-from xpra.server.server_core import ServerCore
+from xpra.server.server_core import ServerCore, get_server_info, get_thread_info
 from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.main import parse_display_name, connect_to
 from xpra.scripts.server import deadly_signal
@@ -157,6 +157,7 @@ class ProxyServer(ServerCore):
         if proxy_process in self.processes:
             self.processes.remove(proxy_process)
         log.info("processes: %s", self.processes)
+
 
     def get_info(self, proto, *args):
         info = ServerCore.get_info(self, proto)
@@ -341,9 +342,11 @@ class ProxyProcess(Process):
                 auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key)
                 caps.update(auth_caps)
             packet = ("hello", caps)
-        elif packet_type=="info":
-            #TODO: filter / add proxy info here
-            pass
+        elif packet_type=="info-response":
+            #adds proxy info:
+            info = packet[1]
+            info.update(get_server_info("proxy."))
+            info.update(get_thread_info("proxy.", proto))
         self.queue_client_packet(packet)
 
     def process_client_packet(self, proto, packet):

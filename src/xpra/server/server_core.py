@@ -24,11 +24,66 @@ from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import set_application_name, load_binary_file, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info
-from xpra.net.protocol import Protocol, has_rencode, use_lz4, rencode_version, use_rencode, new_cipher_caps, get_network_caps
+from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps
 from xpra.util import typedict
 
 
 MAX_CONCURRENT_CONNECTIONS = 20
+
+
+def get_server_info(prefix=""):
+    #this function is for non UI thread info
+    info = {
+            prefix+"pid"                : os.getpid(),
+            prefix+"byteorder"          : sys.byteorder,
+            prefix+"platform"           : platform_name(sys.platform, python_platform.release()),
+            prefix+"platform.release"   : python_platform.release(),
+            prefix+"platform.platform"  : python_platform.platform(),
+            prefix+"hostname"           : socket.gethostname(),
+            prefix+"python.full_version": sys.version,
+            prefix+"python.version"     : sys.version_info[:3],
+            }
+    for x in ("uid", "gid"):
+        if hasattr(os, "get%s" % x):
+            try:
+                info[prefix+x] = getattr(os, "get%s" % x)()
+            except:
+                pass
+    if sys.platform.startswith("linux"):
+        info[prefix+"platform.linux_distribution"] = python_platform.linux_distribution()
+    try:
+        import Crypto
+        info[prefix+"pycrypto.version"] = Crypto.__version__
+    except:
+        pass
+    add_version_info(info, prefix)
+    return info
+
+def get_thread_info(prefix="", proto=None):
+    #threads:
+    info = {}
+    info_threads = proto.get_threads()
+    info[prefix+"threads"] = threading.active_count() - len(info_threads)
+    info[prefix+"info_threads"] = len(info_threads)
+    i = 0
+    #threads used by the "info" client:
+    for t in info_threads:
+        info[prefix+"info_thread[%s]" % i] = t.name
+        i += 1
+    i = 0
+    #all non-info threads:
+    for t in threading.enumerate():
+        if t not in info_threads:
+            info[prefix+"thread[%s]" % i] = t.name
+            i += 1
+    #platform specific bits:
+    try:
+        from xpra.platform.info import get_sys_info
+        for k,v in get_sys_info().items():
+            info[prefix+k] = v
+    except:
+        log.error("error getting system info", exc_info=True)
+    return info
 
 
 class ServerCore(object):
@@ -392,27 +447,15 @@ class ServerCore(object):
     def make_hello(self):
         now = time.time()
         capabilities = get_network_caps()
+        capabilities.update(get_server_info())
         capabilities.update({
-                        "hostname"              : socket.gethostname(),
-                        "version"               : xpra.__version__,
                         "start_time"            : int(self.start_time),
-                        "python_version"        : python_platform.python_version(),
-                        "platform"              : sys.platform,
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),
                         "server_type"           : "core",
                         })
-        try:
-            capabilities["platform.release"] = python_platform.release()
-            capabilities["platform.platform"] = python_platform.platform()
-        except Exception, e:
-            log.warn("error getting platform information: %s", e)
-        if sys.platform.startswith("linux"):
-            capabilities["platform.linux_distribution"] = python_platform.linux_distribution()
         if self.session_name:
             capabilities["session_name"] = self.session_name
-        if has_rencode:
-            capabilities["rencode.version"] = rencode_version
         if self._reverse_aliases:
             capabilities["aliases"] = self._reverse_aliases
         add_version_info(capabilities)
@@ -453,33 +496,13 @@ class ServerCore(object):
 
     def get_info(self, proto, *args):
         #this function is for non UI thread info
-        info = {"server.type"               : "core",
-                "server.pid"                : os.getpid(),
-                "server.byteorder"          : sys.byteorder,
-                "server.platform"           : platform_name(sys.platform, python_platform.release()),
-                "server.platform.release"   : python_platform.release(),
-                "server.platform.platform"  : python_platform.platform(),
-                "server.hostname"           : socket.gethostname(),
+        info = get_server_info("server.")
+        info.update({
+                "server.type"               : "core",
                 "server.start_time"         : int(self.start_time),
-                "server.python.full_version": sys.version,
-                "server.python.version"     : sys.version_info[:3],
                 "session.name"              : self.session_name or "",
                 "features.authenticator"    : str((self.auth_class or str)("")),
-                }
-        for x in ("uid", "gid"):
-            if hasattr(os, "get%s" % x):
-                try:
-                    info["server."+x] = getattr(os, "get%s" % x)()
-                except:
-                    pass
-        if sys.platform.startswith("linux"):
-            info["server.platform.linux_distribution"] = python_platform.linux_distribution()
-        try:
-            import Crypto
-            info["server.pycrypto.version"] = Crypto.__version__
-        except:
-            pass
-        add_version_info(info, "server.")
+                })
         info.update(self.get_thread_info(proto))
         return info
 

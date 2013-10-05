@@ -106,13 +106,16 @@ def new_cipher_caps(proto, cipher, encryption_key):
                  }
 
 def get_network_caps():
-    return {
+    caps = {
                 "raw_packets"           : True,
                 "chunked_compression"   : True,
                 "digest"                : ("hmac", "xor"),
                 "rencode"               : use_rencode,
                 "lz4"                   : use_lz4,
                }
+    if has_rencode:
+        caps["rencode.version"] = rencode_version
+    return caps
 
 
 def repr_ellipsized(obj, limit=100):
