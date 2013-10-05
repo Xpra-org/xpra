@@ -551,7 +551,10 @@ class ServerBase(ServerCore):
             capabilities.update(server_cipher)
         server_source.hello(capabilities)
 
-    def get_ui_info(self, proto, client_uuids, wids, *args):
+    def send_hello_info(self, proto):
+        self.get_all_info(self.do_send_info, proto, self._id_to_window.keys())
+
+    def get_ui_info(self, proto, wids, *args):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """

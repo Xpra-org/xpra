@@ -420,14 +420,20 @@ class ServerCore(object):
 
 
     def send_hello_info(self, proto):
-        def send_info(info):
-            proto.send_now(("hello", info))
-        self.get_all_info(send_info, proto, self._id_to_window.keys())
+        #Note: this can be overriden in subclasses to pass arguments to get_ui_info()
+        #(ie: see server_base)
+        self.get_all_info(self.do_send_info, proto)
+
+    def do_send_info(self, proto, info):
+        proto.send_now(("hello", info))
 
     def _process_info_request(self, proto, packet):
         ss = self._server_sources.get(proto)
         assert ss, "cannot find server source for %s" % proto
-        self.get_all_info(ss.send_info_response, proto, *packet[1:])
+        def info_callback(_proto, info):
+            assert proto==_proto
+            ss.send_info_response(info)
+        self.get_all_info(info_callback, proto, *packet[1:])
 
     def get_all_info(self, callback, proto, *args):
         ui_info = self.get_ui_info(proto, *args)
@@ -438,7 +444,7 @@ class ServerCore(object):
                 ui_info.update(info)
             except Exception, e:
                 log.error("error during info collection: %s", e, exc_info=True)
-            callback(ui_info)
+            callback(proto, ui_info)
         thread.start_new_thread(in_thread, ())
 
     def get_ui_info(self, proto, *args):
@@ -475,6 +481,7 @@ class ServerCore(object):
             pass
         add_version_info(info, "server.")
         info.update(self.get_thread_info(proto))
+        return info
 
     def get_thread_info(self, proto):
         #threads:
@@ -500,7 +507,7 @@ class ServerCore(object):
                 info[k] = v
         except:
             log.error("error getting system info", exc_info=True)
-
+        return info
 
     def process_packet(self, proto, packet):
         try:
