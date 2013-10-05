@@ -24,7 +24,7 @@ class Authenticator(object):
     def get_password(self):
         return None
 
-    def authenticate(self, challenge_response):
+    def authenticate(self, challenge_response, client_salt):
         return False
 
     def get_sessions(self):

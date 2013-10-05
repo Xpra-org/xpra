@@ -5,6 +5,7 @@
 
 from xpra.dotxpra import DotXpra
 from xpra.util import xor
+from xpra.util import merge
 from xpra.os_util import get_hex_uuid
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -42,12 +43,17 @@ class SysAuthenticator(object):
     def check(self, password):
         raise NotImplementedError()
 
-    def authenticate(self, challenge_response):
+    def authenticate(self, challenge_response, client_salt):
         global socket_dir
         if self.salt is None:
             log.error("got a challenge response with no salt!")
             return False
-        password = xor(challenge_response, self.salt)
+        if client_salt is None:
+            salt = self.salt
+        else:
+            salt = merge(self.salt, client_salt)
+        self.salt = None
+        password = xor(challenge_response, salt)
         #warning: enabling logging here would log the actual system password!
         #log("authenticate(%s) password=%s", challenge_response, password)
         #verify login:

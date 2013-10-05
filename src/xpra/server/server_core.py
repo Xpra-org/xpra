@@ -330,9 +330,10 @@ class ServerCore(object):
 
         #verify authentication if required:
         if proto.authenticator:
-            log("processing authentication with %s", proto.authenticator)
-            #send challenge if this is not a response:
             challenge_response = c.strget("challenge_response")
+            client_salt = c.strget("challenge_client_salt")
+            log("processing authentication with %s, response=%s, client_salt=%s", proto.authenticator, challenge_response, client_salt)
+            #send challenge if this is not a response:
             if not challenge_response:
                 challenge = proto.authenticator.get_challenge()
                 if challenge is None:
@@ -345,7 +346,8 @@ class ServerCore(object):
                     return False
                 proto.send_now(("challenge", salt, auth_caps or "", digest))
                 return False
-            if not proto.authenticator.authenticate(challenge_response):
+
+            if not proto.authenticator.authenticate(challenge_response, client_salt):
                 auth_failed("invalid challenge response")
                 return False
             log("authentication challenge passed")
@@ -390,6 +392,7 @@ class ServerCore(object):
                         "elapsed_time"          : int(now - self.start_time),
                         "raw_packets"           : True,
                         "chunked_compression"   : True,
+                        "digest"                : ("hmac", "xor"),
                         "server_type"           : "core",
                         "lz4"                   : has_lz4,
                         "rencode"               : has_rencode,
@@ -399,7 +402,6 @@ class ServerCore(object):
             capabilities["platform.platform"] = python_platform.platform()
         except Exception, e:
             log.warn("error getting platform information: %s", e)
-        capabilities["digest"] = ("hmac", "xor")
         if sys.platform.startswith("linux"):
             capabilities["platform.linux_distribution"] = python_platform.linux_distribution()
         if self.session_name:

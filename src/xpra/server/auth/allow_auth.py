@@ -24,5 +24,5 @@ class Authenticator(SysAuthenticator):
     def get_password(self):
         return None
 
-    def authenticate(self, challenge_response):
+    def authenticate(self, challenge_response, client_salt):
         return True

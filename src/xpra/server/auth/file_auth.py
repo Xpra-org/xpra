@@ -11,10 +11,10 @@
 
 import os.path
 import sys
-import pwd
 import hmac
 
 from xpra.os_util import get_hex_uuid
+from xpra.util import merge
 from xpra.dotxpra import DotXpra
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -139,23 +139,26 @@ class Authenticator(object):
             return None
         return entry[0]
 
-    def authenticate(self, challenge_response):
+    def authenticate(self, challenge_response, client_salt):
         global password_file
         if not self.salt:
             log.error("illegal challenge response received - salt cleared or unset")
             return None
         #ensure this salt does not get re-used:
-        salt = self.salt
+        if client_salt is None:
+            salt = self.salt
+        else:
+            salt = merge(self.salt, client_salt)
         self.salt = None
         entry = self.get_entry()
         if entry is None:
             log.error("usename %s does not exist in %s", self.username, password_file)
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
-        hash = hmac.HMAC(fpassword, salt).hexdigest()
-        debug("authenticate(%s) password=%s, salt=%s, hash=%s", challenge_response, fpassword, salt, hash)
-        if hash!=challenge_response:
-            debug("expected '%s' but got '%s'", hash, challenge_response)
+        verify = hmac.HMAC(fpassword, salt).hexdigest()
+        debug("authenticate(%s) password=%s, salt=%s, hash=%s", challenge_response, fpassword, salt, verify)
+        if verify!=challenge_response:
+            debug("expected '%s' but got '%s'", verify, challenge_response)
             log.error("hmac password challenge for %s does not match", self.username)
             return False
         self.sessions = uid, gid, displays, env_options, session_options
