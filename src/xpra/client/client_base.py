@@ -21,7 +21,7 @@ from xpra.version_util import version_compat_check, add_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict
+from xpra.util import typedict, merge
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -154,15 +154,20 @@ class XpraClientBase(object):
             self._reverse_aliases[key] = i
             i += 1
 
-    def send_hello(self, challenge_response=None):
-        hello = self.make_hello_base(challenge_response)
+    def send_hello(self, challenge_response=None, client_salt=None):
+        hello = self.make_hello_base()
         #we could avoid sending the full hello in some cases
         #(ie: auth requested which will trigger a new hello)
         hello.update(self.make_hello())
+        if challenge_response:
+            assert self.password
+            hello["challenge_response"] = challenge_response
+            if client_salt:
+                hello["challenge_client_salt"] = client_salt
         log.debug("send_hello(%s) packet=%s", binascii.hexlify(challenge_response or ""), hello)
         self.send("hello", hello)
 
-    def make_hello_base(self, challenge_response=None):
+    def make_hello_base(self):
         capabilities = {"namespace"             : True,
                         "raw_packets"           : True,
                         "chunked_compression"   : True,
@@ -184,9 +189,6 @@ class XpraClientBase(object):
             capabilities["rencode.version"] = rencode_version
         add_version_info(capabilities)
 
-        if challenge_response:
-            assert self.password
-            capabilities["challenge_response"] = challenge_response
         if self.encryption:
             assert self.encryption in ENCRYPTION_CIPHERS
             capabilities["cipher"] = self.encryption
@@ -332,12 +334,17 @@ class XpraClientBase(object):
             if not self.set_server_encryption(server_cipher, key):
                 return
         digest = "hmac"
-        if len(packet)>=4:
+        client_can_salt = len(packet)>=4
+        client_salt = None
+        if client_can_salt:
+            #server supports client salt, and tells us which digest to use:
             digest = packet[3]
+            client_salt = get_hex_uuid()
+            #TODO: use some key stretching algorigthm? (meh)
+            salt = merge(salt, client_salt)
         if digest=="hmac":
             import hmac
             challenge_response = hmac.HMAC(self.password, salt).hexdigest()
-            log("hmac(%s, %s)=%s", self.password, salt, challenge_response)
         elif digest=="xor":
             #don't send XORed password unencrypted:
             if not self._protocol.cipher_out and not ALLOW_UNENCRYPTED_PASSWORDS:
@@ -348,8 +355,10 @@ class XpraClientBase(object):
         else:
             self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest)
             return
+        if digest:
+            log("%s(%s, %s)=%s", digest, self.password, salt, challenge_response)
         self.password_sent = True
-        self.send_hello(challenge_response)
+        self.send_hello(challenge_response, client_salt)
 
     def set_server_encryption(self, capabilities, key):
         def get(key, default=None):
