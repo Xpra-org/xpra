@@ -33,17 +33,21 @@ class XpraProxy(object):
         self._to_client._Thread__stop()
 
     def _copy_loop(self, log_name, from_conn, to_conn):
-        while not self._closed:
-            log("%s: waiting for data", log_name)
-            buf = untilConcludes(from_conn.read, 4096)
-            if not buf:
-                log("%s: connection lost", log_name)
-                self.quit()
-                return
-            while buf and not self._closed:
-                log("%s: writing %s bytes", log_name, len(buf))
-                written = untilConcludes(to_conn.write, buf)
-                buf = buf[written:]
+        try:
+            while not self._closed:
+                log("%s: waiting for data", log_name)
+                buf = untilConcludes(from_conn.read, 4096)
+                if not buf:
+                    log("%s: connection lost", log_name)
+                    self.quit()
+                    return
+                while buf and not self._closed:
+                    log("%s: writing %s bytes", log_name, len(buf))
+                    written = untilConcludes(to_conn.write, buf)
+                    buf = buf[written:]
+        except Exception, e:
+            log("%s: %s", log_name, e)
+            self.quit()
 
     def quit(self, *args):
         log("closing proxy connections")
