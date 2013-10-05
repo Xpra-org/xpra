@@ -63,6 +63,8 @@ def data_to_buffer(in_data):
     return BytesIOClass(data)
 
 def platform_name(sys_platform, release):
+    if not sys_platform:
+        return "unknown"
     PLATFORMS = {"win32"    : "Microsoft Windows",
                  "cygwin"   : "Windows/Cygwin",
                  "linux2"   : "Linux",
