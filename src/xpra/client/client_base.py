@@ -15,7 +15,7 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger()
 
-from xpra.net.protocol import Protocol, has_rencode, has_lz4, rencode_version, use_rencode
+from xpra.net.protocol import Protocol, has_rencode, use_lz4, rencode_version, use_rencode, get_network_caps
 from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import version_compat_check, add_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
@@ -171,12 +171,9 @@ class XpraClientBase(object):
         self.send("hello", hello)
 
     def make_hello_base(self):
-        capabilities = {"namespace"             : True,
-                        "raw_packets"           : True,
-                        "chunked_compression"   : True,
-                        "digest"                : ("hmac", "xor"),
-                        "rencode"               : has_rencode,
-                        "lz4"                   : has_lz4,
+        capabilities = get_network_caps()
+        capabilities.update({
+                        "namespace"             : True,
                         "hostname"              : socket.gethostname(),
                         "uuid"                  : self.uuid,
                         "username"              : self.username,
@@ -187,7 +184,7 @@ class XpraClientBase(object):
                         "platform.processor"    : python_platform.processor(),
                         "client_type"           : self.client_type(),
                         "python.version"        : sys.version_info[:3],
-                        }
+                        })
         if has_rencode:
             capabilities["rencode.version"] = rencode_version
         add_version_info(capabilities)
@@ -428,7 +425,7 @@ class XpraClientBase(object):
         self._protocol.chunked_compression = c.boolget("chunked_compression")
         if use_rencode and c.boolget("rencode"):
             self._protocol.enable_rencode()
-        if c.boolget("lz4") and has_lz4 and self._protocol.chunked_compression and self.compression_level==1:
+        if c.boolget("lz4") and use_lz4 and self._protocol.chunked_compression and self.compression_level==1:
             self._protocol.enable_lz4()
         if self.encryption:
             #server uses a new cipher after second hello:

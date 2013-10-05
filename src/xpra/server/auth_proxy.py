@@ -17,7 +17,7 @@ from xpra.server.server_core import ServerCore
 from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.main import parse_display_name, connect_to
 from xpra.scripts.server import deadly_signal
-from xpra.net.protocol import Protocol, new_cipher_caps
+from xpra.net.protocol import Protocol, new_cipher_caps, get_network_caps
 from xpra.os_util import Queue, SIGNAMES
 
 
@@ -257,23 +257,22 @@ class ProxyProcess(Process):
             self.exit_cb(self)
 
     def filter_client_caps(self, caps):
-        #remove caps that the proxy intercepts
-        #FIXME: more filtering needed
-        #hello_packet["encodings"]=("rgb", )
-        pcaps = self.filter_caps(caps, ("cipher", "mmap", "aliases"))
-        pcaps["proxy"] = True
-        return pcaps
+        return self.filter_caps(caps, ("cipher", "digest", "mmap", "aliases"))
 
     def filter_server_caps(self, caps):
         return self.filter_caps(caps, "aliases")
 
     def filter_caps(self, caps, prefixes):
-        #not very pythonic!
+        #removes caps that the proxy overrides / does not use:
+        #(not very pythonic!)
         pcaps = {}
         for k,v in caps.items():
             skip = len([e for e in prefixes if k.startswith(e)])
             if skip==0:
                 pcaps[k] = v
+        #replace the network caps with the proxy's own:
+        pcaps.update(get_network_caps())
+        pcaps["proxy"] = True
         return pcaps
 
 
@@ -342,6 +341,9 @@ class ProxyProcess(Process):
                 auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key)
                 caps.update(auth_caps)
             packet = ("hello", caps)
+        elif packet_type=="info":
+            #TODO: filter / add proxy info here
+            pass
         self.queue_client_packet(packet)
 
     def process_client_packet(self, proto, packet):
@@ -354,5 +356,8 @@ class ProxyProcess(Process):
             #echo it back to the client:
             self.client_packets.put(packet)
             self.client_protocol.source_has_more()
+            return
+        elif packet_type=="hello":
+            log.warn("invalid hello packet received after initial authentication (dropped)")
             return
         self.queue_server_packet(packet)

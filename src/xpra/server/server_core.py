@@ -24,7 +24,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import set_application_name, load_binary_file, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info
-from xpra.net.protocol import Protocol, has_rencode, has_lz4, rencode_version, use_rencode, new_cipher_caps
+from xpra.net.protocol import Protocol, has_rencode, use_lz4, rencode_version, use_rencode, new_cipher_caps, get_network_caps
 from xpra.util import typedict
 
 
@@ -262,7 +262,7 @@ class ServerCore(object):
         proto.chunked_compression = c.boolget("chunked_compression")
         if use_rencode and c.boolget("rencode"):
             proto.enable_rencode()
-        if c.boolget("lz4") and has_lz4 and proto.chunked_compression and self.compression_level==1:
+        if c.boolget("lz4") and use_lz4 and proto.chunked_compression and self.compression_level==1:
             proto.enable_lz4()
 
         log("process_hello: capabilities=%s", capabilities)
@@ -391,7 +391,8 @@ class ServerCore(object):
 
     def make_hello(self):
         now = time.time()
-        capabilities = {
+        capabilities = get_network_caps()
+        capabilities.update({
                         "hostname"              : socket.gethostname(),
                         "version"               : xpra.__version__,
                         "start_time"            : int(self.start_time),
@@ -399,13 +400,8 @@ class ServerCore(object):
                         "platform"              : sys.platform,
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),
-                        "raw_packets"           : True,
-                        "chunked_compression"   : True,
-                        "digest"                : ("hmac", "xor"),
                         "server_type"           : "core",
-                        "lz4"                   : has_lz4,
-                        "rencode"               : has_rencode,
-                        }
+                        })
         try:
             capabilities["platform.release"] = python_platform.release()
             capabilities["platform.platform"] = python_platform.platform()

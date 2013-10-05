@@ -42,6 +42,7 @@ except:
     has_lz4 = False
     def lz4_compress(packet, level):
         raise Exception("lz4 is not supported!")
+use_lz4 = has_lz4 and not os.environ.get("XPRA_USE_LZ4", "1")=="1"
 
 rencode_dumps, rencode_loads, rencode_version = None, None, None
 try:
@@ -103,6 +104,15 @@ def new_cipher_caps(proto, cipher, encryption_key):
                  "cipher.key_salt"  : key_salt,
                  "cipher.key_stretch_iterations" : iterations
                  }
+
+def get_network_caps():
+    return {
+                "raw_packets"           : True,
+                "chunked_compression"   : True,
+                "digest"                : ("hmac", "xor"),
+                "rencode"               : use_rencode,
+                "lz4"                   : use_lz4,
+               }
 
 
 def repr_ellipsized(obj, limit=100):

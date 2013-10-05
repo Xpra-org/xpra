@@ -49,6 +49,7 @@ def add_version_info(props, version_prefix=""):
     except:
         pass
 
+
 def main():
     d = {}
     add_version_info(d)
