@@ -32,13 +32,16 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-enable-sharing\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-encryption\fP=\fICIPHER\fP]
+[\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
+[\fB\-\-auth\fP=\fImodule\fP]
 [\fB\-\-password\-file\fP=\fIfilename\fP]
 [\fB\-\-clipboard-filter\-file\fP=\fIfilename\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBattach\fP
-[\fI:DISPLAY\fP | \fIssh:USER@HOST:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
+[\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP | \fItcp:[USER@]HOST:PORT[:DISPLAY]\fP]
 [\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
 [\fB\-\-no\-mmap\fP]
 [\fB\-\-no\-windows\fP]
@@ -76,6 +79,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-mmap\-group\fP]
 [\fB\-\-enable\-pings\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
+[\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
 .HP
 \fBxpra\fP \fBshadow\fP \fI:DISPLAY\fP
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
@@ -88,11 +92,14 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-microphone\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-auth\fP=\fImodule\fP]
 [\fB\-\-password\-file\fP=\fIfilename\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
+\fBxpra\fP \fBproxy\fP \fI:DISPLAY\fP
+.HP
 \fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+\fItcp:[USER@]HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBdetach\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
@@ -214,8 +221,7 @@ machine regardless of its number, \fBxpra attach ssh:frodo\fP will
 similarly attach to the lone xpra session on a remote machine.
 
 If the xpra server was given the \fB\-\-bind\-tcp\fP option when
-started (which is a security risk unless the \fB\-\-password\-file\fP
-option is used), then you can also connect to it using a display of
+started then you can also connect to it using a display of
 the form \fBtcp:HOST:PORT\fP. (Notice that \fBssh:\fP takes an optional
 \fIdisplay\fP number, while \fBtcp:\fP takes a required \fIport\fP
 number.)
@@ -259,6 +265,10 @@ This command shadows an existing X11 display. Note that this mode of
 operation uses screenscraping which is far less efficient. Using a
 video encoder (x264 or vpx) is highly recommended for this mode of
 operation.
+.SS xpra proxy
+This command allows a single server to proxy connections for multiple
+others, potentially serving as a load balancing or authentication
+entry point for many sessions.
 
 .SS Important Note
 Some platforms and package managers may choose to only build the client
@@ -284,12 +294,13 @@ Disables memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
 This method of data transfer offers much lower overheads
-and reduces both CPU consumption and context switches.
+and reduces both CPU consumption and local network traffic.
 .TP
 \fB\-\-no\-windows\fP
 Tells the server not to send any window data,
 only notifications and bell events will be forwarded - if they
 are enabled.
+.TP
 \fB\-\-no\-clipboard\fP
 Disables clipboard synchronization.
 If used on the server, no clients will be able to use clipboard
@@ -299,7 +310,7 @@ connection will ignore clipboard data from the server.
 \fB\-\-no\-pulseaudio\fP
 Disables the starting of a pulseaudio server with the session.
 .TP
-\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP
+\fB\-\-pulseaudio\-command\fP=\fISERVER\-START\-COMMAND\fP
 Specifies the pulseaudio command to use to start the pulseaudio
 server, unless disabled with \fB\-\-no\-pulseaudio\fP.
 .TP
@@ -349,6 +360,42 @@ recommended.
 By specifying a shared directory this can be coupled with the
 mmap-group option to connect Xpra sessions across user accounts.
 
+.SS Options for start, upgrade, proxy
+.TP
+\fB\-\-no\-daemon\fP
+By default, the xpra server puts itself into the background,
+i.e. 'daemonizes', and redirects its output to a log file.  This
+prevents that behavior (useful mostly for debugging).
+.TP
+\fB\-\-auth\fP=\fImodule\fP
+Specifies the authentication module to use.
+This can be used to secure sockets in a different way from
+the \fB\-\-encryption\fP switch: authentication modules can
+validate a username and password against a variety of backend modules:
+.RS
+.IP \fBallow\fP
+always allows authentication - this is dangerous
+and should only be used for testing
+.IP \fBfail\fP
+always fails authentication, useful for testing
+.IP \fBfile\fP
+checks the password against the file specified using
+\fBpassword\-file\fP switch. The file can either contain
+a single password, in which case it will be used for all
+usernames, or a list of user credentials of the form (one
+per line):
+\fIusername|password|uid|gid|displays|env_opts|session_opts\fP
+.IP \fBpam\fP
+validates the username and password using the PAM system
+.IP \fBwin32\fP
+validates the username and password using Microsoft Windows
+authentication
+.IP \fBsys\fP
+chooses the most appropriate system authentication module
+automatically (either \fBpam\fP or \fBwin32\fP)
+.RE
+.PP
+
 .SS Options for start, upgrade
 .TP
 \fB\-\-start\-child\fP=\fICMD\fP
@@ -362,11 +409,6 @@ This option may only be used if \fB\-\-start\-child\fP is also
 given.  If it is given, then the xpra server will monitor the status
 of the children started by \fB\-\-start\-child\fP, and will
 automatically terminate itself when the last of them has exited.
-.TP
-\fB\-\-no\-daemon\fP
-By default, the xpra server puts itself into the background,
-i.e. 'daemonizes', and redirects its output to a log file.  This
-prevents that behavior (useful mostly for debugging).
 .TP
 \fB\-\-use\-display\fP
 Use an existing display rather than starting one with xvfb.
@@ -398,7 +440,7 @@ the host portion is omitted, then 127.0.0.1 (localhost) will be
 used. If you wish to accept connections on all interfaces, pass
 0.0.0.0 for the host portion.
 
-Using this switch without using the password option is not recommended,
+Using this switch without using the auth option is not recommended,
 and is a major security risk (especially when passing 0.0.0.0)!
 Anyone at all may connect to this port and access your session.
 Use it only if you have special needs, and understand the consequences
@@ -411,6 +453,22 @@ This allows sessions to be secured with a password stored in a text
 file. You should use this if you use the \fB\-\-bind-\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
+.TP
+\fB\-\-encryption\fP=\fICIPHER\fP
+Specifies the cipher to use for securing the connection from
+prying eyes. This is only really useful with the \fB--bind-tcp\fP option.
+This option requires the use of the \fB--encryption-keyfile\fP option.
+The only cipher supported at present is \fIAES\fP, if the client
+requests encryption it will be used by both the client and server
+for all communication after the initial password verification,
+but only if the server supports this feature too.
+Note: this feature has not been extensively reviewed and as it is
+it should not be considered safe from determined attackers.
+.TP
+\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP
+Specifies the key to use with the encryption cipher specified
+with \fB\-\-encryption\fP. The client and server must use the
+same keyfile contents.
 .TP
 \fB\-\-clipboard-filter\-file\fP=\fIfilename\fP
 Name of a file containing regular expressions, any clipboard data
@@ -449,15 +507,16 @@ Disable forwarding of the system bell.
 .SS Options for attach
 .TP
 \fB-z\fP\fILEVEL\fP, \fB\-\-compress\fP=\fILEVEL\fP
-Select the level of compression xpra will use when transmitting data
+Select the level of zlib compression xpra will use when transmitting data
 over the network. Higher levels of compression transmit less data over
 the network, but use more CPU power. Valid options are between 0
 (meaning no compression) and 9, inclusive. Higher levels take
 progressively more CPU while giving diminishing returns in terms of
 actual compression achieved; the default is 3, which gives a
 reasonable trade-off in general.
-You generally do not need to use this option,
-the default value should be adequate in almost all cases.
+If lz4 compression is available, it will be enabled when the level
+is set to 1, lz4 compresses a lot less than zlib but it is also
+much faster.
 
 This compression is not used on pixel data (except
 when using the \fBrgb\fP encoding).
@@ -506,6 +565,10 @@ and the key presses will not be passed to the server.
 The \fBkey\fP specification may include keyboard modifiers in the form
  \fB[modifier\+]*key\fP, for example: \fIShift+F10\fP or \fIShift+Control+B\fP
 .br
+If no shortcuts are defined on the command line,
+the following default one will be used: \fIMeta+Shift+F4:quit\fP
+
+.br
 The following \fBaction\fPs are currently defined:
 .RS
 .IP \fBquit\fP
@@ -519,10 +582,7 @@ forces the currently focused window to be refreshed.
 forces all windows to be refreshed.
 .RE
 .PP
-If no shortcuts are defined on the command line,
-the following default one will be used:
-.br
-\fIMeta+Shift+F4:quit\fP
+
 .TP
 \fB\-\-readonly\fP
 Read only mode prevents all keyboard and mouse activity from being sent
@@ -604,17 +664,6 @@ This is necessary to share the mmap file across user accounts.
 The client and server will exchange ping and echo packets
 which are used to gather latency statistics.
 Those statistics can be seen using the "xpra info" command.
-.TP
-\fB\-\-encryption\fP=\fICIPHER\fP
-Specifies the cipher to use for securing the connection from
-prying eyes. This is only really useful with the \fB--bind-tcp\fP option.
-This option requires the use of the \fB--password-file\fP option.
-The only cipher supported at present is \fIAES\fP, if the client
-requests encryption it will be used by both the client and server
-for all communication after the initial password verification,
-but only if the server supports this feature too.
-Note: this feature has not been extensively reviewed and as it is
-it should not be considered safe from determined attackers.
 
 .SS Options for attach, stop
 .TP
