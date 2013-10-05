@@ -280,7 +280,11 @@ class ServerCore(object):
         auth_caps = self.verify_hello(proto, c)
         if auth_caps is not False:
             #continue processing hello packet:
-            self.hello_oked(proto, packet, c, auth_caps)
+            try:
+                self.hello_oked(proto, packet, c, auth_caps)
+            except:
+                log.error("server error processing new connection from %s", proto, exc_info=True)
+                self.disconnect_client(proto, "server error accepting new connection")
 
 
     def verify_hello(self, proto, c):
@@ -351,6 +355,11 @@ class ServerCore(object):
                 auth_failed("invalid challenge response")
                 return False
             log("authentication challenge passed")
+        else:
+            #did the client expect a challenge?
+            if c.boolget("challenge"):
+                self.disconnect_client(proto, "this server does not require authentication")
+                return False
         return auth_caps
 
     def get_encryption_key(self, authenticator=None):

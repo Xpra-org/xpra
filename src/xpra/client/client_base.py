@@ -34,6 +34,7 @@ EXIT_FAILURE = 7
 EXIT_SSH_FAILURE = 8
 EXIT_PACKET_FAILURE = 9
 EXIT_MMAP_TOKEN_FAILURE = 10
+EXIT_NO_AUTHENTICATION = 11
 
 DEFAULT_TIMEOUT = 20*1000
 ALLOW_UNENCRYPTED_PASSWORDS = os.environ.get("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", "0")=="1"
@@ -54,7 +55,6 @@ class XpraClientBase(object):
         self.exit_code = None
         self.compression_level = 0
         self.username = None
-        self.password = None
         self.password_file = None
         self.password_sent = False
         self.encryption = None
@@ -156,11 +156,14 @@ class XpraClientBase(object):
 
     def send_hello(self, challenge_response=None, client_salt=None):
         hello = self.make_hello_base()
-        #we could avoid sending the full hello in some cases
-        #(ie: auth requested which will trigger a new hello)
-        hello.update(self.make_hello())
+        if self.password_file and not challenge_response:
+            #avoid sending the full hello: tell the server we want
+            #a packet challenge first
+            hello["challenge"] = True
+        else:
+            hello.update(self.make_hello())
         if challenge_response:
-            assert self.password
+            assert self.password_file
             hello["challenge_response"] = challenge_response
             if client_salt:
                 hello["challenge_client_salt"] = client_salt
@@ -316,13 +319,13 @@ class XpraClientBase(object):
 
     def _process_challenge(self, packet):
         log("processing challenge: %s", packet[1:])
-        if not self.password_file and not self.password:
+        if not self.password_file:
             self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requires authentication, please provide a password")
             return
-        if not self.password:
-            if not self.load_password():
-                return
-            assert self.password
+        password = self.load_password()
+        if not password:
+            self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file)
+            return
         salt = packet[1]
         if self.encryption:
             assert len(packet)>=3, "challenge does not contain encryption details to use for the response"
@@ -344,19 +347,19 @@ class XpraClientBase(object):
             salt = merge(salt, client_salt)
         if digest=="hmac":
             import hmac
-            challenge_response = hmac.HMAC(self.password, salt).hexdigest()
+            challenge_response = hmac.HMAC(password, salt).hexdigest()
         elif digest=="xor":
             #don't send XORed password unencrypted:
             if not self._protocol.cipher_out and not ALLOW_UNENCRYPTED_PASSWORDS:
                 self.warn_and_quit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest)
                 return
             from xpra.util import xor
-            challenge_response = xor(self.password, salt)
+            challenge_response = xor(password, salt)
         else:
             self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest)
             return
         if digest:
-            log("%s(%s, %s)=%s", digest, self.password, salt, challenge_response)
+            log("%s(%s, %s)=%s", digest, password, salt, challenge_response)
         self.password_sent = True
         self.send_hello(challenge_response, client_salt)
 
@@ -389,17 +392,15 @@ class XpraClientBase(object):
 
     def load_password(self):
         filename = os.path.expanduser(self.password_file)
-        self.password = load_binary_file(filename)
-        if self.password is None:
-            self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to open password file %s" % self.password_file)
-            return False
-        self.password = self.password.strip("\n\r")
-        log("password read from file %s is %s", self.password_file, "".join(["*" for _ in self.password]))
-        return True
+        password = load_binary_file(filename)
+        password = password.strip("\n\r")
+        log("password read from file %s is %s", self.password_file, "".join(["*" for _ in password]))
+        return password
 
     def _process_hello(self, packet):
         if not self.password_sent and self.password_file:
-            log.warn("Warning: the server did not request our password!")
+            self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
+            return
         self.server_capabilities = packet[1]
         log("processing hello from server: %s", self.server_capabilities)
         c = typedict(self.server_capabilities)
