@@ -547,8 +547,14 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                 return True
             gobject.timeout_add(POLL_DELAY*1000, check_procs)
         else:
-            #with non-buggy python, we can just check the list of pids
+            #with a less buggy python, we can just check the list of pids
             #whenever we get a SIGCHLD
+            #however.. subprocess.Popen will no longer work as expected
+            #see: http://bugs.python.org/issue9127
+            #so we must ensure certain things that exec happen first:
+            from xpra.version_util import get_platform_info_cache
+            get_platform_info_cache()
+
             signal.signal(signal.SIGCHLD, child_reaper.sigchld)
             # Check once after the mainloop is running, just in case the exit
             # conditions are satisfied before we even enter the main loop.

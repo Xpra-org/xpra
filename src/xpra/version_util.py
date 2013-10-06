@@ -50,19 +50,33 @@ def add_version_info(props, version_prefix=""):
     except:
         pass
 
-def get_platform_info(prefix=""):
+def do_get_platform_info():
     from xpra.scripts.config import python_platform
     from xpra.os_util import platform_name
     info = {
-            prefix+"platform"           : sys.platform,
-            prefix+"platform.name"      : platform_name(sys.platform, python_platform.release()),
-            prefix+"platform.release"   : python_platform.release(),
-            prefix+"platform.platform"  : python_platform.platform(),
-            prefix+"platform.machine"   : python_platform.machine(),
-            prefix+"platform.processor" : python_platform.processor(),
+            "platform"           : sys.platform,
+            "platform.name"      : platform_name(sys.platform, python_platform.release()),
+            "platform.release"   : python_platform.release(),
+            "platform.platform"  : python_platform.platform(),
+            "platform.machine"   : python_platform.machine(),
+            "platform.processor" : python_platform.processor(),
             }
     if sys.platform.startswith("linux"):
-        info[prefix+"platform.linux_distribution"] = python_platform.linux_distribution()
+        info["platform.linux_distribution"] = python_platform.linux_distribution()
+    return info
+#cache the output:
+platform_info_cache = None
+def get_platform_info_cache():
+    global platform_info_cache
+    if platform_info_cache is None:
+        platform_info_cache = do_get_platform_info()
+    return platform_info_cache
+
+
+def get_platform_info(prefix=""):
+    info = {}
+    for k,v in get_platform_info_cache().items():
+        info[prefix+k] = v
     return info
 
 
