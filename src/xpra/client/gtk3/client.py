@@ -24,7 +24,7 @@ class XpraClient(GTKXpraClient):
     ClientWindowClass = ClientWindow
 
     def make_hello(self):
-        capabilities = GTKXpraClient.make_hello(self, challenge_response)
+        capabilities = GTKXpraClient.make_hello(self)
         if xor_str is not None:
             capabilities["encoding.supports_delta"] = [x for x in ("rgb24", "rgb32") if x in self.get_core_encodings()]
         return capabilities
