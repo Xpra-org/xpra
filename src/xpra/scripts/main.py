@@ -555,7 +555,6 @@ def parse_display_name(error_cb, opts, display_name):
         if host == "":
             host = "127.0.0.1"
         desc["host"] = host
-        print("desc=%s" % desc)
         return desc
     else:
         error_cb("unknown format for display name: %s" % display_name)

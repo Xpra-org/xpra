@@ -99,7 +99,6 @@ def load_codecs():
                     del codecs["enc_webp_lossless"]
             add_codec_version("webp", "xpra.codecs.webm", "__VERSION__")
             webp_handlers = codec_import_check("webp_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
-            print("webp_handlers=%s" % str(webp_handlers))
             #we need the handlers to encode:
             if not webp_handlers:
                 del codecs["enc_webp"]
