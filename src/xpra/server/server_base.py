@@ -123,7 +123,8 @@ class ServerBase(ServerCore):
         self.core_encodings = ["rgb24", "rgb32"]
         for modules, encodings in {
                               ("enc_vpx",)                  : ["vpx"],
-                              ("enc_x264", "enc_nvenc")     : ["x264"],
+                              ("enc_x264",)                 : ["x264"],
+                              ("enc_nvenc",)                : ["x264"],
                               ("enc_webp",)                 : ["webp"],
                               ("PIL",)                      : ["png", "png/L", "png/P", "jpeg"],
                               }.items():
