@@ -52,7 +52,7 @@ class WindowVideoSource(WindowSource):
         self.csc_modes = self.encoding_options.get("csc_modes", def_csc_modes)
 
         for x in ("vpx", "x264"):
-            if x in self.SERVER_CORE_ENCODINGS:
+            if x in self.server_core_encodings:
                 self._encoders[x] = self.video_encode
 
         self.width_mask = 0xFFFF

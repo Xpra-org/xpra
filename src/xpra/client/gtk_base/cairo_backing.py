@@ -12,7 +12,7 @@ log = Logger()
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks, DRAW_DEBUG
 from xpra.os_util import BytesIOClass, data_to_buffer
-from xpra.scripts.config import PIL
+from xpra.codecs.loader import get_codec
 
 
 """
@@ -88,6 +88,7 @@ class CairoBacking(GTKWindowBacking):
         if self._backing is None:
             fire_paint_callbacks(callbacks, False)
             return  False
+        PIL = get_codec("PIL")
         assert PIL, "cannot paint without PIL!"
         if rowstride==0:
             rowstride = width * 3

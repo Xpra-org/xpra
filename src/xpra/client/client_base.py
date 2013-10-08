@@ -420,7 +420,7 @@ class XpraClientBase(object):
         self._remote_platform_linux_distribution = c.get("platform.linux_distribution")
         verr = version_compat_check(self._remote_version)
         if verr is not None:
-            self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version %s: %s" % (self._remote_version, verr))
+            self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version '%s': %s" % (self._remote_version, verr))
             return False
 
         self._protocol.chunked_compression = c.boolget("chunked_compression")

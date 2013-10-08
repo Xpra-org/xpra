@@ -13,44 +13,18 @@ import time
 from xpra.log import Logger
 log = Logger()
 
-from xpra.scripts.config import PREFERED_ENCODING_ORDER, get_codecs, codec_versions, \
-        has_PIL, has_enc_vpx, has_enc_x264, has_enc_nvenc, has_enc_webp, has_enc_webp_lossless
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
 from xpra.os_util import thread, get_hex_uuid
 from xpra.version_util import add_version_info
 from xpra.util import alnum
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
 
 MAX_CONCURRENT_CONNECTIONS = 20
-
-
-SERVER_CORE_ENCODINGS = ["rgb24", "rgb32"]
-for test, formats in (
-                      (has_enc_vpx                      , ["vpx"]),
-                      (has_enc_x264 or has_enc_nvenc    , ["x264"]),
-                      (has_enc_webp                     , ["webp"]),
-                      (has_PIL                          , ["png", "png/L", "png/P", "jpeg"]),
-                ):
-    if test:
-        for enc in formats:
-            if enc not in SERVER_CORE_ENCODINGS:
-                SERVER_CORE_ENCODINGS.append(enc)
-SERVER_ENCODINGS = [x for x in SERVER_CORE_ENCODINGS if x not in ("rgb32", "rgb24")]
-#renamed rgb24 to rgb in public encodings:
-SERVER_ENCODINGS.append("rgb")
-
-SERVER_LOSSLESS_ENCODINGS = [x for x in SERVER_CORE_ENCODINGS if (x.startswith("png") or x.startswith("rgb"))]
-HAS_LOSSLESS_MODE_ENCODINGS = []
-if has_enc_webp_lossless:
-    HAS_LOSSLESS_MODE_ENCODINGS.append("webp")
-    SERVER_LOSSLESS_ENCODINGS.append("webp")
-
-
-DEFAULT_ENCODING = [x for x in PREFERED_ENCODING_ORDER if x in SERVER_ENCODINGS][0]
 
 
 class ServerBase(ServerCore):
@@ -73,7 +47,6 @@ class ServerBase(ServerCore):
         self.client_properties = {}
 
         self.supports_mmap = False
-        self.default_encoding = DEFAULT_ENCODING
         self.randr = False
 
         self._window_to_id = {}
@@ -92,8 +65,16 @@ class ServerBase(ServerCore):
         self.default_dpi = 96
         self.dpi = 96
         self.supports_clipboard = False
-        self.generic_rgb_encodings = False
 
+        #encodings:
+        self.generic_rgb_encodings = False
+        self.core_encodings = []
+        self.encodings = []
+        self.lossless_encodings = []
+        self.lossless_mode_encodings = []
+        self.default_encoding = None
+
+        self.init_encodings()
         self.init_packet_handlers()
         self.init_aliases()
 
@@ -110,12 +91,7 @@ class ServerBase(ServerCore):
         ServerCore.init(self, opts)
         log("ServerBase.init(%s)", opts)
         self.supports_mmap = opts.mmap
-        if opts.encoding and opts.encoding not in SERVER_ENCODINGS:
-            log.warn("ignored invalid default encoding option: %s", opts.encoding)
-        else:
-            self.default_encoding = opts.encoding
-        if not self.default_encoding:
-            self.default_encoding = DEFAULT_ENCODING
+        self.init_encoding(opts.encoding)
 
         self.default_quality = opts.quality
         self.default_min_quality = opts.min_quality
@@ -142,6 +118,42 @@ class ServerBase(ServerCore):
         else:
             self.timeout_add(10*1000, self.send_ping)
 
+    def init_encodings(self):
+        #core encodings: all the specific encoding formats we can encode:
+        self.core_encodings = ["rgb24", "rgb32"]
+        for modules, encodings in {
+                              ("enc_vpx",)                  : ["vpx"],
+                              ("enc_x264", "enc_nvenc")     : ["x264"],
+                              ("enc_webp",)                 : ["webp"],
+                              ("PIL",)                      : ["png", "png/L", "png/P", "jpeg"],
+                              }.items():
+            missing = [x for x in modules if not has_codec(x)]
+            if len(missing)>0:
+                log("init_encodings() not adding %s because of missing modules: %s", encodings, missing)
+                continue
+            for encoding in encodings:
+                if encoding not in self.core_encodings:
+                    self.core_encodings.append(encoding)
+        #encodings (the more generic names):
+        self.encodings = [x for x in self.core_encodings if x not in ("rgb32", "rgb24")]
+        #renamed rgb24 to rgb in public encodings:
+        if "rgb24" in self.core_encodings:
+            self.encodings.append("rgb")
+        assert len(self.encodings)>0, "no encodings found!"
+
+        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb"))]
+        self.lossless_mode_encodings = []
+        if has_codec("enc_webp_lossless"):
+            self.lossless_mode_encodings.append("webp")
+            self.lossless_encodings.append("webp")
+
+        self.default_encoding = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings][0]
+
+    def init_encoding(self, cmdline_encoding):
+        if cmdline_encoding and cmdline_encoding not in self.encodings:
+            log.warn("ignored invalid default encoding option: %s", cmdline_encoding)
+        else:
+            self.default_encoding = cmdline_encoding
 
     def init_uuid(self):
         # Define a server UUID if needed:
@@ -174,11 +186,12 @@ class ServerBase(ServerCore):
                 log.info("")
 
     def init_sound(self, speaker, speaker_codec, microphone, microphone_codec):
+        from xpra.scripts.config import get_codecs
         log("init_sound(%s, %s, %s, %s)", speaker, speaker_codec, microphone, microphone_codec)
         self.supports_speaker = bool(speaker)
         self.supports_microphone = bool(microphone)
         self.speaker_codecs = speaker_codec
-        if len(self.speaker_codecs)==0 and self.supports_speaker:
+        if len(self.speaker_codecs)==0 and self.supports_speaker:            
             self.speaker_codecs = get_codecs(True, True)
             self.supports_speaker = len(self.speaker_codecs)>0
         self.microphone_codecs = microphone_codec
@@ -435,7 +448,7 @@ class ServerBase(ServerCore):
                           self.get_transient_for,
                           get_window_id,
                           self.supports_mmap,
-                          self.default_encoding,
+                          self.core_encodings, self.encodings, self.default_encoding,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
                           self.default_quality, self.default_min_quality,
@@ -502,50 +515,56 @@ class ServerBase(ServerCore):
     def make_hello(self):
         capabilities = ServerCore.make_hello(self)
         capabilities["max_desktop_size"] = self.get_max_screen_size()
-        encs = SERVER_ENCODINGS[:]
+        encs = set(self.encodings)
         if not self.generic_rgb_encodings:
-            encs.append("rgb24")
-            encs.append("rgb32")
-        capabilities["encodings"] = encs
+            encs.add("rgb24")
+            encs.add("rgb32")
+        capabilities["encodings"] = list(encs)
         self.add_encoding_info(capabilities)
-        capabilities["clipboards"] = self._clipboards
-        capabilities["notifications"] = self.notifications_forwarder is not None
-        capabilities["toggle_cursors_bell_notify"] = True
-        capabilities["toggle_keyboard_sync"] = True
-        capabilities["bell"] = self.bell
-        capabilities["cursors"] = self.cursors
-        capabilities["window_configure"] = True
-        capabilities["window_unmap"] = True
-        capabilities["xsettings-tuple"] = True
-        capabilities["change-quality"] = True
-        capabilities["change-min-quality"] = True
-        capabilities["change-speed"] = True
-        capabilities["change-min-speed"] = True
-        capabilities["client_window_properties"] = True
-        capabilities["sound_sequence"] = True
-        capabilities["notify-startup-complete"] = True
-        capabilities["suspend-resume"] = True
-        capabilities["server_type"] = "base"
+        capabilities.update({
+                     "clipboards"                   : self._clipboards,
+                     "notifications"                : self.notifications_forwarder is not None,
+                     "bell"                         : self.bell,
+                     "cursors"                      : self.cursors,
+                     "toggle_cursors_bell_notify"   : True,
+                     "toggle_keyboard_sync"         : True,
+                     "window_configure"             : True,
+                     "window_unmap"                 : True,
+                     "xsettings-tuple"              : True,
+                     "change-quality"               : True,
+                     "change-min-quality"           : True,
+                     "change-speed"                 : True,
+                     "change-min-speed"             : True,
+                     "client_window_properties"     : True,
+                     "sound_sequence"               : True,
+                     "notify-startup-complete"      : True,
+                     "suspend-resume"               : True,
+                     "server_type"                  : "base",
+                     })
         add_version_info(capabilities)
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
+        log.info("************************************************************************************ hello version=%s", capabilities.get("version"))
         return capabilities
 
     def add_encoding_info(self, d):
-        d["encodings.core"] = SERVER_CORE_ENCODINGS
-        d["encodings.lossless"] = SERVER_LOSSLESS_ENCODINGS
-        d["encodings.with_speed"] = [x for x in SERVER_ENCODINGS if x in ("png", "png/P", "png/L", "jpeg", "x264", "rgb")]
-        d["encodings.with_quality"] = [x for x in SERVER_ENCODINGS if x in ("jpeg", "webp", "x264")]
-        d["encodings.with_lossless_mode"] = HAS_LOSSLESS_MODE_ENCODINGS
+        d["encodings.core"] = self.core_encodings
+        d["encodings.lossless"] = self.lossless_encodings
+        d["encodings.with_speed"] = [x for x in self.core_encodings if x in ("png", "png/P", "png/L", "jpeg", "x264", "rgb")]
+        d["encodings.with_quality"] = [x for x in self.core_encodings if x in ("jpeg", "webp", "x264")]
+        d["encodings.with_lossless_mode"] = self.lossless_mode_encodings
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
         capabilities = self.make_hello()
-        capabilities["actual_desktop_size"] = root_w, root_h
-        capabilities["root_window_size"] = root_w, root_h
-        capabilities["desktop_size"] = self._get_desktop_size_capability(server_source, root_w, root_h)
+        capabilities.update({
+                     "actual_desktop_size"  : (root_w, root_h),
+                     "root_window_size"     : (root_w, root_h),
+                     "desktop_size"         : self._get_desktop_size_capability(server_source, root_w, root_h),
+                     })
         if key_repeat:
-            capabilities["key_repeat"] = key_repeat
-            capabilities["key_repeat_modifiers"] = True
+            capabilities.update({
+                     "key_repeat"           : key_repeat,
+                     "key_repeat_modifiers" : True})
         capabilities["clipboard"] = self._clipboard_helper is not None and self._clipboard_client == server_source
         if server_cipher:
             capabilities.update(server_cipher)
@@ -579,26 +598,28 @@ class ServerBase(ServerCore):
         return info
 
     def do_get_info(self, proto, server_sources=None, window_ids=None):
-        info = {}
-        info["features.randr"] = self.randr
-        info["features.cursors"] = self.cursors
-        info["features.bell"] = self.bell
-        info["features.notifications"] = self.notifications_forwarder is not None
-        info["features.pulseaudio"] = self.pulseaudio
-        info["features.clipboard"] = self.supports_clipboard
+        info = {
+             "features.randr"           : self.randr,
+             "features.cursors"         : self.cursors,
+             "features.bell"            : self.bell,
+             "features.notifications"   : self.notifications_forwarder is not None,
+             "features.pulseaudio"      : self.pulseaudio,
+             "features.clipboard"       : self.supports_clipboard}
         if self._clipboard_helper is not None:
             for k,v in self._clipboard_helper.get_info().items():
                 info["clipboard.%s" % k] = v
-        info["encodings"] = SERVER_ENCODINGS
+        info["encodings"] = self.encodings
+        info["encodings.core"] = self.core_encodings
         self.add_encoding_info(info)
         for k,v in codec_versions.items():
             info["encoding.%s.version" % k] = v
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
-        info["keyboard.sync"] = self.keyboard_sync
-        info["keyboard.repeat.delay"] = self.key_repeat_delay
-        info["keyboard.repeat.interval"] = self.key_repeat_interval
-        info["keyboard.keys_pressed"] = self.keys_pressed.values()
-        info["keyboard.modifiers"] = self.xkbmap_mod_meanings
+        info.update({
+             "keyboard.sync"            : self.keyboard_sync,
+             "keyboard.repeat.delay"    : self.key_repeat_delay,
+             "keyboard.repeat.interval" : self.key_repeat_interval,
+             "keyboard.keys_pressed"    : self.keys_pressed.values(),
+             "keyboard.modifiers"       : self.xkbmap_mod_meanings})
         if self.keyboard_config:
             for k,v in self.keyboard_config.get_info().items():
                 if v is not None:
@@ -644,10 +665,11 @@ class ServerBase(ServerCore):
             del info["size-constraints"]
             for k,v in size_constraints.items():
                 info["size-constraints.%s" % k] = v
-        info["override-redirect"] = window.is_OR()
-        info["tray"] = window.is_tray()
-        info["size"] = window.get_dimensions()
-        info["position"] = window.get_position()
+        info.update({
+             "override-redirect"    : window.is_OR(),
+             "tray"                 : window.is_tray(),
+             "size"                 : window.get_dimensions(),
+             "position"             : window.get_position()})
         return info
 
     def clipboard_progress(self, local_requests, remote_requests):

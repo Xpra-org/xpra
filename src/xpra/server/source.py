@@ -172,7 +172,7 @@ class ServerSource(object):
                  get_transient_for,
                  get_window_id,
                  supports_mmap,
-                 default_encoding,
+                 core_encodings, encodings, default_encoding,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
@@ -181,7 +181,7 @@ class ServerSource(object):
                  get_transient_for,
                  get_window_id,
                  supports_mmap,
-                 default_encoding,
+                 core_encodings, encodings, default_encoding,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
@@ -209,7 +209,10 @@ class ServerSource(object):
         self.sound_source = None
         self.sound_sink = None
 
+        self.server_core_encodings = core_encodings
+        self.server_encodings = encodings
         self.default_encoding = default_encoding
+
         self.default_quality = default_quality      #default encoding quality for lossy encodings
         self.default_min_quality = default_min_quality #default minimum encoding quality
         self.default_speed = default_speed          #encoding speed (only used by x264)
@@ -560,8 +563,7 @@ class ServerSource(object):
         if ms>0 and (s<=0 or s>ms):
             self.default_encoding_options["min-speed"] = ms
         elog("default encoding options: %s", self.default_encoding_options)
-        from xpra.server.server_base import SERVER_CORE_ENCODINGS
-        self.png_window_icons = "png" in self.encodings and "png" in SERVER_CORE_ENCODINGS
+        self.png_window_icons = "png" in self.encodings and "png" in self.server_core_encodings
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #mmap:
         mmap_filename = c.strget("mmap_file")
@@ -583,7 +585,7 @@ class ServerSource(object):
         if self.mmap_size>0:
             log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
         else:
-            others = [x for x in self.core_encodings if x in SERVER_CORE_ENCODINGS and x!=self.encoding]
+            others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
             log.info("using %s as primary encoding, also available: %s", self.encoding, ", ".join(others))
 
     def startup_complete(self):
@@ -798,14 +800,13 @@ class ServerSource(object):
         """ Changes the encoder for the given 'window_ids',
             or for all windows if 'window_ids' is None.
         """
-        from xpra.server.server_base import SERVER_ENCODINGS
         if encoding:
             if encoding not in self.encodings:
                 log.warn("client specified an encoding it does not support: %s, client supplied list: %s" % (encoding, self.encodings))
             #old clients (v0.9.x and earlier) only supported 'rgb24' as 'rgb' mode:
             if encoding=="rgb24":
                 encoding = "rgb"
-            if encoding not in SERVER_ENCODINGS:
+            if encoding not in self.server_encodings:
                 log.error("encoding %s is not supported by this server! " \
                          "Will use the first commonly supported encoding instead", encoding)
                 encoding = None
@@ -817,11 +818,11 @@ class ServerSource(object):
                 encoding = self.default_encoding
             else:
                 #or find intersection of supported encodings:
-                common = [e for e in self.encodings if e in SERVER_ENCODINGS]
+                common = [e for e in self.encodings if e in self.server_encodings]
                 elog("encodings supported by both ends: %s", common)
                 if not common:
                     raise Exception("cannot find compatible encoding between "
-                                    "client (%s) and server (%s)" % (self.encodings, SERVER_ENCODINGS))
+                                    "client (%s) and server (%s)" % (self.encodings, self.server_encodings))
                 encoding = common[0]
         if window_ids is not None:
             wss = [self.window_sources.get(wid) for wid in window_ids]
@@ -852,13 +853,15 @@ class ServerSource(object):
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
                 log.error("failed to setup sound: %s", e)
-        capabilities["encoding"] = self.encoding
-        capabilities["mmap_enabled"] = self.mmap_size>0
+        capabilities.update({
+                     "encoding"             : self.encoding,
+                     "mmap_enabled"         : self.mmap_size>0,
+                     "auto_refresh_delay"   : self.auto_refresh_delay,
+                     })
         if self.mmap_client_token:
             capabilities["mmap_token"] = self.mmap_client_token
         if self.keyboard_config:
             capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
-        capabilities["auto_refresh_delay"] = self.auto_refresh_delay
         self.send("hello", capabilities)
 
     def add_info(self, info, suffix=""):
@@ -1224,6 +1227,7 @@ class ServerSource(object):
                               self.queue_damage, self.queue_packet,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
+                              self.server_core_encodings, self.server_encodings,
                               self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
                               self.default_encoding_options,
                               self.mmap, self.mmap_size)

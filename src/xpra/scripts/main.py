@@ -23,7 +23,7 @@ from xpra.platform.paths import get_default_socket_dir
 from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
-    make_defaults_struct, show_codec_help, parse_bool, print_bool, validate_config, encodings_help
+    make_defaults_struct, show_codec_help, parse_bool, print_bool, validate_config
 
 
 def warn(msg):
@@ -722,6 +722,7 @@ def run_client(parser, opts, extra_args, mode):
             if err:
                 print("invalid encoding: %s" % opts.encoding)
             if opts.encoding=="help" or err:
+                from xpra.codecs.loader import encodings_help
                 print("%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(app.get_encodings()))))
                 if err:
                     return 1

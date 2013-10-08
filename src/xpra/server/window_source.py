@@ -56,7 +56,7 @@ try:
 except:
     xor_str = None
 from xpra.os_util import StringIOClass
-from xpra.scripts.config import enc_webp, has_enc_webp_lossless, webp_handlers, PIL
+from xpra.codecs.loader import get_codec, has_codec
 
 
 class WindowSource(object):
@@ -73,11 +73,10 @@ class WindowSource(object):
     def __init__(self, idle_add, timeout_add, source_remove,
                     queue_damage, queue_packet, statistics,
                     wid, window, batch_config, auto_refresh_delay,
+                    server_core_encodings, server_encodings,
                     encoding, encodings, core_encodings, encoding_options, rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size):
-        from xpra.server.server_base import SERVER_CORE_ENCODINGS
-        self.SERVER_CORE_ENCODINGS = SERVER_CORE_ENCODINGS
         #scheduling stuff (gobject wrapped):
         self.idle_add = idle_add
         self.timeout_add = timeout_add
@@ -88,11 +87,14 @@ class WindowSource(object):
         self.wid = wid
         self.global_statistics = statistics             #shared/global statistics from ServerSource
         self.statistics = WindowPerformanceStatistics()
+
+        self.server_core_encodings = server_core_encodings
+        self.server_encodings = server_encodings
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg", "webp")]
         client_refresh_encodings = encoding_options.get("auto_refresh_encodings", refresh_encodings)
-        self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.SERVER_CORE_ENCODINGS]
+        self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.server_core_encodings]
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
@@ -145,9 +147,9 @@ class WindowSource(object):
                           "rgb32"   : self.rgb_encode,
                           }
         for x in ("png", "png/P", "png/L", "jpeg"):
-            if x in self.SERVER_CORE_ENCODINGS:
+            if x in self.server_core_encodings:
                 self._encoders[x] = self.PIL_encode
-        if "webp" in self.SERVER_CORE_ENCODINGS:
+        if "webp" in self.server_core_encodings:
             self._encoders["webp"] = self.webp_encode
         if self._mmap and self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
@@ -586,10 +588,10 @@ class WindowSource(object):
             else:
                 encs = ("png", "rgb32", "webp")
             for x in encs:
-                if x in self.SERVER_CORE_ENCODINGS and x in self.core_encodings:
+                if x in self.server_core_encodings and x in self.core_encodings:
                     debug("do_get_best_encoding(..) using %s for alpha channel support", x)
                     return x
-            debug("no alpha channel encodings supported: no %s in %s", encs, [x for x in self.SERVER_CORE_ENCODINGS if x in self.core_encodings])
+            debug("no alpha channel encodings supported: no %s in %s", encs, [x for x in self.server_core_encodings if x in self.core_encodings])
         if is_tray:
             #tray needs a lossless encoder
             return switch_to_lossless("for a tray window")
@@ -632,7 +634,7 @@ class WindowSource(object):
                 encs.insert(0, "rgb24")
                 encs.insert(1, "rgb32")
             for e in encs:
-                if e in self.SERVER_CORE_ENCODINGS and e in self.core_encodings:
+                if e in self.server_core_encodings and e in self.core_encodings:
                     return e
         return current_encoding
 
@@ -646,7 +648,7 @@ class WindowSource(object):
         else:
             encs = "png", rgb_fmt, "rgb24"
         for e in encs:
-            if e in self.SERVER_CORE_ENCODINGS and e in self.core_encodings:
+            if e in self.server_core_encodings and e in self.core_encodings:
                 return e
         return fallback
 
@@ -910,6 +912,10 @@ class WindowSource(object):
             self._encoding_warnings.add(key)
 
     def webp_encode(self, coding, image, options):
+        enc_webp = get_codec("enc_webp")
+        webp_handlers = get_codec("webp_bitmap_handlers")
+        assert enc_webp and webp_handlers, "webp components are missing"
+
         BitmapHandler = webp_handlers.BitmapHandler
         handler_encs = {
                     "RGB" : (BitmapHandler.RGB,     "EncodeRGB",  "EncodeLosslessRGB",  False),
@@ -928,7 +934,7 @@ class WindowSource(object):
             q = options.get("quality", q)
         q = max(1, q)
         enc = None
-        if q==100 and has_enc_webp_lossless:
+        if q==100 and has_codec("enc_webp_lossless"):
             enc = getattr(enc_webp, lossless_enc)
             kwargs = {}
             client_options = {}
@@ -991,7 +997,8 @@ class WindowSource(object):
     def PIL_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:
         #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
-        assert coding in self.SERVER_CORE_ENCODINGS
+        assert coding in self.server_core_encodings
+        PIL = get_codec("PIL")
         assert PIL is not None, "Python PIL is not available"
         pixel_format = image.get_pixel_format()
         w = image.get_width()
@@ -1068,6 +1075,7 @@ class WindowSource(object):
         w = image.get_width()
         h = image.get_height()
         pixels = image.get_pixels()
+        PIL = get_codec("PIL")
         img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
         rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
         data = img.tostring("raw", target_format)

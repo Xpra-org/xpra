@@ -21,7 +21,8 @@ from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
-from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs, codec_versions
+from xpra.scripts.config import HAS_SOUND, get_codecs
+from xpra.codecs.loader import codec_versions, has_codec, PREFERED_ENCODING_ORDER
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
@@ -295,22 +296,23 @@ class UIXpraClient(XpraClientBase):
         return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32",)]
 
     def get_core_encodings(self):
-        encodings = ["rgb24"]
-        from xpra.scripts.config import has_PIL, has_dec_vpx, has_dec_avcodec, has_dec_webp, has_csc_swscale
-        encs = (
-              (has_dec_vpx & has_csc_swscale        , ["vpx"]),
-              (has_dec_avcodec & has_csc_swscale    , ["x264"]),
-              (has_dec_webp                         , ["webp"]),
-              (has_PIL                              , ["png", "png/L", "png/P", "jpeg"]),
-               )
-        log("get_core_encodings() encs=%s", encs)
-        for test, formats in encs:
-            if test:
-                for enc in formats:
-                    if enc not in encodings:
-                        encodings.append(enc)
-        log("get_core_encodings()=%s", encodings)
-        return encodings
+        #we always support rgb24:
+        core_encodings = ["rgb24"]
+        for modules, encodings in {
+              ("dec_vpx", "csc_swscale")        : ["vpx"],
+              ("dec_avcodec", "csc_swscale")    : ["x264"],
+              ("dec_webp",)                     : ["webp"],
+              ("PIL",)                          : ["png", "png/L", "png/P", "jpeg"],
+               }.items():
+            missing = [x for x in modules if not has_codec(x)]
+            if len(missing)>0:
+                log("get_core_encodings() not adding %s because of missing modules: %s", encodings, missing)
+                continue
+            for encoding in encodings:
+                if encoding not in encodings:
+                    core_encodings.append(encoding)
+        log("get_core_encodings()=%s", core_encodings)
+        return core_encodings
 
 
     def get_supported_window_layouts(self):

@@ -13,7 +13,7 @@ gobject = import_gobject()
 from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, set_checkeditems, menuitem
 from xpra.client.gtk_base.about import about, close_about
 from xpra.client.gtk_base.session_info import SessionInfo
-from xpra.scripts.config import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
 from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_TRAY_DEBUG")

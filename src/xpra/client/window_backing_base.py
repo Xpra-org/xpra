@@ -16,7 +16,8 @@ from xpra.net.mmap_pipe import mmap_read
 from xpra.net.protocol import has_lz4, LZ4_uncompress
 from xpra.os_util import BytesIOClass, bytestostr
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
-from xpra.scripts.config import dec_avcodec, dec_vpx, dec_webp, PIL
+from xpra.codecs.loader import get_codec
+
 
 #logging in the draw path is expensive:
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
@@ -124,7 +125,8 @@ class WindowBackingBase(object):
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
-        assert PIL
+        PIL = get_codec("PIL")
+        assert PIL, "PIL not found"
         buf = BytesIOClass(img_data)
         img = PIL.Image.open(buf)
         assert img.mode in ("L", "P", "RGB", "RGBA"), "invalid image mode: %s" % img.mode
@@ -145,7 +147,8 @@ class WindowBackingBase(object):
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        assert dec_webp is not None
+        dec_webp = get_codec("dec_webp")
+        assert dec_webp is not None, "webp decoder not found"
         if options.get("has_alpha", False):
             decode = dec_webp.DecodeRGBA
             rowstride = width*4
@@ -214,8 +217,10 @@ class WindowBackingBase(object):
         raise Exception("override me!")
 
 
-    def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
+    def paint_with_video_decoder(self, decoder_name, coding, img_data, x, y, width, height, options, callbacks):
         assert x==0 and y==0
+        decoder_module = get_codec(decoder_name)
+        assert decoder_module, "decoder module not found for %s" % decoder_name
         assert hasattr(decoder_module, "Decoder"), "decoder module %s does not have 'Decoder' factory function!" % decoder_module
         assert hasattr(decoder_module, "get_colorspaces"), "decoder module %s does not have 'get_colorspaces' function!" % decoder_module
         factory = getattr(decoder_module, "Decoder")
@@ -386,9 +391,9 @@ class WindowBackingBase(object):
                 rowstride = width * 4
             self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "x264":
-            self.paint_with_video_decoder(dec_avcodec, "x264", img_data, x, y, width, height, options, callbacks)
+            self.paint_with_video_decoder("dec_avcodec", "x264", img_data, x, y, width, height, options, callbacks)
         elif coding == "vpx":
-            self.paint_with_video_decoder(dec_vpx, "vpx", img_data, x, y, width, height, options, callbacks)
+            self.paint_with_video_decoder("dec_vpx", "vpx", img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)
         elif coding[:3]=="png" or coding=="jpeg":

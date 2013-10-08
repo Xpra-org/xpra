@@ -12,9 +12,8 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
-from xpra.client.window_backing_base import PIL, fire_paint_callbacks
-
-use_PIL = bool(PIL) and os.environ.get("XPRA_USE_PIL", "1")=="1"
+from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.codecs.loader import has_codec
 
 
 """
@@ -34,6 +33,7 @@ class GTK2WindowBacking(GTKWindowBacking):
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
+        use_PIL = has_codec("PIL") and os.environ.get("XPRA_USE_PIL", "1")=="1"
         if use_PIL:
             return GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
         #gdk needs UI thread:
