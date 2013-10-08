@@ -1012,9 +1012,8 @@ def get_spec(encoding, colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     return codec_spec(Encoder, codec_type=get_type(), encoding=encoding,
                       quality=60, setup_cost=100, cpu_cost=10, gpu_cost=100,
-                      min_w=2, min_h=2,
-                      #we may want to limit to 32x32 minimum because of the CUDA kernel
-                      #min_w=32, min_h=32,
+                      #using a hardware encoder for something this small is silly:
+                      min_w=32, min_h=32,
                       max_w=4096, max_h=4096,
                       width_mask=0xFFFE, height_mask=0xFFFE)
 
