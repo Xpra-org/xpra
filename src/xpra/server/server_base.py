@@ -544,7 +544,6 @@ class ServerBase(ServerCore):
         add_version_info(capabilities)
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
-        log.info("************************************************************************************ hello version=%s", capabilities.get("version"))
         return capabilities
 
     def add_encoding_info(self, d):
