@@ -309,7 +309,7 @@ class UIXpraClient(XpraClientBase):
                 log("get_core_encodings() not adding %s because of missing modules: %s", encodings, missing)
                 continue
             for encoding in encodings:
-                if encoding not in encodings:
+                if encoding not in core_encodings:
                     core_encodings.append(encoding)
         log("get_core_encodings()=%s", core_encodings)
         return core_encodings
