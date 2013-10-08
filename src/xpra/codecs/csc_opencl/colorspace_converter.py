@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
 from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_OPENCL_DEBUG")
@@ -39,6 +38,10 @@ def device_info(d):
 def platform_info(platform):
     return "%s (%s)" % (platform.name, platform.vendor)
 
+def is_supported(platform_name):
+    #FreeOCL and pocl do not work:
+    return not platform_name.startswith("FreeOCL") and not platform_name.startswith("Portable Computing Language")
+
 
 def log_device_info(device):
     if not device:
@@ -52,10 +55,13 @@ def log_platforms_info():
     log.info("found %s OpenCL platforms:", len(opencl_platforms))
     for platform in opencl_platforms:
         devices = platform.get_devices()
-        log.info("* %s - %s devices:", platform_info(platform), len(devices))
+        p = "*"
+        if not is_supported(platform.name):
+            p = "-"
+        log.info("%s %s - %s devices:", p, platform_info(platform), len(devices))
         for d in devices:
             p = "-"
-            if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
+            if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT) and is_supported(platform.name):
                 p = "+"
             log.info(" %s %s", p, device_info(d))
 
@@ -82,21 +88,20 @@ def init_context():
         for d in devices:
             if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
                 dtype = device_type(d)
+                add_to = other_options
                 if dtype==PREFERRED_DEVICE_TYPE and \
                     (len(PREFERRED_DEVICE_NAME)==0 or d.name.find(PREFERRED_DEVICE_NAME)>=0) and \
                     (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0):
-                    #FreeOCL does not work:
-                    likely_to_work = (not d.name.startswith("FreeOCL") and
-                            #pocl also fails:
-                            (not d.name.startswith("Portable Computing Language")) and
-                            #Intel SDK does not work on AMD CPUs:
-                            (not platform.name.startswith("Intel") or not d.name.startswith("AMD")))
-                    if likely_to_work:
-                        best_options.insert(0, (d, platform))
-                    else:
-                        best_options.append((d, platform))
+                    add_to = best_options
+                if not is_supported(platform.name):
+                    debug("ignoring %s: not supported", d.name)
+                    continue
+                #Intel SDK does not work (well?) on AMD CPUs:
+                if platform.name.startswith("Intel") and d.name.startswith("AMD"):
+                    #less likely to work: add to end of the list...
+                    add_to.append((d, platform))
                 else:
-                    other_options.append((d, platform))
+                    add_to.insert(0, (d, platform))
     debug("best device/platform options: %s", best_options)
     debug("other device/platform options: %s", other_options)
     for d, p in best_options+other_options:
