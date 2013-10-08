@@ -57,8 +57,6 @@ def load_codecs():
         return
     loaded = True
     debug("loading codecs")
-    import traceback
-    traceback.print_stack()
     codec_import_check("PIL", "Python Imaging Library", "PIL", "PIL", "Image")
     add_codec_version("PIL", "PIL.Image", "VERSION")
     
