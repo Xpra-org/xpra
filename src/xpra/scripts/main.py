@@ -83,10 +83,10 @@ def main(script_file, cmdline):
     if not supports_server:
         command_options.append("(This xpra installation does not support starting local servers.)")
 
-    hidden_options = {}
     parser = OptionParser(version="xpra v%s" % XPRA_VERSION,
                           usage="\n" + "".join(command_options))
     defaults = make_defaults_struct()
+    hidden_options = {"display" : defaults.display}
     if len(server_modes):
         group = OptionGroup(parser, "Server Options",
                     "These options are only relevant on the server when using the %s mode." %
