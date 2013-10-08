@@ -1,28 +1,39 @@
-# Copyright (C) 2011 Michael Zucchi
-# This file is based on code from socles, an OpenCL image processing library.
+# This file is part of Xpra.
+# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+# This file is vaguely inspired by code from socles, an OpenCL image processing library.
 #
-# socles is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# socles is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with socles.  If not, see <http://www.gnu.org/licenses/>.
+# Notes:
+# * we use integer arithmetic by pre-multiplying coefficients by 2*20
+#   and use a fast bit shift to get the result as an 8-bit unsigned char.
+# * each Y/U/V channel is passed in as a single channel image2d
+# * we allow downscaling
+# * the image sampler is passed in (responsibility of the caller to choose the right one)
+# * we deal with odd sized images gracefully by clamping the output (via runtime checks)
+#   as well as the input (if sampler_t uses CLAMP_TO_EDGE)
 
 
-YUV_TO_RGB = {"X"    : "1.0",
-              "A"    : "1.0",
-              "R"    : "Y + 1.5958 * Cb",
-              "G"    : "Y - 0.39173*Cr-0.81290*Cb",
-              "B"    : "Y + 2.017*Cr"
+YUV_TO_RGB = {"X"    : [1.0],
+              "A"    : [1.0],
+              "R"    : [1.0, "*", "Y", "+", 1.5958,  "*", "Cb"],
+              "G"    : [1.0, "*", "Y", "-", 0.39173, "*", "Cr", "-", 0.8129, "*", "Cb"],
+              "B"    : [1.0, "*", "Y", "+", 2.017,   "*", "Cr"],
               }
 
-#Cr width div, Cr heigth div, Cb width div, Cb width div
+def get_RGB_formulae(rgb_channel, multiplier=2**20):
+    #given an RGB channel (R, G or B), return the formulae for it
+    #which uses the named variables Y, Cb (aka U) and Cr (aka V)
+    f = YUV_TO_RGB[rgb_channel]     #ie: ["Y", "+", 1.5958, "*", "Cb"]
+    mf = []
+    for x in f:
+        if type(x)==float:
+            x = int(round(x*multiplier))    #1.5958 -> 1673318
+        mf.append(x)
+    return " ".join([str(x) for x in mf])
+
+
 YUV_FORMATS = ("YUV444P", "YUV422P", "YUV420P")
 
 def indexes_to_rgb_mode(RGB_args):
@@ -70,30 +81,31 @@ def gen_yuv444p_to_rgb_kernel(yuv_format, rgb_format):
     RGB_args = rgb_mode_to_indexes(rgb_format)
     assert len(RGB_args)==4, "we need 4 RGB components (R,G,B and A or X), not: %s" % RGB_args
     kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
-    args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format])
+    rgb_args = [get_RGB_formulae(x) for x in rgb_format]
+    args = tuple([kname] + rgb_args)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
-              uint srcw, uint srch, uint w, uint h,
+              const uint srcw, const uint srch, const uint w, const uint h,
               const sampler_t sampler, write_only image2d_t dst) {
-    uint gx = get_global_id(0);
-    uint gy = get_global_id(1);
-    uint srcx = gx*srcw/w;
-    uint srcy = gy*srch/h;
+    const uint gx = get_global_id(0);
+    const uint gy = get_global_id(1);
+    const uint srcx = gx*srcw/w;
+    const uint srcy = gy*srch/h;
 
     if ((gx < w) & (gy < h)) {
-        float4 p;
+        uint4 p;
 
-        int2 src = (int2)( srcx, srcy );
-        float Y = 1.1643 * read_imagef(srcY, sampler, src).s0 - 0.0625;
-        float Cr = read_imagef(srcU, sampler, src).s0 - 0.5f;
-        float Cb = read_imagef(srcV, sampler, src).s0 - 0.5f;
+        const int2 src  = (int2)( srcx, srcy );
+        const int Y  = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
+        const int Cr = 1048576 * read_imageui(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
+        const int Cb = 1048576 * read_imageui(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
 
-        p.s0 = %s;
-        p.s1 = %s;
-        p.s2 = %s;
-        p.s3 = %s;
+        p.s0 = convert_uchar_sat_rte(%s>>20);
+        p.s1 = convert_uchar_sat_rte(%s>>20);
+        p.s2 = convert_uchar_sat_rte(%s>>20);
+        p.s3 = convert_uchar_sat_rte(%s>>20);
 
-        write_imagef(dst, (int2)( gx, gy ), p);
+        write_imageui(dst, (int2)( gx, gy ), p);
     }
 }
 """
@@ -107,40 +119,41 @@ def gen_yuv422p_to_rgb_kernel(yuv_format, rgb_format):
     RGB_args = rgb_mode_to_indexes(rgb_format)
     assert len(RGB_args)==4, "we need 4 RGB components (R,G,B and A or X), not: %s" % RGB_args
     kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
-    args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*2)
+    rgb_args = [get_RGB_formulae(x) for x in rgb_format]
+    args = tuple([kname] + rgb_args*2)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
-              uint srcw, uint srch, uint w, uint h,
+              const uint srcw, const uint srch, const uint w, const uint h,
               const sampler_t sampler, write_only image2d_t dst) {
-    uint gx = get_global_id(0);
-    uint gy = get_global_id(1);
+    const uint gx = get_global_id(0);
+    const uint gy = get_global_id(1);
 
     if ((gx*2 < w) & (gy < h)) {
-        float4 p;
+        uint4 p;
 
         uint srcx = gx*2*srcw/w;
-        uint srcy = gy*srch/h;
-        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
-        float Cr = read_imagef(srcU, sampler, (int2)( srcx/2, srcy )).s0 - 0.5f;
-        float Cb = read_imagef(srcV, sampler, (int2)( srcx/2, srcy )).s0 - 0.5f;
+        const uint srcy = gy*srch/h;
+        int Y         = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
+        const int Cr  = 1048576 * read_imageui(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
+        const int Cb  = 1048576 * read_imageui(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
 
-        p.s0 = %s;
-        p.s1 = %s;
-        p.s2 = %s;
-        p.s3 = %s;
+        p.s0 = convert_uchar_sat_rte(%s>>20);
+        p.s1 = convert_uchar_sat_rte(%s>>20);
+        p.s2 = convert_uchar_sat_rte(%s>>20);
+        p.s3 = convert_uchar_sat_rte(%s>>20);
 
-        write_imagef(dst, (int2)( gx*2, gy ), p);
+        write_imageui(dst, (int2)( gx*2, gy ), p);
 
         if (gx*2+1 < w) {
             srcx = (gx*2+1)*srcw/w;
-            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
+            Y = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
 
-            p.s0 = %s;
-            p.s1 = %s;
-            p.s2 = %s;
-            p.s3 = %s;
+            p.s0 = convert_uchar_sat_rte(%s>>20);
+            p.s1 = convert_uchar_sat_rte(%s>>20);
+            p.s2 = convert_uchar_sat_rte(%s>>20);
+            p.s3 = convert_uchar_sat_rte(%s>>20);
 
-            write_imagef(dst, (int2)( gx*2+1, gy ), p);
+            write_imageui(dst, (int2)( gx*2+1, gy ), p);
         }
     }
 }
@@ -155,66 +168,73 @@ def gen_yuv420p_to_rgb_kernel(yuv_format, rgb_format):
     RGB_args = rgb_mode_to_indexes(rgb_format)
     assert len(RGB_args)==4, "we need 4 RGB components (R,G,B and A or X), not: %s" % RGB_args
     kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
-    args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*4)
+    #convert rgb_format into list of 4 channel values:
+    rgb_args = [get_RGB_formulae(x) for x in rgb_format]
+    args = tuple([kname] + rgb_args*4)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
-              uint srcw, uint srch, uint w, uint h,
+              const uint srcw, const uint srch, const uint w, const uint h,
               const sampler_t sampler, write_only image2d_t dst) {
-    uint gx = get_global_id(0);
-    uint gy = get_global_id(1);
+    const uint gx = get_global_id(0);
+    const uint gy = get_global_id(1);
 
-    uint x = gx*2;
-    uint y = gy*2;
+    const uint x = gx*2;
+    const uint y = gy*2;
     if ((x < w) & (y < h)) {
-        float4 p;
+        uint4 p;
 
-        uint srcx = gx*2*srcw/w;
-        uint srcy = gy*2*srch/h;
-        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
-        float Cr = read_imagef(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 0.5f;
-        float Cb = read_imagef(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 0.5f;
+        uint srcx = x*srcw/w;
+        uint srcy = y*srch/h;
 
-        p.s0 = %s;
-        p.s1 = %s;
-        p.s2 = %s;
-        p.s3 = %s;
+        //Y = 1.1643 * p.s0 - 0.0625
+        //Y*2**20  = 1220857 * v - 65536
+        //Cb*2**20 = 2**20 * v - 2**19;
+        //Cr*2**20 = 2**20 * v - 2**19;
+        int Y         = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
+        const int Cr  = 1048576 * read_imageui(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
+        const int Cb  = 1048576 * read_imageui(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
 
-        write_imagef(dst, (int2)( x, y ), p);
+        p.s0 = convert_uchar_sat_rte(%s>>20);
+        p.s1 = convert_uchar_sat_rte(%s>>20);
+        p.s2 = convert_uchar_sat_rte(%s>>20);
+        p.s3 = convert_uchar_sat_rte(%s>>20);
+
+        write_imageui(dst, (int2)( x, y ), p);
 
         if (x+1 < w) {
-            srcx = (gx*2+1)*srcw/w;
-            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
+            srcx = (x+1)*srcw/w;
+            Y = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
 
-            p.s0 = %s;
-            p.s1 = %s;
-            p.s2 = %s;
-            p.s3 = %s;
+            p.s0 = convert_uchar_sat_rte(%s>>20);
+            p.s1 = convert_uchar_sat_rte(%s>>20);
+            p.s2 = convert_uchar_sat_rte(%s>>20);
+            p.s3 = convert_uchar_sat_rte(%s>>20);
 
-            write_imagef(dst, (int2)( x+1, y ), p);
+            write_imageui(dst, (int2)( x+1, y ), p);
         }
 
         if (y+1 < h) {
-            srcx = gx*2*srcw/w;
-            srcy = (gy*2+1)*srch/h;
-            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
+            srcx = x*srcw/w;
+            srcy = (y+1)*srch/h;
+            Y = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
 
-            p.s0 = %s;
-            p.s1 = %s;
-            p.s2 = %s;
-            p.s3 = %s;
+            p.s0 = convert_uchar_sat_rte(%s>>20);
+            p.s1 = convert_uchar_sat_rte(%s>>20);
+            p.s2 = convert_uchar_sat_rte(%s>>20);
+            p.s3 = convert_uchar_sat_rte(%s>>20);
 
-            write_imagef(dst, (int2)( x, y+1 ), p);
+            write_imageui(dst, (int2)( x, y+1 ), p);
 
             if (x+1 < w) {
-                srcx = (gx*2+1)*srcw/w;
-                Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
+                srcx = (x+1)*srcw/w;
+                Y = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
 
-                p.s0 = %s;
-                p.s1 = %s;
-                p.s2 = %s;
-                p.s3 = %s;
+                p.s0 = convert_uchar_sat_rte(%s>>20);
+                p.s1 = convert_uchar_sat_rte(%s>>20);
+                p.s2 = convert_uchar_sat_rte(%s>>20);
+                p.s3 = convert_uchar_sat_rte(%s>>20);
 
-                write_imagef(dst, (int2)( x+1, y+1 ), p);
+                write_imageui(dst, (int2)( x+1, y+1 ), p);
             }
         }
     }
@@ -236,44 +256,96 @@ def gen_yuv_to_rgb_kernels(rgb_mode="RGBX", yuv_modes=YUV_FORMATS):
     return YUV_to_RGB_KERNELS
 
 
+RGB_TO_YUV = {"Y"   : [0.257,  "*", "R", "+", 0.504, "*", "G", "+", 0.098, "*", "B", "+", 16],
+              "U"   : [-0.148, "*", "R", "-", 0.291, "*", "G", "+", 0.439, "*", "B", "+", 128],
+              "V"   : [0.439,  "*", "R", "-", 0.368, "*", "G", "-", 0.071, "*", "B", "+", 128],
+              }
 
+def get_YUV_formulae(yuv_channel, fmult=2**20, imult=2**20):
+    #given an YUV channel (Y, U or V), return the formulae for it
+    #which uses the named variables R, G and B
+    f = RGB_TO_YUV[yuv_channel]     #ie: ["Y", "+", 1.5958, "*", "Cb"]
+    mf = []
+    for x in f:
+        if type(x)==float:
+            x = int(round(x*fmult))         #-0.148 -> -155189
+        if type(x) in (float, int):
+            x = int(round(x*imult))         #16 -> 16777216
+        mf.append(x)
+    return " ".join([str(x) for x in mf])
+
+def get_YUV(yuv_channel, R, G, B, exp=0):
+    #exp is how much we bitshift by extra
+    #(ie: if R,G and B contain the sum of 4 pixels
+    # we bit shift by 2 to get the results
+    # the tricky thing is that the floats in the expression
+    # are multiplied by 2**p, but the ints by 2**(p+exp)
+    # because the ints are not multiplied by R,G or B!)
+    p = 20
+    f = get_YUV_formulae(yuv_channel, fmult=2**p, imult=2**(p+exp))
+    #substitute R, G and B:
+    f = f.replace("R", R).replace("G", G).replace("B", B)
+    return "(%s)>>%s" % (f, p+exp)
 
 def gen_rgb_to_yuv444p_kernel(rgb_mode):
     RGB_args = rgb_indexes(rgb_mode)
-    #kernel args: R, G, B are used 3 times each:
+    R = RGB_args[0]                     #ie: 0
+    G = RGB_args[1]                     #ie: 1
+    B = RGB_args[2]                     #ie: 2
     kname = "%s_to_YUV444P" % indexes_to_rgb_mode(RGB_args)
-    args = tuple([kname]+RGB_args*3)
+    #kernel args:
+    args = [kname]
+    #consts:
+    pR = "p.s%s" % R
+    pG = "p.s%s" % G
+    pB = "p.s%s" % B
+    #one U pixel with the sum:
+    Y = get_YUV("Y", pR, pG, pB)
+    U = get_YUV("U", pR, pG, pB)
+    V = get_YUV("V", pR, pG, pB)
+    args += [Y, U, V]
 
     kstr = """
 __kernel void %s(read_only image2d_t src,
-              uint srcw, uint srch, uint w, uint h,
+              const uint srcw, const uint srch, const uint w, const uint h,
               const sampler_t sampler,
-              global uchar *dstY, uint strideY,
-              global uchar *dstU, uint strideU,
-              global uchar *dstV, uint strideV) {
-    uint gx = get_global_id(0);
-    uint gy = get_global_id(1);
+              global uchar *dstY, const uint strideY,
+              global uchar *dstU, const uint strideU,
+              global uchar *dstV, const uint strideV) {
+    const uint gx = get_global_id(0);
+    const uint gy = get_global_id(1);
 
     if ((gx < w) & (gy < h)) {
-        uint4 p = read_imageui(src, sampler, (int2)( (gx*srcw)/w, (gy*srch)/h ));
+        const uint4 p = read_imageui(src, sampler, (int2)( (gx*srcw)/w, (gy*srch)/h ));
 
-        float Y =  (0.257 * p.s%s + 0.504 * p.s%s + 0.098 * p.s%s + 16);
-        float U = (-0.148 * p.s%s - 0.291 * p.s%s + 0.439 * p.s%s + 128);
-        float V =  (0.439 * p.s%s - 0.368 * p.s%s - 0.071 * p.s%s + 128);
-
-        dstY[gx + gy*strideY] = convert_uchar_rte(Y);
-        dstU[gx + gy*strideU] = convert_uchar_rte(U);
-        dstV[gx + gy*strideV] = convert_uchar_rte(V);
+        dstY[gx + gy*strideY] = convert_uchar_sat_rte(%s);
+        dstU[gx + gy*strideU] = convert_uchar_sat_rte(%s);
+        dstV[gx + gy*strideV] = convert_uchar_sat_rte(%s);
     }
 }
 """
-    return kname, kstr % args
+    return kname, kstr % tuple(args)
 
 def gen_rgb_to_yuv422p_kernel(rgb_mode):
     RGB_args = rgb_indexes(rgb_mode)
-    #kernel args: R, G, B are used 6 times each:
+    R = RGB_args[0]                     #ie: 0
+    G = RGB_args[1]                     #ie: 1
+    B = RGB_args[2]                     #ie: 2
     kname = "%s_to_YUV422P" % indexes_to_rgb_mode(RGB_args)
-    args = tuple([kname]+RGB_args*6)
+    #kernel args:
+    args = [kname]
+    #2 Y pixels:
+    for i in range(2):
+        Y = get_YUV("Y", "p[%s].s%s" % (i, R), "p[%s].s%s" % (i, G), "p[%s].s%s" % (i, B))
+        args.append(Y)
+    #consts:
+    RR = "+".join(["p[%s].s%s" % (i, R) for i in range(2)])
+    GG = "+".join(["p[%s].s%s" % (i, G) for i in range(2)])
+    BB = "+".join(["p[%s].s%s" % (i, B) for i in range(2)])
+    #one U pixel with the sum:
+    U = get_YUV("U", "R", "G", "B", exp=1)
+    V = get_YUV("V", "R", "G", "B", exp=1)
+    args += [RR, GG, BB, U, V]
 
     kstr = """
 __kernel void %s(read_only image2d_t src,
@@ -282,115 +354,111 @@ __kernel void %s(read_only image2d_t src,
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
               global uchar *dstV, uint strideV) {
-    uint gx = get_global_id(0);
-    uint gy = get_global_id(1);
+    const uint gx = get_global_id(0);
+    const uint gy = get_global_id(1);
 
     if ((gx*2 < w) & (gy < h)) {
         uint srcx = gx*2*srcw/w;
-        uint srcy = gy*srch/h;
-        uint4 p1 = read_imageui(src, sampler, (int2)( srcx, srcy ));
-        uint4 p2 = p1;
+        const uint srcy = gy*srch/h;
+        uint4 p[2];
+        p[0] = read_imageui(src, sampler, (int2)( srcx, srcy ));
+        p[1] = p[0];
 
         //write up to 2 Y pixels:
-        float Y1 =  (0.257 * p1.s%s + 0.504 * p1.s%s + 0.098 * p1.s%s + 16);
-        uint i = gx*2 + gy*strideY;
-        dstY[i] = convert_uchar_rte(Y1);
+        const uint i = gx*2 + gy*strideY;
+        dstY[i] = convert_uchar_sat_rte(%s);
         //we process two pixels at a time
         //if the source width is odd, this destination pixel may not exist (right edge of picture)
         //(we only read it via CLAMP_TO_EDGE to calculate U and V, which do exist)
         if (gx*2+1 < w) {
             srcx = (gx*2+1)*srcw/w;
-            p2 = read_imageui(src, sampler, (int2)( srcx, srcy ));
-            float Y2 =  (0.257 * p2.s%s + 0.504 * p2.s%s + 0.098 * p2.s%s + 16);
-            dstY[i+1] = convert_uchar_rte(Y2);
+            p[1] = read_imageui(src, sampler, (int2)( srcx, srcy ));
+            dstY[i+1] = convert_uchar_sat_rte(%s);
         }
 
+        const int R = %s;
+        const int G = %s;
+        const int B = %s;
         //write 1 U pixel:
-        float U1 = (-0.148 * p1.s%s - 0.291 * p1.s%s + 0.439 * p1.s%s + 128);
-        float U2 = (-0.148 * p2.s%s - 0.291 * p2.s%s + 0.439 * p2.s%s + 128);
-        //some algorithms just ignore U2, we do not and use an average
-        //dstU[gx + gy*strideU] = convert_uchar_rte(U1);
-        dstU[gx + gy*strideU] = convert_uchar_rte((U1+U2)/2.0);
-
+        dstU[gx + gy*strideU] = convert_uchar_sat_rte(%s);
         //write 1 V pixel:
-        float V1 =  (0.439 * p1.s%s - 0.368 * p1.s%s - 0.071 * p1.s%s + 128);
-        float V2 =  (0.439 * p2.s%s - 0.368 * p2.s%s - 0.071 * p2.s%s + 128);
-        //some algorithms just ignore V2, we do not and use an average
-        //dstV[gx + gy*strideV] = convert_uchar_rte(V1);
-        dstV[gx + gy*strideV] = convert_uchar_rte((V1+V2)/2.0);
+        dstV[gx + gy*strideV] = convert_uchar_sat_rte(%s);
     }
 }
 """
-    return kname, kstr % args
-
+    return kname, kstr % tuple(args)
 
 def gen_rgb_to_yuv420p_kernel(rgb_mode):
-    RGB_args = rgb_indexes(rgb_mode)
-    #kernel args: R, G, B are used 12 times each:
-    kname = "%s_to_YUV420P" % indexes_to_rgb_mode(RGB_args)
-    args = tuple([kname]+RGB_args*12)
-
+    RGB_args = rgb_indexes(rgb_mode)    #BGRX -> [2, 1, 0]
+    R = RGB_args[0]                     #ie: 0
+    G = RGB_args[1]                     #ie: 1
+    B = RGB_args[2]                     #ie: 2
+    kname = "%s_to_YUV420P" % indexes_to_rgb_mode(RGB_args)     # [0, 1, 2] -> RGB
+    #kernel args:
+    args = [kname]
+    #4 Y pixels:
+    for i in range(4):
+        Y = get_YUV("Y", "p[%s].s%s" % (i, R), "p[%s].s%s" % (i, G), "p[%s].s%s" % (i, B))
+        #ie: (roundint(0.257*2**20) * p[i].s2 + roundint(0.504*2**20) * p[i].s1 + roundint(0.098*2**20) * p[i].s0 + 16*2*20)>>20
+        args.append(Y)
+    #consts:
+    RRRR = "+".join(["p[%s].s%s" % (i, R) for i in range(4)])
+    GGGG = "+".join(["p[%s].s%s" % (i, G) for i in range(4)])
+    BBBB = "+".join(["p[%s].s%s" % (i, B) for i in range(4)])
+    #one U pixel with the sum:
+    U = get_YUV("U", "R", "G", "B", exp=2)
+    V = get_YUV("V", "R", "G", "B", exp=2)
+    args += [RRRR, GGGG, BBBB, U, V]
     kstr = """
 __kernel void %s(read_only image2d_t src,
-              uint srcw, uint srch, uint w, uint h,
+              const uint srcw, const uint srch, const uint w, const uint h,
               const sampler_t sampler,
-              global uchar *dstY, uint strideY,
-              global uchar *dstU, uint strideU,
-              global uchar *dstV, uint strideV) {
-    uint gx = get_global_id(0);
-    uint gy = get_global_id(1);
+              global uchar *dstY, const uint strideY,
+              global uchar *dstU, const uint strideU,
+              global uchar *dstV, const uint strideV) {
+    const uint gx = get_global_id(0);
+    const uint gy = get_global_id(1);
 
     if ((gx*2 < w) & (gy*2 < h)) {
         uint srcx = gx*2*srcw/w;
         uint srcy = gy*2*srch/h;
-        uint4 p1 = read_imageui(src, sampler, (int2)( srcx, srcy ));
-        uint4 p2 = p1;
-        uint4 p3 = p1;
-        uint4 p4 = p1;
+        uint4 p[4];
+        p[0] = read_imageui(src, sampler, (int2)( srcx, srcy ));
+        p[1] = p[0];
+        p[2] = p[0];
+        p[3] = p[0];
 
-        //write up to 4 Y pixels:
-        float Y1 =  (0.257 * p1.s%s + 0.504 * p1.s%s + 0.098 * p1.s%s + 16);
-        //same logic as 422P for missing pixels:
         uint i = gx*2 + gy*2*strideY;
-        dstY[i] = convert_uchar_rte(Y1);
+        dstY[i] = convert_uchar_sat_rte(%s);
         if (gx*2+1 < w) {
             srcx = (gx*2+1)*srcw/w;
-            p2 = read_imageui(src, sampler, (int2)( srcx, srcy ));
-            float Y2 =  (0.257 * p2.s%s + 0.504 * p2.s%s + 0.098 * p2.s%s + 16);
-            dstY[i+1] = convert_uchar_rte(Y2);
+            p[1] = read_imageui(src, sampler, (int2)( srcx, srcy ));
+            dstY[i+1] = convert_uchar_sat_rte(%s);
         }
         if (gy*2+1 < h) {
             i += strideY;
             srcx = gx*2*srcw/w;
             srcy = (gy*2+1)*srch/h;
-            p3 = read_imageui(src, sampler, (int2)( srcx, srcy ));
-            float Y3 =  (0.257 * p3.s%s + 0.504 * p3.s%s + 0.098 * p3.s%s + 16);
-            dstY[i] = convert_uchar_rte(Y3);
+            p[2] = read_imageui(src, sampler, (int2)( srcx, srcy ));
+            dstY[i] = convert_uchar_sat_rte(%s);
             if (gx*2+1 < w) {
                 srcx = (gx*2+1)*srcw/w;
-                p4 = read_imageui(src, sampler, (int2)( srcx, srcy ));
-                float Y4 =  (0.257 * p4.s%s + 0.504 * p4.s%s + 0.098 * p4.s%s + 16);
-                dstY[i+1] = convert_uchar_rte(Y4);
+                p[3] = read_imageui(src, sampler, (int2)( srcx, srcy ));
+                dstY[i+1] = convert_uchar_sat_rte(%s);
             }
         }
 
+        const int R = %s;
+        const int G = %s;
+        const int B = %s;
         //write 1 U pixel:
-        float U1 = (-0.148 * p1.s%s - 0.291 * p1.s%s + 0.439 * p1.s%s + 128);
-        float U2 = (-0.148 * p2.s%s - 0.291 * p2.s%s + 0.439 * p2.s%s + 128);
-        float U3 = (-0.148 * p3.s%s - 0.291 * p3.s%s + 0.439 * p3.s%s + 128);
-        float U4 = (-0.148 * p4.s%s - 0.291 * p4.s%s + 0.439 * p4.s%s + 128);
-        dstU[gx + gy*strideU] = convert_uchar_rte((U1+U2+U3+U4)/4.0);
-
+        dstU[gx + gy*strideU] = convert_uchar_sat_rte(%s);
         //write 1 V pixel:
-        float V1 =  (0.439 * p1.s%s - 0.368 * p1.s%s - 0.071 * p1.s%s + 128);
-        float V2 =  (0.439 * p2.s%s - 0.368 * p2.s%s - 0.071 * p2.s%s + 128);
-        float V3 =  (0.439 * p3.s%s - 0.368 * p3.s%s - 0.071 * p3.s%s + 128);
-        float V4 =  (0.439 * p4.s%s - 0.368 * p4.s%s - 0.071 * p4.s%s + 128);
-        dstV[gx + gy*strideV] = convert_uchar_rte((V1+V2+V3+V4)/4.0);
+        dstV[gx + gy*strideV] = convert_uchar_sat_rte(%s);
     }
 }
 """
-    return kname, kstr % args
+    return kname, kstr % tuple(args)
 
 
 RGB_to_YUV_generators = {
