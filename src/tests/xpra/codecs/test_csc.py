@@ -96,6 +96,10 @@ def test_csc_rgb_all(csc_module, w, h):
             populate = len([cs for (cs,cd,cw,ch) in CHECKS.keys() if (cs==src_format and cd in dst_formats and cw==w and ch==h)])>0
             pixels = make_rgb_input(src_format, w, h, use_strings, populate=populate)
             for dst_format in dst_formats:
+                spec = csc_module.get_spec(src_format, dst_format)
+                if w<spec.min_w or h<spec.min_h:
+                    print("skipping test %s to %s at %sx%s because dimensions are too small" % (src_format, dst_format, w, h))
+                    continue
                 checks = CHECKS.get((src_format, dst_format, w, h))
                 ok = do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks)
                 print("test_csc_rgb_all(%s, %s, %s) %s to %s, use_strings=%s, ok=%s" % (csc_module.get_type(), w, h, src_format, dst_format, use_strings, ok))
@@ -158,6 +162,10 @@ def test_csc_planar_all(csc_module, w, h):
             #populate = len([x for x in FMT_TO_EXPECTED_OUTPUT.keys() if x[0]==src_format and x[1] in dst_formats])>0
             strides, pixels = make_planar_input(src_format, w, h, use_strings, populate=populate)
             for dst_format in dst_formats:
+                spec = csc_module.get_spec(src_format, dst_format)
+                if w<spec.min_w or h<spec.min_h:
+                    print("skipping test %s to %s at %sx%s because dimensions are too small" % (src_format, dst_format, w, h))
+                    continue
                 out_pixels = do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels)
                 if DEBUG:
                     print("test_csc_planar_all() %s to %s head of output pixels=%s" % (src_format, dst_format, dump_pixels(out_pixels[:128])))
