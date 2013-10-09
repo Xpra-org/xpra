@@ -21,7 +21,6 @@ from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
-from xpra.scripts.config import HAS_SOUND, get_codecs
 from xpra.codecs.loader import codec_versions, has_codec, PREFERED_ENCODING_ORDER
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
@@ -94,23 +93,30 @@ class UIXpraClient(XpraClientBase):
         self.encoding = self.get_encodings()[0]
 
         #sound:
-        self.speaker_allowed = HAS_SOUND
+        self.speaker_allowed = False
         self.speaker_enabled = False
         self.speaker_codecs = []
-        if self.speaker_allowed:
-            self.speaker_codecs = get_codecs(True, False)
-            self.speaker_allowed = len(self.speaker_codecs)>0
-        self.microphone_allowed = HAS_SOUND
+        self.microphone_allowed = False
         self.microphone_enabled = False
         self.microphone_codecs = []
-        if self.microphone_allowed:
-            self.microphone_codecs = get_codecs(False, False)
-            self.microphone_allowed = len(self.microphone_codecs)>0
-        if HAS_SOUND:
-            soundlog("speaker_allowed=%s, speaker_codecs=%s", self.speaker_allowed, self.speaker_codecs)
-            soundlog("microphone_allowed=%s, microphone_codecs=%s", self.microphone_allowed, self.microphone_codecs)
-        else:
-            soundlog("sound support is disabled (pygst is missing?)")
+        try:
+            from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
+            self.speaker_allowed = has_gst
+            if self.speaker_allowed:
+                self.speaker_codecs = get_sound_codecs(True, False)
+                self.speaker_allowed = len(self.speaker_codecs)>0
+            self.microphone_allowed = has_gst
+            self.microphone_enabled = False
+            self.microphone_codecs = []
+            if self.microphone_allowed:
+                self.microphone_codecs = get_sound_codecs(False, False)
+                self.microphone_allowed = len(self.microphone_codecs)>0
+            if has_gst:
+                soundlog("speaker_allowed=%s, speaker_codecs=%s", self.speaker_allowed, self.speaker_codecs)
+                soundlog("microphone_allowed=%s, microphone_codecs=%s", self.microphone_allowed, self.microphone_codecs)
+        except Exception, e:
+            soundlog("sound support unavailable: %s", e)
+            has_gst = False
         #sound state:
         self.sink_restart_pending = False
         self.on_sink_ready = None
@@ -188,11 +194,15 @@ class UIXpraClient(XpraClientBase):
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.dpi = int(opts.dpi)
 
-        self.speaker_allowed = bool(opts.speaker) and HAS_SOUND
-        self.microphone_allowed = bool(opts.microphone) and HAS_SOUND
+        try:
+            from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
+        except:
+            has_gst = False
+        self.speaker_allowed = bool(opts.speaker) and has_gst
+        self.microphone_allowed = bool(opts.microphone) and has_gst
         self.speaker_codecs = opts.speaker_codec
         if len(self.speaker_codecs)==0 and self.speaker_allowed:
-            self.speaker_codecs = get_codecs(True, False)
+            self.speaker_codecs = get_sound_codecs(True, False)
             self.speaker_allowed = len(self.speaker_codecs)>0
         self.microphone_codecs = opts.microphone_codec
 
@@ -660,11 +670,14 @@ class UIXpraClient(XpraClientBase):
         if iq<0:
             iq = 70
         capabilities["encoding.initial_quality"] = iq
-        if HAS_SOUND:
+        try:
+            from xpra.sound.gstreamer_util import has_gst, add_gst_capabilities
+        except:
+            has_gst = False
+        if has_gst:
             try:
                 from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
                 add_pulseaudio_capabilities(capabilities)
-                from xpra.sound.gstreamer_util import add_gst_capabilities
                 add_gst_capabilities(capabilities, receive=self.speaker_allowed, send=self.microphone_allowed,
                                      receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs, new_namespace=True)
                 soundlog("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])

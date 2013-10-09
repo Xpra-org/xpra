@@ -20,7 +20,7 @@ from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
-from xpra.scripts.config import HAS_SOUND, python_platform
+from xpra.scripts.config import python_platform
 from xpra.net.protocol import compressed_wrapper, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue
@@ -841,11 +841,14 @@ class ServerSource(object):
 
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
-        if HAS_SOUND:
+        try:
+            from xpra.sound.gstreamer_util import has_gst, add_gst_capabilities
+        except:
+            has_gst = False
+        if has_gst:
             try:
                 from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
                 add_pulseaudio_capabilities(capabilities)
-                from xpra.sound.gstreamer_util import add_gst_capabilities
                 add_gst_capabilities(capabilities,
                                      receive=self.supports_microphone, send=self.supports_speaker,
                                      receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs,

@@ -187,17 +187,21 @@ class ServerBase(ServerCore):
                 log.info("")
 
     def init_sound(self, speaker, speaker_codec, microphone, microphone_codec):
-        from xpra.scripts.config import get_codecs
-        log("init_sound(%s, %s, %s, %s)", speaker, speaker_codec, microphone, microphone_codec)
-        self.supports_speaker = bool(speaker)
-        self.supports_microphone = bool(microphone)
+        try:
+            from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
+        except Exception, e:
+            log("cannot load gstreamer: %s", e)
+            has_gst = False
+        log("init_sound(%s, %s, %s, %s) has_gst=%s", speaker, speaker_codec, microphone, microphone_codec, has_gst)
+        self.supports_speaker = bool(speaker) and has_gst
+        self.supports_microphone = bool(microphone) and has_gst
         self.speaker_codecs = speaker_codec
         if len(self.speaker_codecs)==0 and self.supports_speaker:            
-            self.speaker_codecs = get_codecs(True, True)
+            self.speaker_codecs = get_sound_codecs(True, True)
             self.supports_speaker = len(self.speaker_codecs)>0
         self.microphone_codecs = microphone_codec
         if len(self.microphone_codecs)==0 and self.supports_microphone:
-            self.microphone_codecs = get_codecs(False, False)
+            self.microphone_codecs = get_sound_codecs(False, False)
             self.supports_microphone = len(self.microphone_codecs)>0
         try:
             from xpra.sound.pulseaudio_util import add_audio_tagging_env

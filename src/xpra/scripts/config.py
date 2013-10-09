@@ -66,57 +66,6 @@ if OpenGL_safety_check() is not None:
 
 
 
-# we end up initializing gstreamer here and it does things
-# we don't want with sys.argv, so hack around it:
-saved_args = sys.argv
-sys.argv = sys.argv[:1]
-try:
-    from xpra.sound import gstreamer_util   #@UnusedImport
-    HAS_SOUND = True
-except:
-    HAS_SOUND = False
-sys.argv = saved_args
-
-def get_codecs(is_speaker, is_server):
-    if not HAS_SOUND:
-        return []
-    try:
-        from xpra.sound.gstreamer_util import can_encode, can_decode
-        if (is_server and is_speaker) or (not is_server and not is_speaker):
-            return can_encode()
-        else:
-            return can_decode()
-    except Exception, e:
-        warn("failed to get list of codecs: %s" % e)
-        return []
-
-def show_codec_help(is_server, speaker_codecs, microphone_codecs):
-    all_speaker_codecs = get_codecs(True, is_server)
-    invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
-    hs = "help" in speaker_codecs
-    if hs:
-        print("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
-    elif len(invalid_sc):
-        warn("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
-        for x in invalid_sc:
-            speaker_codecs.remove(x)
-    elif len(speaker_codecs)==0:
-        speaker_codecs += all_speaker_codecs
-
-    all_microphone_codecs = get_codecs(True, is_server)
-    invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
-    hm = "help" in microphone_codecs
-    if hm:
-        print("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
-    elif len(invalid_mc):
-        warn("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
-        for x in invalid_mc:
-            microphone_codecs.remove(x)
-    elif len(microphone_codecs)==0:
-        microphone_codecs += all_microphone_codecs
-    return hm or hs
-
-
 def get_build_info():
     info = []
     try:

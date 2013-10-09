@@ -17,7 +17,7 @@ from xpra.os_util import os_info
 from xpra.gtk_common.graph import make_graph_pixmap
 from xpra.deque import maxdeque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
-from xpra.scripts.config import HAS_SOUND, python_platform
+from xpra.scripts.config import python_platform
 from xpra.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, TableBuilder, imagebutton
 log = Logger()
@@ -146,12 +146,12 @@ class SessionInfo(gtk.Window):
             tb.new_row("PyGTK", label(client_version_info("pygtk_version")), label(server_version_info("pygtk.version", "pygtk_version")))
             tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk.version", "gtk_version")))
         tb.new_row("Python", label(python_platform.python_version()), label(server_version_info("server.python.version", "python_version")))
+
         cl_gst_v, cl_pygst_v = "", ""
-        if HAS_SOUND:
-            try:
-                from xpra.sound.gstreamer_util import gst_version as cl_gst_v, pygst_version as cl_pygst_v
-            except:
-                pass
+        try:
+            from xpra.sound.gstreamer_util import gst_version as cl_gst_v, pygst_version as cl_pygst_v
+        except Exception, e:
+            debug("cannot load gstreamer: %s", e)
         tb.new_row("GStreamer", label(make_version_str(cl_gst_v)), label(server_version_info("sound.gst.version", "gst_version")))
         tb.new_row("pygst", label(make_version_str(cl_pygst_v)), label(server_version_info("sound.pygst.version", "pygst_version")))
         tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), label("n/a"))

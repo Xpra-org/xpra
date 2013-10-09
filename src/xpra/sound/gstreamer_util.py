@@ -9,7 +9,7 @@ import os
 
 from xpra.log import Logger, debug_if_env
 log = Logger()
-soundlog = debug_if_env(log, "XPRA_SOUND_DEBUG")
+debug = debug_if_env(log, "XPRA_SOUND_DEBUG")
 
 SOUND_TEST_MODE = os.environ.get("XPRA_SOUND_TEST", "0")!="0"
 
@@ -60,7 +60,6 @@ def unredirect_stderr(oldfd):
         os.dup2(oldfd, 2)
 
 
-has_gst = False
 all_plugin_names = []
 pygst_version = ""
 gst_version = ""
@@ -72,33 +71,88 @@ if sys.platform.startswith("win"):
                 unicode = str           #@ReservedAssignment
             main_dir = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
             os.environ["GST_PLUGIN_PATH"] = os.path.join(main_dir, "gstreamer-0.10")
-#now do the import with stderr redirection:
-import pygst
-pygst.require("0.10")
+
 try:
-    oldfd = redirect_stderr()
-    import gst
-finally:
-    unredirect_stderr(oldfd)
-has_gst = True
-gst_version = gst.gst_version
-pygst_version = gst.pygst_version
+    import pygst
+    pygst.require("0.10")
+    try:
+        #initializing gstreamer parses sys.argv
+        #which interferes with our own command line arguments
+        #so we temporarily replace them:
+        saved_args = sys.argv
+        sys.argv = sys.argv[:1]
+
+        #now do the import with stderr redirection
+        #to avoid gobject warnings:
+        oldfd = redirect_stderr()
+        import gst
+        has_gst = True
+        gst_version = gst.gst_version
+        pygst_version = gst.pygst_version
+    finally:
+        unredirect_stderr(oldfd)
+        sys.argv = saved_args
+except:
+    has_gst = False
+
+
+def get_sound_codecs(is_speaker, is_server):
+    global has_gst
+    if not has_gst:
+        return []
+    try:
+        if (is_server and is_speaker) or (not is_server and not is_speaker):
+            return can_encode()
+        else:
+            return can_decode()
+    except Exception, e:
+        log.warn("failed to get list of codecs: %s" % e)
+        return []
+
+def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
+    if not has_gst:
+        print("sound is not supported - gstreamer not present or not accessible")
+        return True
+    all_speaker_codecs = get_sound_codecs(True, is_server)
+    invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
+    hs = "help" in speaker_codecs
+    if hs:
+        print("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
+    elif len(invalid_sc):
+        log.warn("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
+        for x in invalid_sc:
+            speaker_codecs.remove(x)
+    elif len(speaker_codecs)==0:
+        speaker_codecs += all_speaker_codecs
+
+    all_microphone_codecs = get_sound_codecs(True, is_server)
+    invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
+    hm = "help" in microphone_codecs
+    if hm:
+        print("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
+    elif len(invalid_mc):
+        log.warn("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
+        for x in invalid_mc:
+            microphone_codecs.remove(x)
+    elif len(microphone_codecs)==0:
+        microphone_codecs += all_microphone_codecs
+    return hm or hs
 
 
 def get_all_plugin_names():
-    global all_plugin_names
-    if len(all_plugin_names)==0:
+    global all_plugin_names, has_gst
+    if len(all_plugin_names)==0 and has_gst:
         registry = gst.registry_get_default()
         all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
         all_plugin_names.sort()
-        soundlog("found the following plugins: %s", all_plugin_names)
+        debug("found the following plugins: %s", all_plugin_names)
     return all_plugin_names
 
 def has_plugins(*names):
     allp = get_all_plugin_names()
     missing = [name for name in names if (name is not None and name not in allp)]
     if len(missing)>0:
-        soundlog("missing %s from %s (all=%s)", missing, names, allp)
+        debug("missing %s from %s (all=%s)", missing, names, allp)
     return len(missing)==0
 
 def get_encoder_formatter(name):
@@ -146,19 +200,23 @@ def plugin_str(plugin, options):
 
 def add_gst_capabilities(capabilities, receive=True, send=True,
                         receive_codecs=[], send_codecs=[], new_namespace=False):
+    if not has_gst:
+        return
     if new_namespace:
         capabilities["sound.gst.version"] = gst_version
         capabilities["sound.pygst.version"] = pygst_version
     else:
         capabilities["gst_version"] = gst_version
         capabilities["pygst_version"] = pygst_version
-    capabilities["sound.decoders"] = receive_codecs
-    capabilities["sound.encoders"] = send_codecs
-    capabilities["sound.receive"] = receive and len(receive_codecs)>0
-    capabilities["sound.send"] = send and len(send_codecs)>0
+    capabilities.update({
+                "sound.decoders"    : receive_codecs,
+                "sound.encoders"    : send_codecs,
+                "sound.receive"     : receive and len(receive_codecs)>0,
+                "sound.send"        : send and len(send_codecs)>0})
 
 
 def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
+    assert has_gst
     try:
         matching_codecs = [x for x in remote_decoders if x in local_decoders]
         ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
@@ -182,7 +240,7 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
                 log.error("pulseaudio not supported - sound disabled")
                 return    None
             pa_server = get_pulse_server()
-            soundlog("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote_pulseaudio_server, pa_server)
+            debug("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote_pulseaudio_server, pa_server)
             #only worth comparing if we have a real server string
             #one that starts with {UUID}unix:/..
             if pa_server and pa_server.startswith("{") and \
@@ -190,12 +248,12 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
                 log.error("identical pulseaudio server, refusing to create a sound loop - sound disabled")
                 return    None
             pa_id = get_pulse_id()
-            soundlog("start sound, client id=%s, server id=%s", remote_pulseaudio_id, pa_id)
+            debug("start sound, client id=%s, server id=%s", remote_pulseaudio_id, pa_id)
             if remote_pulseaudio_id and remote_pulseaudio_id==pa_id:
                 log.error("identical pulseaudio ID, refusing to create a sound loop - sound disabled")
                 return    None
             monitor_devices = get_pa_device_options(True, False)
-            soundlog("found pulseaudio monitor devices: %s", monitor_devices)
+            debug("found pulseaudio monitor devices: %s", monitor_devices)
             if len(monitor_devices)==0:
                 log.error("could not detect any pulseaudio monitor devices - sound forwarding is disabled")
                 return    None
@@ -218,6 +276,7 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
     except Exception, e:
         log.error("error setting up sound: %s", e, exc_info=True)
         return    None
+
 
 def main():
     import logging

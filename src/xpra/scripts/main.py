@@ -23,7 +23,7 @@ from xpra.platform.paths import get_default_socket_dir
 from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
-    make_defaults_struct, show_codec_help, parse_bool, print_bool, validate_config
+    make_defaults_struct, parse_bool, print_bool, validate_config
 
 
 def warn(msg):
@@ -411,8 +411,10 @@ When unspecified, all the available codecs are allowed and the first one is used
         warn("\nWarning: running as root")
 
     if mode in ("start", "upgrade", "attach", "shadow", "proxy"):
-        if show_codec_help("attach" not in cmdline[1:],
-                           options.speaker_codec, options.microphone_codec):
+        if "help" in options.speaker_codec or "help" in options.microphone_codec:
+            from xpra.sound.gstreamer_util import show_sound_codec_help
+            show_sound_codec_help("attach" not in cmdline[1:],
+                           options.speaker_codec, options.microphone_codec)
             return 0
         logging.basicConfig(format="%(asctime)s %(message)s")
     else:
