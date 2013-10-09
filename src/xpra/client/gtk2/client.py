@@ -335,11 +335,11 @@ class XpraClient(GTKXpraClient):
                             pass
             if cursor is None:
                 w, h, xhot, yhot, serial, pixels = new_cursor[2:8]
-                log("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s" % (xhot,yhot, serial, w,h, len(pixels)))
                 pixbuf = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
                 x = max(0, min(xhot, w-1))
                 y = max(0, min(yhot, h-1))
                 size = gdk.display_get_default().get_default_cursor_size()
+                log("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s", xhot,yhot, serial, w,h, len(pixels), size)
                 if size>0 and (size<w or size<h):
                     ratio = float(max(w,h))/size
                     pixbuf = pixbuf.scale_simple(int(w/ratio), int(h/ratio), gdk.INTERP_BILINEAR)
