@@ -38,6 +38,15 @@ def nox():
     warnings.filterwarnings("error", "could not open display")
 
 
+supports_shadow = SHADOW_SUPPORTED
+supports_server = LOCAL_SERVERS_SUPPORTED
+if supports_server:
+    try:
+        from xpra.x11.bindings.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
+    except:
+        supports_server = False
+
+
 def main(script_file, cmdline):
     platform_init()
     try:
@@ -45,6 +54,11 @@ def main(script_file, cmdline):
         glib.set_prgname("Xpra")
     except:
         pass
+    parser, options, args, mode = parse_cmdline(cmdline)
+    return run_mode(script_file, parser, options, args, mode)
+
+
+def parse_cmdline(cmdline):
     #################################################################
     ## NOTE NOTE NOTE
     ##
@@ -53,14 +67,6 @@ def main(script_file, cmdline):
     ##
     ## NOTE NOTE NOTE
     #################################################################
-    supports_shadow = SHADOW_SUPPORTED
-    supports_server = LOCAL_SERVERS_SUPPORTED
-    if supports_server:
-        try:
-            from xpra.x11.bindings.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
-        except:
-            supports_server = False
-
     command_options = [
                         "\t%prog attach [DISPLAY]\n",
                         "\t%prog detach [DISPLAY]\n",
@@ -381,6 +387,30 @@ When unspecified, all the available codecs are allowed and the first one is used
     #ensure opengl is either True, False or None
     options.opengl = parse_bool("opengl", options.opengl)
 
+    mode = args.pop(0)
+    return parser, options, args, mode
+
+def dump_frames(*arsg):
+    import traceback
+    frames = sys._current_frames()
+    print("")
+    print("found %s frames:" % len(frames))
+    for fid,frame in frames.items():
+        print("%s - %s:" % (fid, frame))
+        traceback.print_stack(frame)
+    print("")
+
+
+def configure_logging(options, mode):
+    if mode in ("start", "upgrade", "attach", "shadow", "proxy"):
+        if "help" in options.speaker_codec or "help" in options.microphone_codec:
+            from xpra.sound.gstreamer_util import show_sound_codec_help
+            show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
+            return 0
+        logging.basicConfig(format="%(asctime)s %(message)s")
+    else:
+        logging.root.addHandler(logging.StreamHandler(sys.stdout))
+
     def toggle_logging(level):
         if not options.debug:
             logging.root.setLevel(level)
@@ -394,31 +424,6 @@ When unspecified, all the available codecs are allowed and the first one is used
             else:
                 logger = logging.getLogger(cat)
             logger.setLevel(level)
-
-    def dump_frames(*arsg):
-        import traceback
-        frames = sys._current_frames()
-        print("")
-        print("found %s frames:" % len(frames))
-        for fid,frame in frames.items():
-            print("%s - %s:" % (fid, frame))
-            traceback.print_stack(frame)
-        print("")
-
-    #configure default logging handler:
-    mode = args.pop(0)
-    if os.name=="posix" and os.getuid()==0 and mode!="proxy":
-        warn("\nWarning: running as root")
-
-    if mode in ("start", "upgrade", "attach", "shadow", "proxy"):
-        if "help" in options.speaker_codec or "help" in options.microphone_codec:
-            from xpra.sound.gstreamer_util import show_sound_codec_help
-            show_sound_codec_help("attach" not in cmdline[1:],
-                           options.speaker_codec, options.microphone_codec)
-            return 0
-        logging.basicConfig(format="%(asctime)s %(message)s")
-    else:
-        logging.root.addHandler(logging.StreamHandler(sys.stdout))
 
     #set debug log on if required:
     if options.debug:
@@ -435,6 +440,14 @@ When unspecified, all the available codecs are allowed and the first one is used
             toggle_logging(logging.INFO)
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
+
+
+def run_mode(script_file, parser, options, args, mode):
+    #configure default logging handler:
+    if os.name=="posix" and os.getuid()==0 and mode!="proxy":
+        warn("\nWarning: running as root")
+
+    configure_logging(options, mode)
 
     try:
         if mode=="start" and len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:")):
