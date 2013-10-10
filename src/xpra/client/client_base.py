@@ -72,7 +72,7 @@ class XpraClientBase(object):
         self._aliases = {}
         self._reverse_aliases = {}
         #server state and caps:
-        self.server_capabilities = {}
+        self.server_capabilities = None
         self._remote_version = None
         self._remote_revision = None
         self._remote_platform = None
@@ -171,6 +171,13 @@ class XpraClientBase(object):
                 hello["challenge_client_salt"] = client_salt
         log.debug("send_hello(%s) packet=%s", binascii.hexlify(challenge_response or ""), hello)
         self.send("hello", hello)
+        self.timeout_add(DEFAULT_TIMEOUT, self.verify_connected)
+
+    def verify_connected(self):
+        if self.server_capabilities is None:
+            #server has not said hello yet
+            self.warn_and_quit(EXIT_TIMEOUT, "connection timed out")
+
 
     def make_hello_base(self):
         capabilities = get_network_caps()
