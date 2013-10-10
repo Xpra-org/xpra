@@ -538,7 +538,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     clobber = upgrading or opts.use_display
 
     display_name = extra_args.pop(0)
-    display_name_check(display_name)
     if not shadowing and not proxying:
         display_name_check(display_name)
 
