@@ -547,6 +547,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         return  1
 
     atexit.register(run_cleanups)
+    #the server class will usually override those:
     signal.signal(signal.SIGINT, deadly_signal)
     signal.signal(signal.SIGTERM, deadly_signal)
 
@@ -643,6 +644,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         app = XpraServer()
         app.init(clobber, opts)
         app.init_sockets(sockets)
+        _cleanups.insert(0, app.cleanup)
 
     if xvfb_pid is not None:
         save_pid(xvfb_pid)
@@ -672,10 +674,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if opts.start_child:
             assert os.name=="posix", "start-child cannot be used on %s" % os.name
             start_children(child_reaper, opts.start_child)
-
-    _cleanups.insert(0, app.cleanup)
-    signal.signal(signal.SIGTERM, app.signal_quit)
-    signal.signal(signal.SIGINT, app.signal_quit)
 
     try:
         e = app.run()
