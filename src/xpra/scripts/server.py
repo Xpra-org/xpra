@@ -52,15 +52,54 @@ def deadly_signal(signum, frame):
 # child to exit and us to receive the SIGCHLD before our fork() returns (and
 # thus before we even know the pid of the child).  So be careful:
 class ChildReaper(object):
-    def __init__(self, quit_cb, children_pids={}):
+    def __init__(self, quit_cb):
         self._quit = quit_cb
-        self._children_pids = children_pids
+        self._children_pids = {}
         self._dead_pids = set()
         from xpra.log import Logger
         self._logger = Logger()
+        old_python = sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0)
+        if old_python:
+            POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
+            self._logger.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
+            self._logger.warn("switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
+            #keep track of process objects:
+            self.processes = []
+            def check_procs():
+                for proc in self.processes:
+                    if proc.poll() is not None:
+                        self.add_dead_pid(proc.pid)
+                        self.check()
+                self.processes = [proc for proc in self.processes if proc.poll() is None]
+                return True
+            gobject.timeout_add(POLL_DELAY*1000, check_procs)
+        else:
+            #with a less buggy python, we can just check the list of pids
+            #whenever we get a SIGCHLD
+            #however.. subprocess.Popen will no longer work as expected
+            #see: http://bugs.python.org/issue9127
+            #so we must ensure certain things that exec happen first:
+            from xpra.version_util import get_platform_info_cache
+            get_platform_info_cache()
+
+            signal.signal(signal.SIGCHLD, self.sigchld)
+            # Check once after the mainloop is running, just in case the exit
+            # conditions are satisfied before we even enter the main loop.
+            # (Programming with unix the signal API sure is annoying.)
+            def check_once():
+                self.check()
+                return False # Only call once
+            gobject.timeout_add(0, check_once)
+
+    def add_process(self, process, command):
+        process.command = command
+        self._children_pids[process.pid] = process
 
     def check(self):
         if self._children_pids:
+            for pid, proc in self._children_pids.items():
+                if proc.poll() is not None:
+                    self.add_dead_pid(pid)
             pids = set(self._children_pids.keys())
             if pids.issubset(self._dead_pids):
                 self._quit()
@@ -70,9 +109,9 @@ class ChildReaper(object):
 
     def add_dead_pid(self, pid):
         if pid not in self._dead_pids:
-            cmd = self._children_pids.get(pid)
-            if cmd:
-                self._logger.info("child '%s' with pid %s has terminated", cmd, pid)
+            proc = self._children_pids.get(pid)
+            if proc:
+                self._logger.info("child '%s' with pid %s has terminated", proc.command, pid)
             self._dead_pids.add(pid)
             self.check()
 
@@ -157,6 +196,46 @@ fi
 """)
     return "".join(script)
 
+def write_runner_shell_script(dotxpra, contents):
+    # This used to be given a display-specific name, but now we give it a
+    # single fixed name and if multiple servers are started then the last one
+    # will clobber the rest.  This isn't great, but the tradeoff is that it
+    # makes it possible to use bare 'ssh:hostname' display names and
+    # autodiscover the proper numeric display name when only one xpra server
+    # is running on the remote host.  Might need to revisit this later if
+    # people run into problems or autodiscovery turns out to be less useful
+    # than expected.
+    scriptpath = os.path.join(dotxpra.confdir(), "run-xpra")
+    # Write out a shell-script so that we can start our proxy in a clean
+    # environment:
+    scriptfile = open(scriptpath, "w")
+    # Unix is a little silly sometimes:
+    umask = os.umask(0)
+    os.umask(umask)
+    if hasattr(os, "fchmod"):
+        os.fchmod(scriptfile.fileno(), o0700 & ~umask)
+    else:
+        os.chmod(scriptpath, o0700 & ~umask)
+    scriptfile.write(contents)
+    scriptfile.close()
+
+
+def display_name_check(display_name):
+    if display_name.startswith(":"):
+        n = display_name[1:]
+        p = n.find(".")
+        if p>0:
+            n = n[:p]
+        try:
+            dno = int(n)
+            if dno>=0 and dno<10:
+                sys.stderr.write("WARNING: low display number: %s\n" % dno)
+                sys.stderr.write("You are attempting to run the xpra server against what seems to be a default X11 display '%s'.\n" % display_name)
+                sys.stderr.write("This is generally not what you want.\n")
+                sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).\n")
+        except:
+            pass
+
 def create_unix_domain_socket(sockpath, mmap_group):
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -169,9 +248,9 @@ def create_unix_domain_socket(sockpath, mmap_group):
     os.umask(orig_umask)
     return listener
 
-def create_tcp_socket(parser, spec):
+def create_tcp_socket(spec):
     if ":" not in spec:
-        parser.error("TCP port must be specified as [HOST]:PORT")
+        raise Exception("TCP port must be specified as [HOST]:PORT")
     (host, port) = spec.rsplit(":", 1)
     if host == "":
         host = "127.0.0.1"
@@ -191,6 +270,54 @@ def create_tcp_socket(parser, spec):
     listener.bind(sockaddr)
     return listener
 
+def setup_tcp_sockets(bind_tcp):
+    if not bind_tcp:
+        return []
+    from xpra.log import Logger
+    log = Logger()
+    sockets = []
+    def setup_tcp_socket(bind_to):
+        try:
+            tcp_socket = create_tcp_socket(bind_to)
+            sockets.append(("tcp", tcp_socket))
+            def cleanup_tcp_socket():
+                log.info("closing tcp socket %s", bind_to)
+                try:
+                    tcp_socket.close()
+                except:
+                    pass
+            _cleanups.append(cleanup_tcp_socket)
+        except Exception, e:
+            log.error("cannot start - failed to create tcp socket at %s : %s" % (bind_to, e))
+            return  1
+    for tcp_s in set(bind_tcp):
+        setup_tcp_socket(tcp_s)
+    return sockets
+
+def setup_local_socket(dotxpra, display_name, clobber, mmap_group):
+    if sys.platform.startswith("win"):
+        return None, None
+    from xpra.log import Logger
+    log = Logger()
+    #print("creating server socket %s" % sockpath)
+    try:
+        sockpath = dotxpra.server_socket_path(display_name, clobber, wait_for_unknown=5)
+    except ServerSockInUse:
+        raise Exception("You already have an xpra server running at %s\n"
+                     "  (did you want 'xpra upgrade'?)"
+                     % (display_name,))
+    except Exception, e:
+        raise Exception("socket path error: %s" % e)
+    sock = create_unix_domain_socket(sockpath, mmap_group)
+    def cleanup_socket():
+        log.info("removing socket %s", sockpath)
+        try:
+            os.unlink(sockpath)
+        except:
+            pass
+    _cleanups.append(cleanup_socket)
+    return ("unix-domain", sock), cleanup_socket
+
 def close_all_fds(exceptions=[]):
     fd_dirs = ["/dev/fd", "/proc/self/fd"]
     for fd_dir in fd_dirs:
@@ -207,159 +334,47 @@ def close_all_fds(exceptions=[]):
             return
     print("Uh-oh, can't close fds, please port me to your system...")
 
-def run_server(parser, opts, mode, xpra_file, extra_args):
-    if len(extra_args) != 1:
-        parser.error("need exactly 1 extra argument")
-    if opts.encoding and opts.encoding=="help":
-        from xpra.codecs.loader import encodings_help
-        from xpra.server.server_base import ServerBase
-        print("server supports the following encodings:\n * %s" % ("\n * ".join(encodings_help(ServerBase().encodings))))
-        return 0
-    assert mode in ("start", "upgrade", "shadow", "proxy")
-    upgrading = mode == "upgrade"
-    shadowing = mode == "shadow"
-    proxying = mode == "proxy"
-    display_name = extra_args.pop(0)
-    if display_name.startswith(":") and not shadowing and not proxying:
-        n = display_name[1:]
-        p = n.find(".")
-        if p>0:
-            n = n[:p]
-        try:
-            dno = int(n)
-            if dno>=0 and dno<10:
-                sys.stderr.write("WARNING: low display number: %s\n" % dno)
-                sys.stderr.write("You are attempting to run the xpra server against what seems to be a default X11 display '%s'.\n" % display_name)
-                sys.stderr.write("This is generally not what you want.\n")
-                sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).\n")
-        except:
-            pass
-
-    if not shadowing and not proxying and opts.exit_with_children and not opts.start_child:
-        sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
-        return  1
-
-    atexit.register(run_cleanups)
-    signal.signal(signal.SIGINT, deadly_signal)
-    signal.signal(signal.SIGTERM, deadly_signal)
-
-    dotxpra = DotXpra(opts.socket_dir)
-
-    # This used to be given a display-specific name, but now we give it a
-    # single fixed name and if multiple servers are started then the last one
-    # will clobber the rest.  This isn't great, but the tradeoff is that it
-    # makes it possible to use bare 'ssh:hostname' display names and
-    # autodiscover the proper numeric display name when only one xpra server
-    # is running on the remote host.  Might need to revisit this later if
-    # people run into problems or autodiscovery turns out to be less useful
-    # than expected.
-    scriptpath = os.path.join(dotxpra.confdir(), "run-xpra")
-
-    # Save the starting dir now, because we'll lose track of it when we
-    # daemonize:
-    starting_dir = os.getcwd()
-
-    # Daemonize:
-    if opts.daemon:
-        if opts.log_file:
-            if os.path.isabs(opts.log_file):
-                logpath = opts.log_file
-            else:
-                logpath = os.path.join(dotxpra.sockdir(), opts.log_file)
-            logpath = logpath.replace("$DISPLAY", display_name)
+def open_log_file(dotxpra, log_file, display_name):
+    if log_file:
+        if os.path.isabs(log_file):
+            logpath = log_file
         else:
-            logpath = dotxpra.log_path(display_name) + ".log"
-        sys.stderr.write("Entering daemon mode; "
-                         + "any further errors will be reported to:\n"
-                         + ("  %s\n" % logpath))
-        # Do some work up front, so any errors don't get lost.
-        if os.path.exists(logpath):
-            os.rename(logpath, logpath + ".old")
-        logfd = os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, o0666)
-        assert logfd > 2
-        os.chdir("/")
-
-        if os.fork():
-            os._exit(0)
-        os.setsid()
-        if os.fork():
-            os._exit(0)
-        close_all_fds(exceptions=[logfd])
-        fd0 = os.open("/dev/null", os.O_RDONLY)
-        if fd0 != 0:
-            os.dup2(fd0, 0)
-            os.close(fd0)
-        os.dup2(logfd, 1)
-        os.dup2(logfd, 2)
-        os.close(logfd)
-        # Make these line-buffered:
-        sys.stdout = os.fdopen(1, "w", 1)
-        sys.stderr = os.fdopen(2, "w", 1)
-
-    # Write out a shell-script so that we can start our proxy in a clean
-    # environment:
-    scriptfile = open(scriptpath, "w")
-    # Unix is a little silly sometimes:
-    umask = os.umask(0)
-    os.umask(umask)
-    if hasattr(os, "fchmod"):
-        os.fchmod(scriptfile.fileno(), o0700 & ~umask)
+            logpath = os.path.join(dotxpra.sockdir(), log_file)
+        logpath = logpath.replace("$DISPLAY", display_name)
     else:
-        os.chmod(scriptpath, o0700 & ~umask)
-    scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir, opts.socket_dir))
-    scriptfile.close()
+        logpath = dotxpra.log_path(display_name) + ".log"
+    sys.stderr.write("Entering daemon mode; "
+                     + "any further errors will be reported to:\n"
+                     + ("  %s\n" % logpath))
+    # Do some work up front, so any errors don't get lost.
+    if os.path.exists(logpath):
+        os.rename(logpath, logpath + ".old")
+    return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, o0666)
 
-    from xpra.log import Logger
-    log = Logger()
+def daemonize(logfd):
+    os.chdir("/")
+    if os.fork():
+        os._exit(0)
+    os.setsid()
+    if os.fork():
+        os._exit(0)
+    close_all_fds(exceptions=[logfd])
+    fd0 = os.open("/dev/null", os.O_RDONLY)
+    if fd0 != 0:
+        os.dup2(fd0, 0)
+        os.close(fd0)
+    os.dup2(logfd, 1)
+    os.dup2(logfd, 2)
+    os.close(logfd)
+    # Make these line-buffered:
+    sys.stdout = os.fdopen(1, "w", 1)
+    sys.stderr = os.fdopen(2, "w", 1)
 
-    # Initialize the sockets before the display,
-    # That way, errors won't make us kill the Xvfb
-    # (which may not be ours to kill at that point)
-    sockets = []
-    if opts.bind_tcp and len(opts.bind_tcp):
-        def setup_tcp_socket(bind_to):
-            try:
-                tcp_socket = create_tcp_socket(parser, bind_to)
-                sockets.append(("tcp", tcp_socket))
-                def cleanup_tcp_socket():
-                    log.info("closing tcp socket %s", bind_to)
-                    try:
-                        tcp_socket.close()
-                    except:
-                        pass
-                _cleanups.append(cleanup_tcp_socket)
-            except Exception, e:
-                log.error("cannot start - failed to create tcp socket at %s : %s" % (bind_to, e))
-                return  1
-        for tcp_s in set(opts.bind_tcp):
-            setup_tcp_socket(tcp_s)
 
-    clobber = upgrading or opts.use_display
-    if not sys.platform.startswith("win"):
-        #print("creating server socket %s" % sockpath)
-        try:
-            sockpath = dotxpra.server_socket_path(display_name, clobber, wait_for_unknown=5)
-        except ServerSockInUse:
-            parser.error("You already have an xpra server running at %s\n"
-                         "  (did you want 'xpra upgrade'?)"
-                         % (display_name,))
-        except Exception, e:
-            parser.error("socket path error: %s" % e)
-        sock = create_unix_domain_socket(sockpath, opts.mmap_group)
-        sockets.append(("unix-domain", sock))
-        def cleanup_socket():
-            log.info("removing socket %s", sockpath)
-            try:
-                os.unlink(sockpath)
-            except:
-                pass
-        _cleanups.append(cleanup_socket)
-
-    # Do this after writing out the shell script:
-    os.environ["DISPLAY"] = display_name
+def sanitize_env():
     def unsetenv(*varnames):
         for x in varnames:
-            if os.environ.get(x):
+            if x in os.environ:
                 del os.environ[x]
     #we don't want client apps to think these mean anything:
     #(if set, they belong to the desktop the server was started from)
@@ -376,93 +391,222 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     #force 'simple' / 'xim', as 'ibus' 'immodule' breaks keyboard handling
     #unless its daemon is also running - and we don't know if it is..
     #this should override any XSETTINGS too.
-    os.environ["DISABLE_IMSETTINGS"] = "true"
-    os.environ["GTK_IM_MODULE"] = "xim"                     #or "gtk-im-context-simple"?
-    os.environ["QT_IM_MODULE"] = "xim"                      #or "simple"?
-    os.environ["IMSETTINGS_MODULE"] = "none"                #or "xim"?
-    os.environ["XMODIFIERS"] = ""
+    os.environ.update({
+               "DISABLE_IMSETTINGS" : "true",
+               "GTK_IM_MODULE"      : "xim",                #or "gtk-im-context-simple"?
+               "QT_IM_MODULE"       : "xim",                #or "simple"?
+               "IMSETTINGS_MODULE"  : "none",               #or "xim"?
+               "XMODIFIERS"         : ""})
 
-    if not clobber and not shadowing and not proxying:
-        # We need to set up a new server environment
-        xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
-        if not os.path.exists(xauthority):
+def start_pulseaudio(child_reaper, pulseaudio_command):
+    from xpra.log import Logger
+    log = Logger()
+    log("pulseaudio_command=%s", pulseaudio_command)
+    pa_proc = subprocess.Popen(pulseaudio_command, stdin=subprocess.PIPE, shell=True, close_fds=True)
+    child_reaper.add_process(pa_proc, "pulseaudio")
+    log.info("pulseaudio server started with pid %s", pa_proc.pid)
+    def check_pa_start():
+        if pa_proc.poll() is not None or pa_proc.pid in child_reaper._dead_pids:
+            log.warn("Warning: pulseaudio has terminated. Either fix the pulseaudio command line or use --no-pulseaudio to avoid this warning.")
+        return False
+    gobject.timeout_add(1000*2, check_pa_start)
+    def cleanup_pa():
+        log("cleanup_pa() process.poll()=%s, pid=%s, dead_pids=%s", pa_proc.poll(), pa_proc.pid, child_reaper._dead_pids)
+        if pa_proc.poll() is None and pa_proc.pid not in child_reaper._dead_pids:
+            log.info("stopping pulseaudio with pid %s", pa_proc.pid)
             try:
-                open(xauthority, 'wa').close()
-            except Exception, e:
-                sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
-        subs = {"XAUTHORITY" : xauthority,
-                "USER" : os.environ.get("USER", "unknown-user"),
-                "HOME" : os.environ.get("HOME", os.getcwd()),
-                "DISPLAY" : display_name}
-        xvfb = opts.xvfb
-        for var,value in subs.items():
-            xvfb = xvfb.replace("$%s" % var, value)
-            xvfb = xvfb.replace("${%s}" % var, value)
-        xvfb_cmd = xvfb.split()
-        xvfb_executable = xvfb_cmd[0]
-        xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
-        def setsid():
-            #run in a new session
-            if os.name=="posix":
-                os.setsid()
+                pa_proc.terminate()
+            except:
+                log.warn("error trying to stop pulseaudio", exc_info=True)
+    _cleanups.append(cleanup_pa)
+
+
+def start_Xvfb(xvfb_str, display_name):
+    # We need to set up a new server environment
+    xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
+    if not os.path.exists(xauthority):
         try:
-            xvfb = subprocess.Popen(xvfb_cmd+[display_name], executable=xvfb_executable, close_fds=True,
-                                    stdin=subprocess.PIPE, preexec_fn=setsid)
+            open(xauthority, 'wa').close()
+        except Exception, e:
+            #trying to continue anyway!
+            sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
+    subs = {"XAUTHORITY"    : xauthority,
+            "USER"          : os.environ.get("USER", "unknown-user"),
+            "HOME"          : os.environ.get("HOME", os.getcwd()),
+            "DISPLAY"       : display_name}
+    for var,value in subs.items():
+        xvfb_str = xvfb_str.replace("$%s" % var, value)
+        xvfb_str = xvfb_str.replace("${%s}" % var, value)
+    xvfb_cmd = xvfb_str.split()
+    xvfb_executable = xvfb_cmd[0]
+    xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
+    def setsid():
+        #run in a new session
+        if os.name=="posix":
+            os.setsid()
+    xvfb = subprocess.Popen(xvfb_cmd+[display_name], executable=xvfb_executable, close_fds=True,
+                                stdin=subprocess.PIPE, preexec_fn=setsid)
+    from xpra.os_util import get_hex_uuid
+    xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", get_hex_uuid()]
+    try:
+        code = subprocess.call(xauth_cmd)
+        if code != 0:
+            raise OSError("non-zero exit code: %s" % code)
+    except OSError, e:
+        #trying to continue anyway!
+        sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
+    return xvfb
+
+def check_xvfb_process(xvfb=None):
+    if xvfb is None:
+        #we don't have a process to check
+        return True
+    if xvfb.poll() is None:
+        #process is running
+        return True
+    from xpra.log import Logger
+    log = Logger()
+    log.error("")
+    log.error("Xvfb command has terminated! xpra cannot continue")
+    log.error("")
+    return False
+
+def verify_display_ready(xvfb, display_name, shadowing):
+    from xpra.log import Logger
+    log = Logger()
+    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
+    # Whether we spawned our server or not, it is now running -- or at least
+    # starting.  First wait for it to start up:
+    try:
+        wait_for_x_server(display_name, 3) # 3s timeout
+    except Exception, e:
+        sys.stderr.write("%s\n" % e)
+        return  None
+    # Now we can safely load gtk and connect:
+    assert "gtk" not in sys.modules
+    import gtk.gdk          #@Reimport
+    glib.threads_init()
+    display = gtk.gdk.Display(display_name)
+    manager = gtk.gdk.display_manager_get()
+    default_display = manager.get_default_display()
+    if default_display is not None:
+        default_display.close()
+    manager.set_default_display(display)
+    if not shadowing and not check_xvfb_process(xvfb):
+        #if we're here, there is an X11 server, but it isn't the one we started!
+        log.error("There is an X11 server already running on display %s:" % display_name)
+        log.error("You may want to use:")
+        log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)
+        log.error("  'xpra --use-display start %s' to connect xpra to an existing X11 server only" % display_name)
+        log.error("")
+        return  None
+    return display
+
+def start_children(child_reaper, commands):
+    assert os.name=="posix"
+    from xpra.log import Logger
+    log = Logger()
+    #disable ubuntu's global menu using env vars:
+    env = os.environ.copy()
+    env.update({
+        "UBUNTU_MENUPROXY"          : "",
+        "QT_X11_NO_NATIVE_MENUBAR"  : "1"})
+    for child_cmd in commands:
+        if not child_cmd:
+            continue
+        try:
+            proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
+            child_reaper.add_process(proc, child_cmd)
+            log.info("started child '%s' with pid %s", child_cmd, proc.pid)
+        except OSError, e:
+            sys.stderr.write("Error spawning child '%s': %s\n" % (child_cmd, e))
+
+
+def run_server(parser, opts, mode, xpra_file, extra_args):
+    if len(extra_args) != 1:
+        parser.error("need exactly 1 extra argument")
+    if opts.encoding and opts.encoding=="help":
+        from xpra.codecs.loader import encodings_help
+        from xpra.server.server_base import ServerBase
+        print("server supports the following encodings:\n * %s" % ("\n * ".join(encodings_help(ServerBase().encodings))))
+        return 0
+    assert mode in ("start", "upgrade", "shadow", "proxy")
+    upgrading = mode == "upgrade"
+    shadowing = mode == "shadow"
+    proxying  = mode == "proxy"
+    clobber = upgrading or opts.use_display
+
+    display_name = extra_args.pop(0)
+    display_name_check(display_name)
+    if not shadowing and not proxying:
+        display_name_check(display_name)
+
+    if not shadowing and not proxying and opts.exit_with_children and not opts.start_child:
+        sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
+        return  1
+
+    atexit.register(run_cleanups)
+    signal.signal(signal.SIGINT, deadly_signal)
+    signal.signal(signal.SIGTERM, deadly_signal)
+
+    dotxpra = DotXpra(opts.socket_dir)
+
+    # Generate the script text now, because os.getcwd() will
+    # change if/when we daemonize:
+    script = xpra_runner_shell_script(xpra_file, os.getcwd(), opts.socket_dir)
+
+    # Daemonize:
+    if opts.daemon:
+        logfd = open_log_file(dotxpra, opts.log_file, display_name)
+        assert logfd > 2
+        daemonize(logfd)
+
+    # Write out a shell-script so that we can start our proxy in a clean
+    # environment:
+    write_runner_shell_script(dotxpra, script)
+
+    from xpra.log import Logger
+    log = Logger()
+
+    # Initialize the sockets before the display,
+    # That way, errors won't make us kill the Xvfb
+    # (which may not be ours to kill at that point)
+    sockets = setup_tcp_sockets(opts.bind_tcp)
+    socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group)
+    if socket:      #win32 returns None!
+        sockets.append(socket)
+
+    # Do this after writing out the shell script:
+    os.environ["DISPLAY"] = display_name
+    sanitize_env()
+
+    xvfb = None
+    if shadowing or proxying:
+        xvfb_pid = None
+    elif not clobber:
+        try:
+            xvfb = start_Xvfb(opts.xvfb, display_name)
         except OSError, e:
             sys.stderr.write("Error starting Xvfb: %s\n" % (e,))
             return  1
-        from xpra.os_util import get_hex_uuid
-        xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", get_hex_uuid()]
-        try:
-            code = subprocess.call(xauth_cmd)
-            if code != 0:
-                raise OSError("non-zero exit code: %s" % code)
-        except OSError, e:
-            sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
+        xvfb_pid = xvfb.pid
+    elif clobber:
+        #get the saved pid:
+        xvfb_pid = get_pid()
 
-    def xvfb_error(instance_exists=False):
-        if clobber or shadowing or proxying:
-            return False
-        if xvfb.poll() is None:
-            return False
-        log.error("")
-        log.error("Xvfb command has terminated! xpra cannot continue")
-        log.error("")
-        if instance_exists:
-            log.error("There is an X11 server already running on display %s:" % display_name)
-            log.error("You may want to use:")
-            log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)
-            log.error("  'xpra --use-display start %s' to connect xpra to an existing X11 server only" % display_name)
-            log.error("")
-        return True
-
-    if xvfb_error():
+    if not check_xvfb_process(xvfb):
+        #xvfb problem: exit now
         return  1
 
+    display = None
     if not sys.platform.startswith("win") and not sys.platform.startswith("darwin") and not proxying:
-        from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
-        # Whether we spawned our server or not, it is now running -- or at least
-        # starting.  First wait for it to start up:
-        try:
-            wait_for_x_server(display_name, 3) # 3s timeout
-        except Exception, e:
-            sys.stderr.write("%s\n" % e)
-            return  1
-        if xvfb_error(True):
-            return  1
-        # Now we can safely load gtk and connect:
-        assert "gtk" not in sys.modules
-        import gtk.gdk          #@Reimport
-        glib.threads_init()
-        display = gtk.gdk.Display(display_name)
-        manager = gtk.gdk.display_manager_get()
-        default_display = manager.get_default_display()
-        if default_display is not None:
-            default_display.close()
-        manager.set_default_display(display)
+        display = verify_display_ready(xvfb, display_name, shadowing)
+        if not display:
+            return 1
     elif not proxying:
         assert "gtk" not in sys.modules
         import gtk          #@Reimport
+        assert gtk
 
     if shadowing:
         xvfb_pid = None     #we don't own the display
@@ -479,15 +623,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     else:
         from xpra.x11.gtk_x11 import gdk_display_source
         assert gdk_display_source
-
-        if clobber:
-            #get the saved pid:
-            xvfb_pid = get_pid()
-        else:
-            #check that the vfb has started ok:
-            if xvfb_error(True):
-                return  1
-            xvfb_pid = xvfb.pid
 
         #check for an existing window manager:
         from xpra.x11.gtk_x11.wm import wm_check
@@ -508,7 +643,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         app.init(clobber, opts)
         app.init_sockets(sockets)
 
-
     if xvfb_pid is not None:
         save_pid(xvfb_pid)
     #we got this far so the sockets have initialized and
@@ -517,95 +651,31 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     def kill_xvfb():
         # Close our display(s) first, so the server dying won't kill us.
         log.info("killing xvfb with pid %s" % xvfb_pid)
+        import gtk  #@Reimport
         for display in gtk.gdk.display_manager_get().list_displays():
             display.close()
         os.kill(xvfb_pid, signal.SIGTERM)
     if xvfb_pid is not None and not opts.use_display and not shadowing:
         _cleanups.append(kill_xvfb)
 
-    children_pids = {}
-    def reaper_quit():
-        if opts.exit_with_children:
-            log.info("all children have exited and --exit-with-children was specified, exiting")
-            gobject.idle_add(app.clean_quit)
-
-    procs = []
     if os.name=="posix" and not proxying:
-        child_reaper = ChildReaper(reaper_quit, children_pids)
-        old_python = sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0)
-        if old_python:
-            POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
-            log.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
-            log.warn("switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
-            ChildReaper.processes = procs
-            def check_procs():
-                for proc in ChildReaper.processes:
-                    if proc.poll() is not None:
-                        child_reaper.add_dead_pid(proc.pid)
-                        child_reaper.check()
-                ChildReaper.processes = [proc for proc in ChildReaper.processes if proc.poll() is None]
-                return True
-            gobject.timeout_add(POLL_DELAY*1000, check_procs)
-        else:
-            #with a less buggy python, we can just check the list of pids
-            #whenever we get a SIGCHLD
-            #however.. subprocess.Popen will no longer work as expected
-            #see: http://bugs.python.org/issue9127
-            #so we must ensure certain things that exec happen first:
-            from xpra.version_util import get_platform_info_cache
-            get_platform_info_cache()
-
-            signal.signal(signal.SIGCHLD, child_reaper.sigchld)
-            # Check once after the mainloop is running, just in case the exit
-            # conditions are satisfied before we even enter the main loop.
-            # (Programming with unix the signal API sure is annoying.)
-            def check_once():
-                child_reaper.check()
-                return False # Only call once
-            gobject.timeout_add(0, check_once)
-
-        log("upgrading=%s, shadowing=%s, pulseaudio=%s, pulseaudio_command=%s",
-                 upgrading, shadowing, opts.pulseaudio, opts.pulseaudio_command)
+        def reaper_quit():
+            if opts.exit_with_children:
+                log.info("all children have exited and --exit-with-children was specified, exiting")
+                gobject.idle_add(app.clean_quit)
+        child_reaper = ChildReaper(reaper_quit)
         if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
-            pa_proc = subprocess.Popen(opts.pulseaudio_command, stdin=subprocess.PIPE, shell=True, close_fds=True)
-            procs.append(pa_proc)
-            log.info("pulseaudio server started with pid %s", pa_proc.pid)
-            def check_pa_start():
-                if pa_proc.poll() is not None or pa_proc.pid in child_reaper._dead_pids:
-                    log.warn("Warning: pulseaudio has terminated. Either fix the pulseaudio command line or use --no-pulseaudio to avoid this warning.")
-                return False
-            gobject.timeout_add(1000*2, check_pa_start)
-            def cleanup_pa():
-                log("cleanup_pa() process.poll()=%s, pid=%s, dead_pids=%s", pa_proc.poll(), pa_proc.pid, child_reaper._dead_pids)
-                if pa_proc.poll() is None and pa_proc.pid not in child_reaper._dead_pids:
-                    log.info("stopping pulseaudio with pid %s", pa_proc.pid)
-                    try:
-                        pa_proc.terminate()
-                    except:
-                        log.warn("error trying to stop pulseaudio", exc_info=True)
-            _cleanups.append(cleanup_pa)
-    if opts.exit_with_children:
-        assert opts.start_child
-    if opts.start_child and not proxying:
-        assert os.name=="posix"
-        #disable ubuntu's global menu using env vars:
-        env = os.environ.copy()
-        if os.name=="posix":
-            env["UBUNTU_MENUPROXY"] = ""
-            env["QT_X11_NO_NATIVE_MENUBAR"] = "1"
-        for child_cmd in opts.start_child:
-            if child_cmd:
-                try:
-                    proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
-                    children_pids[proc.pid] = child_cmd
-                    procs.append(proc)
-                except OSError, e:
-                    sys.stderr.write("Error spawning child '%s': %s\n"
-                                     % (child_cmd, e))
+            start_pulseaudio(child_reaper, opts.pulseaudio_command)
+        if opts.exit_with_children:
+            assert opts.start_child, "exit-with-children was specified but start-child is missing!"
+        if opts.start_child:
+            assert os.name=="posix", "start-child cannot be used on %s" % os.name
+            start_children(child_reaper, opts.start_child)
 
     _cleanups.insert(0, app.cleanup)
     signal.signal(signal.SIGTERM, app.signal_quit)
     signal.signal(signal.SIGINT, app.signal_quit)
+
     try:
         e = app.run()
     except KeyboardInterrupt:
