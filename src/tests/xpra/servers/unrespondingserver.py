@@ -33,6 +33,14 @@ class UnrespondingServer(ServerCore):
         sock.listen(5)
         gobject.io_add_watch(sock, gobject.IO_IN, self._new_connection, sock)
 
+    def send_version_info(self, proto):
+        #we just ignore it!
+        pass
+
+    def send_hello_info(self, proto):
+        #we just ignore it!
+        pass
+
     def verify_connection_accepted(self, protocol):
         #we just ignore it!
         pass
@@ -59,6 +67,7 @@ def main():
     cmdline = sys.argv
     print("main() cmdline=%s" % cmdline)
     parser, opts, args, mode = parse_cmdline(cmdline)
+    print("main() parser=%s" % parser)
     print("main() options=%s" % opts)
     print("main() mode=%s" % mode)
     display_name = args.pop(0)

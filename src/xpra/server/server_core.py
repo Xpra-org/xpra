@@ -308,6 +308,11 @@ class ServerCore(object):
         self.disconnect_client(proto, "invalid packet format")
 
 
+    def send_version_info(self, proto):
+        response = {"version" : xpra.__version__}
+        proto.send_now(("hello", response))
+        self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
+
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
         c = typedict(capabilities)
@@ -320,9 +325,7 @@ class ServerCore(object):
 
         log("process_hello: capabilities=%s", capabilities)
         if c.boolget("version_request"):
-            response = {"version" : xpra.__version__}
-            proto.send_now(("hello", response))
-            self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
+            self.send_version_info(proto)
             return False
 
         if c.boolget("info_request", False):
