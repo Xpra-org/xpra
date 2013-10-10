@@ -408,6 +408,7 @@ def start_pulseaudio(child_reaper, pulseaudio_command):
     def check_pa_start():
         if pa_proc.poll() is not None or pa_proc.pid in child_reaper._dead_pids:
             log.warn("Warning: pulseaudio has terminated. Either fix the pulseaudio command line or use --no-pulseaudio to avoid this warning.")
+            log.warn(" usually, only a single pulseaudio instance can be running for each user account, and one may be running already")
         return False
     gobject.timeout_add(1000*2, check_pa_start)
     def cleanup_pa():
