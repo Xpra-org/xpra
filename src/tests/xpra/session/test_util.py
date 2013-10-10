@@ -6,7 +6,7 @@
 #@PydevCodeAnalysisIgnore
 
 from tests.xpra.session.test import assert_emits, assert_raises
-from xpra.gtk_common.gobject_util import AutoPropGObjectMixin
+from xpra.gtk_common.gobject_util import AutoPropGObjectMixin, non_none_list_accumulator
 from xpra.gtk_common.quit import gtk_main_quit_really
 import gobject
 import gtk
@@ -15,7 +15,7 @@ class NonNoneListAccumulatorTestClass(gobject.GObject):
     __gsignals__ = {
         "foo": (gobject.SIGNAL_RUN_LAST,
                 gobject.TYPE_PYOBJECT, (),
-                wimpiggy.util.non_none_list_accumulator),
+                non_none_list_accumulator),
         }
 gobject.type_register(NonNoneListAccumulatorTestClass)
 

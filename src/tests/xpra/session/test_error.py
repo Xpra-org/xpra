@@ -6,7 +6,9 @@
 from tests.xpra.session.test import TestWithSession, assert_raises
 from xpra.x11.gtk_x11.error import trap, XError
 # Need a way to generate X errors...
-
+from xpra.x11.bindings.window_bindings import X11WindowBindings, constants  #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import get_xwindow                       #@UnresolvedImport
+X11Window = X11WindowBindings()
 import gtk.gdk
 
 class TestError(TestWithSession):
@@ -17,7 +19,7 @@ class TestError(TestWithSession):
                              wclass=gtk.gdk.INPUT_OUTPUT,
                              event_mask=0)
         win.destroy()
-        wimpiggy.lowlevel.XAddToSaveSet(win)
+        X11Window.XAddToSaveSet(get_xwindow(win))
         return 3
 
     def test_call(self):
@@ -26,7 +28,7 @@ class TestError(TestWithSession):
         try:
             trap.call(self.cause_badwindow)
         except XError, e:
-            assert e.args == (wimpiggy.lowlevel.constants["BadWindow"],)
+            assert e.args == (constants["BadWindow"],)
 
     def test_swallow(self):
         assert trap.swallow(lambda: 0) is None
