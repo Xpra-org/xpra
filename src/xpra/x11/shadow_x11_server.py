@@ -13,9 +13,12 @@ from xpra.server.gtk_shadow_server_base import GTKRootWindowModel
 
 class ShadowX11Server(ShadowServerBase, X11ServerBase):
 
-    def init(self, sockets, opts):
+    def __init__(self):
         ShadowServerBase.__init__(self, gtk.gdk.get_default_root_window())
-        X11ServerBase.init(self, False, sockets, opts)
+        X11ServerBase.__init__(self)
+
+    def init(self, opts):
+        X11ServerBase.init(self, False, opts)
 
     def makeRootWindowModel(self):
         return GTKRootWindowModel(self.root)

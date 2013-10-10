@@ -11,6 +11,7 @@ log = Logger()
 
 from xpra.net.protocol import Compressed
 from xpra.server.batch_config import DamageBatchConfig
+from xpra.util import AdHocStruct
 
 
 class RootWindowModel(object):
@@ -49,25 +50,37 @@ class RootWindowModel(object):
             return socket.gethostname()
         elif prop=="window-type":
             return ["NORMAL"]
+        elif prop=="fullscreen":
+            return False
+        elif prop=="scaling":
+            return None
         elif prop=="size-hints":
-            from xpra.util import AdHocStruct
             size = self.window.get_size()
-            size_hints = AdHocStruct()
-            size_hints.max_size = size
-            size_hints.min_size = size
-            size_hints.base_size = size
-            for x in ("resize_inc", "min_aspect", "max_aspect", "min_aspect_ratio", "max_aspect_ratio"):
-                setattr(size_hints, x, None)
-            return size_hints
+            return RootSizeHints(size)
         else:
             raise Exception("invalid property: %s" % prop)
         return None
+
+    def connect(self, *args):
+        log("ignoring signal connect request: %s", args)
 
     def get_dimensions(self):
         return self.window.get_size()
 
     def get_position(self):
         return 0, 0
+
+class RootSizeHints(AdHocStruct):
+
+    def __init__(self, size):
+        self.max_size = size
+        self.min_size = size
+        self.base_size = size
+        for x in ("resize_inc", "min_aspect", "max_aspect", "min_aspect_ratio", "max_aspect_ratio"):
+            setattr(self, x, None)
+
+    def to_dict(self):
+        return self.__dict__
 
 
 class ShadowServerBase(object):
@@ -140,9 +153,7 @@ class ShadowServerBase(object):
             window = self._id_to_window[wid]
             assert window == self.root_window_model
             w, h = self.root.get_size()
-            props = ("title", "client-machine", "size-hints", "window-type", "has-alpha")
-            ss.new_window("new-window", wid, window, 0, 0, w, h, props, self.client_properties.get(ss.uuid))
-        #ss.send_cursor(self.cursor_data)
+            ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(ss.uuid))
 
 
     def _add_new_window(self, window):
@@ -152,9 +163,7 @@ class ShadowServerBase(object):
     def _send_new_window_packet(self, window):
         assert window == self.root_window_model
         geometry = self.root.get_geometry()[:4]
-        metadata = {}
-        self._do_send_new_window_packet("new-window", window, geometry, metadata)
-
+        self._do_send_new_window_packet("new-window", window, geometry)
 
     def _process_window_common(self, wid):
         window = self._id_to_window.get(wid)
@@ -168,7 +177,7 @@ class ShadowServerBase(object):
         self.mapped_at = x, y, width, height
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
-            self._set_client_properties(proto, wid, packet[6])
+            self._set_client_properties(proto, wid, self.root_window_model, packet[6])
         self.start_refresh()
 
     def _process_unmap_window(self, proto, packet):
@@ -184,7 +193,7 @@ class ShadowServerBase(object):
         self.mapped_at = x, y, w, h
         self._damage(window, 0, 0, w, h)
         if len(packet)>=7:
-            self._set_client_properties(proto, wid, packet[6])
+            self._set_client_properties(proto, wid, self.root_window_model, packet[6])
 
     def _process_move_window(self, proto, packet):
         wid, x, y = packet[1:4]
@@ -207,6 +216,6 @@ class ShadowServerBase(object):
         self.disconnect_client(proto, "closed the only window")
 
     def make_screenshot_packet(self):
-        w, h, encoding, rowstride, data = self.root_window_model.take_root_screenshot()
+        w, h, encoding, rowstride, data = self.root_window_model.take_screenshot()
         assert encoding=="png"  #use fixed encoding for now
         return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
