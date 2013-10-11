@@ -10,7 +10,6 @@
 ## dictionary through which the constants can be accessed like
 ## constants["AV_..."].
 
-AV_PIX_FMT_NV12
 AV_PIX_FMT_YUV420P
 AV_PIX_FMT_YUV422P
 AV_PIX_FMT_YUV444P
