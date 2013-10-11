@@ -17,7 +17,7 @@ from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, EXIT_TIMEOU
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
     """
-        Utility superclass for glib clients
+        Utility superclass for GObject clients
     """
 
     def __init__(self):
