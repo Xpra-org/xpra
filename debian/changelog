@@ -1,7 +1,29 @@
 xpra (0.11.0-1) UNRELEASED; urgency=low
-  * TODO
+  * proxy server mode for serving multiple sessions through one port
+  * support for more authentication mechanisms
+  * lz4 compression
+  * real time frame latency graphs
+  * removed most of the Cython/C code duplication
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 06 Sep 2013 11:53:39 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 11 Oct 2013 12:39:49 +0700
+
+xpra (0.10.5-1) UNRELEASED; urgency=low
+  * fix client time out when the initial connection fails
+  * fix shadow mode
+  * fix connection failures when some system information is missing
+  * fix client disconnection requests
+  * fix encryption cipher error messages
+  * fix client errors when some features are disabled
+  * fix potential rencode bug with unhandled data types
+  * error out if the client requests authentication and none is available
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 10 Oct 2013 15:39:42 +0700
+
+xpra (0.10.4-1) UNRELEASED; urgency=low
+  * fix modifier key handling (was more noticeable with MS Windows clients)
+  * fix auto-refresh
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 10 Sep 2013 12:36:08 +0700
 
 xpra (0.10.3-1) UNRELEASED; urgency=low
   * fix transient windows with no parent

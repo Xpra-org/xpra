@@ -152,8 +152,26 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Sep 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
-- TODO
+* Fri Oct 11 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+- proxy server mode for serving multiple sessions through one port
+- support for more authentication mechanisms
+- lz4 compression
+- real time frame latency graphs
+- removed most of the Cython/C code duplication
+
+* Thu Oct 10 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.5-1
+- fix client time out when the initial connection fails
+- fix shadow mode
+- fix connection failures when some system information is missing
+- fix client disconnection requests
+- fix encryption cipher error messages
+- fix client errors when some features are disabled
+- fix potential rencode bug with unhandled data types
+- error out if the client requests authentication and none is available
+
+* Tue Sep 10 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.4-2
+- fix modifier key handling (was more noticeable with MS Windows clients)
+- fix auto-refresh
 
 * Thu Sep 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.3-2
 - fix transient windows with no parent

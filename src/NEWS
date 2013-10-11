@@ -1,6 +1,28 @@
-v0.11.0 (2013-09-06)
+v0.11.0 (2013-10-11)
 ======================
-	-- TODO
+	-- proxy server mode for serving multiple sessions through one port
+	-- support for more authentication mechanisms
+	-- lz4 compression
+	-- real time frame latency graphs
+	-- removed most of the Cython/C code duplication
+
+
+v0.10.5 (2013-10-10)
+======================
+	-- fix client time out when the initial connection fails
+	-- fix shadow mode
+	-- fix connection failures when some system information is missing
+	-- fix client disconnection requests
+	-- fix encryption cipher error messages
+	-- fix client errors when some features are disabled
+	-- fix potential rencode bug with unhandled data types
+	-- error out if the client requests authentication and none is available
+
+
+v0.10.4 (2013-09-10)
+======================
+	-- fix modifier key handling (was more noticeable with MS Windows clients)
+	-- fix auto-refresh
 
 
 v0.10.3 (2013-09-06)
