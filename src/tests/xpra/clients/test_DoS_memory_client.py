@@ -38,7 +38,7 @@ class TestMemoryClient(CommandConnectClient):
 
 def main():
     import sys
-    from tests.xpra.test_DoS_client import test_DoS
+    from tests.xpra.clients.test_DoS_client import test_DoS
     test_DoS(TestMemoryClient, sys.argv)
 
 

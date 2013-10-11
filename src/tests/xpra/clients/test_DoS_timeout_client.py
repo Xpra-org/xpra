@@ -39,7 +39,7 @@ class TestTimeoutClient(CommandConnectClient):
 
 def main():
     import sys
-    from tests.xpra.test_DoS_client import test_DoS
+    from tests.xpra.clients.test_DoS_client import test_DoS
     test_DoS(TestTimeoutClient, sys.argv)
 
 if __name__ == "__main__":

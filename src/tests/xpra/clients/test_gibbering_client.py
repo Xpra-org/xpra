@@ -57,7 +57,7 @@ class TestGiberringCommandClientNoPacketSize(TestGiberringCommandClient):
 
 def main():
     import sys
-    from tests.xpra.test_DoS_client import test_DoS
+    from tests.xpra.clients.test_DoS_client import test_DoS
     #test_DoS(TestGiberringCommandClient, sys.argv)
     test_DoS(TestGiberringCommandClientNoPacketSize, sys.argv)
 

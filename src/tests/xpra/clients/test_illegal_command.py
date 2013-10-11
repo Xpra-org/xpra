@@ -35,7 +35,7 @@ class TestIllegalCommandClient(CommandConnectClient):
 
 def main():
     import sys
-    from tests.xpra.test_DoS_client import test_DoS
+    from tests.xpra.clients.test_DoS_client import test_DoS
     test_DoS(TestIllegalCommandClient, sys.argv)
 
 
