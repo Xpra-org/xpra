@@ -86,15 +86,11 @@ if HELP:
         d = vars()["%s_ENABLED" % x]
         with_str = "  --with-%s" % x
         without_str = "  --without-%s" % x
-        while len(with_str)<25:
-            with_str += " "
-        while len(without_str)<25:
-            without_str += " "
         if d is True or d is False:
             default_str = str(d)
         else:
             default_str = "auto-detect"
-        print("%s or %s (default: %s)" % (with_str, without_str, default_str))
+        print("%s or %s (default: %s)" % (with_str.ljust(25), without_str.ljust(25), default_str))
     sys.exit(0)
 
 filtered_args = []
