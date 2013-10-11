@@ -13,7 +13,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
      int avcodec_close(AVCodecContext *avctx)
  
      #actual decoding:
-@@ -343,7 +343,7 @@
+@@ -346,7 +346,7 @@
              error("could not open codec")
              self.clean_decoder()
              return  False
@@ -22,7 +22,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
          if self.frame==NULL:
              error("could not allocate an AVFrame for decoding")
              self.clean_decoder()
-@@ -378,8 +378,8 @@
+@@ -381,8 +381,8 @@
  
          debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
          if self.frame!=NULL:

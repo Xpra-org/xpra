@@ -1,8 +1,8 @@
 Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
 ===================================================================
---- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 4054)
+--- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 4457)
 +++ b/xpra/codecs/csc_swscale/colorspace_converter.pyx	(working copy)
-@@ -78,16 +78,16 @@
+@@ -81,16 +81,16 @@
  COLORSPACES = []
  #keeping this array in scope ensures the strings don't go away!
  FORMAT_OPTIONS = [
@@ -31,7 +31,7 @@ Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
  for av_enum_name, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
 Index: xpra/codecs/csc_swscale/constants.txt
 ===================================================================
---- a/xpra/codecs/csc_swscale/constants.txt	(revision 4054)
+--- a/xpra/codecs/csc_swscale/constants.txt	(revision 4458)
 +++ b/xpra/codecs/csc_swscale/constants.txt	(working copy)
 @@ -10,17 +10,17 @@
  ## dictionary through which the constants can be accessed like
@@ -64,7 +64,7 @@ Index: xpra/codecs/csc_swscale/constants.txt
  SWS_BICUBIC
 Index: xpra/codecs/dec_avcodec/constants.txt
 ===================================================================
---- a/xpra/codecs/dec_avcodec/constants.txt	(revision 4054)
+--- a/xpra/codecs/dec_avcodec/constants.txt	(revision 4411)
 +++ b/xpra/codecs/dec_avcodec/constants.txt	(working copy)
 @@ -10,14 +10,14 @@
  ## dictionary through which the constants can be accessed like
@@ -92,15 +92,26 @@ Index: xpra/codecs/dec_avcodec/constants.txt
  CODEC_FLAG2_FAST
 Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
---- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4080)
+--- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4411)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -110,15 +110,15 @@
+@@ -80,8 +80,8 @@
+     AVCodec *avcodec_find_decoder(AVCodecID id)
+     AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
+     int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
+-    AVFrame *avcodec_alloc_frame()
+-    void avcodec_free_frame(AVFrame **frame)
++    #AVFrame *avcodec_alloc_frame()
++    #void avcodec_free_frame(AVFrame **frame)
+     int avcodec_close(AVCodecContext *avctx)
+ 
+     #actual decoding:
+@@ -113,15 +113,15 @@
      #populate mappings:
      COLORSPACES = []
      for pix_fmt, av_enum_str in {
 -            "YUV420P"   : "AV_PIX_FMT_YUV420P",
 -            "YUV422P"   : "AV_PIX_FMT_YUV422P",
--            "YUV444P"   : "AV_PIX_FMT_YUV444P",        
+-            "YUV444P"   : "AV_PIX_FMT_YUV444P",
 -            "RGB"       : "AV_PIX_FMT_RGB24",
 -            "XRGB"      : "AV_PIX_FMT_0RGB",
 -            "BGRX"      : "AV_PIX_FMT_BGR0",
@@ -109,7 +120,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 -            "GBRP"      : "AV_PIX_FMT_GBRP",
 +            "YUV420P"   : "PIX_FMT_YUV420P",
 +            "YUV422P"   : "PIX_FMT_YUV422P",
-+            "YUV444P"   : "PIX_FMT_YUV444P",        
++            "YUV444P"   : "PIX_FMT_YUV444P",
 +            "RGB"       : "PIX_FMT_RGB24",
 +            "XRGB"      : "PIX_FMT_0RGB",
 +            "BGRX"      : "PIX_FMT_BGR0",
@@ -117,5 +128,25 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 +            "BGRA"      : "PIX_FMT_BGRA",
 +            "GBRP"      : "PIX_FMT_GBRP",
           }.items():
-         if av_enum_str not in const:
-             debug("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
+         av_enum = constants.get(av_enum_str)
+         if av_enum is None:
+@@ -346,7 +346,7 @@
+             error("could not open codec")
+             self.clean_decoder()
+             return  False
+-        self.frame = avcodec_alloc_frame()
++        self.frame = <AVFrame *> xmemalign(sizeof(AVFrame))
+         if self.frame==NULL:
+             error("could not allocate an AVFrame for decoding")
+             self.clean_decoder()
+@@ -381,8 +381,8 @@
+ 
+         debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
+         if self.frame!=NULL:
+-            avcodec_free_frame(&self.frame)
+-            #redundant: self.frame = NULL
++            #free(&self.frame)   #freeing here causes a double free on Ubuntu, avcodec_close probably does it too
++            self.frame = NULL
+ 
+         cdef unsigned long ctx_key          #@DuplicatedSignature
+         debug("clean_decoder() freeing AVCodecContext: %s", hex(<unsigned long> self.codec_ctx))
