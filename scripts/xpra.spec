@@ -139,7 +139,6 @@ Patch7: no-strict.patch
 Patch8: old-libav.patch
 Patch9: old-libav-pixfmtconsts.patch
 Patch10: old-libav-no0RGB.patch
-Patch11: disable-pulseaudio.patch
 Patch12: old-xdg-desktop.patch
 Patch15: PIL-cannot-optimize-bug.patch
 
@@ -823,8 +822,8 @@ rm -rf $RPM_BUILD_DIR/xpra-all-%{version}
 zcat $RPM_SOURCE_DIR/xpra-all-%{version}.tar.gz | tar -xvf -
 cd xpra-all-%{version}
 %if 0%{?no_strict}
-%patch7 -p1
-(echo "setup.py" > %{S:ignored_changed_files.txt})
+(sed -e -i s'/strict_ENABLED = True/strict_ENABLED = False/g' setup.py)
+(echo "setup.py" >> %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?old_libav}
 %patch8 -p1
@@ -833,22 +832,23 @@ cd xpra-all-%{version}
 %if 0%{?old_libav}%{?old_pixfmt}
 %patch9 -p1
 %patch10 -p1
-(echo "xpra/codecs/csc_swscale/colorspace_converter.pyx" > %{S:ignored_changed_files.txt})
-(echo "xpra/codecs/csc_swscale/constants.txt" > %{S:ignored_changed_files.txt})
-(echo "xpra/codecs/dec_avcodec/decoder.pyx" > %{S:ignored_changed_files.txt})
-(echo "xpra/codecs/dec_avcodec/constants.txt" > %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/csc_swscale/colorspace_converter.pyx" >> %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/csc_swscale/constants.txt" >> %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/dec_avcodec/decoder.pyx" >> %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/dec_avcodec/constants.txt" >> %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?no_pulseaudio}
-%patch11 -p1
-(echo "etc/*/xpra.conf" > %{S:ignored_changed_files.txt})
+(sed -e -i s'/sound_ENABLED = True/sound_ENABLED = False/g' setup.py)
+(echo "setup.py" >> %{S:ignored_changed_files.txt})
+(echo "etc/*/xpra.conf" >> %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?old_xdg}
 %patch12 -p1
-(echo "xdg/*.desktop" > %{S:ignored_changed_files.txt})
+(echo "xdg/*.desktop" >> %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?PIL_bug}
 %patch15 -p1
-(echo "xpra/server/window_source.py" > %{S:ignored_changed_files.txt})
+(echo "xpra/server/window_source.py" >> %{S:ignored_changed_files.txt})
 %endif
 
 
