@@ -71,7 +71,8 @@ PIC_ENABLED = True
 #allow some of these flags to be modified on the command line:
 SWITCHES = ("enc_x264", "x264_static",
             "nvenc", "dec_avcodec", "avcodec_static",
-            "csc_swscale", "csc_nvcuda", "csc_opencl",
+            "csc_swscale", "swscale_static",
+            "csc_nvcuda", "csc_opencl",
             "vpx", "vpx_static",
             "webp", "rencode", "clipboard",
             "server", "client", "x11",
