@@ -89,13 +89,12 @@ __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only i
               const sampler_t sampler, write_only image2d_t dst) {
     const uint gx = get_global_id(0);
     const uint gy = get_global_id(1);
-    const uint srcx = gx*srcw/w;
-    const uint srcy = gy*srch/h;
 
     if ((gx < w) & (gy < h)) {
+        const uint srcx = gx*srcw/w;
+        const uint srcy = gy*srch/h;
         uint4 p;
 
-        const int2 src  = (int2)( srcx, srcy );
         const int Y  = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
         const int Cr = 1048576 * read_imageui(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
         const int Cb = 1048576 * read_imageui(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
