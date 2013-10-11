@@ -81,7 +81,6 @@ cdef class CSCPixelFormat:
 COLORSPACES = []
 #keeping this array in scope ensures the strings don't go away!
 FORMAT_OPTIONS = [
-#    ("AV_PIX_FMT_NV12",     (1, 1, 0, 0),       (1, 0.5, 0, 0),     "NV12"),
     ("AV_PIX_FMT_RGB24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "RGB"   ),
     ("AV_PIX_FMT_BGR24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "BGR"   ),
     ("AV_PIX_FMT_0RGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
@@ -262,11 +261,7 @@ cdef class ColorspaceConverter:
             #add one extra line to height so we can read a full rowstride
             #no matter where we start to read on the last line.
             #MEMALIGN may be redundant here but it is very cheap
-            if dst_format=="NV12" and i==0:
-                #no padding: packed UV plane follows Y plane
-                self.out_size[i] = self.out_stride[i] * self.out_height[i]
-            else:
-                self.out_size[i] = pad(self.out_stride[i] * (self.out_height[i]+1))
+            self.out_size[i] = pad(self.out_stride[i] * (self.out_height[i]+1))
             self.buffer_size += self.out_size[i]
         debug("buffer size=%s", self.buffer_size)
 
@@ -397,12 +392,6 @@ cdef class ColorspaceConverter:
                 csci.set_plane(i, output_image[i])
                 out.append(plane)
                 strides.append(stride)
-        elif str(self.dst_format)=="NV12":
-            #Y plane, followed by U and V packed
-            oplanes = ImageWrapper.PACKED
-            strides = self.out_stride[0]
-            out = PyBuffer_FromMemory(<void *>output_image[0], self.buffer_size)
-            csci.set_plane(0, output_image[0])
         else:
             #assume no planes, plain RGB packed pixels:
             oplanes = ImageWrapper.PACKED
