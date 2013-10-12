@@ -216,3 +216,58 @@ def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels
     out.clone_pixel_data()
     cc.clean()
     return out.get_pixels()
+
+
+def test_csc_roundtrip(csc_module):
+    src_formats = sorted(csc_module.get_input_colorspaces())
+    for src_format in src_formats:
+        dst_formats = csc_module.get_output_colorspaces(src_format)
+        if not dst_formats:
+            continue
+        for dst_format in dst_formats:
+            #can we convert back to src?
+            if not src_format in csc_module.get_output_colorspaces(dst_format):
+                continue
+            for w, h in SIZES:
+                spec1 = csc_module.get_spec(src_format, dst_format)
+                spec2 = csc_module.get_spec(dst_format, src_format)
+                if w<spec1.min_w or h<spec1.min_h or w<spec2.min_w or h<spec2.min_h:
+                    continue
+                try:
+                    do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h)
+                    print("rountrip %s/%s @ %sx%s passed" % (src_format, dst_format, w, h))
+                except:
+                    print("FAILED %s/%s @ %sx%s" % (src_format, dst_format, w, h))
+                    raise
+
+
+def do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h):
+    if src_format.find("RGB")>=0 or src_format.find("BGR")>=0:
+        pixels = make_rgb_input(src_format, w, h, populate=True)
+        stride = w*4
+        #print(" input pixels: %s (%sx%s, stride=%s, stride*h=%s)" % (len(pixels), w, h, stride, stride*h))
+        assert len(pixels)>=stride*h, "not enough pixels! (expected at least %s but got %s)" % (stride*h, len(pixels))
+        image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, stride, planes=ImageWrapper.PACKED)
+    elif src_format in ("YUV420P", "YUV422P", "YUV444P"):
+        strides, pixels = make_planar_input(src_format, w, h, populate=True)
+        image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=ImageWrapper._3_PLANES)
+
+
+    ColorspaceConverterClass = getattr(csc_module, "ColorspaceConverter")
+    cc1 = ColorspaceConverterClass()
+    cc1.init_context(w, h, src_format, w, h, dst_format)
+
+    temp = cc1.convert_image(image)
+
+    ColorspaceConverterClass = getattr(csc_module, "ColorspaceConverter")
+    cc2 = ColorspaceConverterClass()
+    cc2.init_context(w, h, dst_format, w, h, src_format)
+
+    regen = cc2.convert_image(temp)
+    assert regen
+
+
+def test_all(colorspace_converter):
+    test_csc_rgb(colorspace_converter)
+    test_csc_planar(colorspace_converter)
+    test_csc_roundtrip(colorspace_converter)
