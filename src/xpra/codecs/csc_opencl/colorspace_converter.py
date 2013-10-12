@@ -565,6 +565,7 @@ class ColorspaceConverter(object):
         oimage = pyopencl.Image(context, mem_flags.WRITE_ONLY, oformat, shape=(self.dst_width, self.dst_height))
 
         iformat = pyopencl.ImageFormat(pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8)
+        input_images = []
         for i in range(3):
             _, y_div = divs[i]
             plane = pixels[i]
@@ -574,9 +575,9 @@ class ColorspaceConverter(object):
                 flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR
             shape = strides[i], self.src_height/y_div
             iimage = pyopencl.Image(context, flags, iformat, shape=shape, hostbuf=plane)
-            kernelargs.append(iimage)
+            input_images.append(iimage)
 
-        kernelargs += [numpy.int32(self.src_width), numpy.int32(self.src_height),
+        kernelargs += input_images + [numpy.int32(self.src_width), numpy.int32(self.src_height),
                        numpy.int32(self.dst_width), numpy.int32(self.dst_height),
                        self.sampler, oimage]
 
@@ -586,6 +587,10 @@ class ColorspaceConverter(object):
         self.kernel_function(*kernelargs)
         kend = time.time()
         debug("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
+
+        #free input images:
+        for iimage in input_images:
+            iimage.release()
 
         out_array = numpy.empty(self.dst_width*self.dst_height*4, dtype=numpy.byte)
         pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(self.dst_width, self.dst_height), hostbuf=out_array, is_blocking=True)
@@ -656,6 +661,9 @@ class ColorspaceConverter(object):
         kend = time.time()
         debug("%s took %.1fms", self.kernel_function_name, 1000.0*(kend-kstart))
 
+        #free input image:
+        iimage.release()
+
         #read back:
         pixels = []
         read_events = []
@@ -668,6 +676,9 @@ class ColorspaceConverter(object):
         debug("queue read events took %.1fms (3 planes of size %s, with strides=%s)", 1000.0*(readstart-kend), out_sizes, strides)
         pyopencl.wait_for_events(read_events)
         self.queue.finish()
+        #free output buffers:
+        for out_buf in out_buffers:
+            out_buf.release()
         readend = time.time()
         debug("wait for read events took %.1fms", 1000.0*(readend-readstart))
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, pixels, self.dst_format, 24, strides, planes=ImageWrapper._3_PLANES)
