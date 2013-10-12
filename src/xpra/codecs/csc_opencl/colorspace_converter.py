@@ -473,7 +473,7 @@ class ColorspaceConverter(object):
 
     def __str__(self):
         if self.queue is None:
-            return "opencl(uninitialized)"
+            return "opencl(uninitialized or closed)"
         return "opencl(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
                                                  self.dst_format, self.dst_width, self.dst_height)
 
@@ -506,6 +506,7 @@ class ColorspaceConverter(object):
 
 
     def clean(self):                        #@DuplicatedSignature
+        debug("clean() queue=%s", self.queue)
         if self.queue:
             self.queue.finish()
             self.queue = None
@@ -588,13 +589,13 @@ class ColorspaceConverter(object):
         kend = time.time()
         debug("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
 
-        #free input images:
-        for iimage in input_images:
-            iimage.release()
-
         out_array = numpy.empty(self.dst_width*self.dst_height*4, dtype=numpy.byte)
         pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(self.dst_width, self.dst_height), hostbuf=out_array, is_blocking=True)
         self.queue.finish()
+
+        #free input images:
+        for iimage in input_images:
+            iimage.release()
         debug("readback using %s took %.1fms", CHANNEL_ORDER_TO_STR.get(self.channel_order), 1000.0*(time.time()-kend))
         self.time += time.time()-start
         self.frames += 1
@@ -661,9 +662,6 @@ class ColorspaceConverter(object):
         kend = time.time()
         debug("%s took %.1fms", self.kernel_function_name, 1000.0*(kend-kstart))
 
-        #free input image:
-        iimage.release()
-
         #read back:
         pixels = []
         read_events = []
@@ -676,6 +674,8 @@ class ColorspaceConverter(object):
         debug("queue read events took %.1fms (3 planes of size %s, with strides=%s)", 1000.0*(readstart-kend), out_sizes, strides)
         pyopencl.wait_for_events(read_events)
         self.queue.finish()
+        #free input image:
+        iimage.release()
         #free output buffers:
         for out_buf in out_buffers:
             out_buf.release()
