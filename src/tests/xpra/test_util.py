@@ -7,10 +7,10 @@
 import threading
 import resource
 
-def dump_threads():
+def dump_threads(prefix=""):
     try:
         cur = threading.currentThread()
-        print("current_thread=%s" % cur)
+        print(prefix+"current_thread=%s" % cur)
         count = 1
         for t in threading.enumerate():
             if t!=cur:
@@ -21,9 +21,13 @@ def dump_threads():
         import traceback
         traceback.print_stack()
 
-def dump_resource_usage():
+def dump_resource_usage(prefix=""):
     ru = resource.getrusage(resource.RUSAGE_SELF)
-    print("user=%s sys=%s mem=%sMB" % (ru[0], ru[1], (ru[2]*resource.getpagesize())/1000000.0))
+    if prefix:
+        prefix = prefix.ljust(40)
+    print(prefix+"user=%.3f sys=%.3f mem=%sMB" % (ru[0], ru[1], (ru[2]*resource.getpagesize())/1000000))
+    #import time
+    #time.sleep(0.2)
 
 def main():
     dump_threads()
