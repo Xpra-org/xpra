@@ -6,6 +6,7 @@
 
 import time
 from xpra.codecs.image_wrapper import ImageWrapper
+#from tests.xpra.test_util import dump_resource_usage, dump_threads
 from tests.xpra.codecs.test_codec import dump_pixels, make_rgb_input, make_planar_input
 
 
@@ -17,10 +18,12 @@ SIZES = ((16, 16), (32, 32), (64, 64), (128, 128), (256, 256), (512, 512), (1920
 TEST_SIZES = SIZES + ((51, 7), (511, 3), (5, 768), (111, 555))
 
 #Some helper methods:
-def check_plane(plane, data, expected):
+def check_plane(info, data, expected, tolerance=3, pixel_stride=4, ignore_byte=-1):
     if expected is None:
         #nothing to check
         return
+    assert data is not None
+    print("check_plane(%s, %s:%s, %s:%s" % (info, type(data), len(data), type(expected), len(expected)))
     #chop data to same size as expected sample:
     if type(data) in (buffer, str):
         data = bytearray(data)
@@ -32,18 +35,27 @@ def check_plane(plane, data, expected):
     assert type(actual_data)==type(expected), "expected result as %s but got %s" % (type(expected), type(actual_data))
     assert len(actual_data)==len(expected), "expected at least %s items but got %s" % (len(expected), len(actual_data))
     #now compare values, with some tolerance for rounding (off by one):
-    errs = []
+    errs = {}
+    tested = 0
     for i in range(len(expected)):
+        if ignore_byte>=0:
+            if (i%pixel_stride)==ignore_byte:
+                continue
         va = actual_data[i]
         ve = expected[i]
-        if abs(va-ve)>3:
-            errs.append(i)
+        tested += 1
+        if abs(va-ve)>tolerance:
+            errs[i] = va, ve
+    ratio = 100.0*len(errs)/tested
     if len(errs)>0:
-        print("ERROR! output differs for plane %s" % plane)
-        print("check_plane(%s, .., ..) expected=%s" % (plane, dump_pixels(expected)))
-        print("check_plane(%s, .., ..)   actual=%s" % (plane, dump_pixels(data)))
-        print("errors at %s locations" % len(errs))
-    return len(errs)==0
+        if ratio>1:
+            print("")
+            print("ERROR!")
+        print("output differs for %s" % info)
+        print("check_plane(%s, .., ..) expected=%s" % (info, dump_pixels(expected)))
+        print("check_plane(%s, .., ..)   actual=%s" % (info, dump_pixels(data)))
+        print("errors at %s locations: %s (%.1f%%)" % (len(errs), errs.items()[:10], ratio))
+    return ratio<=2.1
 
 
 #RGB:
@@ -220,8 +232,10 @@ def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels
 
 def test_csc_roundtrip(csc_module):
     src_formats = sorted(csc_module.get_input_colorspaces())
+    src_formats = [x for x in src_formats if (x.find("RGB")>=0 or x.find("BGR")>=0) and len(x)==4]
     for src_format in src_formats:
         dst_formats = csc_module.get_output_colorspaces(src_format)
+        dst_formats = [x for x in dst_formats if x=="YUV444P"]
         if not dst_formats:
             continue
         for dst_format in dst_formats:
@@ -235,23 +249,19 @@ def test_csc_roundtrip(csc_module):
                     continue
                 try:
                     do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h)
-                    print("rountrip %s/%s @ %sx%s passed" % (src_format, dst_format, w, h))
-                except:
-                    print("FAILED %s/%s @ %sx%s" % (src_format, dst_format, w, h))
+                    #print("rountrip %s/%s @ %sx%s passed" % (src_format, dst_format, w, h))
+                except Exception, e:
+                    print("FAILED %s/%s @ %sx%s: %s" % (src_format, dst_format, w, h, e))
                     raise
 
 
 def do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h):
-    if src_format.find("RGB")>=0 or src_format.find("BGR")>=0:
-        pixels = make_rgb_input(src_format, w, h, populate=True)
-        stride = w*4
-        #print(" input pixels: %s (%sx%s, stride=%s, stride*h=%s)" % (len(pixels), w, h, stride, stride*h))
-        assert len(pixels)>=stride*h, "not enough pixels! (expected at least %s but got %s)" % (stride*h, len(pixels))
-        image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, stride, planes=ImageWrapper.PACKED)
-    elif src_format in ("YUV420P", "YUV422P", "YUV444P"):
-        strides, pixels = make_planar_input(src_format, w, h, populate=True)
-        image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=ImageWrapper._3_PLANES)
-
+    assert src_format.find("RGB")>=0 or src_format.find("BGR")>=0
+    pixels = make_rgb_input(src_format, w, h, populate=True)
+    stride = w*4
+    #print(" input pixels: %s (%sx%s, stride=%s, stride*h=%s)" % (len(pixels), w, h, stride, stride*h))
+    assert len(pixels)>=stride*h, "not enough pixels! (expected at least %s but got %s)" % (stride*h, len(pixels))
+    image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, stride, planes=ImageWrapper.PACKED)
 
     ColorspaceConverterClass = getattr(csc_module, "ColorspaceConverter")
     cc1 = ColorspaceConverterClass()
@@ -265,6 +275,21 @@ def do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h):
 
     regen = cc2.convert_image(temp)
     assert regen
+
+    #compare with original:
+    rpixels = regen.get_pixels()
+    info = "%s to %s and back @ %sx%s" % (src_format, dst_format, w, h)
+    if src_format.find("RGB")>=0 or src_format.find("BGR")>=0:
+        ib = max(src_format.find("X"), src_format.find("A"))
+        check_plane(info, rpixels, pixels, tolerance=5, ignore_byte=ib)
+    #else:
+    #    for i in range(3):
+    #        check_plane(info, rpixels[i], pixels[i], tolerance=5)
+    #image.free()
+    temp.free()
+    regen.free()
+    cc1.clean()
+    cc2.clean()
 
 
 def test_all(colorspace_converter):
