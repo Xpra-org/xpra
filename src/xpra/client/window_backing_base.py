@@ -21,7 +21,28 @@ from xpra.codecs.loader import get_codec
 
 #logging in the draw path is expensive:
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
+XPRA_CLIENT_CSC = os.environ.get("XPRA_CLIENT_CSC", "swscale")
 
+ColorspaceConverter = None
+def load_csc():
+    global ColorspaceConverter
+    if ColorspaceConverter is None:
+        def fail_csc(*args):
+            raise Exception("no csc modules available!")
+        ColorspaceConverter = fail_csc
+        opts = [XPRA_CLIENT_CSC]
+        if "swscale" not in opts:
+            opts.append("swscale")
+        for opt in opts:
+            mod = "xpra.codecs.csc_%s.colorspace_converter" % opt
+            try:
+                cc = __import__(mod, {}, {}, "ColorspaceConverter")
+                ColorspaceConverter = getattr(cc, "ColorspaceConverter")
+                print("CSC=%s" % ColorspaceConverter)
+                break
+            except:
+                log.warn("failed to load csc module %s", mod, exc_info=True)
+    return ColorspaceConverter
 
 def fire_paint_callbacks(callbacks, success):
     for x in callbacks:
@@ -38,6 +59,7 @@ see CairoBacking and GTKWindowBacking for actual implementations
 """
 class WindowBackingBase(object):
     def __init__(self, wid, idle_add):
+        load_csc()
         self.wid = wid
         self.idle_add = idle_add
         self._has_alpha = False
@@ -264,7 +286,6 @@ class WindowBackingBase(object):
                         log("csc prep dimensions have changed from %s to %s", (self._csc_prep.get_src_width(), self._csc_prep.get_src_height()), (enc_width, enc_height))
                         self.do_clean_csc_prep()
                 if self._csc_prep is None:
-                    from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter    #@UnresolvedImport
                     self._csc_prep = ColorspaceConverter()
                     csc_speed = 0   #always best quality
                     self._csc_prep.init_context(enc_width, enc_height, input_colorspace,
@@ -333,7 +354,6 @@ class WindowBackingBase(object):
                          width, height, self._csc_decoder.get_dst_width(), self._csc_decoder.get_dst_height())
                 self.do_clean_csc_decoder()
         if self._csc_decoder is None:
-            from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter    #@UnresolvedImport
             self._csc_decoder = ColorspaceConverter()
             #use higher quality csc to compensate for lower quality source
             #(which generally means that we downscaled via YUV422P or lower)
