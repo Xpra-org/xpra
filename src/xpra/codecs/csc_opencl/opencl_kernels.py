@@ -268,7 +268,7 @@ def get_YUV_formulae(yuv_channel, fmult=2**20, imult=2**20):
     for x in f:
         if type(x)==float:
             x = int(round(x*fmult))         #-0.148 -> -155189
-        if type(x) in (float, int):
+        elif type(x)==int:
             x = int(round(x*imult))         #16 -> 16777216
         mf.append(x)
     return " ".join([str(x) for x in mf])
