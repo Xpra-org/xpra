@@ -81,8 +81,8 @@ cdef class CSCPixelFormat:
 COLORSPACES = []
 #keeping this array in scope ensures the strings don't go away!
 FORMAT_OPTIONS = [
-    ("AV_PIX_FMT_RGB24",    (4, 0, 0, 0),       (1, 0, 0, 0),       "RGB"   ),
-    ("AV_PIX_FMT_BGR24",    (4, 0, 0, 0),       (1, 0, 0, 0),       "BGR"   ),
+    ("AV_PIX_FMT_RGB24",    (4, 0, 0, 0),       (1, 0, 0, 0),       "RGBX"  ),
+    ("AV_PIX_FMT_BGR24",    (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
     ("AV_PIX_FMT_0RGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
     ("AV_PIX_FMT_BGR0",     (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
     ("AV_PIX_FMT_ARGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
