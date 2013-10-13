@@ -608,6 +608,7 @@ class ColorspaceConverter(object):
         iplanes = image.get_planes()
         width = image.get_width()
         height = image.get_height()
+        stride = image.get_rowstride()
         pixels = image.get_pixels()
         #debug("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
         assert iplanes==ImageWrapper.PACKED, "we only handle packed data as input!"
@@ -623,7 +624,7 @@ class ColorspaceConverter(object):
 
         #input image:
         iformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNSIGNED_INT8)
-        shape = (self.src_width, self.src_height)
+        shape = (stride/4, self.src_height)
         debug("convert_image() input image format=%s, shape=%s, work size: local=%s, global=%s", iformat, shape, localWorkSize, globalWorkSize)
         if type(pixels)==str:
             #str is not a buffer, so we have to copy the data
