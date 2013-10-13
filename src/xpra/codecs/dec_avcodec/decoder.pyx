@@ -9,6 +9,9 @@ log = Logger()
 debug = debug_if_env(log, "XPRA_AVCODEC_DEBUG")
 error = log.error
 
+#some consumers need a writeable buffer (ie: OpenCL...)
+READ_ONLY = False
+
 from xpra.codecs.codec_constants import get_subsampling_divs, get_colorspace_from_avutil_enum, RGB_FORMATS
 from xpra.codecs.image_wrapper import ImageWrapper
 
@@ -22,6 +25,7 @@ cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
+    object PyBuffer_FromReadWriteMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 
@@ -492,13 +496,19 @@ cdef class Decoder:
                 stride = self.frame.linesize[i]
                 size = height * stride
                 outsize += size
-                plane = PyBuffer_FromMemory(<void *>self.frame.data[i], size)
+                if READ_ONLY:
+                    plane = PyBuffer_FromMemory(<void *>self.frame.data[i], size)
+                else:
+                    plane = PyBuffer_FromReadWriteMemory(<void *>self.frame.data[i], size)
                 out.append(plane)
                 strides.append(stride)
         else:
             strides = self.frame.linesize[0]+self.frame.linesize[1]+self.frame.linesize[2]
             outsize = self.codec_ctx.height * strides
-            out = PyBuffer_FromMemory(<void *>self.frame.data[0], outsize)
+            if READ_ONLY:
+                out = PyBuffer_FromMemory(<void *>self.frame.data[0], outsize)
+            else:
+                out = PyBuffer_FromReadWriteMemory(<void *>self.frame.data[0], outsize)
             nplanes = 0
         if outsize==0:
             self.frame_error()
