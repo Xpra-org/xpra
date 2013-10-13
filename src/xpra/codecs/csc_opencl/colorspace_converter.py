@@ -52,18 +52,18 @@ def log_device_info(device):
     debug("max_work_item_sizes=%s", device.max_work_item_sizes)
 
 def log_platforms_info():
-    log.info("found %s OpenCL platforms:", len(opencl_platforms))
+    debug("found %s OpenCL platforms:", len(opencl_platforms))
     for platform in opencl_platforms:
         devices = platform.get_devices()
         p = "*"
         if not is_supported(platform.name):
             p = "-"
-        log.info("%s %s - %s devices:", p, platform_info(platform), len(devices))
+        debug("%s %s - %s devices:", p, platform_info(platform), len(devices))
         for d in devices:
             p = "-"
             if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT) and is_supported(platform.name):
                 p = "+"
-            log.info(" %s %s", p, device_info(d))
+            debug(" %s %s", p, device_info(d))
 
 def log_version_info():
     log.info("PyOpenCL loaded, header version: %s, GL support: %s",
@@ -360,7 +360,7 @@ def build_kernels():
             logfn("all warnings:%s", "\n* ".join([str(x) for x in w]))
         try:
             warnings.simplefilter("always")
-            log.info("building %s OpenCL kernels: %s", len(NAMES_TO_KERNELS), ", ".join(sorted(NAMES_TO_KERNELS.keys())))
+            debug("building %s OpenCL kernels: %s", len(NAMES_TO_KERNELS), ", ".join(sorted(NAMES_TO_KERNELS.keys())))
             program = pyopencl.Program(context, "\n".join(NAMES_TO_KERNELS.values()))
             program.build()
             dump_warnings(debug)
