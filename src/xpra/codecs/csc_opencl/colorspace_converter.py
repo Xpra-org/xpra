@@ -94,7 +94,7 @@ def init_context():
                     (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0):
                     add_to = best_options
                 if not is_supported(platform.name):
-                    debug("ignoring %s: not supported", d.name)
+                    debug("ignoring unsupported platform/device: %s / %s", platform.name, d.name)
                     continue
                 #Intel SDK does not work (well?) on AMD CPUs:
                 if platform.name.startswith("Intel") and d.name.startswith("AMD"):
