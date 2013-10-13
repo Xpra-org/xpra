@@ -6,6 +6,7 @@
 
 import os
 import zlib
+import binascii
 
 from xpra.log import Logger
 log = Logger()
@@ -23,26 +24,32 @@ from xpra.codecs.loader import get_codec
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 XPRA_CLIENT_CSC = os.environ.get("XPRA_CLIENT_CSC", "swscale")
 
-ColorspaceConverter = None
-def load_csc():
-    global ColorspaceConverter
-    if ColorspaceConverter is None:
-        def fail_csc(*args):
-            raise Exception("no csc modules available!")
-        ColorspaceConverter = fail_csc
-        opts = [XPRA_CLIENT_CSC]
-        if "swscale" not in opts:
-            opts.append("swscale")
+#ie:
+#CSC_OPTIONS = { "YUV420P" : {"RGBX" : [opencl.spec, swscale.spec], "BGRX" : ...} }
+CSC_OPTIONS = None
+def load_csc_options():
+    global CSC_OPTIONS
+    if CSC_OPTIONS is None:
+        CSC_OPTIONS = {}
+        opts = [x.strip() for x in XPRA_CLIENT_CSC.split(",")]
+        log("load_csc_options() module options=%s", opts)
         for opt in opts:
             mod = "xpra.codecs.csc_%s.colorspace_converter" % opt
             try:
-                cc = __import__(mod, {}, {}, "ColorspaceConverter")
-                ColorspaceConverter = getattr(cc, "ColorspaceConverter")
-                print("CSC=%s" % ColorspaceConverter)
-                break
+                csc_module = __import__(mod, {}, {}, "ColorspaceConverter")
+                in_cscs = csc_module.get_input_colorspaces()
+                log("input colorspaces(%s)=%s", csc_module, in_cscs)
+                for in_csc in in_cscs:
+                    in_opts = CSC_OPTIONS.setdefault(in_csc, {})
+                    out_cscs = csc_module.get_output_colorspaces(in_csc)
+                    log("output colorspaces(%s, %s)=%s", csc_module, in_csc, out_cscs)
+                    for out_csc in out_cscs:
+                        spec = csc_module.get_spec(in_csc, out_csc)
+                        specs = in_opts.setdefault(out_csc, [])
+                        specs.append(spec)
+                        log("specs(%s, %s)=%s", in_csc, out_csc, specs)
             except:
                 log.warn("failed to load csc module %s", mod, exc_info=True)
-    return ColorspaceConverter
 
 def fire_paint_callbacks(callbacks, success):
     for x in callbacks:
@@ -59,7 +66,7 @@ see CairoBacking and GTKWindowBacking for actual implementations
 """
 class WindowBackingBase(object):
     def __init__(self, wid, idle_add):
-        load_csc()
+        load_csc_options()
         self.wid = wid
         self.idle_add = idle_add
         self._has_alpha = False
@@ -239,6 +246,34 @@ class WindowBackingBase(object):
         raise Exception("override me!")
 
 
+    def make_csc(self, src_width, src_height, src_format,
+                       dst_width, dst_height, dst_format_options, speed):
+        global CSC_OPTIONS
+        in_options = CSC_OPTIONS.get(src_format, {})
+        assert len(in_options)>0, "no csc options for '%s' input in %s" % (src_format, CSC_OPTIONS)
+        for dst_format in dst_format_options:
+            specs = in_options.get(dst_format)
+            log("make_csc%s specs=%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed), specs)
+            if not specs:
+                continue
+            for spec in specs:
+                if spec.min_w>src_width or spec.min_w>dst_width or \
+                   spec.max_w<src_width or spec.max_w<dst_width or \
+                   spec.max_pixels<max(src_width*src_height, dst_width*dst_height):
+                    log("csc module %s cannot cope with dimensions %sx%s to %sx%s", spec.codec_class, src_width, src_height, dst_width, dst_height)
+                    continue
+                if not spec.can_scale and (src_width!=dst_width or src_height!=dst_height):
+                    log("csc module %s cannot scale")
+                    continue
+                try:
+                    csc = spec.codec_class()
+                    csc.init_context(src_width, src_height, src_format,
+                               dst_width, dst_height, dst_format, speed)
+                    return csc
+                except:
+                    log.error("failed to create csc instance of %s", spec.codec_class, exc_info=True)
+        raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s) in %s" % (src_format, src_width, src_height, " or ".join(dst_format_options), dst_width, dst_height, CSC_OPTIONS))
+
     def paint_with_video_decoder(self, decoder_name, coding, img_data, x, y, width, height, options, callbacks):
         assert x==0 and y==0
         decoder_module = get_codec(decoder_name)
@@ -268,7 +303,6 @@ class WindowBackingBase(object):
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
             decoder_colorspaces = get_colorspaces()
             decoder_colorspace = input_colorspace
-            #if input_colorspace not in decoder_colorspaces:
             if input_colorspace not in decoder_colorspaces:
                 log("colorspace not supported by %s directly", decoder_module)
                 assert input_colorspace in ("BGRA", "BGRX"), "colorspace %s cannot be handled directly or via a csc preparation step!" % input_colorspace
@@ -286,10 +320,9 @@ class WindowBackingBase(object):
                         log("csc prep dimensions have changed from %s to %s", (self._csc_prep.get_src_width(), self._csc_prep.get_src_height()), (enc_width, enc_height))
                         self.do_clean_csc_prep()
                 if self._csc_prep is None:
-                    self._csc_prep = ColorspaceConverter()
                     csc_speed = 0   #always best quality
-                    self._csc_prep.init_context(enc_width, enc_height, input_colorspace,
-                                           width, height, decoder_colorspace, csc_speed)
+                    self._csc_prep = self.make_csc(enc_width, enc_height, input_colorspace,
+                                           width, height, [decoder_colorspace], csc_speed)
                     log("csc preparation step: %s", self._csc_prep)
             elif self._csc_prep:
                 #no longer needed?
@@ -328,20 +361,19 @@ class WindowBackingBase(object):
         return  False
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
-        rgb_format = "RGB"  #we may want to be able to change this (RGBA, BGR, ..)
+        #try 24 bit first (paint_rgb24), then 32 bit (paint_rgb32):
+        target_rgb_formats = ["RGB", "RGBX"]
         #as some video formats like vpx can forward transparency
         #also we could skip the csc step in some cases:
         pixel_format = img.get_pixel_format()
-        #to handle this, we would need the decoder to handle buffers allocation properly:
-        assert pixel_format!=rgb_format, "no csc needed! but we don't handle this scenario yet!"
         if self._csc_decoder is not None:
             if self._csc_decoder.get_src_format()!=pixel_format:
                 if DRAW_DEBUG:
                     log.info("do_video_paint csc: switching src format from %s to %s", self._csc_decoder.get_src_format(), pixel_format)
                 self.do_clean_csc_decoder()
-            elif self._csc_decoder.get_dst_format()!=rgb_format:
+            elif self._csc_decoder.get_dst_format() not in target_rgb_formats:
                 if DRAW_DEBUG:
-                    log.info("do_video_paint csc: switching dst format from %s to %s", self._csc_decoder.get_dst_format(), rgb_format)
+                    log.info("do_video_paint csc: switching dst format from %s to %s", self._csc_decoder.get_dst_format(), target_rgb_formats)
                 self.do_clean_csc_decoder()
             elif self._csc_decoder.get_src_width()!=enc_width or self._csc_decoder.get_src_height()!=enc_height:
                 if DRAW_DEBUG:
@@ -354,26 +386,31 @@ class WindowBackingBase(object):
                          width, height, self._csc_decoder.get_dst_width(), self._csc_decoder.get_dst_height())
                 self.do_clean_csc_decoder()
         if self._csc_decoder is None:
-            self._csc_decoder = ColorspaceConverter()
             #use higher quality csc to compensate for lower quality source
             #(which generally means that we downscaled via YUV422P or lower)
             #or when upscaling the video:
             q = options.get("quality", 50)
             csc_speed = int(min(100, 100-q, 100.0 * (enc_width*enc_height) / (width*height)))
-            self._csc_decoder.init_context(enc_width, enc_height, pixel_format,
-                                           width, height, rgb_format, csc_speed)
+            self._csc_decoder = self.make_csc(enc_width, enc_height, pixel_format,
+                                           width, height, target_rgb_formats, csc_speed)
             if DRAW_DEBUG:
                 log.info("do_video_paint new csc decoder: %s", self._csc_decoder)
+        rgb_format = self._csc_decoder.get_dst_format()
         rgb = self._csc_decoder.convert_image(img)
         if DRAW_DEBUG:
-            log.info("do_video_paint rgb(%s)=%s", img, rgb)
+            log.info("do_video_paint rgb using %s.convert_image(%s)=%s", self._csc_decoder, img, rgb)
+            log.info("pixels head=%s", binascii.hexlify(rgb.get_pixels()[:32]))
         img.free()
         assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
         #this will also take care of firing callbacks (from the UI thread):
         def paint():
             data = rgb.get_pixels()
             rowstride = rgb.get_rowstride()
-            self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+            if rgb_format=="RGB":
+                self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+            else:
+                #assert rgb_format=="RGBX"
+                self.do_paint_rgb32(data, x, y, width, height, rowstride, options, callbacks)
             rgb.free()
         self.idle_add(paint)
 

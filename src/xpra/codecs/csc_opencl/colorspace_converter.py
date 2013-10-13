@@ -145,6 +145,10 @@ CHANNEL_ORDER_TO_STR = {
                     pyopencl.channel_order.RGBx : "RGBx",
                     pyopencl.channel_order.RGB  : "RGB",
                   }
+FILTER_MODE_TO_STR = {
+                    pyopencl.filter_mode.LINEAR : "LINEAR",
+                    pyopencl.filter_mode.NEAREST: "NEAREST"
+                  }
 
 def has_image_format(image_formats, channel_order, channel_type):
     """ checks that the combination of channel_order and channel_type is supported
@@ -186,7 +190,8 @@ def gen_yuv_to_rgb():
             found_rgb.add(dst_rgb_mode)
 
     for rgb_mode, channel_order in IN_CHANNEL_ORDER:
-        if not has_image_format(sif, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
+        #why do we discard RGBX download mode? because it doesn't work, don't ask me why
+        if not has_image_format(sif, channel_order, pyopencl.channel_type.UNSIGNED_INT8) or rgb_mode=="RGBX":
             debug("YUV 2 RGB: channel order %s is not supported directly in WRITE_ONLY + UNSIGNED_INT8 mode", CHANNEL_ORDER_TO_STR.get(channel_order))
             missing.append((rgb_mode, channel_order))
             continue
@@ -206,9 +211,9 @@ def gen_yuv_to_rgb():
                 continue
             #we want a mode which is supported and has the same component channels
             for _, download_rgb_mode, channel_order, _ in YUV_to_RGB_KERNELS.values():
-                if len(download_rgb_mode)<len(dst_rgb_mode):
+                if len(download_rgb_mode)!=len(dst_rgb_mode):
                     #skip mode if it has fewer channels (could drop one we need)
-                    debug("skipping %s (too few channels compared to %s)", download_rgb_mode, dst_rgb_mode)
+                    debug("skipping %s (number of channels different from %s)", download_rgb_mode, dst_rgb_mode)
                     continue
                 ok = has_same_channels(download_rgb_mode, dst_rgb_mode)
                 debug("testing %s as byteswap alternative to %s : %s", download_rgb_mode, dst_rgb_mode, ok)
@@ -294,9 +299,9 @@ def gen_rgb_to_yuv():
                 continue
             #we want a mode which is supported and has the same component channels
             for _, upload_rgb_mode, channel_order, _ in RGB_to_YUV_KERNELS.values():
-                if len(upload_rgb_mode)<len(src_rgb_mode):
+                if len(upload_rgb_mode)!=len(src_rgb_mode):
                     #skip mode if it has fewer channels (could drop one we need)
-                    debug("skipping %s (too few channels compared to %s)", upload_rgb_mode, src_rgb_mode)
+                    debug("skipping %s (number of channels different from %s)", upload_rgb_mode, src_rgb_mode)
                     continue
                 ok = has_same_channels(upload_rgb_mode, src_rgb_mode)
                 debug("testing %s as byteswap alternative to %s : %s", upload_rgb_mode, src_rgb_mode, ok)
@@ -454,7 +459,8 @@ class ColorspaceConverter(object):
             self.convert_image = self.convert_image_rgb
         debug("init_context(..) kernel source=%s", src)
         self.kernel_function = getattr(program, self.kernel_function_name)
-        debug("init_context(..) kernel_function=%s", self.kernel_function)
+        debug("init_context(..) channel order=%s, filter mode=%s", CHANNEL_ORDER_TO_STR.get(self.channel_order, self.channel_order), FILTER_MODE_TO_STR.get(fm, fm))
+        debug("init_context(..) kernel_function %s: %s", self.kernel_function_name, self.kernel_function)
         assert self.kernel_function
 
     def get_info(self):
@@ -540,7 +546,7 @@ class ColorspaceConverter(object):
 
 
     def convert_image_yuv(self, image):
-        global program
+        global program, context
         start = time.time()
         iplanes = image.get_planes()
         width = image.get_width()
@@ -561,10 +567,6 @@ class ColorspaceConverter(object):
 
         kernelargs = [self.queue, globalWorkSize, localWorkSize]
 
-        #output image:
-        oformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNORM_INT8)
-        oimage = pyopencl.Image(context, mem_flags.WRITE_ONLY, oformat, shape=(self.dst_width, self.dst_height))
-
         iformat = pyopencl.ImageFormat(pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8)
         input_images = []
         for i in range(3):
@@ -578,6 +580,10 @@ class ColorspaceConverter(object):
             iimage = pyopencl.Image(context, flags, iformat, shape=shape, hostbuf=plane)
             input_images.append(iimage)
 
+        #output image:
+        oformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNORM_INT8)
+        oimage = pyopencl.Image(context, mem_flags.WRITE_ONLY, oformat, shape=(self.dst_width, self.dst_height))
+
         kernelargs += input_images + [numpy.int32(self.src_width), numpy.int32(self.src_height),
                        numpy.int32(self.dst_width), numpy.int32(self.dst_height),
                        self.sampler, oimage]
@@ -586,16 +592,16 @@ class ColorspaceConverter(object):
         debug("convert_image(%s) calling %s%s after upload took %.1fms",
               image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
         self.kernel_function(*kernelargs)
+        self.queue.finish()
+        #free input images:
+        for iimage in input_images:
+            iimage.release()
         kend = time.time()
         debug("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
 
         out_array = numpy.empty(self.dst_width*self.dst_height*4, dtype=numpy.byte)
-        pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(self.dst_width, self.dst_height), hostbuf=out_array, is_blocking=True)
+        pyopencl.enqueue_read_image(self.queue, oimage, (0, 0), (self.dst_width, self.dst_height), out_array)
         self.queue.finish()
-
-        #free input images:
-        for iimage in input_images:
-            iimage.release()
         debug("readback using %s took %.1fms", CHANNEL_ORDER_TO_STR.get(self.channel_order), 1000.0*(time.time()-kend))
         self.time += time.time()-start
         self.frames += 1
@@ -603,7 +609,7 @@ class ColorspaceConverter(object):
 
 
     def convert_image_rgb(self, image):
-        global program
+        global program, context
         start = time.time()
         iplanes = image.get_planes()
         width = image.get_width()
@@ -660,26 +666,24 @@ class ColorspaceConverter(object):
         kstart = time.time()
         debug("convert_image(%s) calling %s%s after %.1fms", image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
         self.kernel_function(*kernelargs)
+        self.queue.finish()
+        #free input image:
+        iimage.release()
         kend = time.time()
         debug("%s took %.1fms", self.kernel_function_name, 1000.0*(kend-kstart))
 
         #read back:
         pixels = []
-        read_events = []
         for i in range(3):
             out_array = numpy.empty(out_sizes[i], dtype=numpy.byte)
             pixels.append(out_array.data)
-            read = pyopencl.enqueue_read_buffer(self.queue, out_buffers[i], out_array, is_blocking=False)
-            read_events.append(read)
+            pyopencl.enqueue_read_buffer(self.queue, out_buffers[i], out_array, is_blocking=False)
         readstart = time.time()
         debug("queue read events took %.1fms (3 planes of size %s, with strides=%s)", 1000.0*(readstart-kend), out_sizes, strides)
-        pyopencl.wait_for_events(read_events)
         self.queue.finish()
-        #free input image:
-        iimage.release()
+        readend = time.time()
+        debug("wait for read events took %.1fms", 1000.0*(readend-readstart))
         #free output buffers:
         for out_buf in out_buffers:
             out_buf.release()
-        readend = time.time()
-        debug("wait for read events took %.1fms", 1000.0*(readend-readstart))
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, pixels, self.dst_format, 24, strides, planes=ImageWrapper._3_PLANES)
