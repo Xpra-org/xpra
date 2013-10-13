@@ -21,45 +21,35 @@ class TransparentColorWindow(Gtk.Window):
         cr.rectangle(0, 0, w, h)
         cr.fill()
 
+
+        def paint_block(x, y, w, h, Rm=1.0, Gm=1.0, Bm=1.0, label=""):
+            bw = float(w)/16
+            bh = float(h)/16
+            cr.set_operator(cairo.OPERATOR_SOURCE)
+            for i in range(256):
+                R = Rm * float(i+1)/256.0
+                G = Gm * float(i+1)/256.0
+                B = Bm * float(i+1)/256.0
+                cr.set_source_rgb(R, G, B)
+                rx, ry, rw, rh = x+(i%16)*bw, y+(i//16)*bh, bw, bh
+                cr.rectangle(rx, ry, rw, rh)
+                #print("rectangle(%s, %s, %s, %s) alpha=%s" % (rx, ry, rw, rh, alpha))
+                cr.fill()
+            if label:
+                cr.set_source_rgb(1, 1, 1)
+                cr.move_to(x+w/2-12, y+h/2+8)
+                cr.show_text(label)
+
         #Red block
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.set_source_rgb(1, 0, 0)
-        cr.rectangle(0, 0, w/2, h/2)
-        cr.fill()
-        cr.set_source_rgb(1, 1, 1)
-        cr.move_to(w/4-12, h/4+8)
-        cr.show_text("R")
+        paint_block(0, 0, w/2, h/2, 1, 0, 0, "R")
         #Green block:
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.set_source_rgb(0, 1, 0)
-        cr.rectangle(w/2, 0, w/2, h/2)
-        cr.fill()
-        cr.set_source_rgb(1, 1, 1)
-        cr.move_to(w*3/4-12, h/4+8)
-        cr.show_text("G")
+        paint_block(w/2, 0, w/2, h/2, 0, 1, 0, "G")
         #Blue block:
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.set_source_rgb(0, 0, 1)
-        cr.rectangle(0, h/2, w/2, h/2)
-        cr.fill()
-        cr.set_source_rgb(1, 1, 1)
-        cr.move_to(w/4-12, h*3/4+8)
-        cr.show_text("B")
-
+        paint_block(0, h/2, w/2, h/2, 0, 0, 1, "B")
         #Black Shade Block:
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        bx = w/2
-        by = h/2
-        bw = float(w)/2/16
-        bh = float(h)/2/16
-        #print("bx=%s, by=%s, bw=%s, bh=%s" % (bx, by, bw, bh))
-        for i in range(256):
-            gray = float(i+1)/256.0
-            cr.set_source_rgb(gray, gray, gray)
-            rx, ry, rw, rh = bx+(i%16)*bw, by+(i//16)*bh, bw, bh
-            cr.rectangle(rx, ry, rw, rh)
-            #print("rectangle(%s, %s, %s, %s) alpha=%s" % (rx, ry, rw, rh, alpha))
-            cr.fill()
+        paint_block(w/2, h/2, w/2, h/2, 1, 1, 1)
 
+import signal
+signal.signal(signal.SIGINT, lambda x,y : Gtk.main_quit)
 TransparentColorWindow()
 Gtk.main()
