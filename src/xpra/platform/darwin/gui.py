@@ -46,8 +46,6 @@ except:
     Snd = None
 
 
-
-
 def do_init():
     osxapp = get_OSXApplication()
     icon = get_icon("xpra.png")

@@ -6,12 +6,42 @@
 import gobject
 
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-from xpra.clipboard.clipboard_base import ClipboardProxy, debug
+from xpra.clipboard.clipboard_base import ClipboardProxy, debug, log
+
+change_callbacks = []
+change_count = 0
+try:
+    from AppKit import NSPasteboard      #@UnresolvedImport
+    pasteboard = NSPasteboard.generalPasteboard()
+    if pasteboard is None:
+        log.warn("cannot load Pasteboard, maybe not running from a GUI session?")
+    else:
+        def timer_clipboard_check():
+            global change_count
+            c = change_count
+            change_count = pasteboard.changeCount()
+            debug("timer_clipboard_check() was %s, now %s", c, change_count)
+            if c!=change_count:
+                for x in change_callbacks:
+                    try:
+                        x()
+                    except Exception, e:
+                        debug("error in change callback %s: %s", x, e)
+        from xpra.platform.ui_thread_watcher import get_UI_watcher
+        w = get_UI_watcher()
+        debug("UI watcher=%s", w)
+        if w:
+            w.add_alive_callback(timer_clipboard_check)
+except ImportError, e:
+    log.warn("cannot monitor OSX clipboard count: %s", e)
 
 
 class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
     """
         Full of OSX quirks!
+        darwin/features.py should be set
+        * CLIPBOARD_GREEDY: request the other end to send tokens for all owner change events 
+        * CLIPBOARD_WANT_TARGETS: include targets with the tokens
     """
 
     def __init__(self, send_packet_cb, progress_cb=None):
@@ -26,6 +56,11 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
 
 class OSXClipboardProxy(ClipboardProxy):
 
+    def __init__(self, selection):
+        ClipboardProxy.__init__(self, selection)
+        global change_callbacks
+        change_callbacks.append(self.local_clipboard_changed)
+
     def got_token(self, targets):
         # We got the anti-token.
         debug("got token, selection=%s, targets=%s", self._selection, targets)
@@ -33,5 +68,12 @@ class OSXClipboardProxy(ClipboardProxy):
         for target in targets:
             self.selection_add_target(self._selection, target, 0)
         self.selection_owner_set(self._selection)
+
+    def local_clipboard_changed(self):
+        debug("local_clipboard_changed() greedy_client=%s", self._greedy_client)
+        if (self._greedy_client or not self._have_token) and not self._block_owner_change:
+            self._have_token = False
+            self.emit("send-clipboard-token", self._selection)
+            self._sent_token_events += 1
 
 gobject.type_register(OSXClipboardProxy)

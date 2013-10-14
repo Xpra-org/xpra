@@ -12,3 +12,4 @@ CLIPBOARD_GREEDY = True
 CLIPBOARD_NATIVE_CLASS = ("xpra.platform.darwin.osx_clipboard", "OSXClipboardProtocolHelper", {})
 SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True
+UI_THREAD_POLLING = 1000    #poll every second

@@ -43,6 +43,9 @@
 		${prefix}/lib/libgtkmacintegration.*.dylib
 	</binary>
 	<binary>
+ 	   ${prefix}/lib/libexpat.*.dylib
+	</binary>
+	<binary>
  	   ${prefix}/lib/libjpeg.*.dylib
 	</binary>
 	<binary>

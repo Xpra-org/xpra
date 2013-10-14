@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import os
 import sys
 import gobject
@@ -17,7 +16,9 @@ except:
 import gtk
 from gtk import gdk
 
-from xpra.os_util import thread
+from xpra.platform.ui_thread_watcher import get_UI_watcher
+get_UI_watcher(gobject.timeout_add).start()
+
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.gtk_common.cursor_names import cursor_names
@@ -221,41 +222,15 @@ class XpraClient(GTKXpraClient):
                 screen.connect("size-changed", self._screen_size_changed)
                 i += 1
         #if server supports it, enable UI thread monitoring workaround when needed:
-        if self.suspend_resume and (sys.platform.startswith("darwin") or FAKE_UI_LOCKUPS>0):
-            self.start_UI_thread_polling()
-            if FAKE_UI_LOCKUPS>0:
-                def sleep_in_ui_thread(*args):
-                    time.sleep(FAKE_UI_LOCKUPS)
-                    return True
-                gobject.timeout_add((10+FAKE_UI_LOCKUPS)*1000, sleep_in_ui_thread)
-
-    def start_UI_thread_polling(self):
-        log("start_UI_thread_polling()")
-        self.UI_blocked_sent = False
-        def UI_thread_wakeup(*args):
-            log("UI_thread_wakeup()")
-            self.last_UI_thread_time = time.time()
-            #UI thread was blocked?
-            if self.UI_blocked_sent:
-                log.info("UI thread is running again, resuming")
+        if self.suspend_resume:
+            w = get_UI_watcher()
+            def UI_resumed():
                 self.send("resume", True, self._id_to_window.keys())
-                self.UI_blocked_sent = False
-            return self.exit_code is None
-        UI_thread_wakeup()
-        gobject.timeout_add(1000, UI_thread_wakeup)
-        def poll_UI_loop(*args):
-            log("poll_UI_loop() running")
-            while self.exit_code is None:
-                delta = time.time()-self.last_UI_thread_time
-                log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago, UI_blocked_sent=%s", delta, self.UI_blocked_sent)
-                if delta>2.0:
-                    #UI thread is (still?) blocked:
-                    if not self.UI_blocked_sent:
-                        log.info("UI thread is blocked, pausing server")
-                        self.send("suspend", True, self._id_to_window.keys())
-                        self.UI_blocked_sent = True
-                time.sleep(1.0)
-        thread.start_new_thread(poll_UI_loop, ())
+            def UI_failed():
+                self.send("suspend", True, self._id_to_window.keys())
+            w.add_resume_callback(UI_resumed)
+            w.add_fail_callback(UI_failed)
+
 
     def _screen_size_changed(self, *args):
         def update_size(current=None):

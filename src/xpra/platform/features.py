@@ -16,6 +16,7 @@ CLIPBOARD_WANT_TARGETS = False
 CLIPBOARD_GREEDY = False
 CLIPBOARD_NATIVE_CLASS = None
 CAN_DAEMONIZE = False
+UI_THREAD_POLLING = 0
 
 from xpra.platform import platform_import
 platform_import(globals(), "features", False,
@@ -29,4 +30,5 @@ platform_import(globals(), "features", False,
                 "CLIPBOARDS",
                 "CLIPBOARD_WANT_TARGETS",
                 "CLIPBOARD_GREEDY",
-                "CLIPBOARD_NATIVE_CLASS")
+                "CLIPBOARD_NATIVE_CLASS",
+                "UI_THREAD_POLLING")
