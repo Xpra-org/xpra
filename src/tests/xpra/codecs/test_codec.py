@@ -10,6 +10,16 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 
 DEBUG = False
 
+MIN_SIZE = 1024*1024
+SOURCE_DATA = None
+def get_source_data(size):
+    global SOURCE_DATA
+    if SOURCE_DATA is None or len(SOURCE_DATA)<size:
+        print("creating sample data for size %s" % size)
+        SOURCE_DATA = bytearray(max(MIN_SIZE, size))
+        for i in range(size):
+            SOURCE_DATA[i] = (i)%256
+    return SOURCE_DATA[:size]
 
 def dump_pixels(pixels):
     S = 64
@@ -38,15 +48,11 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_st
     start = time.time()
     bpp = len(src_format)
     assert bpp==3 or bpp==4
-    pixels = bytearray("\0" * (w*h*4))
+    size = w*h*bpp
     if populate:
-        for y in range(h):
-            for x in range(w):
-                i = (y*w+x)*bpp
-                v = (y*yratio*w+x*xratio)*bpp
-                for j in range(3):
-                    pixels[i+j] = (v+j*channelratio + seed) % 256
-                pixels[i+3] = 0
+        pixels = bytearray(get_source_data(size))
+    else:
+        pixels = bytearray(size)
     end = time.time()
     if DEBUG:
         print("make_rgb_input%s took %.1fms" % ((src_format, w, h, use_strings, populate), end-start))
@@ -55,7 +61,7 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_st
     return pixels
 
 def make_planar_input(src_format, w, h, use_strings=False, populate=False, seed=0):
-    assert src_format in ("YUV420P", "YUV422P", "YUV444P"), "invalid source format %s" % src_format
+    assert src_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "invalid source format %s" % src_format
     start = time.time()
     Ydivs, Udivs, Vdivs = get_subsampling_divs(src_format)
     Yxd, Yyd = Ydivs
@@ -64,17 +70,14 @@ def make_planar_input(src_format, w, h, use_strings=False, populate=False, seed=
     Ysize = w*h/Yxd/Yyd
     Usize = w*h/Uxd/Uyd
     Vsize = w*h/Vxd/Vyd
-    Ydata = bytearray("\0" * Ysize)
-    Udata = bytearray("\0" * Usize)
-    Vdata = bytearray("\0" * Vsize)
-    if populate:
-        for y in range(h):
-            for x in range(w):
-                i = y*x
-                v = seed + i
-                Ydata[i/Yxd/Yyd] = v % 256
-                Udata[i/Uxd/Uyd] = v % 256
-                Vdata[i/Vxd/Vyd] = v % 256
+    def make_buffer(size):
+        if populate:
+            return bytearray(get_source_data(size))
+        else:
+            return bytearray(size)
+    Ydata = make_buffer(Ysize)
+    Udata = make_buffer(Usize)
+    Vdata = make_buffer(Vsize)
     if use_strings:
         pixels = (str(Ydata), str(Udata), str(Vdata))
     else:
