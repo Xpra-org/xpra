@@ -14,22 +14,32 @@
 # * we deal with odd sized images gracefully by clamping the output (via runtime checks)
 #   as well as the input (if sampler_t uses CLAMP_TO_EDGE)
 
-
-YUV_TO_RGB = {"X"    : [1.0],
-              "A"    : [1.0],
-              "R"    : [1.0, "*", "Y", "+", 1.5958,  "*", "Cb"],
-              "G"    : [1.0, "*", "Y", "-", 0.39173, "*", "Cr", "-", 0.8129, "*", "Cb"],
-              "B"    : [1.0, "*", "Y", "+", 2.017,   "*", "Cr"],
+              
+YUV_TO_RGB = {"X"    : [255, "*", 1],
+              "A"    : [255, "*", 1],
+              "R"    : ["(", "Y", "*", 1, ")", "+", "(", "Cb", "*", 1.5958, ")"],
+              "G"    : ["(", "Y", "*", 1, ")", "-", "(", "Cr", "*", 0.39173, ")", "-", "(", "Cb", "*", 0.8129, ")"],
+              "B"    : ["(", "Y", "*", 1, ")", "+", "(", "Cr", "*", 2.017, ")"],
               }
 
-def get_RGB_formulae(rgb_channel, multiplier=2**20):
+def get_RGB_formulae(rgb_channel, bitshift=20):
     #given an RGB channel (R, G or B), return the formulae for it
     #which uses the named variables Y, Cb (aka U) and Cr (aka V)
     f = YUV_TO_RGB[rgb_channel]     #ie: ["Y", "+", 1.5958, "*", "Cb"]
     mf = []
-    for x in f:
-        if type(x)==float:
-            x = int(round(x*multiplier))    #1.5958 -> 1673318
+    for i in range(len(f)):
+        x = f[i]
+        if x==1:
+            if True:
+                #special case optimization: "* 1" -> "<<2**bitshift"
+                assert f[i-1] == "*"
+                mf = mf[:-1]
+                mf.append("<<")
+                x = bitshift
+            else:
+                x = 2**bitshift
+        elif type(x)==float:
+            x = int(round(x*(2**bitshift)))    #1.5958 -> 1673318
         mf.append(x)
     return " ".join([str(x) for x in mf])
 
@@ -81,8 +91,12 @@ def gen_yuv444p_to_rgb_kernel(yuv_format, rgb_format):
     RGB_args = rgb_mode_to_indexes(rgb_format)
     assert len(RGB_args)==4, "we need 4 RGB components (R,G,B and A or X), not: %s" % RGB_args
     kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
-    rgb_args = [get_RGB_formulae(x) for x in rgb_format]
-    args = tuple([kname] + rgb_args)
+    args = [kname]
+    bitshift = 20
+    for x in rgb_format:
+        args.append(x)
+        args.append("(%s)>>%s" % (get_RGB_formulae(x, bitshift), bitshift))
+        args.append(x)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
               const uint srcw, const uint srch, const uint w, const uint h,
@@ -95,20 +109,24 @@ __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only i
         const uint srcy = gy*srch/h;
         uint4 p;
 
-        const int Y  = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
-        const int Cr = 1048576 * read_imageui(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
-        const int Cb = 1048576 * read_imageui(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
+        const int Y  = read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 16;
+        const int Cr = read_imageui(srcU, sampler, (int2)( srcx, srcy )).s0 - 128;
+        const int Cb = read_imageui(srcV, sampler, (int2)( srcx, srcy )).s0 - 128;
 
-        p.s0 = convert_uchar_sat_rte(%s>>20);
-        p.s1 = convert_uchar_sat_rte(%s>>20);
-        p.s2 = convert_uchar_sat_rte(%s>>20);
-        p.s3 = convert_uchar_sat_rte(%s>>20);
+        const int %s = %s;
+        p.s0 = convert_uchar_sat_rte(%s);
+        const int %s = %s;
+        p.s1 = convert_uchar_sat_rte(%s);
+        const int %s = %s;
+        p.s2 = convert_uchar_sat_rte(%s);
+        const int %s = %s;
+        p.s3 = convert_uchar_sat_rte(%s);
 
         write_imageui(dst, (int2)( gx, gy ), p);
     }
 }
 """
-    return kname, kstr % args
+    return kname, kstr % tuple(args)
 
 def gen_yuv422p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
@@ -118,8 +136,12 @@ def gen_yuv422p_to_rgb_kernel(yuv_format, rgb_format):
     RGB_args = rgb_mode_to_indexes(rgb_format)
     assert len(RGB_args)==4, "we need 4 RGB components (R,G,B and A or X), not: %s" % RGB_args
     kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
-    rgb_args = [get_RGB_formulae(x) for x in rgb_format]
-    args = tuple([kname] + rgb_args*2)
+    args = [kname]
+    bitshift = 20
+    for x in rgb_format+rgb_format:
+        args.append(x)
+        args.append("(%s)>>%s" % (get_RGB_formulae(x, bitshift), bitshift))
+        args.append(x)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
               const uint srcw, const uint srch, const uint w, const uint h,
@@ -132,32 +154,40 @@ __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only i
 
         uint srcx = gx*2*srcw/w;
         const uint srcy = gy*srch/h;
-        int Y         = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
-        const int Cr  = 1048576 * read_imageui(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
-        const int Cb  = 1048576 * read_imageui(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
+        int Y         = read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 16;
+        const int Cr  = read_imageui(srcU, sampler, (int2)( srcx/2, srcy )).s0 - 128;
+        const int Cb  = read_imageui(srcV, sampler, (int2)( srcx/2, srcy )).s0 - 128;
 
-        p.s0 = convert_uchar_sat_rte(%s>>20);
-        p.s1 = convert_uchar_sat_rte(%s>>20);
-        p.s2 = convert_uchar_sat_rte(%s>>20);
-        p.s3 = convert_uchar_sat_rte(%s>>20);
+        int %s = %s;
+        p.s0 = convert_uchar_sat_rte(%s);
+        int %s = %s;
+        p.s1 = convert_uchar_sat_rte(%s);
+        int %s = %s;
+        p.s2 = convert_uchar_sat_rte(%s);
+        int %s = %s;
+        p.s3 = convert_uchar_sat_rte(%s);
 
         write_imageui(dst, (int2)( gx*2, gy ), p);
 
         if (gx*2+1 < w) {
             srcx = (gx*2+1)*srcw/w;
-            Y = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
+            Y = read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 16;
 
-            p.s0 = convert_uchar_sat_rte(%s>>20);
-            p.s1 = convert_uchar_sat_rte(%s>>20);
-            p.s2 = convert_uchar_sat_rte(%s>>20);
-            p.s3 = convert_uchar_sat_rte(%s>>20);
+            %s = %s;
+            p.s0 = convert_uchar_sat_rte(%s);
+            %s = %s;
+            p.s1 = convert_uchar_sat_rte(%s);
+            %s = %s;
+            p.s2 = convert_uchar_sat_rte(%s);
+            %s = %s;
+            p.s3 = convert_uchar_sat_rte(%s);
 
             write_imageui(dst, (int2)( gx*2+1, gy ), p);
         }
     }
 }
 """
-    return kname, kstr % args
+    return kname, kstr % tuple(args)
 
 def gen_yuv420p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
@@ -168,8 +198,12 @@ def gen_yuv420p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(RGB_args)==4, "we need 4 RGB components (R,G,B and A or X), not: %s" % RGB_args
     kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
     #convert rgb_format into list of 4 channel values:
-    rgb_args = [get_RGB_formulae(x) for x in rgb_format]
-    args = tuple([kname] + rgb_args*4)
+    args = [kname]
+    bitshift = 20
+    for x in rgb_format*4:
+        args.append(x)
+        args.append("(%s)>>%s" % (get_RGB_formulae(x, bitshift), bitshift))
+        args.append(x)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
               const uint srcw, const uint srch, const uint w, const uint h,
@@ -189,25 +223,33 @@ __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only i
         //Y*2**20  = 1220857 * v - 65536
         //Cb*2**20 = 2**20 * v - 2**19;
         //Cr*2**20 = 2**20 * v - 2**19;
-        int Y         = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
-        const int Cr  = 1048576 * read_imageui(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
-        const int Cb  = 1048576 * read_imageui(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 524288;
+        int Y         = read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 16;
+        const int Cr  = read_imageui(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 128;
+        const int Cb  = read_imageui(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 128;
 
-        p.s0 = convert_uchar_sat_rte(%s>>20);
-        p.s1 = convert_uchar_sat_rte(%s>>20);
-        p.s2 = convert_uchar_sat_rte(%s>>20);
-        p.s3 = convert_uchar_sat_rte(%s>>20);
+        int %s = %s;
+        p.s0 = convert_uchar_sat_rte(%s);
+        int %s = %s;
+        p.s1 = convert_uchar_sat_rte(%s);
+        int %s = %s;
+        p.s2 = convert_uchar_sat_rte(%s);
+        int %s = %s;
+        p.s3 = convert_uchar_sat_rte(%s);
 
         write_imageui(dst, (int2)( x, y ), p);
 
         if (x+1 < w) {
             srcx = (x+1)*srcw/w;
-            Y = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
+            Y = read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 16;
 
-            p.s0 = convert_uchar_sat_rte(%s>>20);
-            p.s1 = convert_uchar_sat_rte(%s>>20);
-            p.s2 = convert_uchar_sat_rte(%s>>20);
-            p.s3 = convert_uchar_sat_rte(%s>>20);
+            %s = %s;
+            p.s0 = convert_uchar_sat_rte(%s);
+            %s = %s;
+            p.s1 = convert_uchar_sat_rte(%s);
+            %s = %s;
+            p.s2 = convert_uchar_sat_rte(%s);
+            %s = %s;
+            p.s3 = convert_uchar_sat_rte(%s);
 
             write_imageui(dst, (int2)( x+1, y ), p);
         }
@@ -215,23 +257,31 @@ __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only i
         if (y+1 < h) {
             srcx = x*srcw/w;
             srcy = (y+1)*srch/h;
-            Y = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
+            Y = read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 16;
 
-            p.s0 = convert_uchar_sat_rte(%s>>20);
-            p.s1 = convert_uchar_sat_rte(%s>>20);
-            p.s2 = convert_uchar_sat_rte(%s>>20);
-            p.s3 = convert_uchar_sat_rte(%s>>20);
+            %s = %s;
+            p.s0 = convert_uchar_sat_rte(%s);
+            %s = %s;
+            p.s1 = convert_uchar_sat_rte(%s);
+            %s = %s;
+            p.s2 = convert_uchar_sat_rte(%s);
+            %s = %s;
+            p.s3 = convert_uchar_sat_rte(%s);
 
             write_imageui(dst, (int2)( x, y+1 ), p);
 
             if (x+1 < w) {
                 srcx = (x+1)*srcw/w;
-                Y = 1220857 * read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 65536;
+                Y = read_imageui(srcY, sampler, (int2)( srcx, srcy )).s0 - 16;
 
-                p.s0 = convert_uchar_sat_rte(%s>>20);
-                p.s1 = convert_uchar_sat_rte(%s>>20);
-                p.s2 = convert_uchar_sat_rte(%s>>20);
-                p.s3 = convert_uchar_sat_rte(%s>>20);
+                %s = %s;
+                p.s0 = convert_uchar_sat_rte(%s);
+                %s = %s;
+                p.s1 = convert_uchar_sat_rte(%s);
+                %s = %s;
+                p.s2 = convert_uchar_sat_rte(%s);
+                %s = %s;
+                p.s3 = convert_uchar_sat_rte(%s);
 
                 write_imageui(dst, (int2)( x+1, y+1 ), p);
             }
@@ -239,7 +289,7 @@ __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only i
     }
 }
 """
-    return kname, kstr % args
+    return kname, kstr % tuple(args)
 
 
 YUV_to_RGB_generators = {

@@ -238,7 +238,7 @@ def gen_yuv_to_rgb():
                 break
             if dst_rgb_mode not in found_rgb:
                 #not matched:
-                log.warn("YUV 2 RGB: channel order %s is not supported: we don't have a byteswapping alternative", dst_rgb_mode)
+                log("YUV 2 RGB: channel order %s is not supported: we don't have a byteswapping alternative", dst_rgb_mode)
                 continue
     debug("YUV 2 RGB conversions=%s", sorted(YUV_to_RGB_KERNELS.keys()))
     #debug("YUV 2 RGB kernels=%s", YUV_to_RGB_KERNELS)
@@ -317,7 +317,7 @@ def gen_rgb_to_yuv():
                 break
             if src_rgb_mode not in found_rgb:
                 #not matched:
-                log.warn("RGB 2 YUV: channel order %s is not supported: we don't have a byteswapping alternative", src_rgb_mode)
+                log("RGB 2 YUV: channel order %s is not supported: we don't have a byteswapping alternative", src_rgb_mode)
                 continue
 
     debug("RGB 2 YUV conversions=%s", sorted(RGB_to_YUV_KERNELS.keys()))
