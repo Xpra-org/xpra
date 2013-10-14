@@ -128,7 +128,7 @@ class ClientWindowBase(ClientWidgetBase):
                     atvar = match.group(0)          #ie: '@title@'
                     var = atvar[1:len(atvar)-1]     #ie: 'title'
                     default_value = default_values.get(var, u("<unknown %s>") % var)
-                    value = metadata.get(var, default_value)
+                    value = self._metadata.get(var, default_value)
                     if sys.version<'3':
                         value = value.decode("utf-8")
                     return value
