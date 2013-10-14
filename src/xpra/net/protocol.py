@@ -345,8 +345,8 @@ class Protocol(object):
             self._source_has_more.set()
         if packet is None:
             return
-        chunks, proto_flags = self.encode(packet)
         debug("add_packet_to_queue(%s ...)", packet[0])
+        chunks, proto_flags = self.encode(packet)
         try:
             self._write_lock.acquire()
             self._add_chunks_to_queue(chunks, proto_flags, start_send_cb, end_send_cb)
