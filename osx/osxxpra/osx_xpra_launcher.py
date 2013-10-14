@@ -15,5 +15,7 @@ from xpra.platform.darwin.osx_clipboard import OSXClipboardProtocolHelper
 from xpra.platform.darwin.paths import get_resources_dir
 from xpra.client.gl.gl_client_window import GLClientWindow
 from xpra.client.gtk2.client import XpraClient
+from xpra.gtk_common.gtk_view_clipboard import ClipboardStateInfoWindow
+from xpra.gtk_common.gtk_view_keyboard import KeyboardStateInfoWindow
 
 main()
