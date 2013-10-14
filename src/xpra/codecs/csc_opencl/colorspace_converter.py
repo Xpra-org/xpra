@@ -442,11 +442,7 @@ class ColorspaceConverter(object):
         self.dst_height = dst_height
         self.dst_format = dst_format
         self.queue = pyopencl.CommandQueue(context)
-        #sampling type:
-        if self.src_width>self.dst_width and self.src_height>self.dst_height:
-            fm = pyopencl.filter_mode.LINEAR
-        else:
-            fm = pyopencl.filter_mode.NEAREST
+        fm = pyopencl.filter_mode.NEAREST
         self.sampler = pyopencl.Sampler(context, False, pyopencl.addressing_mode.CLAMP_TO_EDGE, fm)
         k_def = KERNELS_DEFS.get((src_format, dst_format))
         assert k_def, "no kernel found for %s to %s" % (src_format, dst_format)
