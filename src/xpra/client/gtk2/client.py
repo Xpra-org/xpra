@@ -84,7 +84,7 @@ class XpraClient(GTKXpraClient):
 
     def get_core_encodings(self):
         encodings = GTKXpraClient.get_core_encodings(self)
-        if gdk.screen_get_default().get_rgba_visual() is not None:
+        if self.has_transparency():
             try:
                 #check for bytearray which is used by PixmapBacking
                 #to unpremultiply rgb32 data
@@ -286,7 +286,7 @@ class XpraClient(GTKXpraClient):
                         work_x, work_y, work_width, work_height)
             screen_sizes.append(item)
             i += 1
-        log("get_screen_sizes()=%s", screen_sizes)
+        log.info("get_screen_sizes()=%s", screen_sizes)
         return screen_sizes
 
 
