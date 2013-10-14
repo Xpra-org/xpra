@@ -15,7 +15,7 @@ PERF_LOOP = 8       #number of megapixels to test on for measuring performance
 MAX_ITER = 32       #also limit total number of iterations (as each iteration takes time to setup)
 SIZES = ((16, 16), (32, 32), (64, 64), (128, 128), (256, 256), (512, 512), (1920, 1080), (2560, 1600))
 #SIZES = ((512, 512), (1920, 1080), (2560, 1600))
-TEST_SIZES = SIZES + ((51, 7), (511, 3), (5, 768), (111, 555))
+TEST_SIZES = ((498, 316), ) + SIZES + ((51, 7), (511, 3), (5, 768), (111, 555))
 
 #Some helper methods:
 def check_plane(info, data, expected, tolerance=3, pixel_stride=4, ignore_byte=-1):
@@ -36,25 +36,29 @@ def check_plane(info, data, expected, tolerance=3, pixel_stride=4, ignore_byte=-
     assert len(actual_data)==len(expected), "expected at least %s items but got %s" % (len(expected), len(actual_data))
     #now compare values, with some tolerance for rounding (off by one):
     errs = {}
-    tested = 0
+    diff = []
     for i in range(len(expected)):
         if ignore_byte>=0:
             if (i%pixel_stride)==ignore_byte:
                 continue
         va = actual_data[i]
         ve = expected[i]
-        tested += 1
-        if abs(va-ve)>tolerance:
-            errs[i] = va, ve
-    ratio = 100.0*len(errs)/tested
+        d = abs(va-ve)
+        diff.append(d)
+        if d>tolerance:
+            errs[i] = hex(va)[2:], hex(ve)[2:]
+    ratio = 100.0*len(errs)/len(diff)
     if len(errs)>0:
+        h = ""
         if ratio>1:
-            print("")
-            print("ERROR!")
-        print("output differs for %s" % info)
+            h = "ERROR "
+        print(h+"output differs for %s, max difference=%s, avg=%.1f" % (info, max(diff), float(sum(diff))/len(diff)))
         print("check_plane(%s, .., ..) expected=%s" % (info, dump_pixels(expected)))
         print("check_plane(%s, .., ..)   actual=%s" % (info, dump_pixels(data)))
-        print("errors at %s locations: %s (%.1f%%)" % (len(errs), errs.items()[:10], ratio))
+        serrs = []
+        for k in sorted(errs.keys())[:10]:
+            serrs.append((hex(k)[2:], (errs.get(k))))
+        print("errors at %s locations: %s (%.1f%%)" % (len(errs), serrs, ratio))
     return ratio<=2.1
 
 
@@ -232,7 +236,8 @@ def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels
 
 def test_csc_roundtrip(csc_module):
     src_formats = sorted(csc_module.get_input_colorspaces())
-    src_formats = [x for x in src_formats if (x.find("RGB")>=0 or x.find("BGR")>=0) and len(x)==4]
+    #src_formats = [x for x in src_formats if (x.find("RGB")>=0 or x.find("BGR")>=0) and len(x)==4]
+    src_formats = [x for x in src_formats if x=="RGB"]
     for src_format in src_formats:
         dst_formats = csc_module.get_output_colorspaces(src_format)
         dst_formats = [x for x in dst_formats if x=="YUV444P"]
@@ -242,7 +247,7 @@ def test_csc_roundtrip(csc_module):
             #can we convert back to src?
             if not src_format in csc_module.get_output_colorspaces(dst_format):
                 continue
-            for w, h in SIZES:
+            for w, h in TEST_SIZES:
                 spec1 = csc_module.get_spec(src_format, dst_format)
                 spec2 = csc_module.get_spec(dst_format, src_format)
                 if w<spec1.min_w or h<spec1.min_h or w<spec2.min_w or h<spec2.min_h:
@@ -258,7 +263,7 @@ def test_csc_roundtrip(csc_module):
 def do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h):
     assert src_format.find("RGB")>=0 or src_format.find("BGR")>=0
     pixels = make_rgb_input(src_format, w, h, populate=True)
-    stride = w*4
+    stride = len(src_format)*w
     #print(" input pixels: %s (%sx%s, stride=%s, stride*h=%s)" % (len(pixels), w, h, stride, stride*h))
     assert len(pixels)>=stride*h, "not enough pixels! (expected at least %s but got %s)" % (stride*h, len(pixels))
     image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, stride, planes=ImageWrapper.PACKED)
@@ -279,9 +284,12 @@ def do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h):
     #compare with original:
     rpixels = regen.get_pixels()
     info = "%s to %s and back @ %sx%s" % (src_format, dst_format, w, h)
-    if src_format.find("RGB")>=0 or src_format.find("BGR")>=0:
-        ib = max(src_format.find("X"), src_format.find("A"))
-        check_plane(info, rpixels, pixels, tolerance=5, ignore_byte=ib)
+    #if src_format.find("RGB")>=0 or src_format.find("BGR")>=0:
+    ib = max(src_format.find("X"), src_format.find("A"))
+    import binascii
+    print("pixels start=%s" % binascii.hexlify(pixels[:20]))    
+    print("regen  start=%s" % binascii.hexlify(rpixels[:20]))
+    check_plane(info, rpixels, pixels, tolerance=5, ignore_byte=ib)
     #else:
     #    for i in range(3):
     #        check_plane(info, rpixels[i], pixels[i], tolerance=5)
