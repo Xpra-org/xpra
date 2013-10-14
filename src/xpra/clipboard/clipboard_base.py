@@ -342,7 +342,8 @@ class ClipboardProxy(gtk.Invisible):
         self._selection = selection
         self._clipboard = gtk.Clipboard(selection=selection)
         self._have_token = False
-        #clients that need a new token for every owner-change: (ie: win32)
+        #clients that need a new token for every owner-change: (ie: win32 and osx)
+        #(forces the client to request new contents - prevents stale clipboard data)
         self._greedy_client = False
         #semaphore to block the sending of the token when we change the owner ourselves:
         self._block_owner_change = False
@@ -354,6 +355,13 @@ class ClipboardProxy(gtk.Invisible):
         self._got_token_events = 0
         self._get_contents_events = 0
         self._request_contents_events = 0
+
+        try:
+            from xpra.x11.gtk_x11.prop import prop_get
+            self.prop_get = prop_get
+        except ImportError:
+            self.prop_get = None
+
         self._clipboard.connect("owner-change", self.do_owner_changed)
 
     def get_info(self):
@@ -427,13 +435,11 @@ class ClipboardProxy(gtk.Invisible):
         if target == "TIMESTAMP":
             pass
         elif target == "MULTIPLE":
-            try:
-                from xpra.x11.gtk_x11.prop import prop_get
-            except ImportError:
+            if not self.prop_get:
                 debug("MULTIPLE for property '%s' not handled due to missing xpra.x11.gtk_x11 bindings", event.property)
                 gtk.Invisible.do_selection_request_event(self, event)
                 return
-            atoms = prop_get(event.window, event.property, ["multiple-conversion"])
+            atoms = self.prop_get(event.window, event.property, ["multiple-conversion"])
             debug("MULTIPLE clipboard atoms: %r", atoms)
             if atoms:
                 targets = atoms[::2]
@@ -469,7 +475,7 @@ class ClipboardProxy(gtk.Invisible):
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
-        debug("do_selection_clear_event(%s) selection=%s", event, self._selection)
+        debug("do_selection_clear_event(%s) have_token=%s, block_owner_change=%,s selection=%s", event, self._have_token, self._block_owner_change, self._selection)
         self._selection_clear_events += 1
         #if greedy_client is set, do_owner_changed will fire the token
         #so don't bother sending it now (same if we don't have it)
@@ -490,6 +496,15 @@ class ClipboardProxy(gtk.Invisible):
         self._have_token = True
         if self._greedy_client:
             self._block_owner_change = True
+        self.claim()
+        if self._block_owner_change:
+            #re-enable the flag via idle_add so events like do_owner_changed
+            #get a chance to run first.
+            def remove_block(*args):
+                self._block_owner_change = False
+            gobject.idle_add(remove_block)
+
+    def claim(self):
         if not self.selection_owner_set(self._selection):
             # I don't know how this can actually fail, given that we pass
             # CurrentTime, but just in case:
@@ -497,12 +512,7 @@ class ClipboardProxy(gtk.Invisible):
                      % (self._selection,)
                      + "will not be able to pass local apps "
                      + "contents of remote clipboard")
-        if self._block_owner_change:
-            #re-enable the flag via idle_add so events like do_owner_changed
-            #get a chance to run first.
-            def remove_block(*args):
-                self._block_owner_change = False
-            gobject.idle_add(remove_block)
+        
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
