@@ -34,9 +34,12 @@ def load_csc_options():
         opts = [x.strip() for x in XPRA_CLIENT_CSC.split(",")]
         log("load_csc_options() module options=%s", opts)
         for opt in opts:
-            mod = "xpra.codecs.csc_%s.colorspace_converter" % opt
+            csc_module = get_codec("csc_%s" % opt)
+            if not csc_module:
+                log.warn("csc module %s not found", opt)
+                continue
+            log("csc_module(%s)=%s", opt, csc_module)
             try:
-                csc_module = __import__(mod, {}, {}, "ColorspaceConverter")
                 in_cscs = csc_module.get_input_colorspaces()
                 log("input colorspaces(%s)=%s", csc_module, in_cscs)
                 for in_csc in in_cscs:
@@ -49,7 +52,7 @@ def load_csc_options():
                         specs.append(spec)
                         log("specs(%s, %s)=%s", in_csc, out_csc, specs)
             except:
-                log.warn("failed to load csc module %s", mod, exc_info=True)
+                log.warn("failed to load csc module %s", csc_module, exc_info=True)
 
 def fire_paint_callbacks(callbacks, success):
     for x in callbacks:
