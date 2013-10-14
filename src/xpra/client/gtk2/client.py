@@ -271,12 +271,12 @@ class XpraClient(GTKXpraClient):
                 monitor = plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm
                 monitors.append(monitor)
                 j += 1
-            root = screen.get_root_window()
             work_x, work_y = 0, 0
             work_width, work_height = screen.get_width(), screen.get_height()
             if not sys.platform.startswith("win"):
                 try:
                     p = gtk.gdk.atom_intern('_NET_WORKAREA')
+                    root = screen.get_root_window()
                     work_x, work_y, work_width, work_height = root.property_get(p)[2][:4]
                 except:
                     pass
