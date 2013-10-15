@@ -73,8 +73,8 @@ class ClientTray(ClientWidgetBase):
             if orientation:
                 client_properties["orientation"] = orientation
             screen = self.tray_widget.get_screen()
-            if screen>=0:
-                client_properties["screen"] = screen
+            if screen:
+                client_properties["screen"] = screen.get_number()
             self._client.send("configure-window", self._id, x, y, w, h, client_properties)
         if self._size!=(w, h):
             self.new_backing(w, h)
