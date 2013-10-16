@@ -614,12 +614,14 @@ class Protocol(object):
     def do_read_parse_thread_loop(self):
         """
             Process the individual network packets placed in _read_queue.
-            We concatenate them, then try to parse them.
-            We extract the individual packets from the potentially large buffer,
+            Concatenate the raw packet data, then try to parse it.
+            Extract the individual packets from the potentially large buffer,
             saving the rest of the buffer for later, and optionally decompress this data
             and re-construct the one python-object-packet from potentially multiple packets (see packet_index).
             The 8 bytes packet header gives us information on the packet index, packet size and compression.
-            The actual processing of the packet is done in the main thread via gobject.idle_add
+            The actual processing of the packet is done via the callback process_packet_cb,
+            this will be called from this parsing thread so any calls that need to be made
+            from the UI thread will need to use a callback (usually via 'idle_add')
         """
         read_buffer = None
         payload_size = -1
