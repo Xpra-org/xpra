@@ -40,9 +40,6 @@ class RootWindowModel(object):
     def get_image(self, x, y, width, height):
         raise NotImplementedError()
 
-    def get_client_contents(self):
-        return self.window
-
     def get_property_names(self):
         return ("title", "client-machine", "window-type", "size-hints")
 
