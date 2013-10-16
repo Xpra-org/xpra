@@ -186,6 +186,7 @@ class Protocol(object):
 
     FLAGS_RENCODE = 0x1
     FLAGS_CIPHER = 0x2
+    FLAGS_NOHEADER = 0x40
 
     def __init__(self, scheduler, conn, process_packet_cb, get_packet_cb=None):
         """
@@ -215,7 +216,7 @@ class Protocol(object):
         self.aliases = {}
         self.chunked_compression = True
         self._closed = False
-        self._encoder = self.bencode
+        self._encoder = self.noencode
         self._compress = zcompress
         self._decompressor = decompressobj()
         self.compression_level = 0
@@ -403,7 +404,10 @@ class Protocol(object):
                 data = self.cipher_out.encrypt(padded)
                 assert len(data)==actual_size
                 debug("sending %s bytes encrypted with %s padding", payload_size, len(padding))
-            if pack_header_and_data is not None and actual_size<PACKET_JOIN_SIZE:
+            if proto_flags & Protocol.FLAGS_NOHEADER:
+                #for plain/text packets (ie: gibberish response)
+                items.append((data, scb, ecb))
+            elif pack_header_and_data is not None and actual_size<PACKET_JOIN_SIZE:
                 if type(data)==unicode:
                     data = str(data)
                 header_and_data = pack_header_and_data(actual_size, proto_flags, level, index, payload_size, data)
@@ -443,6 +447,10 @@ class Protocol(object):
                 self.do_verify_packet(new_tree("key for value='%s'" % str(v)), k)
                 self.do_verify_packet(new_tree("value for key='%s'" % str(k)), v)
 
+    def enable_bencode(self):
+        debug("enable_bencode()")
+        self._encoder = self.bencode
+
     def enable_rencode(self):
         assert rencode_dumps is not None, "rencode cannot be enabled: the module failed to load!"
         debug("enable_rencode()")
@@ -453,6 +461,10 @@ class Protocol(object):
         assert self.chunked_compression, "cannot enable lz4 without chunked compression"
         debug("enable_lz4()")
         self._compress = lz4_compress
+
+    def noencode(self, data):
+        #just send data as a string for clients that don't understand xpra packet format:
+        return ": ".join([str(x) for x in data])+"\n", Protocol.FLAGS_NOHEADER
 
     def bencode(self, data):
         return bencode(data), 0
@@ -645,26 +657,30 @@ class Protocol(object):
                 if bl<=0:
                     break
                 if payload_size<0:
+                    head = read_buffer[:8]
                     if read_buffer[0] not in ("P", ord("P")):
                         err = "invalid packet header byte: '%s', not an xpra client?" % hex(ord(read_buffer[0]))
                         if len(read_buffer)>1:
                             err += " read buffer=0x%s" % repr_ellipsized(read_buffer)
                             if len(read_buffer)>40:
                                 err += "..."
-                        self._gibberish(err, read_buffer[:8])
+                        self._gibberish(err, head)
                         return
                     if bl<8:
                         break   #packet still too small
                     #packet format: struct.pack('cBBBL', ...) - 8 bytes
                     try:
-                        _, protocol_flags, compression_level, packet_index, data_size = unpack_header(read_buffer[:8])
+                        _, protocol_flags, compression_level, packet_index, data_size = unpack_header(head)
                     except Exception, e:
-                        self._gibberish("failed to parse packet header: 0x%s: %s" % (repr_ellipsized(read_buffer[:8]), e), read_buffer[:8])
+                        self._gibberish("failed to parse packet header: 0x%s: %s" % (repr_ellipsized(head), e), head)
                         return
                     read_buffer = read_buffer[8:]
                     bl = len(read_buffer)
                     if protocol_flags & Protocol.FLAGS_CIPHER:
-                        assert self.cipher_in_block_size>0, "received cipher block but we don't have a cipher do decrypt it with"
+                        if self.cipher_in_block_size==0 or not self.cipher_in_name:
+                            err = "received cipher block but we don't have a cipher do decrypt it with, not an xpra client?"
+                            self._gibberish(err, head)
+                            return
                         padding = (self.cipher_in_block_size - data_size % self.cipher_in_block_size) * " "
                         payload_size = data_size + len(padding)
                     else:
@@ -740,7 +756,7 @@ class Protocol(object):
                 #final packet (packet_index==0), decode it:
                 try:
                     if protocol_flags & Protocol.FLAGS_RENCODE:
-                        assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet!"
+                        assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet! not an xpra client?"
                         packet = list(rencode_loads(data))
                     else:
                         #if sys.version>='3':

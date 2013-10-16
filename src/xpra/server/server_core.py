@@ -264,7 +264,6 @@ class ServerCore(object):
         log.info("New connection received: %s", sc)
         protocol = Protocol(self, sc, self.process_packet)
         protocol.large_packets.append("info-response")
-        protocol.set_compression_level(self.compression_level)
         protocol.authenticator = None
         self._potential_protocols.append(protocol)
         protocol.start()
@@ -300,7 +299,7 @@ class ServerCore(object):
     def _process_gibberish(self, proto, packet):
         data = packet[1]
         log.info("Received uninterpretable nonsense: %s", repr(data))
-        self.disconnect_client(proto, "invalid packet format")
+        self.disconnect_client(proto, "invalid packet format, not an xpra client?")
 
 
     def send_version_info(self, proto):
@@ -317,6 +316,9 @@ class ServerCore(object):
             proto.set_compression_level(c.intget("compression_level", self.compression_level))
         if use_rencode and c.boolget("rencode"):
             proto.enable_rencode()
+        else:
+            proto.enable_bencode()
+
         if c.boolget("lz4") and use_lz4 and proto.chunked_compression and self.compression_level==1:
             proto.enable_lz4()
 
