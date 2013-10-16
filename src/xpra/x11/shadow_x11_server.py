@@ -8,7 +8,7 @@ import gtk.gdk
 
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.server.shadow_server_base import ShadowServerBase
-from xpra.server.gtk_shadow_server_base import GTKRootWindowModel
+from xpra.server.gtk_root_window_model import GTKRootWindowModel
 
 
 class ShadowX11Server(ShadowServerBase, X11ServerBase):

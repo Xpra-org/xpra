@@ -9,7 +9,7 @@ import win32con         #@UnresolvedImport
 from xpra.log import Logger
 log = Logger()
 
-from xpra.server.gtk_shadow_server_base import GTKRootWindowModel
+from xpra.server.gtk_root_window_model import GTKRootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase
 
