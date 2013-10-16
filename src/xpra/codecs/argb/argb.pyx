@@ -14,6 +14,17 @@ cdef extern from "Python.h":
                               Py_ssize_t * buffer_len) except -1
 
 
+try:
+    assert bytearray
+    def make_byte_buffer(len):
+        return bytearray(len)
+except:
+    import array
+    #python 2.4 and older do not have bytearray
+    def make_byte_buffer(len):              #@DuplicatedSignature
+        return array.array('b', '\0' * len)
+
+
 def argb_to_rgba(buf):
     # b is a Python buffer object
     cdef const unsigned long * cbuf = <unsigned long *> 0
@@ -27,14 +38,12 @@ cdef argbdata_to_pixdata(const unsigned long* data, int dlen):
     if dlen <= 0:
         return None
     assert dlen % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % dlen
-    import array
-    # Create byte array
-    b = array.array('b', '\0'* dlen)
+    b = make_byte_buffer(dlen)
     cdef int offset = 0
     cdef int i = 0
     cdef unsigned long rgba
     cdef unsigned long argb
-    cdef char b1, b2, b3, b4
+    cdef unsigned char b1, b2, b3, b4
     while i < dlen/4:
         argb = data[i] & 0xffffffff
         rgba = <unsigned long> ((argb << 8) | (argb >> 24)) & 0xffffffff
@@ -63,14 +72,12 @@ cdef argbdata_to_rgb(const unsigned long* data, int dlen):
     if dlen <= 0:
         return None
     assert dlen % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % dlen
-    import array
-    # Create byte array
-    b = array.array('b', '\0'* (dlen/4*3))
+    b = make_byte_buffer(dlen*3/4)
     cdef int offset = 0                     #@DuplicateSignature
     cdef int i = 0                          #@DuplicateSignature
     cdef unsigned long rgba                 #@DuplicateSignature
     cdef unsigned long argb                 #@DuplicateSignature
-    cdef char b1, b2, b3                    #@DuplicateSignature
+    cdef unsigned char b1, b2, b3           #@DuplicateSignature
     while i < dlen/4:
         argb = data[i] & 0xffffffff
         rgba = <unsigned long> ((argb << 8) | (argb >> 24)) & 0xffffffff
