@@ -9,7 +9,6 @@ log = Logger()
 
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
-from xpra.codecs.argb.argb import argb_to_rgb   #@UnresolvedImport
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.os_util import StringIOClass
 
@@ -47,8 +46,7 @@ class OSXRootWindowModel(RootWindowModel):
             logger("OSXRootWindowModel.get_image(..) image size: %sx%s, bpc=%s, bpp=%s, rowstride=%s, alpha=%s", width, height, bpc, bpp, rowstride, alpha_str)
         prov = CG.CGImageGetDataProvider(image)
         argb = CG.CGDataProviderCopyData(prov)
-        rgb = argb_to_rgb(argb)
-        return ImageWrapper(0, 0, width, height, rgb, "RGB", 24, width*3)
+        return ImageWrapper(0, 0, width, height, argb, "BGRX", 24, rowstride)
 
     def take_screenshot(self):
         log("grabbing screenshot")
