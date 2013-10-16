@@ -42,7 +42,7 @@ except:
     has_lz4 = False
     def lz4_compress(packet, level):
         raise Exception("lz4 is not supported!")
-use_lz4 = has_lz4 and not os.environ.get("XPRA_USE_LZ4", "1")=="1"
+use_lz4 = has_lz4 and os.environ.get("XPRA_USE_LZ4", "1")=="1"
 
 rencode_dumps, rencode_loads, rencode_version = None, None, None
 try:

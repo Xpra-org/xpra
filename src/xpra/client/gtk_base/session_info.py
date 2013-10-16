@@ -151,7 +151,7 @@ class SessionInfo(gtk.Window):
         try:
             from xpra.sound.gstreamer_util import gst_version as cl_gst_v, pygst_version as cl_pygst_v
         except Exception, e:
-            debug("cannot load gstreamer: %s", e)
+            log("cannot load gstreamer: %s", e)
         tb.new_row("GStreamer", label(make_version_str(cl_gst_v)), label(server_version_info("sound.gst.version", "gst_version")))
         tb.new_row("pygst", label(make_version_str(cl_pygst_v)), label(server_version_info("sound.pygst.version", "pygst_version")))
         tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), label("n/a"))
@@ -610,7 +610,14 @@ class SessionInfo(gtk.Window):
         set_sound_info(self.microphone_label, None, self.client.microphone_enabled, self.client.sound_source)
 
         self.connection_type_label.set_text(c.info)
-        self.compression_label.set_text(str(p.compression_level))
+        protocol_state = p.save_state()
+        level = protocol_state.get("compression_level")
+        if level==0:
+            compression_str = "None"
+        else:
+            compression_str = " + ".join([x for x in ("zcompress", "lz4", "bencode", "rencode") if protocol_state.get(x, False)==True])
+            compression_str += ", level %s" % level
+        self.compression_label.set_text(compression_str)
         suffix = ""
         if c.info.lower()=="ssh":
             suffix = " (%s)" % c.info
