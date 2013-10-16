@@ -58,6 +58,7 @@ cdef extern from "vpx/vp8cx.h":
 
 cdef extern from "vpx/vpx_encoder.h":
     ctypedef struct vpx_codec_enc_cfg_t:
+        unsigned int g_threads
         unsigned int rc_target_bitrate
         unsigned int g_lag_in_frames
         unsigned int rc_dropframe_thresh
@@ -125,6 +126,8 @@ def init_module():
     #nothing to do!
     pass
 
+VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
+
 
 cdef class Encoder:
     cdef int frames
@@ -133,6 +136,7 @@ cdef class Encoder:
     cdef vpx_img_fmt_t pixfmt
     cdef int width
     cdef int height
+    cdef int max_threads
     cdef char* src_format
 
     def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options):    #@DuplicatedSignature
@@ -144,6 +148,11 @@ cdef class Encoder:
         assert src_format=="YUV420P"
         self.src_format = "YUV420P"
         self.pixfmt = get_vpx_colorspace(self.src_format)
+        try:
+            self.max_threads = max(0, min(32, int(options.get("threads", VPX_THREADS))))
+        except Exception, e:
+            log.warn("error parsing number of threads: %s", e)
+            self.max_threads =2
 
         codec_iface = vpx_codec_vp8_cx()
         self.cfg = <vpx_codec_enc_cfg_t *> xmemalign(sizeof(vpx_codec_enc_cfg_t))
@@ -160,6 +169,7 @@ cdef class Encoder:
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
 
         self.cfg.rc_target_bitrate = width * height * self.cfg.rc_target_bitrate / self.cfg.g_w / self.cfg.g_h
+        self.cfg.g_threads = self.max_threads
         self.cfg.g_w = width
         self.cfg.g_h = height
         self.cfg.g_error_resilient = 0
@@ -175,7 +185,8 @@ cdef class Encoder:
         return {"frames"    : self.frames,
                 "width"     : self.width,
                 "height"    : self.height,
-                "src_format": self.src_format}
+                "src_format": self.src_format,
+                "max_threads": self.max_threads}
 
     def get_encoding(self):
         return "vpx"
