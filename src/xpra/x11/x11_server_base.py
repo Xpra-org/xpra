@@ -61,6 +61,7 @@ class X11ServerBase(GTKServerBase):
     """
 
     def init(self, clobber, opts):
+        self.xsettings_enabled = opts.xsettings
         self.clobber = clobber
         self.x11_init()
         GTKServerBase.init(self, opts)
@@ -259,8 +260,11 @@ class X11ServerBase(GTKServerBase):
 
 
     def _process_server_settings(self, proto, packet):
-        self.update_server_settings(packet[1])
-
+        settings = packet[1]
+        if not self.xsettings_enabled:
+            log("ignoring xsettings update: %s", settings)
+            return
+        self.update_server_settings(settings)
 
     def update_server_settings(self, settings):
         old_settings = dict(self._settings)

@@ -172,6 +172,12 @@ def parse_cmdline(cmdline):
     group.add_option("--no-bell", action="store_false",
                       dest="bell", default=defaults.bell,
                       help="Disable forwarding of the system bell")
+    if os.name=="posix":
+        group.add_option("--no-xsettings", action="store_false",
+                          dest="xsettings", default=defaults.xsettings,
+                          help="Disable xsettings synchronization")
+    else:
+        hidden_options["xsettings"] =  False
     group.add_option("--no-mmap", action="store_false",
                       dest="mmap", default=defaults.mmap,
                       help="Disable memory mapped transfers for local connections")

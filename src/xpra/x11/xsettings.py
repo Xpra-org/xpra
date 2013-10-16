@@ -7,12 +7,13 @@
 import gobject
 import gtk
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.x11.gtk_x11.error import *
+from xpra.x11.gtk_x11.error import trap, XError
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 
 from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,          #@UnresolvedImport
+               remove_event_receiver,       #@UnresolvedImport
                get_pywindow,                #@UnresolvedImport
                get_xatom)                   #@UnresolvedImport
 
@@ -47,6 +48,7 @@ class XSettingsManager(object):
             return
         prop_set(self._window, XSETTINGS, XSETTINGS_TYPE, settings_blob)
 
+
 class XSettingsWatcher(gobject.GObject):
     __gsignals__ = {
         "xsettings-changed": no_arg_signal,
@@ -62,6 +64,9 @@ class XSettingsWatcher(gobject.GObject):
         self._root = self._clipboard.get_display().get_default_screen().get_root_window()
         add_event_receiver(self._root, self)
         self._add_watch()
+
+    def cleanup(self):
+        remove_event_receiver(self._root, self)
 
     def _owner(self):
         owner_x = X11Window.XGetSelectionOwner(self._selection)

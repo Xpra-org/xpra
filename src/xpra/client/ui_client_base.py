@@ -155,6 +155,7 @@ class UIXpraClient(XpraClientBase):
         self.readonly = False
         self.windows_enabled = True
         self.pings = False
+        self.xsettings_enabled = False
 
         self.client_supports_opengl = False
         self.client_supports_notifications = False
@@ -193,6 +194,7 @@ class UIXpraClient(XpraClientBase):
         self.session_name = opts.session_name
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.dpi = int(opts.dpi)
+        self.xsettings_enabled = opts.xsettings
 
         try:
             from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
@@ -270,7 +272,7 @@ class UIXpraClient(XpraClientBase):
     def cleanup(self):
         log("UIXpraClient.cleanup()")
         XpraClientBase.cleanup(self)
-        for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper):
+        for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras):
             if x is None:
                 continue
             if not hasattr(x, "cleanup"):

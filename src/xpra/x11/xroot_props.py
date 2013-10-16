@@ -7,7 +7,7 @@
 import gtk
 import gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver    #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver    #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_get
 
 from xpra.log import Logger
@@ -26,18 +26,21 @@ class XRootPropWatcher(gobject.GObject):
         self._root = gtk.gdk.get_default_root_window()
         add_event_receiver(self._root, self)
 
+    def cleanup(self):
+        remove_event_receiver(self._root, self)
+
     def do_xpra_property_notify_event(self, event):
         log("XRootPropWatcher.do_xpra_property_notify_event(%s) props=%s", event, self._props)
         if event.atom in self._props:
             self._notify(event.atom)
 
     def _notify(self, prop):
-        v = prop_get(gtk.gdk.get_default_root_window(),
-                     prop, "latin1", ignore_errors=True)
+        v = prop_get(self._root, prop, "latin1", ignore_errors=True)
         self.emit("root-prop-changed", prop, str(v))
 
     def notify_all(self):
         for prop in self._props:
             self._notify(prop)
+
 
 gobject.type_register(XRootPropWatcher)

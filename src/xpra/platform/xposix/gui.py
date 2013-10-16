@@ -60,7 +60,18 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
 class ClientExtras(object):
     def __init__(self, client):
         self.client = client
-        self.setup_xprops()
+        self._xsettings_watcher = None
+        self._root_props_watcher = None
+        if client.xsettings_enabled:
+            self.setup_xprops()
+
+    def cleanup(self):
+        if self._xsettings_watcher:
+            self._xsettings_watcher.cleanup()
+            self._xsettings_watcher = None
+        if self._root_props_watcher:
+            self._root_props_watcher.cleanup()
+            self._root_props_watcher = None
 
     def setup_xprops(self):
         self.ROOT_PROPS = {
