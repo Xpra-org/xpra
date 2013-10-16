@@ -76,7 +76,7 @@ if sys.version > '3':
         return level + ZLIB_FLAG, compress(bytes(packet, 'UTF-8'), level)
 else:
     def zcompress(packet, level):
-        return level + ZLIB_FLAG, compress(packet, level)
+        return level + ZLIB_FLAG, compress(str(packet), level)
 
 if sys.version_info[:2]>=(2,5):
     def unpack_header(buf):
