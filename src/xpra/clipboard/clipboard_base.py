@@ -475,7 +475,7 @@ class ClipboardProxy(gtk.Invisible):
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
-        debug("do_selection_clear_event(%s) have_token=%s, block_owner_change=%,s selection=%s", event, self._have_token, self._block_owner_change, self._selection)
+        debug("do_selection_clear_event(%s) have_token=%s, block_owner_change=%s selection=%s", event, self._have_token, self._block_owner_change, self._selection)
         self._selection_clear_events += 1
         #if greedy_client is set, do_owner_changed will fire the token
         #so don't bother sending it now (same if we don't have it)
