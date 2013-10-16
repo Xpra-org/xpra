@@ -234,7 +234,7 @@ class SessionInfo(gtk.Window):
         self.output_bytes_label = label()
         tb.new_row("Bytes Sent", self.output_bytes_label)
         self.compression_label = label()
-        tb.new_row("Compression Level", self.compression_label)
+        tb.new_row("Compression", self.compression_label)
         self.connection_type_label = label()
         tb.new_row("Connection Type", self.connection_type_label)
         self.input_encryption_label = label()
