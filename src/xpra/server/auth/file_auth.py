@@ -64,7 +64,7 @@ def load_auth_file():
         for line in data.splitlines():
             i += 1
             line = line.strip()
-            if len(line)==0:
+            if len(line)==0 or line.startswith("#"):
                 continue
             debug("line %s: %s", i, line)
             if line.find("|")<0:
