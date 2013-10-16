@@ -143,7 +143,7 @@ class ProxyServer(ServerCore):
 
         assert uid!=0 and gid!=0
         try:
-            process = ProxyProcess(uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, c, self.proxy_ended)
+            process = ProxyProcess(uid, gid, env_options, session_options, client_conn, client_state, cipher, encryption_key, server_conn, c, self.proxy_ended)
             debug("starting %s from pid=%s", process, os.getpid())
             process.start()
             debug("process started")
@@ -173,10 +173,12 @@ class ProxyServer(ServerCore):
 
 class ProxyProcess(Process):
 
-    def __init__(self, uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, caps, exit_cb):
+    def __init__(self, uid, gid, env_options, session_options, client_conn, client_state, cipher, encryption_key, server_conn, caps, exit_cb):
         Process.__init__(self, name=str(client_conn))
         self.uid = uid
         self.gid = gid
+        self.env_options = env_options
+        self.session_options = session_options
         self.client_conn = client_conn
         self.client_state = client_state
         self.cipher = cipher
@@ -222,12 +224,18 @@ class ProxyProcess(Process):
             os.setgid(self.gid)
         if os.getuid()!=self.uid:
             os.setuid(self.uid)
+        debug("ProxyProcess.run() new uid=%s, gid=%s", os.getuid(), os.getgid())
+
+        if self.env_options:
+            #TODO: whitelist env update?
+            os.environ.update(self.env_options)
 
         log.info("new proxy started for client %s and server %s", self.client_conn, self.server_conn)
 
         if not USE_THREADING:
             signal.signal(signal.SIGTERM, self.signal_quit)
             signal.signal(signal.SIGINT, self.signal_quit)
+            debug("registered signal handler %s", self.signal_quit)
 
         self.main_queue = Queue()
         #setup protocol wrappers:
@@ -236,12 +244,12 @@ class ProxyProcess(Process):
         self.client_protocol = Protocol(self, self.client_conn, self.process_client_packet, self.get_client_packet)
         self.client_protocol.restore_state(self.client_state)
         self.server_protocol = Protocol(self, self.server_conn, self.process_server_packet, self.get_server_packet)
-
+        self.server_protocol.enable_bencode()
         #server connection tweaks:
         self.server_protocol.large_packets.append("draw")
         self.server_protocol.large_packets.append("keymap-changed")
         self.server_protocol.large_packets.append("server-settings")
-        self.server_protocol.set_compression_level(0)
+        self.server_protocol.set_compression_level(self.session_options.get("compression_level", 0))
 
         debug("starting network threads")
         self.server_protocol.start()
@@ -260,9 +268,17 @@ class ProxyProcess(Process):
             self.exit_cb(self)
 
     def filter_client_caps(self, caps):
-        return self.filter_caps(caps, ("cipher", "digest", "mmap", "aliases"))
+        fc = self.filter_caps(caps, ("cipher", "digest", "mmap", "aliases", "compression"))
+        #add whitelist from session_options:
+        OPTION_WHITELIST = ("compression_level", )
+        for k,v in self.session_options.items():
+            if k in OPTION_WHITELIST:
+                fc[k] = v
+        return fc
 
     def filter_server_caps(self, caps):
+        if caps.get("rencode", False):
+            self.server_protocol.enable_rencode()
         return self.filter_caps(caps, "aliases")
 
     def filter_caps(self, caps, prefixes):
