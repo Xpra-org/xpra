@@ -46,11 +46,6 @@ def get_server_info(prefix=""):
                 info[prefix+x] = getattr(os, "get%s" % x)()
             except:
                 pass
-    try:
-        import Crypto
-        info[prefix+"pycrypto.version"] = Crypto.__version__
-    except:
-        pass
     info.update(get_platform_info(prefix))
     add_version_info(info, prefix)
     return info

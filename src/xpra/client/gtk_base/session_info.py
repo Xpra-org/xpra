@@ -20,6 +20,7 @@ from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_val
 from xpra.scripts.config import python_platform
 from xpra.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, TableBuilder, imagebutton
+from xpra.net.protocol import get_network_caps
 log = Logger()
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
@@ -618,11 +619,19 @@ class SessionInfo(gtk.Window):
             compression_str = " + ".join([x for x in ("zcompress", "lz4", "bencode", "rencode") if protocol_state.get(x, False)==True])
             compression_str += ", level %s" % level
         self.compression_label.set_text(compression_str)
-        suffix = ""
-        if c.info.lower()=="ssh":
-            suffix = " (%s)" % c.info
-        self.input_encryption_label.set_text((p.cipher_in_name or "None")+suffix)
-        self.output_encryption_label.set_text((p.cipher_out_name or "None")+suffix)
+        
+        def enclabel(label, cipher):
+            if not cipher:
+                info = "None"
+            else:
+                info = str(cipher)
+            if c.info.lower()=="ssh":
+                info += " (%s)" % c.info
+            if get_network_caps().get("pycrypto.fastmath", False):
+                info += " (fastmath available)"
+            label.set_text(info)
+        enclabel(self.input_encryption_label, p.cipher_in_name)
+        enclabel(self.output_encryption_label, p.cipher_out_name)
         return True
 
 

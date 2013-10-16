@@ -30,6 +30,14 @@ from xpra.daemon_thread import make_daemon_thread
 from xpra.net.bencode import bencode, bdecode
 from xpra.simple_stats import std_unit, std_unit_dec
 
+try:
+    from Crypto.Cipher import AES
+    from Crypto.Protocol.KDF import PBKDF2
+except Exception, e:
+    AES = None
+    PBKDF2 = None
+    debug("pycrypto is missing: %s", e)
+
 
 from zlib import compress, decompress, decompressobj
 try:
@@ -114,6 +122,17 @@ def get_network_caps():
                 "rencode"               : use_rencode,
                 "lz4"                   : use_lz4,
                }
+    try:
+        import Crypto
+        caps["pycrypto.version"] = Crypto.__version__
+        try:
+            from Crypto.PublicKey import _fastmath
+        except:
+            _fastmath = None
+        caps["pycrypto.fastmath"] = _fastmath is not None
+    except:
+        pass
+    
     if has_rencode:
         caps["rencode.version"] = rencode_version
     return caps
@@ -249,8 +268,7 @@ class Protocol(object):
         assert iterations>=100
         assert ciphername=="AES"
         assert password and iv
-        from Crypto.Cipher import AES
-        from Crypto.Protocol.KDF import PBKDF2
+        assert (AES and PBKDF2), "pycrypto is missing!"
         #stretch the password:
         block_size = 32         #fixme: can we derive this?
         secret = PBKDF2(password, key_salt, dkLen=block_size, count=iterations)
