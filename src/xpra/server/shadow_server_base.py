@@ -31,6 +31,9 @@ class RootWindowModel(object):
     def has_alpha(self):
         return False
 
+    def uses_XShm(self):
+        return False
+
     def acknowledge_changes(self):
         pass
 
