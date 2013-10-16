@@ -37,7 +37,8 @@ try:
     has_lz4 = True
     def lz4_compress(packet, level):
         return level + LZ4_FLAG, LZ4_compress(packet)
-except:
+except Exception, e:
+    debug("lz4 not found: %s", e)
     LZ4_compress, LZ4_uncompress = None, None
     has_lz4 = False
     def lz4_compress(packet, level):
