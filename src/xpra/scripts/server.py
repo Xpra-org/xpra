@@ -569,13 +569,18 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     from xpra.log import Logger
     log = Logger()
 
-    # Initialize the sockets before the display,
-    # That way, errors won't make us kill the Xvfb
-    # (which may not be ours to kill at that point)
-    sockets = setup_tcp_sockets(opts.bind_tcp)
-    socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group)
-    if socket:      #win32 returns None!
-        sockets.append(socket)
+    try:
+        # Initialize the sockets before the display,
+        # That way, errors won't make us kill the Xvfb
+        # (which may not be ours to kill at that point)
+        sockets = []
+        socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group)
+        if socket:      #win32 returns None!
+            sockets.append(socket)
+        sockets += setup_tcp_sockets(opts.bind_tcp)
+    except Exception, e:
+        log.error("cannot start server: failed to setup sockets: %s", e)
+        return 1
 
     # Do this after writing out the shell script:
     os.environ["DISPLAY"] = display_name
@@ -588,7 +593,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         try:
             xvfb = start_Xvfb(opts.xvfb, display_name)
         except OSError, e:
-            sys.stderr.write("Error starting Xvfb: %s\n" % (e,))
+            log.error("Error starting Xvfb: %s\n", e)
             return  1
         xvfb_pid = xvfb.pid
     elif clobber:
