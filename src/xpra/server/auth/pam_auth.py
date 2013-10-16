@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import sys
-import pwd
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log, debug
 
@@ -71,21 +70,6 @@ if check is None:
 
 
 class Authenticator(SysAuthenticator):
-
-    def __init__(self, username):
-        SysAuthenticator.__init__(self, username)
-        try:
-            self.pw = pwd.getpwnam(username)
-        except:
-            self.pw = None
-
-    def get_uid(self):
-        assert self.pw, "username not found"
-        return self.pw.pw_uid
-
-    def get_gid(self):
-        assert self.pw, "username not found"
-        return self.pw.pw_gid
 
     def check(self, password):
         if self.pw is None:

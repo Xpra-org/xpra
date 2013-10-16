@@ -22,6 +22,19 @@ class SysAuthenticator(object):
     def __init__(self, username):
         self.username = username
         self.salt = None
+        try:
+            import pwd
+            self.pw = pwd.getpwnam(username)
+        except:
+            self.pw = None
+
+    def get_uid(self):
+        assert self.pw, "username not found"
+        return self.pw.pw_uid
+
+    def get_gid(self):
+        assert self.pw, "username not found"
+        return self.pw.pw_gid
 
     def get_challenge(self):
         if self.salt is not None:
@@ -30,12 +43,6 @@ class SysAuthenticator(object):
         self.salt = get_hex_uuid()+get_hex_uuid()
         #we need the raw password, so tell the client to use "xor":
         return self.salt, "xor"
-
-    def get_uid(self):
-        raise NotImplementedError()
-
-    def get_gid(self):
-        raise NotImplementedError()
 
     def get_password(self):
         return None
@@ -66,9 +73,13 @@ class SysAuthenticator(object):
         return True
 
     def get_sessions(self):
-        sockdir = DotXpra(socket_dir, actual_username=self.username)
         uid = self.get_uid()
         gid = self.get_gid()
-        results = sockdir.sockets(check_uid=uid)
-        displays = [display for state, display in results if state==DotXpra.LIVE]
+        try:
+            sockdir = DotXpra(socket_dir, actual_username=self.username)
+            results = sockdir.sockets(check_uid=uid)
+            displays = [display for state, display in results if state==DotXpra.LIVE]
+        except Exception, e:
+            log.error("cannot get socker directory for %s: %s", self.username, e)
+            displays = []
         return uid, gid, displays, {}, {}
