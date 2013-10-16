@@ -288,6 +288,10 @@ class Protocol(object):
         info[prefix+"chunked_compression" + suffix] = self.chunked_compression
         info[prefix+"large_packets" + suffix] = self.large_packets
         info[prefix+"compression_level" + suffix] = self.compression_level
+        if self._compress==zcompress:
+            info[prefix+"compression" + suffix] = "zcompress"
+        elif self._compress==lz4_compress:
+            info[prefix+"compression" + suffix] = "lz4"
         info[prefix+"max_packet_size" + suffix] = self.max_packet_size
         for k,v in self.aliases.items():
             info[prefix+"alias." + k + suffix] = v
