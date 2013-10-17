@@ -280,16 +280,20 @@ class ProxyProcess(Process):
     def filter_server_caps(self, caps):
         if caps.get("rencode", False):
             self.server_protocol.enable_rencode()
-        return self.filter_caps(caps, "aliases")
+        return self.filter_caps(caps, ("aliases", ))
 
     def filter_caps(self, caps, prefixes):
         #removes caps that the proxy overrides / does not use:
         #(not very pythonic!)
         pcaps = {}
-        for k,v in caps.items():
+        removed = []
+        for k in caps.keys():
             skip = len([e for e in prefixes if k.startswith(e)])
             if skip==0:
-                pcaps[k] = v
+                pcaps[k] = caps[k]
+            else:
+                removed.append(k)
+        log("filtered out %s matching %s", removed, prefixes)
         #replace the network caps with the proxy's own:
         pcaps.update(get_network_caps())
         #then add the proxy info:
