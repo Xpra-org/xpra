@@ -118,9 +118,10 @@ cdef class Decoder:
     cdef vpx_img_fmt_t pixfmt
     cdef char* src_format
 
-    def init_context(self, width, height, colorspace):
+    def init_context(self, encoding, width, height, colorspace):
         cdef const vpx_codec_iface_t *codec_iface = vpx_codec_vp8_dx()
         cdef int flags = 0
+        assert encoding=="vpx"
         assert colorspace=="YUV420P"
         self.src_format = "YUV420P"
         self.pixfmt = get_vpx_colorspace(self.src_format)

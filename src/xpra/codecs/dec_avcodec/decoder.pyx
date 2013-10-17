@@ -78,6 +78,7 @@ cdef extern from "libavcodec/avcodec.h":
 
     AVPixelFormat PIX_FMT_NONE
     AVCodecID CODEC_ID_H264
+    AVCodecID CODEC_ID_VP8
 
     #init and free:
     void avcodec_register_all()
@@ -141,6 +142,18 @@ def init_colorspaces():
 def get_colorspaces():
     init_colorspaces()
     return COLORSPACES
+
+_CODECS = None
+def get_codecs():
+    global _CODECS
+    if _CODECS is None:
+        avcodec_register_all()
+        _CODECS = []
+        if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
+            _CODECS.append("x264")
+        if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
+            _CODECS.append("vpx")
+    return _CODECS
 
 
 #maps AVCodecContext to the Decoder that manages it
@@ -306,9 +319,12 @@ cdef class Decoder:
     cdef object weakref_images
     cdef AVFrame *frame                             #@DuplicatedSignature
     cdef int frames
+    cdef object encoding
 
-    def init_context(self, int width, int height, colorspace):
+    def init_context(self, encoding, int width, int height, colorspace):
         init_colorspaces()
+        assert encoding in ("vpx", "x264")
+        self.encoding = encoding
         assert colorspace in COLORSPACES, "invalid colorspace: %s" % colorspace
         self.colorspace = NULL
         for x in COLORSPACES:
@@ -326,10 +342,18 @@ cdef class Decoder:
 
         avcodec_register_all()
 
-        self.codec = avcodec_find_decoder(CODEC_ID_H264)
-        if self.codec==NULL:
-            error("codec H264 not found!")
-            return  False
+        if self.encoding=="x264":
+            self.codec = avcodec_find_decoder(CODEC_ID_H264)
+            if self.codec==NULL:
+                error("codec H264 not found!")
+                return  False
+        else:
+            assert self.encoding=="vpx"
+            self.codec = avcodec_find_decoder(CODEC_ID_VP8)
+            if self.codec==NULL:
+                error("codec VP8 not found!")
+                return  False
+
         #from here on, we have to call clean_decoder():
         self.codec_ctx = avcodec_alloc_context3(self.codec)
         if self.codec_ctx==NULL:
@@ -436,7 +460,7 @@ cdef class Decoder:
         return self.codec_ctx.height
 
     def get_type(self):                             #@DuplicatedSignature
-        return "x264"
+        return self.encoding
 
     def decompress_image(self, input, options):
         cdef unsigned char * padded_buf = NULL

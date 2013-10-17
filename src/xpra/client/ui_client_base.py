@@ -21,7 +21,7 @@ from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
-from xpra.codecs.loader import codec_versions, has_codec, PREFERED_ENCODING_ORDER
+from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
@@ -313,7 +313,6 @@ class UIXpraClient(XpraClientBase):
         core_encodings = ["rgb24"]
         for modules, encodings in {
               ("dec_vpx", "csc_swscale")        : ["vpx"],
-              ("dec_avcodec", "csc_swscale")    : ["x264"],
               ("dec_webp",)                     : ["webp"],
               ("PIL",)                          : ["png", "png/L", "png/P", "jpeg"],
                }.items():
@@ -324,6 +323,17 @@ class UIXpraClient(XpraClientBase):
             for encoding in encodings:
                 if encoding not in core_encodings:
                     core_encodings.append(encoding)
+        #special case for avcodec which may be able to decode both vpx and x264:
+        #(both of which "need" swscale - until we get more clever
+        # and test the availibility of GL windows)
+        if has_codec("csc_swscale"):        #or has_codec("csc_opencl"): (see window_backing_base)
+            avcodec_module = get_codec("dec_avcodec")
+            if avcodec_module:
+                encodings = avcodec_module.get_codecs()
+                log("avcodec supports %s", encodings)
+                for encoding in encodings:
+                    if x not in core_encodings:
+                        core_encodings.append(encoding)
         log("get_core_encodings()=%s", core_encodings)
         return core_encodings
 

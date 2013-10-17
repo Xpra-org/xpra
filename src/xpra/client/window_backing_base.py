@@ -17,7 +17,7 @@ from xpra.net.mmap_pipe import mmap_read
 from xpra.net.protocol import has_lz4, LZ4_uncompress
 from xpra.os_util import BytesIOClass, bytestostr
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
-from xpra.codecs.loader import get_codec
+from xpra.codecs.loader import get_codec, has_codec
 
 
 #logging in the draw path is expensive:
@@ -54,6 +54,18 @@ def load_csc_options():
             except:
                 log.warn("failed to load csc module %s", csc_module, exc_info=True)
 
+VPX_DECODER = None
+def load_vpx_decoder():
+    global VPX_DECODER
+    if has_codec("dec_vpx"):
+        VPX_DECODER = "dec_vpx"
+    else:
+        #try dec_avcodec:
+        avcodec_module = get_codec("dec_avcodec")
+        if avcodec_module and "vpx" in avcodec_module.get_codecs():
+            VPX_DECODER = "dec_avcodec"
+
+
 def fire_paint_callbacks(callbacks, success):
     for x in callbacks:
         try:
@@ -70,6 +82,7 @@ see CairoBacking and GTKWindowBacking for actual implementations
 class WindowBackingBase(object):
     def __init__(self, wid, idle_add):
         load_csc_options()
+        load_vpx_decoder()
         self.wid = wid
         self.idle_add = idle_add
         self._has_alpha = False
@@ -281,6 +294,7 @@ class WindowBackingBase(object):
         raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s) in %s" % (src_format, src_width, src_height, " or ".join(dst_format_options), dst_width, dst_height, CSC_OPTIONS))
 
     def paint_with_video_decoder(self, decoder_name, coding, img_data, x, y, width, height, options, callbacks):
+        log.info("paint_with_video_decoder(%s)", decoder_name)
         assert x==0 and y==0
         decoder_module = get_codec(decoder_name)
         assert decoder_module, "decoder module not found for %s" % decoder_name
@@ -351,7 +365,7 @@ class WindowBackingBase(object):
                 if DRAW_DEBUG:
                     log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, decoder_colorspace)
                 self._video_decoder = factory()
-                self._video_decoder.init_context(enc_width, enc_height, decoder_colorspace)
+                self._video_decoder.init_context(coding, enc_width, enc_height, decoder_colorspace)
                 if DRAW_DEBUG:
                     log.info("paint_with_video_decoder: info=%s", self._video_decoder.get_info())
 
@@ -456,7 +470,8 @@ class WindowBackingBase(object):
         elif coding == "x264":
             self.paint_with_video_decoder("dec_avcodec", "x264", img_data, x, y, width, height, options, callbacks)
         elif coding == "vpx":
-            self.paint_with_video_decoder("dec_vpx", "vpx", img_data, x, y, width, height, options, callbacks)
+            assert VPX_DECODER, "no vpx decoder available"
+            self.paint_with_video_decoder(VPX_DECODER, "vpx", img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)
         elif coding[:3]=="png" or coding=="jpeg":
