@@ -917,14 +917,14 @@ class UIXpraClient(XpraClientBase):
             r += " (r%s)" % self._remote_revision
         log.info("server: %s, Xpra version %s", i, r)
         if c.boolget("proxy"):
-            log.info("via %s proxy version %s")
             proxy_hostname = c.strget("proxy.hostname")
             proxy_platform = c.strget("proxy.platform")
             proxy_release = c.strget("proxy.platform.release")
             proxy_version = c.strget("proxy.version")
-            msg = "via %s proxy version %s" % (platform_name(proxy_platform, proxy_release), std(proxy_version))
+            msg = "via: %s proxy version %s" % (platform_name(proxy_platform, proxy_release), std(proxy_version))
             if proxy_hostname:
                 msg += " on '%s'" % std(proxy_hostname)
+            log.info(msg)
         #process the rest from the UI thread:
         self.idle_add(self.process_ui_capabilities, c)
 
