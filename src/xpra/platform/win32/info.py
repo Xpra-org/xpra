@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 def get_sys_info():
-    #TODO: pywin32 code here
     return  {}
 
 def get_username():

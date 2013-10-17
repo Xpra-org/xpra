@@ -77,7 +77,7 @@ cdef class CSCPixelFormat:
             self.height_mult[i] = height_mult[i]
         self.pix_fmt = pix_fmt
 
-#TODO: use a class!
+#we could use a class to represent these options:
 COLORSPACES = []
 #keeping this array in scope ensures the strings don't go away!
 FORMAT_OPTIONS = [

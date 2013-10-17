@@ -1394,7 +1394,7 @@ class UIXpraClient(XpraClientBase):
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if window:
-            #TODO: this is gtk2 only... other backends should implement present..
+            #Note: this is gtk2 only... other backends should implement present..
             window.present()
 
 

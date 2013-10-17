@@ -22,7 +22,6 @@ WAV = "wav"
 OPUS = "opus"
 SPEEX = "speex"
 WAVPACK = "wavpack"
-#TODO: ac3, amr, dca?
 
 #format: encoder, formatter, decoder, parser
 CODECS = {

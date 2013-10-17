@@ -55,7 +55,7 @@ class Win32Tray(TrayBase):
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
-        #TODO: use native code somehow
+        #TODO: use native code somehow to avoid saving to file
         import os
         from gtk import gdk
         try:

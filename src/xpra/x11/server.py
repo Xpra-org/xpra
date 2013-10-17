@@ -345,7 +345,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._damage(window, 0, 0, w, h, options={"min_delay" : 50})
                 return
             log("found existing model %s (but no longer managed!) for %s", type(window), hex(xid))
-            #TODO: we could try to re-use the existing model and window ID,
+            #we could try to re-use the existing model and window ID,
             #but for now it is just easier to create a new one:
             self._lost_window(window)
         tray_window = get_tray_window(raw_window)

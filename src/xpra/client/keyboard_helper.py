@@ -178,7 +178,7 @@ class KeyboardHelper(object):
             self.source_remove(timer)
             del self.keys_pressed[key]
         elif pressed and key not in self.keys_pressed:
-            """ we must ping the server regularly for as long as the key is still pressed: """
+            """ we must send packets to the server regularly for as long as the key is still pressed: """
             #TODO: we can have latency measurements (see ping).. use them?
             LATENCY_JITTER = 100
             MIN_DELAY = 5

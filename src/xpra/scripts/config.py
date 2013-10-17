@@ -352,9 +352,6 @@ OPTIONS_VALIDATION = {
 CLONES = {
             "quality"       : "jpeg-quality",
           }
-#TODO:
-#"speaker-codec"     : [""],
-#"microphone-codec"  : [""],
 
 #these options should not be specified in config files:
 NO_FILE_OPTIONS = ["daemon"]

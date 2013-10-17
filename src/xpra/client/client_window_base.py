@@ -164,7 +164,7 @@ class ClientWindowBase(ClientWidgetBase):
                 self.apply_geometry_hints(hints)
             except:
                 self.error("with hints=%s", hints, exc_info=True)
-            #TODO:
+            #TODO: handle gravity
             #gravity = size_metadata.get("gravity")
 
         if "icon" in metadata:
