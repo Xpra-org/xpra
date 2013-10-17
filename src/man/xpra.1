@@ -24,6 +24,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-cursors\fP]
 [\fB\-\-no\-notifications\fP]
+[\fB\-\-no\-xsettings\fP]
 [\fB\-\-no\-system\-tray\fP]
 [\fB\-\-no\-bell\fP]
 [\fB\-\-no\-speaker\fP]
@@ -48,6 +49,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-cursors\fP]
 [\fB\-\-no\-notifications\fP]
+[\fB\-\-no\-xsettings\fP]
 [\fB\-\-no\-system\-tray\fP]
 [\fB\-\-no\-bell\fP]
 [\fB\-\-no\-keyboard\-sync\fP]
@@ -495,6 +497,10 @@ System notifications require the xpra server to have its own instance
 of a dbus daemon, if it is missing a warning will be printed on
 startup. This switch disables the feature entirely, and avoids
 the warning.
+.TP
+\fB\-\-no\-xsettings\fP
+Disable xsettings synchronization. Xsettings are only forwarded
+from posix clients connecting to real posix servers (not shadows).
 .TP
 \fB\-\-no\-system\-tray\fP
 Disable forwarding of system tray icons.
