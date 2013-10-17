@@ -24,10 +24,13 @@ class XRootPropWatcher(gobject.GObject):
         gobject.GObject.__init__(self)
         self._props = props
         self._root = gtk.gdk.get_default_root_window()
+        self._saved_event_mask = self._root.get_events()
+        self._root.set_events(self._saved_event_mask | gtk.gdk.PROPERTY_CHANGE_MASK)
         add_event_receiver(self._root, self)
 
     def cleanup(self):
         remove_event_receiver(self._root, self)
+        self._root.set_events(self._saved_event_mask)
 
     def do_xpra_property_notify_event(self, event):
         log("XRootPropWatcher.do_xpra_property_notify_event(%s) props=%s", event, self._props)
@@ -35,7 +38,9 @@ class XRootPropWatcher(gobject.GObject):
             self._notify(event.atom)
 
     def _notify(self, prop):
-        v = prop_get(self._root, prop, "latin1", ignore_errors=True)
+        ptype = "latin1"
+        v = prop_get(self._root, prop, ptype, ignore_errors=True)
+        log("XRootPropWatcher._notify(%s) value(%s)=%s", prop, ptype, v)
         self.emit("root-prop-changed", prop, str(v))
 
     def notify_all(self):
