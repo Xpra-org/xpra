@@ -21,6 +21,7 @@ from xpra.scripts.main import parse_display_name, connect_to
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol import Protocol, new_cipher_caps, get_network_caps
 from xpra.os_util import Queue, SIGNAMES
+from xpra.util import typedict
 
 
 PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
@@ -336,7 +337,7 @@ class ProxyProcess(Process):
         #server wants a packet
         p = self.server_packets.get()
         debug("sending to server: %s", p[0])
-        return p,
+        return p, None, None, self.server_packets.qsize()>0
 
     def queue_client_packet(self, packet):
         debug("queueing client packet: %s", packet[0])
@@ -347,7 +348,7 @@ class ProxyProcess(Process):
         #server wants a packet
         p = self.client_packets.get()
         debug("sending to client: %s", p[0])
-        return p,
+        return p, None, None, self.client_packets.qsize()>0
 
     def process_server_packet(self, proto, packet):
         packet_type = packet[0]
@@ -356,7 +357,11 @@ class ProxyProcess(Process):
             self.stop("server connection lost", proto)
             return
         elif packet_type=="hello":
-            caps = self.filter_server_caps(packet[1])
+            c = typedict(packet[1])
+            maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
+            proto.max_packet_size = maxw*maxh*4
+
+            caps = self.filter_server_caps(c)
             #add new encryption caps:
             if self.cipher:
                 auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key)
