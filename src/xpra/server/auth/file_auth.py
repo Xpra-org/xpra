@@ -14,7 +14,7 @@ import sys
 import hmac
 
 from xpra.os_util import get_hex_uuid
-from xpra.util import merge
+from xpra.util import xor
 from xpra.dotxpra import DotXpra
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -148,7 +148,7 @@ class Authenticator(object):
         if client_salt is None:
             salt = self.salt
         else:
-            salt = merge(self.salt, client_salt)
+            salt = xor(self.salt, client_salt)
         self.salt = None
         entry = self.get_entry()
         if entry is None:

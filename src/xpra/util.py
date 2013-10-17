@@ -93,6 +93,3 @@ def nonl(x):
 
 def xor(s1,s2):    
     return ''.join(chr(ord(a) ^ ord(b)) for a,b in zip(s1,s2))
-
-def merge(s1, s2):
-    return ''.join([a+b for (a,b) in zip(s1,s2)])

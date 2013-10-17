@@ -5,7 +5,6 @@
 
 from xpra.dotxpra import DotXpra
 from xpra.util import xor
-from xpra.util import merge
 from xpra.os_util import get_hex_uuid
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -58,7 +57,7 @@ class SysAuthenticator(object):
         if client_salt is None:
             salt = self.salt
         else:
-            salt = merge(self.salt, client_salt)
+            salt = xor(self.salt, client_salt)
         self.salt = None
         password = xor(challenge_response, salt)
         #warning: enabling logging here would log the actual system password!
