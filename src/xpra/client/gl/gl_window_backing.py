@@ -185,8 +185,9 @@ class GLPixmapBacking(GTK2WindowBacking):
             glLoadIdentity()
             glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
             glMatrixMode(GL_MODELVIEW)
-            #TODO glEnableClientState(GL_VERTEX_ARRAY)
-            #TODO glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+            # Could be more optimal to use vertex arrays:
+            # glEnableClientState(GL_VERTEX_ARRAY)
+            # glEnableClientState(GL_TEXTURE_COORD_ARRAY)
 
             # Clear to white
             glClearColor(1.0, 1.0, 1.0, 1.0)
