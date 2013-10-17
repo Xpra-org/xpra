@@ -8,7 +8,7 @@ import gtk
 import gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver    #@UnresolvedImport
-from xpra.x11.gtk_x11.prop import prop_get
+from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter   #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger()
@@ -16,7 +16,7 @@ log = Logger()
 
 class XRootPropWatcher(gobject.GObject):
     __gsignals__ = {
-        "root-prop-changed": (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gobject.TYPE_STRING,)),
+        "root-prop-changed": (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, )),
         "xpra-property-notify-event": n_arg_signal(1),
         }
 
@@ -26,6 +26,7 @@ class XRootPropWatcher(gobject.GObject):
         self._root = gtk.gdk.get_default_root_window()
         self._saved_event_mask = self._root.get_events()
         self._root.set_events(self._saved_event_mask | gtk.gdk.PROPERTY_CHANGE_MASK)
+        init_x11_filter()
         add_event_receiver(self._root, self)
 
     def cleanup(self):
@@ -33,19 +34,17 @@ class XRootPropWatcher(gobject.GObject):
         self._root.set_events(self._saved_event_mask)
 
     def do_xpra_property_notify_event(self, event):
-        log("XRootPropWatcher.do_xpra_property_notify_event(%s) props=%s", event, self._props)
+        log("XRootPropWatcher.do_xpra_property_notify_event(%s)", event)
         if event.atom in self._props:
-            self._notify(event.atom)
+            self.do_notify(event.atom)
 
-    def _notify(self, prop):
-        ptype = "latin1"
-        v = prop_get(self._root, prop, ptype, ignore_errors=True)
-        log("XRootPropWatcher._notify(%s) value(%s)=%s", prop, ptype, v)
-        self.emit("root-prop-changed", prop, str(v))
+    def do_notify(self, prop):
+        log("XRootPropWatcher.do_notify(%s)", prop)
+        self.emit("root-prop-changed", prop)
 
     def notify_all(self):
         for prop in self._props:
-            self._notify(prop)
+            self.do_notify(prop)
 
 
 gobject.type_register(XRootPropWatcher)

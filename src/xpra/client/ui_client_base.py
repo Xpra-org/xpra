@@ -90,6 +90,7 @@ class UIXpraClient(XpraClientBase):
         self.server_info_request = False
         self.server_last_info = None
         self.info_request_pending = False
+        self.screen_size_change_pending = False
         self.encoding = self.get_encodings()[0]
 
         #sound:
@@ -451,6 +452,26 @@ class UIXpraClient(XpraClientBase):
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
         return ClientTray(client, wid, w, h, tray_widget, self.mmap_enabled, self.mmap)
+
+    def screen_size_changed(self, *args):
+        log("screen_size_changed(%s) pending=%s", args, self.screen_size_change_pending)
+        if self.screen_size_change_pending:
+            return
+        def update_screen_size():
+            self.screen_size_change_pending = False
+            root_w, root_h = self.get_root_size()
+            ss = self.get_screen_sizes()
+            log("update_screen_size() sizes=%s", ss)
+            log.info("sending updated screen size to server: %sx%s, screen sizes: %s", root_w, root_h, ss)
+            self.send("desktop_size", root_w, root_h, ss)
+            #update the max packet size (may have gone up):
+            self.set_max_packet_size()
+        #update via timer so the data is more likely to be final (up to date) when we query it,
+        #some properties (like _NET_WORKAREA for X11 clients via xposix "ClientExtras") may
+        #trigger multiple calls to screen_size_changed, delayed by some amount
+        #(sometimes up to 1s..)
+        self.screen_size_change_pending = True
+        self.timeout_add(1000, update_screen_size)
 
     def get_screen_sizes(self):
         raise Exception("override me!")

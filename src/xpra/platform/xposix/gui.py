@@ -7,10 +7,11 @@
 from xpra.log import Logger
 log = Logger()
 
+import gtk.gdk
 try:
     from xpra.x11.gtk_x11.error import trap, XError
     from xpra.x11.gtk_x11.gdk_bindings import get_xwindow   #@UnresolvedImport
-    from xpra.x11.bindings import X11KeyboardBindings   #@UnresolvedImport
+    from xpra.x11.bindings import X11KeyboardBindings       #@UnresolvedImport
     device_bell = X11KeyboardBindings().device_bell
 except:
     device_bell = None
@@ -66,6 +67,7 @@ class ClientExtras(object):
             self.setup_xprops()
 
     def cleanup(self):
+        log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
         if self._xsettings_watcher:
             self._xsettings_watcher.cleanup()
             self._xsettings_watcher = None
@@ -74,23 +76,24 @@ class ClientExtras(object):
             self._root_props_watcher = None
 
     def setup_xprops(self):
-        self.ROOT_PROPS = {
-            "RESOURCE_MANAGER": "resource-manager"
-            }
-        def setup_xprop_xsettings(client):
-            log.debug("setup_xprop_xsettings(%s)", client)
-            try:
-                from xpra.x11.xsettings import XSettingsWatcher
-                from xpra.x11.xroot_props import XRootPropWatcher
-                self._xsettings_watcher = XSettingsWatcher()
-                self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
-                self._handle_xsettings_changed()
-                self._root_props_watcher = XRootPropWatcher(self.ROOT_PROPS.keys())
-                self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
-                self._root_props_watcher.notify_all()
-            except ImportError, e:
-                log.error("failed to load X11 properties/settings bindings: %s - root window properties will not be propagated", e)
-        self.client.connect("handshake-complete", setup_xprop_xsettings)
+        #wait for handshake to complete:
+        self.client.connect("handshake-complete", self.do_setup_xprops)
+
+    def do_setup_xprops(self, *args):
+        log.debug("do_setup_xprops(%s)", args)
+        ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA"]
+        try:
+            from xpra.x11.xsettings import XSettingsWatcher
+            from xpra.x11.xroot_props import XRootPropWatcher
+            self._xsettings_watcher = XSettingsWatcher()
+            self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
+            self._handle_xsettings_changed()
+            self._root_props_watcher = XRootPropWatcher(ROOT_PROPS)
+            self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
+            #ensure we get the initial value:
+            self._root_props_watcher.do_notify("RESOURCE_MANAGER")
+        except ImportError, e:
+            log.error("failed to load X11 properties/settings bindings: %s - root window properties will not be propagated", e)
 
     def _handle_xsettings_changed(self, *args):
         try:
@@ -102,8 +105,18 @@ class ClientExtras(object):
         if blob is not None:
             self.client.send("server-settings", {"xsettings-blob": blob})
 
-    def _handle_root_prop_changed(self, obj, prop, value):
-        log("root_prop_changed: %s=%s", prop, value)
-        assert prop in self.ROOT_PROPS
-        if value is not None and self.client.xsettings_tuple:
-            self.client.send("server-settings", {self.ROOT_PROPS[prop]: value.encode("utf-8")})
+    def _handle_root_prop_changed(self, obj, prop):
+        log("root_prop_changed(%s, %s)", obj, prop)
+        if prop=="RESOURCE_MANAGER":           
+            if not self.client.xsettings_tuple:
+                log.warn("xsettings tuple format not supported, update ignored")
+                return
+            root = gtk.gdk.get_default_root_window()
+            from xpra.x11.gtk_x11.prop import prop_get
+            value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
+            if value is not None:
+                self.client.send("server-settings", {"resource-manager" : value.encode("utf-8")})
+        elif prop=="_NET_WORKAREA":
+            self.client.screen_size_changed("from %s event" % self._root_props_watcher)
+        else:
+            log.error("unknown property %s", prop)

@@ -1033,6 +1033,11 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     return GDK_FILTER_CONTINUE
 
 
+_INIT_X11_FILTER_DONE = False
 def init_x11_filter():
+    global _INIT_X11_FILTER_DONE
+    if _INIT_X11_FILTER_DONE:
+        return
     init_x11_events()
     gdk_window_add_filter(<cGdkWindow*>0, x_event_filter, <void*>0)
+    _INIT_X11_FILTER_DONE = True

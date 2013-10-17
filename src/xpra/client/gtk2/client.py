@@ -219,7 +219,7 @@ class XpraClient(GTKXpraClient):
             i=0
             while i<display.get_n_screens():
                 screen = display.get_screen(i)
-                screen.connect("size-changed", self._screen_size_changed)
+                screen.connect("size-changed", self.screen_size_changed)
                 i += 1
         #if server supports it, enable UI thread monitoring workaround when needed:
         if self.suspend_resume:
@@ -231,23 +231,6 @@ class XpraClient(GTKXpraClient):
             w.add_resume_callback(UI_resumed)
             w.add_fail_callback(UI_failed)
 
-
-    def _screen_size_changed(self, *args):
-        def update_size(current=None):
-            root_w, root_h = self.get_root_size()
-            ss = self.get_screen_sizes()
-            log("update_size(%s) sizes=%s", current, ss)
-            if current is not None and current==ss:
-                #unchanged
-                return
-            log.info("sending updated screen size to server: %sx%s, screen sizes: %s", root_w, root_h, ss)
-            self.send("desktop_size", root_w, root_h, ss)
-            #update the max packet size (may have gone up):
-            self.set_max_packet_size()
-            #check again soon:
-            gobject.timeout_add(1000, update_size, ss)
-        #update via idle_add so the data is actually up to date when we query it!
-        self.idle_add(update_size)
 
     def get_screen_sizes(self):
         display = gdk.display_get_default()
