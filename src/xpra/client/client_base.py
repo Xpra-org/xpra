@@ -21,7 +21,7 @@ from xpra.version_util import version_compat_check, add_version_info, get_platfo
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict, merge
+from xpra.util import typedict, xor
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -351,7 +351,7 @@ class XpraClientBase(object):
             digest = packet[3]
             client_salt = get_hex_uuid()
             #TODO: use some key stretching algorigthm? (meh)
-            salt = merge(salt, client_salt)
+            salt = xor(salt, client_salt)
         if digest=="hmac":
             import hmac
             challenge_response = hmac.HMAC(password, salt).hexdigest()
@@ -360,7 +360,6 @@ class XpraClientBase(object):
             if not self._protocol.cipher_out and not ALLOW_UNENCRYPTED_PASSWORDS:
                 self.warn_and_quit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest)
                 return
-            from xpra.util import xor
             challenge_response = xor(password, salt)
         else:
             self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest)
