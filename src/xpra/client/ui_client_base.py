@@ -871,10 +871,10 @@ class UIXpraClient(XpraClientBase):
                     self.quit(EXIT_MMAP_TOKEN_FAILURE)
                     return
         self.server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
-        self.server_encodings = c.listget("encodings")
-        self.server_encodings_with_speed = c.listget("encodings.with_speed", ("x264",)) #old servers only supported x264
-        self.server_encodings_with_quality = c.listget("encodings.with_quality", ("jpeg", "webp", "x264"))
-        self.server_encodings_with_lossless_mode = c.listget("encodings.with_lossless_mode", ())
+        self.server_encodings = c.strlistget("encodings")
+        self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("x264",)) #old servers only supported x264
+        self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "x264"))
+        self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
         self.change_quality = c.boolget("change-quality")
         self.change_min_quality = c.boolget("change-min-quality")
         self.change_speed = c.boolget("change-speed")
@@ -889,9 +889,9 @@ class UIXpraClient(XpraClientBase):
         self.toggle_cursors_bell_notify = c.boolget("toggle_cursors_bell_notify")
         self.toggle_keyboard_sync = c.boolget("toggle_keyboard_sync")
 
-        self.server_max_desktop_size = c.listget("max_desktop_size")
         self.server_display = c.strget("display")
-        self.server_actual_desktop_size = c.listget("actual_desktop_size")
+        self.server_max_desktop_size = c.intpair("max_desktop_size")
+        self.server_actual_desktop_size = c.intpair("actual_desktop_size")
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.server_randr = c.boolget("resize_screen")
         log.debug("server has randr: %s", self.server_randr)
@@ -946,8 +946,8 @@ class UIXpraClient(XpraClientBase):
         #sound:
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.server_pulseaudio_server = c.strget("sound.pulseaudio.server")
-        self.server_sound_decoders = c.listget("sound.decoders", [])
-        self.server_sound_encoders = c.listget("sound.encoders", [])
+        self.server_sound_decoders = c.strlistget("sound.decoders", [])
+        self.server_sound_encoders = c.strlistget("sound.encoders", [])
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
@@ -959,7 +959,7 @@ class UIXpraClient(XpraClientBase):
         #if self.server_sound_receive and self.microphone_allowed:
         #    self.start_sending_sound()
 
-        self.key_repeat_delay, self.key_repeat_interval = c.listget("key_repeat", (-1,-1))
+        self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1,-1))
         self.emit("handshake-complete")
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")

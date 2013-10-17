@@ -480,11 +480,11 @@ class ServerBase(ServerCore):
             self._clipboard_helper.set_want_targets_client(want_targets)
         #so only activate this feature afterwards:
         self.keyboard_sync = c.boolget("keyboard_sync", True)
-        key_repeat = c.listget("key_repeat", None)
+        key_repeat = c.intpair("key_repeat", None)
         self.set_keyboard_repeat(key_repeat)
 
         #always clear modifiers before setting a new keymap
-        ss.make_keymask_match(c.listget("modifiers", []))
+        ss.make_keymask_match(c.strlistget("modifiers", []))
         self.set_keymap(ss)
 
         #send_hello will take care of sending the current and max screen resolutions

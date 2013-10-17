@@ -45,11 +45,29 @@ class typedict(dict):
         assert type(v)==dict, "expected a dict value for %s but got %s" % (k, type(v))
         return v
 
-    def listget(self, k, default_value=[]):
+    def intpair(self, k, default_value=None):
+        v = self.intlistget(k)
+        if v is None:
+            return default_value
+        assert len(v)==2, "%s is not a pair of numbers: %s" % (k, len(v))
+        return v
+
+    def strlistget(self, k, default_value=[]):
+        return self.listget(k, default_value, str)
+
+    def intlistget(self, k, default_value=[]):
+        return self.listget(k, default_value, int)
+
+    def listget(self, k, default_value=[], item_type=None, max_items=None):
         v = self.capsget(k, default_value)
         if v is None:
             return None
         assert type(v) in (list, tuple), "expected a list or tuple value for %s but got %s" % (k, type(v))
+        if item_type:
+            for x in v:
+                assert type(x)==item_type, "invalid item type for %s %s: expected %s but got %s" % (type(v), k, item_type, type(x))
+        if max_items is not None:
+            assert len(v)<=max_items, "too many items in %s %s: maximum %s allowed, but got %s" % (type(v), k, max_items, len(v))
         return v
 
 
