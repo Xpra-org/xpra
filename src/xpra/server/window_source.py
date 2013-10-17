@@ -581,7 +581,7 @@ class WindowSource(object):
             debug("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
             return  coding
         if has_alpha and self.supports_transparency:
-            if current_encoding in ("png", "rgb32", "webp"):
+            if current_encoding in ("png", "png/P", "png/L", "rgb32", "webp"):
                 return current_encoding
             if current_encoding=="rgb":
                 encs = ("rgb32", "png", "webp")
@@ -1042,18 +1042,33 @@ class WindowSource(object):
             client_options["quality"] = q
         else:
             assert coding in ("png", "png/P", "png/L"), "unsupported png encoding: %s" % coding
+            if coding in ("png/L", "png/P") and self.supports_transparency and rgb=="RGBA":
+                #grab alpha channel (the last one):
+                alpha = im.split()[-1]
+                #convert to simple on or off mask:
+                #set all pixel values below 128 to 255, and the rest to 0
+                mask = PIL.Image.eval(alpha, lambda a: 255 if a <=128 else 0)
+            else:
+                #no transparency
+                mask = None
             if coding=="png/L":
-                im = im.convert("L", palette=PIL.Image.ADAPTIVE)
+                im = im.convert("L", palette=PIL.Image.ADAPTIVE, colors=255)
                 bpp = 8
             elif coding=="png/P":
                 #I wanted to use the "better" adaptive method,
                 #but this does NOT work (produces a black image instead):
                 #im.convert("P", palette=Image.ADAPTIVE)
-                im = im.convert("P", palette=PIL.Image.WEB)
+                im = im.convert("P", palette=PIL.Image.WEB, colors=255)
                 bpp = 8
+            if mask:
+                # paste the alpha mask to the color of index 255
+                im.paste(255, mask)
             kwargs = im.info
             if PIL_CAN_OPTIMIZE and optimize is True:
                 kwargs["optimize"] = optimize
+            if mask is not None:
+                client_options["transparency"] = 255
+                kwargs["transparency"] = 255
             im.save(buf, "PNG", **kwargs)
         debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
         data = buf.getvalue()

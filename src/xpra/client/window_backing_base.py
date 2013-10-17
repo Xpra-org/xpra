@@ -163,8 +163,11 @@ class WindowBackingBase(object):
         img = PIL.Image.open(buf)
         assert img.mode in ("L", "P", "RGB", "RGBA"), "invalid image mode: %s" % img.mode
         if img.mode in ("P", "L"):
-            #TODO: use RGBA for images with transparency
-            img = img.convert("RGB")
+            transparency = options.get("transparency", -1)
+            if transparency>=0:
+                img = img.convert("RGBA")
+            else:
+                img = img.convert("RGB")
         raw_data = img.tostring("raw", img.mode)
         if img.mode=="RGB":
             #PIL flattens the data to a continuous straightforward RGB format:
