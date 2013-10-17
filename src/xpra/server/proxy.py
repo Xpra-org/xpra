@@ -11,6 +11,14 @@ log = Logger()
 from xpra.net.bytestreams import untilConcludes
 
 class XpraProxy(object):
+    """
+        This is the proxy command that runs
+        when one uses the hidden subcommand
+        "xpra _proxy"
+        It simply forwards stdin/stdout to
+        the server socket.
+    """
+
     def __init__(self, client_conn, server_conn):
         self._client_conn = client_conn
         self._server_conn = server_conn

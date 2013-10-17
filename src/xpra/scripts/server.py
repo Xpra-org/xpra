@@ -622,7 +622,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         app.init_sockets(sockets)
     elif proxying:
         xvfb_pid = None
-        from xpra.server.auth_proxy import ProxyServer
+        from xpra.server.proxy_server import ProxyServer
         app = ProxyServer()
         app.init(opts)
         app.init_sockets(sockets)
