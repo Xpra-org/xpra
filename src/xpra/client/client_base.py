@@ -407,10 +407,13 @@ class XpraClientBase(object):
         if not self.password_sent and self.password_file:
             self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
             return
-        self.server_capabilities = packet[1]
-        log("processing hello from server: %s", self.server_capabilities)
-        c = typedict(self.server_capabilities)
-        self.parse_server_capabilities(c)
+        try:
+            self.server_capabilities = packet[1]
+            log("processing hello from server: %s", self.server_capabilities)
+            c = typedict(self.server_capabilities)
+            self.parse_server_capabilities(c)
+        except Exception, e:
+            self.warn_and_quit(EXIT_FAILURE, "error processing hello packet from server: %s" % e)
 
     def capsget(self, capabilities, key, default):
         v = capabilities.get(strtobytes(key), default)
