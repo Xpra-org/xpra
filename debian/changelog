@@ -1,4 +1,26 @@
 xpra (0.11.0-1) UNRELEASED; urgency=low
+  * NVENC hardware h264 encoding acceleration
+  * OpenCL and CUDA colourspace conversion acceleration
+  * proxy server mode for serving multiple sessions through one port
+  * support for transparency in 8-bit PNG modes
+  * support for more authentication mechanisms
+  * lz4 compression
+  * real time frame latency graphs
+  * removed most of the Cython/C code duplication
+  * stricter and safer value parsing
+  * more detailed status information via UI and "xpra info"
+  * drop non xpra clients with a more friendly response
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 17 Oct 2013 22:17:14 +0700
+
+xpra (0.10.6-1) UNRELEASED; urgency=low
+  * fix window titles reverting to "unknown host"
+  * fix tray forwarding bug causing client disconnections
+  * replace previous rencode fix with warning
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 15 Oct 2013 10:29:54 +0700
+
+xpra (0.11.0-1) UNRELEASED; urgency=low
   * proxy server mode for serving multiple sessions through one port
   * support for more authentication mechanisms
   * lz4 compression

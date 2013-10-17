@@ -1,10 +1,24 @@
-v0.11.0 (2013-10-11)
+v0.11.0 (2013-10-17)
 ======================
+	-- NVENC hardware h264 encoding acceleration
+	-- OpenCL and CUDA colourspace conversion acceleration
 	-- proxy server mode for serving multiple sessions through one port
+	-- faster OSX shadow server
+	-- support for transparency in 8-bit PNG modes
 	-- support for more authentication mechanisms
 	-- lz4 compression
 	-- real time frame latency graphs
 	-- removed most of the Cython/C code duplication
+	-- stricter and safer value parsing
+	-- more detailed status information via UI and "xpra info"
+	-- drop non xpra clients with a more friendly response
+
+
+v0.10.6 (2013-10-15)
+======================
+	-- fix window titles reverting to "unknown host"
+	-- fix tray forwarding bug causing client disconnections
+	-- replace previous rencode fix with warning
 
 
 v0.10.5 (2013-10-10)

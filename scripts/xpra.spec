@@ -151,12 +151,23 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Fri Oct 11 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+* Thu Oct 17 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+- NVENC hardware h264 encoding acceleration
+- OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
+- support for transparency in 8-bit PNG modes
 - support for more authentication mechanisms
 - lz4 compression
 - real time frame latency graphs
 - removed most of the Cython/C code duplication
+- stricter and safer value parsing
+- more detailed status information via UI and "xpra info"
+- drop non xpra clients with a more friendly response
+
+* Tue Oct 15 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.6-1
+- fix window titles reverting to "unknown host"
+- fix tray forwarding bug causing client disconnections
+- replace previous rencode fix with warning
 
 * Thu Oct 10 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.5-1
 - fix client time out when the initial connection fails
