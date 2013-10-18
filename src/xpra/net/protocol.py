@@ -496,11 +496,11 @@ class Protocol(object):
             if ti in (int, long, bool, dict, list, tuple):
                 continue
             elif ti==Compressed:
-                #already compressed data (but not using zlib), send as-is
+                #already compressed data (usually pixels), send it as-is
                 packets.append((i, 0, item.data))
                 packet[i] = ''
             elif ti==LevelCompressed:
-                #already compressed data as zlib, send as-is with zlib level marker
+                #already compressed data as zlib or lz4, send as-is with compression marker
                 assert item.level>0
                 packets.append((i, item.level, item.data))
                 packet[i] = ''
@@ -512,7 +512,7 @@ class Protocol(object):
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
             elif ti!=str:
-                log.info("unexpected data type in %s packet: %s", packet[0], ti)
+                log.warn("unexpected data type in %s packet: %s", packet[0], ti)
         #now the main packet (or what is left of it):
         packet_type = packet[0]
         if USE_ALIASES and self.aliases and packet_type in self.aliases:
