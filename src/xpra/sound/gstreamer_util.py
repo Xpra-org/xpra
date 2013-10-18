@@ -283,12 +283,12 @@ def main():
     logging.root.setLevel(logging.INFO)
 
     log.info("GStreamer plugins found: %s", ", ".join(get_all_plugin_names()))
-    if sys.platform.startswith("win"):
-        print("\nPress Enter to close")
-        sys.stdin.readline()
     log.info("")
     log.info("encoders supported: %s", [x for x in CODEC_ORDER if has_encoder(x)])
     log.info("decoders supported: %s", [x for x in CODEC_ORDER if has_decoder(x)])
+    if sys.platform.startswith("win"):
+        print("\nPress Enter to close")
+        sys.stdin.readline()
 
 
 if __name__ == "__main__":
