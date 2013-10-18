@@ -580,7 +580,11 @@ if WIN32:
     #the path after installing may look like this:
     #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
     #but we use something more generic, without the version numbers:
-    vpx_path="C:\\vpx-vp8"
+    vpx_path = ""
+    for p in ("C:\\vpx-1.2", "C:\\vpx-1.1", "C:\\vpx-vp8"):
+        if os.path.exists(p) and os.path.isdir(p):
+            vpx_path = p
+            break
     vpx_include_dir     = os.path.join(vpx_path, "include")
     vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
     if os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
