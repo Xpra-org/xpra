@@ -166,6 +166,7 @@ def encodings_help(encodings):
 
 
 def main():
+    import sys
     import logging
     logging.basicConfig(format="%(message)s")
     logging.root.setLevel(logging.INFO)
@@ -179,6 +180,10 @@ def main():
     print("codecs versions:")
     for name, version in codec_versions.items():
         print("* %s : %s" % (name.ljust(20), version))
+
+    if sys.platform.startswith("win"):
+        print("\nPress Enter to close")
+        sys.stdin.readline()
 
 
 if __name__ == "__main__":
