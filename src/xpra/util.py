@@ -61,7 +61,7 @@ class typedict(dict):
     def listget(self, k, default_value=[], item_type=None, max_items=None):
         v = self.capsget(k, default_value)
         if v is None:
-            return None
+            return default_value
         assert type(v) in (list, tuple), "expected a list or tuple value for %s but got %s" % (k, type(v))
         if item_type:
             for x in v:
