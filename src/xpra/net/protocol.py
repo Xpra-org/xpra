@@ -104,7 +104,7 @@ FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
 
 def new_cipher_caps(proto, cipher, encryption_key):
     iv = get_hex_uuid()[:16]
-    key_salt = get_hex_uuid()
+    key_salt = get_hex_uuid()+get_hex_uuid()
     iterations = 1000
     proto.set_cipher_in(cipher, iv, encryption_key, key_salt, iterations)
     return {

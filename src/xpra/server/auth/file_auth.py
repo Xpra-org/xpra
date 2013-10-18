@@ -115,7 +115,7 @@ class Authenticator(object):
         if self.salt is not None:
             log.error("challenge already sent!")
             return None
-        self.salt = get_hex_uuid()
+        self.salt = get_hex_uuid()+get_hex_uuid()
         #this authenticator can use the safer "hmac" digest:
         return self.salt, "hmac"
 

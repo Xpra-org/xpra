@@ -200,7 +200,7 @@ class XpraClientBase(object):
         if self.encryption:
             assert self.encryption in ENCRYPTION_CIPHERS
             iv = get_hex_uuid()[:16]
-            key_salt = get_hex_uuid()
+            key_salt = get_hex_uuid()+get_hex_uuid()
             iterations = 1000
             capabilities.update({
                         "cipher"                       : self.encryption,
@@ -349,7 +349,7 @@ class XpraClientBase(object):
         if client_can_salt:
             #server supports client salt, and tells us which digest to use:
             digest = packet[3]
-            client_salt = get_hex_uuid()
+            client_salt = get_hex_uuid()+get_hex_uuid()
             #TODO: use some key stretching algorigthm? (meh)
             salt = xor(salt, client_salt)
         if digest=="hmac":
