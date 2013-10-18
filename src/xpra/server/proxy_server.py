@@ -19,7 +19,7 @@ from xpra.server.server_core import ServerCore, get_server_info, get_thread_info
 from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.main import parse_display_name, connect_to
 from xpra.scripts.server import deadly_signal
-from xpra.net.protocol import Protocol, new_cipher_caps, get_network_caps
+from xpra.net.protocol import Protocol, Compressed, compressed_wrapper, new_cipher_caps, get_network_caps
 from xpra.os_util import Queue, SIGNAMES
 from xpra.util import typedict
 from xpra.scripts.config import parse_number, parse_bool
@@ -401,6 +401,23 @@ class ProxyProcess(Process):
             info = packet[1]
             info.update(get_server_info("proxy."))
             info.update(get_thread_info("proxy.", proto))
+        elif packet_type=="draw":
+            #packet = ["draw", wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options]
+            #ensure we don't try to re-compress the pixel data in the network layer:
+            #(re-add the "compressed" marker that gets lost when we re-assemble packets)
+            coding = packet[6]
+            data = packet[7]
+            packet[7] = Compressed("%s pixels" % coding, data)
+        elif packet_type=="cursor":
+            #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
+            #or:
+            #packet = ["cursor", ""]
+            if len(packet)>=9:
+                pixels = packet[8]
+                if len(pixels)<64:
+                    packet[8] = str(pixels)
+                else:
+                    packet[8] = compressed_wrapper("cursor", pixels)
         self.queue_client_packet(packet)
 
     def process_client_packet(self, proto, packet):
