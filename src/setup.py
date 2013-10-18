@@ -583,6 +583,11 @@ if WIN32:
     vpx_path="C:\\vpx-vp8"
     vpx_include_dir     = os.path.join(vpx_path, "include")
     vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
+    if os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
+        vpx_lib_names = ["vpxmd"]             #for libvpx 1.2.0
+    else:
+        vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
+
     # Same for PyGTK:
     # http://www.pygtk.org/downloads.html
     gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
@@ -642,7 +647,7 @@ if WIN32:
         elif "vpx" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', win32_include_dir, vpx_include_dir)
-            add_to_keywords(kw, 'libraries', "vpxmt", "vpxmtd")
+            add_to_keywords(kw, 'libraries', *vpx_lib_names)
             add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
