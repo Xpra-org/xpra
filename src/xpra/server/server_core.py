@@ -218,9 +218,12 @@ class ServerCore(object):
     def do_quit(self):
         raise NotImplementedError()
 
+    def get_server_mode(self):
+        return "server"
+
     def run(self):
-        log.info("xpra server version %s" % xpra.__version__)
-        log.info("running with pid %s" % os.getpid())
+        log.info("xpra %s version %s", self.get_server_mode(), xpra.__version__)
+        log.info("running with pid %s", os.getpid())
         signal.signal(signal.SIGTERM, self.signal_quit)
         signal.signal(signal.SIGINT, self.signal_quit)
         def print_ready():
@@ -498,6 +501,7 @@ class ServerCore(object):
         #this function is for non UI thread info
         info = get_server_info("server.")
         info.update({
+                "server.mode"               : self.get_server_mode(),
                 "server.type"               : "core",
                 "server.start_time"         : int(self.start_time),
                 "session.name"              : self.session_name or "",

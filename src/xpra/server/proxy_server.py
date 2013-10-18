@@ -35,6 +35,12 @@ else:
 
 
 class ProxyServer(ServerCore):
+    """
+        This is the proxy server you can launch with "xpra proxy",
+        once authenticated, it will dispatch the connection
+        to the session found using the authenticator's
+        get_sessions() function.
+    """
 
     def __init__(self):
         log("ProxyServer.__init__()")
@@ -50,6 +56,9 @@ class ProxyServer(ServerCore):
         if not opts.auth:
             raise Exception("The proxy server requires an authentication mode")
         ServerCore.init(self, opts)
+
+    def get_server_mode(self):
+        return "proxy"
 
     def init_aliases(self):
         pass
