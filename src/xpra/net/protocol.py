@@ -121,6 +121,7 @@ def get_network_caps():
                 "digest"                : ("hmac", "xor"),
                 "rencode"               : use_rencode,
                 "lz4"                   : use_lz4,
+                "zlib"                  : True,
                }
     try:
         import Crypto
@@ -242,7 +243,7 @@ class Protocol(object):
         state = {}
         for x in Protocol.STATE_FIELDS:
             state[x] = getattr(self, x)
-        state["zcompress"] = self._compress==zcompress
+        state["zlib"] = self._compress==zcompress
         state["lz4"] = lz4_compress and self._compress==lz4_compress
         state["bencode"] = self._encoder = self.bencode
         state["rencode"] = self._encoder = self.rencode
@@ -309,7 +310,7 @@ class Protocol(object):
         info[prefix+"large_packets" + suffix] = self.large_packets
         info[prefix+"compression_level" + suffix] = self.compression_level
         if self._compress==zcompress:
-            info[prefix+"compression" + suffix] = "zcompress"
+            info[prefix+"compression" + suffix] = "zlib"
         elif self._compress==lz4_compress:
             info[prefix+"compression" + suffix] = "lz4"
         info[prefix+"max_packet_size" + suffix] = self.max_packet_size

@@ -616,7 +616,7 @@ class SessionInfo(gtk.Window):
         if level==0:
             compression_str = "None"
         else:
-            compression_str = " + ".join([x for x in ("zcompress", "lz4", "bencode", "rencode") if protocol_state.get(x, False)==True])
+            compression_str = " + ".join([x for x in ("zlib", "lz4", "bencode", "rencode") if protocol_state.get(x, False)==True])
             compression_str += ", level %s" % level
         self.compression_label.set_text(compression_str)
         
