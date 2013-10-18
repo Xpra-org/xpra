@@ -239,6 +239,7 @@ class ServerSource(object):
         self.client_machine = None
         self.client_processor = None
         self.client_release = None
+        self.client_proxy = False
         self.png_window_icons = False
         self.auto_refresh_delay = 0
         self.server_window_resize = False
@@ -446,6 +447,7 @@ class ServerSource(object):
         self.client_processor = c.strget("platform.processor")
         self.client_release = c.strget("platform.release")
         self.client_version = c.strget("version")
+        self.client_proxy = c.boolget("proxy")
         #general features:
         self.lz4 = c.boolget("lz4", False)
         self.send_windows = c.boolget("windows", True)
@@ -465,14 +467,14 @@ class ServerSource(object):
         self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.namespace = c.boolget("namespace")
 
-        self.desktop_size = c.listget("desktop_size")
+        self.desktop_size = c.intpair("desktop_size")
         self.set_screen_sizes(c.listget("screen_sizes"))
 
         #sound stuff:
         self.pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.pulseaudio_server = c.strget("sound.pulseaudio.server")
-        self.sound_decoders = c.listget("sound.decoders", [])
-        self.sound_encoders = c.listget("sound.encoders", [])
+        self.sound_decoders = c.strlistget("sound.decoders", [])
+        self.sound_encoders = c.strlistget("sound.encoders", [])
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
@@ -515,9 +517,9 @@ class ServerSource(object):
             self.keyboard_config = None
 
         #encodings:
-        self.encodings = c.listget("encodings", [])
-        self.core_encodings = c.listget("encodings.core", self.encodings)
-        self.rgb_formats = c.listget("encodings.rgb_formats", ["RGB"])
+        self.encodings = c.strlistget("encodings", [])
+        self.core_encodings = c.strlistget("encodings.core", self.encodings)
+        self.rgb_formats = c.strlistget("encodings.rgb_formats", ["RGB"])
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
             log.info("windows/pixels forwarding is disabled for this client")
@@ -873,25 +875,32 @@ class ServerSource(object):
         else:
             k = "python_version"
         info[k] = python_platform.python_version()
+        def cv(name, v):
+            info["client."+name+suffix] = v
+        def cvs(update):
+            for k,v in update.items():
+                cv(k, v)
         def addattr(k, name):
             try:
                 v = getattr(self, name)
                 if v is not None:
-                    info["client." + k + suffix] = v
+                    cv(k, v)
             except:
                 log.warn("cannot add attribute %s / %s", k, name, exc_info=True)
-        info["client.version"+suffix] = self.client_version or "unknown"
-        for x in ("type", "platform", "release", "machine", "processor"):
+        cv("version", self.client_version or "unknown")
+        for x in ("type", "platform", "release", "machine", "processor", "proxy"):
             addattr(x, "client_" + x)
-        info["client.platform_name"+suffix] = platform_name(self.client_platform, self.client_release)
-        info["client.uuid"+suffix] = self.uuid
-        info["client.idle_time" + suffix] = int(time.time()-self.last_user_event)
-        info["client.hostname" + suffix] = self.hostname
-        info["client.auto_refresh" + suffix] = self.auto_refresh_delay
-        info["client.desktop_size" + suffix] = self.desktop_size or ""
-        info["client.connection_time" + suffix] = int(self.connection_time)
-        info["client.elapsed_time" + suffix] = int(time.time()-self.connection_time)
-        info["client.suspended" + suffix] = self.suspended
+        cvs({
+             "platform_name"      : platform_name(self.client_platform, self.client_release),
+             "uuid"               : self.uuid,
+             "idle_time"          : int(time.time()-self.last_user_event),
+             "hostname"           : self.hostname,
+             "auto_refresh"       : self.auto_refresh_delay,
+             "desktop_size"       : self.desktop_size or "",
+             "connection_time"    : int(self.connection_time),
+             "elapsed_time"       : int(time.time()-self.connection_time),
+             "suspended"          : self.suspended,
+             })
         #= time.time()
         #self.start_time = time.time()
         if self.screen_sizes:
@@ -900,24 +909,24 @@ class ServerSource(object):
             for x in self.screen_sizes:
                 if type(x) not in (tuple, list):
                     #legacy clients:
-                    info[("client.screen[%s]=" % i) + suffix] = str(x)
+                    cv("screen[%s]=" % i, str(x))
                     continue
-                info[("client.screen[%s].display" % i) + suffix] = x[0]
+                cv("screen[%s].display" % i, x[0])
                 if len(x)>=3:
-                    info[("client.screen[%s].size" % i) + suffix] = x[1], x[2]
+                    cv("screen[%s].size" % i, (x[1], x[2]))
                 if len(x)>=5:
-                    info[("client.screen[%s].size_mm" % i) + suffix] = x[3], x[4]
+                    cv("screen[%s].size_mm" % i, (x[3], x[4]))
                 if len(x)>=6:
                     monitors = x[5]
                     j = 0
                     for monitor in monitors:
                         if len(monitor)>=7:
-                            info[("client.screen[%s].monitor[%s].name" % (i, j)) + suffix] = monitor[0]
-                            info[("client.screen[%s].monitor[%s].geometry" % (i, j)) + suffix] = monitor[1:5]
-                            info[("client.screen[%s].monitor[%s].size_mm" % (i, j)) + suffix] = monitor[5:7]
+                            cv("screen[%s].monitor[%s].name" % (i, j), monitor[0])
+                            cv("screen[%s].monitor[%s].geometry" % (i, j), monitor[1:5])
+                            cv("screen[%s].monitor[%s].size_mm" % (i, j), monitor[5:7])
                         j += 1
                 if len(x)>=10:
-                    info[("client.screen[%s].workarea" % i) + suffix] = x[6:10]
+                    cv("screen[%s].workarea" % i, x[6:10])
                 i += 1
         for prop in ("png_window_icons", "named_cursors", "server_window_resize", "share", "randr_notify",
                      "clipboard_notifications", "raw_window_icons", "system_tray", "generic_window_types",
@@ -930,13 +939,15 @@ class ServerSource(object):
                            "send_bell"          : "bell"}.items():
             addattr("features."+name, prop)
         #encoding:
-        info["client.encodings"+suffix] = self.encodings
-        info["client.encodings.core"+suffix] = self.core_encodings
-        info["client.encoding.default"] = self.default_encoding or ""
+        cvs({
+             "encodings"         : self.encodings,
+             "encodings.core"    : self.core_encodings,
+             "encoding.default"  : self.default_encoding or ""
+             })
         for k,v in self.default_encoding_options.items():
-            info["client.encoding.%s" % k] = v
+            cv("encoding.%s" % k, v)
         for k,v in self.encoding_options.items():
-            info["client.encoding.%s" % k] = v
+            cv("encoding.%s" % k, v)
         def get_sound_info(supported, prop):
             if not supported:
                 return {"state" : "disabled"}
@@ -947,9 +958,9 @@ class ServerSource(object):
         for prop in ("pulseaudio_id", "pulseaudio_server"):
             addattr(prop, prop)
         for k,v in get_sound_info(self.supports_speaker, self.sound_source).items():
-            info["client.speaker.%s" % k] = v
+            cv("speaker.%s" % k, v)
         for k,v in get_sound_info(self.supports_microphone, self.sound_sink).items():
-            info["client.microphone.%s" % k] = v
+            cv("microphone.%s" % k, v)
 
     def send_info_response(self, info):
         self.send("info-response", info)
