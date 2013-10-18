@@ -22,6 +22,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.net.protocol import Protocol, new_cipher_caps, get_network_caps
 from xpra.os_util import Queue, SIGNAMES
 from xpra.util import typedict
+from xpra.scripts.config import parse_number, parse_bool
 
 
 PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
@@ -190,7 +191,7 @@ class ProxyProcess(Process):
         self.uid = uid
         self.gid = gid
         self.env_options = env_options
-        self.session_options = session_options
+        self.session_options = self.sanitize_session_options(session_options)
         self.client_conn = client_conn
         self.client_state = client_state
         self.cipher = cipher
@@ -279,13 +280,26 @@ class ProxyProcess(Process):
         finally:
             self.exit_cb(self)
 
+    def sanitize_session_options(self, options):
+        d = {}
+        def number(k, v):
+            return parse_number(int, k, v)
+        OPTION_WHITELIST = {"compression_level" : number,
+                            "lz4"               : parse_bool}
+        for k,v in options.items():
+            parser = OPTION_WHITELIST.get(k)
+            if parser:
+                log("trying to add %s=%s using %s", k, v, parser)
+                try:
+                    d[k] = parser(k, v)
+                except Exception, e:
+                    log.warn("failed to parse value %s for %s using %s: %s", v, k, parser, e)
+        return d
+
     def filter_client_caps(self, caps):
-        fc = self.filter_caps(caps, ("cipher", "digest", "mmap", "aliases", "compression"))
-        #add whitelist from session_options:
-        OPTION_WHITELIST = ("compression_level", )
-        for k,v in self.session_options.items():
-            if k in OPTION_WHITELIST:
-                fc[k] = v
+        fc = self.filter_caps(caps, ("cipher", "digest", "mmap", "aliases", "compression", "lz4"))
+        #update with options provided via config if any:
+        fc.update(self.session_options)
         return fc
 
     def filter_server_caps(self, caps):

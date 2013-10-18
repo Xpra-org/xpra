@@ -30,7 +30,17 @@ def init(opts):
 
 
 def parseOptions(s):
-    return {}
+    #ie: s="compression_level=1;lz4=0", ...
+    #alternatives: ast, json/simplejson, ...
+    if not s:
+        return {}
+    options = {}
+    for e in s.split(";"):
+        parts = e.split("=", 1)
+        if len(parts)!=2:
+            continue
+        options[parts[0]] = parts[1]
+    return options
 
 
 auth_data = None
