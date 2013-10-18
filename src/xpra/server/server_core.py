@@ -502,7 +502,7 @@ class ServerCore(object):
         info = get_server_info("server.")
         info.update({
                 "server.mode"               : self.get_server_mode(),
-                "server.type"               : "core",
+                "server.type"               : "Python",
                 "server.start_time"         : int(self.start_time),
                 "session.name"              : self.session_name or "",
                 "features.authenticator"    : str((self.auth_class or str)("")),

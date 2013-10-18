@@ -173,7 +173,9 @@ class ProxyServer(ServerCore):
 
     def get_info(self, proto, *args):
         info = ServerCore.get_info(self, proto)
-        info["proxies"] = len(self.processes)
+        info.update({
+            "proxies"       : len(self.processes),
+            "server.type"   : "Python/GObject"})
         i = 0
         for p in self.processes:
             info["proxy[%s]" % i] = str(p)
