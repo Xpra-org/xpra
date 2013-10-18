@@ -330,13 +330,12 @@ class ServerCore(object):
             self.send_version_info(proto)
             return False
 
-        if c.boolget("info_request", False):
-            log.info("processing info request from %s", proto._conn)
-            self.send_hello_info(proto)
-            return
-
         auth_caps = self.verify_hello(proto, c)
         if auth_caps is not False:
+            if c.boolget("info_request", False):
+                log.info("processing info request from %s", proto._conn)
+                self.send_hello_info(proto)
+                return
             #continue processing hello packet:
             try:
                 self.hello_oked(proto, packet, c, auth_caps)
