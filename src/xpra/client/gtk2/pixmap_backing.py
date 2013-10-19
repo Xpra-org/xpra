@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os
 import gtk
 from gtk import gdk
@@ -15,6 +16,9 @@ log = Logger()
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 #make it easier to workaround buggy drivers:
 BACKING_COPY = os.environ.get("XPRA_BACKING_COPY", "1")=="1"
+
+#don't bother trying gtk2 transparencyon on MS Windows:
+HAS_RGBA = not sys.platform.startswith("win")
 
 
 """
@@ -28,16 +32,16 @@ class PixmapBacking(GTK2WindowBacking):
     def init(self, w, h):
         old_backing = self._backing
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
-        if self._has_alpha:
+        if self._has_alpha and HAS_RGBA:
             self._backing = gdk.Pixmap(None, w, h, 32)
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()
             if rgba is not None:
                 self._backing.set_colormap(rgba)
             else:
-                rgb = screen.get_rgb_colormap()
-                self._backing.set_colormap(rgb)
+                #cannot use transparency
                 self._has_alpha = False
+                self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         else:
             self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         cr = self._backing.cairo_create()
