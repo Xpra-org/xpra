@@ -393,9 +393,11 @@ class ClipboardProxy(gtk.Invisible):
     def do_owner_changed(self, *args):
         debug("do_owner_changed(%s) greedy_client=%s, block_owner_change=%s", args, self._greedy_client, self._block_owner_change)
         if self._greedy_client and not self._block_owner_change:
+            self._block_owner_change = True
             self._have_token = False
             self.emit("send-clipboard-token", self._selection)
             self._sent_token_events += 1
+            gobject.idle_add(self.remove_block)
 
     def do_selection_request_event(self, event):
         debug("do_selection_request_event(%s)", event)
@@ -500,9 +502,10 @@ class ClipboardProxy(gtk.Invisible):
         if self._block_owner_change:
             #re-enable the flag via idle_add so events like do_owner_changed
             #get a chance to run first.
-            def remove_block(*args):
-                self._block_owner_change = False
-            gobject.idle_add(remove_block)
+            gobject.idle_add(self.remove_block)
+
+    def remove_block(self, *args):
+        self._block_owner_change = False
 
     def claim(self):
         if not self.selection_owner_set(self._selection):
