@@ -111,10 +111,10 @@ class ClientWindowBase(ClientWidgetBase):
             window_type = [x.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for x in window_type]
             metadata["window-type"] = window_type
 
+        self._metadata.update(metadata)
         if not self.is_realized():
             self.set_wmclass(*self._metadata.get("class-instance",
                                                  ("xpra", "Xpra")))
-        self._metadata.update(metadata)
         self.set_metadata(metadata)
 
     def set_metadata(self, metadata):
