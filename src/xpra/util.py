@@ -46,10 +46,12 @@ class typedict(dict):
         return v
 
     def intpair(self, k, default_value=None):
-        v = self.intlistget(k)
+        v = self.intlistget(k, default_value)
         if v is None:
             return default_value
-        assert len(v)==2, "%s is not a pair of numbers: %s" % (k, len(v))
+        if len(v)!=2:
+            #"%s is not a pair of numbers: %s" % (k, len(v))
+            return default_value
         return v
 
     def strlistget(self, k, default_value=[]):
