@@ -10,7 +10,13 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_UIWATCHER_DEBUG") 
 
+from xpra.platform.features import UI_THREAD_POLLING
 FAKE_UI_LOCKUPS = int(os.environ.get("XPRA_FAKE_UI_LOCKUPS", "0"))
+if FAKE_UI_LOCKUPS>0 and UI_THREAD_POLLING<=0:
+    #even if the platform normally disables UI thread polling,
+    #we need it for testing:
+    UI_THREAD_POLLING = 1000
+POLLING = int(os.environ.get("XPRA_UI_THREAD_POLLING", UI_THREAD_POLLING))
 
 
 class UI_thread_watcher(object):
@@ -100,15 +106,9 @@ class UI_thread_watcher(object):
             time.sleep(self.polling_timeout/1000.0)
 
 
-from xpra.platform.features import UI_THREAD_POLLING
-if FAKE_UI_LOCKUPS>0:
-    #even if the platform normally disables UI thread polling,
-    #we need it for testing:
-    UI_THREAD_POLLING = max(UI_THREAD_POLLING, 1000)
-
 UI_watcher = None
 def get_UI_watcher(timeout_add=None):
     global UI_watcher
     if UI_watcher is None and timeout_add:
-        UI_watcher = UI_thread_watcher(timeout_add, UI_THREAD_POLLING)
+        UI_watcher = UI_thread_watcher(timeout_add, POLLING)
     return UI_watcher
