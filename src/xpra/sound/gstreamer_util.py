@@ -214,6 +214,7 @@ def add_gst_capabilities(capabilities, receive=True, send=True,
                 "sound.send"        : send and len(send_codecs)>0})
 
 
+WARNED_MULTIPLE_DEVICES = False
 def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
     assert has_gst
     try:
@@ -227,7 +228,7 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
             codec = None
         if codec is None:
             codec = ordered_codecs[0]
-        log.info("using sound codec %s", codec)
+        log("using sound codec %s", codec)
         from xpra.sound.src import SoundSource
         if SOUND_TEST_MODE:
             sound_source = SoundSource("audiotestsrc", {"wave":2, "freq":110, "volume":0.4}, codec, {})
@@ -257,20 +258,28 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
                 log.error("could not detect any pulseaudio monitor devices - sound forwarding is disabled")
                 return    None
             #default to first one:
-            monitor_device = monitor_devices.items()[0][0]
+            monitor_device, monitor_device_name = monitor_devices.items()[0]
             if len(monitor_devices)>1:
                 default_sink = get_default_sink()
                 default_monitor = default_sink+".monitor"
-                log.warn("found more than one monitor device: %s", monitor_devices)
+                global WARNED_MULTIPLE_DEVICES
+                if not WARNED_MULTIPLE_DEVICES:
+                    WARNED_MULTIPLE_DEVICES = True
+                    log.warn("found more than one audio monitor device:")
+                    for k,v in monitor_devices.items():
+                        log.warn(" * %s (\"%s\")", v, k)
                 if default_monitor in monitor_devices:
-                    log.warn("using monitor of default sink: %s", monitor_devices.get(default_monitor))
                     monitor_device = default_monitor
+                    monitor_device_name = monitor_devices.get(default_monitor)
+                    if not WARNED_MULTIPLE_DEVICES:
+                        log.warn("using monitor of default sink: %s", monitor_device_name)
                 else:
-                    log.warn("using first device: %s", monitor_devices.items()[0][1])
+                    if not WARNED_MULTIPLE_DEVICES:
+                        log.warn("using the first device")
             #make sure it is not muted:
             set_source_mute(monitor_device, mute=False)
             sound_source = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
-            log.info("starting sound using pulseaudio device %s", monitor_device)
+            log.info("starting sound capture using pulseaudio device: %s", monitor_device_name)
         return sound_source
     except Exception, e:
         log.error("error setting up sound: %s", e, exc_info=True)
