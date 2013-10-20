@@ -259,9 +259,9 @@ class ClipboardProtocolHelperBase(object):
             raise Exception("unhanled encoding: %s" % encoding)
 
     def _process_clipboard_request(self, packet):
+        request_id, selection, target = packet[1:4]
         def no_contents():
             self.send("clipboard-contents-none", request_id, selection)
-        request_id, selection, target = packet[1:4]
         name = self.remote_to_local(selection)
         debug("process clipboard request, request_id=%s, selection=%s, local name=%s, target=%s", request_id, selection, name, target)
         proxy = self._clipboard_proxies.get(name)
@@ -281,16 +281,20 @@ class ClipboardProtocolHelperBase(object):
             if wire_encoding is None:
                 no_contents()
                 return
-            if len(wire_data)>256:
-                wire_data = compressed_wrapper("clipboard: %s / %s" % (dtype, dformat), wire_data)
-                if len(wire_data)>self.max_clipboard_packet_size:
-                    log.warn("even compressed, clipboard contents are too big and have not been sent:"
-                             " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
-                    no_contents()
-                    return
-            self.send("clipboard-contents", request_id, selection,
+            wire_data = self._may_compress(dtype, dformat, wire_data)
+            if wire_data:
+                self.send("clipboard-contents", request_id, selection,
                        dtype, dformat, wire_encoding, wire_data)
         proxy.get_contents(target, got_contents)
+
+    def _may_compress(self, dtype, dformat, wire_data):
+        if len(wire_data)>256:
+            wire_data = compressed_wrapper("clipboard: %s / %s" % (dtype, dformat), wire_data)
+            if len(wire_data)>self.max_clipboard_packet_size:
+                log.warn("even compressed, clipboard contents are too big and have not been sent:"
+                         " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
+                return  None
+        return wire_data
 
     def _process_clipboard_contents(self, packet):
         request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:8]
@@ -467,6 +471,7 @@ class ClipboardProxy(gtk.Invisible):
         result = self.emit("get-clipboard-from-remote", self._selection, target)
         if result is None or result["type"] is None:
             debug("remote selection fetch timed out or empty")
+            selection_data.set("STRING", 8, "")
             return
         data = result["data"]
         dformat = result["format"]
@@ -488,7 +493,11 @@ class ClipboardProxy(gtk.Invisible):
         # ours now"
         # Send off the anti-token.
         if send:
+            boc = self._block_owner_change
+            self._block_owner_change = True
             self.emit("send-clipboard-token", self._selection)
+            if boc is False:
+                gobject.idle_add(self.remove_block)
         gtk.Invisible.do_selection_clear_event(self, event)
 
     def got_token(self, targets):
@@ -505,6 +514,7 @@ class ClipboardProxy(gtk.Invisible):
             gobject.idle_add(self.remove_block)
 
     def remove_block(self, *args):
+        log("remove_block(%s)", args)
         self._block_owner_change = False
 
     def claim(self):
@@ -535,7 +545,7 @@ class ClipboardProxy(gtk.Invisible):
             self._clipboard.request_targets(got_targets)
             return
         def unpack(clipboard, selection_data, user_data):
-            debug("unpack: %s", type(selection_data))
+            debug("unpack %s: %s", clipboard, type(selection_data))
             if selection_data is None:
                 cb(None, None, None)
                 return
