@@ -22,6 +22,7 @@ class ClientTray(ClientWidgetBase):
     DEFAULT_GEOMETRY = DEFAULT_LOCATION + DEFAULT_SIZE
 
     def __init__(self, client, wid, w, h, tray_widget, mmap_enabled, mmap_area):
+        debug("ClientTray%s", (client, wid, w, h, tray_widget, mmap_enabled, mmap_area))
         ClientWidgetBase.__init__(self, client, wid)
         self.tray_widget = tray_widget
         self._has_alpha = True

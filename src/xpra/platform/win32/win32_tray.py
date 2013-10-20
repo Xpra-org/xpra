@@ -8,11 +8,9 @@
 # with methods for integrating with win32_balloon and the popup menu
 
 import tempfile
-from xpra.log import Logger
-log = Logger()
 
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
-from xpra.client.tray_base import TrayBase
+from xpra.client.tray_base import TrayBase, log, debug
 
 
 class Win32Tray(TrayBase):
@@ -42,12 +40,12 @@ class Win32Tray(TrayBase):
         return    self.tray_widget.hwnd
 
     def cleanup(self):
-        log("Win32Tray.cleanup() tray_widget=%s", self.tray_widget)
+        debug("Win32Tray.cleanup() tray_widget=%s", self.tray_widget)
         if self.tray_widget:
             self.stop_win32_session_events(self.getHWND())
             self.tray_widget.close()
             self.tray_widget = None
-        log("Win32Tray.cleanup() ended")
+        debug("Win32Tray.cleanup() ended")
 
     def set_tooltip(self, name):
         if self.tray_widget:
@@ -60,6 +58,7 @@ class Win32Tray(TrayBase):
         from gtk import gdk
         try:
             _, filename = tempfile.mkstemp(".ico", "temp")
+            debug("set_icon_from_data%s using temporary file %s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
             tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
             tray_icon.save(filename, "ico")
             self.set_icon(filename)
@@ -98,7 +97,7 @@ class Win32Tray(TrayBase):
             log.warn("detect_win32_session_events(%s) missing handle!", app_hwnd)
             return
         try:
-            log("detect_win32_session_events(%s)", app_hwnd)
+            debug("detect_win32_session_events(%s)", app_hwnd)
             import win32ts, win32con, win32api, win32gui        #@UnresolvedImport
             WM_TRAYICON = win32con.WM_USER + 20
             NIN_BALLOONSHOW = win32con.WM_USER + 2
@@ -115,29 +114,29 @@ class Win32Tray(TrayBase):
             def MyWndProc(hWnd, msg, wParam, lParam):
                 #from the web!: WM_WTSSESSION_CHANGE is 0x02b1.
                 if msg==0x02b1:
-                    log("Session state change!")
+                    debug("Session state change!")
                 elif msg==win32con.WM_DESTROY:
                     # Restore the old WndProc
-                    log("WM_DESTROY, restoring call handler")
+                    debug("WM_DESTROY, restoring call handler %s", self.oldWndProc)
                     win32api.SetWindowLong(app_hwnd, win32con.GWL_WNDPROC, self.oldWndProc)
                 elif msg==win32con.WM_COMMAND:
-                    log("WM_COMMAND")
+                    debug("WM_COMMAND")
                 elif msg==WM_TRAYICON:
-                    log("WM_TRAYICON")
+                    debug("WM_TRAYICON")
                     if lParam==NIN_BALLOONSHOW:
-                        log("NIN_BALLOONSHOW")
+                        debug("NIN_BALLOONSHOW")
                     if lParam==NIN_BALLOONHIDE:
-                        log("NIN_BALLOONHIDE")
+                        debug("NIN_BALLOONHIDE")
                         self.balloon_click_callback = None
                     elif lParam==NIN_BALLOONTIMEOUT:
-                        log("NIN_BALLOONTIMEOUT")
+                        debug("NIN_BALLOONTIMEOUT")
                     elif lParam==NIN_BALLOONUSERCLICK:
-                        log.info("NIN_BALLOONUSERCLICK, balloon_click_callback=%s" % self.balloon_click_callback)
+                        debug("NIN_BALLOONUSERCLICK, balloon_click_callback=%s", self.balloon_click_callback)
                         if self.balloon_click_callback:
                             self.balloon_click_callback()
                             self.balloon_click_callback = None
                 else:
-                    log("unknown win32 message: %s / %s / %s", msg, wParam, lParam)
+                    log.warn("unknown win32 message: %s / %s / %s", msg, wParam, lParam)
                 # Pass all messages to the original WndProc
                 try:
                     return win32gui.CallWindowProc(self.old_win32_proc, hWnd, msg, wParam, lParam)
