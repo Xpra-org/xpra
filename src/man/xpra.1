@@ -31,13 +31,13 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
 [\fB\-\-no\-microphone\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
-[\fB\-\-enable-sharing\fP]
+[\fB\-\-enable\-sharing\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
-[\fB\-\-auth\fP=\fImodule\fP]
-[\fB\-\-password\-file\fP=\fIfilename\fP]
-[\fB\-\-clipboard-filter\-file\fP=\fIfilename\fP]
+[\fB\-\-auth\fP=\fIMODULE\fP]
+[\fB\-\-password\-file\fP=\fIFILENAME\fP]
+[\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
@@ -66,16 +66,16 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-speed\fP=\fISPEED\fP]
 [\fB\-\-min-speed\fP=\fIMIN-SPEED\fP]
 [\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
-[\fB\-\-key\-shortcut\fP=\fIkey:action\fP]
+[\fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP]
 [\fB\-\-readonly\fP]
 [\fB\-\-enable-sharing\fP]
 [\fB\-\-title\fP=\fIVALUE\fP]
 [\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP]
 [\fB\-\-window\-layout\fP=\fILAYOUT\fP]
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
-[\fB\-\-tray\-icon\fP=\fIfilename\fP]
+[\fB\-\-tray\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
-[\fB\-\-password\-file\fP=\fIfilename\fP]
+[\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-mmap\-group\fP]
@@ -94,8 +94,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-microphone\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-auth\fP=\fImodule\fP]
-[\fB\-\-password\-file\fP=\fIfilename\fP]
+[\fB\-\-auth\fP=\fIMODULE\fP]
+[\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBproxy\fP \fI:DISPLAY\fP
@@ -147,12 +147,14 @@ Xpra can also be used to shadow an existing X11 display.
 \fBxpra start\fP \fI:7\fP
 Start an xpra server using display number \fI:7\fP.
 .TP
-\fBxpra start\fP \fIssh:bigbox:8 \-\-start\-child=xterm\fP
+\fBxpra start\fP \fIssh:bigbox:7 \-\-start\-child=xterm\fP
 Start an xpra server on \fIbigbox\fP with an xterm in it,
 and connect to it.
+.TP
 \fBDISPLAY=\fP\fI:7 firefox\fP
-Start \fIfirefox\fP running inside the xpra server.  No window will
-appear.
+Start \fIfirefox\fP running inside the xpra server.  Run this on the host
+where xpra was started or in terminal forwarded by xpra.  No window will
+appear until you attach with \fBxpra attach\fP.
 .TP
 \fBxpra list\fP
 Show a list of xpra servers you have running on the current host.
@@ -195,7 +197,7 @@ the xpra server.
 
 When starting an xpra server, you must specify the name of the display
 to use.  To do this, simply pick any number you like and stick a colon
-in front of it. For instance :7, :12, and :3117 are all valid display
+in front of it.  For instance :7, :12, and :3117 are all valid display
 names.  Just keep in mind that:
 .IP \(bu
 Every X or xpra server that is running on a single machine must use a
@@ -212,8 +214,8 @@ When specifying an xpra server to a client program like \fBxpra
 attach\fP, \fBxpra detach\fP, \fBxpra stop\fP, \fBxpra version\fP,
 \fBxpra info\fP, \fBxpra list\fP or \fBxpra screenshot\fP then you
 can use a display of the form
-\fB:\fP\fINUMBER\fP to refer to a server on the local host, or one of
-the form \fBssh:\fP\fI[USER@]HOST\fP\fB:\fP\fINUMBER\fP to refer to a server
+\fB:\fP\fIDISPLAY\fP to refer to a server on the local host, or one of
+the form \fBssh:\fP\fI[USER@]HOST\fP\fB:\fP\fIDISPLAY\fP to refer to a server
 on a remote host; xpra will automatically connect to the remote host
 using \fBssh\fP(1).  Generally, if you have only one xpra session
 running on a machine (which you can verify by running \fBxpra list\fP
@@ -224,17 +226,17 @@ similarly attach to the lone xpra session on a remote machine.
 
 If the xpra server was given the \fB\-\-bind\-tcp\fP option when
 started then you can also connect to it using a display of
-the form \fBtcp:HOST:PORT\fP. (Notice that \fBssh:\fP takes an optional
+the form \fBtcp:HOST:PORT\fP.  (Notice that \fBssh:\fP takes an optional
 \fIdisplay\fP number, while \fBtcp:\fP takes a required \fIport\fP
 number.)
 .\" --------------------------------------------------------------------
 .SH SUBCOMMANDS
 .SS xpra start
 This command starts a new xpra server, including any necessary setup.
-(when starting a remote server with the \fBssh:HOST:PORT\fP syntax,
-the new session will also be attached)
+(When starting a remote server with the \fBssh:HOST:DISPLAY\fP syntax,
+the new session will also be attached.)
 .SS xpra attach
-This command attachs to a running xpra server, and forwards any
+This command attaches to a running xpra server, and forwards any
 applications using that server to appear on your current screen.
 .SS xpra detach
 Detaches the given xpra display.
@@ -248,7 +250,7 @@ Note: older servers may not support this feature.
 Queries the server for version, status and statistics.
 Note: older servers may not support this feature.
 .SS xpra stop
-This command attachs to a running xpra server, and requests that it
+This command attaches to a running xpra server, and requests that it
 terminate immediately.  This generally causes any applications using
 that server to terminate as well.
 .SS xpra list
@@ -351,12 +353,12 @@ or force it enabled (\fIyes\fP).
 .TP
 \fB\-\-socket\-dir\fP=\fIDIR\fP
 Location where to write and look for the Xpra socket files.
-Defaults to "~/.xpra". It may also be specified using the
+Defaults to "~/.xpra".  It may also be specified using the
 XPRA_SOCKET_DIR environment variable.
 
 When using the socket-dir option, it is generally necessary to specify
 socket-dir on all following commands, for xpra to work with the
-open sessions. Mixing different socket-dir options is not
+open sessions.  Mixing different socket-dir options is not
 recommended.
 
 By specifying a shared directory this can be coupled with the
@@ -369,7 +371,7 @@ By default, the xpra server puts itself into the background,
 i.e. 'daemonizes', and redirects its output to a log file.  This
 prevents that behavior (useful mostly for debugging).
 .TP
-\fB\-\-auth\fP=\fImodule\fP
+\fB\-\-auth\fP=\fIMODULE\fP
 Specifies the authentication module to use.
 This can be used to secure sockets in a different way from
 the \fB\-\-encryption\fP switch: authentication modules can
@@ -382,7 +384,7 @@ and should only be used for testing
 always fails authentication, useful for testing
 .IP \fBfile\fP
 checks the password against the file specified using
-\fBpassword\-file\fP switch. The file can either contain
+\fBpassword\-file\fP switch.  The file can either contain
 a single password, in which case it will be used for all
 usernames, or a list of user credentials of the form (one
 per line):
@@ -402,7 +404,7 @@ automatically (either \fBpam\fP or \fBwin32\fP)
 .TP
 \fB\-\-start\-child\fP=\fICMD\fP
 After starting the server, runs the command \fICMD\fP using the
-default shell.  The command is run with its $DISPLAY set to point to
+default shell.  The command is run with its \fB$DISPLAY\fP set to point to
 the newly-started server.  This option may be given multiple times to
 start multiple children.
 .TP
@@ -420,15 +422,15 @@ xpra server instance crashed.
 .TP
 \fB\-\-xvfb\fP=\fICMD\fP
 When starting the server, xpra starts a virtual X server to run the
-clients on. By default, this is 'Xvfb'. If your Xvfb is installed in a
+clients on.  By default, this is 'Xvfb'.  If your Xvfb is installed in a
 funny location, or you want to use some other virtual X server, then
 this switch allows you to specify how to run your preferred X server
-executable. The default value used is:
+executable.  The default value used is:
 \fIXvfb +extension Composite \-screen 0 3840x2560x24+32 \-nolisten tcp \-noreset  \-auth $XAUTHORITY\fP
 
 This can also be used to specify Xdummy as an alternative to Xvfb,
 this requires Xorg server version 1.12 or later and the dummy driver
-version 0.3.5 or later. For more information, see:
+version 0.3.5 or later.  For more information, see:
 https://xpra.org/Xdummy.html
 
 .TP
@@ -436,10 +438,10 @@ https://xpra.org/Xdummy.html
 The xpra server always listens for connections on a local Unix domain
 socket, and supports local connections with the \fB:7\fP-style display
 address, and remote connections with the \fBssh:frodo:7\fP-style
-display address. If you want, it can also listen for connections on a
-raw TCP socket. This behavior is enabled with \fB\-\-bind-\-tcp\fP. If
+display address.  If you want, it can also listen for connections on a
+raw TCP socket.  This behavior is enabled with \fB\-\-bind-\-tcp\fP.  If
 the host portion is omitted, then 127.0.0.1 (localhost) will be
-used. If you wish to accept connections on all interfaces, pass
+used.  If you wish to accept connections on all interfaces, pass
 0.0.0.0 for the host portion.
 
 Using this switch without using the auth option is not recommended,
@@ -452,14 +454,14 @@ of your actions.
 .TP
 \fB\-\-password\-file\fP=\fIFILENAME\fP
 This allows sessions to be secured with a password stored in a text
-file. You should use this if you use the \fB\-\-bind-\-tcp\fP option.
+file.  You should use this if you use the \fB\-\-bind\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
 .TP
 \fB\-\-encryption\fP=\fICIPHER\fP
 Specifies the cipher to use for securing the connection from
-prying eyes. This is only really useful with the \fB--bind-tcp\fP option.
-This option requires the use of the \fB--encryption-keyfile\fP option.
+prying eyes.  This is only really useful with the \fB\-\-bind\-tcp\fP option.
+This option requires the use of the \fB\-\-encryption\-keyfile\fP option.
 The only cipher supported at present is \fIAES\fP, if the client
 requests encryption it will be used by both the client and server
 for all communication after the initial password verification,
@@ -469,10 +471,10 @@ it should not be considered safe from determined attackers.
 .TP
 \fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP
 Specifies the key to use with the encryption cipher specified
-with \fB\-\-encryption\fP. The client and server must use the
+with \fB\-\-encryption\fP.  The client and server must use the
 same keyfile contents.
 .TP
-\fB\-\-clipboard-filter\-file\fP=\fIfilename\fP
+\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP
 Name of a file containing regular expressions, any clipboard data
 that matches one of these regular expressions will be dropped.
 Note: at present this only applies to copying from the machine where
@@ -495,11 +497,11 @@ This disables the feature.
 Disable forwarding of system notifications.
 System notifications require the xpra server to have its own instance
 of a dbus daemon, if it is missing a warning will be printed on
-startup. This switch disables the feature entirely, and avoids
+startup.  This switch disables the feature entirely, and avoids
 the warning.
 .TP
 \fB\-\-no\-xsettings\fP
-Disable xsettings synchronization. Xsettings are only forwarded
+Disable xsettings synchronization.  Xsettings are only forwarded
 from posix clients connecting to real posix servers (not shadows).
 .TP
 \fB\-\-no\-system\-tray\fP
@@ -514,9 +516,9 @@ Disable forwarding of the system bell.
 .TP
 \fB-z\fP\fILEVEL\fP, \fB\-\-compress\fP=\fILEVEL\fP
 Select the level of zlib compression xpra will use when transmitting data
-over the network. Higher levels of compression transmit less data over
-the network, but use more CPU power. Valid options are between 0
-(meaning no compression) and 9, inclusive. Higher levels take
+over the network.  Higher levels of compression transmit less data over
+the network, but use more CPU power.  Valid options are between 0
+(meaning no compression) and 9, inclusive.  Higher levels take
 progressively more CPU while giving diminishing returns in terms of
 actual compression achieved; the default is 3, which gives a
 reasonable trade-off in general.
@@ -528,9 +530,8 @@ This compression is not used on pixel data (except
 when using the \fBrgb\fP encoding).
 .TP
 \fB\-\-jpeg\-quality\fP=\fIVALUE\fP
-Deprecated, use \fB\-\-quality\fP:
+Deprecated, use \fB\-\-quality\fP.
 .TP
-
 \fB\-\-quality\fP=\fIVALUE\fP
 This option sets a fixed image compression quality lossy encodings
 (\fBjpeg\fP, \fBwebp\fP or \fBx264\fP).
@@ -545,7 +546,7 @@ This option sets the minimum encoding quality allowed when the quality option is
 set to automatic mode.
 .TP
 \fB\-\-speed\fP=\fISPEED\fP
-This option sets the encoding speed. Slower compresses more, faster
+This option sets the encoding speed.  Slower compresses more, faster
 will give better latency.
 The system normally uses a variable speed, this option forces
 a fixed speed setting to be used instead.
@@ -563,29 +564,29 @@ This option is only relevant when using a lossy encoding
 (\fBjpeg\fP, \fBwebp\fP, \fBx264\fP or \fBvpx\fP) with a quality
 lower than 95%.
 .TP
-\fB\-\-key\-shortcut\fP=\fIkey:action\fP
+\fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP
 Can be specified multiple times to add multiple key shortcuts.
 These keys will be caught by the client and trigger the action specified
 and the key presses will not be passed to the server.
-.br
-The \fBkey\fP specification may include keyboard modifiers in the form
- \fB[modifier\+]*key\fP, for example: \fIShift+F10\fP or \fIShift+Control+B\fP
-.br
+
+The \fIKEY\fP specification may include keyboard modifiers in the form
+\fB[modifier\+]*key\fP, for example: \fIShift+F10\fP or \fIShift+Control+B\fP
+
 If no shortcuts are defined on the command line,
 the following default one will be used: \fIMeta+Shift+F4:quit\fP
 
 .br
-The following \fBaction\fPs are currently defined:
+The following \fIACTION\fPs are currently defined:
 .RS
 .IP \fBquit\fP
-disconnects the xpra client
+Disconnect the xpra client.
 .IP \fBvoid\fP
-does not do anything, and can therefore be used to prevent
+Does not do anything, and can therefore be used to prevent
 certain key combinations from ever being sent to the server.
 .IP \fBrefresh_window\fP
-forces the currently focused window to be refreshed.
+Force the currently focused window to be refreshed.
 .IP \fBrefresh_all_windows\fP
-forces all windows to be refreshed.
+Force all windows to be refreshed.
 .RE
 .PP
 
@@ -594,7 +595,7 @@ forces all windows to be refreshed.
 Read only mode prevents all keyboard and mouse activity from being sent
 to the server.
 .TP
-\fB\-\-enable-sharing\fP
+\fB\-\-enable\-sharing\fP
 Allow more than one client to connect to the same session.
 This must be enabled on both the server and all co-operating clients
 to function.
@@ -605,14 +606,14 @@ and key release events are sent to the server as they occur so that
 the server can maintain a consistent keyboard state.
 Using this option can prevent keys from repeating unexpectedly on
 high latency links but it may also disrupt applications which access
-the keyboard directly (games, etc).
+the keyboard directly (games, etc.).
 .TP
 \fB\-\-no\-speaker\fP
-Disable sound output forwarding support. Application sound output will
+Disable sound output forwarding support.  Application sound output will
 not be sent to the client(s).
 .TP
 \fB\-\-no\-microphone\fP
-Disable sound input forwarding support. Application sound input will
+Disable sound input forwarding support.  Application sound input will
 not be sent from the client(s) to the server.
 .TP
 \fB\-\-speaker\-codec\fP=\fICODEC\fP and \fB\-\-microphone\-codec\fP=\fICODEC\fP
@@ -626,40 +627,49 @@ When unspecified, all the available codecs are allowed and the first one is used
 Sets the text shown as window title.
 The string supplied can make use of remote metadata placeholders
 which will be populated at runtime with the values from the
-remote server. ie:
- \f\@title\@\fP will be replaced by the remote window's title,
- \f\@client-machine\@\fP will be replaced by the remote server's
-hostname.
-
+remote server.
 The default value used is "@title@ on @client-machine@".
+
+The following placeholders are defined:
+.RS
+.IP \fB\@title\@\fP
+Will be replaced by the remote window's title.
+.IP \fB\@client-machine\@\fP
+Will be replaced by the remote server's hostname.
+.RE
+.PP
+
 .TP
 \fB\-\-client\-toolkit\fP=\fITOOLKIT\fP
-Specifies the client toolkit to use. This changes the user interface toolkit
-used to draw the windows and may affect the availibility of other features.
+Specifies the client toolkit to use.  This changes the user interface toolkit
+used to draw the windows and may affect the availability of other features.
 The 'gtk2' toolkit is the one with the most features.
 Use the special value 'help' to get a list of options.
 .TP
 \fB\-\-window\-layout\fP=\fILAYOUT\fP
 Specifies how main windows are drawn, this can be used to add widgets or
 coloured borders to the window frame.
-Use the special value 'help' to get a list of options. Each client toolkit
+Use the special value 'help' to get a list of options.  Each client toolkit
 may or may not provide different window layouts.
 .TP
 \fB\-\-window\-icon\fP=\fIFILENAME\fP
 Path to the default image which will be used for all windows.
 This icon may be shown in the window's bar, its iconified
-state or task switchers. This depends on the operating system,
+state or task switchers.  This depends on the operating system,
 the window manage and the application may override this too.
+.TP
 \fB\-\-no\-tray\fP
-Disables the system tray. Not available on OSX since the dock
+Disables the system tray.  Not available on OSX since the dock
 icon is always shown.
+.TP
 \fB\-\-delay\-tray\fP
 Waits for the first window or notification to appear before
 showing the system tray. (posix only)
+.TP
 \fB\-\-tray\-icon\fP=\fIFILENAME\fP
 Specifies the icon shown in the dock/tray.
 By default it uses a simple default 'xpra' icon.
-(on Microsoft Windows, the icon must be in \fBico\fP format)
+(On Microsoft Windows, the icon must be in \fBico\fP format.)
 .TP
 \fB\-\-mmap\-group\fP
 Sets the mmap file's gid to match the socket file's gid and sets
@@ -669,11 +679,11 @@ This is necessary to share the mmap file across user accounts.
 \fB\-\-enable\-pings\fP
 The client and server will exchange ping and echo packets
 which are used to gather latency statistics.
-Those statistics can be seen using the "xpra info" command.
+Those statistics can be seen using the \fBxpra info\fP command.
 
 .SS Options for attach, stop
 .TP
-\fB\-\-ssh\fP\=fICMD\fP
+\fB\-\-ssh\fP\=\fICMD\fP
 When you use an \fBssh:\fP address to connect to a remote display,
 xpra runs \fBssh\fP(1) to make the underlying connection. By default,
 it does this by running the command "ssh". If your ssh program is in
@@ -689,9 +699,9 @@ arcfour encryption, then you should run
 \fBxpra attach \-\-ssh\fP=\fI"ssh \-c arcfour" ssh:frodo:7\fP
 
 .RE
-(\fINote:\fP don't bother to enable ssh compression; this
+\fINote:\fP Don't bother to enable ssh compression; this
 is redundant with xpra's own compression, and will just waste your
-CPU. See also xpra's \fB\-\-compress\fP switch.)
+CPU.  See also xpra's \fB\-\-compress\fP switch.
 .RE
 .TP
 \fB\-\-remote\-xpra\fP=\fICMD\fP
@@ -722,7 +732,7 @@ which display the remote applications should be shown on.
 There is a global config file in \fI/etc\fP or \fI/usr/local/etc\fP,
 and each user may override it using \fI.xpra/xpra.conf\fP.
 Xpra uses the directory \fI~/.xpra\fP to store a number of files.
-(the examples below are given for the display \fI:7\fP)
+(The examples below are given for the display \fI:7\fP.)
 .TP
 \fI~/.xpra/:7\fP
 The unix domain socket that clients use to contact the xpra server.
@@ -744,14 +754,14 @@ Xpra has no test suite.
 Xpra does not fully handle all aspects of the X protocol; for
 instance, fancy input features like pressure-sensitivity on tablets,
 some window manager hints, and probably other more obscure parts of the
-X protocol. It does, however, degrade gracefully, and patches for each
+X protocol.  It does, however, degrade gracefully, and patches for each
 feature would be gratefully accepted.
 
 The xpra server allocates an over-large framebuffer when using Xvfb;
 this wastes memory, and can cause applications to misbehave (e.g.,
 by letting menus go off-screen).  Conversely, if the framebuffer is ever
 insufficiently large, clients will misbehave in other ways (e.g.,
-input events will be misdirected). This is not a problem when using
+input events will be misdirected).  This is not a problem when using
 Xdummy, see the \fB\-\-xvfb\fP= switch for details.
 
 The need to choose display numbers by hand is annoying.
