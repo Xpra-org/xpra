@@ -305,7 +305,7 @@ def get_defaults():
                     "speed"             : -1,
                     "min-speed"         : -1,
                     "port"              : -1,
-                    "compression_level" : 3,
+                    "compression_level" : 1,
                     "dpi"               : 96,
                     "max-bandwidth"     : 0.0,
                     "auto-refresh-delay": 0.25,
