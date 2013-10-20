@@ -6,8 +6,10 @@
 import gobject
 
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-from xpra.clipboard.clipboard_base import ClipboardProxy, debug, log
+from xpra.clipboard.clipboard_base import ClipboardProxy, TEXT_TARGETS, debug, log
 
+def update_clipboard_change_count():
+    return 0
 change_callbacks = []
 change_count = 0
 try:
@@ -16,6 +18,10 @@ try:
     if pasteboard is None:
         log.warn("cannot load Pasteboard, maybe not running from a GUI session?")
     else:
+        def update_clipboard_change_count():
+            global change_count
+            change_count = pasteboard.changeCount()
+            return change_count
         def timer_clipboard_check():
             global change_count
             c = change_count
@@ -50,6 +56,13 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
     def make_proxy(self, clipboard):
         return OSXClipboardProxy(clipboard)
 
+    def _get_clipboard_from_remote_handler(self, proxy, selection, target):
+        #cannot work on osx, the nested mainloop doesn't run :(
+        #so we don't even try and rely on the "wants_targets" flag
+        #to get the server to send us the data with the token
+        #see "got_token" below
+        return None
+
     def __str__(self):
         return "OSXClipboardProtocolHelper"
 
@@ -61,13 +74,24 @@ class OSXClipboardProxy(ClipboardProxy):
         global change_callbacks
         change_callbacks.append(self.local_clipboard_changed)
 
-    def got_token(self, targets):
+    def got_token(self, targets, target_data):
         # We got the anti-token.
-        debug("got token, selection=%s, targets=%s", self._selection, targets)
+        debug("got token, selection=%s, targets=%s, target_data=%s", self._selection, targets, target_data)
+        self._block_owner_change = True
         self._have_token = True
         for target in targets:
             self.selection_add_target(self._selection, target, 0)
         self.selection_owner_set(self._selection)
+        if target_data:
+            for text_target in TEXT_TARGETS:
+                if text_target in target_data:
+                    text_data = target_data.get(text_target)
+                    debug("clipboard %s set to '%s'", self._selection, text_data)
+                    self._clipboard.set_text(text_data)
+        #prevent our change from firing another clipboard update:
+        c = update_clipboard_change_count()
+        debug("change count now at %s", c)
+        gobject.idle_add(self.remove_block)
 
     def local_clipboard_changed(self):
         debug("local_clipboard_changed() greedy_client=%s", self._greedy_client)

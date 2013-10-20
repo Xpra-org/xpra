@@ -45,6 +45,8 @@ _discard_target_strs_ = ("^SAVE_TARGETS$",
         "^dyn\.")
 DISCARD_TARGETS = [re.compile(x) for x in _discard_target_strs_]
 
+TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
+
 
 class ClipboardProtocolHelperBase(object):
     def __init__(self, send_packet_cb, progress_cb=None, clipboards=CLIPBOARDS, filter_res=None):
@@ -133,13 +135,23 @@ class ClipboardProtocolHelperBase(object):
     def _process_clipboard_token(self, packet):
         selection = packet[1]
         targets = None
+        target_data = None
         if len(packet)>=3:
             targets = packet[2]
+        if len(packet)>=4:
+            raw_target_data = packet[3]
+            if raw_target_data:
+                #raw_target_data = {target : (dtype, dformat, wire_encoding, wire_data) }
+                target_data = {}
+                for target, data in raw_target_data.items():
+                    dtype, dformat, wire_encoding, wire_data = data
+                    raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
+                    target_data[target] = raw_data
         name = self.remote_to_local(selection)
         proxy = self._clipboard_proxies.get(name)
         debug("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         if proxy:
-            proxy.got_token(targets)
+            proxy.got_token(targets, target_data)
         else:
             debug("ignoring token for clipboard proxy name '%s' (no proxy)", name)
 
@@ -172,10 +184,35 @@ class ClipboardProtocolHelperBase(object):
         debug("send clipboard token: %s", selection)
         rsel = self.local_to_remote(selection)
         if self._want_targets:
-            #send the token with the target once we get them:
+            #send the token with the target and data once we get them:
+            #first get the targets, then get the contents for targets we want to send (if any)
             def got_targets(dtype, dformat, targets):
-                debug("sending clipboard token for %s with targets=%s", selection, targets)
-                self.send("clipboard-token", rsel, targets)
+                debug("got_targets for selection %s: %s, %s, %s", selection, dtype, dformat, targets)
+                #if there is a text target, send that too (just the first one that matches for now..)
+                send_now = [x for x in targets if x in TEXT_TARGETS]
+                def send_targets_only():
+                    self.send("clipboard-token", rsel, targets)
+                if len(send_now)==0:
+                    send_targets_only()
+                    return
+                target = send_now[0]
+                def got_contents(dtype, dformat, data):
+                    debug("got_contents for selection %s: %s, %s, %s", selection, dtype, dformat, data)
+                    #code mostly duplicated from _process_clipboard_request
+                    #see there for details
+                    if dtype is None or data is None:
+                        send_targets_only()
+                        return
+                    wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
+                    if wire_encoding is None:
+                        send_targets_only()
+                        return
+                    wire_data = self._may_compress(dtype, dformat, wire_data)
+                    if wire_data:
+                        target_data = {target : (dtype, dformat, wire_encoding, wire_data) }
+                        debug("sending token with target data: %s", target_data)
+                        self.send("clipboard-token", rsel, targets, target_data)
+                proxy.get_contents(target, got_contents)
             proxy.get_contents("TARGETS", got_targets)
             return
         self.send("clipboard-token", rsel)
@@ -500,9 +537,9 @@ class ClipboardProxy(gtk.Invisible):
                 gobject.idle_add(self.remove_block)
         gtk.Invisible.do_selection_clear_event(self, event)
 
-    def got_token(self, targets):
+    def got_token(self, targets, target_data):
         # We got the anti-token.
-        debug("got token, selection=%s, targets=%s", self._selection, targets)
+        debug("got token, selection=%s, targets=%s, target_data=%s", self._selection, targets, target_data)
         self._got_token_events += 1
         self._have_token = True
         if self._greedy_client:
@@ -549,6 +586,7 @@ class ClipboardProxy(gtk.Invisible):
             if selection_data is None:
                 cb(None, None, None)
                 return
+            debug("unpack: %s", selection_data)
             debug("unpack(..) type=%s, format=%s, data=%s:%s", selection_data.type, selection_data.format,
                         type(selection_data.data), len(selection_data.data or ""))
             cb(str(selection_data.type), selection_data.format, selection_data.data)
