@@ -40,8 +40,8 @@ if CLIPBOARDS_ENV is not None:
 _discard_target_strs_ = ("^SAVE_TARGETS$",
         "^COMPOUND_TEXT$",
         "^NeXT ",
-        "^com\.apple\."
-        "^CorePasteboardFlavorType "
+        "^com\.apple\.",
+        "^CorePasteboardFlavorType ",
         "^dyn\.")
 DISCARD_TARGETS = [re.compile(x) for x in _discard_target_strs_]
 
