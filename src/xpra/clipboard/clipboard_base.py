@@ -37,6 +37,8 @@ if CLIPBOARDS_ENV is not None:
     CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS]
 
 
+TEST_DROP_CLIPBOARD_REQUESTS = int(os.environ.get("XPRA_TEST_DROP_CLIPBOARD", "0"))
+
 _discard_target_strs_ = ("^SAVE_TARGETS$",
         "^COMPOUND_TEXT$",
         "^NeXT ",
@@ -305,6 +307,9 @@ class ClipboardProtocolHelperBase(object):
         if proxy is None:
             #err, we were asked about a clipboard we don't handle..
             no_contents()
+            return
+        if TEST_DROP_CLIPBOARD_REQUESTS>0 and (request_id % TEST_DROP_CLIPBOARD_REQUESTS)==0:
+            log.warn("clipboard request %s dropped for testing!", request_id)
             return
         def got_contents(dtype, dformat, data):
             debug("got_contents(%s, %s, %s:%s) data=0x%s..",
