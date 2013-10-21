@@ -96,7 +96,7 @@ def parse_cmdline(cmdline):
     if len(server_modes):
         group = OptionGroup(parser, "Server Options",
                     "These options are only relevant on the server when using the %s mode." %
-                    "or".join(["'%s'" % x for x in server_modes]))
+                    " or ".join(["'%s'" % x for x in server_modes]))
         parser.add_option_group(group)
     if supports_server:
         group.add_option("--start-child", action="append",
@@ -118,8 +118,12 @@ def parse_cmdline(cmdline):
                       + " If a relative filename is specified the it is relative to --socket-dir,"
                       + " the value of '$DISPLAY' will be substituted with the actual display used"
                       )
+        group.add_option("--no-mdns", action="store_false",
+                          dest="mdns", default=True,
+                          help="Don't publish session information via mDNS")
     else:
         hidden_options["daemon"] = False
+        hidden_options["mdns"] = False
         hidden_options["log_file"] = defaults.log_file
     if supports_server:
         group.add_option("--use-display", action="store_true",

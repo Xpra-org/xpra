@@ -16,6 +16,7 @@ import os.path
 import atexit
 import signal
 import socket
+import getpass
 
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
@@ -36,6 +37,8 @@ def run_cleanups():
             print("error running cleanup %s" % c)
             import traceback
             traceback.print_exception(*sys.exc_info())
+
+_when_ready = []
 
 def deadly_signal(signum, frame):
     print("got deadly signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
@@ -236,6 +239,32 @@ def display_name_check(display_name):
         except:
             pass
 
+
+def get_ssh_port():
+    #FIXME: how do we find out which port ssh is on?
+    return 22
+
+#warn just once:
+MDNS_WARNING = False
+def mdns_publish(display_name, mode, listen_on, text_dict={}):
+    try:
+        from xpra.net.avahi_publisher import AvahiPublishers 
+    except Exception, e:
+        global MDNS_WARNING
+        if not MDNS_WARNING:
+            MDNS_WARNING = True
+            from xpra.log import Logger
+            log = Logger()
+            log.error("failed to load the mdns avahi publisher: %s", e)
+            log.error("either fix your installation or use the '--no-mdns' flag")
+        return
+    d = text_dict.copy()
+    d["mode"] = mode
+    ap = AvahiPublishers(listen_on, "Xpra %s %s" % (mode, display_name), text_dict=d)
+    _when_ready.append(ap.start)
+    _cleanups.append(ap.stop)
+
+
 def create_unix_domain_socket(sockpath, mmap_group):
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -248,16 +277,7 @@ def create_unix_domain_socket(sockpath, mmap_group):
     os.umask(orig_umask)
     return listener
 
-def create_tcp_socket(spec):
-    if ":" not in spec:
-        raise Exception("TCP port must be specified as [HOST]:PORT")
-    (host, port) = spec.rsplit(":", 1)
-    if host == "":
-        host = "127.0.0.1"
-    try:
-        iport = int(port)
-    except:
-        raise Exception("invalid port number: %s" % port)
+def create_tcp_socket(host, iport):
     if host.find(":")<0:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sockaddr = (host, iport)
@@ -270,29 +290,35 @@ def create_tcp_socket(spec):
     listener.bind(sockaddr)
     return listener
 
-def setup_tcp_sockets(bind_tcp):
-    if not bind_tcp:
-        return []
+def setup_tcp_socket(host, iport):
     from xpra.log import Logger
     log = Logger()
-    sockets = []
-    def setup_tcp_socket(bind_to):
+    tcp_socket = create_tcp_socket(host, iport)
+    def cleanup_tcp_socket():
+        log.info("closing tcp socket %s:%s", host, iport)
         try:
-            tcp_socket = create_tcp_socket(bind_to)
-            sockets.append(("tcp", tcp_socket))
-            def cleanup_tcp_socket():
-                log.info("closing tcp socket %s", bind_to)
-                try:
-                    tcp_socket.close()
-                except:
-                    pass
-            _cleanups.append(cleanup_tcp_socket)
-        except Exception, e:
-            log.error("cannot start - failed to create tcp socket at %s : %s" % (bind_to, e))
-            return  1
-    for tcp_s in set(bind_tcp):
-        setup_tcp_socket(tcp_s)
-    return sockets
+            tcp_socket.close()
+        except:
+            pass
+    _cleanups.append(cleanup_tcp_socket)
+    return "tcp", tcp_socket
+
+def parse_bind_tcp(bind_tcp):
+    tcp_sockets = set()
+    if bind_tcp:
+        for spec in bind_tcp:
+            if ":" not in spec:
+                raise Exception("TCP port must be specified as [HOST]:PORT")
+            host, port = spec.rsplit(":", 1)
+            if host == "":
+                host = "127.0.0.1"
+            try:
+                iport = int(port)
+            except:
+                raise Exception("invalid port number: %s" % port)
+            tcp_sockets.add((host, iport))
+    return tcp_sockets
+
 
 def setup_local_socket(dotxpra, display_name, clobber, mmap_group):
     if sys.platform.startswith("win"):
@@ -573,13 +599,29 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         # Initialize the sockets before the display,
         # That way, errors won't make us kill the Xvfb
         # (which may not be ours to kill at that point)
+        bind_tcp = parse_bind_tcp(opts.bind_tcp)
+
         sockets = []
+        mdns_info = {"display" : display_name,
+                     "username": getpass.getuser()}
+        if opts.session_name:
+            mdns_info["session"] = opts.session_name
+        #unix:
         socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group)
         if socket:      #win32 returns None!
             sockets.append(socket)
-        sockets += setup_tcp_sockets(opts.bind_tcp)
+            if opts.mdns:
+                ssh_port = get_ssh_port()
+                if ssh_port:
+                    mdns_publish(display_name, "ssh", [("", ssh_port)], mdns_info)
+        #tcp:
+        for host, iport in bind_tcp:
+            socket = setup_tcp_socket(host, iport)
+            sockets.append(socket)
+        if opts.mdns:
+            mdns_publish(display_name, "tcp", bind_tcp, mdns_info)
     except Exception, e:
-        log.error("cannot start server: failed to setup sockets: %s", e)
+        log.error("cannot start server: failed to setup sockets: %s", e, exc_info=True)
         return 1
 
     # Do this after writing out the shell script:
@@ -619,13 +661,11 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer()
         app.init(opts)
-        app.init_sockets(sockets)
     elif proxying:
         xvfb_pid = None
         from xpra.server.proxy_server import ProxyServer
         app = ProxyServer()
         app.init(opts)
-        app.init_sockets(sockets)
     else:
         from xpra.x11.gtk_x11 import gdk_display_source
         assert gdk_display_source
@@ -647,8 +687,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             return 1
         app = XpraServer()
         app.init(clobber, opts)
-        app.init_sockets(sockets)
         _cleanups.insert(0, app.cleanup)
+
+    app.init_sockets(sockets)
+    app.init_when_ready(_when_ready)
 
     if xvfb_pid is not None:
         save_pid(xvfb_pid)

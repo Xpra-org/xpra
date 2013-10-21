@@ -87,6 +87,7 @@ class ServerCore(object):
         log("ServerCore.__init__()")
         self.start_time = time.time()
         self.auth_class = None
+        self._when_ready = []
 
         self._upgrading = False
         #networking bits:
@@ -170,6 +171,9 @@ class ServerCore(object):
         for socktype, sock in sockets:
             self.idle_add(self.add_listen_socket, socktype, sock)
 
+    def init_when_ready(self, callbacks):
+        self._when_ready = callbacks
+
 
     def init_packet_handlers(self):
         log("initializing packet handlers")
@@ -226,6 +230,13 @@ class ServerCore(object):
         log.info("running with pid %s", os.getpid())
         signal.signal(signal.SIGTERM, self.signal_quit)
         signal.signal(signal.SIGINT, self.signal_quit)
+        def start_ready_callbacks():
+            for x in self._when_ready:
+                try:
+                    x()
+                except Exception, e:
+                    log.error("error on %s: %s", x, e)
+        self.idle_add(start_ready_callbacks)
         def print_ready():
             log.info("xpra is ready.")
             sys.stdout.flush()

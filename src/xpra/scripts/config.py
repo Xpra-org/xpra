@@ -251,6 +251,7 @@ OPTION_TYPES = {
                     "autoconnect"       : bool,
                     "exit-with-children": bool,
                     "opengl"            : bool,
+                    "mdns"              : bool,
                     #arrays of strings (default value, allowed options):
                     "speaker-codec"     : list,
                     "microphone-codec"  : list,
@@ -333,6 +334,7 @@ def get_defaults():
                     "autoconnect"       : False,
                     "exit-with-children": False,
                     "opengl"            : OPENGL_DEFAULT,
+                    "mdns"              : True,
                     "speaker-codec"     : [],
                     "microphone-codec"  : [],
                     "key-shortcut"      : ["Meta+Shift+F4:quit", "Meta+Shift+F8:magic_key"],

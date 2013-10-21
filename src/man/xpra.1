@@ -364,12 +364,15 @@ recommended.
 By specifying a shared directory this can be coupled with the
 mmap-group option to connect Xpra sessions across user accounts.
 
-.SS Options for start, upgrade, proxy
+.SS Options for start, upgrade, proxy and shadow
 .TP
 \fB\-\-no\-daemon\fP
 By default, the xpra server puts itself into the background,
 i.e. 'daemonizes', and redirects its output to a log file.  This
 prevents that behavior (useful mostly for debugging).
+.TP
+\fB\-\-no\-mdns\fP
+Turn off publication of new sessions via mDNS.
 .TP
 \fB\-\-auth\fP=\fIMODULE\fP
 Specifies the authentication module to use.
