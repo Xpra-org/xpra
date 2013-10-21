@@ -201,3 +201,14 @@ class StopXpraClient(CommandConnectClient):
 
     def _process_hello(self, packet):
         gobject.idle_add(self.send, "shutdown-server")
+
+
+class DetachXpraClient(CommandConnectClient):
+    """ run the detach subcommand """
+
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
+
+    def _process_hello(self, packet):
+        gobject.idle_add(self.send, "disconnect", "detaching")
+        gobject.idle_add(self.quit, 0)

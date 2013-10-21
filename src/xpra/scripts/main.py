@@ -733,6 +733,9 @@ def run_client(parser, opts, extra_args, mode):
     elif mode=="version":
         from xpra.client.gobject_client_base import VersionXpraClient
         app = VersionXpraClient(connect(), opts)
+    elif mode=="detach":
+        from xpra.client.gobject_client_base import DetachXpraClient
+        app = DetachXpraClient(connect(), opts)
     else:
         if mode in ("attach"):
             sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
@@ -762,11 +765,7 @@ def run_client(parser, opts, extra_args, mode):
         def handshake_complete(*args):
             from xpra.log import Logger
             log = Logger()
-            if mode=="detach":
-                log.info("handshake-complete: detaching")
-                app.quit(0)
-            elif mode=="attach":
-                log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
+            log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
         if hasattr(app, "connect"):
             app.connect("handshake-complete", handshake_complete)
         app.setup_connection(conn)
