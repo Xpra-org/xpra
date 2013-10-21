@@ -455,6 +455,7 @@ class ServerCore(object):
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),
                         "server_type"           : "core",
+                        "info-request"          : True,
                         })
         if self.session_name:
             capabilities["session_name"] = self.session_name
