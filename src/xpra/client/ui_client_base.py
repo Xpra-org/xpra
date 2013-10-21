@@ -19,7 +19,7 @@ from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
-from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
+from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER
 from xpra.simple_stats import std_unit
@@ -623,6 +623,7 @@ class UIXpraClient(XpraClientBase):
                     "dpi"                       : self.dpi,
                     "clipboard"                 : self.client_supports_clipboard,
                     "clipboard.notifications"   : self.client_supports_clipboard,
+                    "clipboard.selections"      : CLIPBOARDS,
                     #buggy osx clipboards:
                     "clipboard.want_targets"    : CLIPBOARD_WANT_TARGETS,
                     #buggy osx and win32 clipboards:

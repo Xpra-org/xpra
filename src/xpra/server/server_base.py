@@ -470,14 +470,19 @@ class ServerBase(ServerCore):
             #deal with buggy win32 clipboards:
             if "clipboard.greedy" not in c:
                 #old clients without the flag: take a guess based on platform:
-                client_platform = c.strget("platform")
-                greedy = client_platform is not None and \
-                    (client_platform.startswith("win") or client_platform.startswith("darwin"))
+                client_platform = c.strget("platform", "")
+                greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
             else:
                 greedy = c.boolget("clipboard.greedy")
             self._clipboard_helper.set_greedy_client(greedy)
             want_targets = c.boolget("clipboard.want_targets")
             self._clipboard_helper.set_want_targets_client(want_targets)
+            #the selections the client supports (default to all):
+            from xpra.platform.features import CLIPBOARDS
+            client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
+            log("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
+            self._clipboard_helper.enable_selections(client_selections)
+
         #so only activate this feature afterwards:
         self.keyboard_sync = c.boolget("keyboard_sync", True)
         key_repeat = c.intpair("key_repeat")
