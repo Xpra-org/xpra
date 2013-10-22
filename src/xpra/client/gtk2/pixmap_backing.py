@@ -46,25 +46,21 @@ class PixmapBacking(GTK2WindowBacking):
         if old_backing is not None:
             # Really we should respect bit-gravity here but... meh.
             old_w, old_h = old_backing.get_size()
-            #note: we may paint the rectangle (old_w, old_h) to (w, h) twice - no big deal
-            if w>old_w:
+            if w>old_w and h>old_h:
+                #both width and height are bigger:
+                cr.rectangle(old_w, 0, w-old_w, h)
+                cr.fill()
                 cr.new_path()
-                cr.move_to(old_w, 0)
-                cr.line_to(w, 0)
-                cr.line_to(w, h)
-                cr.line_to(old_w, h)
-                cr.close_path()
+                cr.rectangle(0, old_h, old_w, h-old_h)
+                cr.fill()
+            elif w>old_w:
+                #enlarged in width only
+                cr.rectangle(old_w, 0, w-old_w, h)
                 cr.fill()
             if h>old_h:
-                cr.new_path()
-                cr.move_to(0, old_h)
-                cr.line_to(0, h)
-                cr.line_to(w, h)
-                cr.line_to(w, old_h)
-                cr.close_path()
+                #enlarged in height only
+                cr.rectangle(0, old_h, w, h-old_h)
                 cr.fill()
-            cr.new_path()
-            cr.move_to(0, 0)
             cr.set_operator(cairo.OPERATOR_SOURCE)
             cr.set_source_pixmap(old_backing, 0, 0)
             cr.paint()
