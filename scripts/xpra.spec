@@ -189,7 +189,7 @@ So basically it's screen for remote X apps.
 - fix modifier key handling (was more noticeable with MS Windows clients)
 - fix auto-refresh
 
-* Thu Sep 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.3-2
+* Fri Sep 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.3-2
 - fix transient windows with no parent
 - fix metadata updates handling (maximize, etc)
 
