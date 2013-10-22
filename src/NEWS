@@ -1,4 +1,4 @@
-v0.11.0 (2013-10-17)
+v0.11.0 (2013-10-22)
 ======================
 	-- NVENC hardware h264 encoding acceleration
 	-- OpenCL and CUDA colourspace conversion acceleration
@@ -12,6 +12,16 @@ v0.11.0 (2013-10-17)
 	-- stricter and safer value parsing
 	-- more detailed status information via UI and "xpra info"
 	-- drop non xpra clients with a more friendly response
+
+
+v0.10.7 (2013-10-22)
+======================
+	-- fix client crash on Linux with AMD cards and fglrx driver
+	-- fix MS Windows tray forwarding (was broken by fix from 0.10.6)
+	-- fix missing WM_CLASS on X11 clients
+	-- fix Mac OSX shadow server
+	-- fix "xpra info" on shadow servers
+	-- add usable 1366x768 dummy resolution
 
 
 v0.10.6 (2013-10-15)

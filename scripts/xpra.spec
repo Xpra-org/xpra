@@ -151,7 +151,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Oct 17 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+* Thu Oct 22 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
 - NVENC hardware h264 encoding acceleration
 - OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
@@ -163,6 +163,12 @@ So basically it's screen for remote X apps.
 - stricter and safer value parsing
 - more detailed status information via UI and "xpra info"
 - drop non xpra clients with a more friendly response
+
+* Tue Oct 22 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.7-1
+- fix client crash on Linux with AMD cards and fglrx driver
+- fix missing WM_CLASS on X11 clients
+- fix "xpra info" on shadow servers
+- add usable 1366x768 dummy resolution
 
 * Tue Oct 15 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.6-1
 - fix window titles reverting to "unknown host"
