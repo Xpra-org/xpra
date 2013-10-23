@@ -433,27 +433,26 @@ class ServerCore(object):
                 return False
         return auth_caps
 
-    def load_binary_file(self, filename):
+    def filedata_nocrlf(self, filename):
         v = load_binary_file(filename)
         if v is None:
             log.error("failed to load '%s'", filename)
-        return v
+            return None
+        return v.strip("\n\r")
 
     def get_encryption_key(self, authenticator=None):
         #if we have a keyfile specified, use that:
         if self.encryption_keyfile:
             log("trying to load encryption key from keyfile: %s", self.encryption_keyfile)
-            return self.load_binary_file(self.encryption_keyfile)
+            return self.filedata_nocrlf(self.encryption_keyfile)
         v = None
         if authenticator:
             log("trying to get encryption key from: %s", authenticator)
             v = authenticator.get_password()
         if v is None and self.password_file:
             log("trying to load encryption key from password file: %s", self.password_file)
-            v = self.load_binary_file(self.password_file)
-        if v is None:
-            return None
-        return v.strip("\n\r")
+            v = self.filedata_nocrlf(self.password_file)
+        return v
 
     def hello_oked(self, proto, packet, c, auth_caps):
         pass
