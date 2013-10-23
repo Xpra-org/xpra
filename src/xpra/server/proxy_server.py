@@ -88,8 +88,6 @@ class ProxyServer(ServerCore):
 
     def hello_oked(self, proto, packet, c, auth_caps):
         self.accept_client(proto, c)
-        #since we hand it over to another process, don't keep hold of it here:
-        self._potential_protocols.remove(proto)
         self.start_proxy(proto, c, auth_caps)
 
     def start_proxy(self, client_proto, c, auth_caps):

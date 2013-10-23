@@ -309,6 +309,8 @@ class ServerCore(object):
 
     def _process_connection_lost(self, proto, packet):
         log.info("Connection lost")
+        if proto in self._potential_protocols:
+            self._potential_protocols.remove(proto)
 
     def _process_gibberish(self, proto, packet):
         data = packet[1]
