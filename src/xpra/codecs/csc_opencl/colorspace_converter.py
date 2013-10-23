@@ -133,18 +133,26 @@ def init_context():
 #Note: we don't care about alpha!
 #This tries to map our standard RGB representation
 #to the channel_order types that OpenCL may support
-IN_CHANNEL_ORDER = (
-                  ("RGBX",  pyopencl.channel_order.RGBx),
-                  ("RGBX",  pyopencl.channel_order.RGBA),
-                  ("BGRX",  pyopencl.channel_order.BGRA),
-                  ("RGB" ,  pyopencl.channel_order.RGB),
-                  )
-CHANNEL_ORDER_TO_STR = {
-                    pyopencl.channel_order.RGBA : "RGBA",
-                    pyopencl.channel_order.BGRA : "BGRA",
-                    pyopencl.channel_order.RGBx : "RGBx",
-                    pyopencl.channel_order.RGB  : "RGB",
-                  }
+IN_CHANNEL_ORDER = []
+#a list of: (string, pyopencl.channel_order)
+#ie: [("RGBA", pyopencl.channel_order.RGBA), ..]
+CHANNEL_ORDER_TO_STR = {}
+#channel order to name:
+#ie: { pyopencl.channel_order.RGBx : "RGBx", ...}
+for rgb_mode, channel_order_name in (
+                  ("RGBX",  "RGBx"),   #pyopencl.channel_order.RGBx
+                  ("RGBX",  "RGBA"),   #pyopencl.channel_order.RGBA
+                  ("BGRX",  "BGRA"),   #pyopencl.channel_order.BGRA
+                  ("RGB" ,  "RGB"),    #pyopencl.channel_order.RGB
+                  ):
+    if not hasattr(pyopencl.channel_order, channel_order_name):
+        debug("this build does not have support for %s", channel_order_name)
+        continue
+    channel_order = getattr(pyopencl.channel_order, channel_order_name)
+    IN_CHANNEL_ORDER.append((rgb_mode, channel_order))
+    CHANNEL_ORDER_TO_STR[channel_order] = channel_order_name
+
+
 FILTER_MODE_TO_STR = {
                     pyopencl.filter_mode.LINEAR : "LINEAR",
                     pyopencl.filter_mode.NEAREST: "NEAREST"
