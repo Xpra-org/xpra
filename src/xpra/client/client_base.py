@@ -399,6 +399,8 @@ class XpraClientBase(object):
     def load_password(self):
         filename = os.path.expanduser(self.password_file)
         password = load_binary_file(filename)
+        if password is None:
+            return None
         password = password.strip("\n\r")
         log("password read from file %s is %s", self.password_file, "".join(["*" for _ in password]))
         return password
