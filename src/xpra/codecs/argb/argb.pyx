@@ -14,13 +14,16 @@ cdef extern from "Python.h":
                               Py_ssize_t * buffer_len) except -1
 
 
-try:
-    assert bytearray
+#test for availability of bytearray
+#in a way that does not cause Cython to fail to compile:
+import __builtin__
+_bytearray =  __builtin__.__dict__.get("bytearray")
+if _bytearray is not None:
     def make_byte_buffer(len):
-        return bytearray(len)
-except:
+        return _bytearray(len)
+else:
+    #python 2.4 and older do not have bytearray, use array:
     import array
-    #python 2.4 and older do not have bytearray
     def make_byte_buffer(len):              #@DuplicatedSignature
         return array.array('b', '\0' * len)
 
