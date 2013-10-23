@@ -34,6 +34,8 @@ else:
     #use processes:
     from multiprocessing import Process         #@Reimport
 
+MAX_CONCURRENT_CONNECTIONS = 200
+
 
 class ProxyServer(ServerCore):
     """
@@ -46,6 +48,7 @@ class ProxyServer(ServerCore):
     def __init__(self):
         log("ProxyServer.__init__()")
         ServerCore.__init__(self)
+        self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self.main_loop = None
         self.processes = []
         self.idle_add = gobject.idle_add

@@ -95,6 +95,7 @@ class ServerCore(object):
         self._aliases = {}
         self._reverse_aliases = {}
         self.socket_types = {}
+        self._max_connections = MAX_CONCURRENT_CONNECTIONS
 
         self.session_name = "Xpra"
 
@@ -263,7 +264,7 @@ class ServerCore(object):
     def _new_connection(self, listener, *args):
         socktype = self.socket_types.get(listener, "")
         sock, address = listener.accept()
-        if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
+        if len(self._potential_protocols)>=self._max_connections:
             log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
             sock.close()
             return  True
