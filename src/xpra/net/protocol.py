@@ -732,14 +732,19 @@ class Protocol(object):
                         data = data[:-len(padding)]
                 #uncompress if needed:
                 if compression_level>0:
-                    if self.chunked_compression:
-                        if compression_level & LZ4_FLAG:
-                            assert has_lz4
-                            data = LZ4_uncompress(data)
+                    try:
+                        if self.chunked_compression:
+                            if compression_level & LZ4_FLAG:
+                                assert has_lz4
+                                data = LZ4_uncompress(data)
+                            else:
+                                data = decompress(data)
                         else:
-                            data = decompress(data)
-                    else:
-                        data = self._decompressor.decompress(data)
+                            data = self._decompressor.decompress(data)
+                    except Exception, e:
+                        if self.cipher_in:
+                            return self._call_connection_lost("decompression failed (invalid encryption key?): %s" % e)
+                        return self._call_connection_lost("decompression failed: %s" % e)
 
                 if self.cipher_in and not (protocol_flags & Protocol.FLAGS_CIPHER):
                     return self._call_connection_lost("unencrypted packet dropped: %s" % repr_ellipsized(data))
