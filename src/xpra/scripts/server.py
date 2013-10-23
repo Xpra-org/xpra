@@ -128,13 +128,13 @@ class ChildReaper(object):
                 break
             self.add_dead_pid(pid)
 
-def save_pid(pid):
+def save_xvfb_pid(pid):
     import gtk
     from xpra.x11.gtk_x11.prop import prop_set
     prop_set(gtk.gdk.get_default_root_window(),
                            "_XPRA_SERVER_PID", "u32", pid)
 
-def get_pid():
+def get_xvfb_pid():
     import gtk
     from xpra.x11.gtk_x11.prop import prop_get
     return prop_get(gtk.gdk.get_default_root_window(),
@@ -629,18 +629,14 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     sanitize_env()
 
     xvfb = None
-    if shadowing or proxying:
-        xvfb_pid = None
-    elif not clobber:
+    xvfb_pid = None
+    if not shadowing and not proxying and not clobber:
         try:
             xvfb = start_Xvfb(opts.xvfb, display_name)
         except OSError, e:
             log.error("Error starting Xvfb: %s\n", e)
             return  1
         xvfb_pid = xvfb.pid
-    elif clobber:
-        #get the saved pid:
-        xvfb_pid = get_pid()
 
     if not check_xvfb_process(xvfb):
         #xvfb problem: exit now
@@ -657,18 +653,24 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         assert gtk
 
     if shadowing:
-        xvfb_pid = None     #we don't own the display
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer()
         app.init(opts)
     elif proxying:
-        xvfb_pid = None
         from xpra.server.proxy_server import ProxyServer
         app = ProxyServer()
         app.init(opts)
     else:
         from xpra.x11.gtk_x11 import gdk_display_source
         assert gdk_display_source
+        #(now we can access the X11 server)
+
+        if clobber:
+            #get the saved pid (there should be one):
+            xvfb_pid = get_xvfb_pid()
+        elif xvfb_pid is not None:
+            #save the new pid (we should have one):
+            save_xvfb_pid(xvfb_pid)
 
         #check for an existing window manager:
         from xpra.x11.gtk_x11.wm import wm_check
@@ -692,8 +694,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     app.init_sockets(sockets)
     app.init_when_ready(_when_ready)
 
-    if xvfb_pid is not None:
-        save_pid(xvfb_pid)
     #we got this far so the sockets have initialized and
     #the server should be able to manage the display
     #from now on, if we exit without upgrading we will also kill the Xvfb
