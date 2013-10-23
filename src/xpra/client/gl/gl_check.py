@@ -72,8 +72,12 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         props["pyopengl"] = OpenGL.__version__
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
         from OpenGL.GL import glGetString, glGetInteger
-        gl_major = int(glGetString(GL_VERSION)[0])
-        gl_minor = int(glGetString(GL_VERSION)[2])
+        gl_version_str = glGetString(GL_VERSION)
+        if gl_version_str is None:
+            gl_check_error("OpenGL version is missing - cannot continue")
+            return  {}
+        gl_major = int(gl_version_str[0])
+        gl_minor = int(gl_version_str[2])
         props["opengl"] = gl_major, gl_minor
         MIN_VERSION = (1,1)
         if (gl_major, gl_minor) < MIN_VERSION:
