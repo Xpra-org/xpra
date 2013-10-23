@@ -9,6 +9,7 @@
 # username|password|uid|gid|displays|env_options|session_options
 #
 
+import binascii
 import os.path
 import sys
 import hmac
@@ -166,7 +167,7 @@ class Authenticator(object):
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
         verify = hmac.HMAC(fpassword, salt).hexdigest()
-        debug("authenticate(%s) password=%s, salt=%s, hash=%s", challenge_response, fpassword, salt, verify)
+        debug("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(salt), verify)
         if verify!=challenge_response:
             debug("expected '%s' but got '%s'", verify, challenge_response)
             log.error("hmac password challenge for %s does not match", self.username)

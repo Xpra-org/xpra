@@ -6,6 +6,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import binascii
 import types
 import os
 import sys
@@ -407,7 +408,7 @@ class ServerCore(object):
         if proto.authenticator:
             challenge_response = c.strget("challenge_response")
             client_salt = c.strget("challenge_client_salt")
-            log("processing authentication with %s, response=%s, client_salt=%s", proto.authenticator, challenge_response, client_salt)
+            log("processing authentication with %s, response=%s, client_salt=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""))
             #send challenge if this is not a response:
             if not challenge_response:
                 challenge = proto.authenticator.get_challenge()
