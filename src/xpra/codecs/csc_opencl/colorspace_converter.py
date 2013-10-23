@@ -34,7 +34,9 @@ def device_type(d):
 
 def device_info(d):
     dtype = device_type(d)
-    return "%s: %s (%s / %s)" % (dtype, d.name.strip(), d.version, d.opencl_c_version)
+    if hasattr(d, "opencl_c_version"):
+        return "%s: %s (%s / %s)" % (dtype, d.name.strip(), d.version, d.opencl_c_version)
+    return "%s: %s (%s)" % (dtype, d.name.strip(), d.version)
 def platform_info(platform):
     return "%s (%s)" % (platform.name, platform.vendor)
 
