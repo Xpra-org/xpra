@@ -135,7 +135,6 @@ Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 
 ### Patches ###
-Patch7: no-strict.patch
 Patch8: old-libav.patch
 Patch9: old-libav-pixfmtconsts.patch
 Patch10: old-libav-no0RGB.patch
