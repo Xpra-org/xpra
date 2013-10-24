@@ -27,6 +27,8 @@ from xpra.daemon_thread import make_daemon_thread
 from xpra.scripts.config import parse_number, parse_bool
 
 
+PROXY_SOCKET_TIMEOUT = float(os.environ.get("XPRA_PROXY_SOCKET_TIMEOUT", "0.1"))
+assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
 PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
 USE_THREADING = os.environ.get("XPRA_USE_THREADING", "0")=="1"
 if USE_THREADING:
@@ -56,7 +58,7 @@ class ProxyServer(ServerCore):
         self.idle_add = gobject.idle_add
         self.timeout_add = gobject.timeout_add
         self.source_remove = gobject.source_remove
-        self._socket_timeout = 0.1
+        self._socket_timeout = PROXY_SOCKET_TIMEOUT
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
