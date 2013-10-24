@@ -97,6 +97,7 @@ class ServerCore(object):
         self._reverse_aliases = {}
         self.socket_types = {}
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
+        self._socket_timeout = None
 
         self.session_name = "Xpra"
 
@@ -275,6 +276,7 @@ class ServerCore(object):
             peername = str(address)
         sockname = sock.getsockname()
         target = peername or sockname
+        sock.settimeout(self._socket_timeout)
         log("new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", args, sock, sockname, address, peername)
         sc = SocketConnection(sock, sockname, address, target, socktype)
         log.info("New connection received: %s", sc)

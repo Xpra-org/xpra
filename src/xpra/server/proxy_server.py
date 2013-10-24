@@ -20,8 +20,10 @@ from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.main import parse_display_name, connect_to
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol import Protocol, Compressed, compressed_wrapper, new_cipher_caps, get_network_caps
+from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import Queue, SIGNAMES
 from xpra.util import typedict
+from xpra.daemon_thread import make_daemon_thread
 from xpra.scripts.config import parse_number, parse_bool
 
 
@@ -54,6 +56,7 @@ class ProxyServer(ServerCore):
         self.idle_add = gobject.idle_add
         self.timeout_add = gobject.timeout_add
         self.source_remove = gobject.source_remove
+        self._socket_timeout = 0.1
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
@@ -143,7 +146,6 @@ class ProxyServer(ServerCore):
             return
         debug("server connection=%s", server_conn)
 
-        #grab client connection so we can pass it to the ProxyProcess:
         client_conn = client_proto.steal_connection()
         client_state = client_proto.save_state()
         cipher = None
@@ -155,18 +157,35 @@ class ProxyServer(ServerCore):
         debug("start_proxy(..) client connection=%s", client_conn)
         debug("start_proxy(..) client state=%s", client_state)
 
-        assert uid!=0 and gid!=0
-        try:
-            process = ProxyProcess(uid, gid, env_options, session_options, client_conn, client_state, cipher, encryption_key, server_conn, c, self.proxy_ended)
-            debug("starting %s from pid=%s", process, os.getpid())
-            process.start()
-            debug("process started")
-            #FIXME: remove processes that have terminated
-            self.processes.append(process)
-        finally:
-            #now we can close our handle on the connection:
-            client_conn.close()
-            server_conn.close()
+        #this may block, so run it in a thread:
+        def do_start_proxy():
+            debug("do_start_proxy()")
+            try:
+                #stop IO in proxy:
+                #(it may take up to _socket_timeout until the thread exits)
+                client_conn.set_active(False)
+                ioe = client_proto.wait_for_io_threads_exit(0.1+self._socket_timeout)
+                if not ioe:
+                    log.error("IO threads have failed to terminate!")
+                    return
+                #now we can go back to using blocking sockets:
+                #FIXME: this is a bit ugly, but less intrusive than the alternative?
+                if isinstance(client_conn, SocketConnection):
+                    client_conn._socket.settimeout(None)
+                client_conn.set_active(True)
+
+                assert uid!=0 and gid!=0
+                process = ProxyProcess(uid, gid, env_options, session_options, client_conn, client_state, cipher, encryption_key, server_conn, c, self.proxy_ended)
+                debug("starting %s from pid=%s", process, os.getpid())
+                process.start()
+                debug("process started")
+                #FIXME: remove processes that have terminated
+                self.processes.append(process)
+            finally:
+                #now we can close our handle on the connection:
+                client_conn.close()
+                server_conn.close()
+        make_daemon_thread(do_start_proxy, "start_proxy(%s)" % client_conn).start()
 
     def proxy_ended(self, proxy_process):
         debug("proxy_ended(%s)", proxy_process)
@@ -337,7 +356,7 @@ class ProxyProcess(Process):
         while True:
             debug("run_queue() size=%s", self.main_queue.qsize())
             v = self.main_queue.get()
-            debug("item=%s", v)
+            debug("run_queue() item=%s", v)
             if v is None:
                 break
             fn, args, kwargs = v

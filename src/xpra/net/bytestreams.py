@@ -7,6 +7,7 @@
 import sys
 import os
 import errno
+import socket
 
 #on some platforms (ie: OpenBSD), reading and writing from sockets
 #raises an IOError but we should continue if the error code is EINTR
@@ -15,10 +16,12 @@ CONTINUE = [errno.EINTR]
 if sys.platform.startswith("win"):
     WSAEWOULDBLOCK = 10035
     CONTINUE.append(WSAEWOULDBLOCK)
-def untilConcludes(f, *a, **kw):
-    while True:
+def untilConcludes(is_active_cb, f, *a, **kw):
+    while is_active_cb():
         try:
             return f(*a, **kw)
+        except socket.timeout:
+            continue
         except (IOError, OSError), e:
             if e.args[0] in CONTINUE:
                 continue
@@ -34,15 +37,28 @@ class Connection(object):
         self.input_bytecount = 0
         self.output_bytecount = 0
         self.filename = None            #only used for unix domain sockets!
+        self.active = True
+
+    def is_active(self):
+        return self.active
+
+    def set_active(self, active):
+        self.active = active
+
+    def close(self):
+        self.set_active(False)
+
+    def untilConcludes(self, *args):
+        return untilConcludes(self.is_active, *args)
 
     def _write(self, *args):
-        w = untilConcludes(*args)
+        w = self.untilConcludes(*args)
         self.output_bytecount += w
         return w
 
     def _read(self, *args):
-        r = untilConcludes(*args)
-        self.input_bytecount += len(r)
+        r = self.untilConcludes(*args)
+        self.input_bytecount += len(r or "")
         return r
 
     def get_info(self):
@@ -75,6 +91,7 @@ class TwoFileConnection(Connection):
         return self._write(os.write, self._writeable.fileno(), buf)
 
     def close(self):
+        Connection.close(self)
         try:
             self._writeable.close()
             self._readable.close()
@@ -103,6 +120,7 @@ class SocketConnection(Connection):
         return self._write(self._socket.send, buf)
 
     def close(self):
+        Connection.close(self)
         self._socket.close()
 
     def __str__(self):

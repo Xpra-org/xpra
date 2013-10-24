@@ -260,6 +260,16 @@ class Protocol(object):
         if state.get("rencode", False):
             self.enable_rencode()
 
+    def wait_for_io_threads_exit(self, timeout=None):
+        for t in (self._read_thread, self._write_thread):
+            t.join(timeout)
+        exited = True
+        for t in (self._read_thread, self._write_thread):
+            if t.isAlive():
+                exited = False
+                break
+        return exited
+
     def set_packet_source(self, get_packet_cb):
         self._get_packet_cb = get_packet_cb
 
@@ -858,7 +868,7 @@ class Protocol(object):
             except:
                 log.error("error closing %s", self._conn, exc_info=True)
             self._conn = None
-        self.terminate_io_threads()
+        self.terminate_queue_threads()
         self.scheduler.idle_add(self.clean)
 
     def steal_connection(self):
@@ -868,8 +878,7 @@ class Protocol(object):
         conn = self._conn
         self._closed = True
         self._conn = None
-        self.terminate_io_threads()
-        self.scheduler.idle_add(self.clean)
+        self.terminate_queue_threads()
         return conn
 
     def clean(self):
@@ -881,7 +890,8 @@ class Protocol(object):
         self._read_parser_thread = None
         self._process_packet_cb = None
 
-    def terminate_io_threads(self):
+    def terminate_queue_threads(self):
+        log("terminate_queue_threads()")
         #the format thread will exit since closed is set too:
         self._source_has_more.set()
         #make the threads exit by adding the empty marker:

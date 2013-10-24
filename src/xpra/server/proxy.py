@@ -44,18 +44,21 @@ class XpraProxy(object):
         try:
             while not self._closed:
                 log("%s: waiting for data", log_name)
-                buf = untilConcludes(from_conn.read, 4096)
+                buf = untilConcludes(self.is_active, from_conn.read, 4096)
                 if not buf:
                     log("%s: connection lost", log_name)
                     self.quit()
                     return
                 while buf and not self._closed:
                     log("%s: writing %s bytes", log_name, len(buf))
-                    written = untilConcludes(to_conn.write, buf)
+                    written = untilConcludes(self.is_active, to_conn.write, buf)
                     buf = buf[written:]
         except Exception, e:
             log("%s: %s", log_name, e)
             self.quit()
+
+    def is_active(self):
+        return not self._closed
 
     def quit(self, *args):
         log("closing proxy connections")
