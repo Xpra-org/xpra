@@ -245,8 +245,8 @@ class Protocol(object):
             state[x] = getattr(self, x)
         state["zlib"] = self._compress==zcompress
         state["lz4"] = lz4_compress and self._compress==lz4_compress
-        state["bencode"] = self._encoder = self.bencode
-        state["rencode"] = self._encoder = self.rencode
+        state["bencode"] = self._encoder == self.bencode
+        state["rencode"] = self._encoder == self.rencode
         #state["connection"] = self._conn
         return state
 
