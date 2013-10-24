@@ -414,9 +414,9 @@ def get_xorg_conf_and_script():
         out, _ = proc.communicate()
         release = out.replace("\n", "")
         print("Found OS release: %s" % release)
-        if release=="raring":
+        if release in ("raring", "saucy"):
             #yet another instance of Ubuntu breaking something
-            print("Warning: Ubuntu 'raring' breaks Xorg/Xdummy usage - using Xvfb fallback")
+            print("Warning: Ubuntu '%s' breaks Xorg/Xdummy usage - using Xvfb fallback" % release)
             return  Xvfb()
     except Exception, e:
         print("failed to detect OS release using %s: %s" % (" ".join(cmd), e))
