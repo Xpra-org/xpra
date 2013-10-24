@@ -141,6 +141,9 @@ self-tuning and relatively latency-insensitive, and thus is usable
 over network connections that are too slow or unreliable for standard
 X forwarding.
 Xpra can also be used to shadow an existing X11 display.
+.P
+By default the Xpra server announces available sessions (username and display
+number) via mDNS to the local network. Use \fB\-\-no\-mdns\fP to disable it.
 .\" --------------------------------------------------------------------
 .SH EXAMPLES
 .TP \w'xpra\ 'u
