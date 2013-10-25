@@ -27,7 +27,7 @@ __global__ void BGRA2NV12(uint8_t *srcImage,    int srcPitch,
         R[0] = srcImage[si+2];
         G[0] = srcImage[si+1];
         B[0] = srcImage[si];
-        for (j=0; j<4; j++) {
+        for (j=1; j<4; j++) {
             R[j] = R[0];
             G[j] = G[0];
             B[j] = B[0];
