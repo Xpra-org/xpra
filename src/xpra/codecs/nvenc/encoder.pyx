@@ -16,6 +16,8 @@ error = log.error
 
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
+#for SDK version 3, set to 0x30
+DEF NVENC_SDK_API_VERSION = 0x20
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEY = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
 
@@ -319,7 +321,8 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_H264_PROFILE_HIGH_GUID
     GUID NV_ENC_H264_PROFILE_STEREO_GUID
     GUID NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY
-    GUID NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID
+    IF NVENC_SDK_API_VERSION >= 0x30:
+        GUID NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID
     GUID NV_ENC_MPEG2_PROFILE_SIMPLE_GUID
     GUID NV_ENC_MPEG2_PROFILE_MAIN_GUID
     GUID NV_ENC_MPEG2_PROFILE_HIGH_GUID
@@ -334,26 +337,29 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_PRESET_HP_GUID
     GUID NV_ENC_PRESET_HQ_GUID
     GUID NV_ENC_PRESET_BD_GUID
-    #V3 ONLY:
-    GUID NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID
-    GUID NV_ENC_PRESET_LOW_LATENCY_HQ_GUID
-    GUID NV_ENC_PRESET_LOW_LATENCY_HP_GUID
-    #V2 ONLY:
-    #GUID NV_ENC_PRESET_VC_GUID
-    #GUID NV_ENC_PRESET_WIDI_GUID
-    #GUID NV_ENC_PRESET_CAMERA_GUID
-    #GUID NV_ENC_PRESET_AVCHD_GUID
-    #GUID NV_ENC_PRESET_IPOD_GUID
-    #GUID NV_ENC_PRESET_PSP_GUID
-    #GUID NV_ENC_PRESET_GAME_CAPTURE_GUID
-    #GUID NV_ENC_PRESET_CLOUD_GAMING_720p60_GUID
-    #GUID NV_ENC_PRESET_CLOUD_GAMING_720p30_GUID
-    #GUID NV_ENC_PRESET_DESKTOP_CAPTURE_GUID
-    #GUID NV_ENC_PRESET_MVC_STEREO_GUID
-    #GUID NV_ENC_PRESET_CLOUD_GAMING_720p60_GUID
-    #GUID NV_ENC_PRESET_CLOUD_GAMING_720p30_GUID
-    #GUID NV_ENC_PRESET_DESKTOP_CAPTURE_GUID
-    #GUID NV_ENC_PRESET_MVC_STEREO_GUID
+    IF NVENC_SDK_API_VERSION >= 0x30:
+        #V3 ONLY PRESETS:
+        GUID NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID
+        GUID NV_ENC_PRESET_LOW_LATENCY_HQ_GUID
+        GUID NV_ENC_PRESET_LOW_LATENCY_HP_GUID
+        #NV_ENC_CODEC_MPEG2_GUID, etc..
+    ELSE:
+        #V2 ONLY PRESETS:
+        GUID NV_ENC_PRESET_VC_GUID
+        GUID NV_ENC_PRESET_WIDI_GUID
+        GUID NV_ENC_PRESET_CAMERA_GUID
+        GUID NV_ENC_PRESET_AVCHD_GUID
+        GUID NV_ENC_PRESET_IPOD_GUID
+        GUID NV_ENC_PRESET_PSP_GUID
+        GUID NV_ENC_PRESET_GAME_CAPTURE_GUID
+        GUID NV_ENC_PRESET_CLOUD_GAMING_720p60_GUID
+        GUID NV_ENC_PRESET_CLOUD_GAMING_720p30_GUID
+        GUID NV_ENC_PRESET_DESKTOP_CAPTURE_GUID
+        GUID NV_ENC_PRESET_MVC_STEREO_GUID
+        GUID NV_ENC_PRESET_CLOUD_GAMING_720p60_GUID
+        GUID NV_ENC_PRESET_CLOUD_GAMING_720p30_GUID
+        GUID NV_ENC_PRESET_DESKTOP_CAPTURE_GUID
+        GUID NV_ENC_PRESET_MVC_STEREO_GUID
 
     ctypedef struct NV_ENC_CAPS_PARAM:
         uint32_t    version
@@ -428,59 +434,107 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t                    reserved1[254]      #[in]: Reserved and should be set to 0
         void*                       reserved2[64]       #[in]: Reserved and should be set to NULL
 
-    ctypedef struct NV_ENC_CONFIG_H264:
-        uint32_t    enableTemporalSVC   #[in]: Set to 1 to enable SVC temporal
-        uint32_t    enableStereoMVC     #[in]: Set to 1 to enable stereo MVC
-        uint32_t    hierarchicalPFrames #[in]: Set to 1 to enable hierarchical PFrames
-        uint32_t    hierarchicalBFrames #[in]: Set to 1 to enable hierarchical BFrames
-        uint32_t    outputBufferingPeriodSEI    #[in]: Set to 1 to write SEI buffering period syntax in the bitstream
-        uint32_t    outputPictureTimingSEI      #[in]: Set to 1 to write SEI picture timing syntax in the bitstream
-        uint32_t    outputAUD                   #[in]: Set to 1 to write access unit delimiter syntax in bitstream
-        uint32_t    disableSPSPPS               #[in]: Set to 1 to disable writing of Sequence and Picture parameter info in bitstream
-        uint32_t    outputFramePackingSEI       #[in]: Set to 1 to enable writing of frame packing arrangement SEI messages to bitstream
-        uint32_t    outputRecoveryPointSEI      #[in]: Set to 1 to enable writing of recovery point SEI message
-        uint32_t    enableIntraRefresh          #[in]: Set to 1 to enable gradual decoder refresh or intra refresh. If the GOP structure uses B frames this will be ignored
-        uint32_t    enableConstrainedEncoding   #[in]: Set this to 1 to enable constrainedFrame encoding where each slice in the constarined picture is independent of other slices
-                                                #Check support for constrained encoding using ::NV_ENC_CAPS_SUPPORT_CONSTRAINED_ENCODING caps.
-        uint32_t    repeatSPSPPS        #[in]: Set to 1 to enable writing of Sequence and Picture parameter for every IDR frame
-        uint32_t    enableVFR           #[in]: Set to 1 to enable variable frame rate.
-        uint32_t    enableLTR           #[in]: Set to 1 to enable LTR support and auto-mark the first
-        uint32_t    reservedBitFields   #[in]: Reserved bitfields and must be set to 0
-        uint32_t    level               #[in]: Specifies the encoding level. Client is recommended to set this to NV_ENC_LEVEL_AUTOSELECT in order to enable the NvEncodeAPI interface to select the correct level.
-        uint32_t    idrPeriod           #[in]: Specifies the IDR interval. If not set, this is made equal to gopLength in NV_ENC_CONFIG.Low latency application client can set IDR interval to NVENC_INFINITE_GOPLENGTH so that IDR frames are not inserted automatically.
-        uint32_t    separateColourPlaneFlag     #[in]: Set to 1 to enable 4:4:4 separate colour planes
-        uint32_t    disableDeblockingFilterIDC  #[in]: Specifies the deblocking filter mode. Permissible value range: [0,2]
-        uint32_t    numTemporalLayers   #[in]: Specifies max temporal layers to be used for hierarchical coding. Valid value range is [1,::NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS]
-        uint32_t    spsId               #[in]: Specifies the SPS id of the sequence header. Currently reserved and must be set to 0.
-        uint32_t    ppsId               #[in]: Specifies the PPS id of the picture header. Currently reserved and must be set to 0.
-        NV_ENC_H264_ADAPTIVE_TRANSFORM_MODE adaptiveTransformMode   #[in]: Specifies the AdaptiveTransform Mode. Check support for AdaptiveTransform mode using ::NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM caps.
-        NV_ENC_H264_FMO_MODE fmoMode    #[in]: Specified the FMO Mode. Check support for FMO using ::NV_ENC_CAPS_SUPPORT_FMO caps.
-        NV_ENC_H264_BDIRECT_MODE bdirectMode    #[in]: Specifies the BDirect mode. Check support for BDirect mode using ::NV_ENC_CAPS_SUPPORT_BDIRECT_MODE caps.
-        NV_ENC_H264_ENTROPY_CODING_MODE entropyCodingMode   #[in]: Specifies the entropy coding mode. Check support for CABAC mode using ::NV_ENC_CAPS_SUPPORT_CABAC caps.
-        NV_ENC_STEREO_PACKING_MODE stereoMode   #[in]: Specifies the stereo frame packing mode which is to be signalled in frame packing arrangement SEI
-        NV_ENC_CONFIG_H264_EXT h264Extension    #[in]: Specifies the H264 extension config
-        uint32_t    intraRefreshPeriod  #[in]: Specifies the interval between successive intra refresh if enableIntrarefresh is set and one time intraRefresh configuration is desired.
-                                        #When this is specified only first IDR will be encoded and no more key frames will be encoded. Client should set PIC_TYPE = NV_ENC_PIC_TYPE_INTRA_REFRESH
-                                        #for first picture of every intra refresh period.
-        uint32_t    intraRefreshCnt     #[in]: Specifies the number of frames over which intra refresh will happen
-        uint32_t    maxNumRefFrames     #[in]: Specifies the DPB size used for encoding. Setting it to 0 will let driver use the default dpb size.
-                                        #The low latency application which wants to invalidate reference frame as an error resilience tool
-                                        #is recommended to use a large DPB size so that the encoder can keep old reference frames which can be used if recent
-                                        #frames are invalidated.
-        uint32_t    sliceMode           #[in]: This parameter in conjunction with sliceModeData specifies the way in which the picture is divided into slices
-                                        #sliceMode = 0 MB based slices, sliceMode = 1 Byte based slices, sliceMode = 2 MB row based slices, sliceMode = 3, numSlices in Picture
-                                        #When forceIntraRefreshWithFrameCnt is set it will have priority over sliceMode setting
-                                        #When sliceMode == 0 and sliceModeData == 0 whole picture will be coded with one slice
-        uint32_t    sliceModeData       #[in]: Specifies the parameter needed for sliceMode. For:
-                                        #sliceMode = 0, sliceModeData specifies # of MBs in each slice (except last slice)
-                                        #sliceMode = 1, sliceModeData specifies maximum # of bytes in each slice (except last slice)
-                                        #sliceMode = 2, sliceModeData specifies # of MB rows in each slice (except last slice)
-                                        #sliceMode = 3, sliceModeData specifies number of slices in the picture. Driver will divide picture into slices optimally
-        NV_ENC_CONFIG_H264_VUI_PARAMETERS h264VUIParameters   #[in]: Specifies the H264 video usability info pamameters
-        uint32_t    ltrNumFrames        #[in]: Specifies the number of LTR frames used. Additionally, encoder will mark the first numLTRFrames base layer reference frames within each IDR interval as LTR
-        uint32_t    ltrTrustMode        #[in]: Specifies the LTR operating mode. Set to 0 to disallow encoding using LTR frames until later specified. Set to 1 to allow encoding using LTR frames unless later invalidated.
-        uint32_t    reserved1[272]      #[in]: Reserved and must be set to 0
-        void        *reserved2[64]      #[in]: Reserved and must be set to NULL
+    IF NVENC_SDK_API_VERSION >= 0x30:
+        ctypedef struct NV_ENC_CONFIG_H264:
+            uint32_t    enableTemporalSVC   #[in]: Set to 1 to enable SVC temporal
+            uint32_t    enableStereoMVC     #[in]: Set to 1 to enable stereo MVC
+            uint32_t    hierarchicalPFrames #[in]: Set to 1 to enable hierarchical PFrames
+            uint32_t    hierarchicalBFrames #[in]: Set to 1 to enable hierarchical BFrames
+            uint32_t    outputBufferingPeriodSEI    #[in]: Set to 1 to write SEI buffering period syntax in the bitstream
+            uint32_t    outputPictureTimingSEI      #[in]: Set to 1 to write SEI picture timing syntax in the bitstream
+            uint32_t    outputAUD                   #[in]: Set to 1 to write access unit delimiter syntax in bitstream
+            uint32_t    disableSPSPPS               #[in]: Set to 1 to disable writing of Sequence and Picture parameter info in bitstream
+            uint32_t    outputFramePackingSEI       #[in]: Set to 1 to enable writing of frame packing arrangement SEI messages to bitstream
+            uint32_t    outputRecoveryPointSEI      #[in]: Set to 1 to enable writing of recovery point SEI message
+            uint32_t    enableIntraRefresh          #[in]: Set to 1 to enable gradual decoder refresh or intra refresh. If the GOP structure uses B frames this will be ignored
+            uint32_t    enableConstrainedEncoding   #[in]: Set this to 1 to enable constrainedFrame encoding where each slice in the constarined picture is independent of other slices
+                                                    #Check support for constrained encoding using ::NV_ENC_CAPS_SUPPORT_CONSTRAINED_ENCODING caps.
+            uint32_t    repeatSPSPPS        #[in]: Set to 1 to enable writing of Sequence and Picture parameter for every IDR frame
+            uint32_t    enableVFR           #[in]: Set to 1 to enable variable frame rate.
+            uint32_t    enableLTR           #[in]: Set to 1 to enable LTR support and auto-mark the first
+            uint32_t    reservedBitFields   #[in]: Reserved bitfields and must be set to 0
+            uint32_t    level               #[in]: Specifies the encoding level. Client is recommended to set this to NV_ENC_LEVEL_AUTOSELECT in order to enable the NvEncodeAPI interface to select the correct level.
+            uint32_t    idrPeriod           #[in]: Specifies the IDR interval. If not set, this is made equal to gopLength in NV_ENC_CONFIG.Low latency application client can set IDR interval to NVENC_INFINITE_GOPLENGTH so that IDR frames are not inserted automatically.
+            uint32_t    separateColourPlaneFlag     #[in]: Set to 1 to enable 4:4:4 separate colour planes
+            uint32_t    disableDeblockingFilterIDC  #[in]: Specifies the deblocking filter mode. Permissible value range: [0,2]
+            uint32_t    numTemporalLayers   #[in]: Specifies max temporal layers to be used for hierarchical coding. Valid value range is [1,::NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS]
+            uint32_t    spsId               #[in]: Specifies the SPS id of the sequence header. Currently reserved and must be set to 0.
+            uint32_t    ppsId               #[in]: Specifies the PPS id of the picture header. Currently reserved and must be set to 0.
+            NV_ENC_H264_ADAPTIVE_TRANSFORM_MODE adaptiveTransformMode   #[in]: Specifies the AdaptiveTransform Mode. Check support for AdaptiveTransform mode using ::NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM caps.
+            NV_ENC_H264_FMO_MODE fmoMode    #[in]: Specified the FMO Mode. Check support for FMO using ::NV_ENC_CAPS_SUPPORT_FMO caps.
+            NV_ENC_H264_BDIRECT_MODE bdirectMode    #[in]: Specifies the BDirect mode. Check support for BDirect mode using ::NV_ENC_CAPS_SUPPORT_BDIRECT_MODE caps.
+            NV_ENC_H264_ENTROPY_CODING_MODE entropyCodingMode   #[in]: Specifies the entropy coding mode. Check support for CABAC mode using ::NV_ENC_CAPS_SUPPORT_CABAC caps.
+            NV_ENC_STEREO_PACKING_MODE stereoMode   #[in]: Specifies the stereo frame packing mode which is to be signalled in frame packing arrangement SEI
+            NV_ENC_CONFIG_H264_EXT h264Extension    #[in]: Specifies the H264 extension config
+            uint32_t    intraRefreshPeriod  #[in]: Specifies the interval between successive intra refresh if enableIntrarefresh is set and one time intraRefresh configuration is desired.
+                                            #When this is specified only first IDR will be encoded and no more key frames will be encoded. Client should set PIC_TYPE = NV_ENC_PIC_TYPE_INTRA_REFRESH
+                                            #for first picture of every intra refresh period.
+            uint32_t    intraRefreshCnt     #[in]: Specifies the number of frames over which intra refresh will happen
+            uint32_t    maxNumRefFrames     #[in]: Specifies the DPB size used for encoding. Setting it to 0 will let driver use the default dpb size.
+                                            #The low latency application which wants to invalidate reference frame as an error resilience tool
+                                            #is recommended to use a large DPB size so that the encoder can keep old reference frames which can be used if recent
+                                            #frames are invalidated.
+            uint32_t    sliceMode           #[in]: This parameter in conjunction with sliceModeData specifies the way in which the picture is divided into slices
+                                            #sliceMode = 0 MB based slices, sliceMode = 1 Byte based slices, sliceMode = 2 MB row based slices, sliceMode = 3, numSlices in Picture
+                                            #When forceIntraRefreshWithFrameCnt is set it will have priority over sliceMode setting
+                                            #When sliceMode == 0 and sliceModeData == 0 whole picture will be coded with one slice
+            uint32_t    sliceModeData       #[in]: Specifies the parameter needed for sliceMode. For:
+                                            #sliceMode = 0, sliceModeData specifies # of MBs in each slice (except last slice)
+                                            #sliceMode = 1, sliceModeData specifies maximum # of bytes in each slice (except last slice)
+                                            #sliceMode = 2, sliceModeData specifies # of MB rows in each slice (except last slice)
+                                            #sliceMode = 3, sliceModeData specifies number of slices in the picture. Driver will divide picture into slices optimally
+            NV_ENC_CONFIG_H264_VUI_PARAMETERS h264VUIParameters   #[in]: Specifies the H264 video usability info pamameters
+            uint32_t    ltrNumFrames        #[in]: Specifies the number of LTR frames used. Additionally, encoder will mark the first numLTRFrames base layer reference frames within each IDR interval as LTR
+            uint32_t    ltrTrustMode        #[in]: Specifies the LTR operating mode. Set to 0 to disallow encoding using LTR frames until later specified. Set to 1 to allow encoding using LTR frames unless later invalidated.
+            uint32_t    reserved1[272]      #[in]: Reserved and must be set to 0
+            void        *reserved2[64]      #[in]: Reserved and must be set to NULL
+    ELSE:
+        #identical to the one above, but without sliceMode and sliceModeData...
+        ctypedef struct NV_ENC_CONFIG_H264: #@DuplicatedSignature
+            uint32_t    enableTemporalSVC   #[in]: Set to 1 to enable SVC temporal
+            uint32_t    enableStereoMVC     #[in]: Set to 1 to enable stereo MVC
+            uint32_t    hierarchicalPFrames #[in]: Set to 1 to enable hierarchical PFrames
+            uint32_t    hierarchicalBFrames #[in]: Set to 1 to enable hierarchical BFrames
+            uint32_t    outputBufferingPeriodSEI    #[in]: Set to 1 to write SEI buffering period syntax in the bitstream
+            uint32_t    outputPictureTimingSEI      #[in]: Set to 1 to write SEI picture timing syntax in the bitstream
+            uint32_t    outputAUD                   #[in]: Set to 1 to write access unit delimiter syntax in bitstream
+            uint32_t    disableSPSPPS               #[in]: Set to 1 to disable writing of Sequence and Picture parameter info in bitstream
+            uint32_t    outputFramePackingSEI       #[in]: Set to 1 to enable writing of frame packing arrangement SEI messages to bitstream
+            uint32_t    outputRecoveryPointSEI      #[in]: Set to 1 to enable writing of recovery point SEI message
+            uint32_t    enableIntraRefresh          #[in]: Set to 1 to enable gradual decoder refresh or intra refresh. If the GOP structure uses B frames this will be ignored
+            uint32_t    enableConstrainedEncoding   #[in]: Set this to 1 to enable constrainedFrame encoding where each slice in the constarined picture is independent of other slices
+                                                    #Check support for constrained encoding using ::NV_ENC_CAPS_SUPPORT_CONSTRAINED_ENCODING caps.
+            uint32_t    repeatSPSPPS        #[in]: Set to 1 to enable writing of Sequence and Picture parameter for every IDR frame
+            uint32_t    enableVFR           #[in]: Set to 1 to enable variable frame rate.
+            uint32_t    enableLTR           #[in]: Set to 1 to enable LTR support and auto-mark the first
+            uint32_t    reservedBitFields   #[in]: Reserved bitfields and must be set to 0
+            uint32_t    level               #[in]: Specifies the encoding level. Client is recommended to set this to NV_ENC_LEVEL_AUTOSELECT in order to enable the NvEncodeAPI interface to select the correct level.
+            uint32_t    idrPeriod           #[in]: Specifies the IDR interval. If not set, this is made equal to gopLength in NV_ENC_CONFIG.Low latency application client can set IDR interval to NVENC_INFINITE_GOPLENGTH so that IDR frames are not inserted automatically.
+            uint32_t    separateColourPlaneFlag     #[in]: Set to 1 to enable 4:4:4 separate colour planes
+            uint32_t    disableDeblockingFilterIDC  #[in]: Specifies the deblocking filter mode. Permissible value range: [0,2]
+            uint32_t    numTemporalLayers   #[in]: Specifies max temporal layers to be used for hierarchical coding. Valid value range is [1,::NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS]
+            uint32_t    spsId               #[in]: Specifies the SPS id of the sequence header. Currently reserved and must be set to 0.
+            uint32_t    ppsId               #[in]: Specifies the PPS id of the picture header. Currently reserved and must be set to 0.
+            NV_ENC_H264_ADAPTIVE_TRANSFORM_MODE adaptiveTransformMode   #[in]: Specifies the AdaptiveTransform Mode. Check support for AdaptiveTransform mode using ::NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM caps.
+            NV_ENC_H264_FMO_MODE fmoMode    #[in]: Specified the FMO Mode. Check support for FMO using ::NV_ENC_CAPS_SUPPORT_FMO caps.
+            NV_ENC_H264_BDIRECT_MODE bdirectMode    #[in]: Specifies the BDirect mode. Check support for BDirect mode using ::NV_ENC_CAPS_SUPPORT_BDIRECT_MODE caps.
+            NV_ENC_H264_ENTROPY_CODING_MODE entropyCodingMode   #[in]: Specifies the entropy coding mode. Check support for CABAC mode using ::NV_ENC_CAPS_SUPPORT_CABAC caps.
+            NV_ENC_STEREO_PACKING_MODE stereoMode   #[in]: Specifies the stereo frame packing mode which is to be signalled in frame packing arrangement SEI
+            NV_ENC_CONFIG_H264_EXT h264Extension    #[in]: Specifies the H264 extension config
+            uint32_t    intraRefreshPeriod  #[in]: Specifies the interval between successive intra refresh if enableIntrarefresh is set and one time intraRefresh configuration is desired.
+                                            #When this is specified only first IDR will be encoded and no more key frames will be encoded. Client should set PIC_TYPE = NV_ENC_PIC_TYPE_INTRA_REFRESH
+                                            #for first picture of every intra refresh period.
+            uint32_t    intraRefreshCnt     #[in]: Specifies the number of frames over which intra refresh will happen
+            uint32_t    maxNumRefFrames     #[in]: Specifies the DPB size used for encoding. Setting it to 0 will let driver use the default dpb size.
+                                            #The low latency application which wants to invalidate reference frame as an error resilience tool
+                                            #is recommended to use a large DPB size so that the encoder can keep old reference frames which can be used if recent
+                                            #frames are invalidated.
+            NV_ENC_CONFIG_H264_VUI_PARAMETERS h264VUIParameters   #[in]: Specifies the H264 video usability info pamameters
+            uint32_t    ltrNumFrames        #[in]: Specifies the number of LTR frames used. Additionally, encoder will mark the first numLTRFrames base layer reference frames within each IDR interval as LTR
+            uint32_t    ltrTrustMode        #[in]: Specifies the LTR operating mode. Set to 0 to disallow encoding using LTR frames until later specified. Set to 1 to allow encoding using LTR frames unless later invalidated.
+            uint32_t    reserved1[274]      #[in]: Reserved and must be set to 0
+            void        *reserved2[64]      #[in]: Reserved and must be set to NULL
+
 
     ctypedef struct NV_ENC_CONFIG_MPEG2:
         uint32_t    profile             #[in]: Specifies the encoding profile
@@ -971,7 +1025,8 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_H264_PROFILE_HIGH_GUID)              : "high",
         guidstr(NV_ENC_H264_PROFILE_STEREO_GUID)            : "stereo",
         guidstr(NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY): "temporal",
-        guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)  : "constrained-high",
+        #this is added below via ifdef:
+        #NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID          : "constrained-high",
         },
     guidstr(NV_ENC_CODEC_MPEG2_GUID) : {
         guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
@@ -993,29 +1048,37 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
         },
     }
+IF NVENC_SDK_API_VERSION >= 0x30:
+    CODEC_PROFILES_GUIDS.get(guidstr(NV_ENC_CODEC_H264_GUID))[guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)] = "constrained-high"
+
 
 CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_DEFAULT_GUID)                     : "default",
     guidstr(NV_ENC_PRESET_HP_GUID)                          : "hp",
     guidstr(NV_ENC_PRESET_HQ_GUID)                          : "hq",
     guidstr(NV_ENC_PRESET_BD_GUID)                          : "bd",
-    #V3 only:
-    guidstr(NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID)         : "low-latency",
-    guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
-    guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
-    #V2 only:
-    #guidstr(NV_ENC_PRESET_VC_GUID)                          : "vc",
-    #guidstr(NV_ENC_PRESET_WIDI_GUID)                        : "widi",
-    #guidstr(NV_ENC_PRESET_CAMERA_GUID)                      : "camera",
-    #guidstr(NV_ENC_PRESET_AVCHD_GUID)                       : "avchd",
-    #guidstr(NV_ENC_PRESET_IPOD_GUID)                        : "ipod",
-    #guidstr(NV_ENC_PRESET_PSP_GUID)                         : "psp",
-    #guidstr(NV_ENC_PRESET_GAME_CAPTURE_GUID)                : "game-capture",
-    #guidstr(NV_ENC_PRESET_CLOUD_GAMING_720p60_GUID)         : "gaming 720p60",
-    #guidstr(NV_ENC_PRESET_CLOUD_GAMING_720p30_GUID)         : "gaming 720p30",
-    #guidstr(NV_ENC_PRESET_DESKTOP_CAPTURE_GUID)             : "desktop-capture",
-    #guidstr(NV_ENC_PRESET_MVC_STEREO_GUID)                  : "mvc-stereo",
     }
+#SDK version specific presets:
+IF NVENC_SDK_API_VERSION >= 0x30:
+    CODEC_PRESETS_GUIDS.update({
+        guidstr(NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID)         : "low-latency",
+        guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
+        guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
+        })
+ELSE:
+    CODEC_PRESETS_GUIDS.update({
+        guidstr(NV_ENC_PRESET_VC_GUID)                          : "vc",
+        guidstr(NV_ENC_PRESET_WIDI_GUID)                        : "widi",
+        guidstr(NV_ENC_PRESET_CAMERA_GUID)                      : "camera",
+        guidstr(NV_ENC_PRESET_AVCHD_GUID)                       : "avchd",
+        guidstr(NV_ENC_PRESET_IPOD_GUID)                        : "ipod",
+        guidstr(NV_ENC_PRESET_PSP_GUID)                         : "psp",
+        guidstr(NV_ENC_PRESET_GAME_CAPTURE_GUID)                : "game-capture",
+        guidstr(NV_ENC_PRESET_CLOUD_GAMING_720p60_GUID)         : "gaming 720p60",
+        guidstr(NV_ENC_PRESET_CLOUD_GAMING_720p30_GUID)         : "gaming 720p30",
+        guidstr(NV_ENC_PRESET_DESKTOP_CAPTURE_GUID)             : "desktop-capture",
+        guidstr(NV_ENC_PRESET_MVC_STEREO_GUID)                  : "mvc-stereo",
+    })
 
 BUFFER_FORMAT = {
         NV_ENC_BUFFER_FORMAT_UNDEFINED              : "undefined",
@@ -1496,8 +1559,9 @@ cdef class Encoder:
                 picParams.pictureType = NV_ENC_PIC_TYPE_P
             picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
             picParams.codecPicParams.h264PicParams.refPicFlag = 1
-            picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
-            picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
+            IF NVENC_SDK_API_VERSION >= 0x30:
+                picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
+                picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
             #picParams.encodePicFlags = NV_ENC_PIC_FLAG_FORCEINTRA
             #picParams.inputTimeStamp = int(1000.0 * time.time())
             #inputDuration = 0      #FIXME: use frame delay?
