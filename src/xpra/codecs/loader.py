@@ -20,7 +20,7 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
             for classname in classnames:
                 ic =  __import__(class_module, {}, {}, classname)
                 #warn("codec_import_check(%s, ..)=%s" % (name, ic))
-                debug(" found %s: %s", name, ic)
+                debug(" found %s : %s", name, ic)
                 codecs[name] = ic
                 return ic
         except ImportError, e:
@@ -59,33 +59,36 @@ def load_codecs():
     debug("loading codecs")
     codec_import_check("PIL", "Python Imaging Library", "PIL", "PIL", "Image")
     add_codec_version("PIL", "PIL.Image", "VERSION")
-    
+
     codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
     codec_import_check("dec_vpx", "vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
     add_codec_version("vpx", "xpra.codecs.vpx.encoder", "get_version", True)
-    
+
     codec_import_check("enc_x264", "x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
     add_codec_version("x264", "xpra.codecs.enc_x264.encoder", "get_version", True)
-    
+
     codec_import_check("enc_nvenc", "nvenc encoder", "xpra.codecs.nvenc", "xpra.codecs.nvenc.encoder", "Encoder")
     add_codec_version("nvenc", "xpra.codecs.nvenc.encoder", "get_version", True)
-    
+
     codec_import_check("csc_swscale", "swscale colorspace conversion", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
     add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter", "get_version", True)
-    
+
     codec_import_check("csc_opencl", "OpenCL colorspace conversion", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
     add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter", "get_version", True)
-    
+
     codec_import_check("csc_nvcuda", "CUDA colorspace conversion", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
     add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "get_version", True)
-    
+
     codec_import_check("dec_avcodec", "avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder")
     add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder", "get_version", True)
 
-
-    try:
-        #python >=2.6 only and required for webp to work:
-        bytearray()
+    import __builtin__
+    if "bytearray" in __builtin__.__dict__:
+        def nowebp(remove=["enc_webp", "enc_webp_lossless"]):
+            for x in remove:
+                if x in codecs:
+                    del codecs[x]
+        #no bytearray (python 2.6 or later), no webp
         try:
             #these symbols are all available upstream as of libwebp 0.2:
             codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
@@ -96,19 +99,15 @@ def load_codecs():
                 #the fact that the python functions are defined is not enough
                 #we need to check if the underlying C functions actually exist:
                 if not _enc_webp_lossless.HAS_LOSSLESS:
-                    del codecs["enc_webp_lossless"]
+                    nowebp(["enc_webp_lossless"])
             add_codec_version("webp", "xpra.codecs.webm", "__VERSION__")
             webp_handlers = codec_import_check("webp_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
             #we need the handlers to encode:
             if not webp_handlers:
-                del codecs["enc_webp"]
-                if "enc_webp_lossless" in codecs:
-                    del codecs["enc_webp_lossless"]
+                nowebp()
         except Exception, e:
             warn("cannot load webp: " % e)
-    except:
-        #no bytearray, no webp
-        pass
+            nowebp()
     debug("done loading codecs")
     debug("found:")
     #print("codec_status=%s" % codecs)
@@ -170,7 +169,7 @@ def main():
     import logging
     logging.basicConfig(format="%(message)s")
     logging.root.setLevel(logging.INFO)
-    
+
     load_codecs()
     print("codecs/csc modules found:")
     #print("codec_status=%s" % codecs)
