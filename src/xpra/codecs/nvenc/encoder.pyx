@@ -1361,6 +1361,8 @@ cdef class Encoder:
             if presetConfig!=NULL:
                 #presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
                 params.encodeConfig = &presetConfig.presetCfg
+            else:
+                self.preset_name = None
             raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params), "initializing encoder")
             debug("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
@@ -1394,9 +1396,19 @@ cdef class Encoder:
         cdef float pps
         info = {"width"     : self.width,
                 "height"    : self.height,
+                "frames"    : self.frames,
+                "device"    : device_info(self.cuda_device),
+                "codec"     : self.codec_name,
                 "encoder_width" : self.encoder_width,
                 "encoder_height" : self.encoder_height,
-                "src_format": self.src_format}
+                "src_format": self.src_format,
+                "version"   : get_version()}
+        if self.preset_name:
+            info["preset"] = self.preset_name
+        if self.frames>0 and self.time>0:
+            pps = float(self.width) * float(self.height) * float(self.frames) / self.time
+            info["total_time_ms"] = int(self.time*1000.0)
+            info["pixels_per_second"] = int(pps)
         return info
 
     def __str__(self):
