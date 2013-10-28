@@ -334,10 +334,26 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_PRESET_HP_GUID
     GUID NV_ENC_PRESET_HQ_GUID
     GUID NV_ENC_PRESET_BD_GUID
+    #V3 ONLY:
     GUID NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID
     GUID NV_ENC_PRESET_LOW_LATENCY_HQ_GUID
     GUID NV_ENC_PRESET_LOW_LATENCY_HP_GUID
-    #NV_ENC_CODEC_MPEG2_GUID, etc..
+    #V2 ONLY:
+    #GUID NV_ENC_PRESET_VC_GUID
+    #GUID NV_ENC_PRESET_WIDI_GUID
+    #GUID NV_ENC_PRESET_CAMERA_GUID
+    #GUID NV_ENC_PRESET_AVCHD_GUID
+    #GUID NV_ENC_PRESET_IPOD_GUID
+    #GUID NV_ENC_PRESET_PSP_GUID
+    #GUID NV_ENC_PRESET_GAME_CAPTURE_GUID
+    #GUID NV_ENC_PRESET_CLOUD_GAMING_720p60_GUID
+    #GUID NV_ENC_PRESET_CLOUD_GAMING_720p30_GUID
+    #GUID NV_ENC_PRESET_DESKTOP_CAPTURE_GUID
+    #GUID NV_ENC_PRESET_MVC_STEREO_GUID
+    #GUID NV_ENC_PRESET_CLOUD_GAMING_720p60_GUID
+    #GUID NV_ENC_PRESET_CLOUD_GAMING_720p30_GUID
+    #GUID NV_ENC_PRESET_DESKTOP_CAPTURE_GUID
+    #GUID NV_ENC_PRESET_MVC_STEREO_GUID
 
     ctypedef struct NV_ENC_CAPS_PARAM:
         uint32_t    version
@@ -888,22 +904,22 @@ def guidstr(guid):
     #log.info("guidstr(%s)=%s", guid, s)
     return s
 
-cdef GUID parseguid(s):
+cdef GUID c_parseguid(src):
     #just as ugly as above - shoot me now
     #only this format is allowed:
     sample_key = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
-    if len(s)!=len(sample_key):
-        raise Exception("invalid GUID format: expected %s characters but got %s" % (len(sample_key), len(s)))
+    if len(src)!=len(sample_key):
+        raise Exception("invalid GUID format: expected %s characters but got %s" % (len(sample_key), len(src)))
     for i in range(len(sample_key)):
         if sample_key[i]=="-":
             #dash must be in the same place:
-            if s[i]!="-":
+            if src[i]!="-":
                 raise Exception("invalid GUID format: character at position %s is not '-'" % i)
         else:
             #must be an hex number:
-            if s.upper()[i] not in ("0123456789ABCDEF"):
+            if src.upper()[i] not in ("0123456789ABCDEF"):
                 raise Exception("invalid GUID format: character at position %s is not in hex" % i)
-    parts = s.split("-")    #ie: ["CE788D20", "AAA9", ...]
+    parts = src.split("-")    #ie: ["CE788D20", "AAA9", ...]
     nparts = []
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
         b = bytearray(binascii.unhexlify(parts[i]))
@@ -920,9 +936,12 @@ cdef GUID parseguid(s):
         guid.Data4[i] = (v>>((7-i)*8)) % 256
     return guid
 
+def parseguid(s):
+    return c_parseguid(s)
+
 def test_parse():
     sample_key = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
-    x = parseguid(sample_key)
+    x = c_parseguid(sample_key)
     v = guidstr(x)
     assert v==sample_key, "expected %s but got %s" % (sample_key, v)
 test_parse()
@@ -931,7 +950,7 @@ cdef GUID CLIENT_KEY_GUID
 memset(&CLIENT_KEY_GUID, 0, sizeof(GUID))
 if CLIENT_KEY:
     try:
-        CLIENT_KEY_GUID = parseguid(CLIENT_KEY)
+        CLIENT_KEY_GUID = c_parseguid(CLIENT_KEY)
     except Exception, e:
         log.error("invalid client key specified: %s", e)
 
@@ -980,9 +999,22 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_HP_GUID)                          : "hp",
     guidstr(NV_ENC_PRESET_HQ_GUID)                          : "hq",
     guidstr(NV_ENC_PRESET_BD_GUID)                          : "bd",
+    #V3 only:
     guidstr(NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID)         : "low-latency",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
+    #V2 only:
+    #guidstr(NV_ENC_PRESET_VC_GUID)                          : "vc",
+    #guidstr(NV_ENC_PRESET_WIDI_GUID)                        : "widi",
+    #guidstr(NV_ENC_PRESET_CAMERA_GUID)                      : "camera",
+    #guidstr(NV_ENC_PRESET_AVCHD_GUID)                       : "avchd",
+    #guidstr(NV_ENC_PRESET_IPOD_GUID)                        : "ipod",
+    #guidstr(NV_ENC_PRESET_PSP_GUID)                         : "psp",
+    #guidstr(NV_ENC_PRESET_GAME_CAPTURE_GUID)                : "game-capture",
+    #guidstr(NV_ENC_PRESET_CLOUD_GAMING_720p60_GUID)         : "gaming 720p60",
+    #guidstr(NV_ENC_PRESET_CLOUD_GAMING_720p30_GUID)         : "gaming 720p30",
+    #guidstr(NV_ENC_PRESET_DESKTOP_CAPTURE_GUID)             : "desktop-capture",
+    #guidstr(NV_ENC_PRESET_MVC_STEREO_GUID)                  : "mvc-stereo",
     }
 
 BUFFER_FORMAT = {
@@ -1052,6 +1084,7 @@ cdef cuda_init_devices():
         debug(" max block sizes: (%s, %s, %s)", d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z))
         debug(" max grid sizes: (%s, %s, %s)", d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z))
         #SMmajor, SMminor = d.compute_cabability()
+        #FIXME: restore check and use FORCE flag here!
         SMmajor, SMminor = 0xFFFF, 0xFFFF
         has_nvenc = ((SMmajor<<4) + SMminor) >= 0x30
         pre = "-"
@@ -1106,10 +1139,12 @@ cdef raiseNVENC(NVENCSTATUS ret, msg=""):
 def get_BGRA2NV12():
     from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
     from pycuda.compiler import SourceModule
-    log.info("BGRA2NV12=%s", BGRA2NV12_kernel)
+    debug("BGRA2NV12=%s", BGRA2NV12_kernel)
     mod = SourceModule(BGRA2NV12_kernel)
     BGRA2NV12_function = mod.get_function("BGRA2NV12")
     return BGRA2NV12_function
+
+API_V2_WARNING = False
 
 
 cdef class Encoder:
@@ -1141,22 +1176,28 @@ cdef class Encoder:
     cdef object preset_name
     cdef double time
     cdef int frames
+    cdef int api_warning
 
     cdef GUID get_codec(self):
         codecs = self.query_codecs()
         #codecs={'H264': '6BC82762-4E63-4CA4-AA85-1E50F321F6BF'}
         assert self.codec_name in codecs, "%s not supported!?" % self.codec_name
-        return parseguid(codecs.get(self.codec_name))
+        return c_parseguid(codecs.get(self.codec_name))
 
     cdef GUID get_preset(self, GUID codec):
         #PRESET:
         presets = self.query_presets(codec)
         #presets={'low-latency': '49DF21C5-6DFA-4FEB-9787-6ACC9EFFB726', 'bd': '82E3E450-BDBB-4E40-989C-82A90DF9EF32', 'default': 'B2DFB705-4EBD-4C49-9B5F-24A777D3E587', 'hp': '60E4C59F-E846-4484-A56D-CD45BE9FDDF6', 'hq': '34DBA71D-A77B-4B8F-9C3E-B6D5DA24C012', 'low-latency-hp': '67082A44-4BAD-48FA-98EA-93056D150A58', 'low-latency-hq': 'C5F733B9-EA97-4CF9-BEC2-BF78A74FD105'}
         self.preset_name = None
-        for x in ("low-latency-hq", "low-latency", "low-latency-hp"):
+        DESIRED_PRESET_LIST = (
+                  #in V3, the presets are called "low-latency":
+                  "low-latency-hq", "low-latency", "low-latency-hp",
+                  #in V2, they are called gaming:
+                  "game-capture", "gaming 720p60", "gaming 720p30")
+        for x in DESIRED_PRESET_LIST:
             if x in presets:
                 self.preset_name = x
-                return parseguid(presets.get(x))
+                return c_parseguid(presets.get(x))
         raise Exception("no low-latency presets available for '%s'!?" % self.codec_name)
 
 
@@ -1238,11 +1279,10 @@ cdef class Encoder:
         input_formats = self.query_input_formats(codec)
         assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
         try:
-            presetConfig = self.get_preset_config(codec, preset)
+            presetConfig = self.get_preset_config(self.preset_name, codec, preset)
 
             #PROFILE
             profiles = self.query_profiles(NV_ENC_CODEC_H264_GUID)
-            presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
             #self.gopLength = presetConfig.presetCfg.gopLength
 
             memset(&params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))
@@ -1255,7 +1295,9 @@ cdef class Encoder:
             params.darHeight = self.encoder_height
             params.enableEncodeAsync = 0            #not supported on Linux
             params.enablePTD = 0                    #not supported in sync mode!?
-            params.encodeConfig = &presetConfig.presetCfg
+            if presetConfig!=NULL:
+                #presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
+                params.encodeConfig = &presetConfig.presetCfg
             raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params), "initializing encoder")
             debug("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
@@ -1282,7 +1324,8 @@ cdef class Encoder:
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
             debug("bitstreamBuffer=%s", hex(<long> self.bitstreamBuffer))
         finally:
-            free(presetConfig)
+            if presetConfig!=NULL:
+                free(presetConfig)
 
     def get_info(self):
         cdef float pps
@@ -1490,14 +1533,28 @@ cdef class Encoder:
         return pixels, {}
 
 
-    cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, GUID encode_GUID, GUID preset_GUID):
+    cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID):
         """ you must free it after use! """
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
+        cdef int ret
         presetConfig = <NV_ENC_PRESET_CONFIG*> malloc(sizeof(NV_ENC_PRESET_CONFIG))
         assert presetConfig!=NULL, "failed to allocate memory for preset config"
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
-        raiseNVENC(self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig), "getting preset config for %s" % guidstr(preset_GUID))
+        ret = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
+        if ret!=0:
+            global API_V2_WARNING
+            #API version 2.0 fails every time
+            #we call nvEncGetEncodePresetConfig and I don't know why
+            #so warn just once:
+            if NVENCAPI_VERSION==0x20:
+                debug("failed to get preset config for %s", name)
+                if not API_V2_WARNING:
+                    log.warn("API version %s fails on nvEncGetEncodePresetConfig (no further warnings will be shown)", hex(NVENCAPI_VERSION))
+                API_V2_WARNING = True
+            else:
+                log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(ret, ret))
+            return NULL
         return presetConfig
 
     cdef object query_presets(self, GUID encode_GUID):
@@ -1521,15 +1578,21 @@ cdef class Encoder:
                 preset_GUID = preset_GUIDs[x]
                 preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset_GUID))
                 debug("* %s : %s", guidstr(preset_GUID), preset_name)
-                try:
-                    presetConfig = self.get_preset_config(encode_GUID, preset_GUID)
-                    encConfig = presetConfig.presetCfg
-                    debug("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
-                finally:
-                    free(presetConfig)
-                presets[preset_name] = guidstr(preset_GUID)
+                presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID)
+                if presetConfig!=NULL:
+                    try:
+                        encConfig = presetConfig.presetCfg
+                        #debug("presetConfig.presetCfg=%s", <long> encConfig)
+                        debug("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
+                    finally:
+                        free(presetConfig)
+                if preset_name is None:
+                    log.warn("unknown preset found: %s", guidstr(preset_GUID))
+                else:
+                    presets[preset_name] = guidstr(preset_GUID)
         finally:
             free(preset_GUIDs)
+        debug("query_presets(%s)=%s", guidstr(encode_GUID), presets)
         return presets
 
     cdef object query_profiles(self, GUID encode_GUID):
