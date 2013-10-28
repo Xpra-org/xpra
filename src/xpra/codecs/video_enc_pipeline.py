@@ -42,7 +42,7 @@ class VideoPipelineHelper(object):
         except:
             log.warn("init_video_encoders_options() cannot add x264 encoder", exc_info=True)
         try:
-            self.init_video_encoder_option("enc_nvenc")
+            self.init_video_encoder_option("nvenc")
         except:
             log.warn("init_video_encoders_options() cannot add nvenc encoder", exc_info=True)
         debug("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)
