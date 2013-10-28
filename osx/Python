@@ -31,7 +31,7 @@ export GST_PLUGIN_SCANNER="$bundle_contents/Helpers/gst-plugin-scanner"
 #Set $PYTHON to point inside the bundle
 #This is not the real "python" but a copy of it named "xpra"
 #This is hacked together in make-app.sh
-export PYTHON="$bundle_bin/Xpra"
+export PYTHON="$bundle_bin/python"
 export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules
 PYTHONPATH="$bundle_lib:$PYTHONPATH"
