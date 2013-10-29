@@ -452,10 +452,17 @@ class UIXpraClient(XpraClientBase):
                 self.send_positional(["button-action", wid,
                                               button, pressed, (x, y), modifiers])
                 tray.reconfigure()
-        def tray_mouseover(*args):
-            log("tray_mouseover(%s)", args)
+
+        def tray_mouseover(x, y):
+            log("tray_mouseover(%s, %s)", x, y)
+            pointer = x, y
+            modifiers = self.get_current_modifiers()
+            buttons = []
+            self.send_mouse_position(["pointer-position", wid, pointer, modifiers, buttons])
+            
         def tray_exit(*args):
             log("tray_exit(%s)", args)
+
         #(menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
         tray_widget = self.make_system_tray(None, "Xpra", None, tray_resized, tray_click, tray_mouseover, tray_exit)
         log("tray_widget=%s", tray_widget)
