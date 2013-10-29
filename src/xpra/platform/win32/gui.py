@@ -14,21 +14,22 @@ def get_native_notifier_classes():
     try:
         from xpra.platform.win32.win32_notifier import Win32_Notifier
         return [Win32_Notifier]
-    except Exception, e:
-        log("cannot load native win32 notifier: %s", e)
+    except:
+        log.warn("cannot load native win32 notifier", exc_info=True)
         return []
 
 def get_native_tray_classes():
     try:
         from xpra.platform.win32.win32_tray import Win32Tray
         return [Win32Tray]
-    except Exception, e:
-        log("cannot load native win32 tray: %s", e)
+    except:
+        log.warn("cannot load native win32 tray", exc_info=True)
         return []
 
 def get_native_system_tray_classes(*args):
-    #Win32Tray can be used for both:
-    return get_native_tray_classes()
+    #Win32Tray cannot set the icon from data
+    #so it cannot be used for application trays
+    return []
 
 
 class ClientExtras(object):

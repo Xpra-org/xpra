@@ -3,11 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os.path
 import gtk.gdk
 
 from xpra.client.tray_base import TrayBase, debug, log
-from xpra.platform.paths import get_icon_dir
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 from xpra.platform.darwin.gui import set_exit_cb
 from xpra.platform.gui import ready as gui_ready
@@ -23,7 +21,6 @@ class OSXTray(TrayBase):
         TrayBase.__init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
         from xpra.platform.darwin.gui import get_OSXApplication
         self.macapp = get_OSXApplication()
-        self.icon_filename = icon_filename
         self.last_attention_request_id = -1
 
         self.set_global_menu()
@@ -65,14 +62,8 @@ class OSXTray(TrayBase):
         tray_icon = gtk.gdk.pixbuf_new_from_data(pixels, gtk.gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
         self.macapp.set_dock_icon_pixbuf(tray_icon)
 
-    def set_icon(self, basefilename):
+    def do_set_icon_from_file(self, filename):
         if not self.macapp:
-            return
-        with_ext = "%s.png" % basefilename
-        icon_dir = get_icon_dir()
-        filename = os.path.join(icon_dir, with_ext)
-        if not os.path.exists(filename):
-            log.error("could not find icon '%s' in osx icon dir: %s", with_ext, icon_dir)
             return
         pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)
@@ -101,8 +92,8 @@ class OSXTray(TrayBase):
         debug("OSXTray.set_dock_menu() done")
 
     def set_dock_icon(self):
-        if self.icon_filename:
-            debug("OSXTray.set_dock_icon() loading icon from %s", self.icon_filename)
-            pixbuf = gtk.gdk.pixbuf_new_from_file(self.icon_filename)
+        if self.default_icon_filename:
+            debug("OSXTray.set_dock_icon() loading icon from %s", self.default_icon_filename)
+            pixbuf = gtk.gdk.pixbuf_new_from_file(self.default_icon_filename)
             self.macapp.set_dock_icon_pixbuf(pixbuf)
         debug("OSXTray.set_dock_icon() done")

@@ -7,9 +7,8 @@
 # Augments the win32_NotifyIcon "system tray" support class
 # with methods for integrating with win32_balloon and the popup menu
 
-import tempfile
 
-from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
+from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon, WM_TRAY_EVENT, BUTTON_MAP
 from xpra.client.tray_base import TrayBase, log, debug
 
 
@@ -17,6 +16,7 @@ class Win32Tray(TrayBase):
 
     def __init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
         TrayBase.__init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
+        self.default_icon_extension = "ico"
         self.default_icon_name = "xpra.ico"
         icon_filename = self.get_tray_icon_filename(icon_filename)
         self.tray_widget = win32NotifyIcon(tooltip, click_cb, exit_cb, None, icon_filename)
@@ -32,6 +32,12 @@ class Win32Tray(TrayBase):
 
     def hide(self):
         pass
+
+
+    def get_geometry(self):
+        if self.tray_widget:
+            return self.tray_widget.get_geometry()
+        return None
 
 
     def getHWND(self):
@@ -53,21 +59,15 @@ class Win32Tray(TrayBase):
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
-        #TODO: use native code somehow to avoid saving to file
-        import os
-        from gtk import gdk
-        try:
-            _, filename = tempfile.mkstemp(".ico", "temp")
-            debug("set_icon_from_data%s using temporary file %s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
-            tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
-            tray_icon.save(filename, "ico")
-            self.set_icon(filename)
-        finally:
-            os.unlink(filename)
+        #FIXME: saving to temporary file does not work!
+        #we need to find a way to convert the pixels into a HICON
+        #then call win32gui.Shell_NotifyIcon
+        log.warn("win32_tray does not support set_icon_from_data!")
 
-    def set_icon(self, iconPathName):
-        if self.tray_widget:
-            self.tray_widget.set_icon(iconPathName)
+
+    def do_set_icon_from_file(self, filename):
+        self.tray_widget.set_icon(filename)
+
 
     def set_blinking(self, on):
         if self.tray_widget:
@@ -75,12 +75,16 @@ class Win32Tray(TrayBase):
 
 
     def stop_win32_session_events(self, app_hwnd):
-        if app_hwnd is None:
-            log.warn("stop_win32_session_events(%s) missing handle!", app_hwnd)
-            return
         try:
-            import win32ts                                        #@UnresolvedImport
-            win32ts.WTSUnRegisterSessionNotification(app_hwnd)
+            import win32ts, win32con, win32api          #@UnresolvedImport
+            if self.old_win32_proc and app_hwnd:
+                win32api.SetWindowLong(app_hwnd, win32con.GWL_WNDPROC, self.old_win32_proc)
+                self.old_win32_proc = None
+
+            if app_hwnd:
+                win32ts.WTSUnRegisterSessionNotification(app_hwnd)
+            else:
+                log.warn("stop_win32_session_events(%s) missing handle!", app_hwnd)
         except:
             log.error("stop_win32_session_events", exc_info=True)
 
@@ -99,7 +103,6 @@ class Win32Tray(TrayBase):
         try:
             debug("detect_win32_session_events(%s)", app_hwnd)
             import win32ts, win32con, win32api, win32gui        #@UnresolvedImport
-            WM_TRAYICON = win32con.WM_USER + 20
             NIN_BALLOONSHOW = win32con.WM_USER + 2
             NIN_BALLOONHIDE = win32con.WM_USER + 3
             NIN_BALLOONTIMEOUT = win32con.WM_USER + 4
@@ -117,24 +120,33 @@ class Win32Tray(TrayBase):
                     debug("Session state change!")
                 elif msg==win32con.WM_DESTROY:
                     # Restore the old WndProc
-                    debug("WM_DESTROY, restoring call handler %s", self.oldWndProc)
-                    win32api.SetWindowLong(app_hwnd, win32con.GWL_WNDPROC, self.oldWndProc)
+                    debug("WM_DESTROY: %s / %s", wParam, lParam)
                 elif msg==win32con.WM_COMMAND:
                     debug("WM_COMMAND")
-                elif msg==WM_TRAYICON:
-                    debug("WM_TRAYICON")
+                elif msg==WM_TRAY_EVENT:
                     if lParam==NIN_BALLOONSHOW:
-                        debug("NIN_BALLOONSHOW")
-                    if lParam==NIN_BALLOONHIDE:
-                        debug("NIN_BALLOONHIDE")
+                        debug("WM_TRAY_EVENT: NIN_BALLOONSHOW")
+                    elif lParam==NIN_BALLOONHIDE:
+                        debug("WM_TRAY_EVENT: NIN_BALLOONHIDE")
                         self.balloon_click_callback = None
                     elif lParam==NIN_BALLOONTIMEOUT:
-                        debug("NIN_BALLOONTIMEOUT")
+                        debug("WM_TRAY_EVENT: NIN_BALLOONTIMEOUT")
                     elif lParam==NIN_BALLOONUSERCLICK:
-                        debug("NIN_BALLOONUSERCLICK, balloon_click_callback=%s", self.balloon_click_callback)
+                        debug("WM_TRAY_EVENT: NIN_BALLOONUSERCLICK, balloon_click_callback=%s", self.balloon_click_callback)
                         if self.balloon_click_callback:
                             self.balloon_click_callback()
                             self.balloon_click_callback = None
+                    elif lParam==win32con.WM_MOUSEMOVE:
+                        debug("WM_TRAY_EVENT: WM_MOUSEMOVE")
+                        if self.mouseover_cb:
+                            x, y = win32api.GetCursorPos()
+                            self.mouseover_cb(x, y)
+                    elif lParam in BUTTON_MAP:
+                        debug("WM_TRAY_EVENT: %s", BUTTON_MAP.get(lParam))                        
+                    else:
+                        log.warn("WM_TRAY_EVENT: unknown event: %s / %s", wParam, lParam)
+                elif msg==win32con.WM_ACTIVATEAPP:
+                    debug("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
                 else:
                     log.warn("unknown win32 message: %s / %s / %s", msg, wParam, lParam)
                 # Pass all messages to the original WndProc

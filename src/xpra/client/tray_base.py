@@ -25,6 +25,8 @@ class TrayBase(object):
         self.mouseover_cb = mouseover_cb
         self.exit_cb = exit_cb
         self.tray_widget = None
+        self.default_icon_filename = icon_filename
+        self.default_icon_extension = "png"
         self.default_icon_name = "xpra.png"
 
     def cleanup(self):
@@ -32,7 +34,7 @@ class TrayBase(object):
             self.hide()
             self.tray_widget = None
 
-    def get_tray_icon_filename(self, cmdlineoverride):
+    def get_tray_icon_filename(self, cmdlineoverride=None):
         if cmdlineoverride and os.path.exists(cmdlineoverride):
             debug("get_tray_icon_filename using %s from command line", cmdlineoverride)
             return  cmdlineoverride
@@ -76,17 +78,25 @@ class TrayBase(object):
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
         raise Exception("override me!")
 
-    def set_icon(self, basefilename):
-        with_ext = "%s.png" % basefilename
-        icon_dir = get_icon_dir()
-        filename = os.path.join(icon_dir, with_ext)
-        self.set_icon_from_file(filename)
+    def set_icon(self, basefilename=None):
+        if basefilename is None:
+            #use default filename, or find file with default icon name:
+            filename = self.default_icon_filename or self.get_tray_icon_filename()
+        else:
+            #create full path + filename from basefilename:
+            with_ext = "%s.%s" % (basefilename, self.default_icon_extension)
+            icon_dir = get_icon_dir()
+            filename = os.path.join(icon_dir, with_ext)
+        if not os.path.exists(filename):
+            log.error("could not find icon '%s' for name '%s'", filename, basefilename)
+            return
+        abspath = os.path.abspath(filename)
+        debug("set_icon(%s) using filename=%s", basefilename, abspath)
+        self.set_icon_from_file(abspath)
 
     def set_icon_from_file(self, filename):
+        debug("set_icon_from_file(%s) tray_widget=%s", filename, self.tray_widget)
         if not self.tray_widget:
-            return
-        if not os.path.exists(filename):
-            log.error("could not find icon %s", filename)
             return
         self.do_set_icon_from_file(filename)
 

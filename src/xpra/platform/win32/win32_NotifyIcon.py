@@ -13,53 +13,50 @@ import win32con                    #@UnresolvedImport
 
 import sys, os
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
+
 
 BUTTON_MAP = {
-            win32con.WM_LBUTTONDOWN    : (1, 1),
-            win32con.WM_LBUTTONUP    : (1, 0),
-            win32con.WM_MBUTTONUP    : (2, 0),
-            win32con.WM_MBUTTONDOWN : (2, 0),
-            win32con.WM_RBUTTONDOWN    : (3, 1),
-            win32con.WM_RBUTTONUP    : (3, 0)
+            win32con.WM_LBUTTONDOWN     : (1, 1),
+            win32con.WM_LBUTTONUP       : (1, 0),
+            win32con.WM_MBUTTONDOWN     : (2, 1),
+            win32con.WM_MBUTTONUP       : (2, 0),
+            win32con.WM_RBUTTONDOWN     : (3, 1),
+            win32con.WM_RBUTTONUP       : (3, 0)
             }
 
 
 class win32NotifyIcon(object):
 
-    message_map = {
-        win32con.WM_DESTROY            : win32NotifyIcon.OnDestroy,
-        win32con.WM_COMMAND            : win32NotifyIcon.OnCommand,
-        win32NotifyIcon._message_id    : win32NotifyIcon.OnTaskbarNotify,
-    }
-    wc = win32gui.WNDCLASS()
-    wc.hInstance = win32api.GetModuleHandle(None)
-    wc.lpszClassName = "win32NotifyIcon"
-    wc.lpfnWndProc = message_map # could also specify a wndproc.
-    classAtom = win32gui.RegisterClass(wc)
+    click_callbacks = {}
+    exit_callbacks = {}
+    command_callbacks = {}
+    live_hwnds = set()
 
     def __init__(self, title, click_callback, exit_callback, command_callback=None, iconPathName=None):
         self.title = title[:127]
-        self.click_callback = click_callback
-        self.exit_callback = exit_callback
-        self.command_callback = command_callback
         self.current_icon = None
-        self.closed = False
-        self._message_id = win32con.WM_USER+20        #a message id we choose
         # Register the Window class.
-        self.hinst = win32NotifyIcon.wc.hInstance
+        self.hinst = NIwc.hInstance
         # Create the Window.
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        self.hwnd = win32gui.CreateWindow(win32NotifyIcon.classAtom, self.title+" StatusIcon Window", style, \
-        0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
-        0, 0, self.hinst, None)
+        self.hwnd = win32gui.CreateWindow(NIclassAtom, self.title+" StatusIcon Window", style, \
+            0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
+            0, 0, self.hinst, None)
         win32gui.UpdateWindow(self.hwnd)
         self.current_icon = self.win32LoadIcon(iconPathName)
         win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, self.make_nid(win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP))
+        #register callbacks:
+        win32NotifyIcon.live_hwnds.add(self.hwnd)
+        win32NotifyIcon.click_callbacks[self.hwnd] = click_callback
+        win32NotifyIcon.exit_callbacks[self.hwnd] = exit_callback
+        win32NotifyIcon.command_callbacks[self.hwnd] = command_callback
+        
 
     def make_nid(self, flags):
-        return (self.hwnd, 0, flags, self._message_id, self.current_icon, self.title)
+        return (self.hwnd, 0, flags, WM_TRAY_EVENT, self.current_icon, self.title)
 
     def set_blinking(self, on):
         #FIXME: implement blinking on win32 using a timer
@@ -81,42 +78,69 @@ class win32NotifyIcon(object):
             log.error("Failed to load icon at %s: %s", iconPathName, e)
             return    win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
 
-    def OnCommand(self, hwnd, msg, wparam, lparam):
-        log("OnCommand(%s,%s,%s,%s)", hwnd, msg, wparam, lparam)
-        cid = win32api.LOWORD(wparam)
-        if self.command_callback:
-            self.command_callback(self.hwnd, cid)
+    @classmethod
+    def remove_callbacks(cls, hwnd):
+        for x in (cls.command_callbacks, cls.exit_callbacks, cls.click_callbacks):
+            if hwnd in x:
+                del x[hwnd]
 
-    def OnDestroy(self, hwnd, msg, wparam, lparam):
-        log("OnDestroy(%s,%s,%s,%s) closed=%s, exit_callback=%s",
-                hwnd, msg, wparam, lparam, self.closed, self.exit_callback)
-        if self.closed:
+    @classmethod
+    def OnCommand(cls, hwnd, msg, wparam, lparam):
+        cc = cls.command_callbacks.get(hwnd)
+        log("OnCommand(%s,%s,%s,%s) command callback=%s", hwnd, msg, wparam, lparam, cc)
+        if cc:
+            cid = win32api.LOWORD(wparam)
+            cc(hwnd, cid)
+
+    @classmethod
+    def OnDestroy(cls, hwnd, msg, wparam, lparam):
+        ec = cls.exit_callbacks.get(hwnd)
+        log("OnDestroy(%s,%s,%s,%s) exit_callback=%s", hwnd, msg, wparam, lparam, ec)
+        if hwnd not in cls.live_hwnds:
             return
-        self.closed = True
+        cls.live_hwnds.remove(hwnd)
+        cls.remove_callbacks(hwnd)
         try:
-            nid = (self.hwnd, 0)
+            nid = (hwnd, 0)
             log("OnDestroy(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
             win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
-            log("OnDestroy(..) calling exit_callback=%s", self.exit_callback)
-            if self.exit_callback:
-                self.exit_callback()
+            log("OnDestroy(..) calling exit_callback=%s", ec)
+            if ec:
+                ec()
         except:
             log.error("OnDestroy(..)", exc_info=True)
 
-    def OnTaskbarNotify(self, hwnd, msg, wparam, lparam):
+    @classmethod
+    def OnTaskbarNotify(cls, hwnd, msg, wparam, lparam):
         bm = BUTTON_MAP.get(lparam)
-        log("OnTaskbarNotify(%s,%s,%s,%s) button lookup: %s", hwnd, msg, wparam, lparam, bm)
-        if bm is not None:
-            self.click_callback(*bm)
+        cc = cls.click_callbacks.get(hwnd)
+        log("OnTaskbarNotify(%s,%s,%s,%s) button lookup: %s, callback=%s", hwnd, msg, wparam, lparam, bm, cc)
+        if bm is not None and cc:
+            cc(*bm)
         return 1
 
     def close(self):
-        log("win32NotifyIcon.close() exit_callback=%s", self.exit_callback)
-        self.exit_callback = None
+        log("win32NotifyIcon.close()")
+        win32NotifyIcon.remove_callbacks(self.hwnd)
         self.OnDestroy(0, None, None, None)
 
     def get_geometry(self):
         return    win32gui.GetWindowRect(self.hwnd)
+
+
+WM_TRAY_EVENT = win32con.WM_USER+20        #a message id we choose
+message_map = {
+    win32con.WM_DESTROY            : win32NotifyIcon.OnDestroy,
+    win32con.WM_COMMAND            : win32NotifyIcon.OnCommand,
+    WM_TRAY_EVENT                      : win32NotifyIcon.OnTaskbarNotify,
+}
+NIwc = win32gui.WNDCLASS()
+NIwc.hInstance = win32api.GetModuleHandle(None)
+NIwc.lpszClassName = "win32NotifyIcon"
+NIwc.lpfnWndProc = message_map # could also specify a wndproc.
+NIclassAtom = win32gui.RegisterClass(NIwc)
+
+
 
 
 def main():

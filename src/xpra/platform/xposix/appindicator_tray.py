@@ -44,14 +44,15 @@ class AppindicatorTray(TrayBase):
         TrayBase.__init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
         filename = self.get_tray_icon_filename(icon_filename)
         self.appindicator = get_appindicator()
+        self._has_icon = False
         assert self.appindicator, "appindicator is not available!"
         self.tray_widget = self.appindicator.Indicator(tooltip, filename, self.appindicator.CATEGORY_APPLICATION_STATUS)
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
         self.tray_widget.set_attention_icon("xpra.png")
         if filename:
-            self.tray_widget.set_icon(filename)
-        else:
+            self.set_icon_from_file(filename)
+        if not self._has_icon:
             self.tray_widget.set_label("Xpra")
         if menu:
             self.tray_widget.set_menu(menu)
@@ -67,24 +68,45 @@ class AppindicatorTray(TrayBase):
         pass
 
     def set_tooltip(self, text=None):
-        self.tray_widget.set_label(text or "Xpra")
+        #we only use this if we haven't got an icon
+        #as with appindicator this creates a large text label
+        #next to where the icon is/should be
+        if not self._has_icon:
+            self.tray_widget.set_label(text or "Xpra")
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
-        #can't do that either..
-        pass
+        #use a temporary file (yuk)
+        try:
+            from gtk import gdk
+        except:
+            #no gtk.gdk... no can do
+            return
+        import tempfile
+        try:
+            _, filename = tempfile.mkstemp(suffix="png")
+            debug("set_icon_from_data%s using temporary file %s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
+            tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+            tray_icon.save(filename, "png")
+            self.do_set_icon_from_file(filename)
+        finally:
+            os.unlink(filename)
 
     def do_set_icon_from_file(self, filename):
         if not hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon(filename)
+            self._has_icon = True
             return
         head, icon_name = os.path.split(filename)
         if head:
+            debug("do_set_icon_from_file(%s) setting icon theme path=%s", filename, head)
             self.tray_widget.set_icon_theme_path(head)
         #remove extension (wtf?)
         dot = icon_name.rfind(".")
         if dot>0:
             icon_name = icon_name[:dot]
+        debug("do_set_icon_from_file(%s) setting icon=%s", filename, icon_name)
         self.tray_widget.set_icon(icon_name)
+        self._has_icon = True
 
 
 def main():
