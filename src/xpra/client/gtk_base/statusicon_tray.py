@@ -6,14 +6,12 @@
 
 # A tray implemented using gtk.StatusIcon
 
-import os
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 
 from xpra.client.tray_base import TrayBase, debug
 from xpra.gtk_common.gtk_util import set_tooltip_text
-from xpra.platform.paths import get_icon_dir
 
 ORIENTATION = {}
 if not is_gtk3():
@@ -95,12 +93,6 @@ class GTKStatusIconTray(TrayBase):
         tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
         self.tray_widget.set_from_pixbuf(tray_icon)
 
-
-    def set_icon(self, basefilename):
-        with_ext = "%s.png" % basefilename
-        icon_dir = get_icon_dir()
-        filename = os.path.join(icon_dir, with_ext)
-        self.set_icon_from_file(filename)
 
     def do_set_icon_from_file(self, filename):
         if hasattr(self.tray_widget, "set_from_file"):
