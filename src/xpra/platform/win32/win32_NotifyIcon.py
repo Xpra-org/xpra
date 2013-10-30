@@ -18,6 +18,11 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
 
+#found here:
+#http://msdn.microsoft.com/en-us/library/windows/desktop/ff468877(v=vs.85).aspx
+WM_XBUTTONDOWN  = 0x020B
+WM_XBUTTONUP    = 0x020C
+WM_XBUTTONDBLCLK= 0x020D
 
 BUTTON_MAP = {
             win32con.WM_LBUTTONDOWN     : [(1, 1)],
@@ -29,6 +34,9 @@ BUTTON_MAP = {
             win32con.WM_LBUTTONDBLCLK   : [(1, 1), (1, 0)],
             win32con.WM_MBUTTONDBLCLK   : [(2, 1), (2, 0)],
             win32con.WM_RBUTTONDBLCLK   : [(3, 1), (3, 0)],
+            WM_XBUTTONDOWN              : [(4, 1)],
+            WM_XBUTTONUP                : [(4, 0)],
+            WM_XBUTTONDBLCLK            : [(4, 1), (4, 0)],
             }
 
 FALLBACK_ICON = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
@@ -59,7 +67,6 @@ class win32NotifyIcon(object):
         win32NotifyIcon.click_callbacks[self.hwnd] = click_callback
         win32NotifyIcon.exit_callbacks[self.hwnd] = exit_callback
         win32NotifyIcon.command_callbacks[self.hwnd] = command_callback
-        
 
     def make_nid(self, flags):
         return (self.hwnd, 0, flags, WM_TRAY_EVENT, self.current_icon, self.title)
@@ -191,16 +198,6 @@ class win32NotifyIcon(object):
         debug("win32NotifyIcon.close()")
         win32NotifyIcon.remove_callbacks(self.hwnd)
         win32NotifyIcon.OnDestroy(self.hwnd, None, None, None)
-
-    def get_geometry(self):
-        geom = win32gui.GetWindowRect(self.hwnd)
-        debug("get_geometry() GetWindowRect(%s)=%s", self.hwnd, geom)
-        geom = win32gui.GetClientRect(self.hwnd)
-        debug("get_geometry() GetClientRect(%s)=%s", self.hwnd, geom)
-        x1, y1, x2, y2 = geom
-        g = x1, y1, min(64, max(16, x2-x1)), min(64, max(16, y2-y1))
-        debug("get_geometry()=%s", g)
-        return g
 
 
 WM_TRAY_EVENT = win32con.WM_USER+20        #a message id we choose
