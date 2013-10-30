@@ -405,6 +405,7 @@ class UIXpraClient(XpraClientBase):
 
 
     def setup_xpra_tray(self, tray_icon_filename):
+        #this is the our own tray
         def xpra_tray_click(button, pressed, time=0):
             log("xpra_tray_click(%s, %s)", button, pressed)
             if button==1 and pressed:
@@ -416,55 +417,45 @@ class UIXpraClient(XpraClientBase):
         def xpra_tray_exit(*args):
             log("xpra_tray_exit(%s)", args)
             self.quit(0)
+        def xpra_tray_geometry(*args):
+            log("xpra_tray_geometry%s", args)
+
         menu = None
         if self.menu_helper:
             menu = self.menu_helper.build()
-        return self.make_tray(menu, "Xpra", tray_icon_filename, None, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
+        return self.make_tray(menu, "Xpra", tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
 
     def setup_system_tray(self, client, wid, w, h):
-        def tray_resized(*args):
-            log("tray_resized(%s)", args)
-            tray = self._id_to_window.get(wid)
-            if tray:
-                tray.reconfigure()
+        tray_widget = None
+        #this is a tray forwarded for a remote application
         def tray_click(button, pressed, time=0):
-            log("tray_click(%s, %s, %s)", button, pressed, time)
             tray = self._id_to_window.get(wid)
+            log("tray_click(%s, %s, %s) tray=%s", button, pressed, time, tray)
             if tray:
                 x, y = self.get_mouse_position()
-                #special case for crapple where we don't have
-                #the real location of the tray, so we may have to
-                #move where the tray is mapped to ensure the click
-                #does hit it... what a lot of ****
-                tx, ty, tw, th = tray.get_geometry()
-                if tray.get_tray_geometry() is None:
-                    #ok so, we don't have the real location...
-                    #is the click within the current bounds:
-                    if x<tx or x>(tx+tw) or y<ty or y>(ty+th):
-                        #no, so we have to move the tray first
-                        #we'll assume the click was in the middle
-                        tww, twh = tray.get_tray_size() or [24, 24]
-                        tx = max(0, int(x - tww/2))
-                        ty = max(0, int(y - twh/2))
-                        log("moving tray to: %sx%s", tx, ty)
-                        tray.move_resize(tx, ty, tww, twh)
                 modifiers = self.get_current_modifiers()
-                self.send_positional(["button-action", wid,
-                                              button, pressed, (x, y), modifiers])
+                self.send_positional(["button-action", wid, button, pressed, (x, y), modifiers])
                 tray.reconfigure()
-
         def tray_mouseover(x, y):
-            log("tray_mouseover(%s, %s)", x, y)
-            pointer = x, y
-            modifiers = self.get_current_modifiers()
-            buttons = []
-            self.send_mouse_position(["pointer-position", wid, pointer, modifiers, buttons])
-            
+            tray = self._id_to_window.get(wid)
+            log("tray_mouseover(%s, %s) tray=%s", x, y, tray)
+            if tray:
+                pointer = x, y
+                modifiers = self.get_current_modifiers()
+                buttons = []
+                self.send_mouse_position(["pointer-position", wid, pointer, modifiers, buttons])
+        def tray_geometry():
+            #tell the "ClientTray" where it now lives
+            #which should also update the location on the server if it has changed
+            tray = self._id_to_window.get(wid)
+            geom = tray_widget.get_geometry()
+            log("tray_geometry() geometry=%s tray=%s", geom, tray)
+            if tray and geom:
+                tray.move_resize(*geom)
         def tray_exit(*args):
             log("tray_exit(%s)", args)
-
         #(menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
-        tray_widget = self.make_system_tray(None, "Xpra", None, tray_resized, tray_click, tray_mouseover, tray_exit)
+        tray_widget = self.make_system_tray(None, "Xpra", None, tray_geometry, tray_click, tray_mouseover, tray_exit)
         log("tray_widget=%s", tray_widget)
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()

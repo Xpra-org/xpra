@@ -41,8 +41,6 @@ class Win32Tray(TrayBase):
     def hide(self):
         pass
 
-    def get_geometry(self):
-        return None
 
     def getHWND(self):
         if self.tray_widget is None:
@@ -73,6 +71,9 @@ class Win32Tray(TrayBase):
     def set_blinking(self, on):
         if self.tray_widget:
             self.tray_widget.set_blinking(on)
+
+    def get_geometry(self):
+        return self.geometry_guess
 
 
     def stop_win32_session_events(self, app_hwnd):

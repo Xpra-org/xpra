@@ -17,8 +17,8 @@ INFO_REQUEST = 10
 
 class OSXTray(TrayBase):
 
-    def __init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
-        TrayBase.__init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
+    def __init__(self, *args):
+        TrayBase.__init__(self, *args)
         from xpra.platform.darwin.gui import get_OSXApplication
         self.macapp = get_OSXApplication()
         self.last_attention_request_id = -1

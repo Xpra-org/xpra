@@ -6,6 +6,7 @@
 
 # A tray implemented using gtk.StatusIcon
 
+import sys
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
@@ -19,28 +20,38 @@ if not is_gtk3():
     ORIENTATION[gtk.ORIENTATION_HORIZONTAL] = "HORIZONTAL"
     ORIENTATION[gtk.ORIENTATION_VERTICAL]   = "VERTICAL"
 
+GUESS_GEOMETRY = sys.platform.startswith("win") or sys.platform.startswith("darwin")
+
 
 class GTKStatusIconTray(TrayBase):
 
-    def __init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
-        TrayBase.__init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
+    def __init__(self, *args):
+        TrayBase.__init__(self, *args)
         self.tray_widget = gtk.StatusIcon()
-        set_tooltip_text(self.tray_widget, tooltip or "Xpra")
+        set_tooltip_text(self.tray_widget, self.tooltip or "Xpra")
         self.tray_widget.connect('activate', self.activate_menu)
         self.tray_widget.connect('popup-menu', self.popup_menu)
         if self.size_changed_cb:
             self.tray_widget.connect('size-changed', self.size_changed_cb)
-        filename = self.get_tray_icon_filename(icon_filename)
+        filename = self.get_tray_icon_filename(self.default_icon_filename)
         if filename:
             self.set_icon_from_file(filename)
 
+    def may_guess(self):
+        if GUESS_GEOMETRY:
+            x, y = gdk.get_default_root_window().get_pointer()[:2]
+            w, h = self.get_size()
+            self.recalculate_geometry(x, y, w, h)
+
     def activate_menu(self, widget, *args):
         debug("activate_menu(%s, %s)", widget, args)
+        self.may_guess()
         self.click_cb(1, 1)
         self.click_cb(1, 0)
 
     def popup_menu(self, widget, button, time, *args):
         debug("popup_menu(%s, %s, %s, %s)", widget, button, time, args)
+        self.may_guess()
         self.click_cb(button, 1, 0)
         self.click_cb(button, 0, 0)
 
@@ -72,12 +83,13 @@ class GTKStatusIconTray(TrayBase):
         ag = self.tray_widget.get_geometry()
         debug("GTKStatusIconTray.get_geometry() %s.get_geometry()=%s", self.tray_widget, ag)
         if ag is None:
-            return None
+            #probably win32 or OSX...
+            return self.geometry_guess
         _, geom, _ = ag
         return geom.x, geom.y, geom.width, geom.height
 
     def get_size(self):
-        s = self.tray_widget.get_size()
+        s = max(8, min(256, self.tray_widget.get_size()))
         return [s, s]
 
 

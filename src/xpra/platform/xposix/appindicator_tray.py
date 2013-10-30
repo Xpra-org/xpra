@@ -40,13 +40,13 @@ def can_use_appindicator():
 
 class AppindicatorTray(TrayBase):
 
-    def __init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
-        TrayBase.__init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
-        filename = self.get_tray_icon_filename(icon_filename)
+    def __init__(self, *args):
+        TrayBase.__init__(self, *args)
+        filename = self.get_tray_icon_filename(self.default_icon_filename)
         self.appindicator = get_appindicator()
         self._has_icon = False
         assert self.appindicator, "appindicator is not available!"
-        self.tray_widget = self.appindicator.Indicator(tooltip, filename, self.appindicator.CATEGORY_APPLICATION_STATUS)
+        self.tray_widget = self.appindicator.Indicator(self.tooltip, filename, self.appindicator.CATEGORY_APPLICATION_STATUS)
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
         self.tray_widget.set_attention_icon("xpra.png")
@@ -54,8 +54,8 @@ class AppindicatorTray(TrayBase):
             self.set_icon_from_file(filename)
         if not self._has_icon:
             self.tray_widget.set_label("Xpra")
-        if menu:
-            self.tray_widget.set_menu(menu)
+        if self.menu:
+            self.tray_widget.set_menu(self.menu)
 
     def hide(self, *args):
         self.tray_widget.set_status(self.appindicator.STATUS_PASSIVE)

@@ -8,6 +8,7 @@ import os.path
 
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, debug_if_env
+from xpra.deque import maxdeque
 log = Logger()
 debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
 
@@ -28,6 +29,9 @@ class TrayBase(object):
         self.default_icon_filename = icon_filename
         self.default_icon_extension = "png"
         self.default_icon_name = "xpra.png"
+        #some implementations need this for guessing the geometry (see recalculate_geometry):
+        self.geometry_guess = None
+        self.tray_event_locations = maxdeque(512)
 
     def cleanup(self):
         if self.tray_widget:
@@ -102,3 +106,40 @@ class TrayBase(object):
 
     def do_set_icon_from_file(self, filename):
         raise Exception("override me!")
+
+    def recalculate_geometry(self, x, y, width, height):
+        if len(self.tray_event_locations)>0 and self.tray_event_locations[-1]==(x,y):
+            #unchanged
+            return
+        self.tray_event_locations.append((x, y))
+        #sets of locations that can fit together within (size,size) distance of each other:
+        xs, ys = set(), set()
+        xs.add(x)
+        ys.add(y)
+        #walk though all of them in reverse (and stop when one does not fit):
+        for tx, ty in reversed(self.tray_event_locations):
+            minx = min(xs)
+            miny = min(ys)
+            maxx = max(xs)
+            maxy = max(ys)
+            if (tx<minx and tx<(maxx-width)) or (tx>maxx and tx>(minx+width)):
+                break       #cannot fit...
+            if (ty<miny and ty<(maxy-height)) or (ty>maxy and ty>(miny+height)):
+                break       #cannot fit...
+            xs.add(tx)
+            ys.add(ty)
+        #now add some padding if needed:
+        minx = min(xs)
+        miny = min(ys)
+        maxx = max(xs)
+        maxy = max(ys)
+        padx = width-(maxx-minx)
+        pady = height-(maxy-miny)
+        assert padx>=0 and pady>=0
+        minx -= padx/2
+        miny -= pady/2
+        oldgeom = self.geometry
+        self.geometry = minx, miny, minx+width, miny+height
+        log("recalculate_geometry() %s", self.geometry)
+        if self.size_changed_cb and self.geometry!=oldgeom:
+            self.size_changed_cb()
