@@ -10,6 +10,7 @@
 import win32api                    #@UnresolvedImport
 import win32gui                    #@UnresolvedImport
 import win32con                    #@UnresolvedImport
+import tempfile
 
 import sys, os
 
@@ -19,13 +20,18 @@ debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
 
 
 BUTTON_MAP = {
-            win32con.WM_LBUTTONDOWN     : (1, 1),
-            win32con.WM_LBUTTONUP       : (1, 0),
-            win32con.WM_MBUTTONDOWN     : (2, 1),
-            win32con.WM_MBUTTONUP       : (2, 0),
-            win32con.WM_RBUTTONDOWN     : (3, 1),
-            win32con.WM_RBUTTONUP       : (3, 0)
+            win32con.WM_LBUTTONDOWN     : [(1, 1)],
+            win32con.WM_LBUTTONUP       : [(1, 0)],
+            win32con.WM_MBUTTONDOWN     : [(2, 1)],
+            win32con.WM_MBUTTONUP       : [(2, 0)],
+            win32con.WM_RBUTTONDOWN     : [(3, 1)],
+            win32con.WM_RBUTTONUP       : [(3, 0)],
+            win32con.WM_LBUTTONDBLCLK   : [(1, 1), (1, 0)],
+            win32con.WM_MBUTTONDBLCLK   : [(2, 1), (2, 0)],
+            win32con.WM_RBUTTONDBLCLK   : [(3, 1), (3, 0)],
             }
+
+FALLBACK_ICON = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
 
 
 class win32NotifyIcon(object):
@@ -46,7 +52,7 @@ class win32NotifyIcon(object):
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
             0, 0, self.hinst, None)
         win32gui.UpdateWindow(self.hwnd)
-        self.current_icon = self.win32LoadIcon(iconPathName)
+        self.current_icon = self.LoadImage(iconPathName)
         win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, self.make_nid(win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP))
         #register callbacks:
         win32NotifyIcon.live_hwnds.add(self.hwnd)
@@ -67,16 +73,77 @@ class win32NotifyIcon(object):
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP))
 
     def set_icon(self, iconPathName):
-        self.current_icon = self.win32LoadIcon(iconPathName)
+        hicon = self.LoadImage(iconPathName)
+        self.do_set_icon(hicon)
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON))
 
-    def win32LoadIcon(self, iconPathName):
+    def do_set_icon(self, hicon):
+        debug("do_set_icon(%s)", hicon)
+        self.current_icon = hicon
+        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON))
+
+
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
+        #TODO: use native code somehow to avoid saving to file
+        debug("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride))
+        from PIL import Image           #@UnresolvedImport
+        if has_alpha:
+            rgb_format = "RGBA"
+        else:
+            rgb_format = "RGB"
+        img = Image.frombuffer(rgb_format, (w, h), pixels, "raw", rgb_format, 0, 1)
+        img = img.convert("P")
+        #apparently, we have to use SM_CXSMICON (small icon) and not SM_CXICON (regular size):
+        size = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
+        if w!=h or w!=size:
+            img = img.resize((size, size), Image.ANTIALIAS)
+        fd, filename = tempfile.mkstemp(".bmp")
+        hicon = FALLBACK_ICON
+        try:
+            f = os.fdopen(fd, "w")
+            img.save(f, format="bmp")
+            f.close()
+
+            #this is a BITMAP:
+            pygdihandle = self.LoadImage(filename, None)
+            if pygdihandle:
+                pyiconinfo = (True, 0, 0, pygdihandle, pygdihandle)
+                hicon = win32gui.CreateIconIndirect(pyiconinfo)
+                debug("CreateIconIndirect(%s)=%s", pyiconinfo, hicon)
+                if hicon==0:
+                    hicon = FALLBACK_ICON
+            self.do_set_icon(hicon)
+        except:
+            log.error("error setting icon using temporary file %s", filename, exc_info=True)
+        finally:
+            try:
+                os.unlink(filename)
+            except:
+                log.error("error cleaning up temporary file %s", filename, exc_info=True)
+            if hicon!=FALLBACK_ICON:
+                win32gui.DestroyIcon(hicon)
+
+    def LoadImage(self, iconPathName, fallback=FALLBACK_ICON):
+        debug("LoadImage(%s)", iconPathName)
         icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
         try:
-            return    win32gui.LoadImage(self.hinst, iconPathName, win32con.IMAGE_ICON, 0, 0, icon_flags)
+            img_type = win32con.IMAGE_ICON
+            if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
+                img_type = win32con.IMAGE_BITMAP
+                icon_flags |= win32con.LR_CREATEDIBSECTION
+            debug("LoadImage(%s) using image type=%s", iconPathName, {win32con.IMAGE_ICON : "ICON",
+                                                                        win32con.IMAGE_BITMAP : "BITMAP"}.get(img_type))
+            v = win32gui.LoadImage(self.hinst, iconPathName, img_type, 0, 0, icon_flags)
         except Exception, e:
             log.error("Failed to load icon at %s: %s", iconPathName, e)
-            return    win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
+            v = fallback
+        debug("LoadImage(%s)=%s", iconPathName, v)
+        return v
+
+    @classmethod
+    def restart(cls):
+        #FIXME: keep current icon and repaint it on restart
+        pass
 
     @classmethod
     def remove_callbacks(cls, hwnd):
@@ -87,7 +154,7 @@ class win32NotifyIcon(object):
     @classmethod
     def OnCommand(cls, hwnd, msg, wparam, lparam):
         cc = cls.command_callbacks.get(hwnd)
-        log("OnCommand(%s,%s,%s,%s) command callback=%s", hwnd, msg, wparam, lparam, cc)
+        debug("OnCommand(%s,%s,%s,%s) command callback=%s", hwnd, msg, wparam, lparam, cc)
         if cc:
             cid = win32api.LOWORD(wparam)
             cc(hwnd, cid)
@@ -95,16 +162,16 @@ class win32NotifyIcon(object):
     @classmethod
     def OnDestroy(cls, hwnd, msg, wparam, lparam):
         ec = cls.exit_callbacks.get(hwnd)
-        log("OnDestroy(%s,%s,%s,%s) exit_callback=%s", hwnd, msg, wparam, lparam, ec)
+        debug("OnDestroy(%s,%s,%s,%s) exit_callback=%s", hwnd, msg, wparam, lparam, ec)
         if hwnd not in cls.live_hwnds:
             return
         cls.live_hwnds.remove(hwnd)
         cls.remove_callbacks(hwnd)
         try:
             nid = (hwnd, 0)
-            log("OnDestroy(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
+            debug("OnDestroy(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
             win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
-            log("OnDestroy(..) calling exit_callback=%s", ec)
+            debug("OnDestroy(..) calling exit_callback=%s", ec)
             if ec:
                 ec()
         except:
@@ -114,25 +181,34 @@ class win32NotifyIcon(object):
     def OnTaskbarNotify(cls, hwnd, msg, wparam, lparam):
         bm = BUTTON_MAP.get(lparam)
         cc = cls.click_callbacks.get(hwnd)
-        log("OnTaskbarNotify(%s,%s,%s,%s) button lookup: %s, callback=%s", hwnd, msg, wparam, lparam, bm, cc)
+        debug("OnTaskbarNotify(%s,%s,%s,%s) button(s) lookup: %s, callback=%s", hwnd, msg, wparam, lparam, bm, cc)
         if bm is not None and cc:
-            cc(*bm)
+            for button_event in bm:
+                cc(*button_event)
         return 1
 
     def close(self):
-        log("win32NotifyIcon.close()")
+        debug("win32NotifyIcon.close()")
         win32NotifyIcon.remove_callbacks(self.hwnd)
-        self.OnDestroy(0, None, None, None)
+        win32NotifyIcon.OnDestroy(self.hwnd, None, None, None)
 
     def get_geometry(self):
-        return    win32gui.GetWindowRect(self.hwnd)
+        geom = win32gui.GetWindowRect(self.hwnd)
+        debug("get_geometry() GetWindowRect(%s)=%s", self.hwnd, geom)
+        geom = win32gui.GetClientRect(self.hwnd)
+        debug("get_geometry() GetClientRect(%s)=%s", self.hwnd, geom)
+        x1, y1, x2, y2 = geom
+        g = x1, y1, min(64, max(16, x2-x1)), min(64, max(16, y2-y1))
+        debug("get_geometry()=%s", g)
+        return g
 
 
 WM_TRAY_EVENT = win32con.WM_USER+20        #a message id we choose
 message_map = {
-    win32con.WM_DESTROY            : win32NotifyIcon.OnDestroy,
-    win32con.WM_COMMAND            : win32NotifyIcon.OnCommand,
-    WM_TRAY_EVENT                      : win32NotifyIcon.OnTaskbarNotify,
+    win32gui.RegisterWindowMessage("TaskbarCreated") : win32NotifyIcon.restart,
+    win32con.WM_DESTROY                 : win32NotifyIcon.OnDestroy,
+    win32con.WM_COMMAND                 : win32NotifyIcon.OnCommand,
+    WM_TRAY_EVENT                       : win32NotifyIcon.OnTaskbarNotify,
 }
 NIwc = win32gui.WNDCLASS()
 NIwc.hInstance = win32api.GetModuleHandle(None)

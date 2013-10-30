@@ -7,7 +7,6 @@
 # Augments the win32_NotifyIcon "system tray" support class
 # with methods for integrating with win32_balloon and the popup menu
 
-
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon, WM_TRAY_EVENT, BUTTON_MAP
 from xpra.client.tray_base import TrayBase, log, debug
 
@@ -59,15 +58,12 @@ class Win32Tray(TrayBase):
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
-        #FIXME: saving to temporary file does not work!
-        #we need to find a way to convert the pixels into a HICON
-        #then call win32gui.Shell_NotifyIcon
-        log.warn("win32_tray does not support set_icon_from_data!")
-
+        if self.tray_widget:
+            self.tray_widget.set_icon_from_data(pixels, has_alpha, w, h, rowstride)
 
     def do_set_icon_from_file(self, filename):
-        self.tray_widget.set_icon(filename)
-
+        if self.tray_widget:
+            self.tray_widget.set_icon(filename)
 
     def set_blinking(self, on):
         if self.tray_widget:
