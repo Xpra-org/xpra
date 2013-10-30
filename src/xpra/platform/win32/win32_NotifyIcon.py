@@ -93,42 +93,64 @@ class win32NotifyIcon(object):
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
         #TODO: use native code somehow to avoid saving to file
         debug("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride))
-        from PIL import Image           #@UnresolvedImport
+        from PIL import Image, ImageOps           #@UnresolvedImport
         if has_alpha:
             rgb_format = "RGBA"
         else:
             rgb_format = "RGB"
         img = Image.frombuffer(rgb_format, (w, h), pixels, "raw", rgb_format, 0, 1)
-        img = img.convert("P")
         #apparently, we have to use SM_CXSMICON (small icon) and not SM_CXICON (regular size):
         size = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
         if w!=h or w!=size:
             img = img.resize((size, size), Image.ANTIALIAS)
-        fd, filename = tempfile.mkstemp(".bmp")
+        if has_alpha:
+            #extract alpha channel as mask:
+            alpha = img.tostring("raw", "A")
+            mask = Image.fromstring("L", img.size, alpha)
+            mask = ImageOps.invert(mask)
+            mask = mask.convert("P")
+        else:
+            #use image as mask:
+            mask = img
+        img = img.convert("P")
+
         hicon = FALLBACK_ICON
         try:
-            f = os.fdopen(fd, "w")
-            img.save(f, format="bmp")
-            f.close()
-
-            #this is a BITMAP:
-            pygdihandle = self.LoadImage(filename, None)
-            if pygdihandle:
-                pyiconinfo = (True, 0, 0, pygdihandle, pygdihandle)
+            bitmap = self.make_bitmap_from_Image(img)
+            if mask is img:
+                mask_bitmap = bitmap
+            else:
+                mask_bitmap = self.make_bitmap_from_Image(mask)
+            if mask_bitmap:
+                pyiconinfo = (True, 0, 0, mask_bitmap, bitmap)
                 hicon = win32gui.CreateIconIndirect(pyiconinfo)
                 debug("CreateIconIndirect(%s)=%s", pyiconinfo, hicon)
                 if hicon==0:
                     hicon = FALLBACK_ICON
             self.do_set_icon(hicon)
+            win32gui.UpdateWindow(self.hwnd)
         except:
-            log.error("error setting icon using temporary file %s", filename, exc_info=True)
+            log.error("error setting icon", exc_info=True)
+        finally:
+            if hicon!=FALLBACK_ICON:
+                win32gui.DestroyIcon(hicon)
+
+    def make_bitmap_from_Image(self, img):
+        fd, filename = tempfile.mkstemp(".bmp")
+        try:
+            f = os.fdopen(fd, "w")
+            img.save(f, format="bmp")
+            f.close()
+            return self.LoadImage(filename, None)
+        except:
+            log.error("error converting %s to a bitmap in %s", img, filename, exc_info=True)
+            return None
         finally:
             try:
                 os.unlink(filename)
             except:
                 log.error("error cleaning up temporary file %s", filename, exc_info=True)
-            if hicon!=FALLBACK_ICON:
-                win32gui.DestroyIcon(hicon)
+
 
     def LoadImage(self, iconPathName, fallback=FALLBACK_ICON):
         debug("LoadImage(%s)", iconPathName)
