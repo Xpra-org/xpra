@@ -138,8 +138,8 @@ class TrayBase(object):
         assert padx>=0 and pady>=0
         minx -= padx/2
         miny -= pady/2
-        oldgeom = self.geometry
-        self.geometry = minx, miny, minx+width, miny+height
-        log("recalculate_geometry() %s", self.geometry)
-        if self.size_changed_cb and self.geometry!=oldgeom:
+        oldgeom = self.geometry_guess
+        self.geometry_guess = minx, miny, width, height
+        log("recalculate_geometry() %s", self.geometry_guess)
+        if self.size_changed_cb and self.geometry_guess!=oldgeom:
             self.size_changed_cb()
