@@ -208,6 +208,8 @@ cdef class Encoder:
     cdef int preset
     cdef int quality
     cdef int speed
+    cdef long long bytes_in
+    cdef long long bytes_out
 
     def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options):    #@DuplicatedSignature
         global COLORSPACES
@@ -267,6 +269,10 @@ cdef class Encoder:
                 "quality"   : self.quality,
                 "src_format": self.src_format,
                 "version"   : get_version()}
+        if self.bytes_in>0 and self.bytes_out>0:
+            info["bytes_in"] = self.bytes_in
+            info["bytes_out"] = self.bytes_out
+            info["ratio_pct"] = int(100.0 * self.bytes_out / self.bytes_in)
         if self.frames>0 and self.time>0:
             pps = float(self.width) * float(self.height) * float(self.frames) / self.time
             info["total_time_ms"] = int(self.time*1000.0)
@@ -367,6 +373,7 @@ cdef class Encoder:
             for i in range(3):
                 pic_in.img.plane[i] = pic_buf
                 pic_in.img.i_stride[i] = istrides
+            self.bytes_in += pic_buf_len
         else:
             assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
             assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
@@ -387,6 +394,7 @@ cdef class Encoder:
                 return None
             out = <char *>nals[0].p_payload
             cdata = out[:frame_size]
+            self.bytes_out += frame_size
             end = time.time()
             self.time += end-start
             self.frames += 1
