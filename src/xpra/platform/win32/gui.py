@@ -29,7 +29,7 @@ def get_native_tray_classes():
 def get_native_system_tray_classes(*args):
     #Win32Tray cannot set the icon from data
     #so it cannot be used for application trays
-    return []
+    return get_native_tray_classes()
 
 
 class ClientExtras(object):
