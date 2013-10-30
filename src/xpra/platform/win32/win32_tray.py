@@ -18,6 +18,12 @@ NIN_BALLOONSHOW         = win32con.WM_USER + 2
 NIN_BALLOONHIDE         = win32con.WM_USER + 3
 NIN_BALLOONTIMEOUT      = win32con.WM_USER + 4
 NIN_BALLOONUSERCLICK    = win32con.WM_USER + 5
+BALLOON_EVENTS = {
+            NIN_BALLOONSHOW             : "NIN_BALLOONSHOW",
+            NIN_BALLOONHIDE             : "NIN_BALLOONHIDE",
+            NIN_BALLOONTIMEOUT          : "NIN_BALLOONTIMEOUT",
+            NIN_BALLOONUSERCLICK        : "NIN_BALLOONUSERCLICK",
+          }
 
 
 class Win32Tray(TrayBase):
@@ -30,7 +36,6 @@ class Win32Tray(TrayBase):
         self.tray_widget = win32NotifyIcon(self.tooltip, self.click_cb, self.exit_cb, None, icon_filename)
         #now let's try to hook the session notification
         self.detect_win32_session_events(self.getHWND())
-        self.balloon_click_callback = None
 
     def ready(self):
         pass
@@ -93,25 +98,14 @@ class Win32Tray(TrayBase):
         x, y = win32api.GetCursorPos()
         size = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
         self.recalculate_geometry(x, y, size, size)
-
-        if lParam==NIN_BALLOONSHOW:
-            debug("WM_TRAY_EVENT: NIN_BALLOONSHOW")
-        elif lParam==NIN_BALLOONHIDE:
-            debug("WM_TRAY_EVENT: NIN_BALLOONHIDE")
-            self.balloon_click_callback = None
-        elif lParam==NIN_BALLOONTIMEOUT:
-            debug("WM_TRAY_EVENT: NIN_BALLOONTIMEOUT")
-        elif lParam==NIN_BALLOONUSERCLICK:
-            debug("WM_TRAY_EVENT: NIN_BALLOONUSERCLICK, balloon_click_callback=%s", self.balloon_click_callback)
-            if self.balloon_click_callback:
-                self.balloon_click_callback()
-                self.balloon_click_callback = None
+        if lParam in BALLOON_EVENTS:
+            debug("WM_TRAY_EVENT: %s", BALLOON_EVENTS.get(lParam))
         elif lParam==win32con.WM_MOUSEMOVE:
             debug("WM_TRAY_EVENT: WM_MOUSEMOVE")
             if self.mouseover_cb:
                 self.mouseover_cb(x, y)
         elif lParam in BUTTON_MAP:
-            debug("WM_TRAY_EVENT: %s", BUTTON_MAP.get(lParam))
+            debug("WM_TRAY_EVENT: click %s", BUTTON_MAP.get(lParam))
         else:
             log.warn("WM_TRAY_EVENT: unknown event: %s / %s", wParam, lParam)
 
