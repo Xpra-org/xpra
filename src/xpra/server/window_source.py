@@ -1044,6 +1044,8 @@ class WindowSource(object):
             assert coding in ("png", "png/P", "png/L"), "unsupported png encoding: %s" % coding
             if coding in ("png/L", "png/P") and self.supports_transparency and rgb=="RGBA":
                 #grab alpha channel (the last one):
+                #we use the last channel because we know it is RGBA,
+                #otherwise we should do: alpha_index= image.getbands().index('A')
                 alpha = im.split()[-1]
                 #convert to simple on or off mask:
                 #set all pixel values below 128 to 255, and the rest to 0
