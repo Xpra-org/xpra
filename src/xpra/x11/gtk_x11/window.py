@@ -210,6 +210,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 "X11 window id", "",
                 -1, 65535, -1,
                 gobject.PARAM_READABLE),
+        "title": (gobject.TYPE_PYOBJECT,
+                  "Window title (unicode or None)", "",
+                  gobject.PARAM_READABLE),
         "group-leader": (gobject.TYPE_PYOBJECT,
                          "Window group leader as a pair: (xid, gdk window)", "",
                          gobject.PARAM_READABLE),
@@ -428,6 +431,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("xid", get_xwindow(self.client_window))
         self._internal_set_property("pid", pget("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", pget("WM_WINDOW_ROLE", "latin1"))
+        for mutable in ["WM_NAME", "_NET_WM_NAME"]:
+            log("reading initial value for %s", mutable)
+            self._handle_property_change(mutable)
 
 
     def _handle_scaling(self):
@@ -440,6 +446,18 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         else:
             self._internal_set_property("scaling", None)
     _property_handlers["_XPRA_SCALING"] = _handle_scaling
+
+    def _handle_title_change(self):
+        net_wm_name = self.prop_get("_NET_WM_NAME", "utf8", True)
+        if net_wm_name is not None:
+            self._internal_set_property("title", net_wm_name)
+        else:
+            # may be None
+            wm_name = self.prop_get("WM_NAME", "latin1", True)
+            self._internal_set_property("title", wm_name)
+
+    _property_handlers["WM_NAME"] = _handle_title_change
+    _property_handlers["_NET_WM_NAME"] = _handle_title_change
 
     def _handle_wm_hints(self):
         wm_hints = self.prop_get("WM_HINTS", "wm-hints", True)
@@ -620,7 +638,7 @@ class SystemTrayWindowModel(OverrideRedirectWindowModel):
 
     def __init__(self, client_window):
         OverrideRedirectWindowModel.__init__(self, client_window)
-        self.property_names.append("tray")
+        self.property_names = ["pid", "role", "xid", "has-alpha", "tray", "title"]
 
     def is_tray(self):
         return  True
@@ -692,9 +710,6 @@ class WindowModel(BaseWindowModel):
                    gobject.PARAM_READWRITE),
         "state": (gobject.TYPE_PYOBJECT,
                   "State, as per _NET_WM_STATE", "",
-                  gobject.PARAM_READABLE),
-        "title": (gobject.TYPE_PYOBJECT,
-                  "Window title (unicode or None)", "",
                   gobject.PARAM_READABLE),
         "icon-title": (gobject.TYPE_PYOBJECT,
                        "Icon title (unicode or None)", "",
@@ -1080,18 +1095,6 @@ class WindowModel(BaseWindowModel):
 
     _property_handlers["WM_NORMAL_HINTS"] = _handle_wm_normal_hints
 
-    def _handle_title_change(self):
-        net_wm_name = self.prop_get("_NET_WM_NAME", "utf8", True)
-        if net_wm_name is not None:
-            self._internal_set_property("title", net_wm_name)
-        else:
-            # may be None
-            wm_name = self.prop_get("WM_NAME", "latin1", True)
-            self._internal_set_property("title", wm_name)
-
-    _property_handlers["WM_NAME"] = _handle_title_change
-    _property_handlers["_NET_WM_NAME"] = _handle_title_change
-
     def _handle_icon_title_change(self):
         net_wm_icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
         if net_wm_icon_name is not None:
@@ -1200,7 +1203,6 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("modal", modal)
 
         for mutable in ["WM_HINTS", "WM_NORMAL_HINTS",
-                        "WM_NAME", "_NET_WM_NAME",
                         "WM_ICON_NAME", "_NET_WM_ICON_NAME",
                         "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]:
             log("reading initial value for %s", mutable)

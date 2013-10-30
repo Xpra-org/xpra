@@ -7,7 +7,7 @@ import gtk
 import gobject
 
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.x11.gtk_x11.prop import prop_set
+from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.gtk_x11.error import trap
 
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -177,13 +177,18 @@ class SystemTray(gobject.GObject):
         add_event_receiver(window, self)
         w = max(1, min(64, w))
         h = max(1, min(64, h))
-        debug("dock_tray(%s) window=%s, geometry=%s, visual.depth=%s", hex(xid), window, window.get_geometry(), window.get_visual().depth)
+        title = prop_get(window, "_NET_WM_NAME", "utf8", ignore_errors=True)
+        if title is None:
+            title = prop_get(window, "WM_NAME", "latin1", ignore_errors=True)
+        if title is None:
+            title = ""
+        debug("dock_tray(%s) window=%s, geometry=%s, title=%s, visual.depth=%s", hex(xid), window, window.get_geometry(), title, window.get_visual().depth)
         event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
         tray_window = gtk.gdk.Window(root, width=w, height=h,
                                            window_type=gtk.gdk.WINDOW_TOPLEVEL,
                                            event_mask = event_mask,
                                            wclass=gtk.gdk.INPUT_OUTPUT,
-                                           title="TrayWindow",
+                                           title=title,
                                            x=-200, y=-200,
                                            override_redirect=True,
                                            visual=window.get_visual(),

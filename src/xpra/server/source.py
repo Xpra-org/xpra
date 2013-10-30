@@ -1075,7 +1075,10 @@ class ServerSource(object):
         assert window.is_tray()
         if not self.can_send_window(window):
             return
-        self.send("new-tray", wid, w, h)
+        metadata = {}
+        for propname in list(window.get_property_names()):
+            metadata.update(self._make_metadata(wid, window, propname))
+        self.send("new-tray", wid, w, h, metadata)
 
     def new_window(self, ptype, wid, window, x, y, w, h, client_properties):
         if not self.can_send_window(window):
