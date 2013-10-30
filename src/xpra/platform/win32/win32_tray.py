@@ -13,7 +13,6 @@ from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon, WM_TRAY_EVENT,
 from xpra.client.tray_base import TrayBase, log, debug
 
 #had to look this up online:
-WM_WTSSESSION_CHANGE    = 0x02b1
 NIN_BALLOONSHOW         = win32con.WM_USER + 2
 NIN_BALLOONHIDE         = win32con.WM_USER + 3
 NIN_BALLOONTIMEOUT      = win32con.WM_USER + 4
@@ -24,6 +23,18 @@ BALLOON_EVENTS = {
             NIN_BALLOONTIMEOUT          : "NIN_BALLOONTIMEOUT",
             NIN_BALLOONUSERCLICK        : "NIN_BALLOONUSERCLICK",
           }
+WM_WTSSESSION_CHANGE    = 0x02b1
+IGNORE_EVENTS = {
+            win32con.WM_DESTROY         : "WM_DESTROY",
+            win32con.WM_COMMAND         : "WM_COMMAND",
+            win32con.WM_DEVICECHANGE    : "WM_DEVICECHANGE",
+            WM_WTSSESSION_CHANGE        : "WM_WTSSESSION_CHANGE",
+            }
+KNOWN_WM_EVENTS = {}
+for x in dir(win32con):
+    if x.startswith("WM_"):
+        v = getattr(win32con, x)
+        KNOWN_WM_EVENTS[v] = x
 
 
 class Win32Tray(TrayBase):
@@ -137,19 +148,14 @@ class Win32Tray(TrayBase):
 
     def MyWndProc(self, hWnd, msg, wParam, lParam):
         assert hWnd==self.getHWND(), "invalid hwnd: %s (expected %s)" % (hWnd, self.getHWND())
-        if msg==WM_WTSSESSION_CHANGE:
-            debug("Session state change!")
-        elif msg==win32con.WM_DESTROY:
-            # Restore the old WndProc
-            debug("WM_DESTROY: %s / %s", wParam, lParam)
-        elif msg==win32con.WM_COMMAND:
-            debug("WM_COMMAND")
+        if msg in IGNORE_EVENTS:
+            debug("%s: %s / %s", IGNORE_EVENTS.get(msg), wParam, lParam)
         elif msg==WM_TRAY_EVENT:
             self.tray_event(wParam, lParam)
         elif msg==win32con.WM_ACTIVATEAPP:
             debug("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
         else:
-            log.warn("unknown win32 message: %s / %s / %s", msg, wParam, lParam)
+            log.warn("unexpected message: %s / %s / %s", KNOWN_WM_EVENTS.get(msg, msg), wParam, lParam)
         # Pass all messages to the original WndProc
         try:
             return win32gui.CallWindowProc(self.old_win32_proc, hWnd, msg, wParam, lParam)
