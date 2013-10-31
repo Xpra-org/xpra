@@ -85,11 +85,14 @@ echo
 echo "*******************************************************************************"
 echo "Add xpra/server/python scripts"
 cp ./Python "${HELPERS_DIR}/"
-cp ./xpra "${HELPERS_DIR}/"
+cp ./Xpra "${HELPERS_DIR}/"
+cp ./Keyboard_Tool "${HELPERS_DIR}/"
 cp ./SSH_ASKPASS "${HELPERS_DIR}/"
-# copy "python" as "xpra" and "Xpra_Launcher" so we can have a process that is not called "python"...
+# copy "python" binary as another name so we can have a process that is not called "python"
+# for each one of the tools we provide a script for:
 cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra"
 cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra_Launcher"
+cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Keyboard_Tool"
 #we dont need the wrapper installed by distutils:
 rm "${MACOS_DIR}/Xpra_Launcher-bin"
 
