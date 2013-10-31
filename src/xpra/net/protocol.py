@@ -530,7 +530,7 @@ class Protocol(object):
             packet[0] = self.aliases[packet_type]
         try:
             main_packet, proto_version = self._encoder(packet)
-        except (KeyError, TypeError), e:
+        except Exception, e:
             if self._closed:
                 return [], 0
             log.error("failed to encode packet: %s", packet, exc_info=True)
