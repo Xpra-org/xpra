@@ -10,7 +10,6 @@
 import win32api                    #@UnresolvedImport
 import win32gui                    #@UnresolvedImport
 import win32con                    #@UnresolvedImport
-import tempfile
 
 import sys, os
 
@@ -104,23 +103,44 @@ class win32NotifyIcon(object):
         if w!=h or w!=size:
             img = img.resize((size, size), Image.ANTIALIAS)
         if has_alpha:
-            #extract alpha channel as mask:
+            #extract alpha channel as mask into an inverted "L" channel image:
             alpha = img.tostring("raw", "A")
             mask = Image.fromstring("L", img.size, alpha)
             mask = ImageOps.invert(mask)
-            mask = mask.convert("P")
+            #strip alpha from pixels:
+            img = img.convert("RGB")
         else:
-            #use image as mask:
+            #no alpha: just use image as mask:
             mask = img
-        img = img.convert("P")
+
+        def img_to_bitmap(image, pixel_value):
+            hdc = win32gui.CreateCompatibleDC(0)
+            dc = win32gui.GetDC(0)
+            hbm = win32gui.CreateCompatibleBitmap(dc, size, size)
+            hbm_save = win32gui.SelectObject(hdc, hbm)
+            for x in range(size):
+                for y in range(size):
+                    pixel = image.getpixel((x, y))
+                    v = pixel_value(pixel)
+                    win32gui.SetPixelV(hdc, x, y, v)
+            win32gui.SelectObject(hdc, hbm_save)
+            win32gui.ReleaseDC(self.hwnd, hdc)
+            win32gui.ReleaseDC(self.hwnd, dc)
+            return hbm
 
         hicon = FALLBACK_ICON
         try:
-            bitmap = self.make_bitmap_from_Image(img)
+            def rgb_pixel(pixel):
+                r, g, b = pixel[:3]
+                return r+g*256+b*256*256
+            bitmap = img_to_bitmap(img, rgb_pixel)
             if mask is img:
                 mask_bitmap = bitmap
             else:
-                mask_bitmap = self.make_bitmap_from_Image(mask)
+                #mask is in "L" mode, so we get the pixel value directly from getpixel(x, y)
+                def mask_pixel(l):
+                    return l+l*256+l*256*256
+                mask_bitmap = img_to_bitmap(mask, mask_pixel)
             if mask_bitmap:
                 pyiconinfo = (True, 0, 0, mask_bitmap, bitmap)
                 hicon = win32gui.CreateIconIndirect(pyiconinfo)
@@ -132,36 +152,21 @@ class win32NotifyIcon(object):
         except:
             log.error("error setting icon", exc_info=True)
         finally:
+            #DeleteDC(dc)
             if hicon!=FALLBACK_ICON:
                 win32gui.DestroyIcon(hicon)
 
-    def make_bitmap_from_Image(self, img):
-        fd, filename = tempfile.mkstemp(".bmp")
-        try:
-            f = os.fdopen(fd, "w")
-            img.save(f, format="bmp")
-            f.close()
-            return self.LoadImage(filename, None)
-        except:
-            log.error("error converting %s to a bitmap in %s", img, filename, exc_info=True)
-            return None
-        finally:
-            try:
-                os.unlink(filename)
-            except:
-                log.error("error cleaning up temporary file %s", filename, exc_info=True)
-
 
     def LoadImage(self, iconPathName, fallback=FALLBACK_ICON):
-        debug("LoadImage(%s)", iconPathName)
         icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
         try:
             img_type = win32con.IMAGE_ICON
             if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
                 img_type = win32con.IMAGE_BITMAP
-                icon_flags |= win32con.LR_CREATEDIBSECTION
-            debug("LoadImage(%s) using image type=%s", iconPathName, {win32con.IMAGE_ICON : "ICON",
-                                                                        win32con.IMAGE_BITMAP : "BITMAP"}.get(img_type))
+                icon_flags |= win32con.LR_CREATEDIBSECTION | win32con.LR_LOADTRANSPARENT
+            debug("LoadImage(%s) using image type=%s", iconPathName,
+                                        {win32con.IMAGE_ICON    : "ICON",
+                                         win32con.IMAGE_BITMAP  : "BITMAP"}.get(img_type))
             v = win32gui.LoadImage(self.hinst, iconPathName, img_type, 0, 0, icon_flags)
         except Exception, e:
             log.error("Failed to load icon at %s: %s", iconPathName, e)
