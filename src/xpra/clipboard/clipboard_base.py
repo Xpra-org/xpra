@@ -156,15 +156,11 @@ class ClipboardProtocolHelperBase(object):
         target_data = None
         if len(packet)>=3:
             targets = packet[2]
-        if len(packet)>=4:
-            raw_target_data = packet[3]
-            if raw_target_data:
-                #raw_target_data = {target : (dtype, dformat, wire_encoding, wire_data) }
-                target_data = {}
-                for target, data in raw_target_data.items():
-                    dtype, dformat, wire_encoding, wire_data = data
-                    raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
-                    target_data[target] = raw_data
+        if len(packet)>=8:
+            target_data = {}
+            target, dtype, dformat, wire_encoding, wire_data = packet[3:8]
+            raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
+            target_data[target] = raw_data
         proxy.got_token(targets, target_data)
 
     def _get_clipboard_from_remote_handler(self, proxy, selection, target):
@@ -220,10 +216,12 @@ class ClipboardProtocolHelperBase(object):
                         send_targets_only()
                         return
                     wire_data = self._may_compress(dtype, dformat, wire_data)
-                    if wire_data:
-                        target_data = {target : (dtype, dformat, wire_encoding, wire_data) }
-                        debug("sending token with target data: %s", target_data)
-                        self.send("clipboard-token", rsel, targets, target_data)
+                    if not wire_data:
+                        send_targets_only()
+                        return
+                    target_data = (target, dtype, dformat, wire_encoding, wire_data)
+                    debug("sending token with target data: %s", target_data)
+                    self.send("clipboard-token", rsel, targets, *target_data)
                 proxy.get_contents(target, got_contents)
             proxy.get_contents("TARGETS", got_targets)
             return
