@@ -13,6 +13,7 @@ from xpra.deque import maxdeque
 from xpra.gtk_common.gtk_util import TableBuilder, label
 from xpra.platform.paths import get_icon
 from xpra.platform import init
+from xpra.platform.features import CLIPBOARDS
 
 
 class ClipboardInstance(object):
@@ -180,9 +181,7 @@ class ClipboardStateInfoWindow(object):
         self.events.modify_font(fixed)
 
         #how many clipboards to show:
-        self.clipboards = ["CLIPBOARD", "PRIMARY", "SECONDARY"]
-        if sys.platform.startswith("win"):
-            self.clipboards = ["CLIPBOARD"]
+        self.clipboards = CLIPBOARDS
 
         tb = TableBuilder()
         table = tb.get_table()
