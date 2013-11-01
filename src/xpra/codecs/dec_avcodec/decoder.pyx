@@ -319,12 +319,16 @@ cdef class Decoder:
     cdef object weakref_images
     cdef AVFrame *frame                             #@DuplicatedSignature
     cdef int frames
+    cdef int width
+    cdef int height
     cdef object encoding
 
     def init_context(self, encoding, int width, int height, colorspace):
         init_colorspaces()
         assert encoding in ("vpx", "x264")
         self.encoding = encoding
+        self.width = width
+        self.height = height
         assert colorspace in COLORSPACES, "invalid colorspace: %s" % colorspace
         self.colorspace = NULL
         for x in COLORSPACES:
@@ -432,6 +436,8 @@ cdef class Decoder:
         info = {
                 "type"      : self.get_type(),
                 "frames"    : self.frames,
+                "width"     : self.width,
+                "height"    : self.height,
                 }
         if self.framewrappers:
             info["buffers"] = len(self.framewrappers)
@@ -439,8 +445,8 @@ cdef class Decoder:
             info["colorspace"] = self.colorspace
             info["actual_colorspace"] = self.get_actual_colorspace()
         if not self.is_closed():
-            info["width"] = self.get_width()
-            info["height"] = self.get_height()
+            info["decoder_width"] = self.get_width()
+            info["decoder_height"] = self.get_height()
         else:
             info["closed"] = True
         return info
@@ -452,12 +458,10 @@ cdef class Decoder:
         self.clean()
 
     def get_width(self):
-        assert self.codec_ctx!=NULL
-        return self.codec_ctx.width
+        return self.width
 
     def get_height(self):
-        assert self.codec_ctx!=NULL
-        return self.codec_ctx.height
+        return self.height
 
     def get_type(self):                             #@DuplicatedSignature
         return self.encoding
@@ -537,7 +541,9 @@ cdef class Decoder:
         if outsize==0:
             self.frame_error()
             raise Exception("output size is zero!")
-        img = AVImageWrapper(0, 0, self.codec_ctx.width, self.codec_ctx.height, out, cs, 24, strides, nplanes)
+        assert self.codec_ctx.width>=self.width, "codec width is smaller than our width: %s<%s" % (self.codec_ctx.width, self.width)
+        assert self.codec_ctx.height>=self.height, "codec height is smaller than our height: %s<%s" % (self.codec_ctx.height, self.height)
+        img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes)
         img.decoder = self
         img.av_frame = None
         #we must find the frame wrapper used by our get_buffer override:
