@@ -424,6 +424,7 @@ class UIXpraClient(XpraClientBase):
         if self.menu_helper:
             menu = self.menu_helper.build()
         tray = self.make_tray(menu, "Xpra", tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
+        log("setup_xpra_tray(%s)=%s", tray_icon_filename, tray)
         return tray
 
     def setup_system_tray(self, client, wid, w, h, title):
