@@ -17,7 +17,7 @@ error = log.error
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
 #for SDK version 3, set to 0x30
-DEF NVENC_SDK_API_VERSION = 0x20
+DEF NVENC_SDK_API_VERSION = 0x30
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEY = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
 
@@ -1390,7 +1390,7 @@ cdef class Encoder:
             createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
             raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
-            debug("bitstreamBuffer=%s", hex(<long> self.bitstreamBuffer))
+            debug("output bitstream buffer=%s", hex(<long> self.bitstreamBuffer))
         finally:
             if presetConfig!=NULL:
                 free(presetConfig)
@@ -1424,7 +1424,7 @@ cdef class Encoder:
         self.clean()
 
     def clean(self):                        #@DuplicatedSignature
-        debug("clean() context=%s", hex(<long> self.context))
+        debug("clean() cuda_context=%s, encoder context=%s", self.cuda_context, hex(<long> self.context))
         if self.cuda_context:
             self.cuda_context.push()
             try:
@@ -1437,7 +1437,7 @@ cdef class Encoder:
     def cuda_clean(self):
         self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
-            debug("clean() unregistering %s", hex(<long> self.inputHandle))
+            debug("clean() unregistering CUDA NV12 buffer input handle %s", hex(<long> self.inputHandle))
             raiseNVENC(self.functionList.nvEncUnregisterResource(self.context, self.inputHandle), "unregistering CUDA input buffer")
             self.inputHandle = NULL
         if self.inputBuffer is not None:
@@ -1453,7 +1453,7 @@ cdef class Encoder:
             self.cudaNV12Buffer = None
         if self.context!=NULL:
             if self.bitstreamBuffer!=NULL:
-                debug("clean() destroying bitstream buffer %s", hex(<long> self.bitstreamBuffer))
+                debug("clean() destroying output bitstream buffer %s", hex(<long> self.bitstreamBuffer))
                 raiseNVENC(self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer), "destroying output buffer")
                 self.bitstreamBuffer = NULL
             debug("clean() destroying encoder %s", hex(<long> self.context))
@@ -1611,6 +1611,7 @@ cdef class Encoder:
 
         self.time += end-start
         debug("returning %s bytes, complete compression for frame %s took %.1fms", size, self.frames, 1000.0*(end-start))
+        debug("pixels head: %s", binascii.hexlify(pixels[:128]))
         self.frames += 1
         return pixels, {}
 

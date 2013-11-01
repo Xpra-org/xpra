@@ -977,7 +977,7 @@ toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 if nvenc_ENABLED:
     make_constants("xpra", "codecs", "nvenc", "constants")
-    nvenc_pkgconfig = pkgconfig("nvenc", "cuda")
+    nvenc_pkgconfig = pkgconfig("nvenc3", "cuda")
     cython_add(Extension("xpra.codecs.nvenc.encoder",
                          ["xpra/codecs/nvenc/encoder.pyx"],
                          **nvenc_pkgconfig), min_version=(0, 16))
