@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os.path
 import gtk.gdk
 
 from xpra.client.tray_base import TrayBase, debug, log
@@ -92,8 +93,12 @@ class OSXTray(TrayBase):
         debug("OSXTray.set_dock_menu() done")
 
     def set_dock_icon(self):
-        if self.default_icon_filename:
-            debug("OSXTray.set_dock_icon() loading icon from %s", self.default_icon_filename)
-            pixbuf = gtk.gdk.pixbuf_new_from_file(self.default_icon_filename)
-            self.macapp.set_dock_icon_pixbuf(pixbuf)
-        debug("OSXTray.set_dock_icon() done")
+        if not self.default_icon_filename:
+            return
+        filename = os.path.abspath(self.default_icon_filename)
+        if not os.path.exists(filename):
+            log.warn("cannot set dock icon, file '%s' not found!", filename)
+            return
+        debug("OSXTray.set_dock_icon() loading icon from %s", filename)
+        pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+        self.macapp.set_dock_icon_pixbuf(pixbuf)
