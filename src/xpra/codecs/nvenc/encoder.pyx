@@ -1101,6 +1101,9 @@ COLORSPACES = ("BGRX", )
 def get_colorspaces():
     return COLORSPACES
 
+WIDTH_MASK = 0xFFFE
+HEIGHT_MASK = 0xFFFE
+
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (format, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
@@ -1110,7 +1113,7 @@ def get_spec(encoding, colorspace):
                       #using a hardware encoder for something this small is silly:
                       min_w=32, min_h=32,
                       max_w=4096, max_h=4096,
-                      width_mask=0xFFFE, height_mask=0xFFFE)
+                      width_mask=WIDTH_MASK, height_mask=HEIGHT_MASK)
 
 
 def get_version():
@@ -1432,6 +1435,7 @@ cdef class Encoder:
                 self.cuda_context = None
 
     def cuda_clean(self):
+        self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
             debug("clean() unregistering %s", hex(<long> self.inputHandle))
             raiseNVENC(self.functionList.nvEncUnregisterResource(self.context, self.inputHandle), "unregistering CUDA input buffer")
@@ -1483,8 +1487,9 @@ cdef class Encoder:
     def flushEncoder(self):
         cdef NV_ENC_PIC_PARAMS picParams
         memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
+        picParams.version = NV_ENC_PIC_PARAMS_VER
         picParams.encodePicFlags = NV_ENC_PIC_FLAG_EOS
-        self.functionList.nvEncEncodePicture(self.context, &picParams)
+        raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "flushing encoder buffer")
 
     def compress_image(self, image, options={}):
         self.cuda_context.push()
@@ -1509,7 +1514,8 @@ cdef class Encoder:
         debug("compress_image(%s, %s)", image, options)
         assert self.context!=NULL, "context is not initialized"
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
-        assert image.get_width()<=self.encoder_width, "invalid width: %s" % image.get_width()
+        assert (image.get_width() & WIDTH_MASK)<=self.encoder_width, "invalid width: %s" % image.get_width()
+        assert (image.get_height() & HEIGHT_MASK)<=self.encoder_height, "invalid height: %s" % image.get_height()
         pixels = image.get_pixels()
         stride = image.get_rowstride()
         w = image.get_width()
@@ -1603,9 +1609,9 @@ cdef class Encoder:
         end = time.time()
         debug("download took %.1f ms", (end-encode_end)*1000.0)
 
-        self.frames += 1
         self.time += end-start
-        debug("returning %s bytes, complete compression took %.1fms", size, 1000.0*(end-start))
+        debug("returning %s bytes, complete compression for frame %s took %.1fms", size, self.frames, 1000.0*(end-start))
+        self.frames += 1
         return pixels, {}
 
 
@@ -1715,8 +1721,9 @@ cdef class Encoder:
             for x in range(inputFmtCount):
                 inputFmt = inputFmts[x]
                 debug("* %s", hex(inputFmt))
-                for format_mask, format_name in BUFFER_FORMAT.items():
+                for format_mask in sorted(BUFFER_FORMAT.keys()):
                     if format_mask>0 and (format_mask & inputFmt)>0:
+                        format_name = BUFFER_FORMAT.get(format_mask)
                         debug(" + %s : %s", hex(format_mask), format_name)
                         input_formats[format_name] = hex(format_mask)
         finally:
