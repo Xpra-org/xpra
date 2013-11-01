@@ -16,7 +16,8 @@ error = log.error
 
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
-#for SDK version 3, set to 0x30
+#for SDK version 2, set this to 0x20
+#for SDK version 3, set this to 0x30
 DEF NVENC_SDK_API_VERSION = 0x30
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEY = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
@@ -306,6 +307,8 @@ cdef extern from "nvEncodeAPI.h":
         uint16_t Data2
         uint16_t Data3
         uint8_t  Data4[8]
+
+    int NVENC_INFINITE_GOPLENGTH
 
     #Encode Codec GUIDS supported by the NvEncodeAPI interface.
     GUID NV_ENC_CODEC_H264_GUID
@@ -1362,7 +1365,8 @@ cdef class Encoder:
             params.enableEncodeAsync = 0            #not supported on Linux
             params.enablePTD = 0                    #not supported in sync mode!?
             if presetConfig!=NULL:
-                #presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
+                presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
+                presetConfig.presetCfg.encodeCodecConfig.h264Config.idrPeriod = NVENC_INFINITE_GOPLENGTH
                 params.encodeConfig = &presetConfig.presetCfg
             else:
                 self.preset_name = None
@@ -1505,6 +1509,7 @@ cdef class Encoder:
         cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         cdef size_t size
+        cdef int input_size
         cdef int offset = 0
         cdef input_buf_len = 0
         cdef int x, y, stride
@@ -1524,10 +1529,10 @@ cdef class Encoder:
 
         #FIXME: we should copy from pixels directly..
         #copy to input buffer:
-        size = self.inputPitch * self.encoder_height
-        assert len(pixels)<=size, "too many pixels (expected %s max, got %s)" % (size, len(pixels))
+        input_size = self.inputPitch * self.encoder_height
+        assert len(pixels)<=input_size, "too many pixels (expected %s max, got %s)" % (input_size, len(pixels))
         self.inputBuffer.data[:len(pixels)] = pixels
-        debug("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), size)
+        debug("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), input_size)
 
         #copy input buffer to CUDA buffer:
         self.driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
@@ -1559,6 +1564,7 @@ cdef class Encoder:
         raiseNVENC(self.functionList.nvEncMapInputResource(self.context, &mapInputResource), "mapping input resource")
         debug("compress_image(..) device buffer mapped to %s", hex(<long> mapInputResource.mappedResource))
 
+        size = 0
         try:
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
             picParams.version = NV_ENC_PIC_PARAMS_VER
@@ -1576,11 +1582,12 @@ cdef class Encoder:
             else:
                 picParams.pictureType = NV_ENC_PIC_TYPE_P
             picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
-            picParams.codecPicParams.h264PicParams.refPicFlag = 1
+            picParams.codecPicParams.h264PicParams.refPicFlag = self.frames==0
             IF NVENC_SDK_API_VERSION >= 0x30:
                 picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
                 picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
-            #picParams.encodePicFlags = NV_ENC_PIC_FLAG_FORCEINTRA
+            #picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
+            picParams.frameIdx = self.frames
             #picParams.inputTimeStamp = int(1000.0 * time.time())
             #inputDuration = 0      #FIXME: use frame delay?
             picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
@@ -1610,10 +1617,11 @@ cdef class Encoder:
         debug("download took %.1f ms", (end-encode_end)*1000.0)
 
         self.time += end-start
-        debug("returning %s bytes, complete compression for frame %s took %.1fms", size, self.frames, 1000.0*(end-start))
-        debug("pixels head: %s", binascii.hexlify(pixels[:128]))
+        debug("returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
+        #debug("pixels head: %s", binascii.hexlify(pixels[:128]))
+        client_options = {"frame" : self.frames}
         self.frames += 1
-        return pixels, {}
+        return pixels, client_options
 
 
     cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID):
@@ -1808,7 +1816,6 @@ cdef class Encoder:
         params.device = <void*> cuda_context
         params.clientKeyPtr = &CLIENT_KEY_GUID
         params.apiVersion = NVENCAPI_VERSION
-        #params.clientKeyPtr = client_key
         debug("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> self.functionList.nvEncOpenEncodeSessionEx))
         raiseNVENC(self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context), "opening session")
         debug("success, encoder context=%s", hex(<long> self.context))
