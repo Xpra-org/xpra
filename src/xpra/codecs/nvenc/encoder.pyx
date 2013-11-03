@@ -957,7 +957,7 @@ def guidstr(guid):
         parts.append(b)
     parts.append(bytearray(guid.get("Data4")[:2]))
     parts.append(bytearray(guid.get("Data4")[2:8]))
-    s = "-".join([binascii.hexlify(b).upper() for b in parts])
+    s = "-".join([binascii.hexlify(str(b)).upper() for b in parts])
     #log.info("guidstr(%s)=%s", guid, s)
     return s
 
