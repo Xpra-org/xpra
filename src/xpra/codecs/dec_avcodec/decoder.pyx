@@ -151,7 +151,7 @@ def get_codecs():
         _CODECS = []
         if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
             _CODECS.append("x264")
-        if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
+        if avcodec_find_decoder(CODEC_ID_VP8)!=NULL:
             _CODECS.append("vpx")
     return _CODECS
 
