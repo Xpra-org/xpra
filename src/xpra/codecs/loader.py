@@ -126,34 +126,38 @@ def has_codec(name):
     load_codecs()
     return name in codecs
 
+OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"}
+NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx"}
+ALL_OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8", "rgb24" : "rgb"}
+ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"}
 
 ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale", "csc_opencl", "csc_nvcuda", "dec_avcodec", "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"
 
-PREFERED_ENCODING_ORDER = ["x264", "vpx", "webp", "png", "png/P", "png/L", "rgb", "jpeg"]
+PREFERED_ENCODING_ORDER = ["h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "jpeg"]
 
 ENCODINGS_TO_NAME = {
-                  "x264"    : "H.264",
-                  "vpx"     : "VPx",
-                  "png"     : "PNG (24/32bpp)",
-                  "png/P"   : "PNG (8bpp colour)",
-                  "png/L"   : "PNG (8bpp grayscale)",
-                  "webp"    : "WebP",
-                  "jpeg"    : "JPEG",
-                  "rgb"     : "Raw RGB + zlib (24/32bpp)",
-                }
+      "h264"    : "H.264",
+      "vp8"     : "VP8",
+      "png"     : "PNG (24/32bpp)",
+      "png/P"   : "PNG (8bpp colour)",
+      "png/L"   : "PNG (8bpp grayscale)",
+      "webp"    : "WebP",
+      "jpeg"    : "JPEG",
+      "rgb"     : "Raw RGB + zlib (24/32bpp)",
+    }
 
 ENCODINGS_HELP = {
-                  "x264"    : "H.264 video codec",
-                  "vpx"     : "VPx video codec",
-                  "png"     : "Portable Network Graphics (24 or 32bpp for transparency)",
-                  "png/P"   : "Portable Network Graphics (8bpp colour)",
-                  "png/L"   : "Portable Network Graphics (8bpp grayscale)",
-                  "webp"    : "WebP compression (lossless or lossy)",
-                  "jpeg"    : "JPEG lossy compression",
-                  "rgb"     : "Raw RGB pixels, lossless, compressed using zlib (24 or 32bpp for transparency)",
-                  }
+      "h264"    : "H.264 video codec",
+      "vp8"     : "VP8 video codec",
+      "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
+      "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
+      "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
+      "webp"    : "WebP compression (lossless or lossy)",
+      "jpeg"    : "JPEG lossy compression",
+      "rgb"     : "Raw RGB pixels, lossless, compressed using zlib or lz4 (24bpp or 32bpp for transparency)",
+      }
 
-HELP_ORDER = ("x264", "vpx", "webp", "png", "png/P", "png/L", "rgb", "jpeg")
+HELP_ORDER = ("h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "jpeg")
 
 def encodings_help(encodings):
     h = []

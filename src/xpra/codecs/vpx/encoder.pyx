@@ -104,8 +104,7 @@ def get_type():
     return "vpx"
 
 def get_encodings():
-    #FIXME: should be renamed to "h264" since we are talking about the format...
-    return ["vpx"]
+    return ["vp8"]
 
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
@@ -144,7 +143,7 @@ cdef class Encoder:
     cdef char* src_format
 
     def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options):    #@DuplicatedSignature
-        assert encoding=="vpx", "invalid encoding: %s" % encoding
+        assert encoding=="vp8", "invalid encoding: %s" % encoding
         cdef const vpx_codec_iface_t *codec_iface
         self.width = width
         self.height = height
@@ -193,7 +192,7 @@ cdef class Encoder:
                 "max_threads": self.max_threads}
 
     def get_encoding(self):
-        return "vpx"
+        return "vp8"
 
     def get_width(self):
         return self.width
@@ -267,13 +266,13 @@ cdef class Encoder:
             i = vpx_codec_encode(self.context, image, frame_cnt, 1, flags, VPX_DL_REALTIME)
         if i!=0:
             free(image)
-            log.error("vpx codec encoding error: %s", vpx_codec_destroy(self.context))
+            log.error("vp8 codec encoding error: %s", vpx_codec_destroy(self.context))
             return None
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
         if get_packet_kind(pkt) != VPX_CODEC_CX_FRAME_PKT:
             free(image)
-            log.error("vpx: invalid packet type: %s", get_packet_kind(pkt))
+            log.error("vp8 invalid packet type: %s", get_packet_kind(pkt))
             return None
         self.frames += 1
         #FIXME: we copy the pixels here, we could manage the buffer instead

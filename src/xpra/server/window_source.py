@@ -6,17 +6,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import os
-MAX_NONVIDEO_PIXELS = 512
-MAX_NONVIDEO_OR_INITIAL_PIXELS = 1024*64
-try:
-    MAX_NONVIDEO_PIXELS = int(os.environ.get("XPRA_MAX_NONVIDEO_PIXELS", 2048))
-except:
-    pass
-try:
-    MAX_NONVIDEO_OR_INITIAL_PIXELS = int(os.environ.get("XPRA_MAX_NONVIDEO_OR_INITIAL_PIXELS", 1024*64))
-except:
-    pass
+
+from xpra.log import Logger, debug_if_env
+log = Logger()
+elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
 
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 90))
@@ -28,12 +23,6 @@ MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "1")=="1"
 ALLOW_ALPHA = os.environ.get("XPRA_ALLOW_ALPHA", "1")=="1"
 
-import time
-
-from xpra.log import Logger, debug_if_env
-log = Logger()
-elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
-
 XPRA_DAMAGE_DEBUG = os.environ.get("XPRA_DAMAGE_DEBUG", "0")!="0"
 if XPRA_DAMAGE_DEBUG:
     debug = log.info
@@ -43,6 +32,7 @@ else:
         pass
     debug = noop
     rgblog = noop
+
 
 from xpra.deque import maxdeque
 from xpra.net.protocol import compressed_wrapper, Compressed
@@ -56,7 +46,7 @@ try:
 except:
     xor_str = None
 from xpra.os_util import StringIOClass
-from xpra.codecs.loader import get_codec, has_codec
+from xpra.codecs.loader import get_codec, has_codec, NEW_ENCODING_NAMES_TO_OLD
 
 
 class WindowSource(object):
@@ -93,23 +83,24 @@ class WindowSource(object):
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg", "webp")]
-        client_refresh_encodings = encoding_options.get("auto_refresh_encodings", refresh_encodings)
+        client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", refresh_encodings)
         self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.server_core_encodings]
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
         self.default_encoding_options = default_encoding_options    #default encoding options, like "quality", "min-quality", etc
                                                         #may change at runtime (ie: see ServerSource.set_quality)
-        self.encoding_client_options = encoding_options.get("client_options", False)
+        self.encoding_client_options = encoding_options.boolget("client_options")
                                                         #does the client support encoding options?
-        self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
+        self.supports_rgb24zlib = encoding_options.boolget("rgb24zlib")
                                                         #supports rgb (both rgb24 and rgb32..) compression outside network layer (unwrapped)
-        self.supports_transparency = ALLOW_ALPHA and encoding_options.get("transparency", False)
-        self.rgb_lz4 = encoding_options.get("rgb_lz4", False)
-        self.full_frames_only = encoding_options.get("full_frames_only", False)
+        self.generic_encodings = encoding_options.boolget("generic")
+        self.supports_transparency = ALLOW_ALPHA and encoding_options.boolget("transparency")
+        self.rgb_lz4 = encoding_options.boolget("rgb_lz4")
+        self.full_frames_only = encoding_options.boolget("full_frames_only")
         self.supports_delta = []
         if xor_str is not None and not window.is_tray():
-            self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
+            self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
         self.last_pixmap_data = None
         self.batch_config = batch_config
         self.suspended = False
@@ -133,6 +124,7 @@ class WindowSource(object):
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = maxdeque(100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
         self._encoding_speed = maxdeque(100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
+
         # for managing/cancelling damage requests:
         self._damage_delayed = None                     #may store a delayed region when batching in progress
         self._damage_delayed_expired = False            #when this is True, the region should have expired
@@ -427,7 +419,7 @@ class WindowSource(object):
             actual_encoding = options.get("encoding")
             if actual_encoding is None:
                 actual_encoding = self.get_best_encoding(False, window, w*h, ww, wh, self.encoding)
-            if actual_encoding in ("x264", "vpx") or window.is_tray() or self.full_frames_only:
+            if actual_encoding in ("h264", "vp8") or window.is_tray() or self.full_frames_only:
                 x, y = 0, 0
                 w, h = ww, wh
             self.batch_config.last_delays.append((now, delay))
@@ -556,7 +548,7 @@ class WindowSource(object):
             return
 
         actual_encoding = self.get_best_encoding(True, window, pixel_count, ww, wh, coding)
-        if actual_encoding in ("x264", "vpx"):
+        if actual_encoding in ("h264", "vp8"):
             #use full screen dimensions:
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
             return
@@ -566,73 +558,52 @@ class WindowSource(object):
             x, y, w, h = region
             self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
 
+
     def get_best_encoding(self, batching, window, pixel_count, ww, wh, current_encoding):
         e = self.do_get_best_encoding(batching, window.has_alpha(), window.is_tray(), window.is_OR(), pixel_count, ww, wh, current_encoding)
+        if e is None:
+            e = self.get_core_encoding(window.has_alpha(), current_encoding)
         log("get_best_encoding%s=%s", (batching, window, pixel_count, ww, wh, current_encoding), e)
         return e
 
     def do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
         """
-            decide whether we send a full window update
-            using the video encoder or if a small lossless region(s) is a better choice
+            decide which encoding to use: transparent windows and trays need special treatment
+            (this is also overriden in WindowVideoSource)
         """
-        def switch_to_lossless(reason):
-            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
-            debug("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
-            return  coding
         if has_alpha and self.supports_transparency:
-            if current_encoding in ("png", "png/P", "png/L", "rgb32", "webp"):
-                return current_encoding
-            if current_encoding=="rgb":
-                encs = ("rgb32", "png", "webp")
-            else:
-                encs = ("png", "rgb32", "webp")
-            for x in encs:
-                if x in self.server_core_encodings and x in self.core_encodings:
-                    debug("do_get_best_encoding(..) using %s for alpha channel support", x)
-                    return x
-            debug("no alpha channel encodings supported: no %s in %s", encs, [x for x in self.server_core_encodings if x in self.core_encodings])
+            return self.get_transparent_encoding(current_encoding)
         if is_tray:
             #tray needs a lossless encoder
-            return switch_to_lossless("for a tray window")
-        if current_encoding not in ("x264", "vpx"):
-            return self.get_core_encoding(has_alpha, current_encoding)
-        max_nvoip = MAX_NONVIDEO_OR_INITIAL_PIXELS
-        max_nvp = MAX_NONVIDEO_PIXELS
-        if not batching:
-            max_nvoip *= 128
-            max_nvp *= 128
-        if self._sequence==1 and is_OR and pixel_count<max_nvoip:
-            #first frame of a small-ish OR window, those are generally short lived
-            #so delay using a video encoder until the next frame:
-            return switch_to_lossless("first small frame of an OR window")
-        if current_encoding=="x264":
-            #x264 needs sizes divisible by 2:
-            ww = ww & 0xFFFE
-            wh = wh & 0xFFFE
-        if ww<8 or wh<=2:
-            #swscale limitation
-            return switch_to_lossless("window dimensions are unsuitable for swscale")
-        if pixel_count<ww*wh*0.01:
-            #less than one percent of total area
-            return switch_to_lossless("few pixels (%.2f%% of window)" % (100*pixel_count/ww/wh))
-        if pixel_count>max_nvp:
-            #too many pixels, use current video encoder
-            return self.get_core_encoding(has_alpha, current_encoding)
-        if pixel_count<0.5*ww*wh and not batching:
-            #less than 50% of the full window and we're not batching
-            return switch_to_lossless("%i%% of image, not batching" % (100*pixel_count/ww/wh))
-        return self.get_core_encoding(has_alpha, current_encoding)
+            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
+            debug("do_get_best_encoding(..) using %s encoder for %s tray pixels", coding, pixel_count)
+            return coding
+        return None
+
+    def get_transparent_encoding(self, current_encoding):
+        if current_encoding in ("png", "png/P", "png/L", "rgb32", "webp"):
+            return current_encoding
+        if current_encoding=="rgb":
+            encs = ("rgb32", "png", "webp")
+        else:
+            encs = ("png", "rgb32", "webp")
+        for x in encs:
+            if x in self.server_core_encodings and x in self.core_encodings:
+                debug("do_get_best_encoding(..) using %s for alpha channel support", x)
+                return x
+        debug("no alpha channel encodings supported: no %s in %s", encs, [x for x in self.server_core_encodings if x in self.core_encodings])
+        return None
 
     def get_core_encoding(self, has_alpha, current_encoding):
-        encs = [current_encoding]
         if current_encoding=="rgb":
+            encs = [current_encoding]
             if has_alpha:
                 encs.insert(0, "rgb32")
                 encs.insert(1, "rgb24")
             else:
                 encs.insert(0, "rgb24")
                 encs.insert(1, "rgb32")
+            log.info("get_core_encodings(%s, %s) encs=%s, server_core_encodings=%s, core_encodings=%s", has_alpha, current_encoding, encs, self.server_core_encodings, self.core_encodings)
             for e in encs:
                 if e in self.server_core_encodings and e in self.core_encodings:
                     return e
@@ -832,8 +803,8 @@ class WindowSource(object):
             * 'mmap' will use 'mmap_send' + 'mmap_encode' - always if available, otherwise:
             * 'jpeg' and 'png' are handled by 'PIL_encode'.
             * 'webp' uses 'webp_encode'
-            * 'x264' and 'vpx' use 'video_encode'
-            * 'rgb24' and 'rgb32' use 'rgb_encode' and the 'Compressed' wrapper to tell the network layer it is already zlibbed
+            * 'h264' and 'vp8' use 'video_encode'
+            * 'rgb24' and 'rgb32' use 'rgb_encode'
         """
         if self.is_cancelled(sequence) or self.suspended:
             debug("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
@@ -884,6 +855,9 @@ class WindowSource(object):
         if store>0:
             self.last_pixmap_data = w, h, coding, store, dpixels
             client_options["store"] = store
+        if not self.generic_encodings:
+            #old clients use non-generic encoding names:
+            coding = NEW_ENCODING_NAMES_TO_OLD.get(coding, coding)
         #actual network packet:
         packet = ["draw", wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()

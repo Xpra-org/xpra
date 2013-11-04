@@ -13,6 +13,15 @@ from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_sub
 from xpra.codecs.video_enc_pipeline import VideoPipelineHelper
 from xpra.server.window_source import WindowSource, debug, log
 
+def envint(name, d):
+    try:
+        return int(os.environ.get(name, d))
+    except:
+        return d
+
+MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 2048)
+MAX_NONVIDEO_OR_INITIAL_PIXELS = envint("XPRA_MAX_NONVIDEO_OR_INITIAL_PIXELS", 1024*64)
+
 ENCODER_TYPE = os.environ.get("XPRA_ENCODER_TYPE", "")  #ie: "x264" or "nvenc"
 CSC_TYPE = os.environ.get("XPRA_CSC_TYPE", "")          #ie: "swscale" or "opencl"
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
@@ -51,10 +60,16 @@ class WindowVideoSource(WindowSource):
         #0.10 onwards should have specified csc_modes:
         self.csc_modes = self.encoding_options.get("csc_modes", def_csc_modes)
 
-        for x in ("vpx", "x264"):
+        for x in ("vp8", "h264"):
             if x in self.server_core_encodings:
                 self._encoders[x] = self.video_encode
 
+        #these constraints get updated with real values
+        #when we construct the video pipeline:
+        self.min_w = 1
+        self.min_h = 1
+        self.max_w = 16384
+        self.max_h = 16384
         self.width_mask = 0xFFFF
         self.height_mask = 0xFFFF
         self.actual_scaling = None
@@ -65,7 +80,7 @@ class WindowVideoSource(WindowSource):
 
         self.last_pipeline_params = None
         self.last_pipeline_scores = []
-        self._video_pipeline_helper.may_init()
+        WindowVideoSource._video_pipeline_helper.may_init()
 
     def add_stats(self, info, suffix=""):
         WindowSource.add_stats(self, info, suffix)
@@ -104,8 +119,8 @@ class WindowVideoSource(WindowSource):
         self.cleanup_codecs()
 
     def cleanup_codecs(self):
-        """ Video encoders (x264 and vpx) require us to run
-            cleanup code to free the memory they use.
+        """ Video encoders (x264, nvenc and vpx) and their csc helpers
+            require us to run cleanup code to free the memory they use.
         """
         try:
             self._lock.acquire()
@@ -155,13 +170,60 @@ class WindowVideoSource(WindowSource):
         #now figure out if we need to send edges separately:
         dw = w - (w & self.width_mask)
         dh = h - (h & self.height_mask)
-        if coding in ("vpx", "x264") and (dw>0 or dh>0):
+        if coding in ("vp8", "h264") and (dw>0 or dh>0):
             if dw>0:
                 lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, dw*h)
                 WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, lossless, options)
             if dh>0:
                 lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, w*dh)
                 WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, lossless, options)
+
+
+    def do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
+        """
+            decide whether we send a full window update
+            using the video encoder or if a small lossless region(s) is a better choice
+        """
+        encoding = WindowSource.do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding)
+        if encoding is not None:
+            #superclass knows best (usually a tray or transparent window):
+            return encoding
+        if current_encoding not in ("h264", "vp8"):
+            return None
+        if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
+            #video encoder cannot handle this size!
+            #(maybe this should be an 'assert' statement here?)
+            return None
+
+        def switch_to_lossless(reason):
+            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
+            debug("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
+            return  coding
+
+        max_nvoip = MAX_NONVIDEO_OR_INITIAL_PIXELS
+        max_nvp = MAX_NONVIDEO_PIXELS
+        if not batching:
+            max_nvoip *= 128
+            max_nvp *= 128
+        if self._sequence==1 and is_OR and pixel_count<max_nvoip:
+            #first frame of a small-ish OR window, those are generally short lived
+            #so delay using a video encoder until the next frame:
+            return switch_to_lossless("first small frame of an OR window")
+        #ensure the dimensions we use for decision making are the ones actually used:
+        ww = ww & self.width_mask
+        wh = wh & self.height_mask
+        if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
+            return switch_to_lossless("window dimensions are unsuitable for this encoder/csc")
+        if pixel_count<ww*wh*0.01:
+            #less than one percent of total area
+            return switch_to_lossless("few pixels (%.2f%% of window)" % (100*pixel_count/ww/wh))
+        if pixel_count>max_nvp:
+            #too many pixels, use current video encoder
+            return self.get_core_encoding(has_alpha, current_encoding)
+        if pixel_count<0.5*ww*wh and not batching:
+            #less than 50% of the full window and we're not batching
+            return switch_to_lossless("%i%% of image, not batching" % (100*pixel_count/ww/wh))
+        return self.get_core_encoding(has_alpha, current_encoding)
 
 
     def reconfigure(self, force_reload=False):
@@ -236,7 +298,7 @@ class WindowVideoSource(WindowSource):
             Each solution is rated and we return all of them in descending
             score (best solution comes first).
         """
-        encoder_specs = self._video_pipeline_helper.get_encoder_specs(encoding)
+        encoder_specs = WindowVideoSource._video_pipeline_helper.get_encoder_specs(encoding)
         assert len(encoder_specs)>0, "no encoders found for '%s'" % encoding
         scores = []
         def add_scores(info, csc_spec, enc_in_format):
@@ -266,7 +328,7 @@ class WindowVideoSource(WindowSource):
             if scaling == (1, 1):
                 add_scores("direct (no csc)", None, src_format)
         #now add those that require a csc step:
-        csc_specs = self._video_pipeline_helper.get_csc_specs(src_format)
+        csc_specs = WindowVideoSource._video_pipeline_helper.get_csc_specs(src_format)
         if csc_specs:
             #debug("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
             #we have csc module(s) that can get us from pixel_format to out_csc:
@@ -502,10 +564,18 @@ class WindowVideoSource(WindowSource):
                 debug("setup_pipeline: trying %s", option)
                 speed = self.get_current_speed()
                 quality = self.get_current_quality()
+                min_w = 1
+                min_h = 1
+                max_w = 16384
+                max_h = 16384
                 if csc_spec:
                     #TODO: no need to OR encoder mask if we are scaling...
                     self.width_mask = csc_spec.width_mask & encoder_spec.width_mask
                     self.height_mask = csc_spec.height_mask & encoder_spec.height_mask
+                    min_w = max(min_w, csc_spec.min_w)
+                    min_h = max(min_h, csc_spec.min_h)
+                    max_w = min(max_w, csc_spec.max_w)
+                    max_h = min(max_h, csc_spec.max_h)
                     csc_width = width & self.width_mask
                     csc_height = height & self.height_mask
                     enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height)
@@ -523,11 +593,21 @@ class WindowVideoSource(WindowSource):
                     #use the encoder's mask directly since that's all we have to worry about!
                     self.width_mask = encoder_spec.width_mask
                     self.height_mask = encoder_spec.height_mask
+                    #restrict limits:
+                    min_w = max(min_w, encoder_spec.min_w)
+                    min_h = max(min_h, encoder_spec.min_h)
+                    max_w = min(max_w, encoder_spec.max_w)
+                    max_h = min(max_h, encoder_spec.max_h)
                     enc_width = width & self.width_mask
                     enc_height = height & self.height_mask
                 enc_start = time.time()
                 self._video_encoder = encoder_spec.codec_class()
                 self._video_encoder.init_context(enc_width, enc_height, enc_in_format, encoder_spec.encoding, quality, speed, self.encoding_options)
+                #record new actual limits:
+                self.min_w = min_w
+                self.min_h = min_h
+                self.max_w = max_w
+                self.max_h = max_h
                 enc_end = time.time()
                 debug("setup_pipeline: video encoder=%s, info: %s, setup took %.2fms",
                         self._video_encoder, self._video_encoder.get_info(), (enc_end-enc_start)*1000.0)
@@ -541,7 +621,7 @@ class WindowVideoSource(WindowSource):
 
     def video_encode(self, encoding, image, options):
         """
-            This method is used by make_data_packet to encode frames using x264 or vpx.
+            This method is used by make_data_packet to encode frames using h264 or vp8.
             Video encoders only deal with fixed dimensions,
             so we must clean and reinitialize the encoder if the window dimensions
             has changed.

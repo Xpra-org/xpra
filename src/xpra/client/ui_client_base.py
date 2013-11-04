@@ -21,7 +21,7 @@ from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
-from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER
+from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
@@ -146,7 +146,9 @@ class UIXpraClient(XpraClientBase):
         self.toggle_keyboard_sync = False
         self.window_configure = False
         self.window_unmap = False
+        self.server_generic_encodings = False
         self.server_encodings = []
+        self.server_core_encodings = []
         self.server_encodings_with_speed = ()
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless = ()
@@ -303,16 +305,29 @@ class UIXpraClient(XpraClientBase):
         log("UIXpraClient.cleanup() done")
 
     def get_encodings(self):
+        """
+            For backwards compatibility with older servers,
+            the values we return from this method can be
+            a little confusing... (ie: 'x264' for 'h264')
+            Best to use get_core_encodings wherever possible.
+        """
         cenc = self.get_core_encodings()
+        cenc = [NEW_ENCODING_NAMES_TO_OLD.get(x, x) for x in cenc]
         if "rgb24" in cenc and "rgb" not in cenc:
             cenc.append("rgb")
         return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32",)]
 
     def get_core_encodings(self):
+        """
+            This method returns the actual encodings supported.
+            ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
+            It is often overriden in the actual client class implementations,
+            where extra encodings can be added (generally just 'rgb32' for transparency).
+        """
         #we always support rgb24:
         core_encodings = ["rgb24"]
         for modules, encodings in {
-              ("dec_vpx", "csc_swscale")        : ["vpx"],
+              ("dec_vpx", "csc_swscale")        : ["vp8"],
               ("dec_webp",)                     : ["webp"],
               ("PIL",)                          : ["png", "png/L", "png/P", "jpeg"],
                }.items():
@@ -323,7 +338,7 @@ class UIXpraClient(XpraClientBase):
             for encoding in encodings:
                 if encoding not in core_encodings:
                     core_encodings.append(encoding)
-        #special case for avcodec which may be able to decode both vpx and x264:
+        #special case for avcodec which may be able to decode both 'vp8' and 'h264':
         #(both of which "need" swscale - until we get more clever
         # and test the availibility of GL windows)
         if has_codec("csc_swscale"):        #or has_codec("csc_opencl"): (see window_backing_base)
@@ -617,54 +632,50 @@ class UIXpraClient(XpraClientBase):
             except:
                 pass
         capabilities.update({
-                    "randr_notify"              : True,
-                    "compressible_cursors"      : True,
-                    "dpi"                       : self.dpi,
-                    "clipboard"                 : self.client_supports_clipboard,
-                    "clipboard.notifications"   : self.client_supports_clipboard,
-                    "clipboard.selections"      : CLIPBOARDS,
-                    #buggy osx clipboards:
-                    "clipboard.want_targets"    : CLIPBOARD_WANT_TARGETS,
-                    #buggy osx and win32 clipboards:
-                    "clipboard.greedy"          : CLIPBOARD_GREEDY,
-                    "notifications"             : self.client_supports_notifications,
-                    "cursors"                   : self.client_supports_cursors,
-                    "bell"                      : self.client_supports_bell
-                    })
+            "randr_notify"              : True,
+            "compressible_cursors"      : True,
+            "dpi"                       : self.dpi,
+            "clipboard"                 : self.client_supports_clipboard,
+            "clipboard.notifications"   : self.client_supports_clipboard,
+            "clipboard.selections"      : CLIPBOARDS,
+            #buggy osx clipboards:
+            "clipboard.want_targets"    : CLIPBOARD_WANT_TARGETS,
+            #buggy osx and win32 clipboards:
+            "clipboard.greedy"          : CLIPBOARD_GREEDY,
+            "notifications"             : self.client_supports_notifications,
+            "cursors"                   : self.client_supports_cursors,
+            "bell"                      : self.client_supports_bell,
+            "encoding.client_options"   : True,
+            "encoding_client_options"   : True,
+            "encoding.csc_atoms"        : True,
+            #TODO: check for csc support (swscale only?)
+            "encoding.video_scaling"    : True,
+            "encoding.rgb_lz4"          : use_lz4 and self.compression_level==1,
+            "encoding.transparency"     : self.has_transparency(),
+            #TODO: check for csc support (swscale only?)
+            "encoding.csc_modes"        : ("YUV420P", "YUV422P", "YUV444P", "BGRA", "BGRX"),
+            "rgb24zlib"                 : True,
+            "encoding.rgb24zlib"        : True,
+            "named_cursors"             : False,
+            "share"                     : self.client_supports_sharing,
+            "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
+            "windows"                   : self.windows_enabled,
+            "window.raise"              : True,
+            "raw_window_icons"          : True,
+            "system_tray"               : self.client_supports_system_tray,
+            "xsettings-tuple"           : True,
+            "generic_window_types"      : True,
+            "server-window-resize"      : True,
+            "notify-startup-complete"   : True,
+            "generic-rgb-encodings"     : True,
+            "encodings"                 : self.get_encodings(),
+            "encodings.core"            : self.get_core_encodings(),
+            "encodings.rgb_formats"     : ["RGB", "RGBA"]
+            })
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
-        capabilities.update({
-                    "encoding.client_options"   : True,
-                    "encoding_client_options"   : True,
-                    "encoding.csc_atoms"        : True,
-                    #TODO: check for csc support (swscale only?)
-                    "encoding.video_scaling"    : True,
-                    "encoding.rgb_lz4"          : use_lz4 and self.compression_level==1,
-                    "encoding.transparency"     : self.has_transparency(),
-                    #TODO: check for csc support (swscale only?)
-                    "encoding.csc_modes"        : ("YUV420P", "YUV422P", "YUV444P", "BGRA", "BGRX"),
-                    "rgb24zlib"                 : True,
-                    "encoding.rgb24zlib"        : True,
-                    "named_cursors"             : False,
-                    "share"                     : self.client_supports_sharing,
-                    "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
-                    "windows"                   : self.windows_enabled,
-                    "window.raise"              : True,
-                    "raw_window_icons"          : True,
-                    "system_tray"               : self.client_supports_system_tray,
-                    "xsettings-tuple"           : True,
-                    "generic_window_types"      : True,
-                    "server-window-resize"      : True,
-                    "notify-startup-complete"   : True,
-                    "generic-rgb-encodings"     : True
-                    })
         if self.encoding:
             capabilities["encoding"] = self.encoding
-        capabilities.update({
-                    "encodings"                 : self.get_encodings(),
-                    "encodings.core"            : self.get_core_encodings(),
-                    "encodings.rgb_formats"     : ["RGB", "RGBA"]
-                    })
         if self.quality>0:
             capabilities.update({
                          "jpeg"             : self.quality,
@@ -680,7 +691,7 @@ class UIXpraClient(XpraClientBase):
             capabilities["encoding.min-speed"] = self.min_speed
         log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["encoding.uses_swscale"] = True
-        if "x264" in self.get_encodings():
+        if "h264" in self.get_core_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high10" for I420/YUV420P
             # as the python client always supports all the profiles
@@ -692,12 +703,16 @@ class UIXpraClient(XpraClientBase):
                         ("I420", "YUV420P", "high10"),
                         ("I422", "YUV422P", ""),
                         ("I444", "YUV444P", "")):
-                profile = os.environ.get("XPRA_X264_%s_PROFILE" % old_csc_name, default_profile)
-                profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_name, profile)
+                profile = default_profile
+                #try with the old prefix (X264) as well as the more correct one (H264):
+                for H264_NAME in ("X264", "H264"):
+                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, old_csc_name), profile)
+                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, csc_name), profile)
                 if profile:
                     #send as both old and new names:
-                    capabilities["encoding.x264.%s.profile" % old_csc_name] = profile
-                    capabilities["encoding.x264.%s.profile" % csc_name] = profile
+                    for h264_name in ("x264", "h264"):
+                        capabilities["encoding.%s.%s.profile" % (h264_name, old_csc_name)] = profile
+                        capabilities["encoding.%s.%s.profile" % (h264_name, csc_name)] = profile
             log("x264 encoding options: %s", str([(k,v) for k,v in capabilities.items() if k.startswith("encoding.x264.")]))
         iq = max(self.min_quality, self.quality)
         if iq<0:
@@ -881,10 +896,18 @@ class UIXpraClient(XpraClientBase):
                     self.quit(EXIT_MMAP_TOKEN_FAILURE)
                     return
         self.server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
-        self.server_encodings = c.strlistget("encodings")
-        self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("x264",)) #old servers only supported x264
-        self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "x264"))
-        self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
+        def getenclist(k, default_value=[]):
+            #deals with old servers and substitute old encoding names for the new ones
+            v = c.strlistget(k, default_value)
+            if not v:
+                return v
+            return [OLD_ENCODING_NAMES_TO_NEW.get(x, x) for x in v]
+        self.server_generic_encodings = c.boolget("encodings.generic")
+        self.server_encodings = getenclist("encodings")
+        self.server_core_encodings = getenclist("encodings.core", self.server_encodings)
+        self.server_encodings_with_speed = getenclist("encodings.with_speed", ("h264",)) #old servers only supported x264
+        self.server_encodings_with_quality = getenclist("encodings.with_quality", ("jpeg", "webp", "h264"))
+        self.server_encodings_with_lossless_mode = getenclist("encodings.with_lossless_mode", ())
         self.change_quality = c.boolget("change-quality")
         self.change_min_quality = c.boolget("change-min-quality")
         self.change_speed = c.boolget("change-speed")
@@ -1221,6 +1244,9 @@ class UIXpraClient(XpraClientBase):
         assert encoding in self.get_encodings(), "encoding %s is not supported!" % encoding
         assert encoding in self.server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, self.server_encodings)
         self.encoding = encoding
+        if not self.server_generic_encodings:
+            #translate to old name the server will understand:
+            encoding = ALL_NEW_ENCODING_NAMES_TO_OLD.get(encoding, encoding)
         self.send("encoding", encoding)
 
 
@@ -1311,6 +1337,8 @@ class UIXpraClient(XpraClientBase):
     def _do_draw(self, packet):
         """ this runs from the draw thread above """
         wid, x, y, width, height, coding, data, packet_sequence, rowstride = packet[1:10]
+        #rename old encoding aliases early:
+        coding = OLD_ENCODING_NAMES_TO_NEW.get(coding, coding)
         window = self._id_to_window.get(wid)
         if not window:
             #window is gone

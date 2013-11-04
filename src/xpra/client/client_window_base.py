@@ -258,7 +258,7 @@ class ClientWindowBase(ClientWidgetBase):
                 self._refresh_timer = None
             #if we need to set a refresh timer, do it:
             is_hq = options.get("quality", 0)>=95
-            is_lossy = coding in ("jpeg", "vpx", "x264")
+            is_lossy = coding in ("jpeg", "vp8", "h264")
             if self._refresh_timer is None and self._auto_refresh_delay>0 and is_lossy and not is_hq:
                 #make sure our own refresh does not make us fire again
                 #FIXME: this should be per-window!

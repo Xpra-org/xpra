@@ -627,7 +627,7 @@ class GTKTrayMenuBase(object):
                 set_tooltip_text(self.speed, "Quality is always 100% with mmap")
             elif not self.client.change_speed:
                 set_tooltip_text(self.speed, "Server does not support changing speed")
-            elif self.client.encoding!="x264":
+            elif self.client.encoding!="h264":
                 set_tooltip_text(self.speed, "Not supported with %s encoding" % self.client.encoding)
             else:
                 set_tooltip_text(self.speed, "Encoding latency vs size")

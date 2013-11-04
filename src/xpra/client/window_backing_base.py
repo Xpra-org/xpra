@@ -348,9 +348,9 @@ class WindowBackingBase(object):
                 self.do_clean_csc_prep()
 
             if self._video_decoder:
-                if self._video_decoder.get_type()!=coding:
+                if self._video_decoder.get_encoding()!=coding:
                     if DRAW_DEBUG:
-                        log.info("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_type(), coding)
+                        log.info("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_encoding(), coding)
                     self.do_clean_video_decoder()
                 elif self._video_decoder.get_width()!=enc_width or self._video_decoder.get_height()!=enc_height:
                     if DRAW_DEBUG:
@@ -466,11 +466,11 @@ class WindowBackingBase(object):
             if rowstride==0:
                 rowstride = width * 4
             self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
-        elif coding == "x264":
-            self.paint_with_video_decoder("dec_avcodec", "x264", img_data, x, y, width, height, options, callbacks)
-        elif coding == "vpx":
+        elif coding=="h264":
+            self.paint_with_video_decoder("dec_avcodec", "h264", img_data, x, y, width, height, options, callbacks)
+        elif coding=="vp8":
             assert VPX_DECODER, "no vpx decoder available"
-            self.paint_with_video_decoder(VPX_DECODER, "vpx", img_data, x, y, width, height, options, callbacks)
+            self.paint_with_video_decoder(VPX_DECODER, "vp8", img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)
         elif coding[:3]=="png" or coding=="jpeg":

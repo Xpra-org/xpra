@@ -89,7 +89,7 @@ def get_version():
     return get_vpx_abi_version()
 
 def get_type(self):
-    return  "vpx"
+    return  "vp8"
 
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
@@ -103,7 +103,7 @@ def get_spec(colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
     #setup cost is reasonable (usually about 5ms)
-    return codec_spec(Decoder, codec_type="vpx", setup_cost=40)
+    return codec_spec(Decoder, codec_type="vp8", setup_cost=40)
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
@@ -121,7 +121,7 @@ cdef class Decoder:
     def init_context(self, encoding, width, height, colorspace):
         cdef const vpx_codec_iface_t *codec_iface = vpx_codec_vp8_dx()
         cdef int flags = 0
-        assert encoding=="vpx"
+        assert encoding=="vp8"
         assert colorspace=="YUV420P"
         self.src_format = "YUV420P"
         self.pixfmt = get_vpx_colorspace(self.src_format)
@@ -152,6 +152,9 @@ cdef class Decoder:
 
     def is_closed(self):
         return self.context==NULL
+
+    def get_encoding(self):
+        return "vp8"
 
     def get_type(self):                 #@DuplicatedSignature
         return  "vpx"

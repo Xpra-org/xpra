@@ -21,10 +21,11 @@ from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.scripts.config import python_platform
+from xpra.codecs.loader import OLD_ENCODING_NAMES_TO_NEW
 from xpra.net.protocol import compressed_wrapper, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue
-from xpra.util import std
+from xpra.util import std, typedict
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
@@ -219,7 +220,11 @@ class ServerSource(object):
         self.default_min_speed = default_min_speed  #default minimum encoding speed
         self.encoding = None                        #the default encoding for all windows
         self.encodings = []                         #all the encodings supported by the client
-        self.encoding_options = {}
+        self.core_encodings = []
+        self.rgb_formats = ["RGB"]
+        self.generic_rgb_encodings = False
+        self.generic_encodings = False
+        self.encoding_options = typedict()
         self.default_batch_config = DamageBatchConfig()     #contains default values, some of which may be supplied by the client
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
         self.default_encoding_options = {}
@@ -517,9 +522,17 @@ class ServerSource(object):
             self.keyboard_config = None
 
         #encodings:
-        self.encodings = c.strlistget("encodings", [])
-        self.core_encodings = c.strlistget("encodings.core", self.encodings)
-        self.rgb_formats = c.strlistget("encodings.rgb_formats", ["RGB"])
+        def getenclist(k, default_value=[]):
+            #deals with old servers and substitute old encoding names for the new ones
+            v = c.strlistget(k, default_value)
+            if not v:
+                return v
+            return [OLD_ENCODING_NAMES_TO_NEW.get(x, x) for x in v]
+        self.encodings = getenclist("encodings")
+        self.core_encodings = getenclist("encodings.core", self.encodings)
+        self.rgb_formats = getenclist("encodings.rgb_formats", ["RGB"])
+        self.generic_rgb_encodings = c.boolget("generic-rgb-encodings")
+        self.generic_encodings = c.boolget("encodings.generic")
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
             log.info("windows/pixels forwarding is disabled for this client")
@@ -546,22 +559,16 @@ class ServerSource(object):
         elog("encoding options: %s", self.encoding_options)
 
         q = c.intget("jpeg", self.default_quality)  #pre 0.7 versions
-        def getencint(k, d):
-            v = self.encoding_options.get(k, d)
-            try:
-                return int(v)
-            except:
-                return d
-        q = getencint("quality", q)         #0.7 onwards:
+        q = self.encoding_options.intget("quality", q)         #0.7 onwards:
         if q>0:
             self.default_encoding_options["quality"] = q
-        mq = getencint("min-quality", self.default_min_quality)
+        mq = self.encoding_options.intget("min-quality", self.default_min_quality)
         if mq>0 and (q<=0 or q>mq):
             self.default_encoding_options["min-quality"] = mq
-        s = getencint("speed", self.default_speed)
+        s = self.encoding_options.intget("speed", self.default_speed)
         if s>0:
             self.default_encoding_options["speed"] = s
-        ms = getencint("min-speed", self.default_min_speed)
+        ms = self.encoding_options.intget("min-speed", self.default_min_speed)
         if ms>0 and (s<=0 or s>ms):
             self.default_encoding_options["min-speed"] = ms
         elog("default encoding options: %s", self.default_encoding_options)
@@ -867,6 +874,7 @@ class ServerSource(object):
             capabilities["mmap_token"] = self.mmap_client_token
         if self.keyboard_config:
             capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
+        self.rewrite_encoding_values(capabilities)
         self.send("hello", capabilities)
 
     def add_info(self, info, suffix=""):
@@ -963,7 +971,40 @@ class ServerSource(object):
             cv("microphone.%s" % k, v)
 
     def send_info_response(self, info):
+        self.rewrite_encoding_values(info)
         self.send("info-response", info)
+
+
+    def rewrite_encoding_values(self, d):
+        """
+            The server class does not know
+            what encoding name values the client supports.
+            (this is used for patching the contents of "hello" and "info" packets for older clients)
+        """
+        replace = {}
+        if not self.generic_rgb_encodings:
+            replace["rgb"] = ("rgb24", "rgb32")
+        if not self.generic_encodings:
+            replace["h264"] = ("x264", )
+            replace["vp8"] = ("vpx", )
+        if len(replace)==0:
+            return
+        #filter only "encodings.*" keys:
+        for k in [x for x in d.keys() if x=="encodings" or x.startswith("encodings.")]:
+            v = d.get(k)
+            if type(v) not in (list, tuple):
+                continue
+            l = list(v)
+            newlist = l
+            for new_encoding_name, old_encoding_names in replace.items():
+                if new_encoding_name not in l:
+                    continue
+                p = newlist.index(new_encoding_name)
+                newlist = newlist[:p] + list(old_encoding_names) + newlist[p+1:]
+            if l!=newlist:
+                d[k] = newlist
+                debug("rewrite_encoding_values for key '%s': %s replaced by %s", k, l, newlist)
+                        
 
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended:

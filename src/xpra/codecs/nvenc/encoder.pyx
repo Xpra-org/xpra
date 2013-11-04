@@ -1126,8 +1126,7 @@ def get_type():
     return "nvenc"
 
 def get_encodings():
-    #FIXME: should be renamed to "h264" since we are talking about the format...
-    return ["x264"]
+    return ["h264"]
 
 cdef int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
@@ -1473,7 +1472,7 @@ cdef class Encoder:
         return  "nvenc"
 
     def get_encoding(self):                     #@DuplicatedSignature
-        return  "x264"
+        return  "h264"
 
     def get_src_format(self):
         return self.src_format

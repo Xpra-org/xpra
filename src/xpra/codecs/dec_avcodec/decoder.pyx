@@ -150,9 +150,9 @@ def get_codecs():
         avcodec_register_all()
         _CODECS = []
         if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
-            _CODECS.append("x264")
+            _CODECS.append("h264")
         if avcodec_find_decoder(CODEC_ID_VP8)!=NULL:
-            _CODECS.append("vpx")
+            _CODECS.append("vp8")
     return _CODECS
 
 
@@ -325,7 +325,7 @@ cdef class Decoder:
 
     def init_context(self, encoding, int width, int height, colorspace):
         init_colorspaces()
-        assert encoding in ("vpx", "x264")
+        assert encoding in ("vp8", "h264")
         self.encoding = encoding
         self.width = width
         self.height = height
@@ -346,13 +346,13 @@ cdef class Decoder:
 
         avcodec_register_all()
 
-        if self.encoding=="x264":
+        if self.encoding=="h264":
             self.codec = avcodec_find_decoder(CODEC_ID_H264)
             if self.codec==NULL:
                 error("codec H264 not found!")
                 return  False
         else:
-            assert self.encoding=="vpx"
+            assert self.encoding=="vp8"
             self.codec = avcodec_find_decoder(CODEC_ID_VP8)
             if self.codec==NULL:
                 error("codec VP8 not found!")
@@ -463,8 +463,11 @@ cdef class Decoder:
     def get_height(self):
         return self.height
 
+    def get_encoding(self):
+        return "h264"
+
     def get_type(self):                             #@DuplicatedSignature
-        return self.encoding
+        return "avcodec"
 
     def decompress_image(self, input, options):
         cdef unsigned char * padded_buf = NULL

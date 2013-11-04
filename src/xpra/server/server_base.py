@@ -18,7 +18,7 @@ from xpra.server.server_core import ServerCore
 from xpra.os_util import thread, get_hex_uuid
 from xpra.version_util import add_version_info
 from xpra.util import alnum
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec, get_codec
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
@@ -67,7 +67,6 @@ class ServerBase(ServerCore):
         self.supports_clipboard = False
 
         #encodings:
-        self.generic_rgb_encodings = False
         self.core_encodings = []
         self.encodings = []
         self.lossless_encodings = []
@@ -121,26 +120,32 @@ class ServerBase(ServerCore):
     def init_encodings(self):
         #core encodings: all the specific encoding formats we can encode:
         self.core_encodings = ["rgb24", "rgb32"]
-        for modules, encodings in {
-                              ("enc_vpx",)                  : ["vpx"],
-                              ("enc_x264",)                 : ["x264"],
-                              ("enc_nvenc",)                : ["x264"],
-                              ("enc_webp",)                 : ["webp"],
-                              ("PIL",)                      : ["png", "png/L", "png/P", "jpeg"],
+        #encodings: the format families we can encode (same as core, except for rgb):
+        self.encodings = ["rgb"]
+
+        def add_encodings(encodings):
+            for e in encodings:
+                if e not in self.encodings:
+                    self.encodings.append(e)
+                if e not in self.core_encodings:
+                    self.core_encodings.append(e)
+
+        #video encoders (actual encodings supported are queried):
+        for codec_name in ("enc_vpx", "enc_x264", "enc_nvenc"):
+            codec = get_codec(codec_name)
+            if codec:
+                #codec.get_type()    #ie: "vpx", "x264" or "nvenc"
+                log("init_encodings() codec %s found, adding: %s", codec.get_type(), codec.get_encodings())
+                add_encodings(codec.get_encodings())  #ie: ["vp8"] or ["h264"]
+
+        for module, encodings in {
+                              "enc_webp"  : ["webp"],
+                              "PIL"       : ["png", "png/L", "png/P", "jpeg"],
                               }.items():
-            missing = [x for x in modules if not has_codec(x)]
-            if len(missing)>0:
-                log("init_encodings() not adding %s because of missing modules: %s", encodings, missing)
+            if not has_codec(module):
+                log("init_encodings() codec module %s is missing, not adding: %s", module, encodings)
                 continue
-            for encoding in encodings:
-                if encoding not in self.core_encodings:
-                    self.core_encodings.append(encoding)
-        #encodings (the more generic names):
-        self.encodings = [x for x in self.core_encodings if x not in ("rgb32", "rgb24")]
-        #renamed rgb24 to rgb in public encodings:
-        if "rgb24" in self.core_encodings:
-            self.encodings.append("rgb")
-        assert len(self.encodings)>0, "no encodings found!"
+            add_encodings(encodings)
 
         self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb"))]
         self.lossless_mode_encodings = []
@@ -446,7 +451,6 @@ class ServerBase(ServerCore):
             self.disconnect_client(proto, reason)
         def get_window_id(wid):
             return self._window_to_id.get(wid)
-        self.generic_rgb_encodings = c.boolget("generic-rgb-encodings")
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
@@ -526,47 +530,50 @@ class ServerBase(ServerCore):
 
     def make_hello(self):
         capabilities = ServerCore.make_hello(self)
-        capabilities["max_desktop_size"] = self.get_max_screen_size()
-        encs = set(self.encodings)
-        if not self.generic_rgb_encodings:
-            encs.add("rgb24")
-            encs.add("rgb32")
-        capabilities["encodings"] = list(encs)
-        self.add_encoding_info(capabilities)
         capabilities.update({
-                     "clipboards"                   : self._clipboards,
-                     "notifications"                : self.notifications_forwarder is not None,
-                     "bell"                         : self.bell,
-                     "cursors"                      : self.cursors,
-                     "toggle_cursors_bell_notify"   : True,
-                     "toggle_keyboard_sync"         : True,
-                     "window_configure"             : True,
-                     "window_unmap"                 : True,
-                     "xsettings-tuple"              : True,
-                     "change-quality"               : True,
-                     "change-min-quality"           : True,
-                     "change-speed"                 : True,
-                     "change-min-speed"             : True,
-                     "client_window_properties"     : True,
-                     "sound_sequence"               : True,
-                     "notify-startup-complete"      : True,
-                     "suspend-resume"               : True,
-                     "server_type"                  : "base",
-                     })
+             "max_desktop_size"             : self.get_max_screen_size(),
+             "clipboards"                   : self._clipboards,
+             "notifications"                : self.notifications_forwarder is not None,
+             "bell"                         : self.bell,
+             "cursors"                      : self.cursors,
+             "toggle_cursors_bell_notify"   : True,
+             "toggle_keyboard_sync"         : True,
+             "window_configure"             : True,
+             "window_unmap"                 : True,
+             "xsettings-tuple"              : True,
+             "change-quality"               : True,
+             "change-min-quality"           : True,
+             "change-speed"                 : True,
+             "change-min-speed"             : True,
+             "client_window_properties"     : True,
+             "sound_sequence"               : True,
+             "notify-startup-complete"      : True,
+             "suspend-resume"               : True,
+             "encodings.generic"            : True,
+             "server_type"                  : "base",
+             })
         add_version_info(capabilities)
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
         return capabilities
 
-    def add_encoding_info(self, d):
-        d["encodings.core"] = self.core_encodings
-        d["encodings.lossless"] = self.lossless_encodings
-        d["encodings.with_speed"] = [x for x in self.core_encodings if x in ("png", "png/P", "png/L", "jpeg", "x264", "rgb")]
-        d["encodings.with_quality"] = [x for x in self.core_encodings if x in ("jpeg", "webp", "x264")]
-        d["encodings.with_lossless_mode"] = self.lossless_mode_encodings
+    def get_encoding_info(self):
+        """
+            Warning: the encodings values may get
+            re-written on the way out.
+            (see ServerSource.rewrite_encoding_values)
+        """
+        return  {
+             "encodings"                : self.encodings,
+             "encodings.core"           : self.core_encodings,
+             "encodings.lossless"       : self.lossless_encodings,
+             "encodings.with_speed"     : [x for x in self.core_encodings if x in ("png", "png/P", "png/L", "jpeg", "h264", "rgb")],
+             "encodings.with_quality"   : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264")],
+             "encodings.with_lossless_mode" : self.lossless_mode_encodings}
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
         capabilities = self.make_hello()
+        capabilities.update(self.get_encoding_info())
         capabilities.update({
                      "actual_desktop_size"  : (root_w, root_h),
                      "root_window_size"     : (root_w, root_h),
@@ -619,9 +626,7 @@ class ServerBase(ServerCore):
         if self._clipboard_helper is not None:
             for k,v in self._clipboard_helper.get_info().items():
                 info["clipboard.%s" % k] = v
-        info["encodings"] = self.encodings
-        info["encodings.core"] = self.core_encodings
-        self.add_encoding_info(info)
+        info.update(self.get_encoding_info())
         for k,v in codec_versions.items():
             info["encoding.%s.version" % k] = v
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])

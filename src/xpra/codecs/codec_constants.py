@@ -65,7 +65,7 @@ class codec_spec(object):
         self.width_mask = width_mask
         self.height_mask = height_mask
         self.can_scale = can_scale
-        self.encoding = encoding                #ie: "vpx"
+        self.encoding = encoding                #ie: "h264"
 
     def can_handle(self, width, height):
         return self.max_w>=width and self.max_h>=height \

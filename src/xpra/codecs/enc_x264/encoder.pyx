@@ -135,8 +135,7 @@ def get_type():
     return "x264"
 
 def get_encodings():
-    #FIXME: should be renamed to "h264" since we are talking about the format...
-    return ["x264"]
+    return ["h264"]
 
 def init_module():
     #nothing to do!
@@ -215,7 +214,7 @@ cdef class Encoder:
         global COLORSPACES
         cs_info = COLORSPACES.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACES.keys())
-        assert encoding=="x264", "invalid encoding: %s" % encoding
+        assert encoding=="h264", "invalid encoding: %s" % encoding
         self.width = width
         self.height = height
         self.quality = quality
@@ -288,7 +287,7 @@ cdef class Encoder:
         return self.context==NULL
 
     def get_encoding(self):
-        return "x264"
+        return "h264"
 
     def __dealloc__(self):
         self.clean()

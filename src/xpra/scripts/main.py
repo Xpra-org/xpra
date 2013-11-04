@@ -742,14 +742,13 @@ def run_client(parser, opts, extra_args, mode):
             sys.stdout.flush()
         app = make_client(parser.error, opts)
         if opts.encoding:
-            if opts.encoding=="rgb24":
-                #fix old encoding name
-                opts.encoding = "rgb"
+            #fix old encoding names if needed:
+            from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW, encodings_help
+            opts.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(opts.encoding, opts.encoding)
             err = opts.encoding not in app.get_encodings()
             if err and opts.encoding!="help":
                 print("invalid encoding: %s" % opts.encoding)
             if opts.encoding=="help" or err:
-                from xpra.codecs.loader import encodings_help
                 print("%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(app.get_encodings()))))
                 if err:
                     return 1
