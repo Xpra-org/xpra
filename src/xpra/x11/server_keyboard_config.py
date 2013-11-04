@@ -90,7 +90,7 @@ class KeyboardConfig(object):
         if self.xkbmap_mod_meanings:
             for mod, mod_name in self.xkbmap_mod_meanings.items():
                 info["modifier." + mod ] = mod_name
-        if len(self.xkbmap_x11_keycodes)>0:
+        if self.xkbmap_x11_keycodes:
             for keycode, keysyms in self.xkbmap_x11_keycodes.items():
                 info["x11_keycode." + str(keycode) ] = keysyms
         for x in ("print", "layout", "variant"):
