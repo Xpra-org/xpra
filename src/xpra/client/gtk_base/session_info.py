@@ -531,7 +531,7 @@ class SessionInfo(gtk.Window):
         self.opengl_buffering.set_text(buffering)
 
         scaps = self.client.server_capabilities
-        se = scaps.get("encodings.core", scaps.get("encodings", []))
+        se = scaps.get("encodings.core", scaps.get("encodings", scaps.get("encodings.core", [])))
         self.server_encodings_label.set_text(", ".join(sorted(se)))
         self.client_encodings_label.set_text(", ".join(sorted(self.client.get_core_encodings())))
         self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)

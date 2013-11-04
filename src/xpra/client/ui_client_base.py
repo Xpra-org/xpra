@@ -21,7 +21,7 @@ from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
-from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
+from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
@@ -306,16 +306,15 @@ class UIXpraClient(XpraClientBase):
 
     def get_encodings(self):
         """
-            For backwards compatibility with older servers,
-            the values we return from this method can be
-            a little confusing... (ie: 'x264' for 'h264')
-            Best to use get_core_encodings wherever possible.
+            Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
+            That's because although we may support both, the encoding chosen is plain "rgb",
+            and the actual encoding used ("rgb24" or "rgb32") depends on the window's bit depth.
+            ("rgb32" if there is an alpha channel, and if the client supports it)
         """
         cenc = self.get_core_encodings()
-        cenc = [NEW_ENCODING_NAMES_TO_OLD.get(x, x) for x in cenc]
-        if "rgb24" in cenc and "rgb" not in cenc:
+        if ("rgb24" in cenc or "rgb32" in cenc) and "rgb" not in cenc:
             cenc.append("rgb")
-        return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32",)]
+        return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
 
     def get_core_encodings(self):
         """

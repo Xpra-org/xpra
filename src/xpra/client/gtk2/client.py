@@ -86,9 +86,7 @@ class XpraClient(GTKXpraClient):
         encodings = GTKXpraClient.get_core_encodings(self)
         if self.has_transparency():
             try:
-                #check for bytearray which is used by PixmapBacking
                 #to unpremultiply rgb32 data
-                bytearray("")
                 from xpra.codecs.argb.argb import unpremultiply_argb_in_place   #@UnresolvedImport
                 assert unpremultiply_argb_in_place
                 encodings.append("rgb32")
