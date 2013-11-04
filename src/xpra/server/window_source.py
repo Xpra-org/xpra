@@ -989,7 +989,7 @@ class WindowSource(object):
             bpp = 24
         debug("rgb_encode using level=%s, compressed %sx%s in %s/%s: %s bytes down to %s", level, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cdata))
         if not self.encoding_client_options or not self.supports_rgb24zlib:
-            return  zlib, {}, image.get_rowstride(), bpp
+            return  zlib, {}, image.get_width(), image.get_height(), image.get_rowstride(), bpp
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
         return Compressed(coding, cdata), options, image.get_width(), image.get_height(), image.get_rowstride(), bpp
