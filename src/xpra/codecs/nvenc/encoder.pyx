@@ -1242,8 +1242,11 @@ cdef class Encoder:
     cdef NV_ENC_BUFFER_FORMAT bufferFmt
     cdef object codec_name
     cdef object preset_name
+    #statistics, etc:
     cdef double time
     cdef int frames
+    cdef long long bytes_in
+    cdef long long bytes_out
     cdef int api_warning
 
     cdef GUID get_codec(self):
@@ -1409,6 +1412,10 @@ cdef class Encoder:
                 "encoder_height" : self.encoder_height,
                 "src_format": self.src_format,
                 "version"   : get_version()}
+        if self.bytes_in>0 and self.bytes_out>0:
+            info["bytes_in"] = self.bytes_in
+            info["bytes_out"] = self.bytes_out
+            info["ratio_pct"] = int(100.0 * self.bytes_out / self.bytes_in)
         if self.preset_name:
             info["preset"] = self.preset_name
         if self.frames>0 and self.time>0:
@@ -1607,7 +1614,7 @@ cdef class Encoder:
 
             #copy to python buffer:
             size = lockOutputBuffer.bitstreamSizeInBytes
-            pixels = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
+            data = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
         finally:
             raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer), "unlocking output buffer")
             raiseNVENC(self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource), "unmapping input resource")
@@ -1617,10 +1624,12 @@ cdef class Encoder:
 
         self.time += end-start
         debug("returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
-        #debug("pixels head: %s", binascii.hexlify(pixels[:128]))
+        #debug("pixels head: %s", binascii.hexlify(data[:128]))
         client_options = {"frame" : self.frames}
+        self.bytes_in += input_size
+        self.bytes_out += size
         self.frames += 1
-        return pixels, client_options
+        return data, client_options
 
 
     cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID):
