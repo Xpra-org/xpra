@@ -445,8 +445,8 @@ cdef class Decoder:
             info["colorspace"] = self.colorspace
             info["actual_colorspace"] = self.get_actual_colorspace()
         if not self.is_closed():
-            info["decoder_width"] = self.get_width()
-            info["decoder_height"] = self.get_height()
+            info["decoder_width"] = self.codec_ctx.width
+            info["decoder_height"] = self.codec_ctx.height
         else:
             info["closed"] = True
         return info
