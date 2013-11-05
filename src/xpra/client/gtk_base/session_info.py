@@ -116,7 +116,7 @@ class SessionInfo(gtk.Window):
         cl_rev, cl_ch, cl_date = "unknown", "", ""
         try:
             from xpra.build_info import BUILD_DATE as cl_date
-            from xpra.src_info import REVISION as cl_rev, LOCAL_MODIFICATIONS as cl_ch
+            from xpra.src_info import REVISION as cl_rev, LOCAL_MODIFICATIONS as cl_ch      #@UnresolvedImport
         except:
             pass
         def make_version_str(version):
