@@ -1445,7 +1445,8 @@ cdef class Encoder:
                 self.cuda_context = None
 
     def cuda_clean(self):
-        self.flushEncoder()
+        if self.context!=NULL:
+            self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
             debug("clean() unregistering CUDA NV12 buffer input handle %s", hex(<long> self.inputHandle))
             raiseNVENC(self.functionList.nvEncUnregisterResource(self.context, self.inputHandle), "unregistering CUDA input buffer")
