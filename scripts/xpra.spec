@@ -150,18 +150,30 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Oct 22 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+* Tue Nov 05 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
 - NVENC hardware h264 encoding acceleration
 - OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
+- publish session via mDNS
+- OSX client two way clipboard support
 - support for transparency in 8-bit PNG modes
 - support for more authentication mechanisms
 - lz4 compression
 - real time frame latency graphs
+- improved system tray forwarding support
 - removed most of the Cython/C code duplication
 - stricter and safer value parsing
 - more detailed status information via UI and "xpra info"
 - drop non xpra clients with a more friendly response
+
+* Tue Nov 05 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.9-1
+- fix h264 decoding of padded images
+- fix plain RGB encoding with very old clients
+- fix "xpra info" error when old clients are connected
+- remove warning when "help" is specified as encoding
+
+* Tue Oct 22 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.8-1
+- fix misapplied patch breaking all windows with transparency
 
 * Tue Oct 22 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.7-1
 - fix client crash on Linux with AMD cards and fglrx driver

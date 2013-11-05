@@ -1,17 +1,35 @@
-v0.11.0 (2013-10-22)
+v0.11.0 (2013-11-05)
 ======================
 	-- NVENC hardware h264 encoding acceleration
 	-- OpenCL and CUDA colourspace conversion acceleration
 	-- proxy server mode for serving multiple sessions through one port
+	-- publish session via mDNS
 	-- faster OSX shadow server
+	-- OSX client two way clipboard support
 	-- support for transparency in 8-bit PNG modes
 	-- support for more authentication mechanisms
 	-- lz4 compression
 	-- real time frame latency graphs
+	-- improved system tray forwarding support
 	-- removed most of the Cython/C code duplication
 	-- stricter and safer value parsing
 	-- more detailed status information via UI and "xpra info"
 	-- drop non xpra clients with a more friendly response
+	-- handle non-ASCII characters in output on MS Windows
+	-- libvpx 1.2 for OSX and MS Windows
+
+
+v0.10.9 (2013-11-05)
+======================
+	-- fix h264 decoding of padded images
+	-- fix plain RGB encoding with very old clients
+	-- fix "xpra info" error when old clients are connected
+	-- remove warning when "help" is specified as encoding
+
+
+v0.10.8 (2013-10-22)
+======================
+	-- fix misapplied patch breaking all windows with transparency
 
 
 v0.10.7 (2013-10-22)
