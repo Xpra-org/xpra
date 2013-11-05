@@ -1469,6 +1469,7 @@ cdef class Encoder:
                 self.bitstreamBuffer = NULL
             debug("clean() destroying encoder %s", hex(<long> self.context))
             raiseNVENC(self.functionList.nvEncDestroyEncoder(self.context), "destroying context")
+            self.context = NULL
 
     def get_width(self):
         return self.width
