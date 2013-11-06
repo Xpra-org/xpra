@@ -199,9 +199,12 @@ def get_svn_props():
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 
+SRC_INFO_FILE = "./xpra/src_info.py"
 def record_src_info():
-    SRC_INFO_FILE = "./xpra/src_info.py"
     update_properties(get_svn_props(), SRC_INFO_FILE)
+
+def has_src_info():
+    return os.path.exists(SRC_INFO_FILE) and os.path.isfile(SRC_INFO_FILE)
 
 def main():
     record_build_info(True)
