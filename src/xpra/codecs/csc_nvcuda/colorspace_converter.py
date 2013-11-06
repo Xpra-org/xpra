@@ -36,7 +36,7 @@ def select_device():
     if selected_device is not None:
         return selected_device
     ngpus = driver.Device.count()
-    log.info("PyCUDA found %s devices:", ngpus)
+    log.info("PyCUDA found %s device(s):", ngpus)
     device = None
     for i in range(ngpus):
         d = driver.Device(i)
@@ -98,7 +98,8 @@ KERNELS_MAP = {}
 for rgb_format, yuv_formats in COLORSPACES_MAP.items():
     m = gen_rgb_to_yuv_kernels(rgb_format, yuv_formats)
     KERNELS_MAP.update(m)
-log.info("csc_nvcuda kernels: %s", [x[0] for x in KERNELS_MAP.values()])
+_kernel_names_ = sorted(set([x[0] for x in KERNELS_MAP.values()]))
+log.info("%s csc_nvcuda kernels: %s", len(_kernel_names_), ", ".join(_kernel_names_))
 
 def get_type():
     return "nvcuda"
