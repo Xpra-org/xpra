@@ -24,7 +24,7 @@ except ImportError:
 
 SIGNAMES = {}
 for x in [x for x in dir(signal) if x.startswith("SIG")]:
-    SIGNAMES[x] = getattr(signal, x)
+    SIGNAMES[getattr(signal, x)] = x
 
 
 #python3 making life difficult:
