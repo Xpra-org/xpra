@@ -100,7 +100,8 @@ def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
             v = read_mmap_token(mmap_area)
             debug("mmap_token=%s, verification=%s", mmap_token, v)
             if v!=mmap_token:
-                log.error("WARNING: mmap token verification failed, not using mmap area!")
+                log.warn("WARNING: mmap token verification failed, not using mmap area!")
+                log.warn("expected '%s', found '%s'", mmap_token, v)
                 mmap_area.close()
                 return None, 0
             if new_mmap_token:
