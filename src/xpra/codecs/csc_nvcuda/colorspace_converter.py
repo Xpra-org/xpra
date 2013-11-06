@@ -52,7 +52,7 @@ def select_device():
             device = d
     selected_device = device
     return selected_device
-assert select_device() is not None
+assert select_device() is not None, "no valid CUDA devices found"
 
 context = None
 context_wrapper = None
@@ -72,6 +72,8 @@ class CudaContextWrapper(object):
 
 def init_context():
     global context, context_wrapper
+    if context_wrapper is not None:
+        return
     log_sys_info()
     device = select_device()
     context = device.make_context(flags=driver.ctx_flags.SCHED_YIELD | driver.ctx_flags.MAP_HOST)
@@ -194,7 +196,8 @@ class ColorspaceConverter(object):
                 "src_format": self.src_format,
                 "dst_width" : self.dst_width,
                 "dst_height": self.dst_height,
-                "dst_format": self.dst_format}
+                "dst_format": self.dst_format,
+                "device"    : device_info(self.cuda_device)}
         if self.frames>0 and self.time>0:
             pps = float(self.src_width) * float(self.src_height) * float(self.frames) / self.time
             info["total_time_ms"] = int(self.time*1000.0)
