@@ -21,7 +21,7 @@ from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 DEF NVENC_SDK_API_VERSION = 0x30
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEY = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
-
+DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
@@ -1112,7 +1112,7 @@ def get_spec(encoding, colorspace):
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     return codec_spec(Encoder, codec_type=get_type(), encoding=encoding,
-                      quality=60, setup_cost=100, cpu_cost=10, gpu_cost=100,
+                      quality=100, speed=100, setup_cost=100, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
                       min_w=32, min_h=32,
                       max_w=4096, max_h=4096,
@@ -1261,12 +1261,13 @@ cdef class Encoder:
         #presets={'low-latency': '49DF21C5-6DFA-4FEB-9787-6ACC9EFFB726', 'bd': '82E3E450-BDBB-4E40-989C-82A90DF9EF32', 'default': 'B2DFB705-4EBD-4C49-9B5F-24A777D3E587', 'hp': '60E4C59F-E846-4484-A56D-CD45BE9FDDF6', 'hq': '34DBA71D-A77B-4B8F-9C3E-B6D5DA24C012', 'low-latency-hp': '67082A44-4BAD-48FA-98EA-93056D150A58', 'low-latency-hq': 'C5F733B9-EA97-4CF9-BEC2-BF78A74FD105'}
         self.preset_name = None
         DESIRED_PRESET_LIST = (
+                  DESIRED_PRESET,
                   #in V3, the presets are called "low-latency":
                   "low-latency-hq", "low-latency", "low-latency-hp",
                   #in V2, they are called gaming:
                   "game-capture", "gaming 720p60", "gaming 720p30")
         for x in DESIRED_PRESET_LIST:
-            if x in presets:
+            if x and (x in presets):
                 self.preset_name = x
                 return c_parseguid(presets.get(x))
         raise Exception("no low-latency presets available for '%s'!?" % self.codec_name)
