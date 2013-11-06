@@ -48,7 +48,7 @@ def is_supported(platform_name):
 def log_device_info(device):
     if not device:
         return
-    log.info("using device: %s", device_info(device))
+    log.info(" using device: %s", device_info(device))
     debug("max_work_group_size=%s", device.max_work_group_size)
     debug("max_work_item_dimensions=%s", device.max_work_item_dimensions)
     debug("max_work_item_sizes=%s", device.max_work_item_sizes)
@@ -113,7 +113,7 @@ def init_context():
             context = pyopencl.Context([d])
             selected_platform = p
             selected_device = d
-            log.info("using platform: %s", platform_info(selected_platform))
+            log.info(" using platform: %s", platform_info(selected_platform))
             log_device_info(selected_device)
             return
         except Exception, e:
