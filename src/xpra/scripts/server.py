@@ -621,7 +621,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if opts.mdns:
             mdns_publish(display_name, "tcp", bind_tcp, mdns_info)
     except Exception, e:
-        log.error("cannot start server: failed to setup sockets: %s", e, exc_info=True)
+        log.error("cannot start server: failed to setup sockets: %s", e)
         return 1
 
     # Do this after writing out the shell script:
