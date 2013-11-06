@@ -110,12 +110,14 @@ class AvahiPublisher:
 
 		g = dbus.Interface(bus.get_object(avahi.DBUS_NAME, server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
 
-		g.AddService(self.interface, avahi.PROTO_UNSPEC,dbus.UInt32(0),
-					 self.name, self.stype, self.domain, self.host,
-					 dbus.UInt16(self.port), self.text)
-
-		g.Commit()
-		self.group = g
+		try:
+			g.AddService(self.interface, avahi.PROTO_UNSPEC,dbus.UInt32(0),
+						 self.name, self.stype, self.domain, self.host,
+						 dbus.UInt16(self.port), self.text)
+			g.Commit()
+			self.group = g
+		except Exception, e:
+			log.warn("failed to start %s: %s", self, e)
 
 	def stop(self):
 		if self.group:
