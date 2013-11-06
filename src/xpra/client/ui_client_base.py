@@ -885,12 +885,13 @@ class UIXpraClient(XpraClientBase):
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
-            mmap_token = c.strget("mmap_token")
+            mmap_token = c.intget("mmap_token")
             if mmap_token:
                 from xpra.net.mmap_pipe import read_mmap_token
                 token = read_mmap_token(self.mmap)
                 if token!=mmap_token:
                     log.warn("mmap token verification failed!")
+                    log.warn("expected '%s', found '%s'", mmap_token, token)
                     self.mmap_enabled = False
                     self.quit(EXIT_MMAP_TOKEN_FAILURE)
                     return
