@@ -82,6 +82,7 @@ class WindowSource(object):
         self.server_encodings = server_encodings
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
+        self.encoding_last_used = None
         refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg", "webp")]
         client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", refresh_encodings)
         self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.server_core_encodings]
@@ -253,6 +254,9 @@ class WindowSource(object):
         #no suffix for metadata (as it is the same for all clients):
         info[prefix+"dimensions"] = self.window_dimensions
         info[prefix+"encoding"+suffix] = self.encoding
+        info[prefix+"encoding.mmap"+suffix] = bool(self._mmap) and (self._mmap_size>0)
+        if self.encoding_last_used:
+            info[prefix+"encoding.last_used"+suffix] = self.encoding_last_used
         info[prefix+"suspended"+suffix] = self.suspended
         info[prefix+"property.scaling"+suffix] = self.scaling
         info[prefix+"property.fullscreen"+suffix] = self.fullscreen
@@ -872,6 +876,7 @@ class WindowSource(object):
         totals[0] = totals[0] + 1
         totals[1] = totals[1] + w*h
         self._last_sequence_queued = sequence
+        self.encoding_last_used = coding
         #debug("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
         return packet
 
