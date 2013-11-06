@@ -337,9 +337,7 @@ class UIXpraClient(XpraClientBase):
             if len(missing)>0:
                 log("get_core_encodings() not adding %s because of missing modules: %s", encodings, missing)
                 continue
-            for encoding in encodings:
-                if encoding not in core_encodings:
-                    core_encodings.append(encoding)
+            core_encodings += encodings
         #special case for avcodec which may be able to decode both 'vp8' and 'h264':
         #(both of which "need" swscale - until we get more clever
         # and test the availibility of GL windows)
@@ -348,11 +346,10 @@ class UIXpraClient(XpraClientBase):
             if avcodec_module:
                 encodings = avcodec_module.get_codecs()
                 log("avcodec supports %s", encodings)
-                for encoding in encodings:
-                    if x not in core_encodings:
-                        core_encodings.append(encoding)
+                core_encodings += encodings
         log("get_core_encodings()=%s", core_encodings)
-        return core_encodings
+        #remove duplicates and use prefered encoding order:
+        return [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings)]
 
 
     def get_supported_window_layouts(self):
