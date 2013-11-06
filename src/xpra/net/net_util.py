@@ -79,9 +79,12 @@ def do_get_bind_ifacemask(iface):
 def get_iface(ip):
 	if not ip:
 		return	None
+	if ip.find(":"):
+		#ipv6?
+		return None
 	ip_parts = ip.split(".")
 	if len(ip_parts)!=4:
-		log.error("invalid ip! (%d parts)" % len(ip_parts), ip)
+		log.error("invalid IPv4! (%d parts)", len(ip_parts))
 		return	None
 
 	best_match = None
