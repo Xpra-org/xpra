@@ -30,10 +30,15 @@ def get_interface_index(host):
 		return	avahi.IF_UNSPEC
 	
 	iface = get_iface(host)
-	if not iface:
-		return	None
+	debug("get_iface(%s)=%s", host, iface)
+	if iface is None:
+		return	avahi.IF_UNSPEC
 
-	return	if_nametoindex(iface)
+	index = if_nametoindex(iface)
+	debug("if_nametoindex(%s)=%s", iface, index)
+	if iface is None:
+		return	avahi.IF_UNSPEC
+	return index
 
 
 class AvahiPublishers:
@@ -111,15 +116,19 @@ class AvahiPublisher:
 		g = dbus.Interface(bus.get_object(avahi.DBUS_NAME, server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
 
 		try:
-			g.AddService(self.interface, avahi.PROTO_UNSPEC,dbus.UInt32(0),
+			args = (self.interface, avahi.PROTO_UNSPEC,dbus.UInt32(0),
 						 self.name, self.stype, self.domain, self.host,
 						 dbus.UInt16(self.port), self.text)
+			debug("calling %s%s", g, args)
+			g.AddService(*args)
 			g.Commit()
 			self.group = g
+			debug("dbus service added")
 		except Exception, e:
 			log.warn("failed to start %s: %s", self, e)
 
 	def stop(self):
+		debug("%s.stop() group=%s", self, self.group)
 		if self.group:
 			self.group.Reset()
 

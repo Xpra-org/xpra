@@ -9,17 +9,18 @@
 import socket
 import sys
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_NETWORK_DEBUG")
 
 
 has_netifaces = True
 try:
 	import netifaces				#@UnresolvedImport
-	log("netifaces loaded sucessfully")
+	debug("netifaces loaded sucessfully")
 except Exception, e:
 	has_netifaces = False
-	log("netifaces package is missing!")
+	log.warn("python netifaces package is missing")
 iface_ipmasks = {}
 bind_IPs = None
 
@@ -42,7 +43,7 @@ def do_get_bind_IPs():
 	global iface_ipmasks
 	ips = []
 	ifaces = netifaces.interfaces()
-	log("ifaces=%s", ifaces)
+	debug("ifaces=%s", ifaces)
 	for iface in ifaces:
 		if_ipmasks = []
 		try:
@@ -56,7 +57,7 @@ def do_get_bind_IPs():
 		except Exception, e:
 			log.error("error on %s: %s", iface, e)
 		iface_ipmasks[iface] = if_ipmasks
-	log("do_get_bind_IPs()=%s", ips)
+	debug("do_get_bind_IPs()=%s", ips)
 	return ips
 
 def do_get_bind_ifacemask(iface):
@@ -73,13 +74,13 @@ def do_get_bind_ifacemask(iface):
 						ipmasks.append((addr,mask))
 					except Exception, e:
 						log.error("do_get_bind_ifacemask(%s) error on %s", iface, addr, e)
-	log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
+	debug("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
 	return ipmasks
 
 def get_iface(ip):
 	if not ip:
 		return	None
-	if ip.find(":"):
+	if ip.find(":")>=0:
 		#ipv6?
 		return None
 	ip_parts = ip.split(".")
@@ -112,7 +113,7 @@ def get_iface(ip):
 					best_match = iface
 			except Exception, e:
 				log.error("error parsing ip (%s) or its mask (%s): %s", test_ip, mask, e)
-	log("get_iface(%s)=%s", ip, best_match)
+	debug("get_iface(%s)=%s", ip, best_match)
 	return	best_match
 
 
@@ -135,7 +136,7 @@ if not sys.platform.startswith("win"):
 		cdll.LoadLibrary(library)
 		#<CDLL 'libc.so.6', handle 7fcac419b000 at 7fcac1ab0c10>
 		_libc = CDLL(library)
-		log("successfully loaded C library from %s", library)
+		debug("successfully loaded socket C library from %s", library)
 	except ImportError, e:
 		log.error("library %s not found: %s", library, e)
 	except OSError, e:
