@@ -9,8 +9,9 @@ import os.path
 
 from xpra.scripts.exec_util import safe_exec
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_SOUND_DEBUG")
 
 
 def which(name):
@@ -52,6 +53,7 @@ def pactl_output(*pactl_args):
     cmd = [pactl_bin] + list(pactl_args)
     try:
         code, out, _ = safe_exec(cmd)
+        debug("pactl_output%s returned %s", pactl_args, code)
         return  code, out
     except Exception, e:
         log.error("failed to execute %s: %s", cmd, e)
@@ -68,7 +70,7 @@ def get_x11_property(atom_name):
         if p is None:
             return ""
         v = p[2]
-        log("%s=%s", atom_name, v)
+        debug("get_x11_property(%s)=%s", atom_name, v)
         return v
     except:
         return ""
@@ -82,6 +84,7 @@ def has_pa_x11_property():
 
 def is_pa_installed():
     pactl_bin = get_pactl_bin()
+    debug("is_pa_installed() pactl_bin=%s", pactl_bin)
     return len(pactl_bin)>0
 
 def has_pa():
@@ -102,10 +105,13 @@ def get_pactl_stat_line(prefix):
     code, out = pactl_output("stat")
     if code!=0:
         return    ""
+    stat = ""
     for line in out.splitlines():
         if line.startswith(prefix):
-            return line[len(prefix):].strip()
-    return ""
+            stat = line[len(prefix):].strip()
+            break
+    debug("get_pactl_stat_line(%s)=%s", prefix, stat)
+    return stat
 
 def get_default_sink():
     return get_pactl_stat_line("Default Sink:")

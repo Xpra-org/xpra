@@ -228,7 +228,7 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
             codec = None
         if codec is None:
             codec = ordered_codecs[0]
-        log("using sound codec %s", codec)
+        debug("using sound codec %s", codec)
         from xpra.sound.src import SoundSource
         if SOUND_TEST_MODE:
             sound_source = SoundSource("audiotestsrc", {"wave":2, "freq":110, "volume":0.4}, codec, {})
