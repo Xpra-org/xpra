@@ -501,14 +501,22 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
             print("removing Cython/build generated file: %s" % x)
             os.unlink(filename)
 
+from add_build_info import record_build_info, record_src_info, has_src_info
+
 if "clean" not in sys.argv:
-    # Add build info to build_info.py file:
-    from add_build_info import record_build_info
+    # Add build info to build_info.py file:    
     record_build_info()
 
 if "sdist" in sys.argv:
-    from add_build_info import record_src_info
     record_src_info()
+
+if "install" in sys.argv:
+    #if installing from source tree rather than
+    #from a source snapshot, we may not have a "src_info" file
+    #so create one:
+    if not has_src_info():
+        record_src_info()
+    
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:
     #take shortcut to skip cython/pkgconfig steps:
