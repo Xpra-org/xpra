@@ -23,7 +23,7 @@ import xpra
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
-from xpra.os_util import set_application_name, load_binary_file, SIGNAMES
+from xpra.os_util import set_application_name, load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info, get_platform_info
 from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps
 from xpra.util import typedict
@@ -478,7 +478,11 @@ class ServerCore(object):
                         "elapsed_time"          : int(now - self.start_time),
                         "server_type"           : "core",
                         "info-request"          : True,
+                        "uuid"                  : get_user_uuid(),
                         })
+        mid = get_machine_id()
+        if mid:
+            capabilities["machine_id"] = mid
         if self.session_name:
             capabilities["session_name"] = self.session_name
         if self._reverse_aliases:

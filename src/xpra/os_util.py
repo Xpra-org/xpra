@@ -144,27 +144,43 @@ except ImportError:
 
 def get_machine_id():
     v = u""
-    for filename in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
-        if os.path.exists(filename) and os.path.isfile(filename):
-            f = None
-            try:
-                try:
-                    f = open(filename, 'rb')
-                    v = f.read()
-                    break
-                finally:
-                    if f:
-                        f.close()
-            except Exception:
-                pass
+    if os.name=="posix":
+        for filename in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
+            v = load_binary_file(filename)
+            if v is not None:
+                break
     return  str(v).strip("\n\r")
+
+def get_user_uuid():
+    """
+        Try to generate a uuid string which is unique to this user.
+        (relies on get_machine_id to uniquely identify a machine)
+    """
+    try:
+        import hashlib
+        u = hashlib.sha1()
+    except:
+        #try python2.4 variant:
+        import sha
+        u = sha.new()
+    def uupdate(ustr):
+        u.update(ustr.encode("utf-8"))
+    uupdate(get_machine_id())
+    if os.name=="posix":
+        uupdate(u"/")
+        uupdate(str(os.getuid()))
+        uupdate(u"/")
+        uupdate(str(os.getgid()))
+    uupdate(os.environ.get("HOME", ""))
+    return u.hexdigest()
+
 
 def load_binary_file(filename):
     if not os.path.exists(filename):
         return None
     f = None
     try:
-        f = open(filename, "rU")
+        f = open(filename, "rb")
         try:
             return f.read()
         finally:

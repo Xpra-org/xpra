@@ -25,7 +25,7 @@ from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_EN
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import set_application_name, thread, Queue, os_info, platform_name
+from xpra.os_util import set_application_name, thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid
 from xpra.util import nn, std
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -1021,6 +1021,13 @@ class UIXpraClient(XpraClientBase):
         soundlog("start_sending_sound()")
         assert self.microphone_allowed
         assert self.server_sound_receive
+
+        if self._remote_machine_id and self._remote_machine_id==get_machine_id():
+            #looks like we're on the same machine, verify it's a different user:
+            if self._remote_uuid==get_user_uuid():
+                log.warn("cannot start sound: identical user environment as the server (loop)")
+                return
+
         if self.sound_source:
             if self.sound_source.get_state()=="active":
                 log.error("already sending sound!")

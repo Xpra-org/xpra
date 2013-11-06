@@ -24,7 +24,7 @@ from xpra.scripts.config import python_platform
 from xpra.codecs.loader import OLD_ENCODING_NAMES_TO_NEW
 from xpra.net.protocol import compressed_wrapper, Compressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import platform_name, StringIOClass, thread, Queue
+from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machine_id, get_user_uuid
 from xpra.util import std, typedict
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
@@ -233,6 +233,7 @@ class ServerSource(object):
         self.suspended = False
 
         self.uuid = ""
+        self.machine_id = ""
         self.hostname = ""
         self.username = ""
         self.name = ""
@@ -443,6 +444,7 @@ class ServerSource(object):
         log.debug("default batch config: %s", self.default_batch_config)
         #client uuid:
         self.uuid = c.strget("uuid")
+        self.machine_id = c.strget("machine_id")
         self.hostname = c.strget("hostname")
         self.username = c.strget("username")
         self.name = c.strget("name")
@@ -607,6 +609,11 @@ class ServerSource(object):
         if self.suspended:
             log.warn("not starting sound as we are suspended")
             return
+        if self.machine_id and self.machine_id==get_machine_id():
+            #looks like we're on the same machine, verify it's a different user:
+            if self.uuid==get_user_uuid():
+                log.warn("cannot start sound: identical user environment as the server (loop)")
+                return
         assert self.supports_speaker, "cannot send sound: support not enabled on the server"
         assert self.sound_source is None, "a sound source already exists"
         assert self.sound_receive, "cannot send sound: support is not enabled on the client"

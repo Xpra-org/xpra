@@ -20,7 +20,7 @@ from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.version_util import version_compat_check, add_version_info, get_platform_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
-from xpra.os_util import get_hex_uuid, get_machine_id, load_binary_file, SIGNAMES, strtobytes, bytestostr
+from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
 from xpra.util import typedict, xor
 
 EXIT_OK = 0
@@ -73,13 +73,15 @@ class XpraClientBase(object):
         self._reverse_aliases = {}
         #server state and caps:
         self.server_capabilities = None
+        self._remote_machine_id = None
+        self._remote_uuid = None
         self._remote_version = None
         self._remote_revision = None
         self._remote_platform = None
         self._remote_platform_release = None
         self._remote_platform_platform = None
         self._remote_platform_linux_distribution = None
-        self.make_uuid()
+        self.uuid = get_user_uuid()
         self.init_packet_handlers()
 
     def init(self, opts):
@@ -183,20 +185,23 @@ class XpraClientBase(object):
     def make_hello_base(self):
         capabilities = get_network_caps()
         capabilities.update({
-                        "encodings.generic"     : True,
-                        "namespace"             : True,
-                        "hostname"              : socket.gethostname(),
-                        "uuid"                  : self.uuid,
-                        "username"              : self.username,
-                        "name"                  : get_name(),
-                        "client_type"           : self.client_type(),
-                        "python.version"        : sys.version_info[:3],
-                        "compression_level"     : self.compression_level,
-                        })
+                "encodings.generic"     : True,
+                "namespace"             : True,
+                "hostname"              : socket.gethostname(),
+                "uuid"                  : self.uuid,
+                "username"              : self.username,
+                "name"                  : get_name(),
+                "client_type"           : self.client_type(),
+                "python.version"        : sys.version_info[:3],
+                "compression_level"     : self.compression_level,
+                })
         if self.display:
             capabilities["display"] = self.display
         capabilities.update(get_platform_info())
         add_version_info(capabilities)
+        mid = get_machine_id()
+        if mid:
+            capabilities["machine_id"] = mid
 
         if self.encryption:
             assert self.encryption in ENCRYPTION_CIPHERS
@@ -225,24 +230,6 @@ class XpraClientBase(object):
         if self._reverse_aliases:
             capabilities["aliases"] = self._reverse_aliases
         return capabilities
-
-    def make_uuid(self):
-        try:
-            import hashlib
-            u = hashlib.sha1()
-        except:
-            #try python2.4 variant:
-            import sha
-            u = sha.new()
-        def uupdate(ustr):
-            u.update(ustr.encode("utf-8"))
-        uupdate(get_machine_id())
-        if os.name=="posix":
-            uupdate(u"/")
-            uupdate(str(os.getuid()))
-            uupdate(u"/")
-            uupdate(str(os.getgid()))
-        self.uuid = u.hexdigest()
 
     def send(self, *parts):
         self._ordinary_packets.append(parts)
@@ -425,6 +412,8 @@ class XpraClientBase(object):
         return v
 
     def parse_server_capabilities(self, c):
+        self._remote_machine_id = c.strget("machine_id")
+        self._remote_uuid = c.strget("uuid")
         self._remote_version = c.strget("version")
         self._remote_revision = c.strget("revision")
         self._remote_revision = c.strget("build.revision", self._remote_revision)
