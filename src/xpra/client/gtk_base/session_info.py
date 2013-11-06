@@ -128,6 +128,10 @@ class SessionInfo(gtk.Window):
                 v = scaps.get(x)
                 if v is not None:
                     return v
+                if self.client.server_last_info:
+                    v = self.client.server_last_info.get(x)
+                if v is not None:
+                    return v
             return None
         def server_version_info(*prop_names):
             return make_version_str(server_info(*prop_names))
@@ -146,7 +150,7 @@ class SessionInfo(gtk.Window):
         else:
             tb.new_row("PyGTK", label(client_version_info("pygtk_version")), label(server_version_info("pygtk.version", "pygtk_version")))
             tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk.version", "gtk_version")))
-        tb.new_row("Python", label(python_platform.python_version()), label(server_version_info("server.python.version", "python_version")))
+        tb.new_row("Python", label(python_platform.python_version()), label(server_version_info("server.python.version", "python_version", "python.version")))
 
         cl_gst_v, cl_pygst_v = "", ""
         try:
