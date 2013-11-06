@@ -64,6 +64,12 @@ class AvahiPublishers:
 					txt.append("%s=%s" % (k,v))
 			if host=="0.0.0.0":
 				host = ""
+			else:
+				try:
+					import socket
+					host = socket.gethostbyaddr(host)[0]
+				except:
+					pass
 			self.publishers.append(AvahiPublisher(service_name, port, service_type, domain="", host=host, text=txt, interface=iface_index))
 	
 	def start(self):
