@@ -210,6 +210,9 @@ class UIXpraClient(XpraClientBase):
             self.speaker_codecs = get_sound_codecs(True, False)
             self.speaker_allowed = len(self.speaker_codecs)>0
         self.microphone_codecs = opts.microphone_codec
+        if len(self.microphone_codecs)==0 and self.microphone_allowed:
+            self.microphone_codecs = get_sound_codecs(False, False)
+            self.microphone_allowed = len(self.microphone_codecs)>0
 
         self.init_opengl(opts.opengl)
         self.readonly = opts.readonly
