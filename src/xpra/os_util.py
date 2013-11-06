@@ -22,8 +22,9 @@ except ImportError:
     from Queue import Queue             #@Reimport @UnusedImport
 
 
-
-SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
+SIGNAMES = {}
+for x in [x for x in dir(signal) if x.startswith("SIG")]:
+    SIGNAMES[x] = getattr(signal, x)
 
 
 #python3 making life difficult:
@@ -143,6 +144,11 @@ except ImportError:
 
 
 def get_machine_id():
+    """
+        Try to get uuid string which uniquely identifies this machine.
+        Warning: only works on posix!
+        (which is ok since we only used it on posix at present)
+    """
     v = u""
     if os.name=="posix":
         for filename in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
