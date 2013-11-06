@@ -576,7 +576,7 @@ class ServerSource(object):
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #mmap:
         mmap_filename = c.strget("mmap_file")
-        mmap_token = c.strget("mmap_token")
+        mmap_token = c.intget("mmap_token")
         log("client supplied mmap_file=%s, mmap supported=%s, token=%s", mmap_filename, self.supports_mmap, mmap_token)
         if mmap_filename:
             if not self.supports_mmap:
