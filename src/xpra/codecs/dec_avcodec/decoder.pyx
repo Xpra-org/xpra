@@ -405,11 +405,12 @@ cdef class Decoder:
         #that needs to be freed using avcodec_release_buffer(..)
         #as this requires the context to still be valid!
         #copying the pixels should ensure we free the AVFrameWrapper associated with it:
-        images = [y for y in [x() for x in self.weakref_images] if y is not None]
-        self.weakref_images = []
-        debug("clean_decoder() cloning pixels for images still in use: %s", images)
-        for img in images:
-            img.clone_pixel_data()
+        if self.weakref_images:
+            images = [y for y in [x() for x in self.weakref_images] if y is not None]
+            self.weakref_images = []
+            debug("clean_decoder() cloning pixels for images still in use: %s", images)
+            for img in images:
+                img.clone_pixel_data()
 
         debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
         if self.frame!=NULL:
