@@ -1203,13 +1203,24 @@ cdef raiseNVENC(NVENCSTATUS ret, msg=""):
         raise Exception("%s - returned %s" % (msg, nvencStatusInfo(ret)))
 
 
-#BGRA2NV12_functions = {}
-def get_BGRA2NV12():
-    from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
-    from pycuda.compiler import SourceModule
-    debug("BGRA2NV12=%s", BGRA2NV12_kernel)
-    mod = SourceModule(BGRA2NV12_kernel)
+#cache the cubin files for each device_id:
+BGRA2NV12_functions = {}
+def get_BGRA2NV12(device_id):
+    start = time.time()
+    global BGRA2NV12_functions
+    from pycuda.compiler import compile
+    from pycuda import driver
+    cubin = BGRA2NV12_functions.get(device_id)
+    if cubin is None:
+        from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
+        debug("compiling for device %s: BGRA2NV12=%s", device_id, BGRA2NV12_kernel)
+        cubin = compile(BGRA2NV12_kernel)
+        BGRA2NV12_functions[device_id] = cubin
+    #now load from cubin:
+    mod = driver.module_from_buffer(cubin)
     BGRA2NV12_function = mod.get_function("BGRA2NV12")
+    end = time.time()
+    debug("compilation took %.1fms", 1000.0*(end-start))
     return BGRA2NV12_function
 
 API_V2_WARNING = False
@@ -1301,14 +1312,15 @@ cdef class Encoder:
         self.driver = driver
         debug("init_cuda(%s)", device_id)
         self.cuda_device = driver.Device(DEFAULT_CUDA_DEVICE_ID)
+        debug("init_cuda(%s) cuda_device=%s", device_id, self.cuda_device)
         self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
+        debug("init_cuda(%s) cuda_context=%s", device_id, self.cuda_context)
         #use alias to make code easier to read:
         d = self.cuda_device
         da = driver.device_attribute
         try:
-            debug("init_cuda(%s) cuda_device=%s, cuda_context=%s", device_id, self.cuda_device, self.cuda_context)
             #compile/get kernel:
-            self.BGRA2NV12 = get_BGRA2NV12()
+            self.BGRA2NV12 = get_BGRA2NV12(device_id)
             #allocate CUDA input buffer (on device) 32-bit RGB:
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(self.encoder_width*4, self.encoder_height, 16)
             debug("CUDA Input Buffer=%s, pitch=%s", hex(int(self.cudaInputBuffer)), self.inputPitch)
@@ -1833,8 +1845,6 @@ cdef class Encoder:
 
 
 def init_module():
-    #check for module availibility:
-
     #check that we have CUDA device(s):
     cuda_check()
 
