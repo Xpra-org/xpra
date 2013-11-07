@@ -10,7 +10,7 @@ from threading import Lock
 
 from xpra.net.protocol import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs
-from xpra.codecs.video_enc_pipeline import VideoPipelineHelper
+from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.window_source import WindowSource, debug, log
 
 def envint(name, d):
@@ -43,7 +43,7 @@ class WindowVideoSource(WindowSource):
         A WindowSource that handles video codecs.
     """
 
-    _video_pipeline_helper = VideoPipelineHelper()
+    _video_helper = getVideoHelper()
 
     def __init__(self, *args):
         WindowSource.__init__(self, *args)
@@ -80,7 +80,7 @@ class WindowVideoSource(WindowSource):
 
         self.last_pipeline_params = None
         self.last_pipeline_scores = []
-        WindowVideoSource._video_pipeline_helper.may_init()
+        WindowVideoSource._video_helper.may_init()
 
     def add_stats(self, info, suffix=""):
         WindowSource.add_stats(self, info, suffix)
@@ -298,7 +298,7 @@ class WindowVideoSource(WindowSource):
             Each solution is rated and we return all of them in descending
             score (best solution comes first).
         """
-        encoder_specs = WindowVideoSource._video_pipeline_helper.get_encoder_specs(encoding)
+        encoder_specs = WindowVideoSource._video_helper.get_encoder_specs(encoding)
         assert len(encoder_specs)>0, "no encoders found for '%s'" % encoding
         scores = []
         def add_scores(info, csc_spec, enc_in_format):
@@ -328,7 +328,7 @@ class WindowVideoSource(WindowSource):
             if scaling == (1, 1):
                 add_scores("direct (no csc)", None, src_format)
         #now add those that require a csc step:
-        csc_specs = WindowVideoSource._video_pipeline_helper.get_csc_specs(src_format)
+        csc_specs = WindowVideoSource._video_helper.get_csc_specs(src_format)
         if csc_specs:
             #debug("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
             #we have csc module(s) that can get us from pixel_format to out_csc:

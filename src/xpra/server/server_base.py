@@ -116,6 +116,14 @@ class ServerBase(ServerCore):
             self.timeout_add(1000, self.send_ping)
         else:
             self.timeout_add(10*1000, self.send_ping)
+        thread.start_new_thread(self.threaded_init, ())
+
+    def threaded_init(self):
+        log("threaded_init() start")
+        #try to load video encoders in advance as this can take some time:
+        from xpra.codecs.video_helper import getVideoHelper
+        getVideoHelper().may_init()
+        log("threaded_init() end")
 
     def init_encodings(self):
         #core encodings: all the specific encoding formats we can encode:

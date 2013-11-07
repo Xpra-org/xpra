@@ -4,23 +4,42 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from threading import Lock
 from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_VIDEOPIPELINE_DEBUG")
 
 from xpra.codecs.loader import get_codec
 
+singleton = None
 
-class VideoPipelineHelper(object):
 
-    _video_encoder_specs = {}
-    _csc_encoder_specs = {}
+class VideoHelper(object):
+
+    def __init__(self):
+        global singleton
+        assert singleton is None
+        self._video_encoder_specs = {}
+        self._csc_encoder_specs = {}
+        #bits needed to ensure we can initialize just once
+        #even when called from multiple threads:
+        self._initialized = False
+        self._lock = Lock()
 
     def may_init(self):
-        if len(self._video_encoder_specs)==0:
-            self.init_video_encoders_options()
-        if len(self._csc_encoder_specs)==0:
-            self.init_csc_options()
+        if self._initialized:
+            return
+        try:
+            self._lock.acquire()
+            if self._initialized:
+                return
+            if len(self._video_encoder_specs)==0:
+                self.init_video_encoders_options()
+            if len(self._csc_encoder_specs)==0:
+                self.init_csc_options()
+            self._initialized = True
+        finally:
+            self._lock.release()
 
     def get_encoder_specs(self, encoding):
         return self._video_encoder_specs.get(encoding, [])
@@ -63,7 +82,7 @@ class VideoPipelineHelper(object):
         encodings = encoder_module.get_encodings()
         debug("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
         for encoding in encodings:
-            encoder_specs = VideoPipelineHelper._video_encoder_specs.setdefault(encoding, {})
+            encoder_specs = self._video_encoder_specs.setdefault(encoding, {})
             for colorspace in colorspaces:
                 colorspace_specs = encoder_specs.setdefault(colorspace, [])
                 spec = encoder_module.get_spec(encoding, colorspace)
@@ -98,10 +117,15 @@ class VideoPipelineHelper(object):
             return
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
-            csc_specs = VideoPipelineHelper._csc_encoder_specs.setdefault(in_csc, [])
+            csc_specs = self._csc_encoder_specs.setdefault(in_csc, [])
             out_cscs = csc_module.get_output_colorspaces(in_csc)
             debug("init_csc_option(..) %s.get_output_colorspaces(%s)=%s", csc_module.get_type(), in_csc, out_cscs)
             for out_csc in out_cscs:
                 spec = csc_module.get_spec(in_csc, out_csc)
                 item = out_csc, spec
                 csc_specs.append(item)
+
+singleton = VideoHelper()
+def getVideoHelper():
+    global singleton
+    return singleton
