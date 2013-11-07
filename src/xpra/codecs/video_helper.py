@@ -27,16 +27,16 @@ class VideoHelper(object):
         self._lock = Lock()
 
     def may_init(self):
+        #check without lock (usual fast path):
         if self._initialized:
             return
         try:
             self._lock.acquire()
+            #check again with lock held (in case of race):
             if self._initialized:
                 return
-            if len(self._video_encoder_specs)==0:
-                self.init_video_encoders_options()
-            if len(self._csc_encoder_specs)==0:
-                self.init_csc_options()
+            self.init_video_encoders_options()
+            self.init_csc_options()
             self._initialized = True
         finally:
             self._lock.release()
