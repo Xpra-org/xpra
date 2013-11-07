@@ -42,6 +42,10 @@ RGB_FORMATS = ("XRGB",
                "RGB")
 
 
+class TransientCodecException(Exception):
+    pass
+
+
 class codec_spec(object):
 
     def __init__(self, codec_class, codec_type="", encoding=None,

@@ -9,7 +9,7 @@ import time
 from threading import Lock
 
 from xpra.net.protocol import Compressed
-from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs
+from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.window_source import WindowSource, debug, log
 
@@ -612,8 +612,12 @@ class WindowVideoSource(WindowSource):
                 debug("setup_pipeline: video encoder=%s, info: %s, setup took %.2fms",
                         self._video_encoder, self._video_encoder.get_info(), (enc_end-enc_start)*1000.0)
                 return  True
+            except TransientCodecException, e:
+                log.warn("setup_pipeline failed for %s: %s", option, e)
+                self.cleanup_codecs()
             except:
                 log.warn("setup_pipeline failed for %s", option, exc_info=True)
+                self.cleanup_codecs()
         end = time.time()
         debug("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
         return False

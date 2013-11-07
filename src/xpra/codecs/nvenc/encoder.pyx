@@ -8,6 +8,8 @@ import time
 import os
 import numpy
 
+from xpra.util import AtomicInteger
+from xpra.codecs.codec_constants import codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -878,7 +880,6 @@ cdef extern from "nvEncodeAPI.h":
         void*                           reserved2[285]                  #[in]:  Reserved and must be set to NULL
 
 include "constants.pxi"
-from xpra.codecs.codec_constants import codec_spec
 
 NV_ENC_STATUS_TXT = {
     NV_ENC_SUCCESS : "This indicates that API call returned with no errors.",
@@ -932,6 +933,7 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_RESOURCE_NOT_REGISTERED : "This indicates that the client is attempting to unregister a resource that has not been successfuly registered.",
     NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfuly mapped.",
       }
+debug("NV_ENC_STATUS=%s", NV_ENC_STATUS_TXT)
 
 CODEC_PROFILES = {
                   #NV_ENC_H264_PROFILE_BASELINE_GUID
@@ -1226,6 +1228,9 @@ def get_BGRA2NV12(device_id):
 API_V2_WARNING = False
 
 
+context_counter = AtomicInteger()
+
+
 cdef class Encoder:
     cdef int width
     cdef int height
@@ -1283,7 +1288,6 @@ cdef class Encoder:
                 return c_parseguid(presets.get(x))
         raise Exception("no low-latency presets available for '%s'!?" % self.codec_name)
 
-
     def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options={}):    #@DuplicatedSignature
         assert encoding in get_encodings(), "invalid encoding %s" % encoding
         debug("init_context%s", (width, height, src_format, encoding, quality, speed, options))
@@ -1311,10 +1315,14 @@ cdef class Encoder:
         from pycuda import driver
         self.driver = driver
         debug("init_cuda(%s)", device_id)
-        self.cuda_device = driver.Device(DEFAULT_CUDA_DEVICE_ID)
-        debug("init_cuda(%s) cuda_device=%s", device_id, self.cuda_device)
-        self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
-        debug("init_cuda(%s) cuda_context=%s", device_id, self.cuda_context)
+        try:
+            self.cuda_device = driver.Device(DEFAULT_CUDA_DEVICE_ID)
+            debug("init_cuda(%s) cuda_device=%s", device_id, self.cuda_device)
+            self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
+            debug("init_cuda(%s) cuda_context=%s", device_id, self.cuda_context)
+        except driver.MemoryError, e:
+            debug("init_cuda(%s) %s", device_id, e)
+            raise TransientCodecException("could not initialize cuda: %s" % e)
         #use alias to make code easier to read:
         d = self.cuda_device
         da = driver.device_attribute
@@ -1483,6 +1491,9 @@ cdef class Encoder:
             debug("clean() destroying encoder %s", hex(<long> self.context))
             raiseNVENC(self.functionList.nvEncDestroyEncoder(self.context), "destroying context")
             self.context = NULL
+            global context_counter
+            context_counter.decrease()
+            debug("clean() (still %s contexts in use)", context_counter)
 
     def get_width(self):
         return self.width
@@ -1817,6 +1828,7 @@ cdef class Encoder:
 
 
     cdef open_encode_session(self):
+        global context_counter
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
         debug("open_encode_session() cuda_context=%s", self.cuda_context)
 
@@ -1840,8 +1852,15 @@ cdef class Encoder:
         params.clientKeyPtr = &CLIENT_KEY_GUID
         params.apiVersion = NVENCAPI_VERSION
         debug("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> self.functionList.nvEncOpenEncodeSessionEx))
-        raiseNVENC(self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context), "opening session")
-        debug("success, encoder context=%s", hex(<long> self.context))
+        cdef int ret            #@DuplicatedSignature
+        ret = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
+        if ret==NV_ENC_ERR_UNSUPPORTED_DEVICE:
+            msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
+            debug(msg)
+            raise TransientCodecException(msg)
+        raiseNVENC(ret, "opening session")
+        context_counter.increase()
+        debug("success, encoder context=%s (%s contexts in use)", hex(<long> self.context), context_counter)
 
 
 def init_module():
