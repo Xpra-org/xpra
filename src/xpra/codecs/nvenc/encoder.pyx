@@ -24,6 +24,8 @@ DEF NVENC_SDK_API_VERSION = 0x30
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEY = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
+DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "0"))
+
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
@@ -1109,6 +1111,9 @@ def get_colorspaces():
 WIDTH_MASK = 0xFFFE
 HEIGHT_MASK = 0xFFFE
 
+context_counter = AtomicInteger()
+
+
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (format, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
@@ -1176,7 +1181,6 @@ def get_cuda_devices():
             log.info(" + %s", cuda_devices.get(device_id))
     return cuda_devices
 
-DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "0"))
 
 def cuda_check():
     global DEFAULT_CUDA_DEVICE_ID
@@ -1226,9 +1230,6 @@ def get_BGRA2NV12(device_id):
 API_V2_WARNING = False
 
 
-context_counter = AtomicInteger()
-
-
 cdef class Encoder:
     cdef int width
     cdef int height
@@ -1236,6 +1237,7 @@ cdef class Encoder:
     cdef int encoder_height
     cdef object src_format
     #PyCUDA:
+    cdef int device_id
     cdef object driver
     cdef object cuda_device
     cdef object cuda_context
@@ -1301,32 +1303,32 @@ cdef class Encoder:
         self.cuda_context = None
         start = time.time()
 
-        device_id = options.get("cuda_device", DEFAULT_CUDA_DEVICE_ID)
-        self.init_cuda(device_id)
+        self.device_id = options.get("cuda_device", DEFAULT_CUDA_DEVICE_ID)
+        self.init_cuda()
 
         end = time.time()
         debug("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
 
-    def init_cuda(self, device_id):
-        assert device_id in get_cuda_devices().keys(), "invalid device_id '%s' (available: %s)" % (device_id, cuda_devices)
+    def init_cuda(self):
+        assert self.device_id in get_cuda_devices().keys(), "invalid device_id '%s' (available: %s)" % (self.device_id, cuda_devices)
 
         from pycuda import driver
         self.driver = driver
-        debug("init_cuda(%s)", device_id)
+        debug("init_cuda() device_id=%s", self.device_id)
         try:
             self.cuda_device = driver.Device(DEFAULT_CUDA_DEVICE_ID)
-            debug("init_cuda(%s) cuda_device=%s", device_id, self.cuda_device)
+            debug("init_cuda() cuda_device=%s", self.cuda_device)
             self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
-            debug("init_cuda(%s) cuda_context=%s", device_id, self.cuda_context)
+            debug("init_cuda() cuda_context=%s", self.cuda_context)
         except driver.MemoryError, e:
-            debug("init_cuda(%s) %s", device_id, e)
+            debug("init_cuda() %s", e)
             raise TransientCodecException("could not initialize cuda: %s" % e)
         #use alias to make code easier to read:
         d = self.cuda_device
         da = driver.device_attribute
         try:
             #compile/get kernel:
-            self.BGRA2NV12 = get_BGRA2NV12(device_id)
+            self.BGRA2NV12 = get_BGRA2NV12(self.device_id)
             #allocate CUDA input buffer (on device) 32-bit RGB:
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(self.encoder_width*4, self.encoder_height, 16)
             debug("CUDA Input Buffer=%s, pitch=%s", hex(int(self.cudaInputBuffer)), self.inputPitch)
