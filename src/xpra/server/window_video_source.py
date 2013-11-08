@@ -309,6 +309,7 @@ class WindowVideoSource(WindowSource):
         encoder_specs = WindowVideoSource._video_helper.get_encoder_specs(encoding)
         assert len(encoder_specs)>0, "no encoders found for '%s'" % encoding
         scores = []
+        debug("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self.get_min_speed(), int(self.get_current_quality()), self.get_min_quality())
         def add_scores(info, csc_spec, enc_in_format):
             colorspace_specs = encoder_specs.get(enc_in_format)
             debug("add_scores(%s, %s, %s)", info, csc_spec, enc_in_format)
@@ -355,6 +356,49 @@ class WindowVideoSource(WindowSource):
         return {"NV12" : "YUV420P"}.get(csc_mode, csc_mode)
 
 
+    def get_quality_score(self, csc_format, csc_spec, encoder_spec):
+        quality = encoder_spec.quality
+        if csc_format and csc_format in ("YUV420P", "YUV422P", "YUV444P"):
+            #account for subsampling (reduces quality):
+            y,u,v = get_subsampling_divs(csc_format)
+            div = 0.5   #any colourspace convertion will lose at least some quality (due to rounding)
+            for div_x, div_y in (y, u, v):
+                div += (div_x+div_y)/2.0/3.0
+            quality = quality / div
+
+        if csc_spec:
+            #csc_spec.quality is the upper limit (up to 100):
+            quality += csc_spec.quality
+            quality /= 2.0
+
+        #the lower the current quality
+        #the more we need an HQ encoder/csc to improve things:
+        qscore = max(0, (100.0-self.get_current_quality()) * quality/100.0)
+        mq = self.get_min_quality()
+        if mq>=0:
+            #if the encoder quality is lower or close to min_quality
+            #then it isn't very suitable:
+            mqs = max(0, quality - mq)*100/max(1, 100-mq)
+            qscore = (qscore + mqs)/2.0
+        return qscore
+
+    def get_speed_score(self, csc_spec, encoder_spec):
+        #score based on speed:
+        speed = encoder_spec.speed
+        if csc_spec:
+            speed += csc_spec.speed
+            speed /= 2.0
+        #the lower the current speed
+        #the more we need a fast encoder/csc to cancel it out:
+        sscore = max(0, (100.0-self.get_current_speed()) * speed/100.0)
+        ms = self.get_min_speed()
+        if ms>=0:
+            #if the encoder speed is lower or close to min_speed
+            #then it isn't very suitable:
+            mss = max(0, speed - ms)*100/max(1, 100-ms)
+            sscore = (sscore + mss)/2.0
+        return sscore
+
     def get_score(self, csc_format, csc_spec, encoder_spec, width, height):
         """
             Given an optional csc step (csc_format and csc_spec), and
@@ -372,36 +416,10 @@ class WindowVideoSource(WindowSource):
             return -1
         if not encoder_spec.can_handle(width, height):
             return -1
-        #debug("get_score%s", (csc_format, csc_spec, encoder_spec,
-        #          width, height, min_quality, target_quality, min_speed, target_speed))
         def clamp(v):
             return max(0, min(100, v))
-        #evaluate output quality:
-        quality = clamp(encoder_spec.quality)
-        if csc_format and csc_format in ("YUV420P", "YUV422P", "YUV444P"):
-            #account for subsampling (reduces quality):
-            y,u,v = get_subsampling_divs(csc_format)
-            div = 0.5   #any colourspace convertion will lose at least some quality (due to rounding)
-            for div_x, div_y in (y, u, v):
-                div += (div_x+div_y)/2.0/3.0
-            quality = quality / div
-        if csc_spec and csc_spec.quality<100:
-            #csc_spec.quality is the upper limit (up to 100):
-            quality *= csc_spec.quality/100.0
-        #score based on how far we are:
-        if quality<self.get_min_quality():
-            qscore = 0
-        else:
-            qscore = 100-abs(quality-self.get_current_quality())
-
-        #score based on speed:
-        speed = clamp(encoder_spec.speed)
-        if csc_spec:
-            speed *= csc_spec.speed/100.0
-        if speed<self.get_min_speed():
-            sscore = 0
-        else:
-            sscore = 100-abs(speed-self.get_current_speed())
+        qscore = clamp(self.get_quality_score(csc_format, csc_spec, encoder_spec))
+        sscore = clamp(self.get_speed_score(csc_spec, encoder_spec))
 
         #score for "edge resistance" via setup cost:
         ecsc_score = 100
@@ -434,9 +452,10 @@ class WindowVideoSource(WindowSource):
             ee_score = 100 - encoder_spec.setup_cost
         #edge resistance score: average of csc and encoder score:
         er_score = (ecsc_score + ee_score) / 2.0
-        debug("get_score%s %s/%s/%s", (csc_format, csc_spec, encoder_spec,
-                  width, height), int(qscore), int(sscore), int(er_score))
-        return int((qscore+sscore+er_score)/3.0)
+        score = int((qscore+sscore+er_score)/3.0)
+        debug("get_score%s quality:%.1f, speed:%.1f, setup:%.1f score=%s", (csc_format, csc_spec, encoder_spec,
+                  width, height), qscore, sscore, er_score, score)
+        return score
 
     def get_encoder_dimensions(self, csc_spec, encoder_spec, width, height):
         """
