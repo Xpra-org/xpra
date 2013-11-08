@@ -475,6 +475,9 @@ class WindowVideoSource(WindowSource):
                 self.actual_scaling = 2,3
             elif self.fullscreen and quality<60 and speed>70:
                 self.actual_scaling = 1,2
+            elif width>=4096 or height>=4096:
+                #most encoders can't  deal with that!
+                self.actual_scaling = 1,2
         if self.actual_scaling is None:
             self.actual_scaling = 1, 1
         v, u = self.actual_scaling
