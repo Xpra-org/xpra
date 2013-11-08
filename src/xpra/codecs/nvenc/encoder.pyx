@@ -1618,7 +1618,6 @@ cdef class Encoder:
         stride = image.get_rowstride()
         w = image.get_width()
         h = image.get_height()
-        debug("compress_image(..) pixels=%s", type(pixels))
 
         #FIXME: we should copy from pixels directly..
         #copy to input buffer:
@@ -1689,7 +1688,7 @@ cdef class Encoder:
 
             raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
             encode_end = time.time()
-            debug("encoded in %.1f ms", (encode_end-csc_end)*1000.0)
+            debug("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
 
             #lock output buffer:
             memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
@@ -1697,7 +1696,7 @@ cdef class Encoder:
             lockOutputBuffer.doNotWait = 0
             lockOutputBuffer.outputBitstream = self.bitstreamBuffer
             raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer), "locking output buffer")
-            debug("output buffer locked, bitstreamBufferPtr=%s", hex(<long> lockOutputBuffer.bitstreamBufferPtr))
+            debug("compress_image(..) output buffer locked, bitstreamBufferPtr=%s", hex(<long> lockOutputBuffer.bitstreamBufferPtr))
 
             #copy to python buffer:
             size = lockOutputBuffer.bitstreamSizeInBytes
@@ -1707,10 +1706,10 @@ cdef class Encoder:
             raiseNVENC(self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource), "unmapping input resource")
 
         end = time.time()
-        debug("download took %.1f ms", (end-encode_end)*1000.0)
+        debug("compress_image(..) download took %.1f ms", (end-encode_end)*1000.0)
 
         self.time += end-start
-        debug("returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
+        debug("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
         #debug("pixels head: %s", binascii.hexlify(data[:128]))
         client_options = {"frame" : self.frames}
         self.bytes_in += input_size
