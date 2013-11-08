@@ -1292,7 +1292,8 @@ cdef class Encoder:
     cdef object driver
     cdef object cuda_device
     cdef object cuda_context
-    cdef object BGRA2NV12
+    cdef object kernel
+    cdef object kernel_name
     cdef object max_block_sizes
     cdef object max_grid_sizes
     cdef int max_threads_per_block
@@ -1302,9 +1303,9 @@ cdef class Encoder:
     cdef NV_ENC_REGISTERED_PTR inputHandle
     cdef object inputBuffer
     cdef object cudaInputBuffer
-    cdef object cudaNV12Buffer
+    cdef object cudaOutputBuffer
     cdef int inputPitch
-    cdef int NV12Pitch
+    cdef int outputPitch
     cdef void *bitstreamBuffer
     cdef NV_ENC_BUFFER_FORMAT bufferFmt
     cdef object codec_name
@@ -1388,14 +1389,17 @@ cdef class Encoder:
         d = self.cuda_device
         da = driver.device_attribute
         try:
-            #compile/get kernel:
-            self.BGRA2NV12 = get_BGRA2NV12(self.device_id)
+            #compile/get kernel - hardcoded for NV12:
+            self.kernel = get_BGRA2NV12(self.device_id)
+            self.kernel_name = "BGRA2NV12"
+            self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
+
             #allocate CUDA input buffer (on device) 32-bit RGB:
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(self.encoder_width*4, self.encoder_height, 16)
             debug("CUDA Input Buffer=%s, pitch=%s", hex(int(self.cudaInputBuffer)), self.inputPitch)
-            #allocate CUDA NV12 buffer (on device):
-            self.cudaNV12Buffer, self.NV12Pitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3/2, 16)
-            debug("CUDA NV12 Buffer=%s, pitch=%s", hex(int(self.cudaNV12Buffer)), self.NV12Pitch)
+            #allocate CUDA output buffer (on device):
+            self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3/2, 16)
+            debug("CUDA Output Buffer=%s, pitch=%s", hex(int(self.cudaOutputBuffer)), self.outputPitch)
             #allocate input buffer on host:
             self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.encoder_height, dtype=numpy.byte)
             debug("inputBuffer=%s (size=%s)", self.inputBuffer, self.inputPitch*self.encoder_height)
@@ -1405,7 +1409,7 @@ cdef class Encoder:
             debug("max_block_sizes=%s", self.max_block_sizes)
             debug("max_grid_sizes=%s", self.max_grid_sizes)
 
-            self.max_threads_per_block = self.BGRA2NV12.get_attribute(driver.function_attribute.MAX_THREADS_PER_BLOCK)
+            self.max_threads_per_block = self.kernel.get_attribute(driver.function_attribute.MAX_THREADS_PER_BLOCK)
             debug("max_threads_per_block=%s", self.max_threads_per_block)
 
             self.init_nvenc()
@@ -1427,7 +1431,6 @@ cdef class Encoder:
         codec = self.get_codec()
         preset = self.get_preset(codec)
 
-        self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
         input_format = BUFFER_FORMAT[self.bufferFmt]
         input_formats = self.query_input_formats(codec)
         assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
@@ -1461,11 +1464,11 @@ cdef class Encoder:
             memset(&registerResource, 0, sizeof(NV_ENC_REGISTER_RESOURCE))
             registerResource.version = NV_ENC_REGISTER_RESOURCE_VER
             registerResource.resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
-            resource = int(self.cudaNV12Buffer)
+            resource = int(self.cudaOutputBuffer)
             registerResource.resourceToRegister = <void *> resource
             registerResource.width = self.encoder_width
             registerResource.height = self.encoder_height
-            registerResource.pitch = self.NV12Pitch
+            registerResource.pitch = self.outputPitch
             raiseNVENC(self.functionList.nvEncRegisterResource(self.context, &registerResource), "registering CUDA input buffer")
             self.inputHandle = registerResource.registeredResource
             debug("input handle for CUDA buffer: %s", hex(<long> self.inputHandle))
@@ -1530,7 +1533,7 @@ cdef class Encoder:
         if self.context!=NULL:
             self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
-            debug("clean() unregistering CUDA NV12 buffer input handle %s", hex(<long> self.inputHandle))
+            debug("clean() unregistering CUDA output buffer input handle %s", hex(<long> self.inputHandle))
             raiseNVENC(self.functionList.nvEncUnregisterResource(self.context, self.inputHandle), "unregistering CUDA input buffer")
             self.inputHandle = NULL
         if self.inputBuffer is not None:
@@ -1540,10 +1543,10 @@ cdef class Encoder:
             debug("clean() freeing CUDA input buffer %s", hex(int(self.cudaInputBuffer)))
             self.cudaInputBuffer.free()
             self.cudaInputBuffer = None
-        if self.cudaNV12Buffer is not None:
-            debug("clean() freeing CUDA NV12 buffer %s", hex(int(self.cudaNV12Buffer)))
-            self.cudaNV12Buffer.free()
-            self.cudaNV12Buffer = None
+        if self.cudaOutputBuffer is not None:
+            debug("clean() freeing CUDA output buffer %s", hex(int(self.cudaOutputBuffer)))
+            self.cudaOutputBuffer.free()
+            self.cudaOutputBuffer = None
         if self.context!=NULL:
             if self.bitstreamBuffer!=NULL:
                 debug("clean() destroying output bitstream buffer %s", hex(<long> self.bitstreamBuffer))
@@ -1639,9 +1642,9 @@ cdef class Encoder:
         gridh = max(1, h/blockh/2)
         if gridh*2*blockh<h:
             gridh += 1
-        debug("compress_image(..) calling %s", self.BGRA2NV12)
-        self.BGRA2NV12(self.cudaInputBuffer, numpy.int32(stride),      #numpy.int32(self.inputPitch),
-                       self.cudaNV12Buffer, numpy.int32(self.NV12Pitch), numpy.int32(self.encoder_height),
+        debug("compress_image(..) calling CUDA CSC kernel %s", self.kernel_name)
+        self.kernel(self.cudaInputBuffer, numpy.int32(stride),      #numpy.int32(self.inputPitch),
+                       self.cudaOutputBuffer, numpy.int32(self.outputPitch), numpy.int32(self.encoder_height),
                        numpy.int32(w), numpy.int32(h),
                        block=(blockw,blockh,1), grid=(gridw, gridh))
         #a block is a group of threads: (blockw * blockh) threads
@@ -1664,7 +1667,7 @@ cdef class Encoder:
             picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
             picParams.inputWidth = self.encoder_width
             picParams.inputHeight = self.encoder_height
-            picParams.inputPitch = self.NV12Pitch
+            picParams.inputPitch = self.outputPitch
             picParams.inputBuffer = mapInputResource.mappedResource
             picParams.outputBitstream = self.bitstreamBuffer
             #picParams.pictureType: required when enablePTD is disabled
