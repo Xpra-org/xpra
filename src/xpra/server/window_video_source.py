@@ -421,6 +421,8 @@ class WindowVideoSource(WindowSource):
         qscore = clamp(self.get_quality_score(csc_format, csc_spec, encoder_spec))
         sscore = clamp(self.get_speed_score(csc_spec, encoder_spec))
 
+        #runtime codec adjustements:
+        runtime_score = 100
         #score for "edge resistance" via setup cost:
         ecsc_score = 100
         if csc_spec:
@@ -436,6 +438,7 @@ class WindowVideoSource(WindowSource):
                 ecsc_score = max(0, 80 - csc_spec.setup_cost*80.0/100.0)
             else:
                 ecsc_score = 80
+            runtime_score *= csc_spec.get_runtime_factor()
             enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height)
         else:
             #not using csc at all!
@@ -452,9 +455,9 @@ class WindowVideoSource(WindowSource):
             ee_score = 100 - encoder_spec.setup_cost
         #edge resistance score: average of csc and encoder score:
         er_score = (ecsc_score + ee_score) / 2.0
-        score = int((qscore+sscore+er_score)/3.0)
-        debug("get_score%s quality:%.1f, speed:%.1f, setup:%.1f score=%s", (csc_format, csc_spec, encoder_spec,
-                  width, height), qscore, sscore, er_score, score)
+        score = int((qscore+sscore+er_score)*runtime_score/100.0/3.0)
+        debug("get_score%s quality:%.1f, speed:%.1f, setup:%.1f runtime:%.1f score=%s", (csc_format, csc_spec, encoder_spec,
+                  width, height), qscore, sscore, er_score, runtime_score, score)
         return score
 
     def get_encoder_dimensions(self, csc_spec, encoder_spec, width, height):

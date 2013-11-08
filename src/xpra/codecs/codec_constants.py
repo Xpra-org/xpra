@@ -71,6 +71,11 @@ class codec_spec(object):
         self.can_scale = can_scale
         self.encoding = encoding                #ie: "h264"
 
+    def get_runtime_factor(self):
+        #a cost multiplier that some encoder may want to override
+        #1.0 means no change:
+        return 1.0
+
     def can_handle(self, width, height):
         return self.max_w>=width and self.max_h>=height \
             and self.min_w<=width and self.min_h<=height \

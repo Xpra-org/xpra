@@ -9,6 +9,7 @@ import os
 import numpy
 
 from xpra.util import AtomicInteger
+from xpra.deque import maxdeque
 from xpra.codecs.codec_constants import codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger, debug_if_env
@@ -1111,20 +1112,46 @@ def get_colorspaces():
 WIDTH_MASK = 0xFFFE
 HEIGHT_MASK = 0xFFFE
 
-#Note: this counter should be per-device
-#but although the support code is there, we currently only use one device
+#Note: these counters should be per-device, but:
+#1) although the support code is there, we currently only use one device
+#2) when we call get_runtime_factor(), we don't know which device is going to get used!
 context_counter = AtomicInteger()
+context_failures_history = maxdeque(100)
+
+def get_runtime_factor():
+    global context_failures_history, context_counter
+    cc = context_counter.get()
+    if len(context_failures_history)==0 and cc<8:
+        #no problems!
+        debug("nvenc.get_runtime_factor()=%s", 1.0)
+        return 1.0
+    #try to avoid using too many contexts
+    #(usually, we can have up to 32 contexts per card)
+    f = max(0, 1.0 - (max(0, cc-8)/64.0))
+    #if we have had errors recently, lower our chances further:
+    now = time.time()
+    recent_errors = [c for t,c in context_failures_history if (now-t)<60]
+    if len(recent_errors)>0:
+        last_count = recent_errors[-1]
+        if last_count<=cc:
+            #the last recent error had as many contexts available
+            #so this is unlikely to work, lower more:
+            f /= 2.0
+    debug("nvenc.get_runtime_factor()=%s", f)
+    return f
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (format, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    return codec_spec(Encoder, codec_type=get_type(), encoding=encoding,
+    cs = codec_spec(Encoder, codec_type=get_type(), encoding=encoding,
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
                       min_w=32, min_h=32,
                       max_w=4096, max_h=4096,
                       width_mask=WIDTH_MASK, height_mask=HEIGHT_MASK)
+    cs.get_runtime_factor = get_runtime_factor
+    return cs
 
 
 def get_version():
@@ -1312,7 +1339,7 @@ cdef class Encoder:
 
     def init_cuda(self):
         assert self.device_id in get_cuda_devices().keys(), "invalid device_id '%s' (available: %s)" % (self.device_id, cuda_devices)
-
+        global context_counter, context_failures_history
         from pycuda import driver
         self.driver = driver
         debug("init_cuda() device_id=%s", self.device_id)
@@ -1322,6 +1349,7 @@ cdef class Encoder:
             self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
             debug("init_cuda() cuda_context=%s", self.cuda_context)
         except driver.MemoryError, e:
+            context_failures_history.append((time.time(), context_counter.get()))
             debug("init_cuda() %s", e)
             raise TransientCodecException("could not initialize cuda: %s" % e)
         #use alias to make code easier to read:
@@ -1829,7 +1857,7 @@ cdef class Encoder:
 
 
     cdef open_encode_session(self):
-        global context_counter
+        global context_counter, context_failures_history
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
         debug("open_encode_session() cuda_context=%s", self.cuda_context)
 
@@ -1856,6 +1884,7 @@ cdef class Encoder:
         cdef int ret            #@DuplicatedSignature
         ret = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if ret==NV_ENC_ERR_UNSUPPORTED_DEVICE:
+            context_failures_history.append((time.time(), context_counter.get()))
             msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
             debug(msg)
             raise TransientCodecException(msg)
