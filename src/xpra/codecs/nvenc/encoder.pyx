@@ -1111,15 +1111,16 @@ def get_colorspaces():
 WIDTH_MASK = 0xFFFE
 HEIGHT_MASK = 0xFFFE
 
+#Note: this counter should be per-device
+#but although the support code is there, we currently only use one device
 context_counter = AtomicInteger()
-
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (format, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     return codec_spec(Encoder, codec_type=get_type(), encoding=encoding,
-                      quality=100, speed=100, setup_cost=100, cpu_cost=10, gpu_cost=100,
+                      quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
                       min_w=32, min_h=32,
                       max_w=4096, max_h=4096,
