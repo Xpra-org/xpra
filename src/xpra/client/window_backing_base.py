@@ -360,6 +360,10 @@ class WindowBackingBase(object):
                     if DRAW_DEBUG:
                         log.info("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), decoder_colorspace)
                     self.do_clean_video_decoder()
+                elif options.get("frame")==0:
+                    if DRAW_DEBUG:
+                        log.info("paint_with_video_decoder: first frame of new stream")
+                    self.do_clean_video_decoder()
             if self._video_decoder is None:
                 if DRAW_DEBUG:
                     log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, decoder_colorspace)
