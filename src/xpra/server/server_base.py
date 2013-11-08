@@ -557,7 +557,7 @@ class ServerBase(ServerCore):
              "sound_sequence"               : True,
              "notify-startup-complete"      : True,
              "suspend-resume"               : True,
-             "encodings.generic"            : True,
+             "encoding.generic"             : True,
              "server_type"                  : "base",
              })
         add_version_info(capabilities)

@@ -185,7 +185,7 @@ class XpraClientBase(object):
     def make_hello_base(self):
         capabilities = get_network_caps()
         capabilities.update({
-                "encodings.generic"     : True,
+                "encoding.generic"      : True,
                 "namespace"             : True,
                 "hostname"              : socket.gethostname(),
                 "uuid"                  : self.uuid,

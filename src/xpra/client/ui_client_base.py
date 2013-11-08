@@ -902,7 +902,7 @@ class UIXpraClient(XpraClientBase):
             if not v:
                 return v
             return [OLD_ENCODING_NAMES_TO_NEW.get(x, x) for x in v]
-        self.server_generic_encodings = c.boolget("encodings.generic")
+        self.server_generic_encodings = c.boolget("encoding.generic")
         self.server_encodings = getenclist("encodings")
         self.server_core_encodings = getenclist("encodings.core", self.server_encodings)
         self.server_encodings_with_speed = getenclist("encodings.with_speed", ("h264",)) #old servers only supported x264

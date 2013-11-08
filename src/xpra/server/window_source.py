@@ -859,11 +859,12 @@ class WindowSource(object):
         if store>0:
             self.last_pixmap_data = w, h, coding, store, dpixels
             client_options["store"] = store
+        encoding = coding
         if not self.generic_encodings:
             #old clients use non-generic encoding names:
-            coding = NEW_ENCODING_NAMES_TO_OLD.get(coding, coding)
+            encoding = NEW_ENCODING_NAMES_TO_OLD.get(coding, coding)
         #actual network packet:
-        packet = ["draw", wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options]
+        packet = ["draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()
         #debug("%sms to compress %sx%s pixels using %s with ratio=%s%%, delta=%s",
         #         dec1(end*1000.0-start*1000.0), w, h, coding, dec1(100.0*len(data)/len(rgbdata)), delta)

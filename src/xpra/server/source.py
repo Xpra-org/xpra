@@ -534,7 +534,7 @@ class ServerSource(object):
         self.core_encodings = getenclist("encodings.core", self.encodings)
         self.rgb_formats = getenclist("encodings.rgb_formats", ["RGB"])
         self.generic_rgb_encodings = c.boolget("generic-rgb-encodings")
-        self.generic_encodings = c.boolget("encodings.generic")
+        self.generic_encodings = c.boolget("encoding.generic")
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
             log.info("windows/pixels forwarding is disabled for this client")
