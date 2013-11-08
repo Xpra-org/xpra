@@ -1153,12 +1153,10 @@ cdef cuda_init_devices():
         host_mem = d.get_attribute(da.CAN_MAP_HOST_MEMORY)
         debug(" max block sizes: (%s, %s, %s)", d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z))
         debug(" max grid sizes: (%s, %s, %s)", d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z))
-        #SMmajor, SMminor = d.compute_cabability()
-        #FIXME: restore check and use FORCE flag here!
-        SMmajor, SMminor = 0xFFFF, 0xFFFF
+        SMmajor, SMminor = d.compute_capability()
         has_nvenc = ((SMmajor<<4) + SMminor) >= 0x30
         pre = "-"
-        if host_mem and has_nvenc:
+        if host_mem and (has_nvenc or FORCE):
             pre = "+"
             devices[i] = device_info(d)
         debug(" %s %s (%sMB)", pre, device_info(d), mem/1024/1024)
