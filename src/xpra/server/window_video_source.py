@@ -491,14 +491,17 @@ class WindowVideoSource(WindowSource):
             #no scaling window attribute defined, so use heuristics to enable:
             quality = self.get_current_quality()
             speed = self.get_current_speed()
-            if width*height>=1024*1024 and quality<30 and speed>90:
+            if width>=4096 or height>=4096:
+                #most encoders can't deal with that!
+                d = 1
+                while width/d>=4096 or height/d>=4096:
+                    d += 1
+                self.actual_scaling = 1,d
+            elif width*height>=1024*1024 and quality<30 and speed>90:
                 self.actual_scaling = 2,3
             elif self.maximized and quality<50 and speed>80:
                 self.actual_scaling = 2,3
             elif self.fullscreen and quality<60 and speed>70:
-                self.actual_scaling = 1,2
-            elif width>=4096 or height>=4096:
-                #most encoders can't  deal with that!
                 self.actual_scaling = 1,2
         if self.actual_scaling is None:
             self.actual_scaling = 1, 1
