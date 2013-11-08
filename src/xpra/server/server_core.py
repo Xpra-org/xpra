@@ -26,6 +26,7 @@ from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import set_application_name, load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info, get_platform_info
 from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps
+from xpra.server.background_worker import stop_worker
 from xpra.util import typedict
 
 
@@ -202,13 +203,15 @@ class ServerCore(object):
         log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
-        self.clean_quit()
+        self.clean_quit(True)
 
-    def clean_quit(self):
+    def clean_quit(self, from_signal=False):
         self.cleanup()
         def quit_timer(*args):
             log.debug("quit_timer()")
             self.quit(False)
+        #if from a signal, just force quit:
+        stop_worker(from_signal)
         self.timeout_add(500, quit_timer)
         def force_quit(*args):
             log.debug("force_quit()")
