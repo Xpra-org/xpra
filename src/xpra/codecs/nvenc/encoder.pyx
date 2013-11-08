@@ -1087,6 +1087,27 @@ ELSE:
         guidstr(NV_ENC_PRESET_DESKTOP_CAPTURE_GUID)             : "desktop-capture",
         guidstr(NV_ENC_PRESET_MVC_STEREO_GUID)                  : "mvc-stereo",
     })
+#try to map preset names to a "speed" value:
+PRESET_SPEED = {
+    "bd"            : 0,
+    "hq"            : 20,
+    "default"       : 40,
+    "hp"            : 50,
+    "low-latency-hq": 60,
+    "low-latency"   : 80,
+    "low-latency-hp": 100,
+    }
+PRESET_QUALITY = {
+    "bd"            : 100,
+    "hq"            : 80,
+    "default"       : 60,
+    "hp"            : 50,
+    "low-latency-hq": 40,
+    "low-latency"   : 20,
+    "low-latency-hp": 0,
+    }
+
+
 
 BUFFER_FORMAT = {
         NV_ENC_BUFFER_FORMAT_UNDEFINED              : "undefined",
@@ -1264,6 +1285,8 @@ cdef class Encoder:
     cdef int encoder_width
     cdef int encoder_height
     cdef object src_format
+    cdef int speed
+    cdef int quality
     #PyCUDA:
     cdef int device_id
     cdef object driver
@@ -1304,16 +1327,23 @@ cdef class Encoder:
         presets = self.query_presets(codec)
         #presets={'low-latency': '49DF21C5-6DFA-4FEB-9787-6ACC9EFFB726', 'bd': '82E3E450-BDBB-4E40-989C-82A90DF9EF32', 'default': 'B2DFB705-4EBD-4C49-9B5F-24A777D3E587', 'hp': '60E4C59F-E846-4484-A56D-CD45BE9FDDF6', 'hq': '34DBA71D-A77B-4B8F-9C3E-B6D5DA24C012', 'low-latency-hp': '67082A44-4BAD-48FA-98EA-93056D150A58', 'low-latency-hq': 'C5F733B9-EA97-4CF9-BEC2-BF78A74FD105'}
         self.preset_name = None
-        DESIRED_PRESET_LIST = (
-                  DESIRED_PRESET,
-                  #in V3, the presets are called "low-latency":
-                  "low-latency-hq", "low-latency", "low-latency-hp",
-                  #in V2, they are called gaming:
-                  "game-capture", "gaming 720p60", "gaming 720p30")
-        for x in DESIRED_PRESET_LIST:
-            if x and (x in presets):
-                self.preset_name = x
-                return c_parseguid(presets.get(x))
+
+        options = {}
+        #if a preset was specified, give it the best score possible (-1):
+        if DESIRED_PRESET:
+            options[-1] = DESIRED_PRESET
+        #add all presets ranked by how far they are from the target speed and quality:
+        for x in CODEC_PRESETS_GUIDS.values():
+            preset_speed = PRESET_SPEED.get(x, 50)
+            preset_quality = PRESET_QUALITY.get(x, 50)
+            v = abs(preset_speed-self.speed) + abs(preset_quality-self.quality)
+            options.setdefault(v, []).append(x)
+        for v in sorted(options.keys()):
+            for preset in options.get(v):
+                if preset and (preset in presets):
+                    debug("using preset '%s' for quality=%s, speed=%s", preset, self.speed, self.quality)
+                    self.preset_name = preset
+                    return c_parseguid(presets.get(preset))
         raise Exception("no low-latency presets available for '%s'!?" % self.codec_name)
 
     def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options={}):    #@DuplicatedSignature
@@ -1321,6 +1351,8 @@ cdef class Encoder:
         debug("init_context%s", (width, height, src_format, encoding, quality, speed, options))
         self.width = width
         self.height = height
+        self.speed = speed
+        self.quality = quality
         self.encoder_width = roundup(width, 32)
         self.encoder_height = roundup(height, 32)
         self.src_format = src_format
