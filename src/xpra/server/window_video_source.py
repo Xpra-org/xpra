@@ -330,7 +330,7 @@ class WindowVideoSource(WindowSource):
                     if score>=0:
                         item = score, csc_spec, enc_in_format, encoder_spec
                         scores.append(item)
-        if src_format in self.csc_modes and not FORCE_CSC:
+        if src_format in self.csc_modes and (not FORCE_CSC or src_format==FORCE_CSC_MODE):
             scaling = self.calculate_scaling(width, height)
             #we can only use direct if not scaling
             #as csc is the step that does the scaling (at present..)
