@@ -104,16 +104,16 @@ class WindowVideoSource(WindowSource):
                 info[prefix+"encoder."+k+suffix] = v
         if self.last_pipeline_params:
             encoding, width, height, src_format = self.last_pipeline_params
-            info[prefix+"pipeline_param.encoding"+suffix] = encoding
-            info[prefix+"pipeline_param.dimensions"+suffix] = width, height
-            info[prefix+"pipeline_param.src_format"+suffix] = src_format
+            info[prefix+"encoding.pipeline_param.encoding"+suffix] = encoding
+            info[prefix+"encoding.pipeline_param.dimensions"+suffix] = width, height
+            info[prefix+"encoding.pipeline_param.src_format"+suffix] = src_format
         if self.last_pipeline_scores:
             i = 0
             for score, csc_spec, enc_in_format, encoder_spec in self.last_pipeline_scores:
-                info[prefix+("pipeline_option[%s].score" % i)+suffix] = score
-                info[prefix+("pipeline_option[%s].csc" % i)+suffix] = repr(csc_spec)
-                info[prefix+("pipeline_option[%s].format" % i)+suffix] = str(enc_in_format)
-                info[prefix+("pipeline_option[%s].encoder" % i)+suffix] = repr(encoder_spec)
+                info[prefix+("encoding.pipeline_option[%s].score" % i)+suffix] = score
+                info[prefix+("encoding.pipeline_option[%s].csc" % i)+suffix] = repr(csc_spec)
+                info[prefix+("encoding.pipeline_option[%s].format" % i)+suffix] = str(enc_in_format)
+                info[prefix+("encoding.pipeline_option[%s].encoder" % i)+suffix] = repr(encoder_spec)
                 i += 1
 
     def cleanup(self):

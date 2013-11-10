@@ -275,12 +275,12 @@ class WindowSource(object):
                     info[prefix+"."+k] = v
         quality_list = [x for _, _, x in list(self._encoding_quality)]
         if len(quality_list)>0:
-            qp = prefix+"quality"+suffix
+            qp = prefix+"encoding.quality"+suffix
             add_list_stats(info, qp, quality_list, show_percentile=[9])
             add_last_rec_info(qp, self._encoding_quality)
         speed_list = [x for _, _, x in list(self._encoding_speed)]
         if len(speed_list)>0:
-            sp = prefix+"speed"+suffix
+            sp = prefix+"encoding.speed"+suffix
             add_list_stats(info, sp, speed_list, show_percentile=[9])
             add_last_rec_info(sp, self._encoding_speed)
         self.batch_config.add_stats(info, prefix, suffix)

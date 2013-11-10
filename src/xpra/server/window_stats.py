@@ -157,8 +157,8 @@ class WindowPerformanceStatistics(object):
                         comp_times_ns.append((1000.0*1000*1000*compression_time/pixels, pixels))
                         total_pixels += pixels
                         total_time += compression_time
-                add_weighted_list_stats(info, prefix+"compression.ratio_pct"+suffix, comp_ratios_pct)
-                add_weighted_list_stats(info, prefix+"compression.pixels_per_ns"+suffix, comp_times_ns)
+                add_weighted_list_stats(info, prefix+"encoding.ratio_pct"+suffix, comp_ratios_pct)
+                add_weighted_list_stats(info, prefix+"encoding.pixels_per_ns"+suffix, comp_times_ns)
                 if total_time>0:
                     info[prefix+"encoding.pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
             add_compression_stats(estats, suffix=suffix)
