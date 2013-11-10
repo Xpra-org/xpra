@@ -12,7 +12,7 @@ log = Logger()
 
 import re
 from xpra.util import nonl
-from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, EXIT_TIMEOUT, EXIT_OK
+from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
@@ -191,6 +191,23 @@ class VersionXpraClient(CommandConnectClient):
         log.debug("make_hello() adding version_request to %s", capabilities)
         capabilities["version_request"] = True
         return capabilities
+
+
+class ExitXpraClient(CommandConnectClient):
+    """ This client does one thing only:
+        it asks the server to terminate (like stop),
+        but without killing the Xvfb or clients.
+    """
+
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
+
+    def _process_hello(self, packet):
+        props = packet[1]
+        if not props.get("exit_server"):
+            self.warn_and_quit(EXIT_UNSUPPORTED, "server does not support exit command")
+            return
+        gobject.idle_add(self.send, "exit-server")
 
 
 class StopXpraClient(CommandConnectClient):

@@ -85,6 +85,10 @@ class ServerCore(object):
         It only handles establishing the connection.
     """
 
+    #magic value to distinguish exit code for upgrading (True==1)
+    #and exiting:
+    EXITING_CODE = 2
+
     def __init__(self):
         log("ServerCore.__init__()")
         self.start_time = time.time()
@@ -205,11 +209,11 @@ class ServerCore(object):
         signal.signal(signal.SIGTERM, deadly_signal)
         self.clean_quit(True)
 
-    def clean_quit(self, from_signal=False):
+    def clean_quit(self, from_signal=False, upgrading=False):
         self.cleanup()
         def quit_timer(*args):
             log.debug("quit_timer()")
-            self.quit(False)
+            self.quit(upgrading)
         #if from a signal, just force quit:
         stop_worker(from_signal)
         self.timeout_add(500, quit_timer)
@@ -257,7 +261,7 @@ class ServerCore(object):
         log("cleanup will disconnect: %s", self._potential_protocols)
         for proto in self._potential_protocols:
             if self._upgrading:
-                reason = "upgrading"
+                reason = "upgrading/exiting"
             else:
                 reason = "shutting down"
             self.disconnect_client(proto, reason)

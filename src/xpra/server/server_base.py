@@ -328,6 +328,7 @@ class ServerBase(ServerCore):
             "sound-data":                           self._process_sound_data,
             #requests:
             "shutdown-server":                      self._process_shutdown_server,
+            "exit-server":                          self._process_exit_server,
             "buffer-refresh":                       self._process_buffer_refresh,
             "screenshot":                           self._process_screenshot,
             "disconnect":                           self._process_disconnect,
@@ -350,13 +351,21 @@ class ServerBase(ServerCore):
     def add_listen_socket(self, socktype, socket):
         raise NotImplementedError()
 
-    def _process_shutdown_server(self, proto, packet):
-        log.info("Shutting down in response to request")
+    def _disconnect_all(self, message):
         for p in self._potential_protocols:
             try:
-                self.send_disconnect(p, "server shutdown")
+                self.send_disconnect(p, message)
             except:
                 pass
+
+    def _process_exit_server(self, proto, packet):
+        log.info("Exiting response to request")
+        self._disconnect_all("server exiting")
+        self.timeout_add(1000, self.clean_quit, False, ServerCore.EXITING_CODE)
+
+    def _process_shutdown_server(self, proto, packet):
+        log.info("Shutting down in response to request")
+        self._disconnect_all("server shutdown")
         self.timeout_add(1000, self.clean_quit)
 
     def force_disconnect(self, proto):
@@ -558,6 +567,7 @@ class ServerBase(ServerCore):
              "notify-startup-complete"      : True,
              "suspend-resume"               : True,
              "encoding.generic"             : True,
+             "exit_server"                  : True,
              "server_type"                  : "base",
              })
         add_version_info(capabilities)

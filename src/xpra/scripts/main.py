@@ -80,6 +80,7 @@ def parse_cmdline(cmdline):
         server_modes.append("upgrade")
         command_options = ["\t%prog start DISPLAY\n",
                            "\t%prog stop [DISPLAY]\n",
+                           "\t%prog exit [DISPLAY]\n",
                            "\t%prog list\n",
                            "\t%prog upgrade DISPLAY\n",
                            ] + command_options
@@ -469,9 +470,9 @@ def run_mode(script_file, parser, options, args, mode):
             return run_server(parser, options, mode, script_file, args)
         elif mode in ("attach", "detach", "screenshot", "version", "info"):
             return run_client(parser, options, args, mode)
-        elif mode == "stop" and (supports_server or supports_shadow):
+        elif mode in ("stop", "exit") and (supports_server or supports_shadow):
             nox()
-            return run_stop(parser, options, args)
+            return run_stopexit(mode, parser, options, args)
         elif mode == "list" and (supports_server or supports_shadow):
             return run_list(parser, options, args)
         elif mode in ("_proxy", "_proxy_start") and (supports_server or supports_shadow):
@@ -877,9 +878,8 @@ def run_proxy(parser, opts, script_file, args, start_server=False):
     app.run()
     return  0
 
-def run_stop(parser, opts, extra_args):
+def run_stopexit(mode, parser, opts, extra_args):
     assert "gtk" not in sys.modules
-    from xpra.client.gobject_client_base import StopXpraClient
 
     def show_final_state(display):
         sockdir = DotXpra(opts.socket_dir)
@@ -904,7 +904,14 @@ def run_stop(parser, opts, extra_args):
     conn = connect_or_fail(display_desc)
     e = 1
     try:
-        app = StopXpraClient(conn, opts)
+        if mode=="stop":
+            from xpra.client.gobject_client_base import StopXpraClient
+            app = StopXpraClient(conn, opts)
+        elif mode=="exit":
+            from xpra.client.gobject_client_base import ExitXpraClient
+            app = ExitXpraClient(conn, opts)
+        else:
+            raise Exception("invalid mode: %s" % mode)
         e = app.run()
     finally:
         app.cleanup()

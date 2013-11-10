@@ -104,6 +104,10 @@ xpra \- viewer for remote, persistent X applications
 \fItcp:[USER@]HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
+\fBxpra\fP \fBexit\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
+\fItcp:[USER@]HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
+.HP
 \fBxpra\fP \fBdetach\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
@@ -214,8 +218,8 @@ forwarding enabled will also use a display number; ssh generally picks
 numbers near ten (10, 11, 12, ...).
 .PP
 When specifying an xpra server to a client program like \fBxpra
-attach\fP, \fBxpra detach\fP, \fBxpra stop\fP, \fBxpra version\fP,
-\fBxpra info\fP, \fBxpra list\fP or \fBxpra screenshot\fP then you
+attach\fP, \fBxpra detach\fP, \fBxpra stop\fP, \fBxpra exit\fP, 
+\fBxpra version\fP, \fBxpra info\fP, \fBxpra list\fP or \fBxpra screenshot\fP then you
 can use a display of the form
 \fB:\fP\fIDISPLAY\fP to refer to a server on the local host, or one of
 the form \fBssh:\fP\fI[USER@]HOST\fP\fB:\fP\fIDISPLAY\fP to refer to a server
@@ -254,8 +258,12 @@ Queries the server for version, status and statistics.
 Note: older servers may not support this feature.
 .SS xpra stop
 This command attaches to a running xpra server, and requests that it
-terminate immediately.  This generally causes any applications using
+terminates immediately.  This generally causes any applications using
 that server to terminate as well.
+.SS xpra exit
+This command attaches to a running xpra server, and requests that it
+terminates immediately.  Unlike \fBxpra stop\fP, the Xvfb process and
+its X11 clients (if any) will be left running.
 .SS xpra list
 This command finds all xpra servers that have been started by the
 current user on the current machine, and lists them.
