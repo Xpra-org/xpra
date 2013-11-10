@@ -321,7 +321,7 @@ class ProxyProcess(Process):
         return d
 
     def filter_client_caps(self, caps):
-        fc = self.filter_caps(caps, ("cipher", "digest", "mmap", "aliases", "compression", "lz4"))
+        fc = self.filter_caps(caps, ("cipher", "digest", "aliases", "compression", "lz4"))
         #update with options provided via config if any:
         fc.update(self.session_options)
         return fc
@@ -430,8 +430,9 @@ class ProxyProcess(Process):
             #ensure we don't try to re-compress the pixel data in the network layer:
             #(re-add the "compressed" marker that gets lost when we re-assemble packets)
             coding = packet[6]
-            data = packet[7]
-            packet[7] = Compressed("%s pixels" % coding, data)
+            if coding!="mmap":
+                data = packet[7]
+                packet[7] = Compressed("%s pixels" % coding, data)
         elif packet_type=="cursor":
             #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
             #or:
