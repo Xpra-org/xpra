@@ -1152,7 +1152,7 @@ def get_runtime_factor():
     fm_pct = 100
     if total_memory>0:
         fm_pct = int(100.0*free_memory/total_memory)
-    if len(context_failures_history)==0 and cc<8 fm_pct>=25:
+    if len(context_failures_history)==0 and cc<8 and fm_pct>=25:
         #no problems!
         debug("nvenc.get_runtime_factor()=%s", 1.0)
         return 1.0
