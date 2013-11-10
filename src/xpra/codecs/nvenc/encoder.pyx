@@ -1257,24 +1257,32 @@ cdef raiseNVENC(NVENCSTATUS ret, msg=""):
 
 
 #cache the cubin files for each device_id:
-BGRA2NV12_functions = {}
-def get_BGRA2NV12(device_id):
+KERNEL_cubins = {}
+def get_CUDA_kernel(device_id, kernel_name, kernel_source):
     start = time.time()
-    global BGRA2NV12_functions
+    global KERNEL_cubins
     from pycuda.compiler import compile
     from pycuda import driver
-    cubin = BGRA2NV12_functions.get(device_id)
+    cubin = KERNEL_cubins.get((device_id, kernel_name))
     if cubin is None:
-        from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
-        debug("compiling for device %s: BGRA2NV12=%s", device_id, BGRA2NV12_kernel)
-        cubin = compile(BGRA2NV12_kernel)
-        BGRA2NV12_functions[device_id] = cubin
+        debug("compiling for device %s: %s=%s", device_id, kernel_name, kernel_source)
+        cubin = compile(kernel_source)
+        KERNEL_cubins[(device_id, kernel_name)] = cubin
     #now load from cubin:
     mod = driver.module_from_buffer(cubin)
-    BGRA2NV12_function = mod.get_function("BGRA2NV12")
+    kernel_function = mod.get_function(kernel_name)
     end = time.time()
-    debug("compilation took %.1fms", 1000.0*(end-start))
-    return BGRA2NV12_function
+    debug("compilation of %s took %.1fms", kernel_name, 1000.0*(end-start))
+    return kernel_name, kernel_function
+
+def get_BGRA2YUV444P(device_id):
+    from xpra.codecs.nvenc.CUDA_rgb2yuv444p import BGRA2YUV444P_kernel
+    return get_CUDA_kernel(device_id, "BGRA2YUV444P", BGRA2YUV444P_kernel)
+
+def get_BGRA2NV12(device_id):
+    from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
+    return get_CUDA_kernel(device_id, "BGRA2NV12", BGRA2NV12_kernel)
+
 
 API_V2_WARNING = False
 
@@ -1310,6 +1318,7 @@ cdef class Encoder:
     cdef NV_ENC_BUFFER_FORMAT bufferFmt
     cdef object codec_name
     cdef object preset_name
+    cdef object pixel_format
     #statistics, etc:
     cdef double time
     cdef int frames
@@ -1362,6 +1371,7 @@ cdef class Encoder:
         self.frames = 0
         self.cuda_device = None
         self.cuda_context = None
+        self.pixel_format = ""
         start = time.time()
 
         self.device_id = options.get("cuda_device", DEFAULT_CUDA_DEVICE_ID)
@@ -1389,16 +1399,22 @@ cdef class Encoder:
         d = self.cuda_device
         da = driver.device_attribute
         try:
-            #compile/get kernel - hardcoded for NV12:
-            self.kernel = get_BGRA2NV12(self.device_id)
-            self.kernel_name = "BGRA2NV12"
-            self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
+            if self.quality<50:
+                self.kernel_name, self.kernel = get_BGRA2NV12(self.device_id)
+                self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
+                self.pixel_format = "NV12"
+                cuda_height = self.encoder_height*3/2
+            else:
+                self.kernel_name, self.kernel = get_BGRA2YUV444P(self.device_id)
+                self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_PL
+                self.pixel_format = "YUV444P"
+                cuda_height = self.encoder_height*3
 
             #allocate CUDA input buffer (on device) 32-bit RGB:
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(self.encoder_width*4, self.encoder_height, 16)
             debug("CUDA Input Buffer=%s, pitch=%s", hex(int(self.cudaInputBuffer)), self.inputPitch)
             #allocate CUDA output buffer (on device):
-            self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3/2, 16)
+            self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, cuda_height, 16)
             debug("CUDA Output Buffer=%s, pitch=%s", hex(int(self.cudaOutputBuffer)), self.outputPitch)
             #allocate input buffer on host:
             self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.encoder_height, dtype=numpy.byte)
@@ -1491,16 +1507,21 @@ cdef class Encoder:
         info = {"width"     : self.width,
                 "height"    : self.height,
                 "frames"    : self.frames,
-                "device"    : device_info(self.cuda_device),
                 "codec"     : self.codec_name,
-                "encoder_width" : self.encoder_width,
-                "encoder_height" : self.encoder_height,
-                "src_format": self.src_format,
+                "encoder_width"     : self.encoder_width,
+                "encoder_height"    : self.encoder_height,
                 "version"   : get_version()}
+        if self.cuda_device:
+            info["device"] = device_info(self.cuda_device)
+        if self.src_format:
+            info["src_format"] = self.src_format
+        if self.pixel_format:
+            info["pixel_format"] = self.pixel_format
         if self.bytes_in>0 and self.bytes_out>0:
-            info["bytes_in"] = self.bytes_in
-            info["bytes_out"] = self.bytes_out
-            info["ratio_pct"] = int(100.0 * self.bytes_out / self.bytes_in)
+            info.update({
+                "bytes_in"  : self.bytes_in,
+                "bytes_out" : self.bytes_out,
+                "ratio_pct" : int(100.0 * self.bytes_out / self.bytes_in)})
         if self.preset_name:
             info["preset"] = self.preset_name
         if self.frames>0 and self.time>0:
@@ -1510,7 +1531,7 @@ cdef class Encoder:
         return info
 
     def __str__(self):
-        return "nvenc(%s - %sx%s)" % (self.src_format, self.width, self.height)
+        return "nvenc(%s/%s - %sx%s)" % (self.src_format, self.pixel_format, self.width, self.height)
 
     def is_closed(self):
         return self.context==NULL
@@ -1635,12 +1656,19 @@ cdef class Encoder:
 
         #FIXME: find better values and validate against max_block/max_grid:
         blockw, blockh = 16, 16
-        #divide each dimension by 2 since we process 4 pixels at a time:
-        gridw = max(1, w/blockw/2)
+        if self.pixel_format=="NV12":
+            #(these values are derived from the kernel code - which we should know nothing about here..)
+            #divide each dimension by 2 since we process 4 pixels at a time:
+            dx, dy = 2, 2
+        else:
+            #YUV444P does one pixel at a time:
+            dx, dy = 1, 1
+        gridw = max(1, w/blockw/dx)
         if gridw*2*blockw<w:
             gridw += 1
-        gridh = max(1, h/blockh/2)
-        if gridh*2*blockh<h:
+        gridh = max(1, h/blockh/dy)
+        #if dy made us round down, add one:
+        if gridh*dy*blockh<h:
             gridh += 1
         debug("compress_image(..) calling CUDA CSC kernel %s", self.kernel_name)
         self.kernel(self.cudaInputBuffer, numpy.int32(stride),      #numpy.int32(self.inputPitch),
