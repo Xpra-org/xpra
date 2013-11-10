@@ -1407,12 +1407,14 @@ cdef class Encoder:
         d = self.cuda_device
         da = driver.device_attribute
         try:
-            if self.quality<50:
+            if True:
                 self.kernel_name, self.kernel = get_BGRA2NV12(self.device_id)
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
                 self.pixel_format = "NV12"
                 cuda_height = self.encoder_height*3/2
             else:
+                #FIXME: YUV444P doesn't work and I don't know why
+                #No idea what "separateColourPlaneFlag" is meant to do either
                 self.kernel_name, self.kernel = get_BGRA2YUV444P(self.device_id)
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_PL
                 self.pixel_format = "YUV444P"
@@ -1478,6 +1480,8 @@ cdef class Encoder:
             if presetConfig!=NULL:
                 presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
                 presetConfig.presetCfg.encodeCodecConfig.h264Config.idrPeriod = NVENC_INFINITE_GOPLENGTH
+                #needed for YUV444P?
+                #presetConfig.presetCfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1
                 params.encodeConfig = &presetConfig.presetCfg
             else:
                 self.preset_name = None
