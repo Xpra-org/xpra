@@ -53,13 +53,6 @@ cdef extern from "libswscale/swscale.h":
                   uint8_t *const dst[], const int dstStride[]) nogil
 
 
-def get_type():
-    return "swscale"
-
-def get_version():
-    return get_swscale_version()
-
-
 cdef class CSCPixelFormat:
     cdef AVPixelFormat av_enum
     cdef char* av_enum_name
@@ -162,6 +155,16 @@ def get_swscale_flags_strs(int flags):
             strs.append(flag)
     return strs
 
+
+def init_module():
+    #nothing to do!
+    pass
+
+def get_type():
+    return "swscale"
+
+def get_version():
+    return get_swscale_version()
 
 def get_input_colorspaces():
     return COLORSPACES

@@ -18,8 +18,19 @@ import time
 assert bytearray
 import pycuda                               #@UnresolvedImport
 from pycuda import driver                   #@UnresolvedImport
-from pycuda.compiler import SourceModule    #@UnresolvedImport
+from pycuda.compiler import compile         #@UnresolvedImport
 driver.init()
+
+
+DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "0"))
+COLORSPACES_MAP = {
+                   "BGRA" : ("YUV420P", "YUV422P", "YUV444P"),
+                   "BGRX" : ("YUV420P", "YUV422P", "YUV444P"),
+                   "RGBA" : ("YUV420P", "YUV422P", "YUV444P"),
+                   "RGBX" : ("YUV420P", "YUV422P", "YUV444P"),
+                   }
+KERNELS_MAP = {}
+
 
 def log_sys_info():
     log.info("PyCUDA version=%s", ".".join([str(x) for x in driver.get_version()]))
@@ -28,16 +39,41 @@ def log_sys_info():
 def device_info(d):
     return "%s @ %s" % (d.name(), d.pci_bus_id())
 
-DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "0"))
+def roundup(n, m):
+    return (n + m - 1) & ~(m - 1)
+
+
+#cache pre-compiled kernel cubins per device:
+KERNEL_cubins = {}
+def get_CUDA_kernel(device_id, src_format, dst_format):
+    start = time.time()
+    k = KERNELS_MAP.get((src_format, dst_format))
+    assert k is not None, "no kernel found for %s to %s" % (src_format, dst_format)
+    function_name, ksrc = k
+    global KERNEL_cubins
+    cubin = KERNEL_cubins.get((device_id, function_name))
+    if cubin is None:
+        debug("compiling for device %s: %s=%s", device_id, function_name, ksrc)
+        cubin = compile(ksrc)
+        KERNEL_cubins[(device_id, function_name)] = cubin
+    #now load from cubin:
+    mod = driver.module_from_buffer(cubin)
+    CUDA_function = mod.get_function(function_name)
+    end = time.time()
+    debug("compilation of %s took %.1fms", function_name, 1000.0*(end-start))
+    return function_name, CUDA_function
+
 
 selected_device = None
+selected_device_id = None
 def select_device():
-    global selected_device
+    global selected_device, selected_device_id
     if selected_device is not None:
-        return selected_device
+        return selected_device_id, selected_device
     ngpus = driver.Device.count()
     log.info("PyCUDA found %s device(s):", ngpus)
     device = None
+    device_id = -1
     for i in range(ngpus):
         d = driver.Device(i)
         host_mem = d.get_attribute(driver.device_attribute.CAN_MAP_HOST_MEMORY)
@@ -50,9 +86,11 @@ def select_device():
         #debug("compute_capability=%s, attributes=%s", d.compute_capability(), attr)
         if host_mem and (device is None or i==DEFAULT_CUDA_DEVICE_ID):
             device = d
+            device_id = i
     selected_device = device
-    return selected_device
-assert select_device() is not None, "no valid CUDA devices found"
+    selected_device_id = device_id
+    assert selected_device is not None, "no valid CUDA devices found"
+    return selected_device_id, selected_device
 
 context = None
 context_wrapper = None
@@ -70,38 +108,32 @@ class CudaContextWrapper(object):
             self.context.detach()
             self.context = None
 
-def init_context():
+
+def init_module():
     global context, context_wrapper
     if context_wrapper is not None:
         return
     log_sys_info()
-    device = select_device()
+    device_id, device = select_device()
     context = device.make_context(flags=driver.ctx_flags.SCHED_YIELD | driver.ctx_flags.MAP_HOST)
     debug("testing with context=%s", context)
     debug("api version=%s", context.get_api_version())
     free, total = driver.mem_get_info()
     debug("using device %s",  device_info(device))
     debug("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
-    #context.pop()
     context_wrapper = CudaContextWrapper(context)
+
+    #generate kernel sources:
+    for rgb_format, yuv_formats in COLORSPACES_MAP.items():
+        m = gen_rgb_to_yuv_kernels(rgb_format, yuv_formats)
+        KERNELS_MAP.update(m)
+    _kernel_names_ = sorted(set([x[0] for x in KERNELS_MAP.values()]))
+    log.info("%s csc_nvcuda kernels: %s", len(_kernel_names_), ", ".join(_kernel_names_))
+
+    #now, pre-compile the kernels:
+    for src_format, dst_format in KERNELS_MAP.keys():
+        get_CUDA_kernel(device_id, src_format, dst_format)
     context.pop()
-
-def roundup(n, m):
-    return (n + m - 1) & ~(m - 1)
-
-
-COLORSPACES_MAP = {
-                   "BGRA" : ("YUV420P", "YUV422P", "YUV444P"),
-                   "BGRX" : ("YUV420P", "YUV422P", "YUV444P"),
-                   "RGBA" : ("YUV420P", "YUV422P", "YUV444P"),
-                   "RGBX" : ("YUV420P", "YUV422P", "YUV444P"),
-                   }
-KERNELS_MAP = {}
-for rgb_format, yuv_formats in COLORSPACES_MAP.items():
-    m = gen_rgb_to_yuv_kernels(rgb_format, yuv_formats)
-    KERNELS_MAP.update(m)
-_kernel_names_ = sorted(set([x[0] for x in KERNELS_MAP.values()]))
-log.info("%s csc_nvcuda kernels: %s", len(_kernel_names_), ", ".join(_kernel_names_))
 
 def get_type():
     return "nvcuda"
@@ -135,6 +167,7 @@ class ColorspaceConverter(object):
         self.dst_width = 0
         self.dst_height = 0
         self.dst_format = ""
+        self.device_id = 0
         self.time = 0
         self.frames = 0
         self.cuda_device = None
@@ -156,25 +189,20 @@ class ColorspaceConverter(object):
         self.dst_format = dst_format
         assert self.src_width==self.dst_width and self.src_height==self.dst_height, "scaling is not supported! (%sx%s to %sx%s)" % (self.src_width, self.src_height, self.dst_width, self.dst_height)
 
+        self.device_id = DEFAULT_CUDA_DEVICE_ID
         self.init_cuda(0)
 
-    def init_cuda(self, device_id):
-        debug("init_cuda(%s)", device_id)
-        self.cuda_device = driver.Device(DEFAULT_CUDA_DEVICE_ID)
+    def init_cuda(self):
+        debug("init_cuda() device_id=%s", self.device_id)
+        self.cuda_device = driver.Device(self.device_id)
         self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
         #use alias to make code easier to read:
         d = self.cuda_device
         da = driver.device_attribute
         try:
-            debug("init_cuda(%s) cuda_device=%s, cuda_context=%s, thread=%s", device_id, self.cuda_device, self.cuda_context, threading.current_thread())
+            debug("init_cuda() cuda_device=%s, cuda_context=%s, thread=%s", self.cuda_device, self.cuda_context, threading.current_thread())
             #compile/get kernel:
-            key = self.src_format, self.dst_format
-            k = KERNELS_MAP.get(key)
-            assert k is not None, "kernel not found for %s" % str(key)
-            self.kernel_function_name, ksrc = k
-            debug("init_cuda(%s) compiling kernel %s: %s", device_id, self.kernel_function_name, ksrc)
-            mod = SourceModule(ksrc)
-            self.kernel_function = mod.get_function(self.kernel_function_name)
+            self.kernel_function_name, self.kernel_function = self.get_CUDA_kernel(self.device_id, self.src_format, self.dst_format)
 
             self.max_block_sizes = d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z)
             self.max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z)

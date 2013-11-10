@@ -25,12 +25,20 @@ opencl_platforms = pyopencl.get_platforms()
 if len(opencl_platforms)==0:
     raise ImportError("no OpenCL platforms found!")
 
+def roundup(n, m):
+    return (n + m - 1) & ~(m - 1)
+
+def dimdiv(dim, div):
+    #when we divide a dimensions by the subsampling
+    #we want to round up so as to include the last
+    #pixel when we hit odd dimensions
+    return roundup(dim/div, div)
+
 def device_type(d):
     try:
         return pyopencl.device_type.to_string(d.type)
     except:
         return d.type
-
 
 def device_info(d):
     dtype = device_type(d)
@@ -43,7 +51,6 @@ def platform_info(platform):
 def is_supported(platform_name):
     #FreeOCL and pocl do not work:
     return not platform_name.startswith("FreeOCL") and not platform_name.startswith("Portable Computing Language")
-
 
 def log_device_info(device):
     if not device:
@@ -76,7 +83,7 @@ def log_version_info():
 selected_device = None
 selected_platform = None
 context = None
-def init_context():
+def select_device():
     global context, selected_device,selected_platform
     if context is not None:
         return
@@ -363,7 +370,7 @@ def build_kernels():
     global program
     if program is not None:
         return
-    init_context()
+    select_device()
     NAMES_TO_KERNELS = gen_kernels()
     with warnings.catch_warnings(record=True) as w:
         def dump_warnings(logfn):
@@ -385,19 +392,12 @@ def build_kernels():
             raise ImportError("cannot build the OpenCL program: %s" % e)
 
 
-def roundup(n, m):
-    return (n + m - 1) & ~(m - 1)
-
-def dimdiv(dim, div):
-    #when we divide a dimensions by the subsampling
-    #we want to round up so as to include the last
-    #pixel when we hit odd dimensions
-    return roundup(dim/div, div)
-
-
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
 
+
+def init_module():
+    build_kernels()
 
 def get_type():
     return "opencl"

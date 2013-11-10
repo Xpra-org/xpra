@@ -115,6 +115,12 @@ class VideoHelper(object):
         debug("init_csc_option(%s) module=%s", csc_name, csc_module)
         if csc_module is None:
             return
+        csc_type = csc_module.get_type()
+        try:
+            csc_module.init_module()
+        except Exception, e:
+            log.warn("cannot use %s module %s: %s", csc_type, csc_module, e, exc_info=True)
+            return
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
             csc_specs = self._csc_encoder_specs.setdefault(in_csc, [])
