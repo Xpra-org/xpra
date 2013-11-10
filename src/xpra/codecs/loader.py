@@ -133,7 +133,9 @@ ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"
 
 ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale", "csc_opencl", "csc_nvcuda", "dec_avcodec", "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"
 
-PREFERED_ENCODING_ORDER = ["h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "jpeg"]
+#note: this is just for defining the order of encodings,
+#so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
+PREFERED_ENCODING_ORDER = ["h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg"]
 
 ENCODINGS_TO_NAME = {
       "h264"    : "H.264",
