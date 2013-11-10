@@ -8,6 +8,10 @@ import time
 import os
 import numpy
 
+import pycuda
+from pycuda import driver
+from pycuda.compiler import compile
+
 from xpra.util import AtomicInteger
 from xpra.deque import maxdeque
 from xpra.codecs.codec_constants import codec_spec, TransientCodecException
@@ -1139,10 +1143,16 @@ HEIGHT_MASK = 0xFFFE
 context_counter = AtomicInteger()
 context_failures_history = maxdeque(100)
 
+free_memory = 0
+total_memory = 0
+
 def get_runtime_factor():
-    global context_failures_history, context_counter
+    global context_failures_history, context_counter, free_memory, total_memory
     cc = context_counter.get()
-    if len(context_failures_history)==0 and cc<8:
+    fm_pct = 100
+    if total_memory>0:
+        fm_pct = int(100.0*free_memory/total_memory)
+    if len(context_failures_history)==0 and cc<8 fm_pct>=25:
         #no problems!
         debug("nvenc.get_runtime_factor()=%s", 1.0)
         return 1.0
@@ -1158,6 +1168,9 @@ def get_runtime_factor():
             #the last recent error had as many contexts available
             #so this is unlikely to work, lower more:
             f /= 2.0
+    #if we are low on free memory, reduce further:
+    if fm_pct<30:
+        f *= fm_pct/30.0
     debug("nvenc.get_runtime_factor()=%s", f)
     return f
 
@@ -1194,8 +1207,6 @@ def device_info(d):
 cdef cuda_init_devices():
     start = time.time()
     log.info("CUDA initialization (this may take a few seconds)")
-    import pycuda
-    from pycuda import driver
     driver.init()
     ngpus = driver.Device.count()
     debug("PyCUDA found %s devices:", ngpus)
@@ -1238,7 +1249,6 @@ def cuda_check():
         raise ImportError("no CUDA devices found!")
     assert DEFAULT_CUDA_DEVICE_ID in cuda_devices.keys(), "specified CUDA device ID %s not found in %s" % (DEFAULT_CUDA_DEVICE_ID, devices)
     #create context for testing:
-    from pycuda import driver
     d = driver.Device(DEFAULT_CUDA_DEVICE_ID)
     context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
     debug("cuda_check created test context, api_version=%s", context.get_api_version())
@@ -1261,8 +1271,6 @@ KERNEL_cubins = {}
 def get_CUDA_kernel(device_id, kernel_name, kernel_source):
     start = time.time()
     global KERNEL_cubins
-    from pycuda.compiler import compile
-    from pycuda import driver
     cubin = KERNEL_cubins.get((device_id, kernel_name))
     if cubin is None:
         debug("compiling for device %s: %s=%s", device_id, kernel_name, kernel_source)
@@ -1298,6 +1306,7 @@ cdef class Encoder:
     #PyCUDA:
     cdef int device_id
     cdef object driver
+    cdef object cuda_device_info
     cdef object cuda_device
     cdef object cuda_context
     cdef object kernel
@@ -1383,12 +1392,11 @@ cdef class Encoder:
     def init_cuda(self):
         assert self.device_id in get_cuda_devices().keys(), "invalid device_id '%s' (available: %s)" % (self.device_id, cuda_devices)
         global context_counter, context_failures_history
-        from pycuda import driver
-        self.driver = driver
         debug("init_cuda() device_id=%s", self.device_id)
         try:
             self.cuda_device = driver.Device(DEFAULT_CUDA_DEVICE_ID)
-            debug("init_cuda() cuda_device=%s", self.cuda_device)
+            self.cuda_device_info = device_info(self.cuda_device)
+            debug("init_cuda() cuda_device=%s (%s)", self.cuda_device, self.cuda_device_info)
             self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
             debug("init_cuda() cuda_context=%s", self.cuda_context)
         except driver.MemoryError, e:
@@ -1511,8 +1519,8 @@ cdef class Encoder:
                 "encoder_width"     : self.encoder_width,
                 "encoder_height"    : self.encoder_height,
                 "version"   : get_version()}
-        if self.cuda_device:
-            info["device"] = device_info(self.cuda_device)
+        if self.cuda_device_info:
+            info["device"] = self.cuda_device_info
         if self.src_format:
             info["src_format"] = self.src_format
         if self.pixel_format:
@@ -1528,6 +1536,10 @@ cdef class Encoder:
             pps = float(self.width) * float(self.height) * float(self.frames) / self.time
             info["total_time_ms"] = int(self.time*1000.0)
             info["pixels_per_second"] = int(pps)
+        if total_memory>0:
+            info["free_memory"] = int(free_memory)
+            info["total_memory"] = int(total_memory)
+            info["free_memory_pct"] = int(100.0*free_memory/total_memory)
         return info
 
     def __str__(self):
@@ -1651,7 +1663,7 @@ cdef class Encoder:
         debug("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), input_size)
 
         #copy input buffer to CUDA buffer:
-        self.driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
+        driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
         debug("compress_image(..) input buffer copied to device")
 
         #FIXME: find better values and validate against max_block/max_grid:
@@ -1738,6 +1750,8 @@ cdef class Encoder:
 
         end = time.time()
         debug("compress_image(..) download took %.1f ms", (end-encode_end)*1000.0)
+        global free_memory, total_memory
+        free_memory, total_memory = driver.mem_get_info()
 
         self.time += end-start
         debug("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
