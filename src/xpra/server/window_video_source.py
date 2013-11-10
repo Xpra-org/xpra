@@ -52,6 +52,7 @@ class WindowVideoSource(WindowSource):
         self.uses_swscale = self.encoding_options.get("uses_swscale", True)
         self.uses_csc_atoms = self.encoding_options.get("csc_atoms", False)
         self.video_scaling = self.encoding_options.get("video_scaling", False)
+        self.video_reinit = self.encoding_options.get("video_reinit", False)
         if not self.encoding_client_options:
             #old clients can only use 420P:
             def_csc_modes = ("YUV420P")
@@ -416,6 +417,13 @@ class WindowVideoSource(WindowSource):
             return -1
         if not encoder_spec.can_handle(width, height):
             return -1
+        if self._video_encoder is not None and not self.video_reinit \
+            and self._video_encoder.get_encoding()==encoder_spec.encoding \
+            and self._video_encoder.get_type()!=encoder_spec.codec_type:
+            #client does not support video decoder reinit,
+            #so we cannot swap for another encoder of the same type
+            #(which would generate a new stream)
+            return -1
         def clamp(v):
             return max(0, min(100, v))
         qscore = clamp(self.get_quality_score(csc_format, csc_spec, encoder_spec))
@@ -448,7 +456,7 @@ class WindowVideoSource(WindowSource):
             enc_width = width & width_mask
             enc_height = height & height_mask
         ee_score = 100
-        if self._video_encoder is None or type(self._video_encoder)!=encoder_spec.codec_class or \
+        if self._video_encoder is None or self._video_encoder.get_type()!=encoder_spec.codec_type or \
            self._video_encoder.get_src_format()!=csc_format or \
            self._video_encoder.get_width()!=enc_width or self._video_encoder.get_height()!=enc_height:
             #account for new encoder setup cost:
