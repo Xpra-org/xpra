@@ -74,7 +74,7 @@ class WindowVideoSource(WindowSource):
         self.max_h = 16384
         self.width_mask = 0xFFFF
         self.height_mask = 0xFFFF
-        self.actual_scaling = None
+        self.actual_scaling = (1, 1)
 
         self._csc_encoder = None
         self._video_encoder = None
@@ -91,7 +91,7 @@ class WindowVideoSource(WindowSource):
         info[prefix+"client.uses_swscale"] = self.uses_swscale
         info[prefix+"client.uses_csc_atoms"] = self.uses_csc_atoms
         info[prefix+"client.supports_scaling"] = self.video_scaling
-        info[prefix+"scaling"] = self.actual_scaling or (1, 1)
+        info[prefix+"scaling"] = self.actual_scaling
         if self._csc_encoder:
             info[prefix+"csc"+suffix] = self._csc_encoder.get_type()
             ci = self._csc_encoder.get_info()
@@ -309,43 +309,44 @@ class WindowVideoSource(WindowSource):
         """
         encoder_specs = WindowVideoSource._video_helper.get_encoder_specs(encoding)
         assert len(encoder_specs)>0, "no encoders found for '%s'" % encoding
+        scaling = self.calculate_scaling(width, height)
         scores = []
         debug("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self.get_min_speed(), int(self.get_current_quality()), self.get_min_quality())
-        def add_scores(info, csc_spec, enc_in_format):
+        def add_scores(info, csc_spec, enc_in_format, encoder_scaling):
             colorspace_specs = encoder_specs.get(enc_in_format)
-            debug("add_scores(%s, %s, %s)", info, csc_spec, enc_in_format)
-            #first, add the direct matches (no csc needed) - if any:
-            if colorspace_specs:
-                #debug("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
-                for encoder_spec in colorspace_specs:
-                    if bool(ENCODER_TYPE) and encoder_spec.codec_type!=ENCODER_TYPE:
-                        debug("add_scores: ignoring %s: %s", encoder_spec.codec_type, encoder_spec)
-                        continue
-                    if bool(CSC_TYPE) and (csc_spec and csc_spec.codec_type!=CSC_TYPE):
-                        debug("add_scores: ignoring %s: %s", csc_spec.codec_type, encoder_spec)
-                        continue
-                    score = self.get_score(enc_in_format,
-                                           csc_spec, encoder_spec,
-                                           width, height)
-                    debug("add_scores: score(%s)=%s", (enc_in_format, csc_spec, encoder_spec, width, height), score)
-                    if score>=0:
-                        item = score, csc_spec, enc_in_format, encoder_spec
-                        scores.append(item)
+            debug("add_scores(%s, %s, %s) colorspace_specs=%s", info, csc_spec, enc_in_format, colorspace_specs)
+            if not colorspace_specs:
+                return
+            #debug("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
+            for encoder_spec in colorspace_specs:
+                if bool(ENCODER_TYPE) and encoder_spec.codec_type!=ENCODER_TYPE:
+                    debug("add_scores: ignoring %s: %s", encoder_spec.codec_type, encoder_spec)
+                    continue
+                if bool(CSC_TYPE) and (csc_spec and csc_spec.codec_type!=CSC_TYPE):
+                    debug("add_scores: ignoring %s: %s", csc_spec.codec_type, encoder_spec)
+                    continue
+                if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
+                    continue
+                score = self.get_score(enc_in_format,
+                                       csc_spec, encoder_spec,
+                                       width, height, scaling)
+                debug("add_scores: score(%s)=%s", (enc_in_format, csc_spec, encoder_spec, width, height), score)
+                if score>=0:
+                    item = score, csc_spec, enc_in_format, encoder_spec
+                    scores.append(item)
         if src_format in self.csc_modes and (not FORCE_CSC or src_format==FORCE_CSC_MODE):
-            scaling = self.calculate_scaling(width, height)
-            #we can only use direct if not scaling
-            #as csc is the step that does the scaling (at present..)
-            if scaling == (1, 1):
-                add_scores("direct (no csc)", None, src_format)
+            add_scores("direct (no csc)", None, src_format, encoder_scaling=scaling)
         #now add those that require a csc step:
         csc_specs = WindowVideoSource._video_helper.get_csc_specs(src_format)
         if csc_specs:
             #debug("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
             #we have csc module(s) that can get us from pixel_format to out_csc:
             for out_csc, csc_spec in csc_specs:
+                if scaling!=(1,1) and not csc_spec.can_scale:
+                    continue
                 actual_csc = self.csc_equiv(out_csc)
                 if actual_csc in self.csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
-                    add_scores("via %s" % out_csc, csc_spec, out_csc)
+                    add_scores("via %s" % out_csc, csc_spec, out_csc, encoder_scaling=(1,1))
         s = sorted(scores, key=lambda x : -x[0])
         debug("get_video_pipeline_options%s scores=%s", (encoding, width, height, src_format), s)
         return s
@@ -400,7 +401,7 @@ class WindowVideoSource(WindowSource):
             sscore = (sscore + mss)/2.0
         return sscore
 
-    def get_score(self, csc_format, csc_spec, encoder_spec, width, height):
+    def get_score(self, csc_format, csc_spec, encoder_spec, width, height, scaling):
         """
             Given an optional csc step (csc_format and csc_spec), and
             and a required encoding step (encoder_spec and width/height),
@@ -447,7 +448,7 @@ class WindowVideoSource(WindowSource):
             else:
                 ecsc_score = 80
             runtime_score *= csc_spec.get_runtime_factor()
-            enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height)
+            enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, scaling)
         else:
             #not using csc at all!
             ecsc_score = 100
@@ -468,7 +469,7 @@ class WindowVideoSource(WindowSource):
                   width, height), qscore, sscore, er_score, runtime_score, score)
         return score
 
-    def get_encoder_dimensions(self, csc_spec, encoder_spec, width, height):
+    def get_encoder_dimensions(self, csc_spec, encoder_spec, width, height, scaling=(1,1)):
         """
             Given a csc and encoder specs and dimensions, we calculate
             the dimensions that we would use as output.
@@ -480,7 +481,7 @@ class WindowVideoSource(WindowSource):
             * the encoder may not support all dimensions
               (see width and height masks)
         """
-        v, u = self.calculate_scaling(width, height)
+        v, u = scaling
         enc_width = int(width * v / u) & encoder_spec.width_mask
         enc_height = int(height * v / u) & encoder_spec.height_mask
         if not encoder_spec.can_handle(enc_width, enc_height):
@@ -488,14 +489,14 @@ class WindowVideoSource(WindowSource):
         return enc_width, enc_height
 
     def calculate_scaling(self, width, height):
-        self.actual_scaling = self.scaling
+        actual_scaling = self.scaling
         if not SCALING or not self.video_scaling:
             #not supported by client or disabled by env:
-            self.actual_scaling = 1, 1
+            actual_scaling = 1, 1
         elif SCALING_HARDCODED:
-            self.actual_scaling = tuple(SCALING_HARDCODED)
-            debug("using hardcoded scaling: %s", self.actual_scaling)
-        elif self.actual_scaling is None:
+            actual_scaling = tuple(SCALING_HARDCODED)
+            debug("using hardcoded scaling: %s", actual_scaling)
+        elif actual_scaling is None:
             #no scaling window attribute defined, so use heuristics to enable:
             quality = self.get_current_quality()
             speed = self.get_current_speed()
@@ -504,23 +505,23 @@ class WindowVideoSource(WindowSource):
                 d = 1
                 while width/d>=4096 or height/d>=4096:
                     d += 1
-                self.actual_scaling = 1,d
+                actual_scaling = 1,d
             elif width*height>=1024*1024 and quality<30 and speed>90:
-                self.actual_scaling = 2,3
+                actual_scaling = 2,3
             elif self.maximized and quality<50 and speed>80:
-                self.actual_scaling = 2,3
+                actual_scaling = 2,3
             elif self.fullscreen and quality<60 and speed>70:
-                self.actual_scaling = 1,2
-        if self.actual_scaling is None:
-            self.actual_scaling = 1, 1
-        v, u = self.actual_scaling
+                actual_scaling = 1,2
+        if actual_scaling is None:
+            actual_scaling = 1, 1
+        v, u = actual_scaling
         if v/u>1.0:
             #never upscale before encoding!
-            self.actual_scaling = 1, 1
+            actual_scaling = 1, 1
         elif float(v)/float(u)<0.1:
             #don't downscale more than 10 times! (for each dimension - that's 100 times!)
-            self.actual_scaling = 1, 10
-        return self.actual_scaling
+            actual_scaling = 1, 10
+        return actual_scaling
 
 
     def check_pipeline(self, encoding, width, height, src_format):
@@ -601,6 +602,7 @@ class WindowVideoSource(WindowSource):
             until one succeeds.
         """
         start = time.time()
+        self.actual_scaling = self.calculate_scaling(width, height)
         debug("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
             try:
@@ -622,7 +624,7 @@ class WindowVideoSource(WindowSource):
                     max_h = min(max_h, csc_spec.max_h)
                     csc_width = width & self.width_mask
                     csc_height = height & self.height_mask
-                    enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height)
+                    enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, self.actual_scaling)
                     #csc speed is not very important compared to encoding speed,
                     #so make sure it never degrades quality
                     csc_speed = min(speed, 100-quality/2.0)
@@ -710,8 +712,9 @@ class WindowVideoSource(WindowSource):
                     #ugly hack: expose internal ffmpeg/libav constant
                     #for old versions without the "csc_atoms" feature:
                     client_options["csc_pixel_format"] = get_avutil_enum_from_colorspace(csc)
-                #tell the client about scaling:
-                if self._csc_encoder and (enc_width!=width or enc_height!=height):
+                #tell the client about scaling (the size of the encoded picture):
+                #(unless the video encoder has already done so):
+                if self._csc_encoder and ("scaled_size" not in client_options) and (enc_width!=width or enc_height!=height):
                     client_options["scaled_size"] = enc_width, enc_height
             debug("video_encode encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                                 encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
