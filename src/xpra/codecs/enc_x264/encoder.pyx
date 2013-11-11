@@ -189,7 +189,6 @@ def get_colorspaces():
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
-    #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     return codec_spec(Encoder, codec_type=get_type(), encoding=encoding, speed=0, setup_cost=50, width_mask=0xFFFE, height_mask=0xFFFE)
