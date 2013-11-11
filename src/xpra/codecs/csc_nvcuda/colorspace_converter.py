@@ -191,7 +191,7 @@ class ColorspaceConverter(object):
         assert self.src_width==self.dst_width and self.src_height==self.dst_height, "scaling is not supported! (%sx%s to %sx%s)" % (self.src_width, self.src_height, self.dst_width, self.dst_height)
 
         self.device_id = DEFAULT_CUDA_DEVICE_ID
-        self.init_cuda(0)
+        self.init_cuda()
 
     def init_cuda(self):
         self.cuda_device = driver.Device(self.device_id)
@@ -204,7 +204,7 @@ class ColorspaceConverter(object):
         try:
             debug("init_cuda() cuda_device=%s, cuda_context=%s, thread=%s", self.cuda_device, self.cuda_context, threading.current_thread())
             #compile/get kernel:
-            self.kernel_function_name, self.kernel_function = self.get_CUDA_kernel(self.device_id, self.src_format, self.dst_format)
+            self.kernel_function_name, self.kernel_function = get_CUDA_kernel(self.device_id, self.src_format, self.dst_format)
 
             self.max_block_sizes = d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z)
             self.max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z)
