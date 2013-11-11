@@ -34,9 +34,12 @@ USE_THREADING = os.environ.get("XPRA_USE_THREADING", "0")=="1"
 if USE_THREADING:
     #use threads
     from threading import Thread as Process     #@UnusedImport
+    MQueue = Queue
 else:
     #use processes:
     from multiprocessing import Process         #@Reimport
+    from multiprocessing import Queue as MQueue #@Reimport
+
 
 MAX_CONCURRENT_CONNECTIONS = 200
 
@@ -54,11 +57,15 @@ class ProxyServer(ServerCore):
         ServerCore.__init__(self)
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self.main_loop = None
+        #keep track of the proxy process instances
+        #the display they're on and the message queue we can
+        # use to communicate with them
         self.processes = {}
         self.idle_add = gobject.idle_add
         self.timeout_add = gobject.timeout_add
         self.source_remove = gobject.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
+        signal.signal(signal.SIGCHLD, self.sigchld)
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
@@ -76,12 +83,23 @@ class ProxyServer(ServerCore):
         self.main_loop = gobject.MainLoop()
         self.main_loop.run()
 
-    def do_quit(self):
+    def stop_all_proxies(self):
         processes = self.processes
         self.processes = {}
-        for process in processes.keys():
-            process.stop()
+        log("stop_all_proxies() will stop proxy processes: %s", processes)
+        for process, v in processes.items():
+            disp,mq = v
+            log("stop_all_proxies() stopping process %s for display %s", process, disp)
+            mq.put("stop")
+        log("stop_all_proxies() done")
+
+    def cleanup(self):
+        self.stop_all_proxies()
+        ServerCore.cleanup(self)
+
+    def do_quit(self):
         self.main_loop.quit()
+        log.info("Proxy Server process ended")
 
     def add_listen_socket(self, socktype, sock):
         sock.listen(5)
@@ -95,6 +113,9 @@ class ProxyServer(ServerCore):
             self.send_disconnect(protocol, "connection timeout")
 
     def hello_oked(self, proto, packet, c, auth_caps):
+        if c.boolget("stop_request"):
+            self.clean_quit()
+            return
         self.accept_client(proto, c)
         self.start_proxy(proto, c, auth_caps)
 
@@ -177,24 +198,33 @@ class ProxyServer(ServerCore):
                 client_conn.set_active(True)
 
                 assert uid!=0 and gid!=0
-                process = ProxyProcess(uid, gid, env_options, session_options, client_conn, client_state, cipher, encryption_key, server_conn, c, self.proxy_ended)
+                message_queue = MQueue()
+                process = ProxyProcess(uid, gid, env_options, session_options, client_conn, client_state, cipher, encryption_key, server_conn, c, message_queue)
                 debug("starting %s from pid=%s", process, os.getpid())
                 process.start()
                 debug("process started")
                 #FIXME: remove processes that have terminated
-                self.processes[process] = display
+                self.processes[process] = (display, message_queue)
             finally:
                 #now we can close our handle on the connection:
                 client_conn.close()
                 server_conn.close()
         make_daemon_thread(do_start_proxy, "start_proxy(%s)" % client_conn).start()
 
-    def proxy_ended(self, proxy_process):
-        debug("proxy_ended(%s)", proxy_process)
-        if proxy_process in self.processes:
-            del self.processes[proxy_process]
-        debug("processes: %s", self.processes)
 
+    def reap(self):
+        dead = []
+        for p in self.processes.keys():
+            live = p.is_alive()
+            if not live:
+                dead.append(p)
+        for p in dead:
+            del self.processes[p]
+
+    def sigchld(self, *args):
+        debug("sigchld(%s)", args)
+        self.reap()
+        debug("processes: %s", self.processes)
 
     def get_info(self, proto, *args):
         info = {"server.type" : "Python/GObject/proxy"}
@@ -205,26 +235,21 @@ class ProxyServer(ServerCore):
             uid, gid = sessions[:2]
             if uid==os.getuid() and gid==os.getgid():
                 info.update(ServerCore.get_info(self, proto))
+                self.reap()
                 i = 0
-                clean = []
-                for p,d in self.processes.items():
-                    live = p.is_alive()
-                    if not live:
-                        clean.append(p)
-                        continue
+                for p,v in self.processes.items():
+                    d,_ = v
                     info["proxy[%s].display" % i] = d
-                    info["proxy[%s].live" % i] = live
+                    info["proxy[%s].live" % i] = p.is_alive()
                     info["proxy[%s].pid" % i] = p.pid
                     i += 1
-                for p in clean:
-                    del self.processes[p]
                 info["proxies"] = len(self.processes)
         return info
 
 
 class ProxyProcess(Process):
 
-    def __init__(self, uid, gid, env_options, session_options, client_conn, client_state, cipher, encryption_key, server_conn, caps, exit_cb):
+    def __init__(self, uid, gid, env_options, session_options, client_conn, client_state, cipher, encryption_key, server_conn, caps, message_queue):
         Process.__init__(self, name=str(client_conn))
         self.uid = uid
         self.gid = gid
@@ -236,11 +261,20 @@ class ProxyProcess(Process):
         self.encryption_key = encryption_key
         self.server_conn = server_conn
         self.caps = caps
-        self.exit_cb = exit_cb
         debug("ProxyProcess%s", (uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, "{..}"))
         self.client_protocol = None
         self.server_protocol = None
         self.main_queue = None
+        self.message_queue = message_queue
+
+    def server_message_queue(self):
+        while True:
+            log.info("waiting for server message on %s", self.message_queue)
+            m = self.message_queue.get()
+            log.info("proxy server message: %s", m)
+            if m=="stop":
+                self.stop("proxy server request")
+                return
 
     def signal_quit(self, signum, frame):
         log.info("")
@@ -288,6 +322,8 @@ class ProxyProcess(Process):
             signal.signal(signal.SIGINT, self.signal_quit)
             debug("registered signal handler %s", self.signal_quit)
 
+        make_daemon_thread(self.server_message_queue, "server message queue").start()
+
         self.main_queue = Queue()
         #setup protocol wrappers:
         self.server_packets = Queue(PROXY_QUEUE_SIZE)
@@ -316,7 +352,8 @@ class ProxyProcess(Process):
             except KeyboardInterrupt, e:
                 self.stop(str(e))
         finally:
-            self.exit_cb(self)
+            debug("ProxyProcess.run() ending %s", os.getpid())
+
 
     def sanitize_session_options(self, options):
         d = {}
@@ -386,6 +423,7 @@ class ProxyProcess(Process):
 
     def stop(self, reason="proxy terminating", skip_proto=None):
         debug("stop(%s, %s)", reason, skip_proto)
+        self.main_queue.put(None)
         #empty the main queue:
         q = Queue()
         q.put(None)

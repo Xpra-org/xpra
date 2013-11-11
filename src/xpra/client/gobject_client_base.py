@@ -213,6 +213,13 @@ class ExitXpraClient(CommandConnectClient):
 class StopXpraClient(CommandConnectClient):
     """ stop a server """
 
+    def make_hello(self):
+        #used for telling the proxy server we want "stop"
+        #(as waiting for the hello back would be too late)
+        capabilities = CommandConnectClient.make_hello(self)
+        capabilities["stop_request"] = True
+        return capabilities
+
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
