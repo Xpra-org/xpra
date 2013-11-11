@@ -11,8 +11,12 @@ from threading import Lock
 from xpra.net.protocol import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException
 from xpra.codecs.video_helper import getVideoHelper
-from xpra.server.window_source import WindowSource, debug, log
+from xpra.server.window_source import WindowSource, log
 from xpra.server.background_worker import add_work_item
+from xpra.log import debug_if_env
+
+debug = debug_if_env(log, "XPRA_VIDEO_DEBUG")
+
 
 def envint(name, d):
     try:
@@ -160,7 +164,7 @@ class WindowVideoSource(WindowSource):
         self.video_scaling = properties.get("encoding.video_scaling", self.video_scaling)
         self.uses_swscale = properties.get("encoding.uses_swscale", self.uses_swscale)
         WindowSource.set_client_properties(self, properties)
-        log("set_client_properties(%s) csc_modes=%s, video_scaling=%s, uses_swscale=%s", properties, self.csc_modes, self.video_scaling, self.uses_swscale)
+        debug("set_client_properties(%s) csc_modes=%s, video_scaling=%s, uses_swscale=%s", properties, self.csc_modes, self.video_scaling, self.uses_swscale)
 
     def unmap(self):
         WindowSource.cancel_damage(self)
@@ -408,11 +412,6 @@ class WindowVideoSource(WindowSource):
             cost" will be lower for pipelines that share components with the
             current one.
         """
-        #first discard if we cannot handle this size:
-        if csc_spec and not csc_spec.can_handle(width, height):
-            return -1
-        if not encoder_spec.can_handle(width, height):
-            return -1
         if self._video_encoder is not None and not self.video_reinit \
             and self._video_encoder.get_encoding()==encoder_spec.encoding \
             and self._video_encoder.get_type()!=encoder_spec.codec_type:
@@ -485,8 +484,6 @@ class WindowVideoSource(WindowSource):
         v, u = scaling
         enc_width = int(width * v / u) & encoder_spec.width_mask
         enc_height = int(height * v / u) & encoder_spec.height_mask
-        if not encoder_spec.can_handle(enc_width, enc_height):
-            return width, height
         return enc_width, enc_height
 
     def calculate_scaling(self, width, height, max_w=4096, max_h=4096):

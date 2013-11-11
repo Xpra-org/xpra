@@ -277,8 +277,7 @@ class WindowBackingBase(object):
                 continue
             for spec in specs:
                 if spec.min_w>src_width or spec.min_w>dst_width or \
-                   spec.max_w<src_width or spec.max_w<dst_width or \
-                   spec.max_pixels<max(src_width*src_height, dst_width*dst_height):
+                   spec.max_w<src_width or spec.max_w<dst_width:
                     log("csc module %s cannot cope with dimensions %sx%s to %sx%s", spec.codec_class, src_width, src_height, dst_width, dst_height)
                     continue
                 if not spec.can_scale and (src_width!=dst_width or src_height!=dst_height):

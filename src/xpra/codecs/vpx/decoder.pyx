@@ -100,7 +100,6 @@ def get_colorspaces():
 
 def get_spec(colorspace):
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
-    #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
     #setup cost is reasonable (usually about 5ms)
     return codec_spec(Decoder, codec_type="vp8", setup_cost=40)

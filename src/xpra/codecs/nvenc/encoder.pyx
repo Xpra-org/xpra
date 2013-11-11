@@ -1177,7 +1177,7 @@ def get_runtime_factor():
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (format, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
-    #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
+    #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     cs = codec_spec(Encoder, codec_type=get_type(), encoding=encoding,
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
