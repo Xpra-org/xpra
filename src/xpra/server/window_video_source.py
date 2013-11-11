@@ -321,7 +321,7 @@ class WindowVideoSource(WindowSource):
                     if bool(ENCODER_TYPE) and encoder_spec.codec_type!=ENCODER_TYPE:
                         debug("add_scores: ignoring %s: %s", encoder_spec.codec_type, encoder_spec)
                         continue
-                    if bool(CSC_TYPE) and csc_spec.codec_type!=CSC_TYPE:
+                    if bool(CSC_TYPE) and (csc_spec and csc_spec.codec_type!=CSC_TYPE):
                         debug("add_scores: ignoring %s: %s", csc_spec.codec_type, encoder_spec)
                         continue
                     score = self.get_score(enc_in_format,
