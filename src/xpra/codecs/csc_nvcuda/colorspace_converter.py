@@ -171,6 +171,7 @@ class ColorspaceConverter(object):
         self.time = 0
         self.frames = 0
         self.cuda_device = None
+        self.cuda_device_info = ""
         self.cuda_context = None
         self.max_block_sizes = 0
         self.max_grid_sizes = 0
@@ -193,8 +194,9 @@ class ColorspaceConverter(object):
         self.init_cuda(0)
 
     def init_cuda(self):
-        debug("init_cuda() device_id=%s", self.device_id)
         self.cuda_device = driver.Device(self.device_id)
+        self.cuda_device_info = device_info(self.cuda_device)
+        debug("init_cuda() device_id=%s, device info: %s", self.device_id, self.cuda_device_info)
         self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
         #use alias to make code easier to read:
         d = self.cuda_device
@@ -225,7 +227,7 @@ class ColorspaceConverter(object):
                 "dst_width" : self.dst_width,
                 "dst_height": self.dst_height,
                 "dst_format": self.dst_format,
-                "device"    : device_info(self.cuda_device)}
+                "device"    : self.cuda_device_info}
         if self.frames>0 and self.time>0:
             pps = float(self.src_width) * float(self.src_height) * float(self.frames) / self.time
             info["total_time_ms"] = int(self.time*1000.0)
