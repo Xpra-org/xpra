@@ -1183,6 +1183,7 @@ def get_spec(encoding, colorspace):
                       #using a hardware encoder for something this small is silly:
                       min_w=32, min_h=32,
                       max_w=4096, max_h=4096,
+                      can_scale=True,
                       width_mask=WIDTH_MASK, height_mask=HEIGHT_MASK)
     cs.get_runtime_factor = get_runtime_factor
     return cs
@@ -1298,9 +1299,12 @@ API_V2_WARNING = False
 cdef class Encoder:
     cdef int width
     cdef int height
+    cdef int input_width
+    cdef int input_height
     cdef int encoder_width
     cdef int encoder_height
     cdef object src_format
+    cdef object scaling
     cdef int speed
     cdef int quality
     #PyCUDA:
@@ -1365,15 +1369,19 @@ cdef class Encoder:
                     return c_parseguid(presets.get(preset))
         raise Exception("no low-latency presets available for '%s'!?" % self.codec_name)
 
-    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options={}):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
         assert encoding in get_encodings(), "invalid encoding %s" % encoding
-        debug("init_context%s", (width, height, src_format, encoding, quality, speed, options))
+        debug("init_context%s", (width, height, src_format, encoding, quality, speed, scaling, options))
         self.width = width
         self.height = height
         self.speed = speed
         self.quality = quality
-        self.encoder_width = roundup(width, 32)
-        self.encoder_height = roundup(height, 32)
+        self.scaling = scaling
+        v, u = scaling
+        self.input_width = roundup(width, 32)
+        self.input_height = roundup(height, 32)
+        self.encoder_width = roundup(width*v/u, 32)
+        self.encoder_height = roundup(height*v/u, 32)
         self.src_format = src_format
         self.codec_name = "H264"
         self.preset_name = None
@@ -1411,24 +1419,26 @@ cdef class Encoder:
                 self.kernel_name, self.kernel = get_BGRA2NV12(self.device_id)
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
                 self.pixel_format = "NV12"
-                cuda_height = self.encoder_height*3/2
+                #1 full Y plane and 2 U+V planes subsampled by 4:
+                plane_size_div = 2
             else:
                 #FIXME: YUV444P doesn't work and I don't know why
                 #No idea what "separateColourPlaneFlag" is meant to do either
                 self.kernel_name, self.kernel = get_BGRA2YUV444P(self.device_id)
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_PL
                 self.pixel_format = "YUV444P"
-                cuda_height = self.encoder_height*3
+                #3 full planes:
+                plane_size_div = 1
 
             #allocate CUDA input buffer (on device) 32-bit RGB:
-            self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(self.encoder_width*4, self.encoder_height, 16)
+            self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(self.input_width*4, self.input_height, 16)
             debug("CUDA Input Buffer=%s, pitch=%s", hex(int(self.cudaInputBuffer)), self.inputPitch)
             #allocate CUDA output buffer (on device):
-            self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, cuda_height, 16)
+            self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3/plane_size_div, 16)
             debug("CUDA Output Buffer=%s, pitch=%s", hex(int(self.cudaOutputBuffer)), self.outputPitch)
             #allocate input buffer on host:
-            self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.encoder_height, dtype=numpy.byte)
-            debug("inputBuffer=%s (size=%s)", self.inputBuffer, self.inputPitch*self.encoder_height)
+            self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.input_height, dtype=numpy.byte)
+            debug("inputBuffer=%s (size=%s)", self.inputBuffer, self.inputPitch*self.input_height)
 
             self.max_block_sizes = d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z)
             self.max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z)
@@ -1523,6 +1533,11 @@ cdef class Encoder:
                 "encoder_width"     : self.encoder_width,
                 "encoder_height"    : self.encoder_height,
                 "version"   : get_version()}
+        if self.scaling!=(1,1):
+            info.update({
+                "input_width"       : self.input_width,
+                "input_height"      : self.input_height,
+                "scaling"           : self.scaling})
         if self.cuda_device_info:
             info["device"] = self.cuda_device_info
         if self.src_format:
@@ -1612,7 +1627,10 @@ cdef class Encoder:
         return self.src_format
 
     def get_client_options(self, options):
-        return {}
+        client_options = {"frame" : self.frames}
+        if self.scaling!=(1,1):
+            client_options["scaled_size"] = self.encoder_width, self.encoder_height
+        return client_options
 
     def set_encoding_speed(self, speed):
         pass
@@ -1652,16 +1670,16 @@ cdef class Encoder:
         debug("compress_image(%s, %s)", image, options)
         assert self.context!=NULL, "context is not initialized"
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
-        assert (image.get_width() & WIDTH_MASK)<=self.encoder_width, "invalid width: %s" % image.get_width()
-        assert (image.get_height() & HEIGHT_MASK)<=self.encoder_height, "invalid height: %s" % image.get_height()
-        pixels = image.get_pixels()
-        stride = image.get_rowstride()
         w = image.get_width()
         h = image.get_height()
+        assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
+        assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
+        pixels = image.get_pixels()
+        stride = image.get_rowstride()
 
         #FIXME: we should copy from pixels directly..
         #copy to input buffer:
-        input_size = self.inputPitch * self.encoder_height
+        input_size = self.inputPitch * self.input_height
         assert len(pixels)<=input_size, "too many pixels (expected %s max, got %s)" % (input_size, len(pixels))
         self.inputBuffer.data[:len(pixels)] = pixels
         debug("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), input_size)
@@ -1687,10 +1705,14 @@ cdef class Encoder:
         if gridh*dy*blockh<h:
             gridh += 1
         debug("compress_image(..) calling CUDA CSC kernel %s", self.kernel_name)
-        self.kernel(self.cudaInputBuffer, numpy.int32(stride),      #numpy.int32(self.inputPitch),
-                       self.cudaOutputBuffer, numpy.int32(self.outputPitch), numpy.int32(self.encoder_height),
-                       numpy.int32(w), numpy.int32(h),
-                       block=(blockw,blockh,1), grid=(gridw, gridh))
+        in_w, in_h = self.input_width, self.input_height
+        if self.scaling!=(1,1):
+            #scaling so scale exact dimensions, not padded input dimensions:
+            in_w, in_h = w, h
+        self.kernel(self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
+                    self.cudaOutputBuffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(self.outputPitch),
+                    numpy.int32(w), numpy.int32(h),
+                    block=(blockw,blockh,1), grid=(gridw, gridh))
         #a block is a group of threads: (blockw * blockh) threads
         #a grid is a group of blocks: (gridw * gridh) blocks
         csc_end = time.time()
@@ -1760,7 +1782,7 @@ cdef class Encoder:
         self.time += end-start
         debug("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
         #debug("pixels head: %s", binascii.hexlify(data[:128]))
-        client_options = {"frame" : self.frames}
+        client_options = self.get_client_options(options)
         self.bytes_in += input_size
         self.bytes_out += size
         self.frames += 1
@@ -1985,6 +2007,6 @@ def init_module():
     for encoding in get_encodings():
         src_format = colorspaces[0]
         try:
-            test_encoder.init_context(1920, 1080, src_format, encoding, 50, 50, {})
+            test_encoder.init_context(1920, 1080, src_format, encoding, 50, 50, (1,1), {})
         finally:
             test_encoder.clean()

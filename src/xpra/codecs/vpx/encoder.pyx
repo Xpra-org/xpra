@@ -142,8 +142,9 @@ cdef class Encoder:
     cdef int max_threads
     cdef char* src_format
 
-    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
         assert encoding=="vp8", "invalid encoding: %s" % encoding
+        assert scaling==(1,1), "vp8 does not handle scaling"
         cdef const vpx_codec_iface_t *codec_iface
         self.width = width
         self.height = height

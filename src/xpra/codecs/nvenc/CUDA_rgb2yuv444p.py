@@ -7,20 +7,23 @@
 BGRA2YUV444P_kernel = """
 #include <stdint.h>
 
-__global__ void BGRA2YUV444P(uint8_t *srcImage,    int srcPitch,
-                             uint8_t *yuvImage,    int dstPitch, int dstHeight,
-                             int w,                int h)
+__global__ void BGRA2YUV444P(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
+                             uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
+                             int w, int h)
 {
     uint32_t gx, gy;
     gx = blockIdx.x * blockDim.x + threadIdx.x;
     gy = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if ((gx < w) & (gy < h)) {
-        //one 32-bit RGB pixel at a time:
+    uint32_t src_y = gy*2 * src_h / dst_h;
+    uint32_t src_x = gx*2 * src_w / dst_w;
+
+    if ((src_x < w) & (src_y < h)) {
         uint8_t R;
         uint8_t G;
         uint8_t B;
-        uint32_t si = (gy * srcPitch) + gx * 4;
+        //one 32-bit RGB pixel at a time:
+        uint32_t si = (src_y * srcPitch) + src_x * 4;
         R = srcImage[si+2];
         G = srcImage[si+1];
         B = srcImage[si];

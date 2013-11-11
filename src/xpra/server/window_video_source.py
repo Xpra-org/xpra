@@ -605,6 +605,7 @@ class WindowVideoSource(WindowSource):
         """
         start = time.time()
         self.actual_scaling = self.calculate_scaling(width, height)
+        scaling = self.actual_scaling
         debug("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
             try:
@@ -626,7 +627,8 @@ class WindowVideoSource(WindowSource):
                     max_h = min(max_h, csc_spec.max_h)
                     csc_width = width & self.width_mask
                     csc_height = height & self.height_mask
-                    enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, self.actual_scaling)
+                    enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, scaling)
+                    scaling = (1, 1)
                     #csc speed is not very important compared to encoding speed,
                     #so make sure it never degrades quality
                     csc_speed = min(speed, 100-quality/2.0)
@@ -648,9 +650,12 @@ class WindowVideoSource(WindowSource):
                     max_h = min(max_h, encoder_spec.max_h)
                     enc_width = width & self.width_mask
                     enc_height = height & self.height_mask
+                    if scaling!=(1,1) and not encoder_spec.can_scale:
+                        debug("scaling is now enabled, so skipping %s", encoder_spec)
+                        continue
                 enc_start = time.time()
                 self._video_encoder = encoder_spec.codec_class()
-                self._video_encoder.init_context(enc_width, enc_height, enc_in_format, encoder_spec.encoding, quality, speed, self.encoding_options)
+                self._video_encoder.init_context(enc_width, enc_height, enc_in_format, encoder_spec.encoding, quality, speed, scaling, self.encoding_options)
                 #record new actual limits:
                 self.min_w = min_w
                 self.min_h = min_h

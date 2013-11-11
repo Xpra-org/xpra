@@ -210,11 +210,12 @@ cdef class Encoder:
     cdef long long bytes_in
     cdef long long bytes_out
 
-    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
         global COLORSPACES
         cs_info = COLORSPACES.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACES.keys())
         assert encoding=="h264", "invalid encoding: %s" % encoding
+        assert scaling==(1,1), "x264 does not handle scaling"
         self.width = width
         self.height = height
         self.quality = quality

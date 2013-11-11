@@ -7,17 +7,21 @@
 BGRA2NV12_kernel = """
 #include <stdint.h>
 
-__global__ void BGRA2NV12(uint8_t *srcImage,    int srcPitch,
-                          uint8_t *dstImage,    int dstPitch, int dstHeight,
-                          int w,                int h)
+__global__ void BGRA2NV12(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
+                          uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
+                          int w, int h)
 {
     uint32_t gx, gy;
     gx = blockIdx.x * blockDim.x + threadIdx.x;
     gy = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if ((gx*2 < w) & (gy*2 < h)) {
+    uint32_t src_y = gy*2 * src_h / dst_h;
+    uint32_t src_x = gx*2 * src_w / dst_w;
+
+    if ((src_x < w) & (src_y < h)) {
         //4 bytes per pixel, and 2 pixels width/height at a time:
-        uint32_t si = (gy * 2 * srcPitch) + gx * 2 * 4;
+        //byte index:
+        uint32_t si = (src_y * srcPitch) + src_x * 4;
 
         //we may read up to 4 32-bit RGB pixels:
         uint8_t R[4];
@@ -36,20 +40,20 @@ __global__ void BGRA2NV12(uint8_t *srcImage,    int srcPitch,
         //write up to 4 Y pixels:
         uint32_t di = (gy * 2 * dstPitch) + gx * 2;
         dstImage[di] = __float2int_rn(0.257 * R[0] + 0.504 * G[0] + 0.098 * B[0] + 16);
-        if (gx*2 + 1 < w) {
+        if (gx*2 + 1 < src_w) {
             R[1] = srcImage[si+6];
             G[1] = srcImage[si+5];
             B[1] = srcImage[si+4];
             dstImage[di + 1] = __float2int_rn(0.257 * R[1] + 0.504 * G[1] + 0.098 * B[1] + 16);
         }
-        if (gy*2 + 1 < h) {
+        if (gy*2 + 1 < src_h) {
             si += srcPitch;
             di += dstPitch;
             R[2] = srcImage[si+2];
             G[2] = srcImage[si+1];
             B[2] = srcImage[si];
             dstImage[di] = __float2int_rn(0.257 * R[2] + 0.504 * G[2] + 0.098 * B[2] + 16);
-            if (gx*2 + 1 < w) {
+            if (gx*2 + 1 < src_w) {
                 R[3] = srcImage[si+6];
                 G[3] = srcImage[si+5];
                 B[3] = srcImage[si+4];
@@ -64,7 +68,7 @@ __global__ void BGRA2NV12(uint8_t *srcImage,    int srcPitch,
             u += -0.148 * R[j] - 0.291 * G[j] + 0.439 * B[j] + 128;
             v +=  0.439 * R[j] - 0.368 * G[j] - 0.071 * B[j] + 128;
         }
-        di = (dstHeight + gy) * dstPitch + gx * 2;
+        di = (dst_h + gy) * dstPitch + gx * 2;
         dstImage[di]      = __float2int_rn(u / 4.0);
         dstImage[di + 1]  = __float2int_rn(v / 4.0);
     }
