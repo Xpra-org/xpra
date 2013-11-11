@@ -537,9 +537,10 @@ class ServerCore(object):
                 "server.mode"               : self.get_server_mode(),
                 "server.type"               : "Python",
                 "server.start_time"         : int(self.start_time),
-                "session.name"              : self.session_name or "",
-                "features.authenticator"    : str((self.auth_class or str)("")),
+                "server.authenticator"      : str((self.auth_class or str)("")),
                 })
+        if self.session_name:
+            info["session.name"] = self.session_name
         info.update(self.get_thread_info(proto))
         return info
 

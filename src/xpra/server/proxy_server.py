@@ -54,7 +54,7 @@ class ProxyServer(ServerCore):
         ServerCore.__init__(self)
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self.main_loop = None
-        self.processes = []
+        self.processes = {}
         self.idle_add = gobject.idle_add
         self.timeout_add = gobject.timeout_add
         self.source_remove = gobject.source_remove
@@ -78,8 +78,8 @@ class ProxyServer(ServerCore):
 
     def do_quit(self):
         processes = self.processes
-        self.processes = []
-        for process in processes:
+        self.processes = {}
+        for process in processes.keys():
             process.stop()
         self.main_loop.quit()
 
@@ -182,7 +182,7 @@ class ProxyServer(ServerCore):
                 process.start()
                 debug("process started")
                 #FIXME: remove processes that have terminated
-                self.processes.append(process)
+                self.processes[process] = display
             finally:
                 #now we can close our handle on the connection:
                 client_conn.close()
@@ -192,19 +192,33 @@ class ProxyServer(ServerCore):
     def proxy_ended(self, proxy_process):
         debug("proxy_ended(%s)", proxy_process)
         if proxy_process in self.processes:
-            self.processes.remove(proxy_process)
+            del self.processes[proxy_process]
         debug("processes: %s", self.processes)
 
 
     def get_info(self, proto, *args):
-        info = ServerCore.get_info(self, proto)
-        info.update({
-            "proxies"       : len(self.processes),
-            "server.type"   : "Python/GObject"})
-        i = 0
-        for p in self.processes:
-            info["proxy[%s]" % i] = str(p)
-            i += 1
+        info = {"server.type" : "Python/GObject/proxy"}
+        #only show more info if we have authenticated
+        #as the user running the proxy server process:
+        sessions = proto.authenticator.get_sessions()
+        if sessions:
+            uid, gid = sessions[:2]
+            if uid==os.getuid() and gid==os.getgid():
+                info.update(ServerCore.get_info(self, proto))
+                i = 0
+                clean = []
+                for p,d in self.processes.items():
+                    live = p.is_alive()
+                    if not live:
+                        clean.append(p)
+                        continue
+                    info["proxy[%s].display" % i] = d
+                    info["proxy[%s].live" % i] = live
+                    info["proxy[%s].pid" % i] = p.pid
+                    i += 1
+                for p in clean:
+                    del self.processes[p]
+                info["proxies"] = len(self.processes)
         return info
 
 
