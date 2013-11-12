@@ -15,8 +15,8 @@ __global__ void BGRA2YUV444P(uint8_t *srcImage, int src_w, int src_h, int srcPit
     gx = blockIdx.x * blockDim.x + threadIdx.x;
     gy = blockIdx.y * blockDim.y + threadIdx.y;
 
-    uint32_t src_y = gy*2 * src_h / dst_h;
-    uint32_t src_x = gx*2 * src_w / dst_w;
+    uint32_t src_y = gy * src_h / dst_h;
+    uint32_t src_x = gx * src_w / dst_w;
 
     if ((src_x < w) & (src_y < h)) {
         uint8_t R;
@@ -30,11 +30,11 @@ __global__ void BGRA2YUV444P(uint8_t *srcImage, int src_w, int src_h, int srcPit
 
         uint32_t di;
         di = (gy * dstPitch) + gx;
-        yuvImage[di] = __float2int_rn(0.257 * R + 0.504 * G + 0.098 * B + 16);
-        di += dstPitch*dstHeight;
-        yuvImage[di] = __float2int_rn(-0.148 * R - 0.291 * G + 0.439 * B + 128);
-        di += dstPitch*dstHeight;
-        yuvImage[di] = __float2int_rn(0.439 * R - 0.368 * G - 0.071 * B + 128);
+        dstImage[di] = __float2int_rn(0.257 * R + 0.504 * G + 0.098 * B + 16);
+        di += dstPitch*dst_h;
+        dstImage[di] = __float2int_rn(-0.148 * R - 0.291 * G + 0.439 * B + 128);
+        di += dstPitch*dst_h;
+        dstImage[di] = __float2int_rn(0.439 * R - 0.368 * G - 0.071 * B + 128);
     }
 }
 """
