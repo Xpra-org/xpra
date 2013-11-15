@@ -5,8 +5,9 @@
 # later version. See the file COPYING for details.
 
 from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_KEYBOARD_DEBUG")
 
 
 class KeyboardBase(object):
@@ -24,7 +25,7 @@ class KeyboardBase(object):
         return False
 
     def set_modifier_mappings(self, mappings):
-        log("set_modifier_mappings(%s)", mappings)
+        debug("set_modifier_mappings(%s)", mappings)
         self.modifier_mappings = mappings
         self.modifier_keys = {}
         self.modifier_keycodes = {}
@@ -34,8 +35,8 @@ class KeyboardBase(object):
                 keycodes = self.modifier_keycodes.setdefault(keyname, [])
                 if keycode not in keycodes:
                     keycodes.append(keycode)
-        log("modifier_keys=%s", self.modifier_keys)
-        log("modifier_keycodes=%s", self.modifier_keycodes)
+        debug("modifier_keys=%s", self.modifier_keys)
+        debug("modifier_keycodes=%s", self.modifier_keycodes)
 
     def mask_to_names(self, mask):
         return mask_to_names(mask, self.modifier_map)
