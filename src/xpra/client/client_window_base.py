@@ -304,6 +304,9 @@ class ClientWindowBase(ClientWidgetBase):
     def log(self, message=""):
         log.info(message)
 
+    def dbus_call(self, *args, **kwargs):
+        #see UIXpraClient.dbus_call
+        return self._client.dbus_call(self._id, *args, **kwargs)
 
     def do_motion_notify_event(self, event):
         if self._client.readonly:

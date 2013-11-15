@@ -6,7 +6,6 @@
 import os
 import gtk
 import dbus.service
-from dbus.mainloop.glib import DBusGMainLoop
 
 from xpra.log import Logger
 log = Logger()
@@ -75,8 +74,8 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         return  "DBUSNotificationsForwarder(%s)" % BUS_NAME
 
 def register(notify_callback=None, close_callback=None, replace=False):
-    DBusGMainLoop(set_as_default=True)
-    bus = dbus.SessionBus()
+    from xpra.x11.dbus_common import init_session_bus
+    bus = init_session_bus()
     flags = dbus.bus.NAME_FLAG_DO_NOT_QUEUE
     if replace:
         flags |= dbus.bus.NAME_FLAG_REPLACE_EXISTING

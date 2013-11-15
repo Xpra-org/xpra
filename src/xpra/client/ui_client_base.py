@@ -26,7 +26,7 @@ from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import set_application_name, thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid
-from xpra.util import nn, std
+from xpra.util import nn, std, AtomicInteger
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -132,6 +132,10 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_receive = False
         self.server_sound_send = False
 
+        #dbus:
+        self.dbus_counter = AtomicInteger()
+        self.dbus_pending_requests = {}
+
         #mmap:
         self.mmap_enabled = False
         self.mmap = None
@@ -159,6 +163,7 @@ class UIXpraClient(XpraClientBase):
         self.windows_enabled = True
         self.pings = False
         self.xsettings_enabled = False
+        self.server_dbus_proxy = False
 
         self.client_supports_opengl = False
         self.client_supports_notifications = False
@@ -883,6 +888,7 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_clipboard = c.boolget("clipboard")
         self.server_clipboards = c.listget("clipboards", ALL_CLIPBOARDS)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
+        self.server_dbus_proxy = c.boolget("dbus_proxy")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
             mmap_token = c.intget("mmap_token")
@@ -1011,6 +1017,52 @@ class UIXpraClient(XpraClientBase):
         gui_ready()
         if self.tray:
             self.tray.ready()
+
+
+    def dbus_call(self, wid, bus_name, path, interface, function, reply_handler=None, error_handler=None, *args):
+        if not self.server_dbus_proxy:
+            log.error("cannot use dbus_call: this server does not support dbus-proxying")
+            return
+        rpcid = self.dbus_counter.increase()
+        self.dbus_filter_pending()
+        self.dbus_pending_requests[rpcid] = (time.time(), bus_name, path, interface, function, reply_handler, error_handler)
+        self.send("rpc", "dbus", rpcid, wid, bus_name, path, interface, function, args)
+        self.timeout_add(5000, self.dbus_filter_pending)
+
+    def dbus_filter_pending(self):
+        """ removes timed out dbus requests """
+        for k in list(self.dbus_pending_requests.keys()):
+            v = self.dbus_pending_requests.get(k)
+            if v is None:
+                continue
+            t, bn, p, i, fn, _, ecb = v
+            if time.time()-t>=5:
+                log.warn("dbus request: %s:%s (%s).%s has timed out", bn, p, i, fn)
+                del self.dbus_pending_requests[k]
+                if ecb is not None:
+                    ecb("timeout")
+
+    def _process_rpc_reply(self, packet):
+        rpc_type, rpcid, success, args = packet[1:5]
+        assert rpc_type=="dbus", "unsupported rpc reply type: %s" % rpc_type
+        log("rpc_reply: %s", (rpc_type, rpcid, success, args))
+        v = self.dbus_pending_requests.get(rpcid)
+        assert v is not None, "pending dbus handler not found for id %s" % rpcid
+        del self.dbus_pending_requests[rpcid]
+        if success:
+            ctype = "ok"
+            rh = v[-2]      #ok callback
+        else:
+            ctype = "error"
+            rh = v[-1]      #error callback
+        if rh is None:
+            log("no %s rpc callback defined, return values=%s", ctype, args)
+            return
+        log("calling %s callback %s(%s)", ctype, rh, args)
+        try:
+            rh(*args)
+        except Exception, e:
+            log.warn("error processing rpc reply handler %s(%s) : %s", rh, args, e)
 
 
     def start_sending_sound(self):
@@ -1310,7 +1362,7 @@ class UIXpraClient(XpraClientBase):
         wid, w, h = packet[1:4]
         metadata = {}
         if len(packet)>=5:
-            metadata = packet[4] 
+            metadata = packet[4]
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         tray = self.setup_system_tray(self, wid, w, h, metadata.get("title", ""))
         log("process_new_tray(%s) tray=%s", packet, tray)
@@ -1519,6 +1571,7 @@ class UIXpraClient(XpraClientBase):
             "lost-window":          self._process_lost_window,
             "desktop_size":         self._process_desktop_size,
             "window-icon":          self._process_window_icon,
+            "rpc-reply":            self._process_rpc_reply,
             "draw":                 self._process_draw,
             # "clipboard-*" packets are handled by a special case below.
             }.items():

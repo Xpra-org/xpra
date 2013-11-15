@@ -65,6 +65,8 @@ class ServerBase(ServerCore):
         self.default_dpi = 96
         self.dpi = 96
         self.supports_clipboard = False
+        self.supports_dbus_proxy = False
+        self.dbus_helper = None
 
         #encodings:
         self.core_encodings = []
@@ -103,12 +105,14 @@ class ServerBase(ServerCore):
         self.default_dpi = int(opts.dpi)
         self.dpi = self.default_dpi
         self.supports_clipboard = opts.clipboard
+        self.supports_dbus_proxy = opts.dbus_proxy
 
         log("starting component init")
         self.init_clipboard(self.supports_clipboard, opts.clipboard_filter_file)
         self.init_keyboard()
         self.init_sound(opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
         self.init_notification_forwarder(opts.notifications)
+        self.init_dbus_helper()
 
         self.load_existing_windows(opts.system_tray)
 
@@ -275,6 +279,17 @@ class ServerBase(ServerCore):
     def watch_keymap_changes(self):
         pass
 
+    def init_dbus_helper(self):
+        if not self.supports_dbus_proxy:
+            return
+        try:
+            from xpra.x11.dbus_helper import DBusHelper
+            self.dbus_helper = DBusHelper()
+        except Exception, e:
+            log.warn("cannot load dbus helper: %s", e)
+            self.supports_dbus_proxy = False
+
+
     def load_existing_windows(self, system_tray):
         pass
 
@@ -323,6 +338,8 @@ class ServerBase(ServerCore):
             "encoding":                             self._process_encoding,
             "suspend":                              self._process_suspend,
             "resume":                               self._process_resume,
+            #dbus:
+            "rpc":                                  self._process_rpc,
             #sound:
             "sound-control":                        self._process_sound_control,
             "sound-data":                           self._process_sound_data,
@@ -553,6 +570,7 @@ class ServerBase(ServerCore):
              "notifications"                : self.notifications_forwarder is not None,
              "bell"                         : self.bell,
              "cursors"                      : self.cursors,
+             "dbus_proxy"                   : self.supports_dbus_proxy,
              "toggle_cursors_bell_notify"   : True,
              "toggle_keyboard_sync"         : True,
              "window_configure"             : True,
@@ -640,6 +658,7 @@ class ServerBase(ServerCore):
              "features.bell"            : self.bell,
              "features.notifications"   : self.notifications_forwarder is not None,
              "features.pulseaudio"      : self.pulseaudio,
+             "features.dbus_proxy"      : self.supports_dbus_proxy,
              "features.clipboard"       : self.supports_clipboard}
         if self._clipboard_helper is not None:
             for k,v in self._clipboard_helper.get_info().items():
@@ -833,6 +852,25 @@ class ServerBase(ServerCore):
             wid_windows = self._id_to_window
         ss.set_encoding(encoding, wids)
         self.refresh_windows(proto, wid_windows)
+
+
+    def _process_rpc(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        assert ss is not None
+        rpc_type, rpcid, _, bus_name, path, interface, function, args = packet[1:9]
+        assert rpc_type=="dbus", "unsupported rpc request type: %s" % rpc_type
+        assert self.supports_dbus_proxy, "server does not support dbus proxy calls"
+        def native(args):
+            if args is None:
+                return ""
+            return [self.dbus_helper.dbus_to_native(x) for x in args]
+        def ok_back(*args):
+            log("rpc: ok_back%s", args)
+            ss.rpc_reply(rpc_type, rpcid, True, native(args))
+        def err_back(*args):
+            log("rpc: err_back%s", args)
+            ss.rpc_reply(rpc_type, rpcid, False, native(args))
+        self.dbus_helper.call_function(bus_name, path, interface, function, args, ok_back, err_back)
 
 
     def _get_window_dict(self, wids):

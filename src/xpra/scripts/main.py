@@ -153,9 +153,13 @@ def parse_cmdline(cmdline):
         group.add_option("--pulseaudio-command", action="store",
                       dest="pulseaudio_command", default=defaults.pulseaudio_command,
                       help="The command used to start the pulseaudio server (default: '%default')")
+        group.add_option("--no-dbus-proxy", action="store",
+                      dest="dbus_proxy", default=defaults.dbus_proxy,
+                      help="Disallow the forwarding of dbus calls from the client (default: '%default')")
     else:
         hidden_options["pulseaudio"] = False
         hidden_options["pulseaudio_command"] = ""
+        hidden_options["dbus_proxy"] = False
 
     group = OptionGroup(parser, "Server Controlled Features",
                 "These options can be used to turn certain features on or off, "

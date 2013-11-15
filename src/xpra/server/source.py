@@ -1047,6 +1047,10 @@ class ServerSource(object):
     def set_deflate(self, level):
         self.send("set_deflate", level)
 
+
+    def rpc_reply(self, *args):
+        self.send("rpc-reply", *args)
+
     def ping(self):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000*time.time())
