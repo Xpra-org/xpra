@@ -99,10 +99,13 @@ class KeyboardHelper(object):
                     action, all_args = action[:-1].split("(", 1)
                     args = []
                     for x in all_args.split(","):
+                        x = x.strip()
                         if len(x)==0:
                             continue
                         if (x[0]=='"' and x[-1]=='"') or (x[0]=="'" and x[-1]=="'"):
                             args.append(x[1:-1])
+                        elif x=="None":
+                            args.append(None)
                         elif x.find("."):
                             args.append(float(x))
                         else:
