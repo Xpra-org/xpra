@@ -229,13 +229,13 @@ class WindowVideoSource(WindowSource):
             return switch_to_lossless("window dimensions are unsuitable for this encoder/csc")
         if pixel_count<ww*wh*0.01:
             #less than one percent of total area
-            return switch_to_lossless("few pixels (%.2f%% of window)" % (100*pixel_count/ww/wh))
+            return switch_to_lossless("few pixels (%.2f%% of window)" % (100.0*pixel_count/ww/wh))
         if pixel_count>max_nvp:
             #too many pixels, use current video encoder
             return self.get_core_encoding(has_alpha, current_encoding)
         if pixel_count<0.5*ww*wh and not batching:
             #less than 50% of the full window and we're not batching
-            return switch_to_lossless("%i%% of image, not batching" % (100*pixel_count/ww/wh))
+            return switch_to_lossless("%i%% of image, not batching" % (100.0*pixel_count/ww/wh))
         return self.get_core_encoding(has_alpha, current_encoding)
 
 
