@@ -28,13 +28,17 @@ class AtomicInteger(object):
     def increase(self, inc = 1):
         self.lock.acquire()
         self.counter = self.counter + inc
+        v = self.counter
         self.lock.release()
+        return v
 
     def decrease(self, dec = 1):
         self.lock.acquire()
         self.counter = self.counter - dec
+        v = self.counter
         self.lock.release()
-    
+        return v
+
     def get(self):
         return self.counter
 
@@ -116,5 +120,5 @@ def nonl(x):
         return None
     return str(x).replace("\n", "\\n").replace("\r", "\\r")
 
-def xor(s1,s2):    
+def xor(s1,s2):
     return ''.join(chr(ord(a) ^ ord(b)) for a,b in zip(s1,s2))
