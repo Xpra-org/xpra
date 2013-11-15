@@ -6,6 +6,8 @@
 
 
 from xpra.platform.keyboard_base import KeyboardBase, debug
+from xpra.platform.darwin.osx_menu import getOSXMenuHelper
+
 
 NUM_LOCK_KEYCODE = 71           #HARDCODED!
 
@@ -16,11 +18,13 @@ class Keyboard(KeyboardBase):
     """
 
     def __init__(self):
+        self.swap_keys = True
         self.meta_modifier = None
         self.control_modifier = None
         self.num_lock_modifier = None
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
+        getOSXMenuHelper().keyboard = self
 
     def set_modifier_mappings(self, mappings):
         KeyboardBase.set_modifier_mappings(self, mappings)
@@ -32,7 +36,7 @@ class Keyboard(KeyboardBase):
     def mask_to_names(self, mask):
         names = KeyboardBase.mask_to_names(self, mask)
         debug("mask_to_names(%s) meta_modifier=%s, control_modifier=%s", mask, self.meta_modifier, self.control_modifier)
-        if self.meta_modifier is not None and self.control_modifier is not None:
+        if self.swap_keys and self.meta_modifier is not None and self.control_modifier is not None:
             #we have the modifier names for both keys we may need to switch
             if self.meta_modifier in names and self.control_modifier not in names:
                 names.remove(self.meta_modifier)
@@ -60,4 +64,5 @@ class Keyboard(KeyboardBase):
         if key_event.keycode==self.num_lock_keycode and not key_event.pressed:
             debug("toggling numlock")
             self.num_lock_state = not self.num_lock_state
+            getOSXMenuHelper().update_numlock(self.num_lock_state)
         send_key_action_cb(wid, key_event)

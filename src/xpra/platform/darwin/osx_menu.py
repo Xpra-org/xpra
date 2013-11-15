@@ -42,6 +42,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         debug("OSXMenuHelper(%s)", client)
         self.menu_bar = None
         self.hidden_window = None
+        self.keyboard = None
         self.menus = {}
 
     def build(self):
@@ -90,6 +91,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
         features_menu.add(self.make_bellmenuitem())
         features_menu.add(self.make_cursorsmenuitem())
         features_menu.add(self.make_notificationsmenuitem())
+        features_menu.add(self.make_swapkeysmenuitem())
+        features_menu.add(self.make_numlockmenuitem())
         #sound_menu = self.make_osxmenu("Sound")
         #if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
         #    sound_menu.add(self.make_speakermenuitem())
@@ -100,6 +103,36 @@ class OSXMenuHelper(GTKTrayMenuBase):
         actions_menu.add(self.make_raisewindowsmenuitem())
         self.menu_bar.show_all()
 
+    def make_swapkeysmenuitem(self):
+        def swapkeys_toggled(*args):
+            v = self.swapkeys_menuitem.get_active()
+            debug("swapkeys_toggled(%s) swap keys enabled=%s", args, v)
+            if self.keyboard:
+                self.keyboard.swap_keys = v
+        self.swapkeys_menuitem = self.checkitem("Control/Option Key Swap", swapkeys_toggled)
+        def set_swapkeys_menuitem(*args):
+            if self.keyboard:
+                self.swapkeys_menuitem.set_active(self.keyboard.swap_keys)
+        self.client.connect("handshake-complete", set_swapkeys_menuitem)
+        return  self.swapkeys_menuitem
+
+    def make_numlockmenuitem(self):
+        def numlock_toggled(*args):
+            v = self.numlock_menuitem.get_active()
+            debug("numlock_toggled(%s) %s", args, v)
+            if self.keyboard:
+                self.keyboard.num_lock_state = v
+        self.numlock_menuitem = self.checkitem("Num Lock", cb=numlock_toggled)
+        self.numlock_menuitem.set_active(True)
+        def set_numlock_menuitem(*args):
+            if self.keyboard:
+                self.numlock_menuitem.set_active(self.keyboard.num_lock_state)
+        self.client.connect("handshake-complete", set_numlock_menuitem)
+        return self.numlock_menuitem
+
+    def update_numlock(self, on):
+        if self.numlock_menuitem:
+            self.numlock_menuitem.set_active(on)
 
     def build_dock_menu(self):
         debug("OSXMenuHelper.build_dock_menu()")
