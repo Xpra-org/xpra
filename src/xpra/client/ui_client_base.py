@@ -167,10 +167,10 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_cursors = False
         self.client_supports_bell = False
         self.client_supports_sharing = False
-        self.notifications_enabled = self.client_supports_notifications
-        self.clipboard_enabled = self.client_supports_clipboard
-        self.cursors_enabled = self.client_supports_cursors
-        self.bell_enabled = self.client_supports_bell
+        self.notifications_enabled = False
+        self.clipboard_enabled = False
+        self.cursors_enabled = False
+        self.bell_enabled = False
 
         self.supports_mmap = MMAP_SUPPORTED and ("rgb24" in self.get_core_encodings())
 
@@ -182,7 +182,6 @@ class UIXpraClient(XpraClientBase):
         self.menu_helper = None
         self.tray = None
         self.notifier = None
-        self.client_supports_notifications = False
 
         #state:
         self._focused = None
