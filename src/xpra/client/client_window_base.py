@@ -301,6 +301,9 @@ class ClientWindowBase(ClientWidgetBase):
     def void(self):
         pass
 
+    def log(self, message=""):
+        log.info(message)
+
 
     def do_motion_notify_event(self, event):
         if self._client.readonly:

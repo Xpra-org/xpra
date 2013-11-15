@@ -93,6 +93,25 @@ class KeyboardHelper(object):
                 continue
             #example for action: "quit"
             action = parts[1]
+            args = ()
+            if action.find("(")>0 and action.endswith(")"):
+                try:
+                    action, all_args = action[:-1].split("(", 1)
+                    args = []
+                    for x in all_args.split(","):
+                        if len(x)==0:
+                            continue
+                        if (x[0]=='"' and x[-1]=='"') or (x[0]=="'" and x[-1]=="'"):
+                            args.append(x[1:-1])
+                        elif x.find("."):
+                            args.append(float(x))
+                        else:
+                            args.append(int(x))
+                    args = tuple(args)
+                except Exception, e:
+                    log.warn("failed to parse arguments of shortcut '%s': %s", s, e)
+                    continue
+
             #example for keyspec: ["Alt", "F8"]
             keyspec = parts[0].split("+")
             modifiers = []
@@ -110,7 +129,7 @@ class KeyboardHelper(object):
                 if not valid:
                     continue
             keyname = keyspec[len(keyspec)-1]
-            shortcuts[keyname] = (modifiers, action)
+            shortcuts[keyname] = (modifiers, action, args)
         debug("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
         return  shortcuts
 
@@ -118,7 +137,7 @@ class KeyboardHelper(object):
         shortcut = self.key_shortcuts.get(key_name)
         if not shortcut:
             return  False
-        (req_mods, action) = shortcut
+        (req_mods, action, args) = shortcut
         for rm in req_mods:
             if rm not in modifiers:
                 #modifier is missing, bail out
@@ -133,7 +152,7 @@ class KeyboardHelper(object):
             log.error("key dropped, invalid method name in shortcut %s: %s", action, e)
             return  True
         try:
-            method()
+            method(*args)
         except KeyboardInterrupt:
             raise
         except Exception, e:

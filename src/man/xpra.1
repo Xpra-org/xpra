@@ -589,11 +589,23 @@ The \fIKEY\fP specification may include keyboard modifiers in the form
 If no shortcuts are defined on the command line,
 the following default one will be used: \fIMeta+Shift+F4:quit\fP
 
+Some of the actions may allow arguments (ie: the \fIlog\fP action does),
+in which case they are specified in the usual programming style
+syntax: \fIACTION(ARG1, ARG2, etc)\fP
+.br
+String arguments must be quoted (both single and double quotes are supported)
+and numeric arguments must not be quoted.
+Beware the the parenthesis and quotes must usually be escaped when
+used from a shell command line.
+Example: \fI--key-shortcut=Meta+Shift+F7:log\\(\\'hello\\'\\)\fP
+
 .br
 The following \fIACTION\fPs are currently defined:
 .RS
 .IP \fBquit\fP
 Disconnect the xpra client.
+.IP \fBlog("MESSAGE")\fP
+Sends \fIMESSAGE\fP to the log.
 .IP \fBvoid\fP
 Does not do anything, and can therefore be used to prevent
 certain key combinations from ever being sent to the server.
