@@ -75,7 +75,7 @@ class XpraClient(GTKXpraClient):
             from xpra.client.gtk2.gtk2_notifier import GTK2_Notifier
             ncs.append(GTK2_Notifier)
         except Exception, e:
-            log("cannot load GTK3 notifier: %s", e)
+            log.warn("cannot load GTK2 notifier: %s", e)
         return ncs
 
 
