@@ -16,6 +16,9 @@ class KeyboardBase(object):
         self.modifier_mappings = {}
         self.modifier_keys = {}
         self.modifier_keycodes = {}
+        #FIXME: this only allows a single modifier per mask
+        #and in some cases we want to allow other modifier names
+        #to use the same mask... (ie: META on OSX)
         self.modifier_map = MODIFIER_MAP
 
     def cleanup(self):
