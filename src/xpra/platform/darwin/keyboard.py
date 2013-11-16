@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 
+import gtk.gdk
 from xpra.platform.keyboard_base import KeyboardBase, debug
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 
@@ -14,7 +15,7 @@ NUM_LOCK_KEYCODE = 71           #HARDCODED!
 
 class Keyboard(KeyboardBase):
     """
-        Switch Meta_L and Control_L
+        Switch Meta and Control
     """
 
     def __init__(self):
@@ -24,26 +25,29 @@ class Keyboard(KeyboardBase):
         self.num_lock_modifier = None
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
-        getOSXMenuHelper().keyboard = self
 
     def set_modifier_mappings(self, mappings):
         KeyboardBase.set_modifier_mappings(self, mappings)
-        self.meta_modifier = self.modifier_keys.get("Meta_L")
-        self.control_modifier = self.modifier_keys.get("Control_L")
+        self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R")
+        self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R")
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
         debug("set_modifier_mappings(%s) meta=%s, control=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.num_lock_modifier)
 
     def mask_to_names(self, mask):
         names = KeyboardBase.mask_to_names(self, mask)
-        debug("mask_to_names(%s) meta_modifier=%s, control_modifier=%s", mask, self.meta_modifier, self.control_modifier)
         if self.swap_keys and self.meta_modifier is not None and self.control_modifier is not None:
-            #we have the modifier names for both keys we may need to switch
-            if self.meta_modifier in names and self.control_modifier not in names:
-                names.remove(self.meta_modifier)
+            meta_on = bool(mask & gtk.gdk.META_MASK)
+            meta_set = self.meta_modifier in names
+            control_set = self.control_modifier in names
+            if meta_on and not control_set:
                 names.append(self.control_modifier)
-            elif self.control_modifier in names and self.meta_modifier not in names:
+                if meta_set:
+                    names.remove(self.meta_modifier)
+            elif control_set and not meta_on:
                 names.remove(self.control_modifier)
-                names.append(self.meta_modifier)
+                if not meta_set:
+                    names.append(self.meta_modifier)
+        #deal with numlock:
         if self.num_lock_modifier is not None:
             if self.num_lock_state and self.num_lock_modifier not in names:
                 names.append(self.num_lock_modifier)
