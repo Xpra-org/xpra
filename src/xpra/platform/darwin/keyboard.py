@@ -80,10 +80,12 @@ class Keyboard(KeyboardBase):
             meta_set = self.meta_modifier in names
             control_set = self.control_modifier in names
             if meta_on and not control_set:
+                debug("mask_to_names swapping meta for control: %s for %s", self.meta_modifier, self.control_modifier)
                 names.append(self.control_modifier)
                 if meta_set:
                     names.remove(self.meta_modifier)
             elif control_set and not meta_on:
+                debug("mask_to_names swapping control for meta: %s for %s", self.control_modifier, self.meta_modifier)
                 names.remove(self.control_modifier)
                 if not meta_set:
                     names.append(self.meta_modifier)
