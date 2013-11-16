@@ -11,7 +11,14 @@ from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 
 
 NUM_LOCK_KEYCODE = 71           #HARDCODED!
-
+#a key and the keys we want to translate it into when swapping keys
+#(a list so we can hopefully find a good match)
+KEYS_TRANSLATION_OPTIONS = {
+                    "Control_L"     : ["Alt_L", "Meta_L"],
+                    "Control_R"     : ["Alt_R", "Meta_R"],
+                    "Meta_L"        : ["Control_L", "Control_R"],
+                    "Meta_R"        : ["Control_R", "Control_L"],
+                    }
 
 class Keyboard(KeyboardBase):
     """
@@ -25,13 +32,46 @@ class Keyboard(KeyboardBase):
         self.num_lock_modifier = None
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
+        self.key_translations = {}
 
     def set_modifier_mappings(self, mappings):
         KeyboardBase.set_modifier_mappings(self, mappings)
         self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R")
         self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R")
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
-        debug("set_modifier_mappings(%s) meta=%s, control=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.num_lock_modifier)
+        debug("set_modifier_mappings(..) meta=%s, control=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.num_lock_modifier)
+        #find the keysyms and keycodes to use for each key we may translate:
+        for orig_keysym in KEYS_TRANSLATION_OPTIONS.keys():
+            new_def = self.find_translation(orig_keysym)
+            if new_def is not None:
+                self.key_translations[orig_keysym] = new_def
+        debug("set_modifier_mappings(..) swap keys translations=%s", self.key_translations)
+
+    def find_translation(self, orig_keysym):
+        new_def = None
+        #ie: keysyms : ["Meta_L", "Alt_L"]
+        keysyms = KEYS_TRANSLATION_OPTIONS.get(orig_keysym)
+        for keysym in keysyms:
+            #ie: "Alt_L":
+            keycodes_defs = self.modifier_keycodes.get(keysym)
+            if not keycodes_defs:
+                #keysym not found
+                continue
+            #ie: [(55, 'Alt_L'), (58, 'Alt_L'), 'Alt_L']
+            for keycode_def in keycodes_defs:
+                if type(keycode_def)==str:      #ie: 'Alt_L'
+                    #no keycode found, but better than nothing:
+                    new_def = 0, keycode_def    #ie: (0, 'Alt_L')
+                    continue
+                #look for a tuple of (keycode, keysym):
+                if type(keycode_def) not in (list, tuple):
+                    continue
+                if type(keycode_def[0])!=int or type(keycode_def[1])!=str:
+                    continue
+                #found one, use that:
+                return keycode_def           #(55, 'Alt_L')
+        return new_def
+
 
     def mask_to_names(self, mask):
         names = KeyboardBase.mask_to_names(self, mask)
@@ -57,14 +97,11 @@ class Keyboard(KeyboardBase):
         return names
 
     def process_key_event(self, send_key_action_cb, wid, key_event):
-        if self.meta_modifier is not None and self.control_modifier is not None:
-            #we have the modifier names for both keys we may need to switch
-            if key_event.keyname=="Control_L":
-                debug("process_key_event swapping Control_L for Meta_L")
-                key_event.keyname = "Meta_L"
-            elif key_event.keyname=="Meta_L":
-                debug("process_key_event swapping Meta_L for Control_L")
-                key_event.keyname = "Control_L"
+        if self.swap_keys:
+            trans = self.key_translations.get(key_event.keyname)
+            if trans:
+                debug("swap keys: translating key '%s' to %s", key_event, trans)
+                key_event.keycode, key_event.keyname = trans 
         if key_event.keycode==self.num_lock_keycode and not key_event.pressed:
             debug("toggling numlock")
             self.num_lock_state = not self.num_lock_state
