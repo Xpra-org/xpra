@@ -799,7 +799,9 @@ def make_client(error_cb, opts):
         import xpra.client.gtk3             #@UnusedImport
         toolkits["gtk3"] = "xpra.client.gtk3.client"
     except Exception, e:
-        print("cannot load gtk3: %s" % e)
+        if "gtk2" not in toolkits:
+            print("cannot load gtk3: %s" % e)
+        pass
     try:
         from PyQt4 import QtCore, QtGui     #@UnresolvedImport @UnusedImport
         try:
