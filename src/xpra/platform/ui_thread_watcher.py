@@ -8,7 +8,7 @@ import time
 from xpra.daemon_thread import make_daemon_thread
 from xpra.log import Logger, debug_if_env
 log = Logger()
-debug = debug_if_env(log, "XPRA_UIWATCHER_DEBUG") 
+debug = debug_if_env(log, "XPRA_UIWATCHER_DEBUG")
 
 from xpra.platform.features import UI_THREAD_POLLING
 FAKE_UI_LOCKUPS = int(os.environ.get("XPRA_FAKE_UI_LOCKUPS", "0"))

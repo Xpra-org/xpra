@@ -58,16 +58,16 @@ class GTK2_Notifier(NotifierBase):
             `bg_color` : if None default is used (usually grey). set with a gtk.gdk.Color.
             `fg_color` : if None default is used (usually black). set with a gtk.gdk.Color.
             `show_timeout : if True, a countdown till destruction will be displayed.
-        
+
         """
         self.max_popups = 5
         self.fg_color = DEFAULT_FG_COLOUR
         self.bg_color = DEFAULT_BG_COLOUR
         self.show_timeout = False
-    
+
         self._notify_stack = []
         self._offset = 0
-    
+
         display = gtk.gdk.display_get_default()
         screen = display.get_default_screen()
         n = screen.get_n_monitors()
@@ -99,7 +99,7 @@ class GTK2_Notifier(NotifierBase):
         self._notify_stack.append(popup)
         self._offset += self._notify_stack[-1].h
         return popup
-    
+
     def destroy_popup_cb(self, popup):
         if popup in self._notify_stack:
             self._notify_stack.remove(popup)
@@ -115,7 +115,7 @@ class Popup(gtk.Window):
         log(None, stack, title, message, callback, image)
         self.stack = stack
         gtk.Window.__init__(self)
-    
+
         self.set_size_request(stack.size_x, -1)
         self.set_decorated(False)
         self.set_deletable(False)
@@ -126,7 +126,7 @@ class Popup(gtk.Window):
         self.set_opacity(0.2)
         self.set_keep_above(True)
         self.destroy_cb = stack.destroy_popup_cb
-    
+
         main_box = gtk.VBox()
         header_box = gtk.HBox()
         self.header = gtk.Label()
@@ -144,7 +144,7 @@ class Popup(gtk.Window):
             close_window.add(close_button)
             header_box.pack_end(close_window, False, False)
         main_box.pack_start(header_box)
-    
+
         body_box = gtk.HBox()
         if image is not None:
             self.image = gtk.Image()
@@ -162,11 +162,11 @@ class Popup(gtk.Window):
         self.counter.set_alignment(1, 1)
         self.counter.set_padding(3, 3)
         self.timeout = stack.timeout
-    
+
         body_box.pack_start(self.message, True, False, 5)
         body_box.pack_end(self.counter, False, False, 5)
         main_box.pack_start(body_box)
-    
+
         if callback:
             cb_text, cb = callback
             button = gtk.Button(cb_text)
@@ -233,7 +233,7 @@ class Popup(gtk.Window):
             return False
         self.set_opacity(opacity)
         return True
-        
+
     def wait(self):
         if not self.hover:
             self.timeout -= 1
@@ -257,7 +257,7 @@ class Popup(gtk.Window):
     def on_hover(self, window, event, hover):
         """Starts/Stops the notification timer on a mouse in/out event"""
         self.hover = hover
-    
+
     def hide_notification(self, *args):
         """Destroys the notification and tells the stack to move the
         remaining notification windows"""

@@ -248,7 +248,7 @@ def get_ssh_port():
 MDNS_WARNING = False
 def mdns_publish(display_name, mode, listen_on, text_dict={}):
     try:
-        from xpra.net.avahi_publisher import AvahiPublishers 
+        from xpra.net.avahi_publisher import AvahiPublishers
     except Exception, e:
         global MDNS_WARNING
         if not MDNS_WARNING:

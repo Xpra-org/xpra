@@ -14,7 +14,7 @@
 # * we deal with odd sized images gracefully by clamping the output (via runtime checks)
 #   as well as the input (if sampler_t uses CLAMP_TO_EDGE)
 
-              
+
 YUV_TO_RGB = {"X"    : [255, "*", 1],
               "A"    : [255, "*", 1],
               "R"    : ["(", "Y", "*", 1, ")", "+", "(", "Cb", "*", 1.5958, ")"],

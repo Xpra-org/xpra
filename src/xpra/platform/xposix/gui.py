@@ -107,7 +107,7 @@ class ClientExtras(object):
 
     def _handle_root_prop_changed(self, obj, prop):
         log("root_prop_changed(%s, %s)", obj, prop)
-        if prop=="RESOURCE_MANAGER":           
+        if prop=="RESOURCE_MANAGER":
             if not self.client.xsettings_tuple:
                 log.warn("xsettings tuple format not supported, update ignored")
                 return

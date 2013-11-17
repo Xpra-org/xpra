@@ -56,7 +56,7 @@ class ClipboardInstance(object):
 
     def clear_entry(self, *args):
         self.value_entry.set_text("")
-    
+
     def clear_label(self, *args):
         self.value_label.set_text("")
 
@@ -78,7 +78,7 @@ class ClipboardInstance(object):
                 self.get_targets.set_active(i)
             i += 1
         self.get_targets.show_all()
-    
+
     def do_get_targets(self, *args):
         self.clipboard.request_targets(self.get_targets_callback)
 

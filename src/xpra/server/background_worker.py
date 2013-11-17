@@ -14,7 +14,7 @@ debug = log.debug
 
 
 class Worker_Thread(Thread):
-    
+
     def __init__(self):
         Thread.__init__(self, name="Worker_Thread")
         self.items = Queue()

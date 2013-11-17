@@ -430,7 +430,7 @@ class ApplicationWindow:
             self.client.setup_connection(conn)
             self.client.init(self.config)
             log("start_XpraClient() client initialized")
-            
+
             if self.config.password:
                 #pass the password to the class directly:
                 self.client.password = self.config.password

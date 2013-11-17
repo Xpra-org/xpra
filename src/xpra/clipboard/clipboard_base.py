@@ -558,7 +558,7 @@ class ClipboardProxy(gtk.Invisible):
             #so don't bother sending it now (same if we don't have it)
             send = ((self._greedy_client and not self._block_owner_change) or self._have_token)
             self._have_token = False
-    
+
             # Emit a signal -> send a note to the other side saying "hey its
             # ours now"
             # Send off the anti-token.
@@ -597,7 +597,7 @@ class ClipboardProxy(gtk.Invisible):
                      % (self._selection,)
                      + "will not be able to pass local apps "
                      + "contents of remote clipboard")
-        
+
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:

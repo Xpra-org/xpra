@@ -133,7 +133,7 @@ def get_network_caps():
         caps["pycrypto.fastmath"] = _fastmath is not None
     except:
         pass
-    
+
     if has_rencode:
         caps["rencode.version"] = rencode_version
     return caps

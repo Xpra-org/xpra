@@ -213,7 +213,7 @@ class ServerBase(ServerCore):
         self.supports_speaker = bool(speaker) and has_gst
         self.supports_microphone = bool(microphone) and has_gst
         self.speaker_codecs = speaker_codec
-        if len(self.speaker_codecs)==0 and self.supports_speaker:            
+        if len(self.speaker_codecs)==0 and self.supports_speaker:
             self.speaker_codecs = get_sound_codecs(True, True)
             self.supports_speaker = len(self.speaker_codecs)>0
         self.microphone_codecs = microphone_codec

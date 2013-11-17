@@ -1003,7 +1003,7 @@ class ServerSource(object):
             if l!=newlist:
                 d[k] = newlist
                 debug("rewrite_encoding_values for key '%s': %s replaced by %s", k, l, newlist)
-                        
+
 
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended:

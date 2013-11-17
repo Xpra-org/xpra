@@ -46,7 +46,7 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
     """
         Full of OSX quirks!
         darwin/features.py should be set
-        * CLIPBOARD_GREEDY: request the other end to send tokens for all owner change events 
+        * CLIPBOARD_GREEDY: request the other end to send tokens for all owner change events
         * CLIPBOARD_WANT_TARGETS: include targets with the tokens
     """
 

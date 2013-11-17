@@ -19,7 +19,7 @@ def gen_rgb_to_nv12_kernel(rgb_format):
     assert R>=0 and G>=0 and B>=0, "invalid format: %s" % rgb_format
 
     kernel_name = "%s_to_NV12" % rgb_only_name(rgb_format)
-    args = [kernel_name] + [R, G, B] * 4;  
+    args = [kernel_name] + [R, G, B] * 4;
     return kernel_name, """
 #include <stdint.h>
 

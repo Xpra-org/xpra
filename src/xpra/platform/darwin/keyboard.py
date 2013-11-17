@@ -103,7 +103,7 @@ class Keyboard(KeyboardBase):
             trans = self.key_translations.get(key_event.keyname)
             if trans:
                 debug("swap keys: translating key '%s' to %s", key_event, trans)
-                key_event.keycode, key_event.keyname = trans 
+                key_event.keycode, key_event.keyname = trans
         if key_event.keycode==self.num_lock_keycode and not key_event.pressed:
             debug("toggling numlock")
             self.num_lock_state = not self.num_lock_state
