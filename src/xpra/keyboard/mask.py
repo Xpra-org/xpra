@@ -43,9 +43,8 @@ DEFAULT_MODIFIER_MEANINGS = {
 
 def mask_to_names(mask, modifier_map):
     modifiers = []
-    for modifier in DEFAULT_ALL_MODIFIER_NAMES:
-        modifier_mask = modifier_map.get(modifier)
-        if (modifier_mask is not None) and (modifier_mask & mask):
+    for modifier, modifier_mask in modifier_map.items():
+        if modifier_mask & mask:
             modifiers.append(modifier)
             mask &= ~modifier_mask
     return modifiers
