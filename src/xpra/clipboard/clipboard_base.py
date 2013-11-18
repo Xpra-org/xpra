@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os
 import struct
 import re
@@ -402,6 +403,8 @@ class ClipboardProxy(gtk.Invisible):
         self._clipboard = gtk.Clipboard(selection=selection)
         self._enabled = True
         self._have_token = False
+        #this workaround is only needed on win32 AFAIK:
+        self._strip_nullbyte = sys.platform.startswith("win")
         #clients that need a new token for every owner-change: (ie: win32 and osx)
         #(forces the client to request new contents - prevents stale clipboard data)
         self._greedy_client = False
@@ -625,9 +628,15 @@ class ClipboardProxy(gtk.Invisible):
                 cb(None, None, None)
                 return
             debug("unpack: %s", selection_data)
+            data = selection_data.data
             debug("unpack(..) type=%s, format=%s, data=%s:%s", selection_data.type, selection_data.format,
-                        type(selection_data.data), len(selection_data.data or ""))
-            cb(str(selection_data.type), selection_data.format, selection_data.data)
+                        type(data), len(data or ""))
+            if self._strip_nullbyte and selection_data.type in ("UTF8_STRING", "STRING") and selection_data.format==8:
+                #we may have to strip the nullbyte:
+                if data and data[-1]=='\0':
+                    debug("stripping end of string null byte")
+                    data = data[:-1]
+            cb(str(selection_data.type), selection_data.format, data)
         self._clipboard.request_contents(target, unpack)
 
 gobject.type_register(ClipboardProxy)
