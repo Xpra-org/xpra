@@ -436,28 +436,19 @@ class ServerBase(ServerCore):
 
 
     def hello_oked(self, proto, packet, c, auth_caps):
-        screenshot_req = c.boolget("screenshot_request")
-        info_req = c.boolget("info_request", False)
-        if not screenshot_req and not info_req:
-            log.info("Handshake complete; enabling connection")
-
-        if screenshot_req:
-            #this is a screenshot request, handle it and disconnect
-            try:
-                packet = self.make_screenshot_packet()
-                if not packet:
-                    self.send_disconnect(proto, "screenshot failed")
-                    return
-                proto.send_now(packet)
-                self.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
-            except Exception, e:
-                log.error("failed to capture screenshot", exc_info=True)
-                self.send_disconnect(proto, "screenshot failed: %s" % e)
+        if c.boolget("screenshot_request"):
+            self.send_screenshot(proto)
             return
-        if info_req:
-            log.info("processing info request from %s", proto._conn)
+        if c.boolget("info_request", False):
             self.send_hello_info(proto)
             return
+        command_req = c.strlistget("command_request")
+        if len(command_req)>0:
+            self.handle_command_request(proto, command_req)
+            return
+
+        #"normal" connection, so log welcome message:
+        log.info("Handshake complete; enabling connection")
 
         # Things are okay, we accept this connection, and may disconnect previous one(s)
         share_count = 0
@@ -624,7 +615,70 @@ class ServerBase(ServerCore):
             capabilities.update(server_cipher)
         server_source.hello(capabilities)
 
+
+    def handle_command_request(self, proto, args):
+        assert len(args)>0
+        log.info("handle_command_request(%s, %s)", proto, args)
+        command = args[0]
+        def respond(error=0, response=""):
+            log("command request response(%s)=%s", command, response)
+            hello = {"command_response"  : (error, response)}
+            proto.send_now(("hello", hello))
+        def argn_err(argn):
+            respond(4, "invalid number of arguments: %s expected" % argn)
+        def arg_err(n, msg):
+            respond(5, "invalid argument %s: %s" % (n, msg))
+        def success():
+            respond(0, "success")
+
+        commands = ("hello", "set_compression")
+        if command=="help":
+            return respond(0, "control supports: %s" % (", ".join(commands)))
+
+        if command not in commands:
+            return respond(6, "invalid command")
+
+        if command=="hello":
+            return respond(0, "hello")
+        #from here on, we assume the command applies to the
+        #current client connection, of which there must only be one:
+        sss = list(self._server_sources.items())
+        if len(sss)==0:
+            return respond(2, "no client connected")
+        elif len(sss)>1:
+            return respond(3, "more than one client connected")            
+        cproto, csource = sss[0]
+        log("handle_command_request will apply to client: %s", csource)
+        if command=="set_compression":
+            if len(args)!=2:
+                return argn_err(2)
+            compression = args[1].lower()
+            opts = ("lz4", "zlib")
+            if compression not in opts:
+                return arg_err(1, "must be one of: %s" % (", ".join(opts)))                
+            if compression=="lz4":
+                cproto.enable_lz4()
+                return success()
+            elif compression=="zlib":
+                cproto.enable_zlib()
+                return success()
+            return arg_err(1, "must be one of: %s" % (", ".join(opts)))
+
+    def send_screenshot(self, proto):
+        #this is a screenshot request, handle it and disconnect
+        try:
+            packet = self.make_screenshot_packet()
+            if not packet:
+                self.send_disconnect(proto, "screenshot failed")
+                return
+            proto.send_now(packet)
+            self.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
+        except Exception, e:
+            log.error("failed to capture screenshot", exc_info=True)
+            self.send_disconnect(proto, "screenshot failed: %s" % e)
+
     def send_hello_info(self, proto):
+        log.info("processing info request from %s", proto._conn)
         self.get_all_info(self.do_send_info, proto, self._id_to_window.keys())
 
     def get_ui_info(self, proto, wids, *args):

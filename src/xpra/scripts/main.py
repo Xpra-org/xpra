@@ -72,6 +72,7 @@ def parse_cmdline(cmdline):
                         "\t%prog detach [DISPLAY]\n",
                         "\t%prog screenshot filename [DISPLAY]\n",
                         "\t%prog info [DISPLAY]\n",
+                        "\t%prog control [DISPLAY] command [arg1] [arg2]..\n",
                         "\t%prog version [DISPLAY]\n"
                       ]
     server_modes = []
@@ -472,7 +473,7 @@ def run_mode(script_file, parser, options, args, mode):
             nox()
             from xpra.scripts.server import run_server
             return run_server(parser, options, mode, script_file, args)
-        elif mode in ("attach", "detach", "screenshot", "version", "info"):
+        elif mode in ("attach", "detach", "screenshot", "version", "info", "control"):
             return run_client(parser, options, args, mode)
         elif mode in ("stop", "exit") and (supports_server or supports_shadow):
             nox()
@@ -735,6 +736,14 @@ def run_client(parser, opts, extra_args, mode):
     elif mode=="info":
         from xpra.client.gobject_client_base import InfoXpraClient
         app = InfoXpraClient(connect(), opts)
+    elif mode=="control":
+        from xpra.client.gobject_client_base import ControlXpraClient
+        if len(extra_args)<=1:
+            parser.error("not enough arguments for 'control' mode")
+        args = extra_args[1:]
+        extra_args = extra_args[:1]
+        app = ControlXpraClient(connect(), opts)
+        app.set_command_args(args)
     elif mode=="version":
         from xpra.client.gobject_client_base import VersionXpraClient
         app = VersionXpraClient(connect(), opts)

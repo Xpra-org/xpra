@@ -12,7 +12,8 @@ log = Logger()
 
 import re
 from xpra.util import nonl
-from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED
+from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, \
+    EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
@@ -190,6 +191,36 @@ class VersionXpraClient(CommandConnectClient):
         capabilities = GObjectXpraClient.make_hello(self)
         log.debug("make_hello() adding version_request to %s", capabilities)
         capabilities["version_request"] = True
+        return capabilities
+
+
+class ControlXpraClient(CommandConnectClient):
+    """ Allows us to send commands to a server.
+    """
+    def set_command_args(self, command):
+        self.command = command
+
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not respond")
+
+    def _process_hello(self, packet):
+        log.debug("process_hello: %s", packet)
+        props = packet[1]
+        cr = props.get("command_response")
+        if cr is None:
+            self.warn_and_quit(EXIT_UNSUPPORTED, "server does not support control command")
+            return
+        code, text = cr
+        if code!=0:
+            log.warn("server returned error code %s", code)
+            self.warn_and_quit(EXIT_REMOTE_ERROR, text)
+            return
+        self.warn_and_quit(EXIT_OK, text)
+
+    def make_hello(self):
+        capabilities = GObjectXpraClient.make_hello(self)
+        log.debug("make_hello() adding command request '%s' to %s", self.command, capabilities)
+        capabilities["command_request"] = self.command
         return capabilities
 
 

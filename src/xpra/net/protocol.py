@@ -467,6 +467,10 @@ class Protocol(object):
         debug("enable_rencode()")
         self._encoder = self.rencode
 
+    def enable_zlib(self):
+        debug("enable_zlib()")
+        self._compress = zcompress
+
     def enable_lz4(self):
         assert has_lz4, "lz4 cannot be enabled: the module failed to load!"
         assert self.chunked_compression, "cannot enable lz4 without chunked compression"
