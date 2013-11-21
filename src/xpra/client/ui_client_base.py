@@ -648,6 +648,7 @@ class UIXpraClient(XpraClientBase):
             "notifications"             : self.client_supports_notifications,
             "cursors"                   : self.client_supports_cursors,
             "bell"                      : self.client_supports_bell,
+            "sound.server_driven"       : True,
             "encoding.client_options"   : True,
             "encoding_client_options"   : True,
             "encoding.csc_atoms"        : True,
@@ -1152,15 +1153,16 @@ class UIXpraClient(XpraClientBase):
         self.on_sink_ready = sink_ready
         self.start_sound_sink(codec)
 
-    def stop_receiving_sound(self):
+    def stop_receiving_sound(self, tell_server=True):
         """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
         soundlog("stop_receiving_sound() sound sink=%s", self.sound_sink)
         ss = self.sound_sink
         self.speaker_enabled = False
+        if tell_server:
+            self.send("sound-control", "stop")
         if ss is None:
             return
         self.sound_sink = None
-        self.send("sound-control", "stop")
         def stop_receiving_sound_thread():
             soundlog("UIXpraClient.stop_receiving_sound_thread()")
             if ss is None:
@@ -1193,7 +1195,8 @@ class UIXpraClient(XpraClientBase):
         self.emit("speaker-changed")
     def sound_sink_bitrate_changed(self, sound_sink, bitrate):
         soundlog("sound_sink_bitrate_changed(%s, %s)", sound_sink, bitrate)
-        self.emit("speaker-changed")
+        #not shown in the UI, so don't bother with emitting a signal:
+        #self.emit("speaker-changed")
     def sound_sink_error(self, sound_sink, error):
         log.warn("stopping speaker because of error: %s", error)
         self.stop_receiving_sound()
@@ -1242,10 +1245,28 @@ class UIXpraClient(XpraClientBase):
             self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
 
     def _process_sound_data(self, packet):
-        if not self.speaker_enabled:
-            soundlog("speaker is now disabled - dropping packet")
-            return
         codec, data, metadata = packet[1:4]
+        if not self.speaker_enabled:
+            if metadata.get("start-of-stream"):
+                #server is asking us to start playing sound
+                if not self.speaker_allowed:
+                    #no can do!
+                    self.stop_receiving_sound(True)
+                    return
+                self.speaker_enabled = True
+                self.emit("speaker-changed")
+                self.on_sink_ready = None
+                codec = metadata.get("codec")
+                soundlog("starting speaker on server request using codec %s", codec)
+                self.start_sound_sink(codec)
+            else:
+                soundlog("speaker is now disabled - dropping packet")
+                return
+        elif metadata.get("end-of-stream"):
+            if self.sound_sink:
+                soundlog("server sent end-of-stream, closing sound pipeline")
+                self.stop_receiving_sound(False)
+            return
         seq = metadata.get("sequence", -1)
         if self.min_sound_sequence>0 and seq<self.min_sound_sequence:
             soundlog("ignoring sound data with old sequence number %s", seq)
@@ -1260,7 +1281,9 @@ class UIXpraClient(XpraClientBase):
         elif self.sound_sink.get_state()=="stopped":
             soundlog("sound data received, sound sink is stopped - starting it")
             self.sound_sink.start()
-        self.sound_sink.add_data(data, metadata)
+        #(some packets (ie: sos, eos) only contain metadata)
+        if len(data)>0:
+            self.sound_sink.add_data(data, metadata)
 
 
     def send_notify_enabled(self):

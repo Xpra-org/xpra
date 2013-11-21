@@ -577,6 +577,7 @@ class ServerBase(ServerCore):
              "suspend-resume"               : True,
              "encoding.generic"             : True,
              "exit_server"                  : True,
+             "sound.server_driven"          : True,
              "server_type"                  : "base",
              })
         add_version_info(capabilities)
@@ -617,8 +618,15 @@ class ServerBase(ServerCore):
 
 
     def handle_command_request(self, proto, args):
+        try:
+            self.do_handle_command_request(proto, args)
+        except:
+            log.error("error processing command: %s", args, exc_info=True)
+            proto.send_now(("hello", {"command_response"  : (127, "error processing command")}))
+
+    def do_handle_command_request(self, proto, args):
         assert len(args)>0
-        log.info("handle_command_request(%s, %s)", proto, args)
+        log("handle_command_request(%s, %s)", proto, args)
         command = args[0]
         def respond(error=0, response=""):
             log("command request response(%s)=%s", command, response)
@@ -631,7 +639,7 @@ class ServerBase(ServerCore):
         def success():
             respond(0, "success")
 
-        commands = ("hello", "set_compression")
+        commands = ("hello", "set_compression", "sound-output", "suspend", "resume")
         if command=="help":
             return respond(0, "control supports: %s" % (", ".join(commands)))
 
@@ -663,6 +671,20 @@ class ServerBase(ServerCore):
                 cproto.enable_zlib()
                 return success()
             return arg_err(1, "must be one of: %s" % (", ".join(opts)))
+        elif command=="sound-output":
+            if len(args)!=2:
+                return argn_err("more than 1")
+            msg = csource.sound_control(*args[1:])
+            return respond(0, msg)
+        elif command=="suspend":
+            csource.suspend(True, self._id_to_window)
+            return respond(0, "suspended")
+        elif command=="resume":
+            csource.resume(True, self._id_to_window)
+            return respond(0, "suspended")
+        else:
+            return respond(9, "internal state error: invalid command '%s'", command)
+
 
     def send_screenshot(self, proto):
         #this is a screenshot request, handle it and disconnect

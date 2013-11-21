@@ -28,6 +28,8 @@ from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machin
 from xpra.server.background_worker import add_work_item
 from xpra.util import std, typedict
 
+
+ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
@@ -272,6 +274,7 @@ class ServerSource(object):
         self.pulseaudio_server = None
         self.sound_decoders = []
         self.sound_encoders = []
+        self.server_driven = False
 
         self.keyboard_config = None
         self.cursor_data = None
@@ -476,6 +479,7 @@ class ServerSource(object):
         self.sound_encoders = c.strlistget("sound.encoders", [])
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
+        self.server_driven = c.boolget("sound.server_driven")
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.pulseaudio_id, self.pulseaudio_server, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
 
@@ -601,7 +605,7 @@ class ServerSource(object):
         if self.suspended:
             log.warn("not starting sound as we are suspended")
             return
-        if self.machine_id and self.machine_id==get_machine_id():
+        if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
             #looks like we're on the same machine, verify it's a different user:
             if self.uuid==get_user_uuid():
                 log.warn("cannot start sound: identical user environment as the server (loop)")
@@ -614,6 +618,12 @@ class ServerSource(object):
             self.sound_source = start_sending_sound(codec, self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
             soundlog("start_sending_sound() sound source=%s", self.sound_source)
             if self.sound_source:
+                if self.server_driven:
+                    #tell the client this is the start:
+                    self.send("sound-data", self.sound_source.codec, "",
+                              {"start-of-stream"    : True,
+                               "codec"              : self.sound_source.codec,
+                               "sequence"           : self.sound_source_sequence})
                 self.sound_source.connect("new-buffer", self.new_sound_buffer)
                 self.sound_source.start()
         except Exception, e:
@@ -624,6 +634,9 @@ class ServerSource(object):
         soundlog("stop_sending_sound() sound_source=%s", ss)
         if ss:
             self.sound_source = None
+            if self.server_driven:
+                #tell the client this is the end:
+                self.send("sound-data", ss.codec, "", {"end-of-stream" : True})
             def stop_sending_sound_thread(*args):
                 soundlog("stop_sending_sound_thread(%s)", args)
                 ss.cleanup()
@@ -655,20 +668,25 @@ class ServerSource(object):
         soundlog("sound_control(%s, %s)", action, args)
         if action=="stop":
             self.stop_sending_sound()
+            return "stopped"
         elif action=="start":
             codec = None
             if len(args)>0:
                 codec = args[0]
             self.start_sending_sound(codec)
+            return "started %s" % codec
         elif action=="new-sequence":
             self.sound_source_sequence = args[0]
+            return "new sequence is %s" % self.sound_source_sequence
         #elif action=="quality":
         #    assert self.sound_source
         #    quality = args[0]
         #    self.sound_source.set_quality(quality)
         #    self.start_sending_sound()
         else:
-            log.error("unknown sound action: %s", action)
+            msg = "unknown sound action: %s" % action
+            log.error(msg)
+            return msg
 
     def sound_data(self, codec, data, metadata, *args):
         soundlog("sound_data(%s, %s, %s, %s) sound sink=%s", codec, len(data or []), metadata, args, self.sound_sink)
