@@ -72,7 +72,7 @@ def parse_cmdline(cmdline):
                         "\t%prog detach [DISPLAY]\n",
                         "\t%prog screenshot filename [DISPLAY]\n",
                         "\t%prog info [DISPLAY]\n",
-                        "\t%prog control [DISPLAY] command [arg1] [arg2]..\n",
+                        "\t%prog control DISPLAY command [arg1] [arg2]..\n",
                         "\t%prog version [DISPLAY]\n"
                       ]
     server_modes = []
