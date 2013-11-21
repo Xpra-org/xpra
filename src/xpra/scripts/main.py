@@ -599,6 +599,8 @@ def pick_display(parser, opts, extra_args):
                         for (state, display) in servers
                         if state is DotXpra.LIVE]
         if len(live_servers) == 0:
+            if not LOCAL_SERVERS_SUPPORTED:
+                parser.error("this installation does not support local servers, you must specify a remote display")
             parser.error("cannot find a live server to connect to")
         elif len(live_servers) == 1:
             return parse_display_name(parser.error, opts, live_servers[0])
@@ -699,6 +701,8 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
 
     elif dtype == "unix-domain":
+        if not hasattr(socket, "AF_UNIX"):
+            return False, "unix domain sockets are not available on this operating system"
         sockdir = DotXpra(display_desc["socket_dir"])
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(5)
