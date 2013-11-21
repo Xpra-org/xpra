@@ -216,6 +216,7 @@ class Protocol(object):
         self.large_packets = ["hello"]
         self.aliases = {}
         self.chunked_compression = True
+        self._log_stats = True
         self._closed = False
         self._encoder = self.noencode
         self._compress = zcompress
@@ -865,7 +866,8 @@ class Protocol(object):
         if self._conn:
             try:
                 self._conn.close()
-                log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
+                if self._log_stats:
+                    log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
                          std_unit(self.input_packetcount), std_unit_dec(self._conn.input_bytecount),
                          std_unit(self.output_packetcount), std_unit_dec(self._conn.output_bytecount)
                          )

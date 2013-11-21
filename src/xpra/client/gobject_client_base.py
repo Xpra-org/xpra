@@ -105,6 +105,12 @@ class CommandConnectClient(GObjectXpraClient):
         GObjectXpraClient.__init__(self)
         GObjectXpraClient.init(self, opts)
         self.connect_with_timeout(conn)
+        self._protocol._log_stats  = False
+
+    def _process_connection_lost(self, packet):
+        #override so we don't log a warning
+        #"command clients" are meant to exit quickly by losing the connection
+        self.quit(EXIT_OK)
 
 
 class ScreenshotXpraClient(CommandConnectClient):
