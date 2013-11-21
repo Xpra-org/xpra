@@ -459,7 +459,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log.warn("focus(..) cannot focus OR window: %s", window)
             return
         log("focus(%s, %s, %s) giving focus to %s", server_source, wid, modifiers, window)
-        window.give_client_focus()
+        #using idle_add seems to prevent some focus races:
+        gobject.idle_add(window.give_client_focus)
         if server_source and modifiers is not None:
             server_source.make_keymask_match(modifiers)
         self._has_focus = wid
