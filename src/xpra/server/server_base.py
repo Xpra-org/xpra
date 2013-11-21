@@ -681,7 +681,7 @@ class ServerBase(ServerCore):
             return respond(0, "suspended")
         elif command=="resume":
             csource.resume(True, self._id_to_window)
-            return respond(0, "suspended")
+            return respond(0, "resumed")
         else:
             return respond(9, "internal state error: invalid command '%s'", command)
 
