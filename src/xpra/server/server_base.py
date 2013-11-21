@@ -620,9 +620,9 @@ class ServerBase(ServerCore):
     def handle_command_request(self, proto, args):
         try:
             self.do_handle_command_request(proto, args)
-        except:
-            log.error("error processing command: %s", args, exc_info=True)
-            proto.send_now(("hello", {"command_response"  : (127, "error processing command")}))
+        except Exception, e:
+            log.error("error processing command %s", args, exc_info=True)
+            proto.send_now(("hello", {"command_response"  : (127, "error processing command: %s" % e)}))
 
     def do_handle_command_request(self, proto, args):
         assert len(args)>0
