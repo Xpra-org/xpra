@@ -206,10 +206,9 @@ cdef int avcodec_get_buffer(AVCodecContext *avctx, AVFrame *frame) with gil:
     decoder = get_decoder(avctx)
     ret = avcodec_default_get_buffer(avctx, frame)
     if ret==0:
-        frame_key = get_frame_key(frame)
         frame_wrapper = AVFrameWrapper()
         frame_wrapper.set_context(avctx, frame)
-        decoder.add_framewrapper(frame_key, frame_wrapper)
+        decoder.add_framewrapper(frame_wrapper)
     #debug("avcodec_get_buffer(%s, %s) ret=%s, decoder=%s, frame pointer=%s",
     #        hex(<unsigned long> avctx), hex(frame_key), ret, decoder, hex(frame_key))
     return ret
@@ -238,6 +237,7 @@ cdef class AVFrameWrapper:
         self.frame = frame
         self.av_freed = 0
         self.xpra_freed = 0
+        debug("%s.set_context(%s, %s)", self, hex(<long> avctx), hex(<long> frame))
 
     def __dealloc__(self):
         #debug("CSCImage.__dealloc__()")
@@ -251,7 +251,7 @@ cdef class AVFrameWrapper:
         return "AVFrameWrapper(%s)" % hex(self.get_key())
 
     def xpra_free(self):
-        debug("%s.xpra_free()", self)
+        debug("%s.xpra_free() av_freed=%s", self, self.av_freed)
         self.xpra_freed = 1
         if self.av_freed==0:
             return False
@@ -259,14 +259,14 @@ cdef class AVFrameWrapper:
         return True
 
     def av_free(self):
-        debug("%s.av_free()", self)
+        debug("%s.av_free() xpra_freed=%s", self, self.xpra_freed)
         self.av_freed = 1
         if self.xpra_freed==0:
             return False
         self.free()
         return True
 
-    def free(self):
+    cdef free(self):
         debug("%s.free()", self)
         if self.avctx!=NULL and self.frame!=NULL:
             avcodec_default_release_buffer(self.avctx, self.frame)
@@ -289,15 +289,17 @@ class AVImageWrapper(ImageWrapper):
         return ImageWrapper.__str__(self)+"-(%s)" % self.av_frame
 
     def free(self):                             #@DuplicatedSignature
-        debug("AVImageWrapper.free() av_frame=%s", self.av_frame)
+        debug("AVImageWrapper.free()")
         ImageWrapper.free(self)
         self.xpra_free_frame()
 
     def clone_pixel_data(self):
+        debug("AVImageWrapper.clone_pixel_data()")
         ImageWrapper.clone_pixel_data(self)
         self.xpra_free_frame()
 
     def xpra_free_frame(self):
+        debug("AVImageWrapper.xpra_free_frame() av_frame=%s", self.av_frame)
         if self.av_frame:
             assert self.decoder, "no decoder set!"
             self.decoder.xpra_free(self.av_frame.get_key())
@@ -563,8 +565,9 @@ cdef class Decoder:
         return img
 
 
-    def frame_error(self):
-        cdef unsigned long frame_key = get_frame_key(self.frame)
+    cdef frame_error(self):
+        cdef unsigned long frame_key                    #@DuplicatedSignature
+        frame_key = get_frame_key(self.frame)
         framewrapper = self.get_framewrapper(frame_key, True)
         log("frame_error() freeing %s", framewrapper)
         if framewrapper:
@@ -572,16 +575,15 @@ cdef class Decoder:
             self.av_free(frame_key)
         return framewrapper
 
-    def get_framewrapper(self, frame_key, ignore_missing=False):
+    cdef get_framewrapper(self, frame_key, ignore_missing=False):
         framewrapper = self.framewrappers.get(int(frame_key))
-        #debug("get_framewrapper(%s)=%s, known frame keys=%s", frame_key, framewrapper,
-        #                        [hex(x) for x in self.framewrappers.keys()])
         assert ignore_missing or framewrapper is not None, "frame not found for pointer %s, known frame keys=%s" % (hex(frame_key),
                                 [hex(x) for x in self.framewrappers.keys()])
         return framewrapper
 
-    def add_framewrapper(self, frame_key, frame_wrapper):
-        debug("add_framewrapper(%s, %s) known frame keys: %s", hex(frame_key), frame_wrapper,
+    def add_framewrapper(self, frame_wrapper):
+        frame_key = frame_wrapper.get_key()
+        debug("add_framewrapper(%s) frame key=%s, known frame keys: %s", frame_wrapper, hex(frame_key),
                                 [hex(x) for x in self.framewrappers.keys()])
         self.framewrappers[int(frame_key)] = frame_wrapper
 
