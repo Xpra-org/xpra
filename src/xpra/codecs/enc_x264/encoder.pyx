@@ -304,7 +304,7 @@ cdef class Encoder:
     def get_src_format(self):
         return self.src_format
 
-    def _get_profile(self, options, csc_mode):
+    cdef _get_profile(self, options, csc_mode):
         #try the environment as a default, fallback to hardcoded default:
         profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode)
         #now see if the client has requested a different value:

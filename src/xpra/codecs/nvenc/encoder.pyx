@@ -31,6 +31,9 @@ CLIENT_KEY = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "0"))
 
+#API is undocumented and broken:
+USE_YUV444P = False
+
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
@@ -1269,7 +1272,7 @@ cdef raiseNVENC(NVENCSTATUS ret, msg=""):
 
 #cache the cubin files for each device_id:
 KERNEL_cubins = {}
-def get_CUDA_kernel(device_id, kernel_name, kernel_source):
+cdef get_CUDA_kernel(device_id, kernel_name, kernel_source):
     start = time.time()
     global KERNEL_cubins
     cubin = KERNEL_cubins.get((device_id, kernel_name))
@@ -1284,11 +1287,11 @@ def get_CUDA_kernel(device_id, kernel_name, kernel_source):
     debug("compilation of %s took %.1fms", kernel_name, 1000.0*(end-start))
     return kernel_name, kernel_function
 
-def get_BGRA2YUV444P(device_id):
+cdef get_BGRA2YUV444P(device_id):
     from xpra.codecs.nvenc.CUDA_rgb2yuv444p import BGRA2YUV444P_kernel
     return get_CUDA_kernel(device_id, "BGRA2YUV444P", BGRA2YUV444P_kernel)
 
-def get_BGRA2NV12(device_id):
+cdef get_BGRA2NV12(device_id):
     from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
     return get_CUDA_kernel(device_id, "BGRA2NV12", BGRA2NV12_kernel)
 
@@ -1397,7 +1400,7 @@ cdef class Encoder:
         end = time.time()
         debug("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
 
-    def init_cuda(self):
+    cdef init_cuda(self):
         assert self.device_id in get_cuda_devices().keys(), "invalid device_id '%s' (available: %s)" % (self.device_id, cuda_devices)
         global context_counter, context_failures_history
         debug("init_cuda() device_id=%s", self.device_id)
@@ -1415,13 +1418,7 @@ cdef class Encoder:
         d = self.cuda_device
         da = driver.device_attribute
         try:
-            if True:
-                self.kernel_name, self.kernel = get_BGRA2NV12(self.device_id)
-                self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
-                self.pixel_format = "NV12"
-                #1 full Y plane and 2 U+V planes subsampled by 4:
-                plane_size_div = 2
-            else:
+            if USE_YUV444P:
                 #FIXME: YUV444P doesn't work and I don't know why
                 #No idea what "separateColourPlaneFlag" is meant to do either
                 self.kernel_name, self.kernel = get_BGRA2YUV444P(self.device_id)
@@ -1429,6 +1426,12 @@ cdef class Encoder:
                 self.pixel_format = "YUV444P"
                 #3 full planes:
                 plane_size_div = 1
+            else:
+                self.kernel_name, self.kernel = get_BGRA2NV12(self.device_id)
+                self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
+                self.pixel_format = "NV12"
+                #1 full Y plane and 2 U+V planes subsampled by 4:
+                plane_size_div = 2
 
             #allocate CUDA input buffer (on device) 32-bit RGB:
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(self.input_width*4, self.input_height, 16)
@@ -1452,7 +1455,7 @@ cdef class Encoder:
         finally:
             self.cuda_context.pop()
 
-    def init_nvenc(self):
+    cdef init_nvenc(self):
         cdef GUID codec
         cdef GUID preset
         cdef GUID profile
@@ -1581,7 +1584,7 @@ cdef class Encoder:
                 self.cuda_context.detach()
                 self.cuda_context = None
 
-    def cuda_clean(self):
+    cdef cuda_clean(self):
         if self.context!=NULL:
             self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
@@ -1639,7 +1642,7 @@ cdef class Encoder:
         pass
 
 
-    def flushEncoder(self):
+    cdef flushEncoder(self):
         cdef NV_ENC_PIC_PARAMS picParams
         memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
         picParams.version = NV_ENC_PIC_PARAMS_VER
@@ -1653,7 +1656,7 @@ cdef class Encoder:
         finally:
             self.cuda_context.pop()
 
-    def do_compress_image(self, image, options={}):
+    cdef do_compress_image(self, image, options={}):
         cdef const void* buf = NULL
         cdef Py_ssize_t buf_len = 0
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
