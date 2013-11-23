@@ -35,7 +35,7 @@ else:
 
 
 from xpra.deque import maxdeque
-from xpra.net.protocol import compressed_wrapper, Compressed
+from xpra.net.protocol import compressed_wrapper, Compressed, use_lz4
 from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
@@ -949,7 +949,8 @@ class WindowSource(object):
         cdata = zlib
         options = {}
         if level>0:
-            zlib = compressed_wrapper(coding, pixels, level=level, lz4=self.rgb_lz4)
+            lz4 = use_lz4 and self.rgb_lz4
+            zlib = compressed_wrapper(coding, pixels, level=level, lz4=lz4)
             cdata = zlib.data
             #debug("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
             #         coding, pixel_format, len(pixels), len(cdata), int(100.0*len(cdata)/len(pixels)), self.rgb_lz4)
@@ -959,7 +960,7 @@ class WindowSource(object):
                 zlib = str(pixels)
                 cdata = zlib
             else:
-                if self.rgb_lz4:
+                if lz4:
                     options["lz4"] = True
                 else:
                     options["zlib"] = level

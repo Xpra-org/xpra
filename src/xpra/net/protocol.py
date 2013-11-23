@@ -172,7 +172,8 @@ class LevelCompressed(Compressed):
         return  "LevelCompressed(%s: %s bytes as %s/%s)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
 def compressed_wrapper(datatype, data, level=5, lz4=False):
-    if lz4 and has_lz4:
+    if lz4:
+        assert use_lz4, "cannot use lz4"
         algo = "lz4"
         cl, cdata = lz4_compress(data, level & LZ4_FLAG)
     else:
