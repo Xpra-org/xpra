@@ -9,6 +9,7 @@
 import gtk.gdk
 import gobject
 gobject.threads_init()
+gtk.gdk.threads_init()
 
 from xpra.log import Logger
 log = Logger()
@@ -44,7 +45,11 @@ class GTKServerBase(ServerBase):
     def do_run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
         log("calling gtk.main()")
-        gtk.main()
+        try:
+            gtk.threads_enter()
+            gtk.main()
+        finally:
+            gtk.threads_leave()
         log("end of gtk.main()")
 
     def add_listen_socket(self, socktype, sock):
