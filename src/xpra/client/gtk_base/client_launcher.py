@@ -15,11 +15,12 @@ import sys
 import shlex
 import signal
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject
-gtk = import_gtk()
-gdk = import_gdk()
-gobject = import_gobject()
+import pygtk
+pygtk.require('2.0')
+import gtk.gdk
+import gobject
 gobject.threads_init()
+gtk.threads_init()
 import pango
 
 
@@ -278,7 +279,8 @@ class ApplicationWindow:
         self.window.present()
 
     def run(self):
-        gtk.main()
+        from xpra.gtk_common.gtk2common import gtk2main
+        gtk2main()
 
     def get_icon(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
