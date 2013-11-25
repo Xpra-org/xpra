@@ -384,6 +384,10 @@ def get_xorg_conf_and_script():
     def Xvfb():
         return "etc/xpra/Xvfb/xpra.conf", False
 
+    if sys.platform.find("bsd")>=0:
+        print("Warning: sorry, no support for Xdummy on %s" % sys.platform)
+        return Xvfb()
+
     if not XORG_BIN:
         print("Xorg not found, cannot detect version or Xdummy support")
         return Xvfb()
