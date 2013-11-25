@@ -63,6 +63,12 @@ class XpraClient(GTKXpraClient):
             self.ClientWindowClass = ClientWindow
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
 
+    def gtk_main(self):
+        if gtk.main_level()==0:
+            gtk.threads_enter()
+            gtk.main()
+            gtk.threads_leave()
+
     def client_type(self):
         return "Python/Gtk2"
 

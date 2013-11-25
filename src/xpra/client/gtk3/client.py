@@ -23,6 +23,9 @@ class XpraClient(GTKXpraClient):
     INPUT_ONLY = None #got moved again???? Gtk.WindowWindowClass.INPUT_ONLY
     ClientWindowClass = ClientWindow
 
+    def gtk_main(self):
+        Gtk.main()
+
     def make_hello(self):
         capabilities = GTKXpraClient.make_hello(self)
         if xor_str is not None:

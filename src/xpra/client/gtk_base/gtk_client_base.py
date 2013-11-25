@@ -48,10 +48,12 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def run(self):
         UIXpraClient.run(self)
         gtk_main_quit_on_fatal_exceptions_enable()
-        if gtk.main_level()==0:
-            gtk.main()
+        self.gtk_main()
         log("GTKXpraClient.run_main_loop() main loop ended, returning exit_code=%s", self.exit_code)
         return  self.exit_code
+
+    def gtk_main(self):
+        raise NotImplementedError()
 
     def quit(self, exit_code=0):
         log("GTKXpraClient.quit(%s) current exit_code=%s", exit_code, self.exit_code)
