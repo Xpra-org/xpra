@@ -373,13 +373,6 @@ def pkgconfig(*packages_options, **ekw):
 def get_xorg_conf_and_script():
     if not server_ENABLED:
         return "etc/xpra/client-only/xpra.conf", False
-    XORG_BIN = None
-    PATHS = os.environ.get("PATH").split(os.pathsep)
-    for x in PATHS:
-        xorg = os.path.join(x, "Xorg")
-        if os.path.isfile(xorg):
-            XORG_BIN = xorg
-            break
 
     def Xvfb():
         return "etc/xpra/Xvfb/xpra.conf", False
@@ -388,6 +381,13 @@ def get_xorg_conf_and_script():
         print("Warning: sorry, no support for Xdummy on %s" % sys.platform)
         return Xvfb()
 
+    XORG_BIN = None
+    PATHS = os.environ.get("PATH").split(os.pathsep)
+    for x in PATHS:
+        xorg = os.path.join(x, "Xorg")
+        if os.path.isfile(xorg):
+            XORG_BIN = xorg
+            break
     if not XORG_BIN:
         print("Xorg not found, cannot detect version or Xdummy support")
         return Xvfb()
