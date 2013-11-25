@@ -15,24 +15,24 @@ from xpra.platform import init
 
 
 modifier_names = {
-                  gtk.gdk.SHIFT_MASK    : "Shift",
-                  gtk.gdk.LOCK_MASK        : "Lock",
-                  gtk.gdk.CONTROL_MASK  : "Control",
-                  gtk.gdk.MOD1_MASK        : "mod1",
-                  gtk.gdk.MOD2_MASK        : "mod2",
-                  gtk.gdk.MOD3_MASK        : "mod3",
-                  gtk.gdk.MOD4_MASK        : "mod4",
-                  gtk.gdk.MOD5_MASK        : "mod5"
+                  gtk.gdk.SHIFT_MASK        : "Shift",
+                  gtk.gdk.LOCK_MASK         : "Lock",
+                  gtk.gdk.CONTROL_MASK      : "Control",
+                  gtk.gdk.MOD1_MASK         : "mod1",
+                  gtk.gdk.MOD2_MASK         : "mod2",
+                  gtk.gdk.MOD3_MASK         : "mod3",
+                  gtk.gdk.MOD4_MASK         : "mod4",
+                  gtk.gdk.MOD5_MASK         : "mod5"
                   }
 short_modifier_names = {
-                  gtk.gdk.SHIFT_MASK    : "S",
-                  gtk.gdk.LOCK_MASK        : "L",
-                  gtk.gdk.CONTROL_MASK  : "C",
-                  gtk.gdk.MOD1_MASK        : "1",
-                  gtk.gdk.MOD2_MASK        : "2",
-                  gtk.gdk.MOD3_MASK        : "3",
-                  gtk.gdk.MOD4_MASK        : "4",
-                  gtk.gdk.MOD5_MASK        : "5"
+                  gtk.gdk.SHIFT_MASK        : "S",
+                  gtk.gdk.LOCK_MASK         : "L",
+                  gtk.gdk.CONTROL_MASK      : "C",
+                  gtk.gdk.MOD1_MASK         : "1",
+                  gtk.gdk.MOD2_MASK         : "2",
+                  gtk.gdk.MOD3_MASK         : "3",
+                  gtk.gdk.MOD4_MASK         : "4",
+                  gtk.gdk.MOD5_MASK         : "5"
                   }
 
 class KeyboardStateInfoWindow:
