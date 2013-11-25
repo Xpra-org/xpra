@@ -935,7 +935,7 @@ class WindowSource(object):
         pixel_format = image.get_pixel_format()
         if pixel_format not in self.rgb_formats:
             if not self.rgb_reformat(image):
-                raise Exception("cannot find compatible rgb format to use for %s!" % pixel_format)
+                raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, self.rgb_formats))
             #get the new format:
             pixel_format = image.get_pixel_format()
         #compress here and return a wrapper so network code knows it is already zlib compressed:
@@ -1078,6 +1078,9 @@ class WindowSource(object):
         h = image.get_height()
         pixels = image.get_pixels()
         PIL = get_codec("PIL")
+        if not PIL:
+            self.warn_encoding_once("no-PIL-module", "no PIL module, cannot convert %s to one of: %s" % (pixel_format, self.rgb_formats))
+            return False
         img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
         rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
         data = img.tostring("raw", target_format)
