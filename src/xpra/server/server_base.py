@@ -639,7 +639,7 @@ class ServerBase(ServerCore):
         def success():
             respond(0, "success")
 
-        commands = ("hello", "set_compression", "sound-output", "suspend", "resume")
+        commands = ("hello", "compression", "sound-output", "suspend", "resume", "name")
         if command=="help":
             return respond(0, "control supports: %s" % (", ".join(commands)))
 
@@ -657,7 +657,7 @@ class ServerBase(ServerCore):
             return respond(3, "more than one client connected")            
         cproto, csource = sss[0]
         log("handle_command_request will apply to client: %s", csource)
-        if command=="set_compression":
+        if command=="compression":
             if len(args)!=2:
                 return argn_err(2)
             compression = args[1].lower()
@@ -672,7 +672,7 @@ class ServerBase(ServerCore):
                 return success()
             return arg_err(1, "must be one of: %s" % (", ".join(opts)))
         elif command=="sound-output":
-            if len(args)!=2:
+            if len(args)<2:
                 return argn_err("more than 1")
             msg = csource.sound_control(*args[1:])
             return respond(0, msg)
@@ -682,6 +682,12 @@ class ServerBase(ServerCore):
         elif command=="resume":
             csource.resume(True, self._id_to_window)
             return respond(0, "resumed")
+        elif command=="name":
+            if len(args)!=2:
+                return argn_err(1)
+            self.session_name = args[1]
+            log.info("changed session name: %s", self.session_name)
+            return respond(0, "session name set")
         else:
             return respond(9, "internal state error: invalid command '%s'", command)
 
