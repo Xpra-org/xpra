@@ -45,6 +45,10 @@ try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except:
     xor_str = None
+try:
+    from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba
+except:
+    bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
 from xpra.os_util import StringIOClass
 from xpra.codecs.loader import get_codec, has_codec, NEW_ENCODING_NAMES_TO_OLD
 
@@ -193,6 +197,9 @@ class WindowSource(object):
         self.supports_transparency = ALLOW_ALPHA and properties.get("encoding.transparency", self.supports_transparency)
         self.encodings = properties.get("encodings", self.encodings)
         self.core_encodings = properties.get("encodings.core", self.core_encodings)
+        #unless the client tells us it does support alpha, assume it does not:
+        self.rgb_formats = properties.get("encodings.rgb_formats", [x for x in self.rgb_formats if x.find("A")<0])
+        debug("set_client_properties: window rgb_formats=%s", self.rgb_formats)
 
 
     def unmap(self):
@@ -1062,9 +1069,50 @@ class WindowSource(object):
         buf.close()
         return coding, Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
 
+    def argb_swap(self, image):
+        """ use the argb codec to do the RGB byte swapping """
+        pixel_format = image.get_pixel_format()
+        if None in (bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba):
+            self.warn_encoding_once("argb-module-missing", "no argb module, cannot convert %s to one of: %s" % (pixel_format, self.rgb_formats))
+            return False
+            
+        #try to fallback to argb module
+        #if we have one of the target pixel formats:
+        pixels = image.get_pixels()
+        rs = image.get_rowstride()
+        if pixel_format in ("BGRX", "BGRA"):
+            if self.supports_transparency and "RGBA" in self.rgb_formats:
+                image.set_pixels(bgra_to_rgba(pixels))
+                image.set_pixel_format("RGBA")
+                return True
+            if "RGB" in self.rgb_formats:
+                image.set_pixels(bgra_to_rgb(pixels))
+                image.set_pixel_format("RGB")
+                image.set_rowstride(rs/4*3)
+                return True
+        if pixel_format in ("XRGB", "ARGB"):
+            if self.supports_transparency and "RGBA" in self.rgb_formats:
+                image.set_pixels(argb_to_rgba(pixels))
+                image.set_pixel_format("RGBA")
+                return True
+            if "RGB" in self.rgb_formats:
+                image.set_pixels(argb_to_rgb(pixels))
+                image.set_pixel_format("RGB")
+                image.set_rowstride(rs/4*3)
+                return True
+        self.warn_encoding_once(pixel_format+"-format-not-handled", "no matching argb function: cannot convert %s to one of: %s" % (pixel_format, self.rgb_formats))
+        return False
+
+
     def rgb_reformat(self, image):
+        """ convert the RGB pixel data into a format supported by the client """
         #need to convert to a supported format!
         pixel_format = image.get_pixel_format()
+        pixels = image.get_pixels()
+        PIL = get_codec("PIL")
+        if not PIL:
+            #try to fallback to argb module
+            return self.argb_swap(image)
         target_format = {
                  "XRGB"   : "RGB",
                  "BGRX"   : "RGB",
@@ -1076,11 +1124,6 @@ class WindowSource(object):
         start = time.time()
         w = image.get_width()
         h = image.get_height()
-        pixels = image.get_pixels()
-        PIL = get_codec("PIL")
-        if not PIL:
-            self.warn_encoding_once("no-PIL-module", "no PIL module, cannot convert %s to one of: %s" % (pixel_format, self.rgb_formats))
-            return False
         img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
         rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
         data = img.tostring("raw", target_format)
