@@ -152,7 +152,7 @@ cdef extern from "X11/extensions/xfixeswire.h":
 
 
 
-from xpra.codecs.argb.argb cimport argbdata_to_pixdata
+from xpra.codecs.argb.argb cimport argbdata_to_rgba
 
 # xmodmap's "keycode" action done implemented in python
 # some of the methods aren't very pythonic
@@ -688,7 +688,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             if image==NULL:
                 return  None
             l = image.width*image.height*4
-            pixels = argbdata_to_pixdata(<const unsigned long*> image.pixels, l)
+            pixels = argbdata_to_rgba(<const unsigned char*> image.pixels, l)
             name = str(image.name)
             return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
                 image.cursor_serial, pixels, name]
