@@ -607,7 +607,7 @@ class WindowSource(object):
             else:
                 encs.insert(0, "rgb24")
                 encs.insert(1, "rgb32")
-            log.info("get_core_encodings(%s, %s) encs=%s, server_core_encodings=%s, core_encodings=%s", has_alpha, current_encoding, encs, self.server_core_encodings, self.core_encodings)
+            log("get_core_encodings(%s, %s) encs=%s, server_core_encodings=%s, core_encodings=%s", has_alpha, current_encoding, encs, self.server_core_encodings, self.core_encodings)
             for e in encs:
                 if e in self.server_core_encodings and e in self.core_encodings:
                     return e
