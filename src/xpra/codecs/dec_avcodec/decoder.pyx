@@ -49,6 +49,9 @@ ctypedef long AVPixelFormat
 cdef extern from "libavutil/mem.h":
     void av_free(void *ptr)
 
+cdef extern from "libavutil/error.h":
+    int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
+
 cdef extern from "libavcodec/avcodec.h":
     ctypedef struct AVFrame:
         uint8_t **data
@@ -324,6 +327,7 @@ cdef class Decoder:
     cdef int width
     cdef int height
     cdef object encoding
+    cdef int r
 
     def init_context(self, encoding, int width, int height, colorspace):
         init_colorspaces()
@@ -376,8 +380,9 @@ cdef class Decoder:
         self.codec_ctx.thread_type = 2      #FF_THREAD_SLICE: allow more than one thread per frame
         self.codec_ctx.thread_count = 0     #auto
         self.codec_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
-        if avcodec_open2(self.codec_ctx, self.codec, NULL) < 0:
-            error("could not open codec")
+        r = avcodec_open2(self.codec_ctx, self.codec, NULL) < 0
+        if r<0:
+            error("could not open codec: %s", self.av_error_str(r))
             self.clean_decoder()
             return  False
         self.frame = avcodec_alloc_frame()
@@ -402,6 +407,7 @@ cdef class Decoder:
         self.clean_decoder()
 
     def clean_decoder(self):
+        cdef int r                      #@DuplicateSignature
         debug("%s.clean_decoder()", self)
         #we may have images handed out, ensure we don't reference any memory
         #that needs to be freed using avcodec_release_buffer(..)
@@ -422,7 +428,9 @@ cdef class Decoder:
         cdef unsigned long ctx_key          #@DuplicatedSignature
         debug("clean_decoder() freeing AVCodecContext: %s", hex(<unsigned long> self.codec_ctx))
         if self.codec_ctx!=NULL:
-            avcodec_close(self.codec_ctx)
+            r = avcodec_close(self.codec_ctx)
+            if r!=0:
+                log.warn("error closing decoder context %s: %s", hex(<unsigned long> self.codec_ctx), self.av_error_str(r))
             av_free(self.codec_ctx)
             global DECODERS
             ctx_key = get_context_key(self.codec_ctx)
@@ -431,6 +439,11 @@ cdef class Decoder:
             self.codec_ctx = NULL
         debug("clean_decoder() done")
 
+    def av_error_str(self, errnum):
+        cdef char[128] err_str
+        if av_strerror(errnum, err_str, 128)==0:
+            return str(err_str[:128])
+        return str(errnum)
 
     def __str__(self):                      #@DuplicatedSignature
         return "dec_avcodec.Decoder(%s)" % self.get_info()
@@ -499,7 +512,7 @@ cdef class Decoder:
             free(padded_buf)
         if len < 0: #for testing add: or options.get("frame", 0)%100==99:
             framewrapper = self.frame_error()
-            log.warn("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s, framewrapper=%s", self, type(input), buf_len, options, len, framewrapper)
+            log.warn("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s, framewrapper=%s", self, type(input), buf_len, options, self.av_error_str(len), framewrapper)
             return None
             #raise Exception("avcodec_decode_video2 failed to decode this frame and returned %s, decoder=%s" % (len, self.get_info()))
 
