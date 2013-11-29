@@ -294,11 +294,13 @@ def make_constants(*paths):
 
 #Don't ask: somehow we seem to need this despite setting
 #PKG_CONFIG_PATH=/usr/local/lib[64]/pkgconfig before running rpmbuild sometimes?
-pkgcp = os.environ.get("PKG_CONFIG_PATH", "").split(":")
-for x in ("/usr/local/lib64/pkgconfig", "/usr/local/lib/pkgconfig"):
-    if x not in pkgcp and os.path.exists(x):
-        pkgcp.append(x)
-os.environ["PKG_CONFIG_PATH"] = ":".join(pkgcp)
+#but only do this if we are doing a static build
+if x264_static_ENABLED or vpx_static_ENABLED or avcodec_static_ENABLED or swscale_static_ENABLED:
+    pkgcp = os.environ.get("PKG_CONFIG_PATH", "").split(":")
+    for x in ("/usr/local/lib64/pkgconfig", "/usr/local/lib/pkgconfig"):
+        if x not in pkgcp and os.path.exists(x):
+            pkgcp.append(x)
+    os.environ["PKG_CONFIG_PATH"] = ":".join(pkgcp)
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*packages_options, **ekw):
@@ -325,13 +327,13 @@ def pkgconfig(*packages_options, **ekw):
             if not valid_option:
                 sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
             package_names.append(valid_option)
-        if packages_options!=package_names:
+        if list(packages_options)!=list(package_names):
             print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, package_names))
         flag_map = {'-I': 'include_dirs',
                     '-L': 'library_dirs',
                     '-l': 'libraries'}
         cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
-        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, env=os.environ, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (output, _) = proc.communicate()
         status = proc.wait()
         if status!=0:
