@@ -63,6 +63,7 @@ nvenc_ENABLED = False
 csc_nvcuda_ENABLED = False
 csc_opencl_ENABLED = True
 
+verbose_ENABLED = False
 warn_ENABLED = True
 strict_ENABLED = True
 debug_ENABLED = False
@@ -78,7 +79,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "server", "client", "x11",
             "gtk2", "gtk3", "qt4",
             "sound", "cyxor", "cymaths", "opengl", "argb",
-            "warn", "strict", "shadow", "debug", "PIC", "Xdummy")
+            "warn", "strict", "shadow", "debug", "PIC", "Xdummy", "verbose")
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
@@ -240,7 +241,7 @@ def get_gcc_version():
                             GCC_VERSION.append(int(p))
                         except:
                             break
-                    print("found gcc version: %s" % str(GCC_VERSION))
+                    print("found gcc version: %s" % ".".join([str(x) for x in GCC_VERSION]))
                     break
     return GCC_VERSION
 
@@ -286,10 +287,16 @@ def make_constants(*paths):
     base = os.path.join(os.getcwd(), *paths)
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
-    if not os.path.exists(pxi_file) or \
-           os.path.getctime(pxi_file)<os.path.getctime(constants_file) or \
-           os.path.getctime(pxi_file)<os.path.getctime(__file__):
-        print("(re)generating %s" % pxi_file)
+    reason = None
+    if not os.path.exists(pxi_file):
+        reason = "no pxi file"
+    elif os.path.getctime(pxi_file)<os.path.getctime(constants_file):
+        reason = "pxi file out of date"
+    elif os.path.getctime(pxi_file)<os.path.getctime(__file__):
+        reason = "newer build file"
+    if reason:
+        if verbose_ENABLED:
+            print("(re)generating %s (%s):" % (pxi_file, reason))
         make_constants_pxi(constants_file, pxi_file)
 
 #Don't ask: somehow we seem to need this despite setting
@@ -327,7 +334,7 @@ def pkgconfig(*packages_options, **ekw):
             if not valid_option:
                 sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
             package_names.append(valid_option)
-        if list(packages_options)!=list(package_names):
+        if verbose_ENABLED and list(packages_options)!=list(package_names):
             print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, package_names))
         flag_map = {'-I': 'include_dirs',
                     '-L': 'library_dirs',
@@ -367,7 +374,8 @@ def pkgconfig(*packages_options, **ekw):
             add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
             add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     #add_to_keywords(kw, 'include_dirs', '.')
-    print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
+    if verbose_ENABLED:
+        print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
     return kw
 
 
@@ -429,7 +437,8 @@ def get_xorg_conf_and_script():
 
     #do live detection
     cmd = ["Xorg", "-version"]
-    print("detecting Xorg version using: %s" % str(cmd))
+    if verbose_ENABLED:
+        print("detecting Xorg version using: %s" % str(cmd))
     try:
         proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out, _ = proc.communicate()
@@ -504,7 +513,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     for x in CLEAN_FILES:
         filename = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
         if os.path.exists(filename):
-            print("removing Cython/build generated file: %s" % x)
+            if verbose_ENABLED:
+                print("removing Cython/build generated file: %s" % x)
             os.unlink(filename)
 
 from add_build_info import record_build_info, record_src_info, has_src_info
