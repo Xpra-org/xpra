@@ -722,7 +722,7 @@ if WIN32:
                     {'script': 'xpra/scripts/main.py',                      'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
                     {'script': 'xpra/gtk_common/gtk_view_keyboard.py',      'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
                     {'script': 'xpra/gtk_common/gtk_view_clipboard.py',     'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
-                    {'script': 'xpra/client/gtk_base/client_launcher.py',   'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
+                    {'script': 'xpra/client/gtk2/client_launcher.py',       'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
               ]
     #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
     console = [
