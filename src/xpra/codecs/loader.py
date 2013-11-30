@@ -79,8 +79,13 @@ def load_codecs():
     codec_import_check("csc_nvcuda", "CUDA colorspace conversion", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
     add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "get_version", True)
 
-    codec_import_check("dec_avcodec", "avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder")
-    add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder", "get_version", True)
+    #ffmpeg v1:
+    if codec_import_check("dec_avcodec", "avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder"):
+        add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder", "get_version", True)
+    else:
+        #ffmpeg v2:
+        codec_import_check("dec_avcodec", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
+        add_codec_version("avcodec", "xpra.codecs.dec_avcodec2.decoder", "get_version", True)
 
     import __builtin__
     if "bytearray" in __builtin__.__dict__:

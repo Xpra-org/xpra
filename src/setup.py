@@ -55,7 +55,9 @@ x264_static_ENABLED = False
 vpx_ENABLED = True
 vpx_static_ENABLED = False
 dec_avcodec_ENABLED = True
+dec_avcodec2_ENABLED = False
 avcodec_static_ENABLED = False
+avcodec2_static_ENABLED = False
 csc_swscale_ENABLED = True
 swscale_static_ENABLED = False
 webp_ENABLED = True
@@ -71,7 +73,9 @@ PIC_ENABLED = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ("enc_x264", "x264_static",
-            "nvenc", "dec_avcodec", "avcodec_static",
+            "nvenc",
+            "dec_avcodec", "avcodec_static",
+            "dec_avcodec2", "avcodec2_static",
             "csc_swscale", "swscale_static",
             "csc_nvcuda", "csc_opencl",
             "vpx", "vpx_static",
@@ -302,7 +306,7 @@ def make_constants(*paths):
 #Don't ask: somehow we seem to need this despite setting
 #PKG_CONFIG_PATH=/usr/local/lib[64]/pkgconfig before running rpmbuild sometimes?
 #but only do this if we are doing a static build
-if x264_static_ENABLED or vpx_static_ENABLED or avcodec_static_ENABLED or swscale_static_ENABLED:
+if x264_static_ENABLED or vpx_static_ENABLED or avcodec_static_ENABLED or avcodec2_static_ENABLED or swscale_static_ENABLED:
     pkgcp = os.environ.get("PKG_CONFIG_PATH", "").split(":")
     for x in ("/usr/local/lib64/pkgconfig", "/usr/local/lib/pkgconfig"):
         if x not in pkgcp and os.path.exists(x):
@@ -497,6 +501,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/enc_x264/constants.pxi",
                    "xpra/codecs/dec_avcodec/decoder.c",
                    "xpra/codecs/dec_avcodec/constants.pxi",
+                   "xpra/codecs/dec_avcodec2/decoder.c",
+                   "xpra/codecs/dec_avcodec2/constants.pxi",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
                    "xpra/codecs/csc_swscale/constants.pxi",
                    "xpra/codecs/xor/cyxor.c",
@@ -1031,6 +1037,19 @@ if dec_avcodec_ENABLED:
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c", "xpra/codecs/memalign/memalign.c"],
                 **avcodec_pkgconfig), min_version=(0, 19))
+
+toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
+if dec_avcodec2_ENABLED:
+    make_constants("xpra", "codecs", "dec_avcodec2", "constants")
+    if avcodec2_static_ENABLED:
+        avcodec2_pkgconfig = STATIC_COMMON_DEFS.copy()
+        avcodec2_pkgconfig['extra_link_args'] = ["-Wl,-soname,dec_avcodec2.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+                                    "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
+    else:
+        avcodec2_pkgconfig = pkgconfig("libavcodec")
+    cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
+                ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/dec_avcodec2/dec_avcodec.c", "xpra/codecs/memalign/memalign.c"],
+                **avcodec2_pkgconfig), min_version=(0, 19))
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:

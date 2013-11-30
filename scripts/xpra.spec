@@ -18,6 +18,7 @@
 %if 0%{?generic}
 %define webp_build_args --without-webp
 %define server_build_args --without-server
+%define avcodec_build_args %{nil}
 %define no_video 1
 %define no_sound 1
 %define no_pulseaudio 1
@@ -47,6 +48,9 @@
 # Fedora 19 onwards ship with Pillow in place of PIL, which has the bug fix:
 %if %(egrep -vq 'release 18' /etc/redhat-release && echo 1 || echo 0)
 %define PIL_bug 0
+%endif
+%if %(egrep -vq 'release 20|release 21' /etc/redhat-release && echo 1 || echo 0)
+%define avcodec_build_args --without-dec_avcodec --with-dec_avcodec2
 %endif
 %endif
 
@@ -883,7 +887,7 @@ cd xpra-all-%{version}
 %build
 cd xpra-all-%{version}
 rm -rf build install
-CFLAGS=-O2 python setup.py build %{video_build_args} %{webp_build_args} %{server_build_args}
+CFLAGS=-O2 python setup.py build %{video_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
 
 %install
 rm -rf $RPM_BUILD_ROOT
