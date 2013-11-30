@@ -17,7 +17,8 @@ import signal
 
 import pygtk
 pygtk.require('2.0')
-import gtk.gdk
+import gtk
+from gtk import gdk
 import gobject
 gobject.threads_init()
 gtk.threads_init()
