@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from xpra.client.gtk_base.client_launcher import main
+from xpra.client.gtk2.client_launcher import main
 
 #force py2app to include all those:
 from xpra.platform.darwin.shadow_server import ShadowServer
