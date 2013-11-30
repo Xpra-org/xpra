@@ -327,9 +327,9 @@ cdef class Decoder:
     cdef int width
     cdef int height
     cdef object encoding
-    cdef int r
 
     def init_context(self, encoding, int width, int height, colorspace):
+        cdef int r
         init_colorspaces()
         assert encoding in ("vp8", "h264")
         self.encoding = encoding
