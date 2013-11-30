@@ -1001,7 +1001,7 @@ if enc_x264_ENABLED:
     make_constants("xpra", "codecs", "enc_x264", "constants")
     if x264_static_ENABLED:
         x264_pkgconfig = STATIC_COMMON_DEFS.copy()
-        x264_pkgconfig['extra_link_args'] = ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+        x264_pkgconfig['extra_link_args'] = ["-Wl,-soname,enc_x264.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
                                  "-lx264", "-Wl,-Bdynamic"]
     else:
         x264_pkgconfig = pkgconfig("x264")
@@ -1014,7 +1014,7 @@ if dec_avcodec_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec", "constants")
     if avcodec_static_ENABLED:
         avcodec_pkgconfig = STATIC_COMMON_DEFS.copy()
-        avcodec_pkgconfig['extra_link_args'] = ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+        avcodec_pkgconfig['extra_link_args'] = ["-Wl,-soname,dec_avcodec.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
                                     "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
     else:
         avcodec_pkgconfig = pkgconfig("libavcodec")
@@ -1027,7 +1027,7 @@ if csc_swscale_ENABLED:
     make_constants("xpra", "codecs", "csc_swscale", "constants")
     if swscale_static_ENABLED:
         swscale_pkgconfig = STATIC_COMMON_DEFS.copy()
-        swscale_pkgconfig['extra_link_args'] = ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+        swscale_pkgconfig['extra_link_args'] = ["-Wl,-soname,csc_swscale.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
                                  "-lswscale", "-Wl,-Bdynamic"]
     else:
         swscale_pkgconfig = pkgconfig("libswscale")
@@ -1039,7 +1039,7 @@ toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     if vpx_static_ENABLED:
         vpx_pkgconfig = STATIC_COMMON_DEFS.copy()
-        vpx_pkgconfig['extra_link_args'] = ["-Wl,-soname,vpxlib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+        vpx_pkgconfig['extra_link_args'] = ["-Wl,-soname,vpx.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
                                 "-lvpx", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
     else:
         vpx_pkgconfig = pkgconfig(["libvpx", "vpx"])
