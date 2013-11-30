@@ -1050,7 +1050,7 @@ if vpx_ENABLED:
     if vpx_static_ENABLED:
         vpx_pkgconfig = STATIC_COMMON_DEFS.copy()
         vpx_pkgconfig['extra_link_args'] = ["-Wl,-soname,vpx.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
-                                "-lvpx", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
+                                "-lvpx", "-Wl,-Bdynamic"]
     else:
         vpx_pkgconfig = pkgconfig(["libvpx", "vpx"])
     cython_add(Extension("xpra.codecs.vpx.encoder",
