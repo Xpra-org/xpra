@@ -14,6 +14,8 @@ READ_ONLY = False
 
 from xpra.codecs.codec_constants import get_subsampling_divs, get_colorspace_from_avutil_enum, RGB_FORMATS
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.util import AtomicInteger
+
 
 include "constants.pxi"
 
@@ -57,6 +59,7 @@ cdef extern from "libavcodec/avcodec.h":
         uint8_t **data
         int *linesize
         int format
+        void *opaque
     ctypedef struct AVCodec:
         pass
     ctypedef struct AVCodecID:
@@ -165,6 +168,8 @@ def get_codecs():
 DECODERS = {}
 
 
+frame_alloc_counter = AtomicInteger()
+
 #these two functions convert pointers to longs
 #so we can use a context or frame as a dictionary key
 #NOTE: we can't simply use the "Frame" pointer as key
@@ -180,7 +185,7 @@ cdef unsigned long get_context_key(AVCodecContext *avctx):
 cdef unsigned long get_frame_key(AVFrame *frame):
     cdef unsigned long frame_key
     assert frame!=NULL, "frame is not set!"
-    frame_key = <unsigned long> frame.data[0]
+    frame_key = <unsigned long> frame.opaque
     return frame_key
 
 cdef void clear_frame(AVFrame *frame):
@@ -203,6 +208,7 @@ cdef int avcodec_get_buffer(AVCodecContext *avctx, AVFrame *frame) with gil:
         we create an AVFrameWrapper object and
         register it with the Decoder for this context.
     """
+    global frame_alloc_counter
     cdef unsigned long frame_key = 0
     cdef AVFrameWrapper frame_wrapper
     cdef int ret
@@ -211,7 +217,9 @@ cdef int avcodec_get_buffer(AVCodecContext *avctx, AVFrame *frame) with gil:
     if ret==0:
         frame_wrapper = AVFrameWrapper()
         frame_wrapper.set_context(avctx, frame)
-        decoder.add_framewrapper(frame_wrapper)
+        frame_key = frame_alloc_counter.increase()
+        frame.opaque = <void*> frame_key
+        decoder.add_framewrapper(frame_wrapper, frame_key)
     #debug("avcodec_get_buffer(%s, %s) ret=%s, decoder=%s, frame pointer=%s",
     #        hex(<unsigned long> avctx), hex(frame_key), ret, decoder, hex(frame_key))
     return ret
@@ -221,6 +229,7 @@ cdef void avcodec_release_buffer(AVCodecContext *avctx, AVFrame *frame) with gil
         we tell the Decoder to manage it.
     """
     cdef unsigned long frame_key = get_frame_key(frame)
+    debug("avcodec_release_buffer(%s, %s) frame_key=%s", hex(<unsigned long> avctx), hex(<unsigned long> frame), hex(frame_key))
     decoder = get_decoder(avctx)
     decoder.av_free(frame_key)
 
@@ -251,6 +260,8 @@ cdef class AVFrameWrapper:
         assert self.frame==NULL and self.avctx==NULL, "frame was freed by both, but not actually freed!"
 
     def __str__(self):
+        if self.frame==NULL:
+            return "AVFrameWrapper(NULL)"
         return "AVFrameWrapper(%s)" % hex(self.get_key())
 
     def xpra_free(self):
@@ -270,13 +281,11 @@ cdef class AVFrameWrapper:
         return True
 
     cdef free(self):
-        debug("%s.free()", self)
+        debug("%s.free() context=%s, frame=%s", self, hex(<unsigned long> self.avctx), hex(<unsigned long> self.frame))
         if self.avctx!=NULL and self.frame!=NULL:
             avcodec_default_release_buffer(self.avctx, self.frame)
-            #do we need this?
-            #avcodec_free_frame(frame)
-            self.avctx = NULL
             self.frame = NULL
+            self.avctx = NULL
 
     def get_key(self):
         return get_frame_key(self.frame)
@@ -493,7 +502,8 @@ cdef class Decoder:
         cdef int got_picture
         cdef AVPacket avpkt
         cdef unsigned long frame_key                #@DuplicatedSignature
-        cdef object framewrapper, img
+        cdef AVFrameWrapper framewrapper
+        cdef object img
         assert self.codec_ctx!=NULL
         assert self.codec!=NULL
         #copy input buffer into padded C buffer:
@@ -565,9 +575,10 @@ cdef class Decoder:
         img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes)
         img.decoder = self
         img.av_frame = None
-        #we must find the frame wrapper used by our get_buffer override:
         frame_key = get_frame_key(self.frame)
         framewrapper = self.get_framewrapper(frame_key)
+        assert framewrapper is not None, "framewrapper not found for frame key %s" % frame_key
+        #framewrapper.set_frame(self.frame)
         img.av_frame = framewrapper
         self.frames += 1
         #add to weakref list after cleaning it up:
@@ -578,32 +589,32 @@ cdef class Decoder:
         return img
 
 
-    cdef frame_error(self):
+    cdef AVFrameWrapper frame_error(self):
         cdef unsigned long frame_key                    #@DuplicatedSignature
+        log("frame_error() frame_key=%s", hex(<unsigned long> self.frame))
         frame_key = get_frame_key(self.frame)
         framewrapper = self.get_framewrapper(frame_key, True)
-        log("frame_error() freeing %s", framewrapper)
+        log("frame_error() av-freeing %s", hex(<unsigned long> self.frame), framewrapper)
         if framewrapper:
             #avcodec had allocated a buffer, make sure we don't claim to be using it:
             self.av_free(frame_key)
-        return framewrapper
+        return <AVFrameWrapper> framewrapper
 
-    cdef get_framewrapper(self, frame_key, ignore_missing=False):
+    cdef AVFrameWrapper get_framewrapper(self, frame_key, ignore_missing=False):
         framewrapper = self.framewrappers.get(int(frame_key))
         assert ignore_missing or framewrapper is not None, "frame not found for pointer %s, known frame keys=%s" % (hex(frame_key),
                                 [hex(x) for x in self.framewrappers.keys()])
-        return framewrapper
+        return <AVFrameWrapper> framewrapper
 
-    def add_framewrapper(self, frame_wrapper):
-        frame_key = frame_wrapper.get_key()
-        debug("add_framewrapper(%s) frame key=%s, known frame keys: %s", frame_wrapper, hex(frame_key),
+    def add_framewrapper(self, frame_wrapper, frame_key):
+        debug("add_framewrapper(%s, %s) known frame keys: %s", frame_wrapper, hex(frame_key),
                                 [hex(x) for x in self.framewrappers.keys()])
         self.framewrappers[int(frame_key)] = frame_wrapper
 
     def av_free(self, frame_key):                       #@DuplicatedSignature
-        avframe = self.get_framewrapper(frame_key)
+        avframe = self.get_framewrapper(frame_key, True)
         debug("av_free(%s) framewrapper=%s", hex(frame_key), avframe)
-        if avframe.av_free():
+        if avframe and avframe.av_free():
             #frame has been freed - remove it from dict:
             del self.framewrappers[frame_key]
 
