@@ -1358,7 +1358,9 @@ class WindowModel(BaseWindowModel):
         if "WM_DELETE_WINDOW" in self.get_property("protocols"):
             trap.swallow_synced(send_wm_delete_window, self.client_window)
         else:
-            log.warn("window does not support WM_DELETE_WINDOW... using force_quit()")
+            title = self.get_property("title")
+            xid = self.get_property("xid")
+            log.warn("window %s ('%s') does not support WM_DELETE_WINDOW... using force_quit()", hex(xid), title)
             # You don't wanna play ball?  Then no more Mr. Nice Guy!
             self.force_quit()
 
