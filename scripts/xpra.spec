@@ -49,7 +49,7 @@
 %if %(egrep -vq 'release 18' /etc/redhat-release && echo 1 || echo 0)
 %define PIL_bug 0
 %endif
-%if %(egrep -vq 'release 20|release 21' /etc/redhat-release && echo 1 || echo 0)
+%if %(egrep -q 'release 20|release 21' /etc/redhat-release && echo 1 || echo 0)
 %define avcodec_build_args --without-dec_avcodec --with-dec_avcodec2
 %endif
 %endif
