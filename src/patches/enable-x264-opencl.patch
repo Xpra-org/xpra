@@ -12,7 +12,7 @@ Index: xpra/codecs/enc_x264/encoder.pyx
      ctypedef struct x264_t:
          pass
      ctypedef struct x264_nal_t:
-@@ -250,6 +253,7 @@
+@@ -251,6 +254,7 @@
          param.i_keyint_min = 999999
          param.b_intra_refresh = 0   #no intra refresh
          param.b_open_gop = 1        #allow open gop

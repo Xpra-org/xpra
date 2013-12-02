@@ -1,7 +1,7 @@
 Index: xpra/server/window_source.py
 ===================================================================
---- xpra/server/window_source.py	(revision 4677)
-+++ xpra/server/window_source.py	(working copy)
+--- a/xpra/server/window_source.py	(revision 4677)
++++ b/xpra/server/window_source.py	(working copy)
 @@ -20,7 +20,7 @@
  
  DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
