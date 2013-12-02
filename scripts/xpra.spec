@@ -12,13 +12,13 @@
 %define old_xdg 0
 %define PIL_bug 1
 
+%define avcodec_build_args %{nil}
 %define webp_build_args --with-webp
 %define server_build_args --with-server
 #if building a generic rpm: exclude anything that requires cython modules:
 %if 0%{?generic}
 %define webp_build_args --without-webp
 %define server_build_args --without-server
-%define avcodec_build_args %{nil}
 %define no_video 1
 %define no_sound 1
 %define no_pulseaudio 1
