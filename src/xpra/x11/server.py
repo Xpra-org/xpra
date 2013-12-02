@@ -409,8 +409,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 log("send_cursor(): default cursor - clearing it")
                 self.cursor_data = None
             elif pixels is not None:
+                #convert bytearray to string:
+                pixels = str(pixels)
                 if len(pixels)<64:
-                    self.cursor_data[7] = str(pixels)
+                    self.cursor_data[7] = pixels
                 else:
                     self.cursor_data[7] = compressed_wrapper("cursor", pixels)
         else:
