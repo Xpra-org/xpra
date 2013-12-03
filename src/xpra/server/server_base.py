@@ -1336,11 +1336,16 @@ class ServerBase(ServerCore):
                 if not ss:
                     #protocol has been dropped!
                     return
+                handler = self._clipboard_helper.process_clipboard_packet
                 assert self._clipboard_client==ss, \
                         "the clipboard packet '%s' does not come from the clipboard owner!" % packet_type
-                assert ss.clipboard_enabled, "received a clipboard packet from a source which does not have clipboard enabled!"
+                if not ss.clipboard_enabled:
+                    #this can happen when we disable clipboard in the middle of transfers
+                    #(especially when there is a clipboard loop)
+                    log.warn("received a clipboard packet from a source which does not have clipboard enabled!")
+                    return
                 assert self._clipboard_helper, "received a clipboard packet but we do not support clipboard sharing"
-                self.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
+                self.idle_add(handler, packet)
                 return
             if proto in self._server_sources:
                 handlers = self._authenticated_packet_handlers
