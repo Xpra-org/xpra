@@ -540,6 +540,14 @@ class ClipboardProxy(gtk.Invisible):
         assert self._selection == str(selection_data.selection)
         target = str(selection_data.target)
         self._request_contents_events += 1
+        #check for clipboard loops:
+        if gtk.main_level()>=20:
+            log.warn("clipboard loop nesting too deep: %s", gtk.main_level())
+            log.warn("you may have a clipboard forwarding loop, temporarily disabling the clipboard")
+            log.warn("it may be best to disable the clipboard completely")
+            self.set_enabled(False)
+            gobject.timeout_add(60*1000, self.set_enabled, True)
+            return
         result = self.emit("get-clipboard-from-remote", self._selection, target)
         if result is None or result["type"] is None:
             debug("remote selection fetch timed out or empty")
