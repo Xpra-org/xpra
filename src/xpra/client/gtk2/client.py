@@ -203,6 +203,10 @@ class XpraClient(GTKXpraClient):
                     self.clipboard_helper.send_all_tokens()
                 else:
                     pass    #FIXME: todo!
+                #reset tray icon:
+                self.local_clipboard_requests = 0
+                self.remote_clipboard_requests = 0
+                self.clipboard_notify(0)
             self.connect("clipboard-toggled", clipboard_toggled)
         self.connect("handshake-complete", register_clipboard_toggled)
         return helperClass(clipboard_send, clipboard_progress, *args, **kwargs)
@@ -211,7 +215,7 @@ class XpraClient(GTKXpraClient):
         if not self.tray:
             return
         log("clipboard_notify(%s)", n)
-        if n>0:
+        if n>0 and self.clipboard_enabled:
             self.tray.set_icon("clipboard")
             self.tray.set_tooltip("%s clipboard requests in progress" % n)
             self.tray.set_blinking(True)
