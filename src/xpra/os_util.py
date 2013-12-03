@@ -27,15 +27,22 @@ for x in [x for x in dir(signal) if x.startswith("SIG")]:
     SIGNAMES[getattr(signal, x)] = x
 
 
-#python3 making life difficult:
+#use cStringIO, fallback to StringIO,
+#and python3 is making life more difficult yet again:
 try:
-    from io import BytesIO as BytesIOClass          #@UnusedImport
+    from io import BytesIO as BytesIOClass              #@UnusedImport
 except:
-    from StringIO import StringIO as BytesIOClass   #@Reimport @UnusedImport
+    try:
+        from cStringIO import StringIO as BytesIOClass  #@Reimport @UnusedImport
+    except:
+        from StringIO import StringIO as BytesIOClass   #@Reimport @UnusedImport
 try:
-    from StringIO import StringIO as StringIOClass  #@UnusedImport
+    from StringIO import StringIO as StringIOClass      #@UnusedImport
 except:
-    from io import StringIO as StringIOClass        #@Reimport @UnusedImport
+    try:
+        from cStringIO import StringIO as StringIOClass #@Reimport @UnusedImport
+    except:
+        from io import StringIO as StringIOClass        #@Reimport @UnusedImport
 
 
 if sys.version < '3':
