@@ -261,6 +261,7 @@ class ServerSource(object):
         self.named_cursors = False
         self.clipboard_enabled = False
         self.clipboard_notifications = False
+        self.clipboard_set_enabled = False
         self.share = False
         self.desktop_size = None
         self.screen_sizes = []
@@ -461,6 +462,7 @@ class ServerSource(object):
         self.randr_notify = c.boolget("randr_notify")
         self.clipboard_enabled = c.boolget("clipboard", True)
         self.clipboard_notifications = c.boolget("clipboard.notifications")
+        self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
         self.share = c.boolget("share")
         self.named_cursors = c.boolget("named_cursors")
         self.raw_window_icons = c.boolget("raw_window_icons")
@@ -1022,6 +1024,9 @@ class ServerSource(object):
                 d[k] = newlist
                 debug("rewrite_encoding_values for key '%s': %s replaced by %s", k, l, newlist)
 
+
+    def send_clipboard_enabled(self, reason=""):
+        self.send("set-clipboard-enabled", self.clipboard_enabled, reason)
 
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended:

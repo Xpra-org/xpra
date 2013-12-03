@@ -132,6 +132,17 @@ class XpraClient(GTKXpraClient):
         return tmhc
 
 
+    def process_clipboard_packet(self, packet):
+        log("process_clipboard_packet(%s) level=%s", packet, gtk.main_level())
+        #check for clipboard loops:
+        if gtk.main_level()>=10:
+            log.warn("loop nesting too deep: %s", gtk.main_level())
+            log.warn("you may have a clipboard forwarding loop, disabling the clipboard")
+            self.clipboard_enabled = False
+            self.emit("clipboard-toggled")
+            return
+        self.idle_add(self.clipboard_helper.process_clipboard_packet, packet)
+
     def make_clipboard_helper(self):
         """
             Try the various clipboard classes until we find one

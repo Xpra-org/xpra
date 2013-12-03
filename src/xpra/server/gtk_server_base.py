@@ -141,3 +141,29 @@ class GTKServerBase(ServerBase):
 
     def _process_resize_window(self, proto, packet):
         log.info("_process_resize_window(%s, %s)", proto, packet)
+
+
+    def send_clipboard_packet(self, *parts):
+        #overriden so we can inject the nesting check:
+        if self.clipboard_nesting_check(self._clipboard_client):
+            ServerBase.send_clipboard_packet(self, *parts)
+
+    def process_clipboard_packet(self, ss, packet):
+        #overriden so we can inject the nesting check:
+        if self.clipboard_nesting_check(ss):
+            ServerBase.process_clipboard_packet(self, ss, packet)
+
+    def clipboard_nesting_check(self, ss):
+        log("clipboard_nesting_check(%s)", ss)
+        if self._clipboard_client is None or not self._clipboard_client.clipboard_enabled:
+            return False
+        if gtk.main_level()>=10:
+            log.warn("loop nesting too deep: %s", gtk.main_level())
+            log.warn("you may have a clipboard forwarding loop, disabling the clipboard")
+            #turn off clipboard at our end:
+            self.set_clipboard_enabled_status(ss, False)
+            #if we can, tell the client to do the same:
+            if ss.clipboard_set_enabled:
+                ss.send_clipboard_enabled("probable clipboard loop detected")
+            return  False
+        return True

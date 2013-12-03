@@ -183,7 +183,6 @@ class UIXpraClient(XpraClientBase):
         self.client_extras = None
         self.keyboard_helper = None
         self.clipboard_helper = None
-        self.clipboard_enabled = False
         self.menu_helper = None
         self.tray = None
         self.notifier = None
@@ -645,6 +644,7 @@ class UIXpraClient(XpraClientBase):
             "clipboard.want_targets"    : CLIPBOARD_WANT_TARGETS,
             #buggy osx and win32 clipboards:
             "clipboard.greedy"          : CLIPBOARD_GREEDY,
+            "clipboard.set_enabled"     : True,
             "notifications"             : self.client_supports_notifications,
             "cursors"                   : self.client_supports_cursors,
             "bell"                      : self.client_supports_bell,
@@ -1314,6 +1314,13 @@ class UIXpraClient(XpraClientBase):
         self.send("set_deflate", self.compression_level)
 
 
+    def _process_clipboard_enabled_status(self, packet):
+        clipboard_enabled, reason = packet[1:3]
+        if self.clipboard_enabled!=clipboard_enabled:
+            log.info("clipboard toggled to %s by the server, reason: %s", clipboard_enabled, reason)
+            self.clipboard_enabled = clipboard_enabled
+            self.emit("clipboard-toggled")
+
     def send_clipboard_enabled_status(self, *args):
         self.send("set-clipboard-enabled", self.clipboard_enabled)
 
@@ -1589,6 +1596,7 @@ class UIXpraClient(XpraClientBase):
             "bell":                 self._process_bell,
             "notify_show":          self._process_notify_show,
             "notify_close":         self._process_notify_close,
+            "set-clipboard-enabled":self._process_clipboard_enabled_status,
             "window-metadata":      self._process_window_metadata,
             "configure-override-redirect":  self._process_configure_override_redirect,
             "lost-window":          self._process_lost_window,
@@ -1608,12 +1616,14 @@ class UIXpraClient(XpraClientBase):
             }.items():
             self._packet_handlers[k] = v
 
+    def process_clipboard_packet(self, packet):
+        self.idle_add(self.clipboard_helper.process_clipboard_packet, packet)
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
         self.check_server_echo(0)
         if type(packet_type) in (unicode, str) and packet_type.startswith("clipboard-"):
             if self.clipboard_enabled and self.clipboard_helper:
-                self.idle_add(self.clipboard_helper.process_clipboard_packet, packet)
+                self.process_clipboard_packet(packet)
         else:
             XpraClientBase.process_packet(self, proto, packet)

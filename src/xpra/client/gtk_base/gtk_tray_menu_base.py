@@ -377,13 +377,13 @@ class GTKTrayMenuBase(object):
         return self.notifications_menuitem
 
     def make_clipboard_togglemenuitem(self):
-        def clipboard_toggled(*args):
+        def menu_clipboard_toggled(*args):
             new_state = self.clipboard_menuitem.get_active()
             debug("clipboard_toggled(%s) clipboard_enabled=%s, new_state=%s", args, self.client.clipboard_enabled, new_state)
             if self.client.clipboard_enabled!=new_state:
                 self.client.clipboard_enabled = new_state
                 self.client.emit("clipboard-toggled")
-        self.clipboard_menuitem = self.checkitem("Clipboard", clipboard_toggled)
+        self.clipboard_menuitem = self.checkitem("Clipboard", menu_clipboard_toggled)
         self.clipboard_menuitem.set_sensitive(False)
         def set_clipboard_menuitem(*args):
             self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
@@ -395,6 +395,11 @@ class GTKTrayMenuBase(object):
             else:
                 set_tooltip_text(self.clipboard_menuitem, "Clipboard synchronization cannot be enabled: disabled by server")
         self.client.connect("handshake-complete", set_clipboard_menuitem)
+        def clipboard_toggled(*args):
+            #keep menu in sync with actual "clipboard_enabled" flag:
+            if self.client.clipboard_enabled != self.clipboard_menuitem.get_active():
+                self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
+        self.client.connect("clipboard-toggled", clipboard_toggled)
         return self.clipboard_menuitem
 
     def make_translatedclipboard_optionsmenuitem(self):
