@@ -76,13 +76,14 @@ class PixmapBacking(GTK2WindowBacking):
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        #log.debug("do_paint_rgb32(%s bytes, %s, %s, %s, %s, %s, %s, %s) backing depth=%s", len(img_data), x, y, width, height, rowstride, options, callbacks, self._backing.get_depth())
+        #log.info("do_paint_rgb32(%s bytes, %s, %s, %s, %s, %s, %s, %s) backing depth=%s", len(img_data), x, y, width, height, rowstride, options, callbacks, self._backing.get_depth())
         #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
+        #log.info("data=%s", type(img_data))
         if self._backing is None:
             return  False
         #FIXME: slow, we create a bytearray and then convert it back to a string!
-        img_data = bytearray(img_data)
-        from xpra.codecs.argb.argb import unpremultiply_argb_in_place   #@UnresolvedImport
+        from xpra.codecs.argb.argb import unpremultiply_argb_in_place, make_byte_buffer   #@UnresolvedImport
+        img_data = make_byte_buffer(img_data)
         unpremultiply_argb_in_place(img_data)
         img_data = str(img_data)
         pixbuf = gdk.pixbuf_new_from_data(img_data, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
