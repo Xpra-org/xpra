@@ -215,7 +215,7 @@ def add_gst_capabilities(capabilities, receive=True, send=True,
 
 
 WARNED_MULTIPLE_DEVICES = False
-def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
+def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
     assert has_gst
     try:
         matching_codecs = [x for x in remote_decoders if x in local_decoders]
@@ -231,7 +231,7 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
         debug("using sound codec %s", codec)
         from xpra.sound.src import SoundSource
         if SOUND_TEST_MODE:
-            sound_source = SoundSource("audiotestsrc", {"wave":2, "freq":110, "volume":0.4}, codec, {})
+            sound_source = SoundSource("audiotestsrc", {"wave":2, "freq":110, "volume":0.4}, codec, volume, {})
             log.info("using test sound source")
         else:
             from xpra.sound.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink
@@ -278,7 +278,7 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
                         log.warn("using the first device")
             #make sure it is not muted:
             set_source_mute(monitor_device, mute=False)
-            sound_source = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
+            sound_source = SoundSource("pulsesrc", {"device" : monitor_device}, codec, volume, {})
             log.info("starting sound capture using pulseaudio device: %s", monitor_device_name)
         return sound_source
     except Exception, e:

@@ -1098,7 +1098,7 @@ class UIXpraClient(XpraClientBase):
             self.emit("microphone-changed")
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
-            self.sound_source = start_sending_sound(None, self.server_sound_decoders, self.microphone_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
+            self.sound_source = start_sending_sound(None, 1.0, self.server_sound_decoders, self.microphone_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
             if not self.sound_source:
                 return False
             self.sound_source.connect("new-buffer", self.new_sound_buffer)

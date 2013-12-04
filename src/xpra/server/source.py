@@ -602,7 +602,7 @@ class ServerSource(object):
         if self.notify_startup_complete:
             self.send("startup-complete")
 
-    def start_sending_sound(self, codec):
+    def start_sending_sound(self, codec, volume=1.0):
         soundlog("start_sending_sound(%s)", codec)
         if self.suspended:
             log.warn("not starting sound as we are suspended")
@@ -617,7 +617,7 @@ class ServerSource(object):
         assert self.sound_receive, "cannot send sound: support is not enabled on the client"
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
-            self.sound_source = start_sending_sound(codec, self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
+            self.sound_source = start_sending_sound(codec, volume, self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
             soundlog("start_sending_sound() sound source=%s", self.sound_source)
             if self.sound_source:
                 if self.server_driven:
@@ -671,12 +671,43 @@ class ServerSource(object):
         if action=="stop":
             self.stop_sending_sound()
             return "stopped"
-        elif action=="start":
+        elif action in ("start", "fadein"):
             codec = None
             if len(args)>0:
                 codec = args[0]
-            self.start_sending_sound(codec)
+            if action=="start":
+                volume = 1.0
+            else:
+                volume = 0.0
+            self.start_sending_sound(codec, volume)
+            if action=="fadein":
+                def fadein():
+                    ss = self.sound_source
+                    if not ss:
+                        return False
+                    volume = ss.get_volume()
+                    log("fadein() volume=%.1f", volume)
+                    if volume<1.0:
+                        volume = min(1.0, volume+0.1)
+                        ss.set_volume(volume)
+                    return volume<1.0
+                self.timeout_add(100, fadein)
             return "started %s" % codec
+        elif action=="fadeout":
+            assert self.sound_source, "no active sound source"
+            def fadeout():
+                ss = self.sound_source
+                if not ss:
+                    return False
+                volume = ss.get_volume()
+                log("fadeout() volume=%.1f", volume)
+                if volume>0:
+                    dec = max(0.1, volume/10.0)
+                    ss.set_volume(max(0, volume-dec))
+                    return True
+                self.stop_sending_sound()
+                return False
+            self.timeout_add(100, fadeout)
         elif action=="new-sequence":
             self.sound_source_sequence = args[0]
             return "new sequence is %s" % self.sound_source_sequence

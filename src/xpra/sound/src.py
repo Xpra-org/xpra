@@ -44,7 +44,7 @@ class SoundSource(SoundPipeline):
         "new-buffer"
         ]
 
-    def __init__(self, src_type=DEFAULT_SRC, src_options={}, codec=MP3, encoder_options={}):
+    def __init__(self, src_type=DEFAULT_SRC, src_options={}, codec=MP3, volume=1.0, encoder_options={}):
         assert src_type in SOURCES
         encoder, fmt = get_encoder_formatter(codec)
         SoundPipeline.__init__(self, codec)
@@ -59,10 +59,12 @@ class SoundSource(SoundPipeline):
             pipeline_els += [
                          "audioresample",
                          "audio/x-raw-int,rate=44100,channels=2"]
+        pipeline_els.append("volume name=volume volume=%s" % volume)
         pipeline_els += [encoder_str,
                         fmt,
                         "appsink name=sink"]
         self.setup_pipeline_and_bus(pipeline_els)
+        self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
         self.sink.set_property("emit-signals", True)
         self.sink.set_property("max-buffers", 10)
@@ -71,6 +73,15 @@ class SoundSource(SoundPipeline):
         self.sink.set_property("qos", False)
         self.sink.connect("new-buffer", self.on_new_buffer)
         self.sink.connect("new-preroll", self.on_new_preroll)
+
+    def set_volume(self, volume=1.0):
+        if self.sink and self.volume:
+            self.volume.set_property("volume", volume)
+
+    def get_volume(self):
+        if self.sink and self.volume:
+            return self.volume.get_property("volume")
+        return 0
 
     def cleanup(self):
         SoundPipeline.cleanup(self)
