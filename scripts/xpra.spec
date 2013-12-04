@@ -154,10 +154,12 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Tue Nov 05 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+* Wed Dec 04 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
 - NVENC hardware h264 encoding acceleration
 - OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
+- server control command for modifying settings at runtime
+- server exit command, which leaves Xvfb running
 - publish session via mDNS
 - OSX client two way clipboard support
 - support for transparency in 8-bit PNG modes
@@ -170,6 +172,21 @@ So basically it's screen for remote X apps.
 - more detailed status information via UI and "xpra info"
 - drop non xpra clients with a more friendly response
 
+* Wed Dec 04 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.10-1
+- fix focus regression
+- fix MS Windows clipboard copy including null byte
+- fix h264 decoding with old versions of avcodec
+- fix potential invalid read past the end of the buffer
+- fix static vpx build arguments
+- fix RGB modes exposed for transparent windows
+- fix crash on clipboard loops: detect and disable clipboard
+- support for ffmpeg version 2.x
+- support for video encoding of windows bigger than 4k
+- support video encoders that re-start the stream
+- fix crash in decoding error path
+- forward compatibility with namespace changes
+- forward compatibility with the new generic encoding names
+  
 * Tue Nov 05 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.9-1
 - fix h264 decoding of padded images
 - fix plain RGB encoding with very old clients

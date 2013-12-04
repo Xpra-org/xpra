@@ -3,6 +3,8 @@ v0.11.0 (2013-11-05)
 	-- NVENC hardware h264 encoding acceleration
 	-- OpenCL and CUDA colourspace conversion acceleration
 	-- proxy server mode for serving multiple sessions through one port
+	-- server control command for modifying settings at runtime
+	-- server exit command, which leaves Xvfb running
 	-- publish session via mDNS
 	-- faster OSX shadow server
 	-- OSX client two way clipboard support
@@ -17,6 +19,23 @@ v0.11.0 (2013-11-05)
 	-- drop non xpra clients with a more friendly response
 	-- handle non-ASCII characters in output on MS Windows
 	-- libvpx 1.2 for OSX and MS Windows
+
+
+v0.10.10 (2013-12-04)
+======================
+	-- fix focus regression
+	-- fix MS Windows clipboard copy including null byte
+	-- fix h264 decoding with old versions of avcodec
+	-- fix potential invalid read past the end of the buffer
+	-- fix static vpx build arguments
+	-- fix RGB modes exposed for transparent windows
+	-- fix crash on clipboard loops: detect and disable clipboard
+	-- support for ffmpeg version 2.x
+	-- support for video encoding of windows bigger than 4k
+	-- support video encoders that re-start the stream
+	-- fix crash in decoding error path
+	-- forward compatibility with namespace changes
+	-- forward compatibility with the new generic encoding names
 
 
 v0.10.9 (2013-11-05)
