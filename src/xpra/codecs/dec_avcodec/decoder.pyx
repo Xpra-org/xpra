@@ -391,7 +391,7 @@ cdef class Decoder:
         self.codec_ctx.thread_type = 2      #FF_THREAD_SLICE: allow more than one thread per frame
         self.codec_ctx.thread_count = 0     #auto
         self.codec_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
-        r = avcodec_open2(self.codec_ctx, self.codec, NULL) < 0
+        r = avcodec_open2(self.codec_ctx, self.codec, NULL)
         if r<0:
             error("could not open codec: %s", self.av_error_str(r))
             self.clean_decoder()
