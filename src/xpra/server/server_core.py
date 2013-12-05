@@ -20,6 +20,7 @@ from xpra.log import Logger
 log = Logger()
 
 import xpra
+from xpra.scripts.main import SOCKET_TIMEOUT
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
@@ -292,7 +293,7 @@ class ServerCore(object):
         protocol.authenticator = None
         self._potential_protocols.append(protocol)
         protocol.start()
-        self.timeout_add(10*1000, self.verify_connection_accepted, protocol)
+        self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
         return True
 
     def verify_connection_accepted(self, protocol):

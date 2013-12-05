@@ -26,8 +26,7 @@ from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
     make_defaults_struct, parse_bool, print_bool, validate_config
 
 
-UNIX_SOCKET_TIMEOUT = int(os.environ.get("XPRA_UNIX_SOCKET_TIMEOUT", 5))
-INET_SOCKET_TIMEOUT = int(os.environ.get("XPRA_INET_SOCKET_TIMEOUT", 10))
+SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
 
 
 def warn(msg):
@@ -709,13 +708,13 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             return False, "unix domain sockets are not available on this operating system"
         sockdir = DotXpra(display_desc["socket_dir"])
         sock = socket.socket(socket.AF_UNIX)
-        sock.settimeout(UNIX_SOCKET_TIMEOUT)
+        sock.settimeout(SOCKET_TIMEOUT)
         sockfile = sockdir.socket_path(display_desc["display"])
         return _socket_connect(sock, sockfile, display_name, dtype)
 
     elif dtype == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(INET_SOCKET_TIMEOUT)
+        sock.settimeout(SOCKET_TIMEOUT)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         return _socket_connect(sock, tcp_endpoint, display_name, dtype)
 
