@@ -260,7 +260,7 @@ cdef class ColorspaceConverter:
         self.buffer_size = 0
         for i in range(4):
             self.out_height[i] = (int) (dst_height * dst.height_mult[i])
-            self.out_stride[i] = roundup((int) (dst_width * dst.width_mult[i]), 4)
+            self.out_stride[i] = roundup((int) (dst_width * dst.width_mult[i]), 16)
             #add one extra line to height so we can read a full rowstride
             #no matter where we start to read on the last line.
             #MEMALIGN may be redundant here but it is very cheap
