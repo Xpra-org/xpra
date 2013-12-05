@@ -681,6 +681,11 @@ class ServerSource(object):
                 volume = 0.0
             self.start_sending_sound(codec, volume)
             if action=="fadein":
+                delay = 1000
+                if len(args)>0:
+                    delay = max(1, min(10*1000, int(args[0])))
+                step = 1.0/(delay/100.0)
+                log("sound_control fadein delay=%s, step=%1.f", delay, step)
                 def fadein():
                     ss = self.sound_source
                     if not ss:
@@ -688,13 +693,18 @@ class ServerSource(object):
                     volume = ss.get_volume()
                     log("fadein() volume=%.1f", volume)
                     if volume<1.0:
-                        volume = min(1.0, volume+0.1)
+                        volume = min(1.0, volume+step)
                         ss.set_volume(volume)
                     return volume<1.0
                 self.timeout_add(100, fadein)
             return "started %s" % codec
         elif action=="fadeout":
             assert self.sound_source, "no active sound source"
+            delay = 1000
+            if len(args)>0:
+                delay = max(1, min(10*1000, int(args[0])))
+            step = 1.0/(delay/100.0)
+            log("sound_control fadeout delay=%s, step=%1.f", delay, step)
             def fadeout():
                 ss = self.sound_source
                 if not ss:
@@ -702,8 +712,7 @@ class ServerSource(object):
                 volume = ss.get_volume()
                 log("fadeout() volume=%.1f", volume)
                 if volume>0:
-                    dec = max(0.1, volume/10.0)
-                    ss.set_volume(max(0, volume-dec))
+                    ss.set_volume(max(0, volume-step))
                     return True
                 self.stop_sending_sound()
                 return False
