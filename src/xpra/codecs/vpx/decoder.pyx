@@ -16,6 +16,7 @@ from libc.stdint cimport int64_t
 
 
 cdef extern from "string.h":
+    void * memcpy(void * destination, void * source, size_t num) nogil
     void * memset(void * ptr, int value, size_t num) nogil
     void free(void * ptr) nogil
 
@@ -26,6 +27,7 @@ cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
+    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
 
 ctypedef unsigned char uint8_t
 ctypedef long vpx_img_fmt_t
@@ -109,6 +111,34 @@ cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     return VPX_IMG_FMT_I420
 
 
+class VPXImageWrapper(ImageWrapper):
+
+    def __init__(self, *args, **kwargs):
+        ImageWrapper.__init__(self, *args, **kwargs)
+        self.buffers = []
+
+    def add_buffer(self, ptr):
+        self.buffers.append(ptr)
+
+    def clone_pixel_data(self):
+        ImageWrapper.clone_pixel_data(self)
+        self.free_buffers()
+
+    def free(self):
+        ImageWrapper.free(self)
+        self.free_buffers()
+
+    def free_buffers(self):
+        cdef void *ptr
+        ImageWrapper.free(self)
+        if self.buffers:
+            for x in self.buffers:
+                #cython magic:
+                ptr = <void *> (<unsigned long> x)
+                free(ptr)
+            self.buffers = []
+
+
 cdef class Decoder:
 
     cdef vpx_codec_ctx_t *context
@@ -173,6 +203,10 @@ cdef class Decoder:
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         cdef int i = 0
+        cdef object image
+        cdef object plane
+        cdef void *padded_buf
+        cdef Py_ssize_t plane_len = 0
         assert self.context!=NULL
         assert PyObject_AsReadBuffer(input, <const void**> &buf, &buf_len)==0
 
@@ -183,9 +217,10 @@ cdef class Decoder:
         if img==NULL:
             log.warn("error during vpx_codec_get_frame: %s" % vpx_codec_error(self.context))
             return None
-        out = []
         strides = []
+        pixels = []
         divs = get_subsampling_divs(self.get_colorspace())
+        image = VPXImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 3)
         for i in (0, 1, 2):
             _, dy = divs[i]
             if dy==1:
@@ -195,8 +230,16 @@ cdef class Decoder:
             else:
                 raise Exception("invalid height divisor %s" % dy)
             stride = img.stride[i]
-            plane = (<char *>img.planes[i])[:(height * stride)]
-            out.append(plane)
             strides.append(stride)
-        image = ImageWrapper(0, 0, self.width, self.height, out, self.get_colorspace(), 24, strides, 3)
+
+            plane_len = height * stride
+            #add one extra line of padding:
+            padded_buf = xmemalign(plane_len + stride)
+            memcpy(padded_buf, <void *>img.planes[i], plane_len)
+            memset(padded_buf+plane_len, 0, stride)
+
+            plane = PyBuffer_FromMemory(padded_buf, plane_len)
+            pixels.append(plane)
+
+            image.add_buffer(<unsigned long> padded_buf)
         return image
