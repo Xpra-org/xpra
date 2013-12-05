@@ -11,5 +11,5 @@ Index: src/xpra/codecs/dec_avcodec/decoder.pyx
 +        self.codec_ctx.thread_type = 1      #FF_THREAD_SLICE: allow more than one thread per frame
 +        self.codec_ctx.thread_count = 1
          self.codec_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
-         r = avcodec_open2(self.codec_ctx, self.codec, NULL) < 0
+         r = avcodec_open2(self.codec_ctx, self.codec, NULL)
          if r<0:
