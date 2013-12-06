@@ -4,19 +4,17 @@
 import gtk
 from gtk import gdk
 from xpra.gtk_common.cursor_names import cursor_names
-names = cursor_names.keys()
 
 width = 400
 height = 200
 def main():
-	global names
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 	window.set_size_request(width, height)
 	window.connect("delete_event", gtk.mainquit)
 
 	cursor_combo = gtk.combo_box_new_text()
 	cursor_combo.append_text("")
-	for name in names:
+	for name in sorted(cursor_names.keys()):
 		cursor_combo.append_text(name)
 	window.add(cursor_combo)
 
