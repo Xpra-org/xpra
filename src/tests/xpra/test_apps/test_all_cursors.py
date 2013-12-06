@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import gobject
+
 import gtk
 from gtk import gdk
 from xpra.gtk_common.cursor_names import cursor_names
@@ -13,23 +13,22 @@ def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 	window.set_size_request(width, height)
 	window.connect("delete_event", gtk.mainquit)
-	label = gtk.Label()
-	window.add(label)
 
-	print("cursor names: %s" % str(names))
+	cursor_combo = gtk.combo_box_new_text()
+	cursor_combo.append_text("")
+	for name in names:
+		cursor_combo.append_text(name)
+	window.add(cursor_combo)
+
 	def change_cursor(*args):
-		global names
-		name = names[0]
-		names = names[1:]
+		name = cursor_combo.get_active_text()
 		print(name)
-		label.set_text(name)
 		gdk_cursor = cursor_names.get(name)
 		cursor = gdk.Cursor(gdk_cursor)
 		window.get_window().set_cursor(cursor)
-		return len(names)>0
 
+	cursor_combo.connect("changed", change_cursor)
 	window.show_all()
-	gobject.timeout_add(1000, change_cursor)
 	gtk.main()
 	return 0
 
