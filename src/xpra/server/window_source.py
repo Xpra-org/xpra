@@ -43,11 +43,13 @@ from xpra.server.stats.maths import time_weighted_average
 from xpra.server.region import new_region, add_rectangle, get_rectangles
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
-except:
+except Exception, e:
+    log("cannot load xor module: %s", e)
     xor_str = None
 try:
-    from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba
-except:
+    from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
+except Exception, e:
+    log("cannot load argb module: %s", e)
     bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
 from xpra.os_util import StringIOClass
 from xpra.codecs.loader import get_codec, has_codec, NEW_ENCODING_NAMES_TO_OLD
