@@ -150,10 +150,6 @@ cdef extern from "X11/extensions/xfixeswire.h":
     void XFixesSelectCursorInput(Display *, Window w, long mask)
 
 
-
-
-from xpra.codecs.argb.argb cimport argbdata_to_rgba
-
 # xmodmap's "keycode" action done implemented in python
 # some of the methods aren't very pythonic
 # that's intentional so as to keep as close as possible
@@ -681,19 +677,36 @@ cdef class X11KeyboardBindings(X11CoreBindings):
 
 
     def get_cursor_image(self):
-        cdef XFixesCursorImage* image
-        #cdef char* pixels
+        cdef XFixesCursorImage* image = NULL
+        cdef int n, i = 0
+        cdef unsigned char r, g, b, a
+        cdef unsigned long argb
         try:
+            from xpra.codecs.argb.argb import make_byte_buffer
             image = XFixesGetCursorImage(self.display)
             if image==NULL:
                 return  None
-            l = image.width*image.height*4
-            pixels = argbdata_to_rgba(<const unsigned char*> image.pixels, l)
+            n = image.width*image.height
+            #Warning: we need to iterate over the input one *long* at a time
+            #(even though only 4 bytes are set - and longs are 8 bytes on 64-bit..)
+            pixels = make_byte_buffer(n*4)
+            while i<n:
+                argb = image.pixels[i] & 0xffffffff
+                a = (argb >> 24)   & 0xff
+                r = (argb >> 16)   & 0xff
+                g = (argb >> 8)    & 0xff
+                b = (argb)         & 0xff
+                pixels[i*4]     = r
+                pixels[i*4+1]   = g
+                pixels[i*4+2]   = b
+                pixels[i*4+3]   = a
+                i += 1
             name = str(image.name)
             return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
                 image.cursor_serial, pixels, name]
         finally:
-            XFree(image)
+            if image:
+                XFree(image)
 
     def get_XFixes_event_base(self):
         cdef int event_base = 0                             #@DuplicatedSignature
