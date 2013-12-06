@@ -236,7 +236,7 @@ cdef class Decoder:
             #add one extra line of padding:
             padded_buf = xmemalign(plane_len + stride)
             memcpy(padded_buf, <void *>img.planes[i], plane_len)
-            memset(padded_buf+plane_len, 0, stride)
+            memset(<void *>((<char *>padded_buf)+plane_len), 0, stride)
 
             plane = PyBuffer_FromMemory(padded_buf, plane_len)
             pixels.append(plane)
