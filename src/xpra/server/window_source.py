@@ -187,6 +187,10 @@ class WindowSource(object):
         debug("window recommended scaling changed: %s", self.scaling)
         self.reconfigure(False)
 
+    def set_scaling(self, scaling):
+        self.scaling = scaling
+        self.reconfigure(True)
+
     def _fullscreen_changed(self, window, *args):
         self.fullscreen = window.get_property("fullscreen")
         debug("window fullscreen state changed: %s", self.fullscreen)

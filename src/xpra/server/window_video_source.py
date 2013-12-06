@@ -32,15 +32,18 @@ CSC_TYPE = os.environ.get("XPRA_CSC_TYPE", "")          #ie: "swscale" or "openc
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
 FORCE_CSC = bool(FORCE_CSC_MODE) or  os.environ.get("XPRA_FORCE_CSC", "0")=="1"
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
-SCALING_HARDCODED = None
-_SCALING_HARDCODED = os.environ.get("XPRA_SCALING_HARDCODED", "")
-if _SCALING_HARDCODED:
-    _values = _SCALING_HARDCODED.split(":")
-    _values = [int(x) for x in _values]
-    if len(_values)==1:
-        SCALING_HARDCODED = 1, _values[0]
-    else:
-        SCALING_HARDCODED = _values[:2]
+def parse_scaling_value(v):
+    if not v:
+        return None
+    values = v.split(":", 1)
+    values = [int(x) for x in values]
+    for x in values:
+        assert x>0, "invalid scaling value %s" % x
+    if len(values)==1:
+        return 1, values[0]
+    assert values[0]<=values[1], "cannot upscale"
+    return values[0], values[1]
+SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 
 
 class WindowVideoSource(WindowSource):

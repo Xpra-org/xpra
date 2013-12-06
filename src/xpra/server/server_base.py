@@ -639,7 +639,9 @@ class ServerBase(ServerCore):
         def success():
             respond(0, "success")
 
-        commands = ("hello", "compression", "sound-output", "suspend", "resume", "name")
+        commands = ("hello", "compression", "sound-output",
+                    "scaling",
+                    "suspend", "resume", "name")
         if command=="help":
             return respond(0, "control supports: %s" % (", ".join(commands)))
 
@@ -682,6 +684,32 @@ class ServerBase(ServerCore):
         elif command=="resume":
             csource.resume(True, self._id_to_window)
             return respond(0, "resumed")
+        elif command=="scaling":
+            if len(args)!=3:
+                return argn_err(3)
+            if args[1]=="*":
+                wids = csource.window_sources.keys()
+            else:
+                try:
+                    wid = int(args[1])
+                    csource.window_sources[wid]
+                    wids = [wid]
+                except:
+                    return respond(10, "cannot find window id %s" % args[1])
+            try:
+                from xpra.server.window_video_source import parse_scaling_value
+                scaling = parse_scaling_value(args[2])
+            except:
+                return respond(11, "invalid scaling value %s" % args[2])
+            for wid in wids:
+                window = self._id_to_window.get(wid)
+                if not window:
+                    continue
+                ws = csource.window_sources.get(wid)
+                if ws:
+                    ws.set_scaling(scaling)
+                    csource.refresh(wid, window, {})
+            return respond(0, "scaling set to %s" % str(scaling))
         elif command=="name":
             if len(args)!=2:
                 return argn_err(1)
