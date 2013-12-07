@@ -13,10 +13,6 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
-try:
-    import numpy
-except:
-    numpy = None
 
 #don't bother trying gtk2 transparencyon on MS Windows:
 HAS_RGBA = not sys.platform.startswith("win")
@@ -84,19 +80,13 @@ class PixmapBacking(GTK2WindowBacking):
         #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
         if self._backing is None:
             return  False
-        from xpra.codecs.argb.argb import unpremultiply_argb_in_place, make_byte_buffer   #@UnresolvedImport
-        needs_str = False
-        if type(img_data)==str:
-            if numpy:
-                #use numpy buffer:
-                img_data = numpy.fromstring(img_data, dtype=numpy.byte)
-            else:
-                #fallback to a byte buffer (bytearray or array):
-                img_data = make_byte_buffer(img_data)
-                needs_str = True
-        unpremultiply_argb_in_place(img_data)
-        if needs_str:
-            img_data = str(img_data)
+        from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
+        if type(img_data)==str or not hasattr(img_data, "raw"):
+            #cannot do in-place:
+            img_data = byte_buffer_to_buffer(unpremultiply_argb(img_data))
+        else:
+            #assume this is a writeable buffer (ie: ctypes from mmap):
+            unpremultiply_argb_in_place(img_data)
         pixbuf = gdk.pixbuf_new_from_data(img_data, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
         cr = self._backing.cairo_create()
         cr.rectangle(x, y, width, height)
