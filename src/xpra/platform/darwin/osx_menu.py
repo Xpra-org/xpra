@@ -112,7 +112,11 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.swapkeys_menuitem = self.checkitem("Control/Option Key Swap", swapkeys_toggled)
         def set_swapkeys_menuitem(*args):
             if self.keyboard:
+                debug("set_swapkeys_menuitem(%s) swap_keys=%s", args, self.keyboard.swap_keys)
                 self.swapkeys_menuitem.set_active(self.keyboard.swap_keys)
+            else:
+                debug("set_swapkeys_menuitem(%s) no keyboard!", args)
+                self.swapkeys_menuitem.set_sensitive(False)
         self.client.connect("handshake-complete", set_swapkeys_menuitem)
         return  self.swapkeys_menuitem
 
