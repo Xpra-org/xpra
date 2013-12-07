@@ -89,8 +89,8 @@ cdef extern from "libavcodec/avcodec.h":
     AVCodec *avcodec_find_decoder(AVCodecID id)
     AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
     int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
-    AVFrame *avcodec_alloc_frame()
-    void avcodec_free_frame(AVFrame **frame)
+    AVFrame* av_frame_alloc()
+    void av_frame_free(AVFrame **frame)
     int avcodec_close(AVCodecContext *avctx)
 
     #actual decoding:
@@ -303,7 +303,7 @@ cdef class Decoder:
             error("could not open codec: %s", self.av_error_str(r))
             self.clean_decoder()
             return  False
-        self.frame = avcodec_alloc_frame()
+        self.frame = av_frame_alloc()
         if self.frame==NULL:
             error("could not allocate an AVFrame for decoding")
             self.clean_decoder()
@@ -337,7 +337,7 @@ cdef class Decoder:
 
         debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
         if self.frame!=NULL:
-            avcodec_free_frame(&self.frame)
+            av_frame_free(&self.frame)
             #redundant: self.frame = NULL
 
         cdef unsigned long ctx_key          #@DuplicatedSignature
