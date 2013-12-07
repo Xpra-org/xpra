@@ -402,10 +402,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def send_cursor(self):
         self.send_cursor_pending = False
         self.cursor_data = X11Keyboard.get_cursor_image()
-        if self.cursor_data:
+        if self.cursor_data is not None:
             pixels = self.cursor_data[7]
             log("send_cursor() cursor=%s", self.cursor_data[:7]+["%s bytes" % len(pixels)]+self.cursor_data[8:])
-            if self.default_cursor_data and pixels==self.default_cursor_data[7]:
+            if self.default_cursor_data is not None and str(pixels)==str(self.default_cursor_data[7]):
                 log("send_cursor(): default cursor - clearing it")
                 self.cursor_data = None
             elif pixels is not None:
