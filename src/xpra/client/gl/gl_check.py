@@ -19,19 +19,45 @@ SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win") or sys.platform.s
 
 BLACKLIST = {"vendor" : ["nouveau", "Humper"]}
 
-#needed on win32?
-DEFAULT_DOUBLE_BUFFERED=0
+DEFAULT_DOUBLE_BUFFERED = 0
+DEFAULT_ALPHA = 1
 if sys.platform.startswith("win"):
-    DEFAULT_DOUBLE_BUFFERED=1
+    #needed on win32?
+    DEFAULT_DOUBLE_BUFFERED = 1
+    #does not work on win32:
+    DEFAULT_ALPHA = 0
 DOUBLE_BUFFERED = os.environ.get("XPRA_OPENGL_DOUBLE_BUFFERED", str(DEFAULT_DOUBLE_BUFFERED))=="1"
+ALPHA = os.environ.get("XPRA_OPENGL_ALPHA", str(DEFAULT_ALPHA))=="1"
 
 
 def get_DISPLAY_MODE():
     import gtk.gdkgl
-    #return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DEPTH | gtk.gdkgl.MODE_DOUBLE
+    #gtk.gdkgl.MODE_DEPTH
+    mode = 0
+    if ALPHA:
+        mode = mode | gtk.gdkgl.MODE_RGBA | gtk.gdkgl.MODE_ALPHA
+    else:
+        mode = mode | gtk.gdkgl.MODE_RGB
     if DOUBLE_BUFFERED:
-        return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DOUBLE
-    return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE
+        mode = mode | gtk.gdkgl.MODE_DOUBLE
+    else:
+        mode = mode | gtk.gdkgl.MODE_SINGLE
+    return mode
+
+def get_MODE_names(mode):
+    import gtk.gdkgl
+    friendly_mode_names = {gtk.gdkgl.MODE_RGB       : "RGB",
+                           gtk.gdkgl.MODE_RGB       : "RGBA",
+                           gtk.gdkgl.MODE_ALPHA     : "ALPHA",
+                           gtk.gdkgl.MODE_DEPTH     : "DEPTH",
+                           gtk.gdkgl.MODE_DOUBLE    : "DOUBLE",
+                           gtk.gdkgl.MODE_SINGLE    : "SINGLE"}
+    friendly_modes = [v for k,v in friendly_mode_names.items() if k>0 and (k&mode)==k]
+    #special case for single (value is zero!)
+    if not (mode&gtk.gdkgl.MODE_DOUBLE==gtk.gdkgl.MODE_DOUBLE):
+        friendly_modes.append("SINGLE")
+    return friendly_modes
+
 
 #by default, we raise an ImportError as soon as we find something missing:
 def raise_error(msg):
@@ -213,17 +239,15 @@ def check_support(min_texture_size=0, force_enable=False):
     display_mode = get_DISPLAY_MODE()
     try:
         glconfig = gtk.gdkgl.Config(mode=display_mode)
-    except gtk.gdkgl.NoMatches:
+    except gtk.gdkgl.NoMatches, e:
+        debug("no match: %s, toggling double-buffering", e)
         display_mode &= ~gtk.gdkgl.MODE_DOUBLE
         glconfig = gtk.gdkgl.Config(mode=display_mode)
-    friendly_mode_names = {gtk.gdkgl.MODE_RGB       : "RGB",
-                           gtk.gdkgl.MODE_DEPTH     : "DEPTH",
-                           gtk.gdkgl.MODE_DOUBLE    : "DOUBLE",
-                           gtk.gdkgl.MODE_SINGLE    : "SINGLE"}
-    friendly_modes = [v for k,v in friendly_mode_names.items() if (k&display_mode)==k]
-    debug("using display mode: %s", friendly_modes)
-    props["display_mode"] = friendly_modes
+    props["display_mode"] = get_MODE_names(display_mode)
     props["glconfig"] = glconfig
+    props["has_alpha"] = glconfig.has_alpha()
+    props["rgba"] = glconfig.is_rgba()
+    debug("GL props=%s", props)
     assert gtk.gdkgl.query_extension()
     glcontext, gldrawable, glext, w = None, None, None, None
     try:

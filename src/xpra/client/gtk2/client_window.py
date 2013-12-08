@@ -90,7 +90,7 @@ class ClientWindow(GTKClientWindowBase):
 
     def set_alpha(self):
         #by default, only RGB (no transparency):
-        self._client_properties["encodings.rgb_formats"] = ("RGB",)
+        self._client_properties["encodings.rgb_formats"] = ["RGB"]
         if sys.platform.startswith("win"):
             return
         if self._has_alpha and not self.is_realized():
@@ -101,7 +101,7 @@ class ClientWindow(GTKClientWindowBase):
             else:
                 self.debug("set_alpha() using rgba colormap for %s, realized=%s", self._id, self.is_realized())
                 self.set_colormap(rgba)
-                self._client_properties["encodings.rgb_formats"] = ("RGBA",)
+                self._client_properties["encodings.rgb_formats"] = ["RGBA"]
 
     def set_modal(self, modal):
         #with gtk2 setting the window as modal would prevent

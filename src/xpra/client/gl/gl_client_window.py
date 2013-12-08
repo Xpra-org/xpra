@@ -28,6 +28,17 @@ class GLClientWindow(ClientWindow):
     def is_GL(self):
         return True
 
+    def set_alpha(self):
+        ClientWindow.set_alpha(self)
+        rgb_formats = self._client_properties.get("encodings.rgb_formats", [])
+        #gl_window_backing supports BGR(A) too:
+        if "RGBA" in rgb_formats:
+            rgb_formats.append("BGRA")
+        if "RGB" in rgb_formats:
+            rgb_formats.append("BGR")
+            #TODO: we could handle BGRX as BGRA too...
+            #rgb_formats.append("BGRX")
+
     def spinner(self, ok):
         if not self._backing.paint_screen or not self._backing._backing or not self.can_have_spinner():
             return

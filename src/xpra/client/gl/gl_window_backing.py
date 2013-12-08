@@ -22,13 +22,16 @@ from xpra.client.gtk2.window_backing import GTK2WindowBacking, fire_paint_callba
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
-    GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_RGB, GL_LINEAR, \
+    GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_COLOR_BUFFER_BIT, \
-    GL_DONT_CARE, GL_TRUE,\
+    GL_DONT_CARE, GL_TRUE, \
+    GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
+    GL_BLEND, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, \
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
     glGenTextures, glDisable, \
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
+    glBlendFunc, \
     glTexParameteri, \
     glTexImage2D, \
     glMultiTexCoord2i, \
@@ -79,6 +82,8 @@ from ctypes import c_char_p
 #  3 = V plane
 #  4 = RGB updates
 #  5 = FBO texture (guaranteed up-to-date window contents)
+# The first four are used to update the FBO,
+# the FBO is what is painted on screen.
 TEX_Y = 0
 TEX_U = 1
 TEX_V = 2
@@ -108,6 +113,9 @@ class GLPixmapBacking(GTK2WindowBacking):
         self._backing = gtk.gtkgl.DrawingArea(self.glconfig)
         #restoring missed masks:
         self._backing.set_events(self._backing.get_events() | gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK)
+        rgba = self._backing.get_screen().get_rgba_colormap()
+        if rgba:
+            self._backing.set_colormap(rgba)
         self._backing.show()
         self._backing.connect("expose_event", self.gl_expose_event)
         self.textures = None # OpenGL texture IDs
@@ -189,8 +197,8 @@ class GLPixmapBacking(GTK2WindowBacking):
             # glEnableClientState(GL_VERTEX_ARRAY)
             # glEnableClientState(GL_TEXTURE_COORD_ARRAY)
 
-            # Clear to white
-            glClearColor(1.0, 1.0, 1.0, 1.0)
+            # Clear background to transparent white
+            glClearColor(1.0, 1.0, 1.0, 0.0)
 
             # Default state is good for YUV painting:
             #  - fragment program enabled
@@ -205,7 +213,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
             # Define empty FBO texture and set rendering to FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, None)
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -246,11 +254,11 @@ class GLPixmapBacking(GTK2WindowBacking):
             return None
         return drawable
 
-    def set_rgb24_paint_state(self):
-        # Set GL state for RGB24 painting:
+    def set_rgb_paint_state(self):
+        # Set GL state for RGB painting:
         #    no fragment program
         #    only tex unit #0 active
-        self.gl_marker("Switching to RGB24 paint state")
+        self.gl_marker("Switching to RGB paint state")
         glDisable(GL_FRAGMENT_PROGRAM_ARB);
         for texture in (GL_TEXTURE1, GL_TEXTURE2):
             glActiveTexture(texture)
@@ -258,7 +266,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         glActiveTexture(GL_TEXTURE0);
         glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
-    def unset_rgb24_paint_state(self):
+    def unset_rgb_paint_state(self):
         # Reset state to our default
         self.gl_marker("Switching back to YUV paint state")
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
@@ -279,10 +287,16 @@ class GLPixmapBacking(GTK2WindowBacking):
         # Change state to target screen instead of our FBO
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
+        # transparent background:
+        glClearColor(1.0, 0.0, 1.0, 0)
+
         # Draw FBO texture on screen
-        self.set_rgb24_paint_state()
+        self.set_rgb_paint_state()
 
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+        # support alpha channel if present:
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
         w, h = self.size
         glBegin(GL_QUADS)
@@ -306,7 +320,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glFlush()
         self.gl_frame_terminator()
 
-        self.unset_rgb24_paint_state()
+        self.unset_rgb_paint_state()
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
         debug("%s.present_fbo() done", self)
 
@@ -320,20 +334,23 @@ class GLPixmapBacking(GTK2WindowBacking):
         finally:
             drawable.gl_end()
 
-    def _do_paint_rgb32(self, *args):
-        #FIXME #385: add transparency to GL
-        raise Exception("bug: it should be impossible to get here: gl backing does not handle transparency")
+    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        self._do_paint_rgb(32, img_data, x, y, width, height, rowstride, options, callbacks)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        debug("%s._do_paint_rgb24(x=%d, y=%d, width=%d, height=%d, rowstride=%d)", self, x, y, width, height, rowstride)
+        self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options, callbacks)
+
+    def _do_paint_rgb(self, bpp, img_data, x, y, width, height, rowstride, options, callbacks):
+        debug("%s._do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d)", self, bpp, len(img_data), x, y, width, height, rowstride)
         drawable = self.gl_init()
         if not drawable:
-            debug("%s._do_paint_rgb24(..) drawable is not set!", self)
+            debug("%s._do_paint_rgb(..) drawable is not set!", self)
             return False
 
         try:
-            self.set_rgb24_paint_state()
+            self.set_rgb_paint_state()
 
+            bytes_per_pixel = bpp/8
             # Compute alignment and row length
             row_length = 0
             alignment = 1
@@ -344,17 +361,33 @@ class GLPixmapBacking(GTK2WindowBacking):
             # If number of extra bytes is greater than the alignment value,
             # then we also have to set row_length
             # Otherwise it remains at 0 (= width implicitely)
-            if (rowstride - width * 3) > a:
-                row_length = width + (rowstride - width * 3) / 3
+            if (rowstride - width * bytes_per_pixel) > a:
+                row_length = width + (rowstride - width * bytes_per_pixel) / bytes_per_pixel
 
-            self.gl_marker("RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (x, y, width, height, rowstride, row_length, alignment))
+            self.gl_marker("RGB%s update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (bpp, x, y, width, height, rowstride, row_length, alignment))
             # Upload data as temporary RGB texture
+            rgb_format = options.get("rgb_format", "RGB")
+            log.info("options=%s, rgb format=%s", options, rgb_format)
+            if bpp==24:
+                if rgb_format=="BGR":
+                    pformat = GL_BGR
+                else:
+                    assert rgb_format=="RGB"
+                    pformat = GL_RGB
+            else:
+                assert bpp==32
+                if rgb_format=="BGRA":
+                    pformat = GL_BGRA
+                else:
+                    assert rgb_format=="RGBA"
+                    pformat = GL_RGBA
+
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
             glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 4, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
 
             # Draw textured RGB quad at the right coordinates
             glBegin(GL_QUADS)
@@ -371,7 +404,6 @@ class GLPixmapBacking(GTK2WindowBacking):
             # Present update to screen
             self.present_fbo(drawable)
             # present_fbo has reset state already
-
         finally:
             drawable.gl_end()
         return True
