@@ -1364,9 +1364,18 @@ class UIXpraClient(XpraClientBase):
         self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
 
     def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
-        ClientWindowClass = self.get_client_window_class(metadata, override_redirect)
+        client_window_classes = self.get_client_window_classes(metadata, override_redirect)
         group_leader_window = self.get_group_leader(metadata, override_redirect)
-        window = ClientWindowClass(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+        window = None
+        for cwc in client_window_classes:
+            try:
+                window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+                break
+            except Exception, e:
+                log.warn("failed to instantiate %s: %s", cwc, e)
+        if window is None:
+            log.warn("no more options.. this window will not be shown, sorry")
+            return
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show()
@@ -1377,8 +1386,8 @@ class UIXpraClient(XpraClientBase):
         return None
 
 
-    def get_client_window_class(self, metadata, override_redirect):
-        return self.ClientWindowClass
+    def get_client_window_classes(self, metadata, override_redirect):
+        return [self.ClientWindowClass]
 
     def _process_new_window(self, packet):
         self._process_new_common(packet, False)

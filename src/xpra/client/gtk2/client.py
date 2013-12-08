@@ -441,20 +441,15 @@ class XpraClient(GTKXpraClient):
         group_leader.destroy()
 
 
-    def get_client_window_class(self, metadata, override_redirect):
+    def get_client_window_classes(self, metadata, override_redirect):
         #only enable GL for normal windows:
         window_types = metadata.get("window-type", ())
         log("get_client_window_class(%s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, window_types=%s, encoding=%s", metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, window_types, self.encoding)
         if self.GLClientWindowClass is None or not self.opengl_enabled or override_redirect:
-            return self.ClientWindowClass
-        if metadata.get("has-alpha", False):
-            #GL cannot do transparency yet:
-            return self.ClientWindowClass
-        if self.mmap_enabled or self.encoding not in ("h264", "vpx"):
-            return self.ClientWindowClass
+            return [self.ClientWindowClass]
         if ("NORMAL" not in window_types) and ("_NET_WM_WINDOW_TYPE_NORMAL" not in window_types):
-            return self.ClientWindowClass
-        return self.GLClientWindowClass
+            return [self.ClientWindowClass, self.GLClientWindowClass]
+        return [self.GLClientWindowClass, self.ClientWindowClass]
 
     def toggle_opengl(self, *args):
         assert self.window_unmap, "server support for 'window_unmap' is required for toggling opengl at runtime"
