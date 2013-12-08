@@ -133,12 +133,12 @@ cdef bgradata_to_rgba(const unsigned char* bgra, int bgra_len):
     assert bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
     #same number of bytes:
     rgba = make_byte_buffer(bgra_len)
-    cdef int bi = 0                          #@DuplicateSignature
+    cdef int i = 0                      #@DuplicateSignature
     while i < bgra_len:
-        rgba[bi]   = bgra[bi+2]              #R
-        rgba[bi+1] = bgra[bi+1]              #G
-        rgba[bi+2] = bgra[bi]                #B
-        rgba[bi+3] = bgra[bi+3]              #A
+        rgba[i]   = bgra[i+2]           #R
+        rgba[i+1] = bgra[i+1]           #G
+        rgba[i+2] = bgra[i]             #B
+        rgba[i+3] = bgra[i+3]           #A
         i += 4
     return rgba
 
@@ -222,12 +222,12 @@ cdef int A = tmp.find('\3')
 cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     # cbuf contains non-premultiplied ARGB32 data in native-endian.
     # We convert to premultiplied ARGB32 data
-    cdef unsigned int a, r, g, b                    #@DuplicateSignature
-    cdef unsigned int argb                          #@DuplicateSignature
+    cdef unsigned int a, r, g, b                #@DuplicateSignature
+    cdef unsigned int argb                      #@DuplicateSignature
     assert sizeof(int) == 4
     assert argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
     argb_out = make_byte_buffer(argb_len)
-    cdef int i                                      #@DuplicateSignature
+    cdef int i                                  #@DuplicateSignature
     for 0 <= i < argb_len / 4:
         argb = argb_in[i]
         a = (argb >> 24) & 0xff
