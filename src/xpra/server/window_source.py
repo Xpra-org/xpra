@@ -945,12 +945,17 @@ class WindowSource(object):
         return "webp", Compressed("webp", str(enc(handler, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0, bpp
 
     def rgb_encode(self, coding, image, options):
+        options = {}
         pixel_format = image.get_pixel_format()
+        #debug("rgb_encode(%s, %s, %s)", coding, image, options)
         if pixel_format not in self.rgb_formats:
             if not self.rgb_reformat(image):
                 raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, self.rgb_formats))
             #get the new format:
             pixel_format = image.get_pixel_format()
+        #"non-standard" pixel format, tell client:
+        if pixel_format not in ("RGB", "RGBA"):
+            options["rgb_format"] = pixel_format
         #compress here and return a wrapper so network code knows it is already zlib compressed:
         pixels = image.get_pixels()
         if len(pixels)<512:
@@ -960,7 +965,6 @@ class WindowSource(object):
         level = max(min_level, min(5, int(110-self.get_current_speed())/20))
         zlib = str(pixels)
         cdata = zlib
-        options = {}
         if level>0:
             lz4 = use_lz4 and self.rgb_lz4
             zlib = compressed_wrapper(coding, pixels, level=level, lz4=lz4)
@@ -1119,18 +1123,25 @@ class WindowSource(object):
         if not PIL:
             #try to fallback to argb module
             return self.argb_swap(image)
-        target_format = {
-                 "XRGB"   : "RGB",
-                 "BGRX"   : "RGB",
-                 "BGRA"   : "RGBA"}.get(pixel_format)
-        if target_format not in self.rgb_formats:
+        modes = {
+                 #source  : [(PIL input format, output format), ..]
+                 "XRGB"   : [("XRGB", "RGB")],
+                 "BGRX"   : [("BGRX", "RGB")],
+                 #try with alpha first:
+                 "BGRA"   : [("BGRA", "RGBA"), ("BGRX", "RGB")]}.get(pixel_format)
+        target_rgb = [(im,om) for (im,om) in modes if om in self.rgb_formats]
+        if len(target_rgb)==0:
+            #try argb module:
+            if self.argb_swap(image):
+                return True
             warning_key = "rgb_reformats(%s)" % pixel_format
             self.warn_encoding_once(warning_key, "cannot convert %s to one of: %s" % (pixel_format, self.rgb_formats))
             return False
+        input_format, target_format = target_rgb[0]
         start = time.time()
         w = image.get_width()
         h = image.get_height()
-        img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
+        img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
         rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
         data = img.tostring("raw", target_format)
         assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, len(data))
