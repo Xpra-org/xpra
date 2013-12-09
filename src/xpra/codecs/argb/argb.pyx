@@ -23,7 +23,7 @@ if numpy:
     def make_byte_buffer(len):
         return numpy.empty(len, dtype=numpy.byte)
     def byte_buffer_to_buffer(x):
-        return x
+        return x.tostring()
 else:
     #test for availability of bytearray
     #in a way that does not cause Cython to fail to compile:

@@ -682,7 +682,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         cdef unsigned char r, g, b, a
         cdef unsigned long argb
         try:
-            from xpra.codecs.argb.argb import make_byte_buffer
+            from xpra.codecs.argb.argb import make_byte_buffer, byte_buffer_to_buffer
             image = XFixesGetCursorImage(self.display)
             if image==NULL:
                 return  None
@@ -703,7 +703,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                 i += 1
             name = str(image.name)
             return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
-                image.cursor_serial, pixels, name]
+                image.cursor_serial, byte_buffer_to_buffer(pixels), name]
         finally:
             if image:
                 XFree(image)
