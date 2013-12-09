@@ -18,14 +18,6 @@ from gtk import gdk
 gtk.threads_init()
 
 
-try:
-    from xpra.x11.gtk_x11.error import trap
-    call_synced = trap.call_synced
-except ImportError:
-    #this is not available on osx and win32
-    def call_synced(fun, *args, **kwargs):
-        return fun(*args, **kwargs)
-
 from xpra.platform.ui_thread_watcher import get_UI_watcher
 get_UI_watcher(gobject.timeout_add).start()
 
@@ -313,7 +305,7 @@ class XpraClient(GTKXpraClient):
                 gdk_cursor = cursor_names.get(cursor_name.upper())
                 if gdk_cursor is not None:
                     log("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
-                    return call_synced(gdk.Cursor, gdk_cursor)
+                    return gdk.Cursor(gdk_cursor)
                 else:
                     log.warn("cursor name '%s' not found", cursor_name)
         #create cursor from the pixel data:
