@@ -318,6 +318,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glClear(GL_COLOR_BUFFER_BIT)
         else:
             glFlush()
+        glDisable(GL_BLEND)
         self.gl_frame_terminator()
 
         self.unset_rgb_paint_state()
