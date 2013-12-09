@@ -543,6 +543,8 @@ class ServerCore(object):
         if self.session_name:
             info["session.name"] = self.session_name
         info.update(self.get_thread_info(proto))
+        for k,v in get_network_caps().items():
+            info["network."+k] = v
         return info
 
     def get_thread_info(self, proto):
