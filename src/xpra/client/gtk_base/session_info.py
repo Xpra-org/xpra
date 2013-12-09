@@ -232,6 +232,12 @@ class SessionInfo(gtk.Window):
         self.client_microphone_codecs_label = label()
         self.server_microphone_codecs_label = label()
         tb.new_row("Microphone Codecs", self.client_microphone_codecs_label, self.server_microphone_codecs_label)
+        self.client_packet_encoders_label = label()
+        self.server_packet_encoders_label = label()
+        tb.new_row("Packet Encoders", self.client_packet_encoders_label, self.server_packet_encoders_label)
+        self.client_packet_compressors_label = label()
+        self.server_packet_compressors_label = label()
+        tb.new_row("Packet Compressors", self.client_packet_compressors_label, self.server_packet_compressors_label)
 
         # Connection Table:
         tb, _ = self.table_tab("connect.png", "Connection", self.populate_connection)
@@ -558,9 +564,6 @@ class SessionInfo(gtk.Window):
         self.opengl_buffering.set_text(buffering)
 
         scaps = self.client.server_capabilities
-        se = scaps.get("encodings.core", scaps.get("encodings", scaps.get("encodings.core", [])))
-        self.server_encodings_label.set_text(", ".join(sorted(se)))
-        self.client_encodings_label.set_text(", ".join(sorted(self.client.get_core_encodings())))
         self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
         self.bool_icon(self.server_clipboard_icon, scaps.get("clipboard", False))
         self.bool_icon(self.server_notifications_icon, scaps.get("notifications", False))
@@ -586,18 +589,43 @@ class SessionInfo(gtk.Window):
             can = scaps.get("sound.send", False) and self.client.speaker_allowed
             self.bool_icon(self.server_speaker_icon, can)
             self.speaker_codec_label.set_text(pipeline_info(can, self.client.sound_sink))
-            self.server_speaker_codecs_label.set_text(codec_info(scaps.get("sound.send", False), scaps.get("sound.encoders", [])))
-            self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
         populate_speaker_info()
         self.client.connect("speaker-changed", populate_speaker_info)
         def populate_microphone_info(*args):
             can = scaps.get("sound.receive", False) and self.client.microphone_allowed
             self.bool_icon(self.server_microphone_icon, can)
             self.microphone_codec_label.set_text(pipeline_info(can, self.client.sound_source))
-            self.server_microphone_codecs_label.set_text(codec_info(scaps.get("sound.receive", False), scaps.get("sound.decoders", [])))
-            self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
         populate_microphone_info()
         self.client.connect("microphone-changed", populate_microphone_info)
+
+        #sound/video codec table:
+        self.server_speaker_codecs_label.set_text(codec_info(scaps.get("sound.send", False), scaps.get("sound.encoders", [])))
+        self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
+        self.server_microphone_codecs_label.set_text(codec_info(scaps.get("sound.receive", False), scaps.get("sound.decoders", [])))
+        self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
+        se = scaps.get("encodings.core", scaps.get("encodings", scaps.get("encodings.core", [])))
+        self.server_encodings_label.set_text(", ".join(sorted(se)))
+        self.client_encodings_label.set_text(", ".join(sorted(self.client.get_core_encodings())))
+
+        def get_encoder_list(caps):
+            l = []
+            if caps.get("bencode", True):
+                l.append("bencode")
+            if caps.get("rencode", False):
+                l.append("rencode")
+            return l
+        self.client_packet_encoders_label.set_text(", ".join(get_encoder_list(get_network_caps())))
+        self.server_packet_encoders_label.set_text(", ".join(get_encoder_list(self.client.server_capabilities)))
+
+        def get_compressor_list(caps):
+            l = []
+            if caps.get("zlib", False):
+                l.append("zlib")
+            if caps.get("lz4", False):
+                l.append("lz4")
+            return l
+        self.client_packet_compressors_label.set_text(", ".join(get_compressor_list(get_network_caps())))
+        self.server_packet_compressors_label.set_text(", ".join(get_compressor_list(self.client.server_capabilities)))
         return False
 
     def populate_connection(self):
