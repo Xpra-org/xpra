@@ -367,7 +367,6 @@ class GLPixmapBacking(GTK2WindowBacking):
             self.gl_marker("RGB%s update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (bpp, x, y, width, height, rowstride, row_length, alignment))
             # Upload data as temporary RGB texture
             rgb_format = options.get("rgb_format", None)
-            log.info("options=%s, rgb format=%s", options, rgb_format)
             if bpp==24:
                 if rgb_format=="BGR":
                     pformat = GL_BGR
