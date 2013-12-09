@@ -14,8 +14,15 @@ log = Logger()
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 
-#don't bother trying gtk2 transparencyon on MS Windows:
+#don't bother trying gtk2 transparency on on MS Windows:
 HAS_RGBA = not sys.platform.startswith("win")
+try:
+    from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
+except:
+    log.warn("argb module is missing, cannot support alpha channels")
+    unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer  = None, None, None
+    #we need argb to un-premultiply alpha:
+    HAS_RGBA = False
 
 
 """
@@ -80,12 +87,13 @@ class PixmapBacking(GTK2WindowBacking):
         #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
         if self._backing is None:
             return  False
-        from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
         if type(img_data)==str or not hasattr(img_data, "raw"):
             #cannot do in-place:
+            assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb"
             img_data = byte_buffer_to_buffer(unpremultiply_argb(img_data))
         else:
             #assume this is a writeable buffer (ie: ctypes from mmap):
+            assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb_in_place"
             unpremultiply_argb_in_place(img_data)
         pixbuf = gdk.pixbuf_new_from_data(img_data, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
         cr = self._backing.cairo_create()
