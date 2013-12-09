@@ -26,12 +26,13 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_COLOR_BUFFER_BIT, \
     GL_DONT_CARE, GL_TRUE, \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
-    GL_BLEND, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, \
+    GL_BLEND, GL_ZERO, GL_ONE, \
+    GL_FUNC_ADD, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
+    glBlendEquationSeparate, glBlendFuncSeparate, \
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
     glGenTextures, glDisable, \
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
-    glBlendFunc, \
     glTexParameteri, \
     glTexImage2D, \
     glMultiTexCoord2i, \
@@ -89,6 +90,10 @@ TEX_U = 1
 TEX_V = 2
 TEX_RGB = 3
 TEX_FBO = 4
+
+# Shader number assignment
+YUV2RGB_SHADER = 0
+RGBP2RGB_SHADER = 1
 
 """
 This is the gtk2 + OpenGL version.
@@ -222,7 +227,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             if not self.shaders:
                 self.shaders = [ 1, 2 ]
                 glGenProgramsARB(2, self.shaders)
-                for progid, progstr in ((0, YUV2RGB_shader), (1, RGBP2RGB_shader)):
+                for progid, progstr in ((YUV2RGB_SHADER, YUV2RGB_shader), (RGBP2RGB_SHADER, RGBP2RGB_shader)):
                     glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
                     glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
                     err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
@@ -231,7 +236,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                         log.error(err)
 
             # Bind program 0 for YUV painting by default
-            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[0])
+            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
             self.gl_setup = True
         return drawable
 
@@ -274,12 +279,12 @@ class GLPixmapBacking(GTK2WindowBacking):
     def set_rgbP_paint_state(self):
         # Set GL state for planar RGB:
         #   change fragment program
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[1])
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[RGBP2RGB_SHADER])
 
     def unset_rgbP_paint_state(self):
         # Reset state to our default (YUV painting):
         #   change fragment program
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[0])
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
     def present_fbo(self, drawable):
         self.gl_marker("Presenting FBO on screen for drawable %s" % drawable)
@@ -296,7 +301,8 @@ class GLPixmapBacking(GTK2WindowBacking):
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
         # support alpha channel if present:
         glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD)
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO)
 
         w, h = self.size
         glBegin(GL_QUADS)
@@ -336,6 +342,17 @@ class GLPixmapBacking(GTK2WindowBacking):
             drawable.gl_end()
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        #FIXME: we ought to be able to use
+        #OpenGL blending and use premultiplied pixels directly... beats me!
+        from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
+        if type(img_data)==str:
+            #cannot do in-place:
+            assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb"
+            img_data = byte_buffer_to_buffer(unpremultiply_argb(img_data))
+        else:
+            #assume this is a writeable buffer (ie: ctypes from mmap):
+            assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb_in_place"
+            unpremultiply_argb_in_place(img_data)
         self._do_paint_rgb(32, img_data, x, y, width, height, rowstride, options, callbacks)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
