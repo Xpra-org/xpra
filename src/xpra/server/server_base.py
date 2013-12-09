@@ -639,7 +639,9 @@ class ServerBase(ServerCore):
         def success():
             respond(0, "success")
 
-        commands = ("hello", "compression", "sound-output",
+        commands = ("hello",
+                    "compression", "encoder",
+                    "sound-output",
                     "scaling",
                     "suspend", "resume", "name")
         if command=="help":
@@ -664,13 +666,23 @@ class ServerBase(ServerCore):
                 return argn_err(2)
             compression = args[1].lower()
             opts = ("lz4", "zlib")
-            if compression not in opts:
-                return arg_err(1, "must be one of: %s" % (", ".join(opts)))                
             if compression=="lz4":
                 cproto.enable_lz4()
                 return success()
             elif compression=="zlib":
                 cproto.enable_zlib()
+                return success()
+            return arg_err(1, "must be one of: %s" % (", ".join(opts)))
+        elif command=="encoder":
+            if len(args)!=2:
+                return argn_err(2)
+            encoder = args[1].lower()
+            opts = ("bencode", "rencode")
+            if encoder=="bencode":
+                cproto.enable_bencode()
+                return success()
+            elif encoder=="rencode":
+                cproto.enable_rencode()
                 return success()
             return arg_err(1, "must be one of: %s" % (", ".join(opts)))
         elif command=="sound-output":
