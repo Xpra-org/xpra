@@ -87,7 +87,7 @@ class PixmapBacking(GTK2WindowBacking):
         #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
         if self._backing is None:
             return  False
-        if type(img_data)==str or not hasattr(img_data, "raw"):
+        if type(img_data)==str:
             #cannot do in-place:
             assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb"
             img_data = byte_buffer_to_buffer(unpremultiply_argb(img_data))
