@@ -12,6 +12,7 @@
 %define old_xdg 0
 %define PIL_bug 1
 
+%define requires_lz4 python-lz4
 %define avcodec_build_args %{nil}
 %define webp_build_args --with-webp
 %define server_build_args --with-server
@@ -77,6 +78,7 @@
 %endif
 
 %if 0%{?el5}
+%define requires_lz4 %{nil}
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
@@ -113,7 +115,7 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}%{dist}
 License: GPL
-Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound}
+Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4}
 Group: Networking
 Packager: Antoine Martin <antoine@devloop.org.uk>
 URL: http://xpra.org/
