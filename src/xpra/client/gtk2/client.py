@@ -310,6 +310,10 @@ class XpraClient(GTKXpraClient):
                     log.warn("cursor name '%s' not found", cursor_name)
         #create cursor from the pixel data:
         w, h, xhot, yhot, serial, pixels = cursor_data[2:8]
+        if len(pixels)<w*h*4:
+            import binascii
+            log.warn("not enough pixels provided in cursor data: %s needed and only %s bytes found (%s)", w*h*4, len(pixels), binascii.hexlify(pixels)[:100])
+            return
         pixbuf = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
         x = max(0, min(xhot, w-1))
         y = max(0, min(yhot, h-1))
@@ -328,6 +332,8 @@ class XpraClient(GTKXpraClient):
             cursor = self.make_cursor(new_cursor)
         except Exception, e:
             log.warn("error creating cursor: %s (using default)", e, exc_info=True)
+            cursor = None
+        if cursor is None:
             #use default:
             cursor = gdk.Cursor(gtk.gdk.X_CURSOR)
         for gtkwindow in gtkwindows:
