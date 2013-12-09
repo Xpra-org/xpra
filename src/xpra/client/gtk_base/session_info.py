@@ -164,7 +164,14 @@ class SessionInfo(gtk.Window):
         tb.new_row("PyOpenGL", label(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), label("n/a"))
 
         # Features Table:
-        tb, _ = self.table_tab("features.png", "Features", self.populate_features)
+        vbox = self.vbox_tab("features.png", "Features", self.populate_features)
+        #add top table:
+        tb = TableBuilder(rows=1, columns=2)
+        table = tb.get_table()
+        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
+        al.add(table)
+        vbox.pack_start(al, expand=True, fill=False, padding=10)
+        #top table contents:
         randr_box = gtk.HBox(False, 20)
         self.server_randr_label = label()
         self.server_randr_icon = gtk.Image()
@@ -180,10 +187,6 @@ class SessionInfo(gtk.Window):
         tb.new_row("Client OpenGL", opengl_box)
         self.opengl_buffering = label()
         tb.new_row("OpenGL Buffering", self.opengl_buffering)
-        self.server_encodings_label = label()
-        tb.new_row("Server Encodings", self.server_encodings_label)
-        self.client_encodings_label = label()
-        tb.new_row("Client Encodings", self.client_encodings_label)
         self.server_mmap_icon = gtk.Image()
         tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
         self.server_clipboard_icon = gtk.Image()
@@ -200,20 +203,35 @@ class SessionInfo(gtk.Window):
         self.speaker_codec_label = label()
         speaker_box.add(self.speaker_codec_label)
         tb.new_row("Speaker Forwarding", speaker_box)
-        self.server_speaker_codecs_label = label()
-        tb.new_row("Server Codecs", self.server_speaker_codecs_label)
-        self.client_speaker_codecs_label = label()
-        tb.new_row("Client Codecs", self.client_speaker_codecs_label)
         microphone_box = gtk.HBox(False, 20)
         self.server_microphone_icon = gtk.Image()
         microphone_box.add(self.server_microphone_icon)
         self.microphone_codec_label = label()
         microphone_box.add(self.microphone_codec_label)
         tb.new_row("Microphone Forwarding", microphone_box)
-        self.server_microphone_codecs_label = label()
-        tb.new_row("Server Codecs", self.server_microphone_codecs_label)
+        #add bottom table:
+        tb = TableBuilder(rows=1, columns=3)
+        table = tb.get_table()
+        vbox.pack_start(table, expand=True, fill=True, padding=20)
+        #bottom table headings:
+        tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box("Client"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box("Server"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.inc()
+        #bottom table contents:
+        self.client_encodings_label = label()
+        self.client_encodings_label.set_line_wrap(True)
+        self.client_encodings_label.set_size_request(250, -1)
+        self.server_encodings_label = label()
+        self.server_encodings_label.set_line_wrap(True)
+        self.server_encodings_label.set_size_request(250, -1)
+        tb.new_row("Encodings", self.client_encodings_label, self.server_encodings_label)
+        self.client_speaker_codecs_label = label()
+        self.server_speaker_codecs_label = label()
+        tb.new_row("Speaker Codecs", self.client_speaker_codecs_label, self.server_speaker_codecs_label)
         self.client_microphone_codecs_label = label()
-        tb.new_row("Client Codecs", self.client_microphone_codecs_label)
+        self.server_microphone_codecs_label = label()
+        tb.new_row("Microphone Codecs", self.client_microphone_codecs_label, self.server_microphone_codecs_label)
 
         # Connection Table:
         tb, _ = self.table_tab("connect.png", "Connection", self.populate_connection)
@@ -239,7 +257,7 @@ class SessionInfo(gtk.Window):
         self.output_bytes_label = label()
         tb.new_row("Bytes Sent", self.output_bytes_label)
         self.compression_label = label()
-        tb.new_row("Compression", self.compression_label)
+        tb.new_row("Compression + Encoding", self.compression_label)
         self.connection_type_label = label()
         tb.new_row("Connection Type", self.connection_type_label)
         self.input_encryption_label = label()
@@ -355,12 +373,17 @@ class SessionInfo(gtk.Window):
     def table_tab(self, icon_filename, title, populate_cb):
         tb = TableBuilder()
         table = tb.get_table()
-        box = gtk.VBox(False, 0)
+        vbox = self.vbox_tab(icon_filename, title, populate_cb)
         al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(table)
-        box.pack_start(al, expand=True, fill=True, padding=20)
-        self.add_tab(icon_filename, title, populate_cb, contents=box)
-        return tb, box
+        vbox.pack_start(al, expand=True, fill=True, padding=20)
+        return tb, vbox
+
+    def vbox_tab(self, icon_filename, title, populate_cb):
+        vbox = gtk.VBox(False, 0)
+        self.add_tab(icon_filename, title, populate_cb, contents=vbox)
+        return vbox
+        
 
     def add_tab(self, icon_filename, title, populate_cb, contents):
         icon = self.get_pixbuf(icon_filename)
