@@ -17,6 +17,15 @@ import gtk
 from gtk import gdk
 gtk.threads_init()
 
+
+try:
+    from xpra.x11.gtk_x11.error import trap
+    call_synced = trap.call_synced
+except ImportError:
+    #this is not available on osx and win32
+    def call_synced(fun, *args, **kwargs):
+        return fun(*args, **kwargs)
+
 from xpra.platform.ui_thread_watcher import get_UI_watcher
 get_UI_watcher(gobject.timeout_add).start()
 
@@ -294,34 +303,41 @@ class XpraClient(GTKXpraClient):
     def get_root_size(self):
         return gdk.get_default_root_window().get_size()
 
+    def make_cursor(self, cursor_data):
+        if not cursor_data:
+            return None
+        #if present, try cursor ny name:
+        if len(cursor_data)>=9 and cursor_names:
+            cursor_name = cursor_data[8]
+            if cursor_name:
+                gdk_cursor = cursor_names.get(cursor_name.upper())
+                if gdk_cursor is not None:
+                    log("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
+                    return call_synced(gdk.Cursor, gdk_cursor)
+                else:
+                    log.warn("cursor name '%s' not found", cursor_name)
+        #create cursor from the pixel data:
+        w, h, xhot, yhot, serial, pixels = cursor_data[2:8]
+        pixbuf = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
+        x = max(0, min(xhot, w-1))
+        y = max(0, min(yhot, h-1))
+        size = gdk.display_get_default().get_default_cursor_size()
+        log("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s", xhot,yhot, serial, w,h, len(pixels), size)
+        if size>0 and (size<w or size<h) and False:
+            ratio = float(max(w,h))/size
+            log("downscaling cursor by %.2f", ratio)
+            pixbuf = pixbuf.scale_simple(int(w/ratio), int(h/ratio), gdk.INTERP_BILINEAR)
+            x = int(x/ratio)
+            y = int(y/ratio)
+        return gdk.Cursor(gdk.display_get_default(), pixbuf, x, y)
+
     def set_windows_cursor(self, gtkwindows, new_cursor):
-        cursor = None
-        if len(new_cursor)>0:
-            cursor = None
-            if len(new_cursor)>=9 and cursor_names:
-                cursor_name = new_cursor[8]
-                if cursor_name:
-                    gdk_cursor = cursor_names.get(cursor_name.upper())
-                    if gdk_cursor is not None:
-                        try:
-                            from xpra.x11.gtk_x11.error import trap
-                            log("setting new cursor: %s=%s", cursor_name, gdk_cursor)
-                            cursor = trap.call_synced(gdk.Cursor, gdk_cursor)
-                        except:
-                            pass
-            if cursor is None:
-                w, h, xhot, yhot, serial, pixels = new_cursor[2:8]
-                pixbuf = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
-                x = max(0, min(xhot, w-1))
-                y = max(0, min(yhot, h-1))
-                size = gdk.display_get_default().get_default_cursor_size()
-                log("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s", xhot,yhot, serial, w,h, len(pixels), size)
-                if size>0 and (size<w or size<h):
-                    ratio = float(max(w,h))/size
-                    pixbuf = pixbuf.scale_simple(int(w/ratio), int(h/ratio), gdk.INTERP_BILINEAR)
-                    x = int(x/ratio)
-                    y = int(y/ratio)
-                cursor = gdk.Cursor(gdk.display_get_default(), pixbuf, x, y)
+        try:
+            cursor = self.make_cursor(new_cursor)
+        except Exception, e:
+            log.warn("error creating cursor: %s (using default)", e, exc_info=True)
+            #use default:
+            cursor = gdk.Cursor(gtk.gdk.X_CURSOR)
         for gtkwindow in gtkwindows:
             if gtk.gtk_version>=(2,14):
                 gdkwin = gtkwindow.get_window()
