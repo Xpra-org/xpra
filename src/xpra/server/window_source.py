@@ -945,7 +945,6 @@ class WindowSource(object):
         return "webp", Compressed("webp", str(enc(handler, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0, bpp
 
     def rgb_encode(self, coding, image, options):
-        options = {}
         pixel_format = image.get_pixel_format()
         #debug("rgb_encode(%s, %s, %s)", coding, image, options)
         if pixel_format not in self.rgb_formats:
@@ -953,9 +952,8 @@ class WindowSource(object):
                 raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, self.rgb_formats))
             #get the new format:
             pixel_format = image.get_pixel_format()
-        #"non-standard" pixel format, tell client:
-        if pixel_format not in ("RGB", "RGBA"):
-            options["rgb_format"] = pixel_format
+        #always tell client which pixel format we are sending:
+        options = {"rgb_format" : pixel_format}
         #compress here and return a wrapper so network code knows it is already zlib compressed:
         pixels = image.get_pixels()
         if len(pixels)<512:
