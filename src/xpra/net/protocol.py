@@ -120,6 +120,7 @@ def get_network_caps():
                 "chunked_compression"   : True,
                 "digest"                : ("hmac", "xor"),
                 "rencode"               : use_rencode,
+                "bencode"               : True,
                 "lz4"                   : use_lz4,
                 "zlib"                  : True,
                }
