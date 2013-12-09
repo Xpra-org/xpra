@@ -49,6 +49,11 @@ echo "Fixing permissions on libpython dylib"
 if [ ! -z "${JHBUILD_PREFIX}" ]; then
 	chmod 755 "${JHBUILD_PREFIX}/lib/"libpython*.dylib
 fi
+#avoid error if there is no /etc/pango:
+#(which seems to be the case with newer builds)
+if [ ! -d "${JHBUILD_PREFIX}/etc/pango" ]; then
+	mkdir "${JHBUILD_PREFIX}/etc/pango"
+fi
 
 echo
 echo "*******************************************************************************"
