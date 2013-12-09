@@ -25,7 +25,7 @@ def getOSXMenuHelper(client=None):
     if _OSXMenuHelper is None:
         _OSXMenuHelper = OSXMenuHelper(client)
     elif client is not None:
-        _OSXMenuHelper.client = client
+        _OSXMenuHelper.set_client(client)
     return _OSXMenuHelper
 
 
@@ -44,6 +44,12 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.hidden_window = None
         self.keyboard = None
         self.menus = {}
+        self.set_client(client)
+
+    def set_client(self, client):
+        self.client = client
+        if client and client.keyboard_helper:
+            self.keyboard = client.keyboard_helper.keyboard
 
     def build(self):
         debug("OSXMenuHelper.build()")
@@ -130,7 +136,11 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.numlock_menuitem.set_active(True)
         def set_numlock_menuitem(*args):
             if self.keyboard:
+                debug("set_numlock_menuitem(%s) num_lock_state=%s", args, self.keyboard.num_lock_state)
                 self.numlock_menuitem.set_active(self.keyboard.num_lock_state)
+            else:
+                debug("set_numlock_menuitem(%s) no keyboard!", args)
+                self.swapkeys_menuitem.set_sensitive(False)
         self.client.connect("handshake-complete", set_numlock_menuitem)
         return self.numlock_menuitem
 
