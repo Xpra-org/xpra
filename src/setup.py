@@ -37,7 +37,7 @@ server_ENABLED = LOCAL_SERVERS_SUPPORTED or shadow_ENABLED
 client_ENABLED = True
 
 x11_ENABLED = not WIN32 and not OSX
-argb_ENABLED = x11_ENABLED or OSX
+argb_ENABLED = True
 gtk2_ENABLED = client_ENABLED
 gtk3_ENABLED = client_ENABLED
 qt4_ENABLED = client_ENABLED
