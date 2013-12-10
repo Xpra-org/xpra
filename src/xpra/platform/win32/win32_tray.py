@@ -23,12 +23,15 @@ BALLOON_EVENTS = {
             NIN_BALLOONTIMEOUT          : "NIN_BALLOONTIMEOUT",
             NIN_BALLOONUSERCLICK        : "NIN_BALLOONUSERCLICK",
           }
-WM_WTSSESSION_CHANGE    = 0x02b1
+#no idea where we're supposed to get those from:
+WM_WTSSESSION_CHANGE        = 0x02b1
+WM_DWMNCRENDERINGCHANGED    = 0x31F
 IGNORE_EVENTS = {
             win32con.WM_DESTROY         : "WM_DESTROY",
             win32con.WM_COMMAND         : "WM_COMMAND",
             win32con.WM_DEVICECHANGE    : "WM_DEVICECHANGE",
             WM_WTSSESSION_CHANGE        : "WM_WTSSESSION_CHANGE",
+            WM_DWMNCRENDERINGCHANGED    : "WM_DWMNCRENDERINGCHANGED",
             }
 KNOWN_WM_EVENTS = {}
 for x in dir(win32con):
