@@ -21,7 +21,7 @@ from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.scripts.config import python_platform
-from xpra.codecs.loader import OLD_ENCODING_NAMES_TO_NEW
+from xpra.codecs.loader import get_codec, has_codec, OLD_ENCODING_NAMES_TO_NEW
 from xpra.net.protocol import compressed_wrapper, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machine_id, get_user_uuid
@@ -34,7 +34,7 @@ NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
 
-def make_window_metadata(window, propname, generic_window_types=False, png_window_icons=False, get_transient_for=None, get_window_id=None):
+def make_window_metadata(window, propname, generic_window_types=False, client_supports_png=False, get_transient_for=None, get_window_id=None):
     if propname in ("title", "icon-title"):
         v = window.get_property(propname)
         if v is None:
@@ -57,7 +57,7 @@ def make_window_metadata(window, propname, generic_window_types=False, png_windo
         surf = window.get_property("icon")
         if surf is None:
             return {}
-        return {"icon": make_window_icon(surf, png_window_icons)}
+        return {"icon": make_window_icon(surf, client_supports_png)}
     elif propname == "client-machine":
         client_machine = window.get_property("client-machine")
         if client_machine is None:
@@ -117,20 +117,21 @@ def make_window_metadata(window, propname, generic_window_types=False, png_windo
         return p
     raise Exception("unhandled property name: %s" % propname)
 
-def make_window_icon(surf, png_window_icons):
+def make_window_icon(surf, client_supports_png):
     pixel_data = surf.get_data()
     pixel_format = surf.get_format()
     stride = surf.get_stride()
     w = surf.get_width()
     h = surf.get_height()
-    log("found new window icon: %sx%s, sending as png=%s", w, h, png_window_icons)
-    if png_window_icons:
-        return make_png_window_icon(png_window_icons, pixel_data, pixel_format, stride, w, h)
+    use_png = client_supports_png and has_codec("PIL")
+    log("found new window icon: %sx%s, sending as png=%s", w, h, use_png)
+    if use_png:
+        return make_png_window_icon(client_supports_png, pixel_data, pixel_format, stride, w, h)
     return make_argb32_window_icon(pixel_data, pixel_format, stride, w, h)
 
-def make_png_window_icon(png_window_icons, pixel_data, pixel_format, stride, w, h):
-    from PIL import Image                       #@UnresolvedImport
-    img = Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
+def make_png_window_icon(client_supports_png, pixel_data, pixel_format, stride, w, h):
+    PIL = get_codec("PIL")
+    img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
     MAX_SIZE = 64
     if w>MAX_SIZE or h>MAX_SIZE:
         #scale icon down
@@ -141,7 +142,7 @@ def make_png_window_icon(png_window_icons, pixel_data, pixel_format, stride, w, 
             w = int(w*MAX_SIZE/h)
             h = MAX_SIZE
         log("scaling window icon down to %sx%s", w, h)
-        img = img.resize((w,h), Image.ANTIALIAS)
+        img = img.resize((w,h), PIL.Image.ANTIALIAS)
     output = StringIOClass()
     img.save(output, 'PNG')
     raw_data = output.getvalue()
@@ -249,7 +250,6 @@ class ServerSource(object):
         self.client_processor = None
         self.client_release = None
         self.client_proxy = False
-        self.png_window_icons = False
         self.auto_refresh_delay = 0
         self.server_window_resize = False
         self.send_cursors = False
@@ -572,7 +572,6 @@ class ServerSource(object):
         if ms>0 and (s<=0 or s>ms):
             self.default_encoding_options["min-speed"] = ms
         elog("default encoding options: %s", self.default_encoding_options)
-        self.png_window_icons = "png" in self.encodings and "png" in self.server_core_encodings
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #mmap:
         mmap_filename = c.strget("mmap_file")
@@ -771,7 +770,7 @@ class ServerSource(object):
     def _make_metadata(self, wid, window, propname):
         return make_window_metadata(window, propname,
                                         generic_window_types=self.generic_window_types,
-                                        png_window_icons=self.png_window_icons,
+                                        client_supports_png=("png" in self.encodings),
                                         get_transient_for=self.get_transient_for,
                                         get_window_id=self.get_window_id)
 
@@ -995,7 +994,7 @@ class ServerSource(object):
                 if len(x)>=10:
                     cv("screen[%s].workarea" % i, x[6:10])
                 i += 1
-        for prop in ("png_window_icons", "named_cursors", "server_window_resize", "share", "randr_notify",
+        for prop in ("named_cursors", "server_window_resize", "share", "randr_notify",
                      "clipboard_notifications", "raw_window_icons", "system_tray", "generic_window_types",
                      "notify_startup_complete", "namespace", "lz4"):
             addattr("features."+prop, prop)
@@ -1206,10 +1205,10 @@ class ServerSource(object):
         surf = window.get_property("icon")
         log("send_window_icon(%s,%s) icon=%s", window, wid, surf)
         if surf is not None:
-            w, h, pixel_format, pixel_data = make_window_icon(surf, self.png_window_icons)
+            w, h, pixel_format, pixel_data = make_window_icon(surf, ("png" in self.encodings))
             assert pixel_format in ("premult_argb32", "png")
             if pixel_format=="premult_argb32":
-                data = compressed_wrapper("rgb24", pixel_data)
+                data = compressed_wrapper("argb32", pixel_data)
             else:
                 data = Compressed("png", pixel_data)
             self.send("window-icon", wid, w, h, pixel_format, data)
