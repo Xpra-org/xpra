@@ -15,6 +15,11 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_OPENGL_DEBUG")
 
+try:
+    from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
+except:
+    unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer = None, None, None
+
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.gl.gl_check import get_DISPLAY_MODE
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
@@ -344,7 +349,6 @@ class GLPixmapBacking(GTK2WindowBacking):
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
         #FIXME: we ought to be able to use
         #OpenGL blending and use premultiplied pixels directly... beats me!
-        from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
         if type(img_data)==str:
             #cannot do in-place:
             assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb"
