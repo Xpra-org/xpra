@@ -296,8 +296,6 @@ class XpraClient(GTKXpraClient):
         return gdk.get_default_root_window().get_size()
 
     def make_cursor(self, cursor_data):
-        if not cursor_data:
-            return None
         #if present, try cursor ny name:
         if len(cursor_data)>=9 and cursor_names:
             cursor_name = cursor_data[8]
@@ -327,15 +325,16 @@ class XpraClient(GTKXpraClient):
             y = int(y/ratio)
         return gdk.Cursor(gdk.display_get_default(), pixbuf, x, y)
 
-    def set_windows_cursor(self, gtkwindows, new_cursor):
-        try:
-            cursor = self.make_cursor(new_cursor)
-        except Exception, e:
-            log.warn("error creating cursor: %s (using default)", e, exc_info=True)
-            cursor = None
-        if cursor is None:
-            #use default:
-            cursor = gdk.Cursor(gtk.gdk.X_CURSOR)
+    def set_windows_cursor(self, gtkwindows, cursor_data):
+        cursor = None
+        if cursor_data:
+            try:
+                cursor = self.make_cursor(cursor_data)
+            except Exception, e:
+                log.warn("error creating cursor: %s (using default)", e, exc_info=True)
+            if cursor is None:
+                #use default:
+                cursor = gdk.Cursor(gtk.gdk.X_CURSOR)
         for gtkwindow in gtkwindows:
             if gtk.gtk_version>=(2,14):
                 gdkwin = gtkwindow.get_window()
