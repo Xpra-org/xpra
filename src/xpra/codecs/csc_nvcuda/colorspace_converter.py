@@ -46,6 +46,7 @@ def roundup(n, m):
 #cache pre-compiled kernel cubins per device:
 KERNEL_cubins = {}
 def get_CUDA_kernel(device_id, src_format, dst_format):
+    init_module()
     start = time.time()
     k = KERNELS_MAP.get((src_format, dst_format))
     assert k is not None, "no kernel found for %s to %s" % (src_format, dst_format)
