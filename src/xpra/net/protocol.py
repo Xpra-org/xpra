@@ -546,7 +546,8 @@ class Protocol(object):
         if len(main_packet)>=1024 and packet_in[0] not in self.large_packets:
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
-        if level>0:
+        #compress, but don't bother for small packets:
+        if level>0 and len(main_packet)>378:
             cl, cdata = self._compress(main_packet, level)
             packets.append((0, cl, cdata))
         else:

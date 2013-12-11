@@ -81,8 +81,8 @@ def test_compress(packet, encoder, compressor, N = 10000):
         packet_info = "%s " % ALIASES.get(packet[0], packet[0])
     compressed = compressor(enc)
     ratio = float(len(enc)) / float(len(compressed))
-    print("packet %s%scompressed %s times with %s in %.3f seconds, ratio=%.1f" %
-          (packet_info, enc_info, N, COMPRESSOR_NAME.get(compressor, compressor), delta, ratio))
+    print("packet %s%scompressed %s times with %s in %.3f seconds, len: %s to %s, ratio=%.1f" %
+          (packet_info, enc_info, N, COMPRESSOR_NAME.get(compressor, compressor), delta, len(enc), len(compressed), ratio))
     #if len(compressed)<64:
     #    import binascii
     #    print("uncompressed packet: %s" % binascii.hexlify(enc))
