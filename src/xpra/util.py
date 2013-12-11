@@ -105,6 +105,11 @@ def log_screen_sizes(root_w, root_h, ss):
     from xpra.log import Logger
     log = Logger()
     log.info("root size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
+    def prstr(s, default=""):
+        if not s:
+            return default
+        #prettify strings on win32
+        return s.lstrip("0\\").lstrip(".\\").replace("0\\", "-")
     for s in ss:
         if len(s)<10:
             log.info(" %s", s)
@@ -113,14 +118,16 @@ def log_screen_sizes(root_w, root_h, ss):
         display_name, width, height, width_mm, height_mm, \
         monitors, work_x, work_y, work_width, work_height = s[:11]
         log.info("  '%s' %sx%s (%sx%s mm) workarea: %sx%s at %sx%s",
-                    display_name, width, height, width_mm, height_mm,
+                    prstr(display_name), width, height, width_mm, height_mm,
                     work_width, work_height, work_x, work_y)
+        i = 0
         for m in monitors:
+            i += 1
             if len(m)<7:
                 log.info("    %s", m)
                 continue
             plug_name, x, y, width, height, wmm, hmm = m[:8]
-            log.info("    '%s' %sx%s at %sx%s (%sx%s mm)", plug_name, width, height, x, y, wmm, hmm)
+            log.info("    '%s' %sx%s at %sx%s (%sx%s mm)", prstr(plug_name, "monitor %s" % i), width, height, x, y, wmm, hmm)
 
 
 def std(_str, extras="-,./ "):
