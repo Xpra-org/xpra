@@ -15,10 +15,6 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_OPENGL_DEBUG")
 
-try:
-    from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
-except:
-    unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer = None, None, None
 
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.gl.gl_check import get_DISPLAY_MODE
@@ -123,9 +119,14 @@ class GLPixmapBacking(GTK2WindowBacking):
         self._backing = gtk.gtkgl.DrawingArea(self.glconfig)
         #restoring missed masks:
         self._backing.set_events(self._backing.get_events() | gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK)
-        rgba = self._backing.get_screen().get_rgba_colormap()
-        if rgba:
-            self._backing.set_colormap(rgba)
+        if self._has_alpha:
+            screen = self._backing.get_screen()
+            rgba = screen.get_rgba_colormap()
+            if rgba:
+                self._backing.set_colormap(rgba)
+            else:
+                log.warn("failed to enable transparency on screen %s", screen)
+                self._has_alpha = False
         self._backing.show()
         self._backing.connect("expose_event", self.gl_expose_event)
         self.textures = None # OpenGL texture IDs
@@ -308,10 +309,11 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.set_rgb_paint_state()
 
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-        # support alpha channel if present:
-        glEnable(GL_BLEND)
-        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD)
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO)
+        if self._has_alpha:
+            # support alpha channel if present:
+            glEnable(GL_BLEND)
+            glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD)
+            glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO)
 
         w, h = self.size
         glBegin(GL_QUADS)
@@ -333,7 +335,8 @@ class GLPixmapBacking(GTK2WindowBacking):
             glClear(GL_COLOR_BUFFER_BIT)
         else:
             glFlush()
-        glDisable(GL_BLEND)
+        if self._has_alpha:
+            glDisable(GL_BLEND)
         self.gl_frame_terminator()
 
         self.unset_rgb_paint_state()
@@ -353,15 +356,9 @@ class GLPixmapBacking(GTK2WindowBacking):
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
         #FIXME: we ought to be able to use
         #OpenGL blending and use premultiplied pixels directly... beats me!
-        if type(img_data)==str:
-            #cannot do in-place:
-            assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb"
-            img_data = byte_buffer_to_buffer(unpremultiply_argb(img_data))
-        else:
-            #assume this is a writeable buffer (ie: ctypes from mmap):
-            assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb_in_place"
-            unpremultiply_argb_in_place(img_data)
-        self._do_paint_rgb(32, img_data, x, y, width, height, rowstride, options, callbacks)
+        rgba = self.unpremultiply(img_data)
+        options["rgb_format"] = "RGBA"
+        self._do_paint_rgb(32, rgba, x, y, width, height, rowstride, options, callbacks)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options, callbacks)

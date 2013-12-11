@@ -13,6 +13,7 @@ from gtk import gdk
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.client_window_base import DRAW_DEBUG
+from xpra.client.gtk2.window_backing import HAS_RGBA
 
 USE_CAIRO = os.environ.get("XPRA_USE_CAIRO_BACKING", "0")=="1"
 if USE_CAIRO:
@@ -91,13 +92,15 @@ class ClientWindow(GTKClientWindowBase):
     def set_alpha(self):
         #by default, only RGB (no transparency):
         self._client_properties["encodings.rgb_formats"] = ["RGB"]
-        if sys.platform.startswith("win"):
+        if not HAS_RGBA:
+            self._has_alpha = False
             return
         if self._has_alpha and not self.is_realized():
             screen = self.get_screen()
             rgba = screen.get_rgba_colormap()
             if rgba is None:
-                self.error("cannot handle window transparency!")
+                self._has_alpha = False
+                self.error("cannot handle window transparency on screen %s", screen)
             else:
                 self.debug("set_alpha() using rgba colormap for %s, realized=%s", self._id, self.is_realized())
                 self.set_colormap(rgba)
