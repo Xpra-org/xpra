@@ -298,7 +298,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
         # transparent background:
-        glClearColor(1.0, 0.0, 1.0, 0)
+        glClearColor(1.0, 1.0, 1.0, 0)
 
         # Draw FBO texture on screen
         self.set_rgb_paint_state()
