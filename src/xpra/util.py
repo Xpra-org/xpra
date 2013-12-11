@@ -45,6 +45,7 @@ class AtomicInteger(object):
     def __str__(self):
         return str(self.counter)
 
+
 class typedict(dict):
 
     def capsget(self, key, default):
@@ -98,6 +99,28 @@ class typedict(dict):
         if max_items is not None:
             assert len(v)<=max_items, "too many items in %s %s: maximum %s allowed, but got %s" % (type(v), k, max_items, len(v))
         return v
+
+
+def log_screen_sizes(root_w, root_h, ss):
+    from xpra.log import Logger
+    log = Logger()
+    log.info("root size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
+    for s in ss:
+        if len(s)<10:
+            log.info(" %s", s)
+            continue
+        #more detailed output:
+        display_name, width, height, width_mm, height_mm, \
+        monitors, work_x, work_y, work_width, work_height = s[:11]
+        log.info("  '%s' %sx%s (%sx%s mm) workarea: %sx%s at %sx%s",
+                    display_name, width, height, width_mm, height_mm,
+                    work_width, work_height, work_x, work_y)
+        for m in monitors:
+            if len(m)<7:
+                log.info("    %s", m)
+                continue
+            plug_name, x, y, width, height, wmm, hmm = m[:8]
+            log.info("    '%s' %sx%s at %sx%s (%sx%s mm)", plug_name, width, height, x, y, wmm, hmm)
 
 
 def std(_str, extras="-,./ "):

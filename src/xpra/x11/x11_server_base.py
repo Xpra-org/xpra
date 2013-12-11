@@ -26,6 +26,7 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.log import Logger
 log = Logger()
 
+from xpra.util import log_screen_sizes
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.xsettings import XSettingsManager
@@ -208,16 +209,18 @@ class X11ServerBase(GTKServerBase):
         if not self.randr:
             return root_w, root_h
         max_w, max_h = 0, 0
-        sizes = []
-        for ss in self._server_sources.values():
+        sss = self._server_sources.values()
+        for ss in sss:
             client_size = ss.desktop_size
             if not client_size:
                 continue
-            sizes.append(client_size)
+            if ss.screen_sizes and len(sss)>1:
+                log.info("* %s:", ss.uuid)
             w, h = client_size
+            log_screen_sizes(w, h, ss.screen_sizes)
             max_w = max(max_w, w)
             max_h = max(max_h, h)
-        log.info("max client resolution is %sx%s (from %s), current server resolution is %sx%s", max_w, max_h, sizes, root_w, root_h)
+        log.info("maximum client resolution is %sx%s (current server resolution is %sx%s)", max_w, max_h, root_w, root_h)
         if max_w>0 and max_h>0:
             return self.set_screen_size(max_w, max_h)
         return  root_w, root_h

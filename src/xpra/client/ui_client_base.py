@@ -26,7 +26,7 @@ from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import set_application_name, thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid
-from xpra.util import nn, std, AtomicInteger
+from xpra.util import nn, std, AtomicInteger, log_screen_sizes
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -488,7 +488,8 @@ class UIXpraClient(XpraClientBase):
             root_w, root_h = self.get_root_size()
             ss = self.get_screen_sizes()
             log("update_screen_size() sizes=%s", ss)
-            log.info("sending updated screen size to server: %sx%s", root_w, root_h)
+            log.info("sending updated screen size to server:")
+            log_screen_sizes(ss)
             self.send("desktop_size", root_w, root_h, ss)
             #update the max packet size (may have gone up):
             self.set_max_packet_size()
@@ -609,7 +610,9 @@ class UIXpraClient(XpraClientBase):
         capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = self.get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
-        capabilities["screen_sizes"] = self.get_screen_sizes()
+        ss = self.get_screen_sizes()
+        log_screen_sizes(root_w, root_h, ss)
+        capabilities["screen_sizes"] = ss
         if self.keyboard_helper:
             key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()
             if key_repeat:
