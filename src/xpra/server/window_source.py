@@ -718,15 +718,16 @@ class WindowSource(object):
             return
         if len(self.auto_refresh_encodings)==0:
             return
-        ww, wh = window.get_dimensions()
-        if actual_quality>=AUTO_REFRESH_THRESHOLD:
-            if w*h>=ww*wh:
-                debug("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
-                #got enough pixels at high quality, cancel timer:
-                self.cancel_refresh_timer()
-            else:
-                debug("schedule_auto_refresh: high quality (%s%%) small area, ignoring", actual_quality)
-            return
+        if client_options.get("scaled_size") is None:
+            ww, wh = window.get_dimensions()
+            if actual_quality>=AUTO_REFRESH_THRESHOLD:
+                if w*h>=ww*wh:
+                    debug("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
+                    #got enough pixels at high quality, cancel timer:
+                    self.cancel_refresh_timer()
+                else:
+                    debug("schedule_auto_refresh: high quality (%s%%) small area, ignoring", actual_quality)
+                return
         def full_quality_refresh():
             debug("full_quality_refresh() for %sx%s window", w, h)
             if self._damage_delayed:
