@@ -135,7 +135,7 @@ ln -sf Resources/lib Frameworks
 pushd Resources/lib
 echo "removing extra gstreamer dylib deps:"
 for x in "libgstbasevideo*" "libgstcdda*" \
-    "libgstcheck*" "libgstnetbuffer*" "libgstpbutils*" "libgstphotography*" \
+    "libgstcheck*" "libgstnetbuffer*" "libgstphotography*" \
     "libgstrtp*" "libgstrtsp*" "libgstsdp*" "libgstsignalprocessor*" \
     "libgstvideo*" \
     ; do
