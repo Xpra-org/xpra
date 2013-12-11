@@ -40,14 +40,25 @@ ALIASES = {
 
 
 TIMES = {}
+def reset_times():
+    global TIMES
+    TIMES = {}
 
+def print_times():
+    #print("totals: %s" % TIMES)
+    lz4_time = TIMES.get(LZ4_compress)
+    zlib_time = TIMES.get(zlib_compress)
+    print("average gain of lz4 over zlib: %.1f times faster" % (zlib_time/lz4_time))
 
 def test_packet(packet):
     for encoder in (bencode, rencode_dumps):
         for compressor in (zlib_compress, LZ4_compress):
             test_compress(packet, encoder, compressor)
+        #order makes no difference:
+        #for compressor in (LZ4_compress, zlib_compress):
+        #    test_compress(packet, encoder, compressor)
 
-def test_compress(packet, encoder, compressor, N = 20000):
+def test_compress(packet, encoder, compressor, N = 10000):
     enc = encoder(packet)
     start = time.time()
     for _ in xrange(N):
@@ -63,8 +74,8 @@ def test_compress(packet, encoder, compressor, N = 20000):
         v += delta
     TIMES[compressor] = v
 
-def test_simple():
-    #hello alias=29
+def test_packets():
+    reset_times()
     hello = (29, {'pycrypto.version': '2.6.1', 'bell': True, 'cursor.default_size': 66L,
                    'platform.release': '3.11.10-200.fc19.x86_64', 'lz4': True,
                    'encoding.vpx.version': 'v1.2.0', 'sound.receive': True, 'digest': ('hmac', 'xor'),
@@ -130,14 +141,121 @@ def test_simple():
     new_window = [12, 2, 0, 0, 499, 316,
                     {'size-constraints': {'minimum-size': (25, 17), 'base-size': (19, 4), 'increment': (6, 13)}, 'fullscreen': False, 'has-alpha': False, 'xid': '0xc00022', 'title': 'xterm', 'pid': 13773, 'client-machine': 'desktop', 'icon-title': 'xterm', 'window-type': ['NORMAL'], 'modal': False, 'maximized': False, 'class-instance': ['xterm', 'XTerm']}, {}]
     test_packet(new_window)
+
+    print("summary of packet tests:")
+    print_times()
     print("")
-    #print("totals: %s" % TIMES)
-    lz4_time = TIMES.get(LZ4_compress)
-    zlib_time = TIMES.get(zlib_compress)
-    print("average gain of lz4 over zlib: %.1f times faster" % (zlib_time/lz4_time))
+
+def test_image():
+    #this code is from here:
+    #http://www.tortall.net/mu/wiki/CairoTutorial/diagram.py?raw
+    #we use it to generate some non-random pixels
+    import cairo
+    w = 1280
+    h = 768
+    alpha = [1, 0.15, 0.15]
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+    cr = cairo.Context(surface)
+    cr.scale(w, h)
+    cr.set_line_width(0.01)
+    cr.save()
+    cr.transform(cairo.Matrix(0.6, 0, 1.0/3, 0.5, 0.02, 0.45))
+    cr.push_group()
+    cr.rectangle(0, 0, 1, 1); cr.clip()
+    def draw_dest():
+        cr.set_source_rgb(1, 1, 1)
+        cr.rectangle(0, 0, 1, 1)
+        cr.fill()
+    draw_dest()
+    cr.set_source_rgb(0, 0, 0)
+    cr.set_line_width( max(cr.device_to_user_distance(2, 2)) )
+    cr.rectangle(0, 0, 1, 1)
+    cr.stroke()
+    cr.pop_group_to_source()
+    cr.paint_with_alpha(alpha[0])
+    cr.restore()
+
+    cr.save()
+    cr.transform(cairo.Matrix(0.6, 0, 1.0/3, 0.5, 0.04, 0.25))
+    cr.push_group()
+    cr.rectangle(0, 0, 1, 1); cr.clip()
+    def draw_mask():
+        cr.set_source_rgb(1, 0.9, 0.6)
+        cr.rectangle(0, 0, 1, 1)
+        cr.fill()
+    draw_mask()
+    cr.pop_group_to_source()
+    cr.paint_with_alpha(alpha[1])
+    cr.restore()
+
+    cr.save()
+    cr.transform(cairo.Matrix(0.6, 0, 1.0/3, 0.5, 0.06, 0.05))
+    cr.push_group()
+    cr.rectangle(0, 0, 1, 1); cr.clip()
+    def draw_src():
+        cr.set_source_rgb(0, 0, 0)
+        cr.rectangle(0, 0, 1, 1)
+        cr.fill()
+    draw_src()
+    cr.pop_group_to_source()
+    cr.paint_with_alpha(alpha[2])
+    cr.restore()
+
+    if True:
+        cr.save()
+        cr.translate(1, 0)
+        cr.scale(1.0 / 3, 1.0 / 3)
+        cr.push_group()
+        cr.rectangle(0, 0, 1, 1); cr.clip()
+        draw_src()
+        cr.pop_group_to_source()
+        cr.paint()
+        cr.restore()
+
+        cr.save()
+        cr.translate(1, 1.0 / 3)
+        cr.scale(1.0 / 3, 1.0 / 3)
+        cr.push_group()
+        cr.rectangle(0, 0, 1, 1); cr.clip()
+        draw_mask()
+        cr.pop_group_to_source()
+        cr.paint()
+        cr.restore()
+
+        cr.save()
+        cr.translate(1, 2.0 / 3)
+        cr.scale(1.0 / 3, 1.0 / 3)
+        cr.push_group()
+        cr.rectangle(0, 0, 1, 1); cr.clip()
+        draw_dest()
+        cr.pop_group_to_source()
+        cr.paint()
+        cr.restore()
+
+        cr.set_line_width( max(cr.device_to_user_distance(2, 2)) )
+        cr.rectangle(1, 0, 1.0/3, 1)
+        cr.clip_preserve()
+        cr.stroke()
+        cr.rectangle(1, 1.0/3, 1.0/3, 1.0/3)
+        cr.stroke()
+
+    pixels = surface.get_data()[:]
+    #cr.show_page()
+    print("pixels=%s bytes" % len(pixels))
+    surface.finish()
+
+    reset_times()
+    def no_encoder(data):
+        return data
+    for compressor in (zlib_compress, LZ4_compress):
+        test_compress(pixels, no_encoder, compressor, N=200)
+    print("image compression test complete")
+    print_times()
+    print("")
 
 def main():
-    test_simple()
+    test_image()
+    test_packets()
 
 
 if __name__ == "__main__":
