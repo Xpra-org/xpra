@@ -301,6 +301,7 @@ def do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h):
 
 
 def test_all(colorspace_converter):
+    colorspace_converter.init_module()
     test_csc_rgb(colorspace_converter)
     test_csc_planar(colorspace_converter)
     test_csc_roundtrip(colorspace_converter)
