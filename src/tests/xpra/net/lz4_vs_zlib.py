@@ -40,15 +40,22 @@ ALIASES = {
 
 
 TIMES = {}
-def reset_times():
+RATIOS = {}
+def reset_stats():
     global TIMES
     TIMES = {}
 
-def print_times():
+def print_stats():
     #print("totals: %s" % TIMES)
     lz4_time = TIMES.get(LZ4_compress)
     zlib_time = TIMES.get(zlib_compress)
     print("average gain of lz4 over zlib: %.1f times faster" % (zlib_time/lz4_time))
+    lz4_ratios = RATIOS.get(LZ4_compress)
+    lz4_ratio = sum(lz4_ratios)/len(lz4_ratios)
+    zlib_ratios = RATIOS.get(zlib_compress)
+    zlib_ratio = sum(zlib_ratios)/len(zlib_ratios)
+    print("average gain of lz4 over zlib: %.1f times faster" % (zlib_time/lz4_time))
+    print("average compression ratios: lz4=%.2f, zlib=%.2f" % (lz4_ratio, zlib_ratio))
 
 def test_packet(packet):
     for encoder in (bencode, rencode_dumps):
@@ -59,23 +66,39 @@ def test_packet(packet):
         #    test_compress(packet, encoder, compressor)
 
 def test_compress(packet, encoder, compressor, N = 10000):
-    enc = encoder(packet)
+    enc_info = ""
+    enc = packet
+    if encoder:
+        enc = encoder(packet)
+        enc_info = "encoded with %s, " % ENCODER_NAME.get(encoder, encoder)
     start = time.time()
     for _ in xrange(N):
         compressor(enc)
     end = time.time()
     delta = end-start
-    print("packet %s encoded with %s, compressed %s times with %s in %.3f seconds" %
-          (ALIASES.get(packet[0], packet[0]), ENCODER_NAME.get(encoder, encoder), N, COMPRESSOR_NAME.get(compressor, compressor), delta))
+    packet_info = ""
+    if type(packet)!=str:
+        packet_info = "%s " % ALIASES.get(packet[0], packet[0])
+    compressed = compressor(enc)
+    ratio = float(len(enc)) / float(len(compressed))
+    print("packet %s%scompressed %s times with %s in %.3f seconds, ratio=%.1f" %
+          (packet_info, enc_info, N, COMPRESSOR_NAME.get(compressor, compressor), delta, ratio))
+    #if len(compressed)<64:
+    #    import binascii
+    #    print("uncompressed packet: %s" % binascii.hexlify(enc))
+    #    print("compressed packet  : %s" % binascii.hexlify(compressed))
+    #record time:
     v = TIMES.get(compressor)
     if v is None:
         v = delta
     else:
         v += delta
     TIMES[compressor] = v
+    #record ratio:
+    RATIOS.setdefault(compressor, []).append(ratio)
 
 def test_packets():
-    reset_times()
+    reset_stats()
     hello = (29, {'pycrypto.version': '2.6.1', 'bell': True, 'cursor.default_size': 66L,
                    'platform.release': '3.11.10-200.fc19.x86_64', 'lz4': True,
                    'encoding.vpx.version': 'v1.2.0', 'sound.receive': True, 'digest': ('hmac', 'xor'),
@@ -143,7 +166,7 @@ def test_packets():
     test_packet(new_window)
 
     print("summary of packet tests:")
-    print_times()
+    print_stats()
     print("")
 
 def test_image():
@@ -244,13 +267,11 @@ def test_image():
     print("pixels=%s bytes" % len(pixels))
     surface.finish()
 
-    reset_times()
-    def no_encoder(data):
-        return data
+    reset_stats()
     for compressor in (zlib_compress, LZ4_compress):
-        test_compress(pixels, no_encoder, compressor, N=200)
+        test_compress(pixels, None, compressor, N=200)
     print("image compression test complete")
-    print_times()
+    print_stats()
     print("")
 
 def main():
