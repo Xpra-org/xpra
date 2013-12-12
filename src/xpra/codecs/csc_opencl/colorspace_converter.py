@@ -379,7 +379,7 @@ def build_kernels():
                 logfn("%s build warnings:", len(build_warnings))
                 for x in build_warnings:
                     debug(str(x))
-            logfn("all warnings:%s", "\n* ".join([str(x) for x in w]))
+            logfn("all warnings:%s", "\n* ".join(set([str(x) for x in w])))
         try:
             warnings.simplefilter("always")
             debug("building %s OpenCL kernels: %s", len(NAMES_TO_KERNELS), ", ".join(sorted(NAMES_TO_KERNELS.keys())))
