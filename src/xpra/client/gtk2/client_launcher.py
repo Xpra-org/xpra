@@ -354,14 +354,20 @@ class ApplicationWindow:
         self.update_options_from_gui()
         self.do_connect()
 
+    def handle_exception(self, e):
+        def ui_handle_exception():
+            self.set_sensitive(True)
+            self.set_info_color(True)
+            self.set_info_text(str(e))
+            self.window.show()
+        gobject.idle_add(ui_handle_exception)
+
     def do_connect(self):
         try:
             self.connect_builtin()
         except Exception, e:
-            self.set_sensitive(True)
-            self.set_info_color(True)
-            self.set_info_text(str(e))
             log.error("cannot connect:", exc_info=True)
+            self.handle_exception(e)
 
     def connect_builtin(self):
         #cooked vars used by connect_to
@@ -424,63 +430,71 @@ class ApplicationWindow:
             conn = connect_to(params, self.set_info_text, ssh_fail_cb=self.ssh_failed)
         except Exception, e:
             log.error("failed to connect", exc_info=True)
-            self.set_sensitive(True)
-            self.set_info_color(True)
-            self.set_info_text(str(e))
-            gobject.idle_add(self.window.show)
+            self.handle_exception(e)
             return
         gobject.idle_add(self.window.hide)
+        gobject.idle_add(self.start_XpraClient, conn)
 
-        def start_XpraClient():
-            log("start_XpraClient() client=%s", self.client)
-            self.client.setup_connection(conn)
-            self.client.init(self.config)
-            log("start_XpraClient() client initialized")
+    def start_XpraClient(self, conn):
+        try:
+            self.do_start_XpraClient(conn)
+        except Exception, e:
+            log.error("failed to start client", exc_info=True)
+            self.handle_exception(e)
 
-            if self.config.password:
-                #pass the password to the class directly:
-                self.client.password = self.config.password
-            #override exit code:
-            warn_and_quit_save = self.client.warn_and_quit
-            quit_save = self.client.quit
-            def do_quit(*args):
-                self.client.warn_and_quit = warn_and_quit_save
-                self.client.quit = quit_save
-                self.destroy()
-                gtk.main_quit()
-            def warn_and_quit_override(exit_code, warning):
-                log("warn_and_quit_override(%s, %s)", exit_code, warning)
-                if self.exit_code == None:
-                    self.exit_code = exit_code
-                self.client.cleanup()
-                password_warning = warning.find("invalid password")>=0
-                if password_warning:
-                    self.password_warning()
-                err = exit_code!=0 or password_warning
-                self.set_info_color(err)
-                self.set_info_text(warning)
-                if err:
-                    def ignore_further_quit_events(*args):
-                        pass
-                    self.client.warn_and_quit = ignore_further_quit_events
-                    self.client.quit = ignore_further_quit_events
-                    self.set_sensitive(True)
-                    gobject.idle_add(self.window.show)
-                else:
-                    do_quit()
+    def do_start_XpraClient(self, conn):
+        log("start_XpraClient() client=%s", self.client)
+        self.client.setup_connection(conn)
+        self.client.init(self.config)
+        log("start_XpraClient() client initialized")
 
-            def quit_override(exit_code):
-                log("quit_override(%s)", exit_code)
-                if self.exit_code == None:
-                    self.exit_code = exit_code
-                self.client.cleanup()
-                if self.exit_code==0:
-                    do_quit()
+        if self.config.password:
+            #pass the password to the class directly:
+            self.client.password = self.config.password
+        #override exit code:
+        warn_and_quit_save = self.client.warn_and_quit
+        quit_save = self.client.quit
+        def do_quit(*args):
+            self.client.warn_and_quit = warn_and_quit_save
+            self.client.quit = quit_save
+            self.destroy()
+            gtk.main_quit()
+        def warn_and_quit_override(exit_code, warning):
+            log("warn_and_quit_override(%s, %s)", exit_code, warning)
+            if self.exit_code == None:
+                self.exit_code = exit_code
+            self.client.cleanup()
+            password_warning = warning.find("invalid password")>=0
+            if password_warning:
+                self.password_warning()
+            err = exit_code!=0 or password_warning
+            self.set_info_color(err)
+            self.set_info_text(warning)
+            if err:
+                def ignore_further_quit_events(*args):
+                    pass
+                self.client.warn_and_quit = ignore_further_quit_events
+                self.client.quit = ignore_further_quit_events
+                self.set_sensitive(True)
+                gobject.idle_add(self.window.show)
+            else:
+                do_quit()
 
-            self.client.warn_and_quit = warn_and_quit_override
-            self.client.quit = quit_override
+        def quit_override(exit_code):
+            log("quit_override(%s)", exit_code)
+            if self.exit_code == None:
+                self.exit_code = exit_code
+            self.client.cleanup()
+            if self.exit_code==0:
+                do_quit()
+
+        self.client.warn_and_quit = warn_and_quit_override
+        self.client.quit = quit_override
+        try:
             self.client.run()
-        gobject.idle_add(start_XpraClient)
+        except Exception, e:
+            log.error("client error", exc_info=True)
+            self.handle_exception(e)
 
     def password_ok(self, *args):
         self.password_entry.modify_text(gtk.STATE_NORMAL, black)
@@ -495,7 +509,7 @@ class ApplicationWindow:
         else:
             color_obj = white
         if color_obj:
-            widget.modify_base(gtk.STATE_NORMAL, color_obj)
+            gobject.idle_add(widget.modify_base, gtk.STATE_NORMAL, color_obj)
 
     def set_widget_fg_color(self, widget, is_error=False):
         if is_error:
@@ -503,7 +517,7 @@ class ApplicationWindow:
         else:
             color_obj = black
         if color_obj:
-            widget.modify_fg(gtk.STATE_NORMAL, color_obj)
+            gobject.idle_add(widget.modify_fg, gtk.STATE_NORMAL, color_obj)
 
 
     def update_options_from_gui(self):
