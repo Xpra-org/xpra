@@ -5,6 +5,7 @@
 
 import os
 import time
+from threading import Event
 from xpra.daemon_thread import make_daemon_thread
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -39,7 +40,7 @@ class UI_thread_watcher(object):
         self.resume_callbacks = []
         self.UI_blocked = False
         self.last_UI_thread_time = 0
-        self.exit = False
+        self.exit = Event()
 
     def start(self):
         if self.last_UI_thread_time>0:
@@ -59,7 +60,7 @@ class UI_thread_watcher(object):
             self.timeout_add((10+FAKE_UI_LOCKUPS)*1000, sleep_in_ui_thread)
 
     def stop(self):
-        self.exit = True
+        self.exit.set()
 
     def add_fail_callback(self, cb):
         self.fail_callbacks.append(cb)
@@ -89,7 +90,7 @@ class UI_thread_watcher(object):
 
     def poll_UI_loop(self):
         debug("poll_UI_loop() running")
-        while not self.exit:
+        while not self.exit.isSet():
             delta = time.time()-self.last_UI_thread_time
             debug("poll_UI_loop() last_UI_thread_time was %.1f seconds ago, UI_blocked=%s", delta, self.UI_blocked)
             if delta>self.max_delta:
@@ -103,7 +104,7 @@ class UI_thread_watcher(object):
                 debug("poll_UI_loop() ok, firing %s", self.alive_callbacks)
                 self.run_callbacks(self.alive_callbacks)
             self.timeout_add(0, self.UI_thread_wakeup)
-            time.sleep(self.polling_timeout/1000.0)
+            self.exit.wait(self.polling_timeout/1000.0)
 
 
 UI_watcher = None

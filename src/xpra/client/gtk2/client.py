@@ -69,6 +69,10 @@ class XpraClient(GTKXpraClient):
     def gtk_main(self):
         gtk2main()
 
+    def cleanup(self):
+        get_UI_watcher().stop()
+        GTKXpraClient.cleanup(self)
+
     def client_type(self):
         return "Python/Gtk2"
 
