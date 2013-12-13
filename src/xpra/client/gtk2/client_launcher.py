@@ -594,6 +594,11 @@ def main():
     if sys.platform.startswith("win"):
         from xpra.platform.win32 import set_log_filename
         set_log_filename("Xpra-Launcher.log")
+    set_prgname("Xpra-Launcher")
+    platform_init()
+    gui_init()
+
+    #logging init:
     from xpra.scripts.main import parse_cmdline
     _, options, args = parse_cmdline(sys.argv)
     import logging
@@ -602,9 +607,7 @@ def main():
         logging.root.setLevel(logging.DEBUG)
     else:
         logging.root.setLevel(logging.INFO)
-    platform_init()
-    gui_init()
-    set_prgname("Xpra-Launcher")
+
     app = ApplicationWindow()
     def app_signal(signum, frame):
         print("")
