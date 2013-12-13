@@ -609,6 +609,8 @@ cdef class Decoder:
         return <AVFrameWrapper> framewrapper
 
     cdef add_framewrapper(self, AVFrameWrapper frame_wrapper, unsigned long frame_key):
+        if len(self.framewrappers)>50:
+            log.warn("too many frames kept in memory - dec_avcodec is probably leaking memory")
         debug("add_framewrapper(%s, %s) known frame keys: %s", frame_wrapper, hex(frame_key),
                                 [hex(x) for x in self.framewrappers.keys()])
         self.framewrappers[int(frame_key)] = frame_wrapper
