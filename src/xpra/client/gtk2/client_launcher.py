@@ -42,6 +42,11 @@ from xpra.log import Logger
 log = Logger()
 
 
+black = gdk.color_parse("black")
+red = gdk.color_parse("red")
+white = gdk.color_parse("white")
+
+
 def get_active_item_index(optionmenu):
     i = 0
     menu = optionmenu.get_menu()
@@ -217,9 +222,7 @@ class ApplicationWindow:
         self.info = gtk.Label()
         self.info.set_line_wrap(True)
         self.info.set_size_request(360, -1)
-        color_obj = gdk.color_parse("red")
-        if color_obj:
-            self.info.modify_fg(gtk.STATE_NORMAL, color_obj)
+        self.info.modify_fg(gtk.STATE_NORMAL, red)
         vbox.pack_start(self.info)
 
         # Buttons:
@@ -480,27 +483,25 @@ class ApplicationWindow:
         gobject.idle_add(start_XpraClient)
 
     def password_ok(self, *args):
-        color_obj = gdk.color_parse("black")
-        self.password_entry.modify_text(gtk.STATE_NORMAL, color_obj)
+        self.password_entry.modify_text(gtk.STATE_NORMAL, black)
 
     def password_warning(self, *args):
-        color_obj = gdk.color_parse("red")
-        self.password_entry.modify_text(gtk.STATE_NORMAL, color_obj)
+        self.password_entry.modify_text(gtk.STATE_NORMAL, red)
         self.password_entry.grab_focus()
 
     def set_widget_bg_color(self, widget, is_error=False):
         if is_error:
-            color_obj = gdk.color_parse("red")
+            color_obj = red
         else:
-            color_obj = gdk.color_parse("white")
+            color_obj = white
         if color_obj:
             widget.modify_base(gtk.STATE_NORMAL, color_obj)
 
     def set_widget_fg_color(self, widget, is_error=False):
         if is_error:
-            color_obj = gdk.color_parse("red")
+            color_obj = red
         else:
-            color_obj = gdk.color_parse("black")
+            color_obj = black
         if color_obj:
             widget.modify_fg(gtk.STATE_NORMAL, color_obj)
 
@@ -593,11 +594,16 @@ def main():
     if sys.platform.startswith("win"):
         from xpra.platform.win32 import set_log_filename
         set_log_filename("Xpra-Launcher.log")
-    platform_init()
-    gui_init()
+    from xpra.scripts.main import parse_cmdline
+    _, options, args = parse_cmdline(sys.argv)
     import logging
     logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.INFO)
+    if options.debug:
+        logging.root.setLevel(logging.DEBUG)
+    else:
+        logging.root.setLevel(logging.INFO)
+    platform_init()
+    gui_init()
     set_prgname("Xpra-Launcher")
     app = ApplicationWindow()
     def app_signal(signum, frame):
@@ -612,9 +618,9 @@ def main():
         gobject.idle_add(show_signal)
     signal.signal(signal.SIGINT, app_signal)
     signal.signal(signal.SIGTERM, app_signal)
-    has_file = len(sys.argv) == 2
+    has_file = len(args) == 1
     if has_file:
-        app.update_options_from_file(sys.argv[1])
+        app.update_options_from_file(args[0])
     if app.config.debug:
         logging.root.setLevel(logging.DEBUG)
     app.create_window()
