@@ -288,7 +288,7 @@ When unspecified, all the available codecs are allowed and the first one is used
     # let the platform specific code add its own options:
     # adds "--no-tray" for platforms that support it
     add_client_options(group)
-    hidden_options["no_tray"] =  False
+    hidden_options["tray"] =  True
     hidden_options["delay_tray"] =  False
     group.add_option("--tray-icon", action="store",
                           dest="tray_icon", default=defaults.tray_icon,

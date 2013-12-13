@@ -237,7 +237,7 @@ class UIXpraClient(XpraClientBase):
             self.keyboard_helper = self.make_keyboard_helper(opts.keyboard_sync, opts.key_shortcut)
 
         tray_icon_filename = opts.tray_icon
-        if not opts.no_tray:
+        if opts.tray:
             self.menu_helper = self.make_tray_menu_helper()
             self.tray = self.setup_xpra_tray(opts.tray_icon)
             if self.tray:
