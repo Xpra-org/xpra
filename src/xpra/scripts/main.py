@@ -57,7 +57,10 @@ def main(script_file, cmdline):
         glib.set_prgname("Xpra")
     except:
         pass
-    parser, options, args, mode = parse_cmdline(cmdline)
+    parser, options, args = parse_cmdline(cmdline)
+    if not args:
+        parser.error("need a mode")
+    mode = args.pop(0)
     return run_mode(script_file, parser, options, args, mode)
 
 
@@ -357,8 +360,6 @@ When unspecified, all the available codecs are allowed and the first one is used
         hidden_options["encryption_keyfile"] = ''
 
     options, args = parser.parse_args(cmdline[1:])
-    if not args:
-        parser.error("need a mode")
 
     #ensure all the option fields are set even though
     #some options are not shown to the user:
@@ -405,9 +406,7 @@ When unspecified, all the available codecs are allowed and the first one is used
             parser.error("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
     #ensure opengl is either True, False or None
     options.opengl = parse_bool("opengl", options.opengl)
-
-    mode = args.pop(0)
-    return parser, options, args, mode
+    return parser, options, args
 
 def dump_frames(*arsg):
     import traceback
