@@ -16,8 +16,9 @@ from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.codecs.loader import has_codec
 
-#don't bother trying gtk2 transparency on on MS Windows:
-HAS_RGBA = not sys.platform.startswith("win")
+#don't bother trying gtk2 transparency on on MS Windows (not supported):
+#or on OSX (doesn't work)
+HAS_RGBA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
 try:
     #we need argb to un-premultiply alpha:
     from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
