@@ -489,7 +489,7 @@ class UIXpraClient(XpraClientBase):
             ss = self.get_screen_sizes()
             log("update_screen_size() sizes=%s", ss)
             log.info("sending updated screen size to server:")
-            log_screen_sizes(ss)
+            log_screen_sizes(root_w, root_h, ss)
             self.send("desktop_size", root_w, root_h, ss)
             #update the max packet size (may have gone up):
             self.set_max_packet_size()
