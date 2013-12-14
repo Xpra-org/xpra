@@ -215,6 +215,7 @@ OPTION_TYPES = {
                     "mode"              : str,
                     "window-layout"     : str,
                     "display"           : str,
+                    "tcp-proxy"         : str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -302,6 +303,7 @@ def get_defaults():
                     "log-file"          : "$DISPLAY.log",
                     "window-layout"     : "",
                     "display"           : "",
+                    "tcp-proxy"         : "",
                     "quality"           : -1,
                     "min-quality"       : 50,
                     "speed"             : -1,

@@ -20,15 +20,18 @@ from xpra.log import Logger
 log = Logger()
 
 import xpra
-from xpra.scripts.main import SOCKET_TIMEOUT
+from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import set_application_name, load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info, get_platform_info
-from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps
+from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps, repr_ellipsized
 from xpra.server.background_worker import stop_worker
+from xpra.daemon_thread import make_daemon_thread
+from xpra.server.proxy import XpraProxy
 from xpra.util import typedict
+
 
 
 MAX_CONCURRENT_CONNECTIONS = 20
@@ -99,11 +102,13 @@ class ServerCore(object):
         self._upgrading = False
         #networking bits:
         self._potential_protocols = []
+        self._tcp_proxy_clients = []
+        self._tcp_proxy = ""
         self._aliases = {}
         self._reverse_aliases = {}
         self.socket_types = {}
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
-        self._socket_timeout = None
+        self._socket_timeout = 0.1
 
         self.session_name = "Xpra"
 
@@ -130,6 +135,7 @@ class ServerCore(object):
         self.session_name = opts.session_name
         set_application_name(self.session_name)
 
+        self._tcp_proxy = opts.tcp_proxy
         self.encryption_keyfile = opts.encryption_keyfile
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
@@ -259,8 +265,11 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def cleanup(self, *args):
+        log("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
+        for p in list(self._tcp_proxy_clients):
+            p.quit()
         log("cleanup will disconnect: %s", self._potential_protocols)
-        for proto in self._potential_protocols:
+        for proto in list(self._potential_protocols):
             if self._upgrading:
                 reason = "upgrading/exiting"
             else:
@@ -291,13 +300,60 @@ class ServerCore(object):
         protocol = Protocol(self, sc, self.process_packet)
         protocol.large_packets.append("info-response")
         protocol.authenticator = None
+        protocol.invalid_header = self.invalid_header
         self._potential_protocols.append(protocol)
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
         return True
 
+    def invalid_header(self, proto, data):
+        log("invalid_header(%s, %s)", proto, repr_ellipsized(data))
+        if proto.input_packetcount==0 and self._tcp_proxy:
+            #look for http get:
+            if data[:4]=="GET ":
+                self.start_tcp_proxy(proto, data)
+                return
+        err = "invalid packet header byte: '%s', not an xpra client?" % hex(ord(data[0]))
+        if len(data)>1:
+            err += " read buffer=0x%s" % repr_ellipsized(data)
+        proto.gibberish(err, data)
+
+    def start_tcp_proxy(self, proto, data):
+        log("start_tcp_proxy(%s, %s)", proto, data[:10])
+        client_connection = proto.steal_connection()
+        self._potential_protocols.remove(proto)
+        #connect to web server:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        host, port = self._tcp_proxy.split(":", 1)
+        try:
+            web_server_connection = _socket_connect(sock, (host, int(port)), "web-proxy-for-%s" % proto, "tcp")
+        except:
+            log.warn("failed to connect to proxy: %s:%s", host, port)
+            proto.gibberish("invalid packet header", data)
+            return
+        log("proxy connected to tcp server at %s:%s : %s", host, port, web_server_connection)
+        web_server_connection.write(data)
+        p = XpraProxy(client_connection, web_server_connection)
+        self._tcp_proxy_clients.append(p)
+        def run_proxy():
+            p.run()
+            log("run_proxy() %s ended", p)
+            if p in self._tcp_proxy_clients:
+                self._tcp_proxy_clients.remove(p)
+        t = make_daemon_thread(run_proxy, "web-proxy-for-%s" % proto)
+        t.start()
+        log.info("client %s forwarded to proxy server %s:%s", client_connection, host, port)
+
+    def is_timedout(self, protocol):
+        #subclasses may override this method (ServerBase does)
+        return not protocol._closed and protocol in self._potential_protocols and \
+            protocol not in self._tcp_proxy_clients
+
     def verify_connection_accepted(self, protocol):
-        raise NotImplementedError()
+        if self.is_timedout(protocol):
+            log.error("connection timedout: %s", protocol)
+            self.send_disconnect(protocol, "login timeout")
 
     def send_disconnect(self, proto, reason):
         log("send_disconnect(%s, %s)", proto, reason)
@@ -367,6 +423,11 @@ class ServerCore(object):
             except:
                 log.error("server error processing new connection from %s", proto, exc_info=True)
                 self.disconnect_client(proto, "server error accepting new connection")
+
+    def set_socket_timeout(self, conn, timeout=None):
+        #FIXME: this is ugly, but less intrusive than the alternative?
+        if isinstance(conn, SocketConnection):
+            conn._socket.settimeout(timeout)
 
 
     def verify_hello(self, proto, c):

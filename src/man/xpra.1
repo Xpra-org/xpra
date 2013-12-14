@@ -40,6 +40,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP]
 .HP
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP | \fItcp:[USER@]HOST:PORT[:DISPLAY]\fP]
@@ -97,6 +98,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-tcp\-proxy\fP=HOST:PORT\fP]
 .HP
 \fBxpra\fP \fBproxy\fP \fI:DISPLAY\fP
 .HP
@@ -470,6 +472,16 @@ and is a major security risk (especially when passing 0.0.0.0)!
 Anyone at all may connect to this port and access your session.
 Use it only if you have special needs, and understand the consequences
 of your actions.
+
+.TP
+\fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP
+Specifies the address to which non-xpra packets will be forwarded.
+This can be used to share the same TCP port with another
+TCP servers, usually a web server.
+xpra clients will connect as usual, but any client that does not
+speak the xpra protocol will be forwarded to the alternative
+server.
+
 
 .SS Options for start, upgrade and attach
 .TP

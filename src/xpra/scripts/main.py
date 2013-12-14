@@ -113,9 +113,14 @@ def parse_cmdline(cmdline):
         group.add_option("--exit-with-children", action="store_true",
                           dest="exit_with_children", default=defaults.exit_with_children,
                           help="Terminate server when --start-child command(s) exit")
+        group.add_option("--tcp-proxy", action="store",
+                          dest="tcp_proxy", default=defaults.tcp_proxy,
+                          metavar="HOST:PORT",
+                          help="The address to which non-xpra packets will be forwarded.")
     else:
         hidden_options["start_child"] = None
         hidden_options["exit_with_children"] = False
+        hidden_options["tcp_proxy"] = ""
     if (supports_server or supports_shadow) and CAN_DAEMONIZE:
         group.add_option("--no-daemon", action="store_false",
                           dest="daemon", default=True,

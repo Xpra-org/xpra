@@ -405,11 +405,8 @@ class ServerBase(ServerCore):
             self._potential_protocols.remove(protocol)
         return source
 
-    def verify_connection_accepted(self, protocol):
-        if not protocol._closed and protocol in self._potential_protocols and protocol not in self._server_sources:
-            log.error("connection timedout: %s", protocol)
-            self.send_disconnect(protocol, "login timeout")
-
+    def is_timedout(self, protocol):
+        return ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
 
     def no_more_clients(self):
         #so it is now safe to clear them:
@@ -472,6 +469,9 @@ class ServerBase(ServerCore):
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.aliases = c.dictget("aliases")
+        #use blocking sockets from now on:
+        self.set_socket_timeout(proto._conn, None)
+
         def drop_client(reason="unknown"):
             self.disconnect_client(proto, reason)
         def get_window_id(wid):

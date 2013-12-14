@@ -20,7 +20,6 @@ from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.main import parse_display_name, connect_to
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol import Protocol, Compressed, compressed_wrapper, new_cipher_caps, get_network_caps
-from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import Queue, SIGNAMES
 from xpra.util import typedict
 from xpra.daemon_thread import make_daemon_thread
@@ -192,9 +191,7 @@ class ProxyServer(ServerCore):
                     log.error("IO threads have failed to terminate!")
                     return
                 #now we can go back to using blocking sockets:
-                #FIXME: this is a bit ugly, but less intrusive than the alternative?
-                if isinstance(client_conn, SocketConnection):
-                    client_conn._socket.settimeout(None)
+                self.set_socket_timeout(client_conn, None)
                 client_conn.set_active(True)
 
                 assert uid!=0 and gid!=0
