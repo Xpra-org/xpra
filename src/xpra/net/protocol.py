@@ -215,6 +215,7 @@ class Protocol(object):
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 32*1024
+        self.abs_max_packet_size = 32*1024*1024
         self.large_packets = ["hello"]
         self.aliases = {}
         self.chunked_compression = True
@@ -628,11 +629,19 @@ class Protocol(object):
         self.close()
         return False
 
-    def _gibberish(self, msg, data):
+    def gibberish(self, msg, data):
         self.scheduler.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, data])
         # Then hang up:
         self.scheduler.timeout_add(1000, self._connection_lost, msg)
 
+    def _invalid_header(self, data):
+        self.invalid_header(self, data)
+
+    def invalid_header(self, proto, data):
+        err = "invalid packet header byte: '%s'" % hex(ord(data[0]))
+        if len(data)>1:
+            err += " read buffer=0x%s" % repr_ellipsized(data)
+        self.gibberish(err, data)
 
     def _read_parse_thread_loop(self):
         debug("read_parse_thread_loop starting")
@@ -678,27 +687,23 @@ class Protocol(object):
                 if payload_size<0:
                     head = read_buffer[:8]
                     if read_buffer[0] not in ("P", ord("P")):
-                        err = "invalid packet header byte: '%s', not an xpra client?" % hex(ord(read_buffer[0]))
-                        if len(read_buffer)>1:
-                            err += " read buffer=0x%s" % repr_ellipsized(read_buffer)
-                            if len(read_buffer)>40:
-                                err += "..."
-                        self._gibberish(err, head)
+                        self._invalid_header(read_buffer)
                         return
                     if bl<8:
                         break   #packet still too small
                     #packet format: struct.pack('cBBBL', ...) - 8 bytes
-                    try:
-                        _, protocol_flags, compression_level, packet_index, data_size = unpack_header(head)
-                    except Exception, e:
-                        self._gibberish("failed to parse packet header: 0x%s: %s" % (repr_ellipsized(head), e), head)
+                    _, protocol_flags, compression_level, packet_index, data_size = unpack_header(head)
+
+                    #sanity check size (will often fail if not an xpra client):
+                    if data_size>self.abs_max_packet_size:
+                        self._invalid_header(read_buffer)
                         return
-                    read_buffer = read_buffer[8:]
-                    bl = len(read_buffer)
+
+                    bl = len(read_buffer)-8
                     if protocol_flags & Protocol.FLAGS_CIPHER:
                         if self.cipher_in_block_size==0 or not self.cipher_in_name:
-                            err = "received cipher block but we don't have a cipher do decrypt it with, not an xpra client?"
-                            self._gibberish(err, head)
+                            log.warn("received cipher block but we don't have a cipher do decrypt it with, not an xpra client?")
+                            self._invalid_header(read_buffer)
                             return
                         padding = (self.cipher_in_block_size - data_size % self.cipher_in_block_size) * " "
                         payload_size = data_size + len(padding)
@@ -707,6 +712,7 @@ class Protocol(object):
                         padding = None
                         payload_size = data_size
                     assert payload_size>0
+                    read_buffer = read_buffer[8:]
 
                 if payload_size>self.max_packet_size:
                     #this packet is seemingly too big, but check again from the main UI thread
@@ -792,7 +798,7 @@ class Protocol(object):
                     if self._closed:
                         return
                     msg = "gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(data), packet_index, payload_size, bl, e)
-                    self._gibberish(msg, data)
+                    self.gibberish(msg, data)
                     return
 
                 if self._closed:
