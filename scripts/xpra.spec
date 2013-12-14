@@ -25,6 +25,13 @@
 %define no_pulseaudio 1
 %endif
 
+%if 0%{?static_video_libs}
+%define static_vpx 1
+%define static_x264 1
+%define static_ffmpeg 1
+%endif
+
+
 #leave it to auto-detect by default:
 %define dummy %{nil}
 #python and gtk bits:
@@ -55,6 +62,26 @@
 %endif
 %endif
 
+%if 0%{?el7}
+#version shipped is good enough for dynamic linking:
+%define static_vpx 0
+%define requires_vpx libvpx
+%define requires_x264 %{nil}
+%define requires_webp libwebp
+%define webp_build_args --with-webp
+%define requires_sound %{nil}
+#do not disable sound support, but do not declare deps for it either
+#(so it can be installed if desired):
+%define no_sound 0
+%define requires_sound %{nil}
+#OpenGL packages are not available yet:
+#%define requires_opengl , PyOpenGL, pygtkglext
+%define requires_opengl %{nil}
+#7.x has dummy support
+%define dummy --with-Xdummy
+%define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
+%endif
+
 %if 0%{?el6}
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
@@ -66,12 +93,12 @@
 %define no_sound 0
 %define requires_sound %{nil}
 #opengl is supported from 6.4 onwards:
-%if %(egrep -q 'release 7|release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
+%if %(egrep -q 'release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
 #6.4 has dummy support, but detection fails because of console ownership issues..
 #so override and set it for 6.4 and later
-%if %(egrep -q 'release 7|release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
+%if %(egrep -q 'release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
 %define dummy --with-Xdummy
 %define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %endif
@@ -94,12 +121,23 @@
 %define include_egg 0
 %endif
 
-%define video_build_args %{nil}
+
+%define ffmpeg_build_args %{nil}
+%define vpx_build_args %{nil}
+%define x264_build_args %{nil}
 %if 0%{?no_video}
-%define video_build_args --without-x264 --without-vpx --without-dec_avcodec --without-csc_swscale
+%define ffmpeg_build_args --without-dec_avcodec --without-dec_avcodec2 --without-csc_swscale
+%define x264_build_args --without-x264
+%define vpx_build_args --without-vpx
 %else
-%if 0%{?static_video_libs}
-%define video_build_args --with-vpx_static --with-x264_static --with-avcodec_static --with-swscale_static
+%if 0%{?static_ffmpeg}
+%define ffmpeg_build_args --with-dec_avcodec --with-avcodec_static --with-csc_swscale --with-swscale_static
+%endif
+%if 0%{?static_vpx}
+%define vpx_build_args --with-vpx --with-vpx_static
+%endif
+%if 0%{?static_x264}
+%define x264_build_args --with-enc_x264 --with-x264_static
 %endif
 %endif
 
@@ -906,7 +944,7 @@ cd xpra-all-%{version}
 %build
 cd xpra-all-%{version}
 rm -rf build install
-CFLAGS=-O2 python setup.py build %{video_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
+CFLAGS=-O2 python setup.py build %{ffmpeg_build_args} %{vpx_build_args} %{x264_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -925,22 +963,17 @@ rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/client/gl
 %endif
 
 %if 0%{?generic}
-# remove anything relying on dynamic libraries (not suitable for a generic RPM)
-# unless they're statically linked and enabled (static_vpx / static_x264):
+# remove anything relying on dynamic libraries (not suitable for a generic RPM):
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/gtk_common/gdk_atoms.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/gtk_x11/*.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/bindings/*.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode/_rencode.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/*/*.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/server/stats/cymaths.so
-%if 0%{?static_video_libs}
-echo "Note: static x264/vpx included in generic rpm"
-%else
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/csc_swscale
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec*
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
-%endif
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/webm
 
 %else
@@ -988,12 +1021,16 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 
 
 %post
-%if 0%{?static_video_libs}
+%if 0%{?static_ffmpeg}
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/csc_swscale/colorspace_converter.so
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/dec_avcodec/decoder.so
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
+%endif
+%if 0%{static_vpx}
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/encoder.so
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/decoder.so
+%endif
+%if 0%{static_x264}
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
 %endif
 %if %{defined Fedora}
 update-desktop-database &> /dev/null || :
