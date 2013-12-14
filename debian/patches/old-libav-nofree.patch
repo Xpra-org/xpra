@@ -1,7 +1,7 @@
 Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
---- xpra/codecs/dec_avcodec/decoder.pyx	(revision 4854)
-+++ xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
+--- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4854)
++++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
 @@ -92,7 +92,7 @@
      AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
      int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
