@@ -6,9 +6,11 @@
 
 import threading
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_PROXY_DEBUG")
 from xpra.net.bytestreams import untilConcludes
+
 
 class XpraProxy(object):
     """
@@ -27,10 +29,12 @@ class XpraProxy(object):
         self._to_server = threading.Thread(target=self._to_server_loop)
 
     def run(self):
+        debug("XpraProxy.run()")
         self._to_client.start()
         self._to_server.start()
         self._to_client.join()
         self._to_server.join()
+        debug("XpraProxy.run() ended")
 
     def _to_client_loop(self):
         self._copy_loop("<-server", self._server_conn, self._client_conn)
@@ -41,27 +45,28 @@ class XpraProxy(object):
         self._to_client._Thread__stop()
 
     def _copy_loop(self, log_name, from_conn, to_conn):
+        debug("XpraProxy._copy_loop(%s, %s, %s)", log_name, from_conn, to_conn)
         try:
             while not self._closed:
-                log("%s: waiting for data", log_name)
+                debug("%s: waiting for data", log_name)
                 buf = untilConcludes(self.is_active, from_conn.read, 4096)
                 if not buf:
-                    log("%s: connection lost", log_name)
+                    debug("%s: connection lost", log_name)
                     self.quit()
                     return
                 while buf and not self._closed:
-                    log("%s: writing %s bytes", log_name, len(buf))
+                    debug("%s: writing %s bytes", log_name, len(buf))
                     written = untilConcludes(self.is_active, to_conn.write, buf)
                     buf = buf[written:]
         except Exception, e:
-            log("%s: %s", log_name, e)
+            debug("%s: %s", log_name, e)
             self.quit()
 
     def is_active(self):
         return not self._closed
 
     def quit(self, *args):
-        log("closing proxy connections")
+        debug("XpraProxy.quit(%s) closing connections", args)
         self._closed = True
         try:
             self._client_conn.close()
