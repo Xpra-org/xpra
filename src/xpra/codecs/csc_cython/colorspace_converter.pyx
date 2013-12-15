@@ -60,7 +60,7 @@ def get_version():
     return (0, 1)
 
 def get_input_colorspaces():
-    return ["BGRX", "BGRA"]
+    return ["BGRX"]
 
 def get_output_colorspaces(input_colorspace):
     return ["YUV420P"]
