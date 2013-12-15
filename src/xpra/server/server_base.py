@@ -19,6 +19,7 @@ from xpra.os_util import thread, get_hex_uuid
 from xpra.version_util import add_version_info
 from xpra.util import alnum
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec, get_codec
+from xpra.codecs.video_helper import getVideoHelper
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
@@ -125,7 +126,6 @@ class ServerBase(ServerCore):
     def threaded_init(self):
         log("threaded_init() start")
         #try to load video encoders in advance as this can take some time:
-        from xpra.codecs.video_helper import getVideoHelper
         getVideoHelper().may_init()
         log("threaded_init() end")
 
@@ -799,6 +799,8 @@ class ServerBase(ServerCore):
             for k,v in self.keyboard_config.get_info().items():
                 if v is not None:
                     info["keyboard."+k] = v
+        # csc and video encoders:
+        info.update(getVideoHelper().get_info())
 
         # other clients:
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])

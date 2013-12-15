@@ -26,6 +26,17 @@ class VideoHelper(object):
         self._initialized = False
         self._lock = Lock()
 
+    def get_info(self):
+        d = {}
+        for in_csc, specs in self._csc_encoder_specs.items():
+            for out_csc, spec in specs:
+                d.setdefault("csc."+in_csc+"_to_"+out_csc, []).append(spec.codec_type)
+        for encoding, encoder_specs in self._video_encoder_specs.items():
+            for in_csc, specs in encoder_specs.items():
+                for spec in specs:
+                    d.setdefault("encoding."+in_csc+"_to_"+encoding, []).append(spec.codec_type)
+        return d
+
     def may_init(self):
         #check without lock (usual fast path):
         if self._initialized:
@@ -84,9 +95,8 @@ class VideoHelper(object):
         for encoding in encodings:
             encoder_specs = self._video_encoder_specs.setdefault(encoding, {})
             for colorspace in colorspaces:
-                colorspace_specs = encoder_specs.setdefault(colorspace, [])
                 spec = encoder_module.get_spec(encoding, colorspace)
-                colorspace_specs.append(spec)
+                encoder_specs.setdefault(colorspace, []).append(spec)
 
     def init_csc_options(self):
         try:
