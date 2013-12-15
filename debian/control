@@ -30,6 +30,14 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,x11-xserver-utils
         ,xserver-xorg-video-dummy
         ,xserver-xorg-input-void
+# for opengl support:
+        ,python-gtkglext1
+        ,python-opengl
+# not strictly needed, but gets rid of ugly warnings in PyOpenGL:
+        ,python-numeric
+        ,python-numpy
+# for PNG and JPEG support:
+        ,python-imaging
 #if you use Ubuntu, you will "want" this mess:
 #		,python-appindicator
 Recommends:
@@ -41,14 +49,6 @@ Recommends:
         ,gstreamer0.10-plugins-ugly
 #                  ^^ mp3 ^^
         ,python-gst0.10
-# for opengl support:
-        ,python-gtkglext1
-        ,python-opengl
-# not strictly needed, but gets rid of ugly warnings in PyOpenGL:
-        ,python-numeric
-        ,python-numpy
-# for PNG and JPEG support:
-        ,python-imaging
         ,openssh-client
         ,ssh-askpass
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
