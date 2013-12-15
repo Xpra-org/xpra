@@ -94,6 +94,10 @@ class VideoHelper(object):
         except:
             log.warn("init_csc_options() cannot add swscale csc", exc_info=True)
         try:
+            self.init_csc_option("csc_cython")
+        except:
+            log.warn("init_csc_options() cannot add cython csc", exc_info=True)
+        try:
             self.init_csc_option("csc_opencl")
         except:
             log.warn("init_csc_options() cannot add opencl csc", exc_info=True)

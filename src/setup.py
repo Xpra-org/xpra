@@ -59,6 +59,7 @@ dec_avcodec2_ENABLED = False
 avcodec_static_ENABLED = False
 avcodec2_static_ENABLED = False
 csc_swscale_ENABLED = True
+csc_cython_ENABLED = True
 swscale_static_ENABLED = False
 webp_ENABLED = True
 nvenc_ENABLED = False
@@ -77,7 +78,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "dec_avcodec", "avcodec_static",
             "dec_avcodec2", "avcodec2_static",
             "csc_swscale", "swscale_static",
-            "csc_nvcuda", "csc_opencl",
+            "csc_nvcuda", "csc_opencl", "csc_cython",
             "vpx", "vpx_static",
             "webp", "rencode", "clipboard",
             "server", "client", "x11",
@@ -505,6 +506,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/dec_avcodec2/constants.pxi",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
                    "xpra/codecs/csc_swscale/constants.pxi",
+                   "xpra/codecs/csc_cython/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/server/stats/cymaths.c",
@@ -1063,6 +1065,12 @@ if csc_swscale_ENABLED:
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/csc_swscale/csc_swscale.c", "xpra/codecs/memalign/memalign.c"],
                 **swscale_pkgconfig), min_version=(0, 19))
+
+toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
+if csc_cython_ENABLED:
+    cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
+                ["xpra/codecs/csc_cython/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c"],
+                ), min_version=(0, 15))
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:

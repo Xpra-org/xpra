@@ -31,14 +31,17 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
         warn("cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
     return None
 codec_versions = {}
-def add_codec_version(name, top_module, fieldname, invoke=False):
+def add_codec_version(name, top_module, version="get_version()"):
     try:
+        fieldname = version
+        if version.endswith("()"):
+            fieldname = version[:-2]
         module = __import__(top_module, {}, {}, [fieldname])
         if not hasattr(module, fieldname):
             warn("cannot find %s in %s", fieldname, module)
             return
         v = getattr(module, fieldname)
-        if invoke and v:
+        if version.endswith("()") and v:
             v = v()
         global codec_versions
         codec_versions[name] = v
@@ -62,30 +65,33 @@ def load_codecs():
 
     codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
     codec_import_check("dec_vpx", "vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
-    add_codec_version("vpx", "xpra.codecs.vpx.encoder", "get_version", True)
+    add_codec_version("vpx", "xpra.codecs.vpx.encoder")
 
     codec_import_check("enc_x264", "x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
-    add_codec_version("x264", "xpra.codecs.enc_x264.encoder", "get_version", True)
+    add_codec_version("x264", "xpra.codecs.enc_x264.encoder")
 
     codec_import_check("enc_nvenc", "nvenc encoder", "xpra.codecs.nvenc", "xpra.codecs.nvenc.encoder", "Encoder")
-    add_codec_version("nvenc", "xpra.codecs.nvenc.encoder", "get_version", True)
+    add_codec_version("nvenc", "xpra.codecs.nvenc.encoder")
 
     codec_import_check("csc_swscale", "swscale colorspace conversion", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
-    add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter", "get_version", True)
+    add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter")
+
+    codec_import_check("csc_cython", "cython colorspace conversion", "xpra.codecs.csc_cython", "xpra.codecs.csc_cython.colorspace_converter", "ColorspaceConverter")
+    add_codec_version("cython", "xpra.codecs.csc_swscale.colorspace_converter")
 
     codec_import_check("csc_opencl", "OpenCL colorspace conversion", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
-    add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter", "get_version", True)
+    add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter")
 
     codec_import_check("csc_nvcuda", "CUDA colorspace conversion", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
-    add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "get_version", True)
+    add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter")
 
     #ffmpeg v1:
     if codec_import_check("dec_avcodec", "avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder"):
-        add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder", "get_version", True)
+        add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder")
     else:
         #ffmpeg v2:
         codec_import_check("dec_avcodec", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
-        add_codec_version("avcodec", "xpra.codecs.dec_avcodec2.decoder", "get_version", True)
+        add_codec_version("avcodec", "xpra.codecs.dec_avcodec2.decoder")
 
     import __builtin__
     if "bytearray" in __builtin__.__dict__:
@@ -136,7 +142,7 @@ NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx"}
 ALL_OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8", "rgb24" : "rgb"}
 ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"}
 
-ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale", "csc_opencl", "csc_nvcuda", "dec_avcodec", "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"
+ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale", "csc_cython", "csc_opencl", "csc_nvcuda", "dec_avcodec", "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
