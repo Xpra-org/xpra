@@ -77,7 +77,7 @@ def load_codecs():
     add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter")
 
     codec_import_check("csc_cython", "cython colorspace conversion", "xpra.codecs.csc_cython", "xpra.codecs.csc_cython.colorspace_converter", "ColorspaceConverter")
-    add_codec_version("cython", "xpra.codecs.csc_swscale.colorspace_converter")
+    add_codec_version("cython", "xpra.codecs.csc_cython.colorspace_converter")
 
     codec_import_check("csc_opencl", "OpenCL colorspace conversion", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
     add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter")
