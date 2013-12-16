@@ -33,8 +33,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
-# not strictly needed, but gets rid of ugly warnings in PyOpenGL:
-        ,python-numeric
+# not *strictly* required, but too important to miss:
         ,python-numpy
 # for PNG and JPEG support:
         ,python-imaging
@@ -51,6 +50,8 @@ Recommends:
         ,python-gst0.10
         ,openssh-client
         ,ssh-askpass
+# not strictly needed, but gets rid of ugly warnings in PyOpenGL:
+        ,python-numeric
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server
