@@ -679,7 +679,7 @@ class WindowSource(object):
             try:
                 packet = self.make_data_packet(*data)
             finally:
-                image.free()
+                self.idle_add(image.free)
                 try:
                     del self.statistics.encoding_pending[sequence]
                 except KeyError:

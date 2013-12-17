@@ -707,8 +707,15 @@ class WindowVideoSource(WindowSource):
             data, client_options = self._video_encoder.compress_image(csc_image, options)
             end = time.time()
 
-            csc_image.free()
+            if csc_image is image:
+                #no csc step, so the image comes from the UI server
+                #and must be freed in the UI thread:
+                self.idle_add(csc_image.free)
+            else:
+                #csc temporary images can be freed at will
+                csc_image.free()
             del csc_image
+
             if data is None:
                 log.error("video_encode: ouch, %s compression failed", encoding)
                 return None, None, 0
@@ -746,7 +753,8 @@ class WindowVideoSource(WindowSource):
         start = time.time()
         csc_image = self._csc_encoder.convert_image(image)
         end = time.time()
-        image.free()
+        #the image comes from the UI server, free it in the UI thread:
+        self.idle_add(image.free)
         debug("csc_image(%s, %s, %s) converted to %s in %.1fms (%.1f MPixels/s)",
                         image, width, height,
                         csc_image, (1000.0*end-1000.0*start), (width*height/(end-start+0.000001)/1024.0/1024.0))
