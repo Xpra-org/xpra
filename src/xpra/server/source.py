@@ -21,7 +21,7 @@ from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.scripts.config import python_platform
-from xpra.codecs.loader import get_codec, has_codec, OLD_ENCODING_NAMES_TO_NEW
+from xpra.codecs.loader import get_codec, has_codec, OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
 from xpra.net.protocol import compressed_wrapper, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machine_id, get_user_uuid
@@ -867,6 +867,7 @@ class ServerSource(object):
         """ Changes the encoder for the given 'window_ids',
             or for all windows if 'window_ids' is None.
         """
+        encoding = OLD_ENCODING_NAMES_TO_NEW.get(encoding, encoding)
         if encoding:
             if encoding not in self.encodings:
                 log.warn("client specified an encoding it does not support: %s, client supplied list: %s" % (encoding, self.encodings))
@@ -923,8 +924,12 @@ class ServerSource(object):
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
                 log.error("failed to setup sound: %s", e)
+        encoding = self.encoding
+        if not self.generic_encodings:
+            #translate back into the legacy names:
+            encoding = NEW_ENCODING_NAMES_TO_OLD.get(encoding, encoding)
         capabilities.update({
-                     "encoding"             : self.encoding,
+                     "encoding"             : encoding,
                      "mmap_enabled"         : self.mmap_size>0,
                      "auto_refresh_delay"   : self.auto_refresh_delay,
                      })
