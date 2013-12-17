@@ -45,8 +45,6 @@ cdef extern from "X11/Xlib.h":
 
     int XFree(void * data)
 
-    void XSync(Display * display, Bool discard)
-
     void XGetErrorText(Display * display, int code, char * buffer_return, int length)
 
 
@@ -79,6 +77,3 @@ cdef class X11CoreBindings:
         cdef char[128] buffer
         XGetErrorText(self.display, code, buffer, 128)
         return str(buffer[:128])
-
-    def XSync(self, discard=False):
-        XSync(self.display, discard)

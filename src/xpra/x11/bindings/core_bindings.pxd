@@ -13,4 +13,3 @@ cdef class X11CoreBindings:
     cdef char * display_name
     cdef xatom(self, str_or_int)
 #    def get_error_text(self, code)
-#    def XSync(self, discard=False):
