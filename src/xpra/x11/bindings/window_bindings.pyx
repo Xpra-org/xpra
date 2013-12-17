@@ -71,8 +71,6 @@ cdef extern from "X11/Xlib.h":
 
     int XFree(void * data)
 
-    void XSync(Display * display, Bool discard)
-
     void XGetErrorText(Display * display, int code, char * buffer_return, int length)
 
     # Needed to find the secret window Gtk creates to own the selection, so we
