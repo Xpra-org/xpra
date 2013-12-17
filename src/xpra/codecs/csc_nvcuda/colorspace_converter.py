@@ -203,7 +203,7 @@ class ColorspaceConverter(object):
         d = self.cuda_device
         da = driver.device_attribute
         try:
-            debug("init_cuda() cuda_device=%s, cuda_context=%s, thread=%s", self.cuda_device, self.cuda_context, threading.current_thread())
+            debug("init_cuda() cuda_device=%s, cuda_context=%s, thread=%s", self.cuda_device, self.cuda_context, threading.currentThread())
             #compile/get kernel:
             self.kernel_function_name, self.kernel_function = get_CUDA_kernel(self.device_id, self.src_format, self.dst_format)
 
@@ -278,7 +278,7 @@ class ColorspaceConverter(object):
     def convert_image(self, image):
         try:
             self.cuda_context.push()
-            debug("convert_image(%s) calling %s with context %s pushed on thread %s", image, self.convert_image_fn, self.cuda_context, threading.current_thread())
+            debug("convert_image(%s) calling %s with context %s pushed on thread %s", image, self.convert_image_fn, self.cuda_context, threading.currentThread())
             return self.convert_image_fn(image)
         finally:
             self.cuda_context.pop()
