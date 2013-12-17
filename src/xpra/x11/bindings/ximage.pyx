@@ -43,11 +43,15 @@ cdef extern from "sys/ipc.h":
         pass
     key_t IPC_PRIVATE
     int IPC_CREAT
+    int IPC_RMID
 
 cdef extern from "sys/shm.h":
     int shmget(key_t __key, size_t __size, int __shmflg)
     void *shmat(int __shmid, const void *__shmaddr, int __shmflg)
     int shmdt (const void *__shmaddr)
+    ctypedef struct shmid_ds:
+        pass
+    int shmctl(int shmid, int cmd, shmid_ds *buf)
 
 cdef extern from "errno.h" nogil:
     int errno
@@ -360,6 +364,7 @@ cdef class XShmWrapper(object):
         #returns:
         # (init_ok, may_retry_this_window, XShm_global_failure)
         cdef size_t size
+        cdef Bool a
         self.ref_count = 0
         self.closed = False
         self.shminfo.shmaddr = <char *> -1
@@ -460,15 +465,17 @@ cdef class XShmWrapper(object):
         assert self.ref_count==0, "XShmWrapper %s cannot be freed: still has a ref count of %s" % (self, self.ref_count)
         assert self.closed, "XShmWrapper %s cannot be freed: it is not closed yet" % self
         has_shm = self.shminfo.shmaddr!=<char *> -1
-        xshm_debug("XShmWrapper.free() has_shm=%s", has_shm)
+        xshm_debug("XShmWrapper.free() has_shm=%s, image=%s, shmid=%s", has_shm, hex(<unsigned long> self.image), self.shminfo.shmid)
         if has_shm:
             XShmDetach(self.display, &self.shminfo)
-        if has_shm:
-            shmdt(self.shminfo.shmaddr)
-            self.shminfo.shmaddr = <char *> -1
         if self.image!=NULL:
             XDestroyImage(self.image)
             self.image = NULL
+        if has_shm:
+            shmctl(self.shminfo.shmid, IPC_RMID, NULL)
+            shmdt(self.shminfo.shmaddr)
+            self.shminfo.shmaddr = <char *> -1
+            self.shminfo.shmid = -1
 
 
 cdef class XShmImageWrapper(XImageWrapper):
