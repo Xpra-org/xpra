@@ -192,6 +192,19 @@ class GLPixmapBacking(GTK2WindowBacking):
             #don't bother trying again for another window:
             glInitFrameTerminatorGREMEDY = None
 
+    def gl_init_shaders(self):
+        assert self.shaders is None
+        # Create and assign fragment programs
+        self.shaders = [ 1, 2 ]
+        glGenProgramsARB(2, self.shaders)
+        for progid, progstr in ((YUV2RGB_SHADER, YUV2RGB_shader), (RGBP2RGB_SHADER, RGBP2RGB_shader)):
+            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
+            glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
+            err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
+            if err:
+                #FIXME: maybe we should do something else here?
+                log.error(err)
+
     def gl_init(self):
         drawable = self.gl_begin()
         w, h = self.size
@@ -202,7 +215,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         if not self.debug_setup:
             self.debug_setup = True
             self.gl_init_debug()
-        
+
         if not self.gl_setup:
             self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))
             # Initialize viewport and matrices for 2D rendering
@@ -238,15 +251,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
             # Create and assign fragment programs
             if not self.shaders:
-                self.shaders = [ 1, 2 ]
-                glGenProgramsARB(2, self.shaders)
-                for progid, progstr in ((YUV2RGB_SHADER, YUV2RGB_shader), (RGBP2RGB_SHADER, RGBP2RGB_shader)):
-                    glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
-                    glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
-                    err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
-                    if err:
-                        #FIXME: maybe we should do something else here?
-                        log.error(err)
+                self.gl_init_shaders()
 
             # Bind program 0 for YUV painting by default
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
