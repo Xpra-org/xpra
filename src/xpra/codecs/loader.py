@@ -148,6 +148,14 @@ ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale"
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
 PREFERED_ENCODING_ORDER = ["h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg"]
 
+compressors = ["zlib"]
+try:
+    import lz4      #@UnresolvedImport
+    del lz4
+    compressors.append("lz4")
+except:
+    pass
+
 ENCODINGS_TO_NAME = {
       "h264"    : "H.264",
       "vp8"     : "VP8",
@@ -156,7 +164,7 @@ ENCODINGS_TO_NAME = {
       "png/L"   : "PNG (8bpp grayscale)",
       "webp"    : "WebP",
       "jpeg"    : "JPEG",
-      "rgb"     : "Raw RGB + zlib (24/32bpp)",
+      "rgb"     : "Raw RGB + %s (24/32bpp)" % ("/".join(compressors)),
     }
 
 ENCODINGS_HELP = {
@@ -167,7 +175,7 @@ ENCODINGS_HELP = {
       "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
       "webp"    : "WebP compression (lossless or lossy)",
       "jpeg"    : "JPEG lossy compression",
-      "rgb"     : "Raw RGB pixels, lossless, compressed using zlib or lz4 (24bpp or 32bpp for transparency)",
+      "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
       }
 
 HELP_ORDER = ("h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "jpeg")
