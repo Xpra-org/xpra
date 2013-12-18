@@ -641,6 +641,9 @@ class SessionInfo(gtk.Window):
         settimedeltastr(self.session_connected_label, self.client.start_time)
 
         p = self.client._protocol
+        if p is None:
+            #no longer connected!
+            return False
         c = p._conn
         self.input_packets_label.set_text(std_unit_dec(p.input_packetcount))
         self.input_bytes_label.set_text(std_unit_dec(c.input_bytecount))
