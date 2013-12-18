@@ -310,6 +310,11 @@ class UIXpraClient(XpraClientBase):
         self._window_to_id = {}
         log("UIXpraClient.cleanup() done")
 
+
+    def show_session_info(self):
+        log.warn("show_session_info() is not implemented in %s", self)
+
+
     def get_encodings(self):
         """
             Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".

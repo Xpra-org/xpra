@@ -23,6 +23,7 @@ from xpra.gtk_common.gtk_util import add_gtk_version_info
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
+from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import system_bell
 try:
@@ -40,6 +41,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def __init__(self):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
+        self.session_info = None
 
     def init(self, opts):
         GObjectXpraClient.init(self, opts)
@@ -68,6 +70,18 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if gtk.main_level()>0:
             log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
             gobject.timeout_add(500, gtk_main_quit_really)
+
+
+    def show_session_info(self):
+        if self.session_info and not self.session_info.is_closed:
+            #exists already: just raise its window:
+            self.session_info.present()
+            return
+        pixbuf = self.get_pixbuf("statistics.png")
+        if not pixbuf:
+            pixbuf = self.get_pixbuf("xpra.png")
+        self.session_info = SessionInfo(self, self.session_name, pixbuf, self._protocol._conn, self.get_pixbuf)
+        self.session_info.show_all()
 
 
     def get_pixbuf(self, icon_name):

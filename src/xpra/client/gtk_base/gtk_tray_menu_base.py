@@ -12,7 +12,6 @@ gobject = import_gobject()
 
 from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, set_checkeditems, menuitem
 from xpra.client.gtk_base.about import about, close_about
-from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -188,14 +187,7 @@ class GTKTrayMenuBase(object):
         return self.menu
 
     def show_session_info(self, *args):
-        if self.session_info and not self.session_info.is_closed:
-            self.session_info.present()
-        else:
-            pixbuf = self.client.get_pixbuf("statistics.png")
-            if not pixbuf:
-                pixbuf = self.client.get_pixbuf("xpra.png")
-            self.session_info = SessionInfo(self.client, self.client.session_name, pixbuf, self.client._protocol._conn, self.client.get_pixbuf)
-            self.session_info.show_all()
+        self.client.show_session_info()
 
     def get_image(self, *args):
         return self.client.get_image(*args)

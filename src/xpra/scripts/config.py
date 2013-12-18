@@ -341,7 +341,7 @@ def get_defaults():
                     "mdns"              : True,
                     "speaker-codec"     : [],
                     "microphone-codec"  : [],
-                    "key-shortcut"      : ["Meta+Shift+F4:quit", "Meta+Shift+F8:magic_key"],
+                    "key-shortcut"      : ["Meta+Shift+F4:quit", "Meta+Shift+F8:magic_key", "Meta+Shift+F11:show_session_info"],
                     "bind-tcp"          : None,
                     "start-child"       : None,
                     }
