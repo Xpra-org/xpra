@@ -18,14 +18,15 @@ from xpra.codecs.loader import has_codec
 
 #don't bother trying gtk2 transparency on on MS Windows (not supported):
 #or on OSX (doesn't work)
-HAS_RGBA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
+DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
+HAS_ALPHA = os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
 try:
     #we need argb to un-premultiply alpha:
     from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
 except:
     log.warn("argb module is missing, cannot support alpha channels")
     unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer  = None, None, None
-    HAS_RGBA = False
+    HAS_ALPHA = False
 
 
 """
@@ -37,7 +38,7 @@ class GTK2WindowBacking(GTKWindowBacking):
 
     def __init__(self, wid, w, h, has_alpha):
         GTKWindowBacking.__init__(self, wid)
-        self._has_alpha = has_alpha and HAS_RGBA
+        self._has_alpha = has_alpha and HAS_ALPHA
 
     def init(self, w, h):
         raise Exception("override me!")

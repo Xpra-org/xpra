@@ -11,7 +11,7 @@ import cairo
 from xpra.log import Logger
 log = Logger()
 
-from xpra.client.gtk2.window_backing import GTK2WindowBacking, HAS_RGBA
+from xpra.client.gtk2.window_backing import GTK2WindowBacking, HAS_ALPHA
 
 
 """
@@ -25,7 +25,7 @@ class PixmapBacking(GTK2WindowBacking):
     def init(self, w, h):
         old_backing = self._backing
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
-        if self._has_alpha and HAS_RGBA:
+        if self._has_alpha and HAS_ALPHA:
             self._backing = gdk.Pixmap(None, w, h, 32)
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()

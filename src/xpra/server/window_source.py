@@ -21,7 +21,7 @@ AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "1")=="1"
-ALLOW_ALPHA = os.environ.get("XPRA_ALLOW_ALPHA", "1")=="1"
+HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
 
 XPRA_DAMAGE_DEBUG = os.environ.get("XPRA_DAMAGE_DEBUG", "0")!="0"
 if XPRA_DAMAGE_DEBUG:
@@ -102,7 +102,7 @@ class WindowSource(object):
         self.supports_rgb24zlib = encoding_options.boolget("rgb24zlib")
                                                         #supports rgb (both rgb24 and rgb32..) compression outside network layer (unwrapped)
         self.generic_encodings = encoding_options.boolget("generic")
-        self.supports_transparency = ALLOW_ALPHA and encoding_options.boolget("transparency")
+        self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.rgb_lz4 = encoding_options.boolget("rgb_lz4")
         self.full_frames_only = encoding_options.boolget("full_frames_only")
         self.supports_delta = []
@@ -200,7 +200,7 @@ class WindowSource(object):
         debug("set_client_properties(%s)", properties)
         self.maximized = properties.get("maximized", False)
         self.full_frames_only = properties.get("encoding.full_frames_only", self.full_frames_only)
-        self.supports_transparency = ALLOW_ALPHA and properties.get("encoding.transparency", self.supports_transparency)
+        self.supports_transparency = HAS_ALPHA and properties.get("encoding.transparency", self.supports_transparency)
         self.encodings = properties.get("encodings", self.encodings)
         self.core_encodings = properties.get("encodings.core", self.core_encodings)
         #unless the client tells us it does support alpha, assume it does not:

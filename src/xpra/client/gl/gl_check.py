@@ -19,22 +19,20 @@ SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win") or sys.platform.s
 
 BLACKLIST = {"vendor" : ["nouveau", "Humper"]}
 
+DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
+HAS_ALPHA = os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
 DEFAULT_DOUBLE_BUFFERED = 0
-DEFAULT_ALPHA = 1
 if sys.platform.startswith("win"):
     #needed on win32?
     DEFAULT_DOUBLE_BUFFERED = 1
-    #does not work on win32:
-    DEFAULT_ALPHA = 0
 DOUBLE_BUFFERED = os.environ.get("XPRA_OPENGL_DOUBLE_BUFFERED", str(DEFAULT_DOUBLE_BUFFERED))=="1"
-ALPHA = os.environ.get("XPRA_OPENGL_ALPHA", str(DEFAULT_ALPHA))=="1"
 
 
 def get_DISPLAY_MODE():
     import gtk.gdkgl
     #gtk.gdkgl.MODE_DEPTH
     mode = 0
-    if ALPHA:
+    if HAS_ALPHA:
         mode = mode | gtk.gdkgl.MODE_RGBA | gtk.gdkgl.MODE_ALPHA
     else:
         mode = mode | gtk.gdkgl.MODE_RGB
