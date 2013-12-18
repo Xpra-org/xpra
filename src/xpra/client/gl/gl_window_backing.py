@@ -235,8 +235,8 @@ class GLPixmapBacking(GTK2WindowBacking):
             # glEnableClientState(GL_VERTEX_ARRAY)
             # glEnableClientState(GL_TEXTURE_COORD_ARRAY)
 
-            # Clear background to transparent white
-            glClearColor(1.0, 1.0, 1.0, 0.0)
+            # Clear background to transparent black
+            glClearColor(0.0, 0.0, 0.0, 0.0)
 
             # Default state is good for YUV painting:
             #  - fragment program enabled
