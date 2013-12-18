@@ -71,6 +71,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
             gobject.timeout_add(500, gtk_main_quit_really)
 
+    def cleanup(self):
+        if self.session_info:
+            self.session_info.destroy()
+        UIXpraClient.cleanup(self)
 
     def show_session_info(self):
         if self.session_info and not self.session_info.is_closed:
