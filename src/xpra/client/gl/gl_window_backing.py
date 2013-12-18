@@ -32,7 +32,7 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     glBlendEquationSeparate, glBlendFuncSeparate, \
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
-    glGenTextures, glDisable, \
+    glGenTextures, glDeleteTextures, glDisable, \
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
     glTexParameteri, \
     glTexImage2D, \
@@ -43,7 +43,7 @@ from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
-from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
+from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glDeleteFramebuffers, glBindFramebuffer, glFramebufferTexture2D
 try:
     from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
 except ImportError:
@@ -242,11 +242,11 @@ class GLPixmapBacking(GTK2WindowBacking):
             #  - fragment program enabled
             #  - YUV fragment program bound
             #  - render to offscreen FBO
-            glEnable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
                 self.gl_init_textures()
 
             # Define empty FBO texture and set rendering to FBO
+            glEnable(GL_FRAGMENT_PROGRAM_ARB)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
             glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
@@ -263,6 +263,12 @@ class GLPixmapBacking(GTK2WindowBacking):
         return drawable
 
     def close(self):
+        if self.offscreen_fbo is not None:
+            glDeleteFramebuffers(1, [self.offscreen_fbo])
+            self.offscreen_fbo = None
+        if self.textures is not None:
+            glDeleteTextures(self.textures)
+            self.textures = None
         if self._backing:
             self._backing.destroy()
         GTK2WindowBacking.close(self)
