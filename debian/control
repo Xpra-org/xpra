@@ -52,6 +52,8 @@ Recommends:
         ,ssh-askpass
 # not strictly needed, but gets rid of ugly warnings in PyOpenGL:
         ,python-numeric
+# hopefully this will motivate someone to package it (trivial too):
+		,python-lz4
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server
