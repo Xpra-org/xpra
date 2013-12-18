@@ -1025,11 +1025,11 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/csc_swscale/colorspace_converter.so
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/dec_avcodec/decoder.so
 %endif
-%if 0%{static_vpx}
+%if 0%{?static_vpx}
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/encoder.so
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/decoder.so
 %endif
-%if 0%{static_x264}
+%if 0%{?static_x264}
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
 %endif
 %if %{defined Fedora}
