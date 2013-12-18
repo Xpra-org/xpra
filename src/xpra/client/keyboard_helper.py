@@ -84,6 +84,9 @@ class KeyboardHelper(object):
                 pub_name = "AltGr"
             if pub_name not in modifier_names:
                 modifier_names[pub_name.lower()] = mod_name
+            if pub_name.lower()=="control":
+                #alias "control" to "ctrl" as it is often used:
+                modifier_names["ctrl"] = mod_name
 
         for s in strs:
             #example for s: Control+F8:some_action()
