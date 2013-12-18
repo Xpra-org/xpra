@@ -135,6 +135,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.size = 0, 0
         self.texture_size = 0, 0
         self.gl_setup = False
+        self.debug_setup = True
         self.paint_screen = False
         self._video_use_swscale = False
         self.draw_needs_refresh = False
@@ -197,9 +198,12 @@ class GLPixmapBacking(GTK2WindowBacking):
         debug("%s.gl_init() GL Pixmap backing size: %d x %d, drawable=%s", self, w, h, drawable)
         if not drawable:
             return  None
-        if not self.gl_setup:
-            self.gl_init_debug()
 
+        if not self.debug_setup:
+            self.debug_setup = True
+            self.gl_init_debug()
+        
+        if not self.gl_setup:
             self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))
             # Initialize viewport and matrices for 2D rendering
             glViewport(0, 0, w, h)
