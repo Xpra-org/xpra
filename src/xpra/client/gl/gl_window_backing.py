@@ -192,6 +192,13 @@ class GLPixmapBacking(GTK2WindowBacking):
             #don't bother trying again for another window:
             glInitFrameTerminatorGREMEDY = None
 
+    def gl_init_textures(self):
+        assert self.offscreen_fbo is None
+        assert self.shaders is None
+        self.textures = glGenTextures(5)
+        self.offscreen_fbo = glGenFramebuffers(1)
+        debug("%s.gl_init_textures() textures: %s, offscreen fbo: %s", self, self.textures, self.offscreen_fbo)
+
     def gl_init_shaders(self):
         assert self.shaders is None
         # Create and assign fragment programs
@@ -237,10 +244,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             #  - render to offscreen FBO
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
-                self.textures = glGenTextures(5)
-                debug("%s.gl_init() textures of size %s : %s", self, self.size, self.textures)
-            if self.offscreen_fbo is None:
-                self.offscreen_fbo = glGenFramebuffers(1)
+                self.gl_init_textures()
 
             # Define empty FBO texture and set rendering to FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
