@@ -381,7 +381,6 @@ class GLPixmapBacking(GTK2WindowBacking):
         #FIXME: we ought to be able to use
         #OpenGL blending and use premultiplied pixels directly... beats me!
         rgba = self.unpremultiply(img_data)
-        options["rgb_format"] = "RGBA"
         self._do_paint_rgb(32, rgba, x, y, width, height, rowstride, options, callbacks)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
@@ -411,9 +410,9 @@ class GLPixmapBacking(GTK2WindowBacking):
             if (rowstride - width * bytes_per_pixel) > a:
                 row_length = width + (rowstride - width * bytes_per_pixel) / bytes_per_pixel
 
-            self.gl_marker("RGB%s update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (bpp, x, y, width, height, rowstride, row_length, alignment))
-            # Upload data as temporary RGB texture
             rgb_format = options.get("rgb_format", None)
+            self.gl_marker("%s %sbpp update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (rgb_format, bpp, x, y, width, height, rowstride, row_length, alignment))
+            # Upload data as temporary RGB texture
             if bpp==24:
                 if rgb_format=="BGR":
                     pformat = GL_BGR
