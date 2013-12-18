@@ -165,6 +165,32 @@ class GLPixmapBacking(GTK2WindowBacking):
             return
         glFrameTerminatorGREMEDY()
 
+    def gl_init_debug(self):
+        #ensure python knows which scope we're talking about:
+        global glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
+        global glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
+        # Ask GL to send us all debug messages
+        if GL_DEBUG_OUTPUT and gl_debug_callback and glInitDebugKHR() == True:
+            glEnable(GL_DEBUG_OUTPUT)
+            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
+            glDebugMessageCallback(gl_debug_callback, None)
+            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, None, GL_TRUE)
+        # Initialize string_marker GL debugging extension if available
+        if glInitStringMarkerGREMEDY and glInitStringMarkerGREMEDY() == True:
+            log.info("Extension GL_GREMEDY_string_marker available. Will output detailed information about each frame.")
+        else:
+            # General case - running without debugger, extension not available
+            glStringMarkerGREMEDY = None
+            #don't bother trying again for another window:
+            glInitStringMarkerGREMEDY = None
+        # Initialize frame_terminator GL debugging extension if available
+        if glInitFrameTerminatorGREMEDY and glInitFrameTerminatorGREMEDY() == True:
+            log.info("Enabling GL frame terminator debugging.")
+        else:
+            glFrameTerminatorGREMEDY = None
+            #don't bother trying again for another window:
+            glInitFrameTerminatorGREMEDY = None
+
     def gl_init(self):
         drawable = self.gl_begin()
         w, h = self.size
@@ -172,30 +198,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         if not drawable:
             return  None
         if not self.gl_setup:
-            #ensure python knows which scope we're talking about:
-            global glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
-            global glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
-            # Ask GL to send us all debug messages
-            if GL_DEBUG_OUTPUT and gl_debug_callback and glInitDebugKHR() == True:
-                glEnable(GL_DEBUG_OUTPUT)
-                glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
-                glDebugMessageCallback(gl_debug_callback, None)
-                glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, None, GL_TRUE)
-            # Initialize string_marker GL debugging extension if available
-            if glInitStringMarkerGREMEDY and glInitStringMarkerGREMEDY() == True:
-                log.info("Extension GL_GREMEDY_string_marker available. Will output detailed information about each frame.")
-            else:
-                # General case - running without debugger, extension not available
-                glStringMarkerGREMEDY = None
-                #don't bother trying again for another window:
-                glInitStringMarkerGREMEDY = None
-            # Initialize frame_terminator GL debugging extension if available
-            if glInitFrameTerminatorGREMEDY and glInitFrameTerminatorGREMEDY() == True:
-                log.info("Enabling GL frame terminator debugging.")
-            else:
-                glFrameTerminatorGREMEDY = None
-                #don't bother trying again for another window:
-                glInitFrameTerminatorGREMEDY = None
+            self.gl_init_debug()
 
             self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))
             # Initialize viewport and matrices for 2D rendering
