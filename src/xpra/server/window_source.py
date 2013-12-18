@@ -622,7 +622,7 @@ class WindowSource(object):
     def get_core_encoding(self, has_alpha, current_encoding):
         if current_encoding=="rgb":
             encs = [current_encoding]
-            if has_alpha:
+            if has_alpha and self.supports_transparency:
                 encs.insert(0, "rgb32")
                 encs.insert(1, "rgb24")
             else:
@@ -959,7 +959,7 @@ class WindowSource(object):
 
     def rgb_encode(self, coding, image, options):
         pixel_format = image.get_pixel_format()
-        #debug("rgb_encode(%s, %s, %s)", coding, image, options)
+        #debug("rgb_encode(%s, %s, %s) rgb_formats=%s", coding, image, options, self.rgb_formats)
         if pixel_format not in self.rgb_formats:
             if not self.rgb_reformat(image):
                 raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, self.rgb_formats))
