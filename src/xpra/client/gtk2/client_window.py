@@ -93,6 +93,7 @@ class ClientWindow(GTKClientWindowBase):
         #by default, only RGB (no transparency):
         self._client_properties["encodings.rgb_formats"] = ["RGB"]
         if not HAS_ALPHA:
+            self._client_properties["encoding.transparency"] = False
             self._has_alpha = False
             return
         if self._has_alpha and not self.is_realized():
@@ -100,6 +101,7 @@ class ClientWindow(GTKClientWindowBase):
             rgba = screen.get_rgba_colormap()
             if rgba is None:
                 self._has_alpha = False
+                self._client_properties["encoding.transparency"] = False
                 self.error("cannot handle window transparency on screen %s", screen)
             else:
                 self.debug("set_alpha() using rgba colormap for %s, realized=%s", self._id, self.is_realized())
