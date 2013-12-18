@@ -135,7 +135,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.size = 0, 0
         self.texture_size = 0, 0
         self.gl_setup = False
-        self.debug_setup = True
+        self.debug_setup = False
         self.paint_screen = False
         self._video_use_swscale = False
         self.draw_needs_refresh = False
