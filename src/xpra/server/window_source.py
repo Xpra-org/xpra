@@ -18,6 +18,9 @@ AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 90))
 AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 95))
 AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 
+MAX_PIXELS_PREFER_RGB = 4096
+AUTO_SWITCH_TO_RGB = False
+
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "1")=="1"
@@ -595,6 +598,11 @@ class WindowSource(object):
             coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
             debug("do_get_best_encoding(..) using %s encoder for %s tray pixels", coding, pixel_count)
             return coding
+        if AUTO_SWITCH_TO_RGB and not batching and pixel_count<MAX_PIXELS_PREFER_RGB and current_encoding in ("png", "webp"):
+            if has_alpha and self.supports_transparency:
+                return self.pick_encoding(["rgb32"])
+            else:
+                return self.pick_encoding(["rgb24"])
         return None
 
     def get_transparent_encoding(self, current_encoding):
@@ -631,11 +639,14 @@ class WindowSource(object):
             rgb_fmt = "rgb32"
         else:
             rgb_fmt = "rgb24"
-        if pixel_count<512:
+        if pixel_count<=MAX_PIXELS_PREFER_RGB:
             encs = rgb_fmt, "png", "rgb24"
         else:
             encs = "png", rgb_fmt, "rgb24"
-        for e in encs:
+        return self.pick_encoding(encs, fallback)
+
+    def pick_encoding(self, encodings, fallback=None):
+        for e in encodings:
             if e in self.server_core_encodings and e in self.core_encodings:
                 return e
         return fallback
@@ -829,10 +840,11 @@ class WindowSource(object):
             return  None
         x, y, w, h, _ = image.get_geometry()
 
+        isize = image.get_size()
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
         debug("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
         start = time.time()
-        if self._mmap and self._mmap_size>0 and image.get_size()>256:
+        if self._mmap and self._mmap_size>0 and isize>256:
             data = self.mmap_send(image)
             if data:
                 #hackish: pass data to mmap_encode using "options":
@@ -880,8 +892,8 @@ class WindowSource(object):
         #actual network packet:
         packet = ["draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()
-        #debug("%sms to compress %sx%s pixels using %s with ratio=%s%%, delta=%s",
-        #         dec1(end*1000.0-start*1000.0), w, h, coding, dec1(100.0*len(data)/len(rgbdata)), delta)
+        debug("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%%, delta=%s",
+                 (end-start)*1000.0, w, h, coding, 100.0*len(data)/isize, delta)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
