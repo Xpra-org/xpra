@@ -32,7 +32,7 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     glBlendEquationSeparate, glBlendFuncSeparate, \
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
-    glGenTextures, glDeleteTextures, glDisable, \
+    glGenTextures, glDisable, \
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
     glTexParameteri, \
     glTexImage2D, \
@@ -43,7 +43,7 @@ from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
-from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glDeleteFramebuffers, glBindFramebuffer, glFramebufferTexture2D
+from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
 try:
     from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
 except ImportError:
@@ -263,12 +263,14 @@ class GLPixmapBacking(GTK2WindowBacking):
         return drawable
 
     def close(self):
-        if self.offscreen_fbo is not None:
-            glDeleteFramebuffers(1, [self.offscreen_fbo])
-            self.offscreen_fbo = None
-        if self.textures is not None:
-            glDeleteTextures(self.textures)
-            self.textures = None
+        #This seems to cause problems, so we rely
+        #on destroying the context to clear textures and fbos...
+        #if self.offscreen_fbo is not None:
+        #    glDeleteFramebuffers(1, [self.offscreen_fbo])
+        #    self.offscreen_fbo = None
+        #if self.textures is not None:
+        #    glDeleteTextures(self.textures)
+        #    self.textures = None
         if self._backing:
             self._backing.destroy()
         GTK2WindowBacking.close(self)
