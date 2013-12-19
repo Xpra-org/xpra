@@ -241,7 +241,7 @@ cdef class ColorspaceConverter:
         out = []
         for i in range(3):
             strides.append(self.dst_strides[i])
-            plane = PyBuffer_FromMemory(<void *>output_image + self.offsets[i], self.dst_sizes[i])
+            plane = PyBuffer_FromMemory(<void *> (<unsigned long> (output_image + self.offsets[i])), self.dst_sizes[i])
             out.append(plane)
         elapsed = time.time()-start
         debug("%s took %.1fms", self, 1000.0*elapsed)
