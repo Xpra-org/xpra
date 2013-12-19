@@ -114,7 +114,7 @@ def get_version():
 def get_type():
     return "avcodec"
 
-
+MIN_AVCODEC_VERSION = 54
 COLORSPACES = None
 FORMAT_TO_ENUM = {}
 ENUM_TO_FORMAT = {}
@@ -125,7 +125,7 @@ def init_colorspaces():
         return
     #populate mappings:
     COLORSPACES = []
-    if LIBAVCODEC_VERSION_MAJOR<54 and os.environ.get("XPRA_FORCE_AVCODEC", "0")!="1":
+    if LIBAVCODEC_VERSION_MAJOR<MIN_AVCODEC_VERSION and os.environ.get("XPRA_FORCE_AVCODEC", "0")!="1":
         log.warn("buggy avcodec version detected: %s", get_version())
         log.warn("cowardly refusing to use it to avoid crashes, set the environment variable:")
         log.warn("XPRA_FORCE_AVCODEC=1")
