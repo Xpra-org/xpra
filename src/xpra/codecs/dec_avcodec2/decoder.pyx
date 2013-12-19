@@ -107,7 +107,7 @@ cdef extern from "libavcodec/avcodec.h":
 
 
 def get_version():
-    return get_avcodec_version()
+    return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
 def get_type():
     return "avcodec2"
