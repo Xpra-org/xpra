@@ -152,7 +152,7 @@ cdef int get_preset_for_speed(int speed):
 
 #the x264 quality option ranges from 0 (best) to 51 (lowest)
 cdef float get_x264_quality(int pct):
-    return 50.0 - (min(100, max(0, pct)) * 49.0 / 100.0)
+    return <float> (50.0 - (min(100, max(0, pct)) * 49.0 / 100.0))
 
 
 cdef char *PROFILE_BASELINE = "baseline"
@@ -256,7 +256,7 @@ cdef class Encoder:
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
     def get_info(self):
-        cdef float pps
+        cdef double pps
         if self.profile is None:
             return {}
         info = {"profile"   : self.profile,
