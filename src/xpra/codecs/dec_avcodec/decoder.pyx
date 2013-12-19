@@ -121,6 +121,12 @@ MIN_AVCODEC_VERSION = 54
 COLORSPACES = None
 FORMAT_TO_ENUM = {}
 ENUM_TO_FORMAT = {}
+if LIBAVCODEC_VERSION_MAJOR<MIN_AVCODEC_VERSION and os.environ.get("XPRA_FORCE_AVCODEC", "0")!="1":
+    log.warn("buggy avcodec version detected: %s", get_version())
+    log.warn("cowardly refusing to use it to avoid crashes, set the environment variable:")
+    log.warn("XPRA_FORCE_AVCODEC=1")
+    log.warn("to use it anyway, at your own risk")
+    raise ImportError("unsupported avcodec version: %s" % str(get_version()))
 def init_colorspaces():
     global COLORSPACES
     if COLORSPACES is not None:
@@ -128,12 +134,6 @@ def init_colorspaces():
         return
     #populate mappings:
     COLORSPACES = []
-    if LIBAVCODEC_VERSION_MAJOR<MIN_AVCODEC_VERSION and os.environ.get("XPRA_FORCE_AVCODEC", "0")!="1":
-        log.warn("buggy avcodec version detected: %s", get_version())
-        log.warn("cowardly refusing to use it to avoid crashes, set the environment variable:")
-        log.warn("XPRA_FORCE_AVCODEC=1")
-        log.warn("to use it anyway, at your own risk")
-        return
     for pix_fmt, av_enum_str in {
             "YUV420P"   : "AV_PIX_FMT_YUV420P",
             "YUV422P"   : "AV_PIX_FMT_YUV422P",
