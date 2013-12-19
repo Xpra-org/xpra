@@ -38,6 +38,9 @@ cdef extern from "string.h":
     void free(void * ptr) nogil
 
 
+cdef extern from "../inline.h":
+    pass
+
 cdef extern from "libavcodec/version.h":
     int LIBAVCODEC_VERSION_MAJOR
     int LIBAVCODEC_VERSION_MINOR

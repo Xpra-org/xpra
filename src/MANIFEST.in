@@ -1,6 +1,8 @@
 include COPYING NEWS README
 include xpra/x11/bindings/constants.txt
 include xpra/x11/gtk_x11/constants.txt
+include xpra/codecs/inline.h
+include xpra/codecs/inline.c
 include xpra/codecs/csc_swscale/csc_swscale.h
 include xpra/codecs/csc_swscale/csc_swscale.c
 include xpra/codecs/dec_avcodec/dec_avcodec.h

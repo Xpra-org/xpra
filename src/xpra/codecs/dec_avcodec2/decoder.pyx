@@ -36,6 +36,9 @@ cdef extern from "string.h":
     void free(void * ptr) nogil
 
 
+cdef extern from "../inline.h":
+    pass
+
 cdef extern from "../memalign/memalign.h":
     void *xmemalign(size_t size)
 

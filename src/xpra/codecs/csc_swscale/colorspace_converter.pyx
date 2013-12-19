@@ -29,6 +29,9 @@ cdef extern from "Python.h":
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
+cdef extern from "../inline.h":
+    pass
+
 ctypedef unsigned char uint8_t
 ctypedef long AVPixelFormat
 cdef extern from "libavcodec/version.h":

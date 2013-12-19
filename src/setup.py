@@ -1037,7 +1037,7 @@ if dec_avcodec_ENABLED:
     else:
         avcodec_pkgconfig = pkgconfig("libavcodec")
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
-                ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/memalign/memalign.c"],
+                ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **avcodec_pkgconfig), min_version=(0, 19))
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
@@ -1050,7 +1050,7 @@ if dec_avcodec2_ENABLED:
     else:
         avcodec2_pkgconfig = pkgconfig("libavcodec")
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
-                ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/memalign/memalign.c"],
+                ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **avcodec2_pkgconfig), min_version=(0, 19))
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
@@ -1063,7 +1063,7 @@ if csc_swscale_ENABLED:
     else:
         swscale_pkgconfig = pkgconfig("libswscale")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
-                ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c"],
+                ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **swscale_pkgconfig), min_version=(0, 19))
 
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
