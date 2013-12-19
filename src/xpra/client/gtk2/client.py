@@ -226,7 +226,7 @@ class XpraClient(GTKXpraClient):
             self.tray.set_blinking(True)
         else:
             self.tray.set_icon(None)    #None means back to default icon
-            self.tray.set_tooltip("Xpra")
+            self.tray.set_tooltip(self.get_tray_title())
             self.tray.set_blinking(False)
 
 
