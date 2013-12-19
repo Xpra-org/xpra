@@ -41,6 +41,7 @@ cdef extern from "vpx/vpx_codec.h":
         pass
     const char *vpx_codec_error(vpx_codec_ctx_t  *ctx)
     vpx_codec_err_t vpx_codec_destroy(vpx_codec_ctx_t *ctx)
+    const char *vpx_codec_version_str()
 
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
@@ -82,13 +83,8 @@ cdef extern from "vpx/vpx_decoder.h":
     vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter)
 
 
-
-cdef extern from "vpxlib.h":
-    int get_vpx_abi_version()
-
-
 def get_version():
-    return get_vpx_abi_version()
+    return vpx_codec_version_str()
 
 def get_type(self):
     return  "vp8"

@@ -7,11 +7,6 @@
 
 #include "vpx/vpx_encoder.h"
 
-int get_vpx_abi_version(void)
-{
-	return VPX_ENCODER_ABI_VERSION;
-}
-
 
 int get_packet_kind(const vpx_codec_cx_pkt_t *pkt)
 {

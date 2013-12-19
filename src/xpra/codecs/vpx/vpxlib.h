@@ -7,8 +7,6 @@
 
 #include <vpx/vpx_encoder.h>
 
-/** Expose the VPX_ENCODER_ABI_VERSION value */
-int get_vpx_abi_version(void);
 
 int get_packet_kind(const vpx_codec_cx_pkt_t *pkt);
 char *get_frame_buffer(const vpx_codec_cx_pkt_t *pkt);

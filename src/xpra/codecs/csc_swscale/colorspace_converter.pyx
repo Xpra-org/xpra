@@ -31,8 +31,10 @@ cdef extern from "Python.h":
 
 ctypedef unsigned char uint8_t
 ctypedef long AVPixelFormat
-cdef extern from "csc_swscale.h":
-    char *get_swscale_version()
+cdef extern from "libavcodec/version.h":
+    int LIBSWSCALE_VERSION_MAJOR
+    int LIBSWSCALE_VERSION_MINOR
+    int LIBSWSCALE_VERSION_MICRO
 
 cdef extern from "libavcodec/avcodec.h":
     AVPixelFormat PIX_FMT_NONE
@@ -164,7 +166,7 @@ def get_type():
     return "swscale"
 
 def get_version():
-    return get_swscale_version()
+    return (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)
 
 def get_input_colorspaces():
     return COLORSPACES

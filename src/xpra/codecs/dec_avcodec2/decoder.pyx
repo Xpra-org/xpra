@@ -36,10 +36,6 @@ cdef extern from "string.h":
     void free(void * ptr) nogil
 
 
-cdef extern from "dec_avcodec.h":
-    char *get_avcodec_version()
-    char **get_supported_colorspaces()
-
 cdef extern from "../memalign/memalign.h":
     void *xmemalign(size_t size)
 
@@ -52,6 +48,11 @@ cdef extern from "libavutil/mem.h":
 
 cdef extern from "libavutil/error.h":
     int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
+
+cdef extern from "libavcodec/version.h":
+    int LIBAVCODEC_VERSION_MAJOR
+    int LIBAVCODEC_VERSION_MINOR
+    int LIBAVCODEC_VERSION_MICRO
 
 cdef extern from "libavcodec/avcodec.h":
     ctypedef struct AVFrame:
@@ -106,7 +107,7 @@ def get_version():
     return get_avcodec_version()
 
 def get_type():
-    return "avcodec"
+    return "avcodec2"
 
 
 COLORSPACES = None

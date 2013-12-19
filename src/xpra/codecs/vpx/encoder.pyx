@@ -58,6 +58,7 @@ cdef extern from "vpx/vp8cx.h":
     const vpx_codec_iface_t  *vpx_codec_vp8_cx()
 
 cdef extern from "vpx/vpx_encoder.h":
+    int VPX_ENCODER_ABI_VERSION
     ctypedef struct vpx_codec_enc_cfg_t:
         unsigned int g_threads
         unsigned int rc_target_bitrate
@@ -87,15 +88,13 @@ cdef extern from "vpx/vpx_encoder.h":
 
 
 cdef extern from "vpxlib.h":
-    int get_vpx_abi_version()
-
     int get_packet_kind(const vpx_codec_cx_pkt_t *pkt)
     char *get_frame_buffer(const vpx_codec_cx_pkt_t *pkt)
     size_t get_frame_size(const vpx_codec_cx_pkt_t *pkt)
 
 
 def get_abi_version():
-    return get_vpx_abi_version()
+    return VPX_ENCODER_ABI_VERSION
 
 def get_version():
     return vpx_codec_version_str()
@@ -179,7 +178,7 @@ cdef class Encoder:
         self.cfg.g_lag_in_frames = 0
         self.cfg.rc_dropframe_thresh = 0
         self.cfg.rc_resize_allowed = 1
-        if vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, get_vpx_abi_version())!=0:
+        if vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)!=0:
             free(self.context)
             raise Exception("failed to initialized vpx encoder: %s", vpx_codec_error(self.context))
 
