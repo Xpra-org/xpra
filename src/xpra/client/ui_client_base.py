@@ -428,7 +428,7 @@ class UIXpraClient(XpraClientBase):
 
     def setup_xpra_tray(self, tray_icon_filename):
         tray = None
-        #this is the our own tray
+        #this is our own tray
         def xpra_tray_click(button, pressed, time=0):
             log("xpra_tray_click(%s, %s)", button, pressed)
             if button==1 and pressed:
@@ -445,7 +445,10 @@ class UIXpraClient(XpraClientBase):
         menu = None
         if self.menu_helper:
             menu = self.menu_helper.build()
-        tray = self.make_tray(menu, "Xpra", tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
+        title = "Xpra"
+        if self._protocol._conn:
+            title = self._protocol._conn.target
+        tray = self.make_tray(menu, title, tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
         log("setup_xpra_tray(%s)=%s", tray_icon_filename, tray)
         return tray
 
