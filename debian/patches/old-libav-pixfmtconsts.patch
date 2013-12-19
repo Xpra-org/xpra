@@ -2,7 +2,7 @@ Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
 ===================================================================
 --- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 4578)
 +++ b/xpra/codecs/csc_swscale/colorspace_converter.pyx	(working copy)
-@@ -81,16 +81,16 @@
+@@ -76,16 +76,16 @@
  COLORSPACES = []
  #keeping this array in scope ensures the strings don't go away!
  FORMAT_OPTIONS = [
@@ -94,9 +94,9 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	2013-10-23 10:33:52.353645287 +0700
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	2013-10-23 10:36:51.473228119 +0700
-@@ -118,15 +118,15 @@
-     #populate mappings:
-     COLORSPACES = []
+@@ -132,15 +132,15 @@
+         log.warn("to use it anyway, at your own risk")
+         return
      for pix_fmt, av_enum_str in {
 -            "YUV420P"   : "AV_PIX_FMT_YUV420P",
 -            "YUV422P"   : "AV_PIX_FMT_YUV422P",

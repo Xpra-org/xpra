@@ -2,7 +2,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4854)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -92,7 +92,7 @@
+@@ -94,7 +94,7 @@
      AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
      int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
      AVFrame *avcodec_alloc_frame()
@@ -11,7 +11,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
      int avcodec_close(AVCodecContext *avctx)
  
      #actual decoding:
-@@ -433,8 +433,8 @@
+@@ -441,8 +441,8 @@
  
          debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
          if self.frame!=NULL:

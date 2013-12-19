@@ -2,7 +2,7 @@ Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
 ===================================================================
 --- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	2013-10-23 10:39:56.374770130 +0700
 +++ b/xpra/codecs/csc_swscale/colorspace_converter.pyx	2013-10-23 10:40:04.119709156 +0700
-@@ -84,8 +84,8 @@
+@@ -79,8 +79,8 @@
      ("PIX_FMT_RGB24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "RGB"  ),
      ("PIX_FMT_BGR24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "BGR"  ),
      ("PIX_FMT_0RGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
@@ -45,7 +45,7 @@ Index: xpra/codecs/dec_avcodec/constants.txt
  PIX_FMT_GBRP
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	2013-10-23 10:39:20.390053525 +0700
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	2013-10-23 10:40:04.124709116 +0700
-@@ -122,8 +122,8 @@
+@@ -136,8 +136,8 @@
              "YUV422P"   : "PIX_FMT_YUV422P",
              "YUV444P"   : "PIX_FMT_YUV444P",
              "RGB"       : "PIX_FMT_RGB24",
