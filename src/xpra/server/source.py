@@ -924,12 +924,14 @@ class ServerSource(object):
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
                 log.error("failed to setup sound: %s", e)
-        encoding = self.encoding
-        if not self.generic_encodings:
-            #translate back into the legacy names:
-            encoding = NEW_ENCODING_NAMES_TO_OLD.get(encoding, encoding)
+        if self.send_windows:
+            assert self.encoding
+            encoding = self.encoding
+            if not self.generic_encodings:
+                #translate back into the legacy names:
+                encoding = NEW_ENCODING_NAMES_TO_OLD.get(encoding, encoding)
+            capabilities["encoding"] = encoding
         capabilities.update({
-                     "encoding"             : encoding,
                      "mmap_enabled"         : self.mmap_size>0,
                      "auto_refresh_delay"   : self.auto_refresh_delay,
                      })
