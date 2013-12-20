@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 #only works with gtk2:
+import os
 from gtk import gdk
 assert gdk
 import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
@@ -14,6 +15,7 @@ import gobject
 from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_OPENGL_DEBUG")
+OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "1")=="1"
 
 
 from xpra.codecs.codec_constants import get_subsampling_divs
@@ -44,37 +46,38 @@ from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
-try:
-    from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
-except ImportError:
-    debug("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
-    GL_DEBUG_OUTPUT = None
-    GL_DEBUG_OUTPUT_SYNCHRONOUS = None
-try:
-    from OpenGL.GL.GREMEDY.string_marker import glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
-    from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
-    from OpenGL.GL import GLDEBUGPROC #@UnresolvedImport
-    def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
-        log.error("src %x type %x id %x severity %x length %d message %s", source, error_type, error_id, severity, length, message)
-    gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
-except ImportError:
-    # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
-    gl_debug_callback = None
-    glInitStringMarkerGREMEDY = None
-    glStringMarkerGREMEDY = None
-    glInitFrameTerminatorGREMEDY = None
-    glFrameTerminatorGREMEDY = None
-debug("OpenGL debugging settings: "+
-      "GL_DEBUG_OUTPUT=%s, GL_DEBUG_OUTPUT_SYNCHRONOUS=%s"+
-      "gl_debug_callback=%s, "+
-      "glInitStringMarkerGREMEDY=%s, glStringMarkerGREMEDY=%s, glInitFrameTerminatorGREMEDY=%s, glFrameTerminatorGREMEDY=%s",
-        GL_DEBUG_OUTPUT,
-        GL_DEBUG_OUTPUT_SYNCHRONOUS,
-        gl_debug_callback,
-        glInitStringMarkerGREMEDY,
-        glStringMarkerGREMEDY,
-        glInitFrameTerminatorGREMEDY,
-        glFrameTerminatorGREMEDY)
+
+
+#debugging variables:
+GL_DEBUG_OUTPUT = None
+GL_DEBUG_OUTPUT_SYNCHRONOUS = None
+gl_debug_callback = None
+glInitStringMarkerGREMEDY = None
+glStringMarkerGREMEDY = None
+glInitFrameTerminatorGREMEDY = None
+glFrameTerminatorGREMEDY = None
+if OPENGL_DEBUG:
+    try:
+        from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
+    except ImportError:
+        debug("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
+    try:
+        from OpenGL.GL.GREMEDY.string_marker import glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
+        from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
+        from OpenGL.GL import GLDEBUGPROC #@UnresolvedImport
+        def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
+            log.error("src %x type %x id %x severity %x length %d message %s", source, error_type, error_id, severity, length, message)
+        gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
+    except ImportError:
+        # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
+        debug("Unable to import GREMEDY OpenGL extension. Debug output will be more limited.")
+    debug("OpenGL debugging settings: "+
+          "GL_DEBUG_OUTPUT=%s, GL_DEBUG_OUTPUT_SYNCHRONOUS=%s"+
+          "gl_debug_callback=%s, "+
+          "glInitStringMarkerGREMEDY=%s, glStringMarkerGREMEDY=%s, glInitFrameTerminatorGREMEDY=%s, glFrameTerminatorGREMEDY=%s",
+            GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS,
+            gl_debug_callback, glInitStringMarkerGREMEDY, glStringMarkerGREMEDY,
+            glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY)
 from ctypes import c_char_p
 
 
