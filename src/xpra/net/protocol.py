@@ -797,6 +797,7 @@ class Protocol(object):
                     log.error("value error reading packet: %s", e, exc_info=True)
                     if self._closed:
                         return
+                    debug("failed to parse packet: %s", binascii.hexlify(data))
                     msg = "gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(data), packet_index, payload_size, bl, e)
                     self.gibberish(msg, data)
                     return
