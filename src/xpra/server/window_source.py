@@ -1138,9 +1138,10 @@ class WindowSource(object):
         modes = {
                  #source  : [(PIL input format, output format), ..]
                  "XRGB"   : [("XRGB", "RGB")],
-                 "BGRX"   : [("BGRX", "RGB")],
+                 "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
                  #try with alpha first:
-                 "BGRA"   : [("BGRA", "RGBA"), ("BGRX", "RGB")]}.get(pixel_format)
+                 "BGRA"   : [("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")]
+                 }.get(pixel_format)
         target_rgb = [(im,om) for (im,om) in modes if om in self.rgb_formats]
         if len(target_rgb)==0:
             #try argb module:

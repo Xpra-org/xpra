@@ -199,15 +199,17 @@ cdef char *ARGB = "ARGB"
 cdef char *BGRA = "BGRA"
 cdef char *RGB = "RGB"
 cdef char *RGBA = "RGBA"
+cdef char *RGBX = "RGBX"
 
-cdef char *RGB_FORMATS[7]
+cdef char *RGB_FORMATS[8]
 RGB_FORMATS[0] = XRGB
 RGB_FORMATS[1] = BGRX
 RGB_FORMATS[2] = ARGB
 RGB_FORMATS[3] = BGRA
 RGB_FORMATS[4] = RGB
 RGB_FORMATS[5] = RGBA
-RGB_FORMATS[6] = NULL
+RGB_FORMATS[6] = RGBX
+RGB_FORMATS[7] = NULL
 
 
 cdef class XImageWrapper:
