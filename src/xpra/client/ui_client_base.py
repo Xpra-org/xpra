@@ -450,9 +450,14 @@ class UIXpraClient(XpraClientBase):
         return tray
 
     def get_tray_title(self):
+        t = []
+        if self.session_name:
+            t.append(self.session_name)
         if self._protocol._conn:
-            return self._protocol._conn.target
-        return "Xpra"
+            t.append(self._protocol._conn.target)
+        if len(t)==0:
+            t.index(0, "Xpra")
+        return "\n".join(t)
 
     def setup_system_tray(self, client, wid, w, h, title):
         tray_widget = None
@@ -888,7 +893,7 @@ class UIXpraClient(XpraClientBase):
         if not XpraClientBase.parse_server_capabilities(self, c):
             return
         if not self.session_name:
-            self.session_name = c.strget("session_name", "Xpra")
+            self.session_name = c.strget("session_name", "")
         set_application_name(self.session_name)
         self.window_configure = c.boolget("window_configure")
         self.window_unmap = c.boolget("window_unmap")

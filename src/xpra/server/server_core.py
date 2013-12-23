@@ -110,7 +110,7 @@ class ServerCore(object):
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout = 0.1
 
-        self.session_name = "Xpra"
+        self.session_name = ""
 
         #Features:
         self.digest_modes = ("hmac", )
