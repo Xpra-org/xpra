@@ -119,36 +119,37 @@ for arg in sys.argv:
     if not matched:
         filtered_args.append(arg)
 sys.argv = filtered_args
-switches_info = {}
-for x in SWITCHES:
-    switches_info[x] = vars()["%s_ENABLED" % x]
-print("build switches: %s" % switches_info)
-if LOCAL_SERVERS_SUPPORTED:
-    print("Xdummy build flag: %s" % Xdummy_ENABLED)
+if "clean" not in sys.argv:
+    switches_info = {}
+    for x in SWITCHES:
+        switches_info[x] = vars()["%s_ENABLED" % x]
+    print("build switches: %s" % switches_info)
+    if LOCAL_SERVERS_SUPPORTED:
+        print("Xdummy build flag: %s" % Xdummy_ENABLED)
 
-#sanity check the flags:
-if clipboard_ENABLED and not server_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
-    print("Warning: clipboard can only be used with the server or one of the gtk clients!")
-    clipboard_ENABLED = False
-if opengl_ENABLED and not gtk2_ENABLED:
-    print("Warning: opengl can only be used with the gtk2 clients")
-    opengl_ENABLED = False
-if shadow_ENABLED and not server_ENABLED:
-    print("Warning: shadow requires server to be enabled!")
-    shadow_ENABLED = False
-if cymaths_ENABLED and not server_ENABLED:
-    print("Warning: cymaths requires server to be enabled!")
-    cymaths_ENABLED = False
-if x11_ENABLED and WIN32:
-    print("Warning: enabling x11 on MS Windows is unlikely to work!")
-if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED and not qt4_ENABLED:
-    print("Warning: client is enabled but none of the client toolkits are!?")
-if not argb_ENABLED and (x11_ENABLED or OSX):
-    print("Error: argb is required for x11 and osx builds!")
-    exit(1)
-if not client_ENABLED and not server_ENABLED:
-    print("Error: you must build at least the client or server!")
-    exit(1)
+    #sanity check the flags:
+    if clipboard_ENABLED and not server_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
+        print("Warning: clipboard can only be used with the server or one of the gtk clients!")
+        clipboard_ENABLED = False
+    if opengl_ENABLED and not gtk2_ENABLED:
+        print("Warning: opengl can only be used with the gtk2 clients")
+        opengl_ENABLED = False
+    if shadow_ENABLED and not server_ENABLED:
+        print("Warning: shadow requires server to be enabled!")
+        shadow_ENABLED = False
+    if cymaths_ENABLED and not server_ENABLED:
+        print("Warning: cymaths requires server to be enabled!")
+        cymaths_ENABLED = False
+    if x11_ENABLED and WIN32:
+        print("Warning: enabling x11 on MS Windows is unlikely to work!")
+    if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED and not qt4_ENABLED:
+        print("Warning: client is enabled but none of the client toolkits are!?")
+    if not argb_ENABLED and (x11_ENABLED or OSX):
+        print("Error: argb is required for x11 and osx builds!")
+        exit(1)
+    if not client_ENABLED and not server_ENABLED:
+        print("Error: you must build at least the client or server!")
+        exit(1)
 
 
 
@@ -373,7 +374,7 @@ def pkgconfig(*packages_options, **ekw):
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
     if debug_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', '-g')
-    if debug_ENABLED:
+        add_to_keywords(kw, 'extra_compile_args', '-ggdb')
         kw['pyrex_gdb'] = True
         if get_gcc_version()>=4.8:
             add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
@@ -702,6 +703,13 @@ if WIN32:
             data_files.append(('.', glob.glob("%s/*32*.dll" % cuda_bin_dir)))
         else:
             sys.exit("ERROR: unknown package config: %s" % str(packages))
+        if debug_ENABLED:
+            #Od will override whatever may be specified elsewhere
+            #and allows us to use the debug switches,
+            #at the cost of a warning...
+            for flag in ('/Od', '/Zi', '/DEBUG', '/RTC1', '/GS'):
+                add_to_keywords(kw, 'extra_compile_args', flag)
+            add_to_keywords(kw, 'extra_link_args', "/DEBUG")
         print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
         return kw
 
@@ -1091,10 +1099,11 @@ if vpx_ENABLED:
 toggle_packages(rencode_ENABLED, "xpra.net.rencode")
 if rencode_ENABLED:
     rencode_pkgconfig = pkgconfig()
-    if not WIN32:
-        add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "-O3")
-    else:
-        add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "/Ox")
+    if not debug_ENABLED:
+        if WIN32:
+            add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "/Ox")
+        else:
+            add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "-O3")
     cython_add(Extension("xpra.net.rencode._rencode",
                 ["xpra/net/rencode/rencode.pyx"],
                 **rencode_pkgconfig))
