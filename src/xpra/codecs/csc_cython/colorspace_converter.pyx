@@ -96,10 +96,6 @@ DEF VC = 8388608    # 128    * 2**16
 
 DEF max_clamp = 16777216    #2**(16+8)
 
-print("Y = %s*R + %s*G + %s*B + %s" % (YR, YG, YB, YC))
-print("U = %s*R + %s*G + %s*B + %s" % (UR, UG, UB, UC))
-print("V = %s*R + %s*G + %s*B + %s" % (VR, VG, VB, VC))
-
 cdef unsigned char clamp(long v) nogil:
     if v<=0:
         return 0
