@@ -32,14 +32,6 @@ cdef extern from "Python.h":
 cdef int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
-cdef unsigned char clamp(float f) nogil:
-    if f<=0:
-        return 0
-    elif f>=255:
-        return 255
-    else:
-        return <unsigned char> f
-
 #precalculate indexes in native endianness:
 tmp = str(struct.pack("=BBBB", 0, 1, 2, 3))
 cdef int BGRA_B = tmp.find('\0')
@@ -80,6 +72,41 @@ class CythonImageWrapper(ImageWrapper):
         if self.cython_buffer>0:
             free(<void *> (<unsigned long> self.cython_buffer))
             self.cython_buffer = 0
+
+
+#Y[o] = clamp(0.257 * R + 0.504 * G + 0.098 * B + 16)
+# Y = 0.257 * R + 0.504 * G + 0.098 * B + 16
+DEF shift = 16
+DEF YR = 16843      # 0.257 * 2**16
+DEF YG = 33030      # 0.504 * 2**16
+DEF YB = 6423       # 0.098 * 2**16
+DEF YC = 1048576    # 16    * 2**16
+#U[y*self.dst_strides[1] + x] = clamp(-0.148 * Rsum/sum - 0.291 * Gsum/sum + 0.439 * Bsum/sum + 128)
+# U = -0.148 * R - 0.291 * G + 0.439 * B + 128
+DEF UR = -9699      #-0.148 * 2**16
+DEF UG = -19071     #-0.291 * 2**16
+DEF UB = 28770      # 0.439 * 2**16
+DEF UC = 8388608    # 128   * 2**16
+#V[y*self.dst_strides[2] + x] = clamp(0.439 * Rsum/sum - 0.368 * Gsum/sum - 0.071 * Bsum/sum + 128)
+# V = 0.439 * R - 0.368 * G - 0.071 * B + 128
+DEF VR = 28770      # 0.439  * 2**16
+DEF VG = -24117     #-0.368  * 2**16
+DEF VB = -4653      #-0.071  * 2**16
+DEF VC = 8388608    # 128    * 2**16
+
+DEF max_clamp = 16777216    #2**(16+8)
+
+print("Y = %s*R + %s*G + %s*B + %s" % (YR, YG, YB, YC))
+print("U = %s*R + %s*G + %s*B + %s" % (UR, UG, UB, UC))
+print("V = %s*R + %s*G + %s*B + %s" % (VR, VG, VB, VC))
+
+cdef unsigned char clamp(long v) nogil:
+    if v<=0:
+        return 0
+    elif v>=max_clamp:
+        return 255
+    else:
+        return <unsigned char> (v>>shift)
 
 
 cdef class ColorspaceConverter:
@@ -184,6 +211,7 @@ cdef class ColorspaceConverter:
         cdef int input_stride
         cdef int x,y,i,o,dx,dy,sum          #@DuplicatedSignature
         cdef int workw, workh
+        cdef int Ystride, Ustride, Vstride
         cdef object plane, input
         cdef unsigned char R, G, B
         cdef unsigned short Rsum
@@ -206,6 +234,10 @@ cdef class ColorspaceConverter:
         Y = output_image + self.offsets[0]
         U = output_image + self.offsets[1]
         V = output_image + self.offsets[2]
+        #copy to local variables (ensures C code will be optimized correctly)
+        Ystride = self.dst_strides[0]
+        Ustride = self.dst_strides[1]
+        Vstride = self.dst_strides[2]
         #we process 4 pixels at a time:
         workw = roundup(self.dst_width/2, 2)
         workh = roundup(self.dst_height/2, 2)
@@ -214,6 +246,9 @@ cdef class ColorspaceConverter:
         with nogil:
             for y in xrange(workh):
                 for x in xrange(workw):
+                    R = 0
+                    G = 0
+                    B = 0
                     Rsum = 0
                     Gsum = 0
                     Bsum = 0
@@ -226,16 +261,20 @@ cdef class ColorspaceConverter:
                             R = input_image[o + BGRA_R]
                             G = input_image[o + BGRA_G]
                             B = input_image[o + BGRA_B]
-                            o = (y*2+dy)*self.dst_strides[0] + (x*2+dx)
-                            Y[o] = clamp(0.257 * R + 0.504 * G + 0.098 * B + 16)
+                            o = (y*2+dy)*Ystride + (x*2+dx)
+                            
+                            Y[o] = clamp(YR * R + YG * G + YB * B + YC)
                             sum += 1
                             Rsum += R
                             Gsum += G
                             Bsum += B
                     #write 1U and 1V:
                     if sum>0:
-                        U[y*self.dst_strides[1] + x] = clamp(-0.148 * Rsum/sum - 0.291 * Gsum/sum + 0.439 * Bsum/sum + 128)
-                        V[y*self.dst_strides[2] + x] = clamp(0.439 * Rsum/sum - 0.368 * Gsum/sum - 0.071 * Bsum/sum + 128)
+                        Rsum /= sum
+                        Gsum /= sum
+                        Bsum /= sum
+                        U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
+                        V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
         #create python buffer from each plane:
         strides = []
         out = []
