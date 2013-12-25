@@ -52,7 +52,10 @@ def decode_unicode(x, f):
 def decode_list(x, f):
     r, f = [], f+1
     while x[f] != 'e':
-        v, f = decode_func[x[f]](x, f)
+        fn = decode_func.get(x[f])
+        if not fn:
+            raise ValueError("invalid list entry: %s" % (x[f:]))
+        v, f = fn(x, f)
         r.append(v)
     return (r, f + 1)
 
@@ -60,11 +63,17 @@ def decode_dict(x, f):
     r, f = {}, f+1
     #lastkey = None
     while x[f] != 'e':
-        k, f = decode_func[x[f]](x, f)
+        fn = decode_func.get(x[f])
+        if not fn:
+            raise ValueError("invalid dict key: %s" % (x[f:]))
+        k, f = fn(x, f)
         #if lastkey is not None and lastkey >= k:
         #    raise ValueError("keys are not in ascending order!")
         #lastkey = k
-        r[k], f = decode_func[x[f]](x, f)
+        fn = decode_func.get(x[f])
+        if not fn:
+            raise ValueError("invalid dict value: %s" % (x[f:]))
+        r[k], f = fn(x, f)
     return (r, f + 1)
 
 decode_func = {}
@@ -80,7 +89,10 @@ for k,v in dict(decode_func).items():
 
 def bdecode(x):
     try:
-        r, l = decode_func[x[0]](x, 0)
+        fn = decode_func.get(x[0])
+        if not fn:
+            raise ValueError("invalid type identifier: %s" % (x[0]))
+        r, l = fn(x, 0)
     except (IndexError, KeyError):
         import traceback
         traceback.print_exc()
