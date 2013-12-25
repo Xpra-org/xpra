@@ -22,7 +22,6 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"]):
         keymap = None
         return  []
     keycodes=[]
-    used_keycodes = []
     max_entries = 1
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
@@ -32,7 +31,6 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"]):
                 name = gdk.keyval_name(keyval)
                 if name not in ignore_keys:
                     keycodes.append((nn(keyval), nn(name), nn(keycode), nn(group), nn(level)))
-                    used_keycodes.append(keycode)
     return keycodes
 
 
