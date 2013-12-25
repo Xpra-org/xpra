@@ -98,7 +98,10 @@ if sys.version_info[0]<3:
 
 
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
-PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 16384))
+#merge header and packet if packet is smaller than:
+PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 32768))
+#inline compressed data in packet if smaller than:
+INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 2048))
 FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
 
 
@@ -516,7 +519,7 @@ class Protocol(object):
                 continue
             elif ti==Compressed:
                 #already compressed data (usually pixels), send it as-is
-                if item.data.length>=256:
+                if item.data.length>=INLINE_SIZE:
                     packets.append((i, 0, item.data))
                     packet[i] = ''
                 else:
