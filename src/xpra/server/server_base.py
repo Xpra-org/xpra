@@ -658,7 +658,7 @@ class ServerBase(ServerCore):
         if len(sss)==0:
             return respond(2, "no client connected")
         elif len(sss)>1:
-            return respond(3, "more than one client connected")            
+            return respond(3, "more than one client connected")
         cproto, csource = sss[0]
         log("handle_command_request will apply to client: %s", csource)
         if command=="compression":

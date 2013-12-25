@@ -258,7 +258,7 @@ cdef class ColorspaceConverter:
                             G = input_image[o + BGRA_G]
                             B = input_image[o + BGRA_B]
                             o = (y*2+dy)*Ystride + (x*2+dx)
-                            
+
                             Y[o] = clamp(YR * R + YG * G + YB * B + YC)
                             sum += 1
                             Rsum += R

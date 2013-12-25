@@ -389,7 +389,7 @@ class SessionInfo(gtk.Window):
         vbox = gtk.VBox(False, 0)
         self.add_tab(icon_filename, title, populate_cb, contents=vbox)
         return vbox
-        
+
 
     def add_tab(self, icon_filename, title, populate_cb, contents):
         icon = self.get_pixbuf(icon_filename)

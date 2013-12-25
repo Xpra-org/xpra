@@ -1097,7 +1097,7 @@ class WindowSource(object):
         if None in (bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba):
             self.warn_encoding_once("argb-module-missing", "no argb module, cannot convert %s to one of: %s" % (pixel_format, self.rgb_formats))
             return False
-            
+
         #try to fallback to argb module
         #if we have one of the target pixel formats:
         pixels = image.get_pixels()

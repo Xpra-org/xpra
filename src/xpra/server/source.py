@@ -808,6 +808,7 @@ class ServerSource(object):
             self.keyboard_config.make_keymask_match(modifier_list, ignored_modifier_keycode, ignored_modifier_keynames)
 
     def set_keymap(self, current_keyboard_config, keys_pressed, force):
+        log("set_keymap%s", (current_keyboard_config, keys_pressed, force))
         if self.keyboard_config and self.keyboard_config.enabled:
             current_id = None
             if current_keyboard_config and current_keyboard_config.enabled:
