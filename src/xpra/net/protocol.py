@@ -508,6 +508,7 @@ class Protocol(object):
         packets = []
         packet = list(packet_in)
         level = self.compression_level
+        min_comp_size = 378
         for i in range(1, len(packet)):
             item = packet[i]
             ti = type(item)
@@ -515,8 +516,13 @@ class Protocol(object):
                 continue
             elif ti==Compressed:
                 #already compressed data (usually pixels), send it as-is
-                packets.append((i, 0, item.data))
-                packet[i] = ''
+                if item.data.length>=256:
+                    packets.append((i, 0, item.data))
+                    packet[i] = ''
+                else:
+                    #data is small enough, inline it:
+                    packet[i] = item.data
+                    min_comp_size += item.data.length
             elif ti==LevelCompressed:
                 #already compressed data as zlib or lz4, send as-is with compression marker
                 assert item.level>0
@@ -548,7 +554,7 @@ class Protocol(object):
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         #compress, but don't bother for small packets:
-        if level>0 and len(main_packet)>378:
+        if level>0 and len(main_packet)>min_comp_size:
             cl, cdata = self._compress(main_packet, level)
             packets.append((0, cl, cdata))
         else:
@@ -692,6 +698,7 @@ class Protocol(object):
                     if bl<8:
                         break   #packet still too small
                     #packet format: struct.pack('cBBBL', ...) - 8 bytes
+                    #debug("packet header: %s", binascii.hexlify(head))
                     _, protocol_flags, compression_level, packet_index, data_size = unpack_header(head)
 
                     #sanity check size (will often fail if not an xpra client):
@@ -814,6 +821,7 @@ class Protocol(object):
                     raw_packets = {}
 
                 self.input_packetcount += 1
+                debug("processing packet %s", packet[0])
                 self._process_packet_cb(self, packet)
 
     def flush_then_close(self, last_packet):
