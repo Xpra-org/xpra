@@ -36,7 +36,7 @@
 
 			var OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
 			var RGB_FORMATS = ["RGBX", "RGBA"];
-			var canvas_state;
+			var canvas_state = null;
 
 			var caps_lock = null;
 			var alt_modifier = null;
@@ -58,6 +58,8 @@
 			}
 
 			processKeyEvent = function(pressed, event) {
+				if (canvas_state==null)
+					return;
 				// MSIE hack
 				if (window.event)
 					event = window.event;
@@ -214,7 +216,7 @@
 				var win = canvas_state.topOfStack();
 				if (win != null)
 					wid = window_to_id[win];
-				show("check_focus() wid="+wid+", focus="+wid);
+				//show("check_focus() wid="+wid+", focus="+wid);
 				if (wid!=focus) {
 					focus = wid;
 					protocol.send(["focus", focus, []]);
@@ -468,6 +470,8 @@
 			}
 			function start() {
 				show("start()");
+				if (canvas_state==null)
+					canvas_state = new CanvasState(document.getElementById('screen'));
 				protocol = new Protocol();
 				protocol.set_packet_handler("open", process_open);
 				protocol.set_packet_handler("close", process_close);
@@ -476,11 +480,27 @@
 				protocol.open(uri);
 				show("opening connection to "+uri);
 			}
+			function stop() {
+				show("stop()");
+				id_to_window = {};
+				window_to_id = {};
+				focus = -1;
+				if (protocol!=null) {
+					protocol.close();
+					protocol = null;
+				}
+				if (canvas_state!=null) {
+					canvas_state.destroy();
+					canvas_state = null;
+				}
+			}
 			function process_close(packet) {
 				show("process_close("+packet+")");
+				stop();
 			}
 			function process_error(packet) {
 				show("process_error("+packet+")");
+				stop();
 			}
 			function process_open(packet) {
 				show("connected to server - sending hello");
@@ -519,7 +539,6 @@
 			function init() {
 				"use strict";
 				show("init()");
-				canvas_state = new CanvasState(document.getElementById('screen'));
 				// add a large green rectangle
 				// s.addShape(new Shape(s, 260, 70, 60, 65, 'rgba(0,205,0,0.7)'));
 				// add a green-blue rectangle
@@ -536,6 +555,7 @@
 			<form onsubmit="return false;">
 				<fieldset>
 				<button id="connect" onclick="start();">Connect</button>
+				<button id="disconnect" onclick="stop();">Disconnect</button>
 				<button id="refresh" onclick="force_refresh();">Refresh</button>
 				<br />
 				</fieldset>

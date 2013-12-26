@@ -165,7 +165,7 @@ function CanvasState(canvas) {
 	// This complicates things a little but but fixes mouse co-ordinate problems
 	// when there's a border or padding. See getMouse for more detail
 	var stylePaddingLeft, stylePaddingTop, styleBorderLeft, styleBorderTop,
-			html, myState, i;
+			html, self, i;
 	if (document.defaultView && document.defaultView.getComputedStyle) {
 		this.stylePaddingLeft	= parseInt(document.defaultView.getComputedStyle(canvas, null).paddingLeft, 10)		|| 0;
 		this.stylePaddingTop	= parseInt(document.defaultView.getComputedStyle(canvas, null).paddingTop, 10)		|| 0;
@@ -208,179 +208,19 @@ function CanvasState(canvas) {
 	// and when the events are fired on the canvas the variable "this" is going to mean the canvas!
 	// Since we still want to use this particular CanvasState in the events we have to save a reference to it.
 	// This is our reference!
-	myState = this;
 
-	//fixes a problem where double clicking causes text to get selected on the canvas
-	canvas.addEventListener('selectstart', function(e) { e.preventDefault(); return false; }, false);
-	// Up, down, and move are for dragging
-	canvas.addEventListener('mousedown', function(e) {
-		var mouse, mx, my, shapes, l, i, mySel;
-		if (myState.expectResize !== -1) {
-			myState.resizeDragging = true;
-			return;
-		}
-		mouse = myState.getMouse(e);
-		mx = mouse.x;
-		my = mouse.y;
-
-		mySel = myState.findShape(mx, my);
-		if (mySel==null) {
-			// havent returned means we have failed to select anything.
-			// If there was an object selected, we deselect it
-			if (myState.selection) {
-				myState.selection = null;
-				myState.valid = false; // Need to clear the old selection border
-			}
-			return;
-		}
-		myState.raiseShape(mySel);
-
-		if (mySel.is_grab_area(mx, my)) {
-			// only left click does anything here:
-			if (mouse.button==1) {
-				// Keep track of where in the object we clicked
-				// so we can move it smoothly (see mousemove)
-				myState.dragoffx = mx - mySel.x;
-				myState.dragoffy = my - mySel.y;
-				myState.dragging = true;
-				myState.selection = mySel;
-				myState.valid = false;
-			}
-			return;
-		}
-		// pass the click to the area:
-		var modifiers = [];
-		var buttons = [];
-		mySel.handle_mouse_click(mouse.button, true, mx, my, modifiers, buttons);
-		return;
-	}, true);
-
-	canvas.addEventListener('mousemove', function(e) {
-		var mouse = myState.getMouse(e),
-				mx = mouse.x,
-				my = mouse.y,
-				handled = false,
-				i, cur;
-		//show("mousemove mouse="+mouse.toSource()+", dragging="+myState.dragging);
-		if (myState.dragging){
-			// We don't want to drag the object by its top-left corner, we want to drag it
-			// from where we clicked. Thats why we saved the offset and use it here
-			myState.selection.move(mouse.x - myState.dragoffx, mouse.y - myState.dragoffy);
-			myState.valid = false; // Something's dragging so we must redraw
-			handled = true;
-		} else if (myState.resizeDragging) {
-			// time ro resize!
-			var shape = myState.selection;
-			var geom = shape.get_window_geometry();
-
-			// 0  1  2
-			// 3     4
-			// 5  6  7
-			switch (myState.expectResize) {
-				case 0:
-					shape.move_resize(mx, my, geom.w + geom.x - mx, geom.h + geom.y - my);
-					break;
-				case 1:
-					shape.move_resize(geom.x, my, geom.w, geom.h + geom.y - my);
-					break;
-				case 2:
-					shape.move_resize(geom.x, my, geom.w + mx - geom.x, geom.h + geom.y - my);
-					break;
-				case 3:
-					shape.move_resize(mx, geom.y, geom.w + geom.x - mx, geom.h);
-					break;
-				case 4:
-					shape.move_resize(geom.x, geom.y, mx - geom.x, geom.h);
-					break;
-				case 5:
-					shape.move_resize(mx, geom.y, geom.w + geom.x - mx, my - geom.y);
-					break;
-				case 6:
-					shape.move_resize(geom.x, geom.y, geom.w, my - geom.y);
-					break;
-				case 7:
-					shape.move_resize(geom.x, geom.y, mx - geom.x, my - geom.y);
-					break;
-			}
-			myState.valid = false; // Something's dragging so we must redraw
-			handled = true;
-		}
-
-		// if there's a selection see if we grabbed one of the selection handles
-		if (myState.selection !== null && !myState.resizeDragging) {
-			for (i = 0; i < 8; i += 1) {
-				// 0  1  2
-				// 3     4
-				// 5  6  7
-
-				cur = myState.selectionHandles[i];
-
-				// we dont need to use the ghost context because
-				// selection handles will always be rectangles
-				if (mx >= cur.x && mx <= cur.x + myState.selectionBoxSize &&
-						my >= cur.y && my <= cur.y + myState.selectionBoxSize) {
-					// we found one!
-					myState.expectResize = i;
-					myState.valid = false;
-					handled = true;
-
-					var sc = {
-							0 : 'nw-resize',
-							1 : 'n-resize',
-							2 : 'ne-resize',
-							3 : 'w-resize',
-							4 : 'e-resize',
-							5 : 'sw-resize',
-							6 : 's-resize',
-							7 : 'se-resize'
-					}[i];
-					if (sc!=undefined)
-						this.style.cursor = sc;
-					break;
-				}
-			}
-			if (!handled) {
-				// not over a selection box, return to normal
-				myState.resizeDragging = false;
-				myState.expectResize = -1;
-				this.style.cursor = 'auto';
-			}
-		}
-
-		// pass move to the area:
-		if (!handled) {
-			var mySel = myState.findShape(mx, my);
-			if (mySel!=null) {
-				var modifiers = [];
-				var buttons = [];
-				mySel.handle_mouse_move(mx, my, modifiers, buttons);
-			}
-		}
-	}, true);
-
-	canvas.addEventListener('mouseup', function(e) {
-		// if not handling it ourselves, pass it down:
-		var mouse = myState.getMouse(e),
-				mx = mouse.x,
-				my = mouse.y;
-		if (!myState.dragging && !myState.resizeDragging) {
-			var mySel = myState.findShape(mx, my);
-			if (mySel!=null) {
-				var modifiers = [];
-				var buttons = [];
-				mySel.handle_mouse_click(mouse.button, false, mx, my, modifiers, buttons);
-			}
-		}
-
-		myState.dragging = false;
-		myState.resizeDragging = false;
-		myState.expectResize = -1;
-		if (myState.selection !== null) {
-			this.style.cursor = 'auto';
-			myState.selection = null;
-			myState.valid = false;
-		}
-	}, true);
+	this.event_listeners = []
+	var listeners = [
+			['selectstart'	, false],
+			['mousedown'	, true],
+			['mousemove'	, true],
+			['mouseup'		, true],
+			['dblclick'		, true],
+			];
+	for (i = 0; i < listeners.length; i += 1) {
+		var l = listeners[i];
+		this.registerEventListener(l[0], l[1]);
+	}
 
 	// disable right click menu:
 	window.oncontextmenu = function(e) {
@@ -388,10 +228,6 @@ function CanvasState(canvas) {
 		return false;
 	}
 
-	// double click
-	canvas.addEventListener('dblclick', function(e) {
-		//TODO!
-	}, true);
 
 	// **** Options! ****
 	this.selectionColor = '#CC0000';
@@ -399,8 +235,11 @@ function CanvasState(canvas) {
 	this.selectionBoxSize = 6;
 	this.selectionBoxColor = 'darkred';
 	this.interval = 30;
-	setInterval(function() { myState.draw(); }, myState.interval);
+
+	var self = this;
+	this.repaint_timer = setInterval(function() { self.draw(); }, self.interval);
 };
+
 
 // Finds the shape at the top of the stack:
 CanvasState.prototype.topOfStack = function() {
@@ -466,6 +305,224 @@ CanvasState.prototype.raiseShape = function(shape) {
 			break;
 		}
 	}
+};
+
+CanvasState.prototype.on_dblclick = function(e) {
+	//TODO!
+}
+
+CanvasState.prototype.on_mousemove = function(e) {
+	show("on_mousemove() this="+this);
+	var mouse = this.getMouse(e),
+			mx = mouse.x,
+			my = mouse.y,
+			handled = false,
+			i, cur;
+	//show("mousemove mouse="+mouse.toSource()+", dragging="+this.dragging);
+	if (this.dragging){
+		// We don't want to drag the object by its top-left corner, we want to drag it
+		// from where we clicked. Thats why we saved the offset and use it here
+		this.selection.move(mouse.x - this.dragoffx, mouse.y - this.dragoffy);
+		this.valid = false; // Something's dragging so we must redraw
+		handled = true;
+	} else if (this.resizeDragging) {
+		// time ro resize!
+		var shape = this.selection;
+		var geom = shape.get_window_geometry();
+
+		// 0  1  2
+		// 3     4
+		// 5  6  7
+		switch (this.expectResize) {
+			case 0:
+				shape.move_resize(mx, my, geom.w + geom.x - mx, geom.h + geom.y - my);
+				break;
+			case 1:
+				shape.move_resize(geom.x, my, geom.w, geom.h + geom.y - my);
+				break;
+			case 2:
+				shape.move_resize(geom.x, my, geom.w + mx - geom.x, geom.h + geom.y - my);
+				break;
+			case 3:
+				shape.move_resize(mx, geom.y, geom.w + geom.x - mx, geom.h);
+				break;
+			case 4:
+				shape.move_resize(geom.x, geom.y, mx - geom.x, geom.h);
+				break;
+			case 5:
+				shape.move_resize(mx, geom.y, geom.w + geom.x - mx, my - geom.y);
+				break;
+			case 6:
+				shape.move_resize(geom.x, geom.y, geom.w, my - geom.y);
+				break;
+			case 7:
+				shape.move_resize(geom.x, geom.y, mx - geom.x, my - geom.y);
+				break;
+		}
+		this.valid = false; // Something's dragging so we must redraw
+		handled = true;
+	}
+
+	// if there's a selection see if we grabbed one of the selection handles
+	if (this.selection !== null && !this.resizeDragging) {
+		for (i = 0; i < 8; i += 1) {
+			// 0  1  2
+			// 3     4
+			// 5  6  7
+
+			cur = this.selectionHandles[i];
+
+			// we dont need to use the ghost context because
+			// selection handles will always be rectangles
+			if (mx >= cur.x && mx <= cur.x + this.selectionBoxSize &&
+					my >= cur.y && my <= cur.y + this.selectionBoxSize) {
+				// we found one!
+				this.expectResize = i;
+				this.valid = false;
+				handled = true;
+
+				var sc = {
+						0 : 'nw-resize',
+						1 : 'n-resize',
+						2 : 'ne-resize',
+						3 : 'w-resize',
+						4 : 'e-resize',
+						5 : 'sw-resize',
+						6 : 's-resize',
+						7 : 'se-resize'
+				}[i];
+				if (sc!=undefined)
+					this.canvas.style.cursor = sc;
+				break;
+			}
+		}
+		if (!handled) {
+			// not over a selection box, return to normal
+			this.resizeDragging = false;
+			this.expectResize = -1;
+			this.canvas.style.cursor = 'auto';
+		}
+	}
+
+	// pass move to the area:
+	if (!handled) {
+		var mySel = this.findShape(mx, my);
+		if (mySel!=null) {
+			var modifiers = [];
+			var buttons = [];
+			mySel.handle_mouse_move(mx, my, modifiers, buttons);
+		}
+	}
+};
+
+CanvasState.prototype.on_mousedown = function(e) {
+	var mouse, mx, my, shapes, l, i, mySel;
+	if (this.expectResize !== -1) {
+		this.resizeDragging = true;
+		return;
+	}
+	mouse = this.getMouse(e);
+	mx = mouse.x;
+	my = mouse.y;
+
+	mySel = this.findShape(mx, my);
+	if (mySel==null) {
+		// havent returned means we have failed to select anything.
+		// If there was an object selected, we deselect it
+		if (this.selection) {
+			this.selection = null;
+			this.valid = false; // Need to clear the old selection border
+		}
+		return;
+	}
+	this.raiseShape(mySel);
+
+	if (mySel.is_grab_area(mx, my)) {
+		// only left click does anything here:
+		if (mouse.button==1) {
+			// Keep track of where in the object we clicked
+			// so we can move it smoothly (see mousemove)
+			this.dragoffx = mx - mySel.x;
+			this.dragoffy = my - mySel.y;
+			this.dragging = true;
+			this.selection = mySel;
+			this.valid = false;
+		}
+		return;
+	}
+	// pass the click to the area:
+	var modifiers = [];
+	var buttons = [];
+	mySel.handle_mouse_click(mouse.button, true, mx, my, modifiers, buttons);
+	return;
+};
+
+CanvasState.prototype.on_mouseup = function(e) {
+	// if not handling it ourselves, pass it down:
+	var mouse = this.getMouse(e),
+			mx = mouse.x,
+			my = mouse.y;
+	if (!this.dragging && !this.resizeDragging) {
+		var mySel = this.findShape(mx, my);
+		if (mySel!=null) {
+			var modifiers = [];
+			var buttons = [];
+			mySel.handle_mouse_click(mouse.button, false, mx, my, modifiers, buttons);
+		}
+	}
+
+	this.dragging = false;
+	this.resizeDragging = false;
+	this.expectResize = -1;
+	if (this.selection !== null) {
+		this.canvas.style.cursor = 'auto';
+		this.selection = null;
+		this.valid = false;
+	}
+};
+
+CanvasState.prototype.on_selectstart = function(e) {
+	e.preventDefault();
+	return false;
+};
+
+
+CanvasState.prototype.registerEventListener = function(event_type, useCapture) {
+	var self = this;
+	var fn_name = "on_"+event_type;
+	var handler = self[fn_name];
+	var fn = function(e) {
+		handler.call(self, e);
+	};
+	this.event_listeners[event_type] = fn;
+	this.canvas["on"+event_type] = fn;
+};
+
+
+CanvasState.prototype.destroy = function() {
+	"use strict";
+	if (this.canvas==null)
+		return;
+	var event_types = Object.keys(this.event_listeners);
+	for (var i = 0; i < event_types.length; i += 1) {
+		var event_type = event_types[i];
+		this.canvas["on"+event_type] = null;
+	}
+	clearInterval(this.repaint_timer);
+	this.canvas = null;
+	this.valid = true;
+	this.shapes = {};
+	this.stacking = 0;
+	this.dragging = false;
+	this.resizeDragging = false;
+	this.expectResize = -1;
+	this.selection = null;
+	this.dragoffx = 0;
+	this.dragoffy = 0;
+	this.ctx.clearRect(0, 0, this.width, this.height);
+	this.width = 0;
+	this.height = 0;
+	this.ctx = null;
 };
 
 CanvasState.prototype.clear = function() {
