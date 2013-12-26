@@ -24,7 +24,7 @@ function Shape(state, x, y, w, h, fill) {
 	this.h = h || 1;
 	this.fill = fill || '#AAAAAA';
 	this.geometry_cb = null;
-}
+};
 
 // Draws this shape to a given context
 Shape.prototype.draw = function(ctx, optionalColor) {
@@ -88,12 +88,16 @@ Shape.prototype.draw_selection = function(ctx, optionalColor) {
 };
 
 // Determine if a point is inside the shape's bounds
-Shape.prototype.contains = function(mx, my) {
+function rectangle_contains(rect, mx, my) {
 	"use strict";
 	// All we have to do is make sure the Mouse X,Y fall in the area between
 	// the shape's X and (X + Height) and its Y and (Y + Height)
-	return	(this.x <= mx) && (this.x + this.w >= mx) &&
-					(this.y <= my) && (this.y + this.h >= my);
+	return	(rect.x <= mx) && (rect.x + rect.w >= mx) &&
+					(rect.y <= my) && (rect.y + rect.h >= my);
+};
+Shape.prototype.contains = function(mx, my) {
+	"use strict";
+	return rectangle_contains(this.get_window_geometry(), mx, my);
 };
 
 // The whole shape is the grab area:
@@ -101,10 +105,10 @@ Shape.prototype.is_grab_area = Shape.prototype.contains;
 
 
 //The geometry of this shape:
-Shape.prototype.get_window_geometry = function(ctx) {
+Shape.prototype.get_window_geometry = function() {
 	"use strict";
 	return { x : this.x, y : this.y, w : this.w, h : this.h };
-}
+};
 
 
 Shape.prototype.move_resize = function(x, y, w, h) {
@@ -128,21 +132,26 @@ Shape.prototype.move_resize = function(x, y, w, h) {
 		this.geometry_cb(this);
 	}
 	//show("move_resize("+x+", "+y+", "+w+", "+h+") new geometry="+this.get_window_geometry().toSource());
-}
+};
 
 Shape.prototype.move = function(x, y) {
 	"use strict";
 	this.move_resize(x, y, this.w, this.h);
-}
+};
 
 Shape.prototype.resize = function(w, h) {
 	"use strict";
 	// when resizing, a negative width or height is possible
 	// in that case, swap position:
 	this.move_resize(this.x, this.y, w, h);
-}
+};
 
-
+Shape.prototype.handle_mouse_click = function(button, pressed, mx, my, modifiers, buttons) {
+	// nothing here
+};
+Shape.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
+	// nothing here
+};
 
 
 function CanvasState(canvas) {
@@ -210,17 +219,23 @@ function CanvasState(canvas) {
 			return;
 		}
 		mouse = myState.getMouse(e);
-		if (mouse.button!=0)
-			return;
 		show("mouse="+mouse.toSource());
 		mx = mouse.x;
 		my = mouse.y;
 
-		shapes = myState.shapes;
-		l = shapes.length;
-		for (i = l-1; i >= 0; i -= 1) {
-			if (shapes[i].is_grab_area(mx, my)) {
-				mySel = shapes[i];
+		mySel = myState.findShape(mx, my);
+		if (mySel==null) {
+			// havent returned means we have failed to select anything.
+			// If there was an object selected, we deselect it
+			if (myState.selection) {
+				myState.selection = null;
+				myState.valid = false; // Need to clear the old selection border
+			}
+			return;
+		}
+		if (mySel.is_grab_area(mx, my)) {
+			// only left click does anything here:
+			if (mouse.button==1) {
 				// Keep track of where in the object we clicked
 				// so we can move it smoothly (see mousemove)
 				myState.dragoffx = mx - mySel.x;
@@ -228,27 +243,29 @@ function CanvasState(canvas) {
 				myState.dragging = true;
 				myState.selection = mySel;
 				myState.valid = false;
-				return;
 			}
+			return;
 		}
-		// havent returned means we have failed to select anything.
-		// If there was an object selected, we deselect it
-		if (myState.selection) {
-			myState.selection = null;
-			myState.valid = false; // Need to clear the old selection border
-		}
+		// pass the click to the area:
+		var modifiers = [];
+		var buttons = [];
+		mySel.handle_mouse_click(mouse.button, true, mx, my, modifiers, buttons);
+		return;
 	}, true);
+
 	canvas.addEventListener('mousemove', function(e) {
 		var mouse = myState.getMouse(e),
 				mx = mouse.x,
 				my = mouse.y,
-				oldx, oldy, i, cur;
+				handled = false,
+				i, cur;
+		//show("mousemove mouse="+mouse.toSource()+", dragging="+myState.dragging);
 		if (myState.dragging){
-			mouse = myState.getMouse(e);
 			// We don't want to drag the object by its top-left corner, we want to drag it
 			// from where we clicked. Thats why we saved the offset and use it here
 			myState.selection.move(mouse.x - myState.dragoffx, mouse.y - myState.dragoffy);
 			myState.valid = false; // Something's dragging so we must redraw
+			handled = true;
 		} else if (myState.resizeDragging) {
 			// time ro resize!
 			var shape = myState.selection;
@@ -284,6 +301,7 @@ function CanvasState(canvas) {
 					break;
 			}
 			myState.valid = false; // Something's dragging so we must redraw
+			handled = true;
 		}
 
 		// if there's a selection see if we grabbed one of the selection handles
@@ -302,44 +320,56 @@ function CanvasState(canvas) {
 					// we found one!
 					myState.expectResize = i;
 					myState.valid = false;
+					handled = true;
 
-					switch (i) {
-						case 0:
-							this.style.cursor='nw-resize';
-							break;
-						case 1:
-							this.style.cursor='n-resize';
-							break;
-						case 2:
-							this.style.cursor='ne-resize';
-							break;
-						case 3:
-							this.style.cursor='w-resize';
-							break;
-						case 4:
-							this.style.cursor='e-resize';
-							break;
-						case 5:
-							this.style.cursor='sw-resize';
-							break;
-						case 6:
-							this.style.cursor='s-resize';
-							break;
-						case 7:
-							this.style.cursor='se-resize';
-							break;
-					}
-					return;
+					var sc = {
+							0 : 'nw-resize',
+							1 : 'n-resize',
+							2 : 'ne-resize',
+							3 : 'w-resize',
+							4 : 'e-resize',
+							5 : 'sw-resize',
+							6 : 's-resize',
+							7 : 'se-resize'
+					}[i];
+					if (sc!=undefined)
+						this.style.cursor = sc;
+					break;
 				}
-
 			}
-			// not over a selection box, return to normal
-			myState.resizeDragging = false;
-			myState.expectResize = -1;
-			this.style.cursor = 'auto';
+			if (!handled) {
+				// not over a selection box, return to normal
+				myState.resizeDragging = false;
+				myState.expectResize = -1;
+				this.style.cursor = 'auto';
+			}
+		}
+
+		// pass move to the area:
+		if (!handled) {
+			var mySel = myState.findShape(mx, my);
+			if (mySel!=null) {
+				var modifiers = [];
+				var buttons = [];
+				mySel.handle_mouse_move(mx, my, modifiers, buttons);
+			}
 		}
 	}, true);
+
 	canvas.addEventListener('mouseup', function(e) {
+		// if not handling it ourselves, pass it down:
+		var mouse = myState.getMouse(e),
+				mx = mouse.x,
+				my = mouse.y;
+		if (!myState.dragging && !myState.resizeDragging) {
+			var mySel = myState.findShape(mx, my);
+			if (mySel!=null) {
+				var modifiers = [];
+				var buttons = [];
+				mySel.handle_mouse_click(mouse.button, false, mx, my, modifiers, buttons);
+			}
+		}
+		
 		myState.dragging = false;
 		myState.resizeDragging = false;
 		myState.expectResize = -1;
@@ -368,6 +398,18 @@ function CanvasState(canvas) {
 	this.selectionBoxColor = 'darkred';
 	this.interval = 30;
 	setInterval(function() { myState.draw(); }, myState.interval);
+};
+
+CanvasState.prototype.findShape = function(mx, my) {
+	var mySel;
+	var l = this.shapes.length;
+	var i;
+	for (i = l-1; i >= 0; i -= 1) {
+		mySel = this.shapes[i];
+		if (mySel.contains(mx, my))
+			return mySel;
+	}
+	return null;
 }
 
 CanvasState.prototype.addShape = function(shape) {
@@ -459,9 +501,10 @@ CanvasState.prototype.getMouse = function(e) {
 
 	var mbutton = 0;
 	if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
-        mbutton = Math.max(0, e.which-2);
-    else if ("button" in e)  // IE, Opera
-        mbutton = Math.max(0, e.button - 1);
+        mbutton = Math.max(0, e.which);
+    else if ("button" in e)  // IE, Opera (zero based)
+        mbutton = Math.max(0, e.button)+1;
+	//show("getmouse: button="+mbutton+", which="+e.which+", button="+e.button);
 
 	// We return a simple javascript object (a hash) with x and y defined
 	return {x: mx, y: my, button: mbutton};
@@ -470,4 +513,3 @@ CanvasState.prototype.getMouse = function(e) {
 // If you dont want to use <body onLoad='init()'>
 // You could uncomment this init() reference and place the script reference inside the body tag
 //init();
-

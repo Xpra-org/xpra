@@ -8,7 +8,8 @@
  */
 
 
-function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, client_properties, geometry_cb) {
+function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, client_properties,
+		geometry_cb, mouse_move_cb, mouse_click_cb) {
 	"use strict";
 	// This is a very simple and unsafe constructor. All we're doing is checking if the values exist.
 	// "x || 0" just means "if there is a value for x, use that. Otherwise use 0."
@@ -40,8 +41,10 @@ function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, clien
 	this.metadata = metadata;
 	this.override_redirect = override_redirect;
 	this.client_properties = client_properties;
-	this.geometry_cb = geometry_cb;
-}
+	this.geometry_cb = geometry_cb || null;
+	this.mouse_move_cb = mouse_move_cb || null;
+	this.mouse_click_cb = mouse_click_cb || null;
+};
 
 XpraWindow.prototype.move_resize = Shape.prototype.move_resize;
 XpraWindow.prototype.move = Shape.prototype.move;
@@ -60,6 +63,19 @@ XpraWindow.prototype.get_internal_geometry = function(ctx) {
 			 h : this.image.height };
 };
 
+XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modifiers, buttons) {
+	var igeom = this.get_internal_geometry();
+	if (this.mouse_click_cb!=null && rectangle_contains(igeom, mx, my)) {
+		this.mouse_click_cb(this, button, pressed, mx, my, modifiers, buttons);
+	}
+};
+
+XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
+	var igeom = this.get_internal_geometry();
+	if (this.mouse_move_cb!=null && rectangle_contains(igeom, mx, my)) {
+		this.mouse_move_cb(this, mx, my, modifiers, buttons);
+	}
+};
 
 // Draws this shape to a given context
 XpraWindow.prototype.draw = function(ctx) {
@@ -186,7 +202,7 @@ XpraWindow.prototype.destroy = function destroy() {
 		canvas_state.removeShape(this.shape);
 		this.shape = null;
 	}
-}
+};
 
 // Determine if a point is inside the window's contents
 XpraWindow.prototype.contains = function(mx, my) {

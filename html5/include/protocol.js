@@ -24,7 +24,7 @@ var api = {},         // Public API
 	raw_packets = {},
 	packet_handlers = {},
 	log_packets = true,
-	no_log_packet_types = ["ping_echo", "key-action", "damage-sequence", "configure-window"];
+	no_log_packet_types = ["ping_echo", "key-action", "damage-sequence", "configure-window", "pointer-position"];
 
 
 function debug(msg) {

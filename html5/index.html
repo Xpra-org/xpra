@@ -196,14 +196,23 @@
 	            var geom = win.get_internal_geometry();
 	            var wid = window_to_id[win];
 	            protocol.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
-	        }
+	        };
+			function mouse_move(win, x, y, modifiers, buttons) {
+	            var wid = window_to_id[win];
+		        protocol.send(["pointer-position", wid, [x, y], modifiers, buttons]);
+			};
+			function mouse_click(win, button, pressed, x, y, modifiers, buttons) {
+	            var wid = window_to_id[win];
+	            protocol.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
+			};
 
 			function get_client_properties(win) {
 				return {"encodings.rgb_formats" : RGB_FORMATS};
-			}
+			};
 
 			function make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties) {
-				var win = new XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, client_properties, window_geometry_changed);
+				var win = new XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, client_properties,
+						window_geometry_changed, mouse_move, mouse_click);
 				//show("make_new_window("+wid+", ..)="+window);
 				id_to_window[wid] = win;
 				window_to_id[win] = wid;
@@ -483,6 +492,11 @@
 				protocol.send(["hello", hello]);
 			}
 
+			function force_refresh() {
+				if (protocol!=null) {
+		        	protocol.send(["buffer-refresh", -1, true, 95]);
+				}
+			}
 
 			function init() {
 				"use strict";
@@ -504,6 +518,7 @@
 			<form onsubmit="return false;">
 				<fieldset>
 				<button id="connect" onclick="start();">Connect</button>
+				<button id="refresh" onclick="force_refresh();">Refresh</button>
 				<br />
 				</fieldset>
 				<canvas id="screen" width="1024" height="600"></canvas>
