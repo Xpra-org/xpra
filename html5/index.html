@@ -25,6 +25,7 @@
 		<script type="text/javascript" src="include/protocol.js"></script>
 		<script type="text/javascript" src="include/keycodes.js"></script>
 		<script type="text/javascript" src="include/shapes.js"></script>
+		<script type="text/javascript" src="include/window.js"></script>
 
 		<script type="text/javascript">
 			var protocol;
@@ -34,45 +35,33 @@
 			var focus = null;
 
 			var OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
-
 			var RGB_FORMATS = ["RGBX", "RGBA"];
 			var canvas_state;
 
 			var caps_lock = null;
+			var alt_modifier = null;
+			var meta_modifier = null;
 
-			function get_event_modifiers(event) {
-				var modifiers = [];
+			function get_modifiers(event) {
+				//convert generic modifiers "meta" and "alt" into their x11 name:
+				var modifiers = get_event_modifiers(event);
 				//FIXME: look them up!
 				var alt = "mod1";
 				var meta = "mod1";
-				if (event.modifiers) {
-					if (event.modifiers & Event.ALT_MASK)
-						modifiers.push(alt);
-					if (event.modifiers & Event.CONTROL_MASK)
-						modifiers.push("control");
-					if (event.modifiers & Event.SHIFT_MASK)
-						modifiers.push("shift");
-					if (event.modifiers & Event.META_MASK)
-						modifiers.push(meta);
-		        } else {
-					if (event.altKey)
-						modifiers.push(alt);
-					if (event.ctrlKey)
-						modifiers.push("control");
-					if (event.metaKey)
-						modifiers.push(meta);
-					if (event.shiftKey)
-						modifiers.push("shift");
-				}
+				var index = modifiers.indexOf("alt");
+				if (index>=0)
+					modifiers[index] = alt;
+				index = modifiers.indexOf("meta");
+				if (index>=0)
+					modifiers[index] = meta;
 				return modifiers;
 			}
 
 			processKeyEvent = function(pressed, event) {
 				// MSIE hack
-				if (window.event) {
+				if (window.event)
 					event = window.event;
-				}
-				show("processKeyEvent("+pressed+", "+event+") keyCode="+event.keyCode+", charCode="+event.charCode+", which="+event.which);
+				//show("processKeyEvent("+pressed+", "+event+") keyCode="+event.keyCode+", charCode="+event.charCode+", which="+event.which);
 
 				var keyname = "";
 				var keycode = 0;
@@ -128,67 +117,6 @@
 				//show("caps_lock="+caps_lock);
 			}
 
-			function Window(x, y, w, h, metadata, override_redirect, client_properties) {
-				this.x = x;
-				this.y = y;
-				this.w = w;
-				this.h = h;
-				this.metadata = metadata;
-				this.override_redirect = override_redirect;
-				this.client_properties = client_properties;
-
-				var ctx = canvas_state.canvas.getContext('2d');
-				this.image = ctx.createImageData(w, h);
-				this.shape = new Shape(canvas_state, this.image, x, y, w, h, 'rgba(0,205,0,0.7)');
-				canvas_state.addShape(this.shape);
-
-				this.draw = function draw(x, y, width, height, coding, img_data, packet_sequence, rowstride, options) {
-					show("draw("+img_data.length+" bytes of "+coding+" data "+width+"x"+height+" at "+x+","+y+")");
-					if (coding=="rgb32") {
-						try {
-							show("options="+(options).toSource());
-						}
-						catch(e) {
-							show("options="+(options));
-						}
-						if (options!=null && options["zlib"]>0) {
-							var inflated = new Zlib.Inflate(img_data).decompress();
-							show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
-							img_data = inflated;
-						}
-						//force set alpha to 1.0
-						//for (var a=0; a<width*height; a++) {
-						//	img_data[a*4+3] = 255;
-						//}
-						var data = this.image.data;
-						var stride = this.image.width*4;
-						if (x==0 && width==this.image.width && y+height<=this.image.height) {
-							//take a shortcut: copy all lines
-							data.set(img_data, y*stride);
-							//show("image updated "+height+" full lines in one go!");
-						}
-						else {
-							//TODO: bounds checking?
-							var line;
-							var in_stride = width*4;
-							for (var i=0; i<height; i++) {
-								line = img_data.subarray(i*in_stride, in_stride);
-								data.set(line, (y+i)*stride + x*4);
-							}
-							//show("image updated in "+height+" lines..");
-						}
-					}
-					canvas_state.invalidate();
-				};
-				this.destroy = function destroy() {
-					if (this.shape!=null) {
-						canvas_state.removeShape(this.shape);
-						this.shape = null;
-					}
-				}
-				return this;
-			}
-
 			function show(text) {
 				console.log(text);
 				var msg = document.getElementById("message")
@@ -201,10 +129,33 @@
 			}
 
 			function process_startup_complete(packet) {
-				show("process_startup_complete("+packet+")");
+				show("startup complete");
 			}
 			function process_hello(packet) {
-				show("process_hello("+packet+")");
+				//show("process_hello("+packet+")");
+				show("got hello: server accepted our connection")
+				var hello = packet[1];
+				//figure out "alt" and "meta" keys: 
+		        if ("modifier_keycodes" in hello) {
+			        var modifier_keycodes = hello["modifier_keycodes"];
+			        for (var mod in modifier_keycodes) {
+			        	//show("modifier_keycode["+mod+"]="+modifier_keycodes[mod].toSource());
+			        	var keys = modifier_keycodes[mod];
+		        		for (var i=0; i<keys.length; i++) {
+		        			var key = keys[i];
+		        			//the first value is usually the integer keycode,
+		        			//the second one is the actual key name,
+		        			//doesn't hurt to test both:
+		        			for (var j=0; j<key.length; j++) {
+		    			        if ("Alt_L"==key[j])
+		    						alt_modifier = mod;
+		    			        if ("Meta_L"==key[j])
+		    						meta_modifier = mod;
+		        			}
+		        		}
+			        }
+		        }
+		        //show("alt="+alt_modifier+", meta="+meta_modifier);
 			}
 			function process_disconnect(packet) {
 				reason = packet[1];
@@ -240,15 +191,24 @@
 				this.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
 			}
 
+			function window_geometry_changed(win) {
+				//show("window_geometry_changed("+win+") geometry="+win.get_window_geometry().toSource());
+	            var geom = win.get_internal_geometry();
+	            var wid = window_to_id[win];
+	            protocol.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
+	        }
+
+			function get_client_properties(win) {
+				return {"encodings.rgb_formats" : RGB_FORMATS};
+			}
+
 			function make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties) {
-				//TODO!
-				var window = Window(x, y, w, h, metadata, override_redirect, client_properties);
-				debug("make_new_window("+wid+", ..)="+window);
-				id_to_window[wid] = window;
-				window_to_id[window] = wid;
-				//only one property we send back:
-				client_properties = {"encodings.rgb_formats" : RGB_FORMATS};
-				protocol.send(["map-window", wid, x, y, w, h, client_properties]);
+				var win = new XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, client_properties, window_geometry_changed);
+				//show("make_new_window("+wid+", ..)="+window);
+				id_to_window[wid] = win;
+				window_to_id[win] = wid;
+				geom = win.get_internal_geometry();
+				protocol.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
 				focus = wid;
 		        protocol.send(["focus", wid, []]);
 			}
@@ -267,6 +227,7 @@
 			}
 
 			function process_draw(packet) {
+				var start = new Date().getTime();
 				wid = packet[1];
 				x = packet[2];
 				y = packet[3];
@@ -282,11 +243,11 @@
 					options = {};
 				if (coding in OLD_ENCODING_NAMES_TO_NEW)
 					coding = OLD_ENCODING_NAMES_TO_NEW[coding];
-				window = id_to_window[wid];
+				var win = id_to_window[wid];
 				var decode_time = -1;
-				if (window) {
-					window.draw(x, y, width, height, coding, data, packet_sequence, rowstride, options);
-					//decode_time = 100;
+				if (win) {
+					win.paint(x, y, width, height, coding, data, packet_sequence, rowstride, options);
+					decode_time = new Date().getTime() - start;
 				}
 				this.send_damage_sequence(wid, packet_sequence, width, height, decode_time);
 			}
@@ -354,7 +315,7 @@
 			function get_DPI() {
 				var dpi_div = document.getElementById("dpi");
 				if (dpi_div != undefined) {
-					show("dpiX="+dpi_div.offsetWidth+", dpiY="+dpi_div.offsetHeight);
+					//show("dpiX="+dpi_div.offsetWidth+", dpiY="+dpi_div.offsetHeight);
 					if (dpi_div.offsetWidth>0 && dpi_div.offsetHeight>0)
 						return Math.round((dpi_div.offsetWidth + dpi_div.offsetHeight) / 2.0);
 				}
@@ -484,8 +445,9 @@
 				protocol.set_packet_handler("open", process_open);
 				protocol.set_packet_handler("close", process_close);
 				protocol.set_packet_handler("error", process_error);
-				protocol.open("ws://localhost:8080/");
-				show("start() protocol="+protocol);
+				var uri = "ws://localhost:8080/";
+				protocol.open(uri);
+				show("opening connection to "+uri);
 			}
 			function process_close(packet) {
 				show("process_close("+packet+")");
@@ -494,7 +456,7 @@
 				show("process_error("+packet+")");
 			}
 			function process_open(packet) {
-				show("process_open("+packet+")");
+				show("connected to server - sending hello");
 				var packet_handlers = {
 					"startup-complete"		: process_startup_complete,
 					"hello"					: process_hello,
@@ -517,7 +479,7 @@
 				}
 
 				var hello = make_hello();
-				show("hello="+hello);
+				//show("hello="+hello);
 				protocol.send(["hello", hello]);
 			}
 
@@ -538,11 +500,15 @@
 	</head>
 
 	<body onload="init()">
-		<button id="connect" onclick="start()">Connect</button>
-		<br />
-		<canvas id="screen" width="1024" height="600"></canvas>
+		<div>
+			<form onsubmit="return false;">
+				<fieldset>
+				<button id="connect" onclick="start();">Connect</button>
+				<br />
+				</fieldset>
+				<canvas id="screen" width="1024" height="600"></canvas>
+			</form>
 		</div>
-		<br />
 		<div id="message">
 		</div>
 		<div id="dpi" style="width: 1in; height: 1in; left: -100%; top: -100%; position: absolute;">

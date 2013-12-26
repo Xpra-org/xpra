@@ -83,3 +83,28 @@ CHARCODE_TO_NAME = {
 for (var i=0; i<26; i++) {
 	CHARCODE_TO_NAME[65+i] = "abcdefghijklmnopqrstuvwxyz"[i];
 }
+
+
+function get_event_modifiers(event) {
+	var modifiers = [];
+	if (event.modifiers) {
+		if (event.modifiers & Event.ALT_MASK)
+			modifiers.push("alt");
+		if (event.modifiers & Event.CONTROL_MASK)
+			modifiers.push("control");
+		if (event.modifiers & Event.SHIFT_MASK)
+			modifiers.push("shift");
+		if (event.modifiers & Event.META_MASK)
+			modifiers.push("meta");
+    } else {
+		if (event.altKey)
+			modifiers.push("alt");
+		if (event.ctrlKey)
+			modifiers.push("control");
+		if (event.metaKey)
+			modifiers.push("meta");
+		if (event.shiftKey)
+			modifiers.push("shift");
+	}
+	return modifiers;
+}

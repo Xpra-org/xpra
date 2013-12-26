@@ -22,7 +22,9 @@ var api = {},         // Public API
 	ws,
 	buf = "",
 	raw_packets = {},
-	packet_handlers = {};
+	packet_handlers = {},
+	log_packets = true,
+	no_log_packet_types = ["ping_echo", "key-action", "damage-sequence", "configure-window"];
 
 
 function debug(msg) {
@@ -214,7 +216,8 @@ function send(packet) {
 	data.set(header);
 	data.set(cdata, 8);
 
-	show("send("+packet+") "+data.byteLength+" bytes in packet for: "+bdata);
+	if (log_packets && no_log_packet_types.indexOf(packet[0])<0)
+		show("send("+packet+") "+data.byteLength+" bytes in packet for: "+bdata.substring(0, 32)+"..");
 	ws.send(data);
 }
 

@@ -12,27 +12,23 @@
 
 // Constructor for Shape objects to hold data for all drawn objects.
 // For now they will just be defined as rectangles.
-function Shape(state, image, x, y, w, h, fill) {
+function Shape(state, x, y, w, h, fill) {
 	"use strict";
 	// This is a very simple and unsafe constructor. All we're doing is checking if the values exist.
 	// "x || 0" just means "if there is a value for x, use that. Otherwise use 0."
 	// But we aren't checking anything else! We could put "Lalala" for the value of x
 	this.state = state;
-	this.image = image;
 	this.x = x || 0;
 	this.y = y || 0;
 	this.w = w || 1;
 	this.h = h || 1;
 	this.fill = fill || '#AAAAAA';
+	this.geometry_cb = null;
 }
 
 // Draws this shape to a given context
 Shape.prototype.draw = function(ctx, optionalColor) {
 	"use strict";
-	if (this.image!=null) {
-		ctx.putImageData(this.image, this.x, this.y);
-		return;
-	}
 	ctx.fillStyle = this.fill;
 	ctx.fillRect(this.x, this.y, this.w, this.h);
 	if (this.state.selection === this) {
@@ -100,6 +96,55 @@ Shape.prototype.contains = function(mx, my) {
 					(this.y <= my) && (this.y + this.h >= my);
 };
 
+// The whole shape is the grab area:
+Shape.prototype.is_grab_area = Shape.prototype.contains;
+
+
+//The geometry of this shape:
+Shape.prototype.get_window_geometry = function(ctx) {
+	"use strict";
+	return { x : this.x, y : this.y, w : this.w, h : this.h };
+}
+
+
+Shape.prototype.move_resize = function(x, y, w, h) {
+	"use strict";
+	// when resizing, a negative width or height is possible
+	// in that case, swap position:
+	if (w < 0) {
+		w = -w;
+		x -= w;
+	}
+	if (h < 0) {
+		h = -h;
+		y -= h;
+	}
+	// try to honour position, but make sure we don't put the window decorations at negative coords:
+	this.x = Math.max((x || 0), 0);
+	this.y = Math.max((y || 0), 0);
+	this.w = Math.max((w || this.w), 1);
+	this.h = Math.max((h || this.h), 1);
+	if (this.geometry_cb!=null) {
+		this.geometry_cb(this);
+	}
+	//show("move_resize("+x+", "+y+", "+w+", "+h+") new geometry="+this.get_window_geometry().toSource());
+}
+
+Shape.prototype.move = function(x, y) {
+	"use strict";
+	this.move_resize(x, y, this.w, this.h);
+}
+
+Shape.prototype.resize = function(w, h) {
+	"use strict";
+	// when resizing, a negative width or height is possible
+	// in that case, swap position:
+	this.move_resize(this.x, this.y, w, h);
+}
+
+
+
+
 function CanvasState(canvas) {
 	"use strict";
 	// **** First some setup! ****
@@ -165,12 +210,16 @@ function CanvasState(canvas) {
 			return;
 		}
 		mouse = myState.getMouse(e);
+		if (mouse.button!=0)
+			return;
+		show("mouse="+mouse.toSource());
 		mx = mouse.x;
 		my = mouse.y;
+
 		shapes = myState.shapes;
 		l = shapes.length;
 		for (i = l-1; i >= 0; i -= 1) {
-			if (shapes[i].contains(mx, my)) {
+			if (shapes[i].is_grab_area(mx, my)) {
 				mySel = shapes[i];
 				// Keep track of where in the object we clicked
 				// so we can move it smoothly (see mousemove)
@@ -198,54 +247,42 @@ function CanvasState(canvas) {
 			mouse = myState.getMouse(e);
 			// We don't want to drag the object by its top-left corner, we want to drag it
 			// from where we clicked. Thats why we saved the offset and use it here
-			myState.selection.x = mouse.x - myState.dragoffx;
-			myState.selection.y = mouse.y - myState.dragoffy;
+			myState.selection.move(mouse.x - myState.dragoffx, mouse.y - myState.dragoffy);
 			myState.valid = false; // Something's dragging so we must redraw
 		} else if (myState.resizeDragging) {
 			// time ro resize!
-			oldx = myState.selection.x;
-			oldy = myState.selection.y;
+			var shape = myState.selection;
+			var geom = shape.get_window_geometry();
 
 			// 0  1  2
 			// 3     4
 			// 5  6  7
 			switch (myState.expectResize) {
 				case 0:
-					myState.selection.x = mx;
-					myState.selection.y = my;
-					myState.selection.w += oldx - mx;
-					myState.selection.h += oldy - my;
+					shape.move_resize(mx, my, geom.w + geom.x - mx, geom.h + geom.y - my);
 					break;
 				case 1:
-					myState.selection.y = my;
-					myState.selection.h += oldy - my;
+					shape.move_resize(geom.x, my, geom.w, geom.h + geom.y - my);
 					break;
 				case 2:
-					myState.selection.y = my;
-					myState.selection.w = mx - oldx;
-					myState.selection.h += oldy - my;
+					shape.move_resize(geom.x, my, geom.w + mx - geom.x, geom.h + geom.y - my);
 					break;
 				case 3:
-					myState.selection.x = mx;
-					myState.selection.w += oldx - mx;
+					shape.move_resize(mx, geom.y, geom.w + geom.x - mx, geom.h);
 					break;
 				case 4:
-					myState.selection.w = mx - oldx;
+					shape.move_resize(geom.x, geom.y, mx - geom.x, geom.h);
 					break;
 				case 5:
-					myState.selection.x = mx;
-					myState.selection.w += oldx - mx;
-					myState.selection.h = my - oldy;
+					shape.move_resize(mx, geom.y, geom.w + geom.x - mx, my - geom.y);
 					break;
 				case 6:
-					myState.selection.h = my - oldy;
+					shape.move_resize(geom.x, geom.y, geom.w, my - geom.y);
 					break;
 				case 7:
-					myState.selection.w = mx - oldx;
-					myState.selection.h = my - oldy;
+					shape.move_resize(geom.x, geom.y, mx - geom.x, my - geom.y);
 					break;
 			}
-
 			myState.valid = false; // Something's dragging so we must redraw
 		}
 
@@ -307,24 +344,24 @@ function CanvasState(canvas) {
 		myState.resizeDragging = false;
 		myState.expectResize = -1;
 		if (myState.selection !== null) {
-			if (myState.selection.w < 0) {
-					myState.selection.w = -myState.selection.w;
-					myState.selection.x -= myState.selection.w;
-			}
-			if (myState.selection.h < 0) {
-					myState.selection.h = -myState.selection.h;
-					myState.selection.y -= myState.selection.h;
-			}
+			this.style.cursor = 'auto';
+			myState.selection = null;
+			myState.valid = false;
 		}
 	}, true);
-	// double click for making new shapes
+
+	// disable right click menu:
+	window.oncontextmenu = function(e) {
+	    //showCustomMenu();
+	    return false;
+	}
+
+	// double click
 	canvas.addEventListener('dblclick', function(e) {
-		var mouse = myState.getMouse(e);
-		myState.addShape(new Shape(myState, mouse.x - 10, mouse.y - 10, 20, 20, 'rgba(0,255,0,.6)'));
+		//TODO!
 	}, true);
 
 	// **** Options! ****
-
 	this.selectionColor = '#CC0000';
 	this.selectionWidth = 2;
 	this.selectionBoxSize = 6;
@@ -344,8 +381,8 @@ CanvasState.prototype.removeShape = function(shape) {
 	var index = this.shapes.indexOf(shape);
 	if (index > -1) {
 		this.shapes.splice(index, 1);
+		this.valid = false;
 	}
-	this.valid = false;
 };
 
 CanvasState.prototype.clear = function() {
@@ -420,8 +457,14 @@ CanvasState.prototype.getMouse = function(e) {
 	mx = e.pageX - offsetX;
 	my = e.pageY - offsetY;
 
+	var mbutton = 0;
+	if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
+        mbutton = Math.max(0, e.which-2);
+    else if ("button" in e)  // IE, Opera
+        mbutton = Math.max(0, e.button - 1);
+
 	// We return a simple javascript object (a hash) with x and y defined
-	return {x: mx, y: my};
+	return {x: mx, y: my, button: mbutton};
 };
 
 // If you dont want to use <body onLoad='init()'>
