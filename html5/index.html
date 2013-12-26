@@ -277,9 +277,12 @@
 			}
 
 			function process_lost_window(packet) {
-				wid = packet[1];
-				win = id_to_window[wid];
-				win.destroy();
+				var wid = packet[1];
+				var win = id_to_window[wid];
+				if (win!=null) {
+					win.destroy();
+					check_focus();
+				}
 			}
 
 			function process_window_resized(packet) {

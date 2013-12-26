@@ -170,7 +170,7 @@ XpraWindow.prototype.draw_selection = function(ctx) {
 
 // Updates the window image with new pixel data
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options) {
-	show("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+")");
+	//show("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+")");
 	if (coding=="rgb32") {
 		//show("options="+(options).toSource());
 		if (options!=null && options["zlib"]>0) {
@@ -205,9 +205,9 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 
 // Close the window and free all resources
 XpraWindow.prototype.destroy = function destroy() {
-	if (this.shape!=null) {
-		canvas_state.removeShape(this.shape);
-		this.shape = null;
+	if (this.state!=null) {
+		this.state.removeShape(this);
+		this.state = null;
 	}
 };
 
