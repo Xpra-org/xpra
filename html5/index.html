@@ -32,7 +32,7 @@
 
 			var id_to_window = {};
 			var window_to_id = {};
-			var focus = null;
+			var focus = -1;
 
 			var OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
 			var RGB_FORMATS = ["RGBX", "RGBA"];
@@ -86,19 +86,21 @@
 				if ((caps_lock && shift) || (!caps_lock && !shift))
 					str = str.toLowerCase();
 
-				//show("keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
-				if (focus != null) {
-			        packet = ["key-action", focus, keyname, pressed, modifiers, keyval, str, keycode, group];
-        			protocol.send(packet)
-        		}
+				var win = canvas_state.topOfStack();
+				if (win != null) {
+					//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
+					var wid = window_to_id[win];
+					packet = ["key-action", wid, keyname, pressed, modifiers, keyval, str, keycode, group];
+					protocol.send(packet);
+				}
 			}
 
 			document.onkeydown = function(event) {
 				processKeyEvent(true, event);
-			}
+			};
 			document.onkeyup = function(event) {
 				processKeyEvent(false, event);
-			}
+			};
 			document.onkeypress = function(event) {
 				var keycode = 0;
 				if (event.which)
@@ -115,7 +117,7 @@
 				else if (keycode>=65 && keycode<=90 && !shift)
 					caps_lock = true;
 				//show("caps_lock="+caps_lock);
-			}
+			};
 
 			function show(text) {
 				console.log(text);
@@ -136,26 +138,26 @@
 				show("got hello: server accepted our connection")
 				var hello = packet[1];
 				//figure out "alt" and "meta" keys: 
-		        if ("modifier_keycodes" in hello) {
-			        var modifier_keycodes = hello["modifier_keycodes"];
-			        for (var mod in modifier_keycodes) {
-			        	//show("modifier_keycode["+mod+"]="+modifier_keycodes[mod].toSource());
-			        	var keys = modifier_keycodes[mod];
-		        		for (var i=0; i<keys.length; i++) {
-		        			var key = keys[i];
-		        			//the first value is usually the integer keycode,
-		        			//the second one is the actual key name,
-		        			//doesn't hurt to test both:
-		        			for (var j=0; j<key.length; j++) {
-		    			        if ("Alt_L"==key[j])
-		    						alt_modifier = mod;
-		    			        if ("Meta_L"==key[j])
-		    						meta_modifier = mod;
-		        			}
-		        		}
-			        }
-		        }
-		        //show("alt="+alt_modifier+", meta="+meta_modifier);
+				if ("modifier_keycodes" in hello) {
+					var modifier_keycodes = hello["modifier_keycodes"];
+					for (var mod in modifier_keycodes) {
+						//show("modifier_keycode["+mod+"]="+modifier_keycodes[mod].toSource());
+						var keys = modifier_keycodes[mod];
+						for (var i=0; i<keys.length; i++) {
+							var key = keys[i];
+							//the first value is usually the integer keycode,
+							//the second one is the actual key name,
+							//doesn't hurt to test both:
+							for (var j=0; j<key.length; j++) {
+								if ("Alt_L"==key[j])
+									alt_modifier = mod;
+								if ("Meta_L"==key[j])
+									meta_modifier = mod;
+							}
+						}
+					}
+				}
+				//show("alt="+alt_modifier+", meta="+meta_modifier);
 			}
 			function process_disconnect(packet) {
 				reason = packet[1];
@@ -193,18 +195,31 @@
 
 			function window_geometry_changed(win) {
 				//show("window_geometry_changed("+win+") geometry="+win.get_window_geometry().toSource());
-	            var geom = win.get_internal_geometry();
-	            var wid = window_to_id[win];
-	            protocol.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
-	        };
+				var geom = win.get_internal_geometry();
+				var wid = window_to_id[win];
+				protocol.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
+			};
 			function mouse_move(win, x, y, modifiers, buttons) {
-	            var wid = window_to_id[win];
-		        protocol.send(["pointer-position", wid, [x, y], modifiers, buttons]);
+				var wid = window_to_id[win];
+				protocol.send(["pointer-position", wid, [x, y], modifiers, buttons]);
 			};
 			function mouse_click(win, button, pressed, x, y, modifiers, buttons) {
-	            var wid = window_to_id[win];
-	            protocol.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
+				var wid = window_to_id[win];
+				check_focus();
+				protocol.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
 			};
+
+			function check_focus() {
+				var wid = -1;
+				var win = canvas_state.topOfStack();
+				if (win != null)
+					wid = window_to_id[win];
+				show("check_focus() wid="+wid+", focus="+wid);
+				if (wid!=focus) {
+					focus = wid;
+					protocol.send(["focus", focus, []]);
+				}
+			}
 
 			function get_client_properties(win) {
 				return {"encodings.rgb_formats" : RGB_FORMATS};
@@ -219,7 +234,7 @@
 				geom = win.get_internal_geometry();
 				protocol.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
 				focus = wid;
-		        protocol.send(["focus", wid, []]);
+				protocol.send(["focus", focus, []]);
 			}
 
 			function process_new_window(packet) {
@@ -263,8 +278,8 @@
 
 			function process_lost_window(packet) {
 				wid = packet[1];
-				window = id_to_window[wid];
-				window.destroy();
+				win = id_to_window[wid];
+				win.destroy();
 			}
 
 			function process_window_resized(packet) {
@@ -360,13 +375,13 @@
 				var dpi = get_DPI();
 				/*
 				equivallent GTK code:
-                monitor = plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm
-                monitors.append(monitor)
+				monitor = plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm
+				monitors.append(monitor)
 
-	            screen = (screen.make_display_name(), screen.get_width(), screen.get_height(),
-                        screen.get_width_mm(), screen.get_height_mm(),
-                        monitors,
-                        work_x, work_y, work_width, work_height)
+				screen = (screen.make_display_name(), screen.get_width(), screen.get_height(),
+						screen.get_width_mm(), screen.get_height_mm(),
+						monitors,
+						work_x, work_y, work_width, work_height)
 				*/
 				var wmm = Math.round(canvas.width*25.4/dpi);
 				var hmm = Math.round(canvas.height*25.4/dpi);
@@ -494,7 +509,7 @@
 
 			function force_refresh() {
 				if (protocol!=null) {
-		        	protocol.send(["buffer-refresh", -1, true, 95]);
+					protocol.send(["buffer-refresh", -1, true, 95]);
 				}
 			}
 

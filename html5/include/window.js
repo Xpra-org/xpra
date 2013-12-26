@@ -17,10 +17,24 @@ function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, clien
 	//keep reference to the canvas:
 	this.state = canvas_state;
 
+	//xpra specific attributes:
+	this.metadata = metadata;
+	this.override_redirect = override_redirect;
+	this.client_properties = client_properties;
+	this.geometry_cb = geometry_cb || null;
+	this.mouse_move_cb = mouse_move_cb || null;
+	this.mouse_click_cb = mouse_click_cb || null;
+
 	// the space taken by window decorations:
-	this.borderWidth = 2;
 	this.borderColor = '#101028';
-	this.topBarHeight = 20;
+	if (override_redirect) {
+		this.borderWidth = 0;
+		this.topBarHeight = 0;
+	}
+	else {
+		this.borderWidth = 2;
+		this.topBarHeight = 20;
+	}
 	this.topBarColor = '#A8A8B0';
 	this.offsets = [this.borderWidth+this.topBarHeight, this.borderWidth, this.borderWidth, this.borderWidth];
 
@@ -36,14 +50,6 @@ function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, clien
 	//create the image holding the pixels (the "backing"):
 	this.image = canvas_state.canvas.getContext('2d').createImageData(w, h);
 	canvas_state.addShape(this);
-
-	//xpra specific attributes:
-	this.metadata = metadata;
-	this.override_redirect = override_redirect;
-	this.client_properties = client_properties;
-	this.geometry_cb = geometry_cb || null;
-	this.mouse_move_cb = mouse_move_cb || null;
-	this.mouse_click_cb = mouse_click_cb || null;
 };
 
 XpraWindow.prototype.move_resize = Shape.prototype.move_resize;
@@ -81,13 +87,14 @@ XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
 XpraWindow.prototype.draw = function(ctx) {
 	"use strict";
 
-	//paint window frame:
-	this.draw_frame(ctx);
-	
-	//paint the window pixels:
+	if (!this.override_redirect)
+		//draw window frame:
+		this.draw_frame(ctx);
+
+	//draw the window pixels:
 	ctx.putImageData(this.image, this.x + this.borderWidth, this.y + this.borderWidth + this.topBarHeight);
 
-	if (this.state.selection === this) {
+	if (this.state.selection === this && !this.override_redirect) {
 		//window.alert("Shape.prototype.draw_selection="+Shape.prototype.draw_selection);
 		this.draw_selection(ctx);
 	}
@@ -187,7 +194,7 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 			var line;
 			var in_stride = width*4;
 			for (var i=0; i<height; i++) {
-				line = img_data.subarray(i*in_stride, in_stride);
+				line = img_data.subarray(i*in_stride, (i+1)*in_stride);
 				data.set(line, (y+i)*stride + x*4);
 			}
 			//show("image updated in "+height+" lines..");

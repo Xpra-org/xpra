@@ -181,7 +181,8 @@ function CanvasState(canvas) {
 	// **** Keep track of state! ****
 
 	this.valid = false;			// when set to false, the canvas will redraw everything
-	this.shapes = [];			// the collection of things to be drawn
+	this.shapes = {};			// the collection of things to be drawn, the key is the stacking order (highest first)
+	this.stacking = 0;
 	this.dragging = false;		// Keep track of when we are dragging
 	this.resizeDragging = false;// Keep track of resize
 	this.expectResize = -1;		// save the # of the selection handle
@@ -219,7 +220,6 @@ function CanvasState(canvas) {
 			return;
 		}
 		mouse = myState.getMouse(e);
-		show("mouse="+mouse.toSource());
 		mx = mouse.x;
 		my = mouse.y;
 
@@ -233,6 +233,8 @@ function CanvasState(canvas) {
 			}
 			return;
 		}
+		myState.raiseShape(mySel);
+
 		if (mySel.is_grab_area(mx, my)) {
 			// only left click does anything here:
 			if (mouse.button==1) {
@@ -369,7 +371,7 @@ function CanvasState(canvas) {
 				mySel.handle_mouse_click(mouse.button, false, mx, my, modifiers, buttons);
 			}
 		}
-		
+
 		myState.dragging = false;
 		myState.resizeDragging = false;
 		myState.expectResize = -1;
@@ -382,8 +384,8 @@ function CanvasState(canvas) {
 
 	// disable right click menu:
 	window.oncontextmenu = function(e) {
-	    //showCustomMenu();
-	    return false;
+		//showCustomMenu();
+		return false;
 	}
 
 	// double click
@@ -400,12 +402,24 @@ function CanvasState(canvas) {
 	setInterval(function() { myState.draw(); }, myState.interval);
 };
 
+// Finds the shape at the top of the stack:
+CanvasState.prototype.topOfStack = function() {
+	if (this.shapes.length==0)
+		return null;
+	var keys = Object.keys(this.shapes).sort().reverse();
+	//show("topOfStack: "+keys.toSource()+" [0]="+keys[0]);
+	return this.shapes[keys[0]];
+}
+
+// Look for the shape starting at the top of the stack
 CanvasState.prototype.findShape = function(mx, my) {
 	var mySel;
-	var l = this.shapes.length;
-	var i;
-	for (i = l-1; i >= 0; i -= 1) {
-		mySel = this.shapes[i];
+	var stacking;
+	var keys = Object.keys(this.shapes).sort().reverse();
+	var l = keys.length;
+	for (i = 0; i < l; i += 1) {
+		stacking = keys[i];
+		mySel = this.shapes[stacking];
 		if (mySel.contains(mx, my))
 			return mySel;
 	}
@@ -414,16 +428,43 @@ CanvasState.prototype.findShape = function(mx, my) {
 
 CanvasState.prototype.addShape = function(shape) {
 	"use strict";
-	this.shapes.push(shape);
+	this.stacking += 1;
+	this.shapes[this.stacking] = shape;
 	this.valid = false;
 };
 
 CanvasState.prototype.removeShape = function(shape) {
 	"use strict";
-	var index = this.shapes.indexOf(shape);
-	if (index > -1) {
-		this.shapes.splice(index, 1);
-		this.valid = false;
+	var stacking;
+	var keys = Object.keys(this.shapes);
+	var l = keys.length;
+	for (i = l-1; i >= 0; i -= 1) {
+		stacking = keys[i];
+		if (shape==this.shapes[stacking]) {
+			delete this.shapes[stacking];
+			this.valid = false;
+			break;
+		}
+	}
+};
+
+CanvasState.prototype.raiseShape = function(shape) {
+	"use strict";
+	var stacking;
+	var keys = Object.keys(this.shapes);
+	var l = keys.length;
+	for (i = l-1; i >= 0; i -= 1) {
+		stacking = keys[i];
+		if (shape==this.shapes[stacking]) {
+			if (stacking==this.stacking)
+				return;
+			delete this.shapes[stacking];
+			this.stacking += 1;
+			this.shapes[this.stacking] = shape;
+			this.valid = false;
+			//show("raiseShape re stacked "+shape+" from "+stacking+" to "+this.stacking);
+			break;
+		}
 	}
 };
 
@@ -449,14 +490,17 @@ CanvasState.prototype.draw = function() {
 
 		// ** Add stuff you want drawn in the background all the time here **
 
-		// draw all shapes
-		l = shapes.length;
+		// draw all shapes in ascending stacking order:
+		var stacking;
+		var keys = Object.keys(this.shapes).sort();
+		var l = keys.length;
 		for (i = 0; i < l; i += 1) {
-			shape = shapes[i];
+			stacking = keys[i];
+			shape = shapes[stacking];
 			// We can skip the drawing of elements that have moved off the screen:
 			if (shape.x <= this.width && shape.y <= this.height &&
 					shape.x + shape.w >= 0 && shape.y + shape.h >= 0) {
-				shapes[i].draw(ctx);
+				shape.draw(ctx);
 			}
 		}
 
@@ -501,9 +545,9 @@ CanvasState.prototype.getMouse = function(e) {
 
 	var mbutton = 0;
 	if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
-        mbutton = Math.max(0, e.which);
-    else if ("button" in e)  // IE, Opera (zero based)
-        mbutton = Math.max(0, e.button)+1;
+		mbutton = Math.max(0, e.which);
+	else if ("button" in e)  // IE, Opera (zero based)
+		mbutton = Math.max(0, e.button)+1;
 	//show("getmouse: button="+mbutton+", which="+e.which+", button="+e.button);
 
 	// We return a simple javascript object (a hash) with x and y defined
