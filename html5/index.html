@@ -93,7 +93,7 @@
 					//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
 					var wid = window_to_id[win];
 					packet = ["key-action", wid, keyname, pressed, modifiers, keyval, str, keycode, group];
-					protocol.send(packet);
+					send(packet);
 				}
 			}
 
@@ -168,7 +168,7 @@
 			function process_ping(packet) {
 				var echotime = packet[1];
 				var l1=0, l2=0, l3=0;
-				protocol.send(["ping_echo", echotime, l1, l2, l3, 0]);
+				send(["ping_echo", echotime, l1, l2, l3, 0]);
 			}
 
 			function process_bell(packet) {
@@ -199,16 +199,16 @@
 				//show("window_geometry_changed("+win+") geometry="+win.get_window_geometry().toSource());
 				var geom = win.get_internal_geometry();
 				var wid = window_to_id[win];
-				protocol.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
+				send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
 			};
 			function mouse_move(win, x, y, modifiers, buttons) {
 				var wid = window_to_id[win];
-				protocol.send(["pointer-position", wid, [x, y], modifiers, buttons]);
+				send(["pointer-position", wid, [x, y], modifiers, buttons]);
 			};
 			function mouse_click(win, button, pressed, x, y, modifiers, buttons) {
 				var wid = window_to_id[win];
 				check_focus();
-				protocol.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
+				send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
 			};
 
 			function check_focus() {
@@ -219,7 +219,7 @@
 				//show("check_focus() wid="+wid+", focus="+wid);
 				if (wid!=focus) {
 					focus = wid;
-					protocol.send(["focus", focus, []]);
+					send(["focus", focus, []]);
 				}
 			}
 
@@ -234,9 +234,9 @@
 				id_to_window[wid] = win;
 				window_to_id[win] = wid;
 				geom = win.get_internal_geometry();
-				protocol.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
+				send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
 				focus = wid;
-				protocol.send(["focus", focus, []]);
+				send(["focus", focus, []]);
 			}
 
 			function process_new_window(packet) {
@@ -249,7 +249,7 @@
 
 
 			function send_damage_sequence(wid, packet_sequence, width, height, decode_time) {
-				protocol.send(["damage-sequence", packet_sequence, wid, width, height, decode_time]);
+				send(["damage-sequence", packet_sequence, wid, width, height, decode_time]);
 			}
 
 			function process_draw(packet) {
@@ -468,6 +468,19 @@
 						"named_cursors"				: false,
 						}
 			}
+
+			function send(packet) {
+				if (protocol!=null) {
+					try {
+						protocol.send(packet);
+					}
+					catch(e) {
+						show("error sending packet: "+e);
+						this.stop();
+					}
+				}
+			}
+
 			function start() {
 				show("start()");
 				if (canvas_state==null)
@@ -527,12 +540,12 @@
 
 				var hello = make_hello();
 				//show("hello="+hello);
-				protocol.send(["hello", hello]);
+				send(["hello", hello]);
 			}
 
 			function force_refresh() {
 				if (protocol!=null) {
-					protocol.send(["buffer-refresh", -1, true, 95]);
+					send(["buffer-refresh", -1, true, 95]);
 				}
 			}
 
