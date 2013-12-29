@@ -9,7 +9,7 @@
  */
 
 CHARCODE_TO_NAME = {
-	8	: "Backspace",
+	8	: "BackSpace",
 	9	: "Tab",
 	13	: "Return",
 	16	: "Shift_L",
