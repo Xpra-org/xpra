@@ -230,7 +230,7 @@
 			function make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties) {
 				var win = new XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, client_properties,
 						window_geometry_changed, mouse_move, mouse_click);
-				//show("make_new_window("+wid+", ..)="+window);
+				//show("make_new_window("+wid+", "+x+", "+y+", "+w+", "+h+", "+metadata+", "+override_redirect+", "+client_properties+")="+window);
 				id_to_window[wid] = win;
 				window_to_id[win] = wid;
 				geom = win.get_internal_geometry();
@@ -442,8 +442,11 @@
 						"encoding.transparency"		: true,
 						"encoding.client_options"	: true,
 						"encoding.csc_atoms"		: true,
-						"encoding.video_reinit"		: true,
-						"encoding.video_scaling"	: true,
+						"encoding.uses_swscale"		: false,
+						//video stuff we may handle later:
+						"encoding.video_reinit"		: false,
+						"encoding.video_scaling"	: false,
+						"encoding.csc_modes"		: [],
 						//we need zlib and lz4:
 						"zlib"						: true,
 						"compressible_cursors"		: true,
