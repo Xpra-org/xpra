@@ -423,7 +423,6 @@
 						"raw_window_icons"			: true,
 						"client_type"		   		: "HTML5",
 						"share"						: false,
-						"compression_level"	 		: 0,
 						"auto_refresh_delay"		: 500,
 						"window.raise"				: true,
 						"randr_notify"				: true,
@@ -447,15 +446,16 @@
 						"encoding.video_reinit"		: false,
 						"encoding.video_scaling"	: false,
 						"encoding.csc_modes"		: [],
-						//we need zlib and lz4:
+						//compression bits:
 						"zlib"						: true,
+						"lz4"						: false,
+						"compression_level"	 		: 1,
 						"compressible_cursors"		: true,
 						"encoding.rgb24zlib"		: true,
-						"rgb24zlib"					: true,
-						"lz4"						: false,
+						"encoding.rgb_zlib"			: true,
 						"encoding.rgb_lz4"			: false,
 						"windows"					: true,
-						//disabled for now:
+						//partial support:
 						"keyboard"					: true,
 						"xkbmap_layout"				: get_keyboard_layout(),
 						"xkbmap_keycodes"			: get_keycodes(),
