@@ -99,9 +99,11 @@
 
 			document.onkeydown = function(event) {
 				processKeyEvent(true, event);
+				return false;
 			};
 			document.onkeyup = function(event) {
 				processKeyEvent(false, event);
+				return false;
 			};
 			document.onkeypress = function(event) {
 				var keycode = 0;
@@ -119,6 +121,7 @@
 				else if (keycode>=65 && keycode<=90 && !shift)
 					caps_lock = true;
 				//show("caps_lock="+caps_lock);
+				return false;
 			};
 
 			function show(text) {
