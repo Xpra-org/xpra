@@ -174,8 +174,18 @@ XpraWindow.prototype.draw_selection = function(ctx) {
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options) {
 	//show("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+")");
 	if (coding=="rgb32") {
+		//if the pixel data is not in an array buffer already, convert it:
+		//(this happens with inlined pixel data)
+		if (typeof img_data==='string') {
+			var uint = new Uint8Array(img_data.length);
+			for(var i=0,j=img_data.length;i<j;++i) {
+				uint[i] = img_data.charCodeAt(i);
+			}
+			img_data = uint;
+		}
 		//show("options="+(options).toSource());
 		if (options!=null && options["zlib"]>0) {
+			//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
 			var inflated = new Zlib.Inflate(img_data).decompress();
 			//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
 			img_data = inflated;
@@ -199,7 +209,6 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 				line = img_data.subarray(i*in_stride, (i+1)*in_stride);
 				data.set(line, (y+i)*stride + x*4);
 			}
-			//show("image updated in "+height+" lines..");
 		}
 	}
 	this.state.invalidate();
