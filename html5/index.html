@@ -57,7 +57,7 @@
 				return modifiers;
 			}
 
-			processKeyEvent = function(pressed, event) {
+			function processKeyEvent(pressed, event) {
 				if (canvas_state==null)
 					return;
 				// MSIE hack
@@ -97,15 +97,15 @@
 				}
 			}
 
-			document.onkeydown = function(event) {
+			function onkeydown(event) {
 				processKeyEvent(true, event);
 				return false;
 			};
-			document.onkeyup = function(event) {
+			function onkeyup(event) {
 				processKeyEvent(false, event);
 				return false;
 			};
-			document.onkeypress = function(event) {
+			function onkeypress(event) {
 				var keycode = 0;
 				if (event.which)
 					keycode = event.which;
@@ -507,6 +507,10 @@
 
 			function start() {
 				show("start()");
+				document.onkeydown = onkeydown;
+				document.onkeyup = onkeyup;
+				document.onkeypress = onkeypress;
+
 				if (canvas_state==null)
 					canvas_state = new CanvasState(document.getElementById('screen'));
 				protocol = new Protocol();
@@ -522,6 +526,9 @@
 				id_to_window = {};
 				window_to_id = {};
 				focus = -1;
+				document.onkeydown = null;
+				document.onkeyup = null;
+				document.onkeypress = null;
 				if (protocol!=null) {
 					protocol.close();
 					protocol = null;
