@@ -137,8 +137,26 @@
 			}
 			function process_hello(packet) {
 				//show("process_hello("+packet+")");
-				show("got hello: server accepted our connection")
 				var hello = packet[1];
+				version = hello["version"];
+				try {
+					var vparts = version.split(".");
+					var vno = [];
+					for (var i=0; i<vparts.length;i++) {
+						vno[i] = parseInt(vparts[i]);
+					}
+					if (vno[0]<=0 && vno[1]<10) {
+						show("unsupported version: "+version);
+						stop();
+						return;
+					}
+				}
+				catch (e) {
+					show("error parsing version number '"+version+"'");
+					stop();
+					return;
+				}
+				show("got hello: server version "+version+" accepted our connection")
 				//figure out "alt" and "meta" keys: 
 				if ("modifier_keycodes" in hello) {
 					var modifier_keycodes = hello["modifier_keycodes"];
