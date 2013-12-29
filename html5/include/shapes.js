@@ -312,7 +312,6 @@ CanvasState.prototype.on_dblclick = function(e) {
 }
 
 CanvasState.prototype.on_mousemove = function(e) {
-	show("on_mousemove() this="+this);
 	var mouse = this.getMouse(e),
 			mx = mouse.x,
 			my = mouse.y,
