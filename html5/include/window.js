@@ -173,45 +173,55 @@ XpraWindow.prototype.draw_selection = function(ctx) {
 // Updates the window image with new pixel data
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options) {
 	//show("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+")");
-	if (coding=="rgb32") {
-		//if the pixel data is not in an array buffer already, convert it:
-		//(this happens with inlined pixel data)
-		if (typeof img_data==='string') {
-			var uint = new Uint8Array(img_data.length);
-			for(var i=0,j=img_data.length;i<j;++i) {
-				uint[i] = img_data.charCodeAt(i);
-			}
-			img_data = uint;
+	if (coding!="rgb32")
+		throw Exception("invalid encoding: "+coding);
+
+	//if the pixel data is not in an array buffer already, convert it:
+	//(this happens with inlined pixel data)
+	if (typeof img_data==='string') {
+		var uint = new Uint8Array(img_data.length);
+		for(var i=0,j=img_data.length;i<j;++i) {
+			uint[i] = img_data.charCodeAt(i);
 		}
-		//show("options="+(options).toSource());
-		if (options!=null && options["zlib"]>0) {
-			//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
-			var inflated = new Zlib.Inflate(img_data).decompress();
-			//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
-			img_data = inflated;
-		}
-		//force set alpha to 1.0
-		//for (var a=0; a<width*height; a++) {
-		//	img_data[a*4+3] = 255;
-		//}
-		var data = this.image.data;
-		var stride = this.image.width*4;
-		if (x==0 && width==this.image.width && y+height<=this.image.height) {
-			//take a shortcut: copy all lines
-			data.set(img_data, y*stride);
-			//show("image updated "+height+" full lines in one go!");
-		}
-		else {
-			//TODO: bounds checking?
-			var line;
-			var in_stride = width*4;
-			for (var i=0; i<height; i++) {
-				line = img_data.subarray(i*in_stride, (i+1)*in_stride);
-				data.set(line, (y+i)*stride + x*4);
-			}
-		}
+		img_data = uint;
 	}
-	this.state.invalidate();
+	//show("options="+(options).toSource());
+	if (options!=null && options["zlib"]>0) {
+		//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
+		var inflated = new Zlib.Inflate(img_data).decompress();
+		//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
+		img_data = inflated;
+	}
+	//force set alpha to 1.0
+	//for (var a=0; a<width*height; a++) {
+	//	img_data[a*4+3] = 255;
+	//}
+	var data = this.image.data;
+	var stride = this.image.width*4;
+	//and we can paint the canvas with it
+	//(if we have transparency, we should probably repaint what is underneath...)
+	var ctx = this.state.ctx;
+
+	if (x==0 && width==this.image.width && y+height<=this.image.height) {
+		//take a shortcut: copy all lines
+		data.set(img_data, y*stride);
+
+		//show("image updated "+height+" full lines in one go!");
+		ctx.putImageData(this.image, this.x + this.borderWidth, this.y + this.borderWidth + this.topBarHeight);
+	}
+	else {
+		//TODO: bounds checking?
+		var line;
+		var in_stride = width*4;
+
+		for (var i=0; i<height; i++) {
+			line = img_data.subarray(i*in_stride, (i+1)*in_stride);
+			data.set(line, (y+i)*stride + x*4);
+		}
+		var img = ctx.createImageData(width, height);
+		img.data.set(img_data);
+		ctx.putImageData(img, this.x + this.borderWidth + x, this.y + this.borderWidth + this.topBarHeight + y);
+	}
 };
 
 // Close the window and free all resources
