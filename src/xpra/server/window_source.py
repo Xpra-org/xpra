@@ -104,9 +104,10 @@ class WindowSource(object):
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.boolget("rgb24zlib")
                                                         #supports rgb (both rgb24 and rgb32..) compression outside network layer (unwrapped)
+        self.rgb_zlib = encoding_options.boolget("rgb_zlib", True)  #client supports zlib pixel compression (not to be confused with 'rgb24zlib'...)
+        self.rgb_lz4 = encoding_options.boolget("rgb_lz4", False)   #client supports lz4 pixel compression
         self.generic_encodings = encoding_options.boolget("generic")
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
-        self.rgb_lz4 = encoding_options.boolget("rgb_lz4")
         self.full_frames_only = encoding_options.boolget("full_frames_only")
         self.supports_delta = []
         if xor_str is not None and not window.is_tray():
@@ -969,11 +970,14 @@ class WindowSource(object):
         options = {"rgb_format" : pixel_format}
         #compress here and return a wrapper so network code knows it is already zlib compressed:
         pixels = image.get_pixels()
-        if len(pixels)<512:
-            min_level = 0
-        else:
-            min_level = 1
-        level = max(min_level, min(5, int(110-self.get_current_speed())/20))
+
+        level = 0
+        if self.rgb_zlib or self.rgb_lz4:
+            if len(pixels)<1024:
+                min_level = 0
+            else:
+                min_level = 1
+            level = max(min_level, min(5, int(110-self.get_current_speed())/20))
         #by default, wire=raw:
         raw_data = str(pixels)
         wire_data = raw_data
@@ -996,7 +1000,7 @@ class WindowSource(object):
                 else:
                     options["zlib"] = level
                     algo = "zlib"
-        if pixel_format.upper().find("A")>=0:
+        if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
             bpp = 32
         else:
             bpp = 24

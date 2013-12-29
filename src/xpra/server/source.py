@@ -543,11 +543,14 @@ class ServerSource(object):
         self.set_encoding(c.strget("encoding", None), None)
         #encoding options (filter):
         #1: these properties are special cased here because we
-        #defined their name before the "encoding." prefix convention:
+        #defined their name before the "encoding." prefix convention,
+        #or because we want to pass default values (zlib/lz4):
         for k,ek in {"initial_quality"          : "initial_quality",
                      "rgb24zlib"                : "rgb24zlib",
                      "encoding_client_options"  : "client_options",
                      "quality"                  : "quality",
+                     "zlib"                     : "rgb_zlib",
+                     "lz4"                      : "rgb_lz4",
                      }.items():
             if k in c:
                 self.encoding_options[ek] = c.get(k)
