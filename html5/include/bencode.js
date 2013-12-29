@@ -59,10 +59,9 @@ function bparse(buf) {
 }
 
 function uintToString(uintArray) {
-	var encodedString = String.fromCharCode.apply(null, uintArray),
-		decodedString = decodeURIComponent(escape(encodedString));
-	return decodedString;
+	return String.fromCharCode.apply(null, uintArray);
 }
+
 
 // javascript equivallent of ord()
 // returns the numeric value of the character
