@@ -206,7 +206,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
             #now remove entries for keysyms we don't have:
             f_entries = set([(keysym, index) for keysym, index in entries if X11Keyboard.parse_keysym(keysym) is not None])
             if len(f_entries)==0:
-                log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
+                debug("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
                 continue
             filtered[keycode] = f_entries
         return filtered
