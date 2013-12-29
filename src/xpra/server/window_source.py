@@ -974,34 +974,38 @@ class WindowSource(object):
         else:
             min_level = 1
         level = max(min_level, min(5, int(110-self.get_current_speed())/20))
-        zlib = str(pixels)
-        cdata = zlib
+        #by default, wire=raw:
+        raw_data = str(pixels)
+        wire_data = raw_data
+        algo = "not"
         if level>0:
-            lz4 = use_lz4 and self.rgb_lz4
-            zlib = compressed_wrapper(coding, pixels, level=level, lz4=lz4)
-            cdata = zlib.data
+            lz4 = use_lz4 and self.rgb_lz4 and level<=3
+            wire_data = compressed_wrapper(coding, pixels, level=level, lz4=lz4)
+            raw_data = wire_data.data
             #debug("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
-            #         coding, pixel_format, len(pixels), len(cdata), int(100.0*len(cdata)/len(pixels)), self.rgb_lz4)
-            if len(cdata)>=(len(pixels)-32):
+            #         coding, pixel_format, len(pixels), len(raw_data), int(100.0*len(raw_data)/len(pixels)), self.rgb_lz4)
+            if len(raw_data)>=(len(pixels)-32):
                 #compressed is actually bigger! (use uncompressed)
                 level = 0
-                zlib = str(pixels)
-                cdata = zlib
+                wire_data = str(pixels)
+                raw_data = wire_data
             else:
                 if lz4:
                     options["lz4"] = True
+                    algo = "lz4"
                 else:
                     options["zlib"] = level
+                    algo = "zlib"
         if pixel_format.upper().find("A")>=0:
             bpp = 32
         else:
             bpp = 24
-        debug("rgb_encode using level=%s, compressed %sx%s in %s/%s: %s bytes down to %s", level, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cdata))
+        debug("rgb_encode using level=%s, %s compressed %sx%s in %s/%s: %s bytes down to %s", level, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(raw_data))
         if not self.encoding_client_options or not self.supports_rgb24zlib:
-            return  coding, zlib, {}, image.get_width(), image.get_height(), image.get_rowstride(), bpp
+            return  coding, wire_data, {}, image.get_width(), image.get_height(), image.get_rowstride(), bpp
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
-        return coding, Compressed(coding, cdata), options, image.get_width(), image.get_height(), image.get_rowstride(), bpp
+        return coding, Compressed(coding, raw_data), options, image.get_width(), image.get_height(), image.get_rowstride(), bpp
 
     def PIL_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:
