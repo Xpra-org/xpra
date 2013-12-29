@@ -519,7 +519,7 @@ class Protocol(object):
                 continue
             elif ti==Compressed:
                 #already compressed data (usually pixels), send it as-is
-                if item.data.length>=INLINE_SIZE:
+                if len(item)>INLINE_SIZE:
                     packets.append((i, 0, item.data))
                     packet[i] = ''
                 else:
