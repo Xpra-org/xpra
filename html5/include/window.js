@@ -21,9 +21,6 @@ function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, clien
 	this.metadata = metadata;
 	this.override_redirect = override_redirect;
 	this.client_properties = client_properties;
-	this.geometry_cb = geometry_cb || null;
-	this.mouse_move_cb = mouse_move_cb || null;
-	this.mouse_click_cb = mouse_click_cb || null;
 
 	// the space taken by window decorations:
 	this.borderColor = '#101028';
@@ -46,6 +43,11 @@ function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, clien
 	// so we can call move_resize safely without firing a callback that does not exist:
 	this.geometry_cb = null;
 	this.move_resize(rx, ry, rw, rh);
+
+	// now safe to assign the callbacks:
+	this.geometry_cb = geometry_cb || null;
+	this.mouse_move_cb = mouse_move_cb || null;
+	this.mouse_click_cb = mouse_click_cb || null;
 
 	//create the image holding the pixels (the "backing"):
 	this.image = canvas_state.canvas.getContext('2d').createImageData(w, h);
