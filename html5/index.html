@@ -92,7 +92,7 @@
 				if (win != null) {
 					//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
 					var wid = window_to_id[win];
-					packet = ["key-action", wid, keyname, pressed, modifiers, keyval, str, keycode, group];
+					var packet = ["key-action", wid, keyname, pressed, modifiers, keyval, str, keycode, group];
 					send(packet);
 				}
 			}
@@ -220,6 +220,8 @@
 				//show("window_geometry_changed("+win+") geometry="+win.get_window_geometry().toSource());
 				var geom = win.get_internal_geometry();
 				var wid = window_to_id[win];
+				if (!win.override_redirect)
+					self.set_focus(wid);
 				send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
 			};
 			function mouse_move(win, x, y, modifiers, buttons) {
@@ -228,6 +230,7 @@
 			};
 			function mouse_click(win, button, pressed, x, y, modifiers, buttons) {
 				var wid = window_to_id[win];
+				//show("mouse_click(..) wid("+win+")="+wid);
 				check_focus();
 				send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
 			};
@@ -237,10 +240,17 @@
 				var win = canvas_state.topOfStack();
 				if (win != null)
 					wid = window_to_id[win];
-				//show("check_focus() wid="+wid+", focus="+wid);
-				if (wid!=focus) {
-					focus = wid;
-					send(["focus", focus, []]);
+				show("check_focus() window_to_id["+win+"]="+wid+", focus="+wid+", window_to_id="+window_to_id.toSource());
+				if (wid!=focus)
+					set_focus(wid);
+			}
+
+			function set_focus(wid) {
+				focus = wid;
+				send(["focus", focus, []]);
+				//set the focused flag on all windows:
+				for (var i=0; i<window_to_id.length; i++) {
+					window_to_id[i].focused = (window_to_id[i]==win);
 				}
 			}
 
@@ -249,15 +259,16 @@
 			};
 
 			function make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties) {
-				var win = new XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, client_properties,
+				var win = new XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties,
 						window_geometry_changed, mouse_move, mouse_click);
-				//show("make_new_window("+wid+", "+x+", "+y+", "+w+", "+h+", "+metadata+", "+override_redirect+", "+client_properties+")="+window);
+				show("make_new_window("+wid+", "+x+", "+y+", "+w+", "+h+", "+metadata+", "+override_redirect+", "+client_properties+")="+win);
 				id_to_window[wid] = win;
 				window_to_id[win] = wid;
 				geom = win.get_internal_geometry();
-				send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
-				focus = wid;
-				send(["focus", focus, []]);
+				if (!override_redirect) {
+					send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
+					set_focus(wid);
+				}
 			}
 
 			function process_new_window(packet) {

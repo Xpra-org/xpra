@@ -8,7 +8,7 @@
  */
 
 
-function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, client_properties,
+function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties,
 		geometry_cb, mouse_move_cb, mouse_click_cb) {
 	"use strict";
 	// This is a very simple and unsafe constructor. All we're doing is checking if the values exist.
@@ -18,6 +18,7 @@ function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, clien
 	this.state = canvas_state;
 
 	//xpra specific attributes:
+	this.wid = wid;
 	this.metadata = metadata;
 	this.override_redirect = override_redirect;
 	this.client_properties = client_properties;
@@ -32,6 +33,7 @@ function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, clien
 		this.borderWidth = 2;
 		this.topBarHeight = 20;
 	}
+	this.focused = false;
 	this.topBarColor = '#A8A8B0';
 	this.offsets = [this.borderWidth+this.topBarHeight, this.borderWidth, this.borderWidth, this.borderWidth];
 
@@ -54,6 +56,11 @@ function XpraWindow(canvas_state, x, y, w, h, metadata, override_redirect, clien
 	canvas_state.addShape(this);
 };
 
+XpraWindow.prototype.toString = function() {
+	return "Window("+this.wid+")";
+}
+
+
 XpraWindow.prototype.move_resize = Shape.prototype.move_resize;
 XpraWindow.prototype.move = Shape.prototype.move;
 XpraWindow.prototype.resize = Shape.prototype.resize;
@@ -72,6 +79,7 @@ XpraWindow.prototype.get_internal_geometry = function(ctx) {
 };
 
 XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modifiers, buttons) {
+	"use strict";
 	var igeom = this.get_internal_geometry();
 	if (this.mouse_click_cb!=null && rectangle_contains(igeom, mx, my)) {
 		this.mouse_click_cb(this, button, pressed, mx, my, modifiers, buttons);
@@ -79,6 +87,7 @@ XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modi
 };
 
 XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
+	"use strict";
 	var igeom = this.get_internal_geometry();
 	if (this.mouse_move_cb!=null && rectangle_contains(igeom, mx, my)) {
 		this.mouse_move_cb(this, mx, my, modifiers, buttons);
@@ -172,7 +181,8 @@ XpraWindow.prototype.draw_selection = function(ctx) {
 
 // Updates the window image with new pixel data
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options) {
-	//show("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+")");
+	"use strict";
+	//show("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
 	if (coding!="rgb32")
 		throw Exception("invalid encoding: "+coding);
 
@@ -206,8 +216,11 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		//take a shortcut: copy all lines
 		data.set(img_data, y*stride);
 
-		//show("image updated "+height+" full lines in one go!");
-		ctx.putImageData(this.image, this.x + this.borderWidth, this.y + this.borderWidth + this.topBarHeight);
+		if (this.focused) {
+			//shortcut: paint canvas directly
+			ctx.putImageData(this.image, this.x + this.borderWidth, this.y + this.borderWidth + this.topBarHeight);
+			return;
+		}
 	}
 	else {
 		//TODO: bounds checking?
@@ -220,12 +233,19 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		}
 		var img = ctx.createImageData(width, height);
 		img.data.set(img_data);
-		ctx.putImageData(img, this.x + this.borderWidth + x, this.y + this.borderWidth + this.topBarHeight + y);
+
+		if (this.focused) {
+			//shortcut: paint canvas directly
+			ctx.putImageData(img, this.x + this.borderWidth + x, this.y + this.borderWidth + this.topBarHeight + y);
+			return;
+		}
 	}
+	this.state.invalidate();
 };
 
 // Close the window and free all resources
 XpraWindow.prototype.destroy = function destroy() {
+	"use strict";
 	if (this.state!=null) {
 		this.state.removeShape(this);
 		this.state = null;
