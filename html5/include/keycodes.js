@@ -4,13 +4,18 @@
  * Licensed under MPL 2.0, see:
  * http://www.mozilla.org/MPL/2.0/
  *
- * Maps web keycodes to the X11 keysym so we can generate a matching X11 keymap.
- * TODO: some values are missing..
  */
 
+
+/**
+ * Maps web keycodes to the X11 keysym so we can generate a matching X11 keymap.
+ * 
+ * TODO: some values are missing..
+ */
 CHARCODE_TO_NAME = {
 	8	: "BackSpace",
 	9	: "Tab",
+	12	: "KP_Begin",
 	13	: "Return",
 	16	: "Shift_L",
 	17	: "Control_L",
@@ -18,6 +23,8 @@ CHARCODE_TO_NAME = {
 	19	: "Pause",			//pause/break
 	20	: "Caps_Lock",
 	27	: "Escape",
+	31	: "Mode_switch",
+	32	: "space",
 	33	: "Prior",			//Page Up
 	34	: "Next",			//Page Down
 	35	: "End",
@@ -26,45 +33,41 @@ CHARCODE_TO_NAME = {
 	38	: "Up",
 	39	: "Right",
 	40	: "Down",
+	42	: "Print",
 	45	: "Insert",
 	46	: "Delete",
+	58	: "colon",
+	59	: "semicolon",
+	60	: "less",
+	61	: "equal",
+	62	: "greater",
+	63	: "question",
+	64	: "at",
 	91	: "Menu",			//Left Window Key
 	92	: "Menu",			//Right Window Key
 	93	: "KP_Enter",		//"select key"?
-	96	: "KP_0",
-	97	: "KP_1",
-	98	: "KP_2",
-	99	: "KP_3",
-	100	: "KP_4",
-	101	: "KP_5",
-	102	: "KP_6",
-	103	: "KP_7",
-	104	: "KP_8",
-	105	: "KP_9",
 	106	: "KP_Multiply",
 	107	: "KP_Add",
 	109	: "KP_Subtract",
 	110	: "KP_Delete",
 	111	: "KP_Divide",
-	112	: "F1",
-	113	: "F2",
-	114	: "F3",
-	115	: "F4",
-	116	: "F5",
-	117	: "F6",
-	118	: "F7",
-	119	: "F8",
-	120	: "F9",
-	121	: "F10",
-	122	: "F11",
-	123	: "F12",
 	144	: "Num_Lock",
 	145	: "Scroll_Lock",
+	160	: "dead_circumflex",
 	167 : "underscore",
+	161	: "exclam",
+	162	: "quotedbl",
+	163	: "numbersign",
+	164	: "dollar",
+	165	: "percent",
+	166	: "ampersand",
+	167	: "underscore",
 	168 : "parenleft",
 	169 : "parenright",
 	170 : "asterisk",
+	171	: "plus",
 	172	: "pipe",
+	173	: "minus",
 	174 : "braceleft",
 	175 : "braceright",
 	176 : "asciitilde",
@@ -83,8 +86,21 @@ CHARCODE_TO_NAME = {
 for (var i=0; i<26; i++) {
 	CHARCODE_TO_NAME[65+i] = "abcdefghijklmnopqrstuvwxyz"[i];
 }
+for (i=0; i<10; i++) {
+	CHARCODE_TO_NAME[48+i] = ""+i;
+	CHARCODE_TO_NAME[96+i] = "KP_"+i;
+}
+for (i=1; i<=24; i++) {
+	CHARCODE_TO_NAME[111+i] = "F"+i;
+}
 
 
+/**
+ * Converts an event into a list of modifiers.
+ * 
+ * @param event
+ * @returns {Array} of strings
+ */
 function get_event_modifiers(event) {
 	var modifiers = [];
 	if (event.modifiers) {
