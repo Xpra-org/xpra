@@ -50,17 +50,6 @@ function hexstr(uintArray) {
 	}
 	return s;
 }
-function uintToString(uintArray) {
-	try {
-		var encodedString = String.fromCharCode.apply(null, uintArray),
-			decodedString = decodeURIComponent(escape(encodedString));
-		return decodedString;
-	}
-	catch(e) {
-		debug("error converting array to string: "+e);
-		return ""+uintArray;
-	}
-}
 
 
 //
@@ -145,26 +134,19 @@ function process_buffer() {
 	}
 
 	//decode raw packet string into objects:
-	var packet_string = uintToString(packet_data);
-	var packet = bdecode(packet_data);
+	var packet = null;
 	try {
 		packet = bdecode(packet_data);
 		//debug("packet[0]="+packet[0]);
-		//debug("packet="+packet);
 		for (var index in raw_packets) {
 			packet[index] = raw_packets[index];
-			//debug("replaced index "+index+" of packet "+packet[0]+" with "+raw_packets[index].length);
 		}
 		raw_packets = {}
 		process_packet(packet);
 	}
 	catch (e) {
 		debug("error parsing packet: "+e);
-		debug("packet_data="+packet_string);
 		debug("packet_data="+hexstr(packet_data));
-		//for (var i=0; i<Math.min(64, packet_data.byteLength); i++) {
-		//	debug("packet_data["+i+"]="+packet_data[i]);
-		//}
 	}
 	if (buf.byteLength>8)
 		process_buffer();
