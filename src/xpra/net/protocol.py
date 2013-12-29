@@ -100,6 +100,7 @@ if sys.version_info[0]<3:
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
 #merge header and packet if packet is smaller than:
 PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 32768))
+LARGE_PACKET_SIZE = 4096
 #inline compressed data in packet if smaller than:
 INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 2048))
 FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
@@ -531,7 +532,7 @@ class Protocol(object):
                 assert item.level>0
                 packets.append((i, item.level, item.data))
                 packet[i] = ''
-            elif ti==str and level>0 and len(item)>=4096:
+            elif ti==str and level>0 and len(item)>LARGE_PACKET_SIZE:
                 log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
                 cl, cdata = self._compress(item, level)
@@ -553,7 +554,7 @@ class Protocol(object):
             log.error("failed to encode packet: %s", packet, exc_info=True)
             self.verify_packet(packet)
             raise e
-        if len(main_packet)>=1024 and packet_in[0] not in self.large_packets:
+        if len(main_packet)>LARGE_PACKET_SIZE and packet_in[0] not in self.large_packets:
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         #compress, but don't bother for small packets:
