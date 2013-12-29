@@ -525,7 +525,7 @@ class Protocol(object):
                 else:
                     #data is small enough, inline it:
                     packet[i] = item.data
-                    min_comp_size += item.data.length
+                    min_comp_size += len(item)
             elif ti==LevelCompressed:
                 #already compressed data as zlib or lz4, send as-is with compression marker
                 assert item.level>0
