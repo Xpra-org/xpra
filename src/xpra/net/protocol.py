@@ -157,6 +157,10 @@ def repr_ellipsized(obj, limit=100):
         return repr(obj)
 
 
+class ConnectionClosedException(Exception):
+    pass
+
+
 class Compressed(object):
     def __init__(self, datatype, data):
         self.datatype = datatype
@@ -223,7 +227,7 @@ class Protocol(object):
         self.large_packets = ["hello"]
         self.aliases = {}
         self.chunked_compression = True
-        self._log_stats = True
+        self._log_stats = None          #None here means auto-detect
         self._closed = False
         self._encoder = self.noencode
         self._compress = zcompress
@@ -577,6 +581,12 @@ class Protocol(object):
             debug("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
         except KeyboardInterrupt, e:
             raise e
+        except ConnectionClosedException, e:
+            if not self._closed:
+                #log it at debug level
+                #(rely on location where we raise to provide better logging)
+                debug("%s connection closed for %s", name, self._conn)
+                self._call_connection_lost("%s connection closed: %s" % (name, e))
         except (OSError, IOError, socket_error), e:
             if not self._closed:
                 if e.args[0] in (errno.ECONNRESET, errno.EPIPE):
@@ -888,6 +898,9 @@ class Protocol(object):
         if self._conn:
             try:
                 self._conn.close()
+                if self._log_stats is None and self._conn.input_bytecount==0 and self._conn.output_bytecount==0:
+                    #no data sent or received, skip logging of stats:
+                    self._log_stats = False
                 if self._log_stats:
                     log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
                          std_unit(self.input_packetcount), std_unit_dec(self._conn.input_bytecount),

@@ -22,6 +22,7 @@ from xpra.platform.options import add_client_options
 from xpra.platform.paths import get_default_socket_dir
 from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
+from xpra.net.protocol import ConnectionClosedException
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
     make_defaults_struct, parse_bool, print_bool, validate_config
 
@@ -638,6 +639,7 @@ def ssh_connect_failed(message):
 def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
+    conn = None
     if dtype == "ssh":
         cmd = display_desc["full_ssh"]
         if sys.platform.startswith("win"):
@@ -679,7 +681,16 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                     debug_cb(error_message)
                 if ssh_fail_cb:
                     ssh_fail_cb(error_message)
-                raise IOError(error_message)
+                if "ssh_abort" not in display_desc:
+                    display_desc["ssh_abort"] = True
+                    from xpra.log import Logger
+                    log = Logger()
+                    log.error("The SSH process has terminated with exit code %s", e)
+                    if conn.input_bytecount==0 and conn.output_bytecount==0:
+                        log.error("Connection to the xpra server via SSH failed for: %s", display_name)
+                        log.error(" the command line used was: %s", cmd)
+                        log.error(" check your username, hostname, display number, etc")
+                raise ConnectionClosedException(error_message)
         def stop_tunnel():
             if os.name=="posix":
                 #on posix, the tunnel may be shared with other processes
@@ -705,7 +716,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                         raise Exception("cannot find function to kill subprocess")
             except Exception, e:
                 print("error trying to stop ssh tunnel process: %s" % e)
-        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
+        conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
 
     elif dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):
@@ -714,16 +725,17 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(SOCKET_TIMEOUT)
         sockfile = sockdir.socket_path(display_desc["display"])
-        return _socket_connect(sock, sockfile, display_name, dtype)
+        conn = _socket_connect(sock, sockfile, display_name, dtype)
 
     elif dtype == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(SOCKET_TIMEOUT)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
-        return _socket_connect(sock, tcp_endpoint, display_name, dtype)
+        conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
 
     else:
         assert False, "unsupported display type in connect: %s" % dtype
+    return conn
 
 
 def run_client(parser, opts, extra_args, mode):
