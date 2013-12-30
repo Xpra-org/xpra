@@ -131,6 +131,12 @@ def test_encoding():
     test_hello()
     test_large_hello()
 
+def test_random():
+    import binascii
+    u = "6c343a6472617769316569333731656931356569366569313365353a726762333231343a7801fbff7f1490130200099e36d8693265693234656431303a7267625f666f726d6174343a52474258343a7a6c69626931656565"
+    s = binascii.unhexlify(u)
+    bdecode(s)
+
 def test_large_dict():
     try:
         from xpra.x11.gtk_x11 import gdk_display_source             #@UnusedImport
@@ -145,6 +151,7 @@ def test_large_dict():
         print("test_large_dict() skipped because of: %s" % e)
 
 def main():
+    test_random()
     test_decoding()
     test_encoding()
     test_large_dict()
