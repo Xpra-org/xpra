@@ -14,8 +14,12 @@
 		<link rel="icon" type="image/png" href="/favicon.png" />
 
 		<style>
+			body {
+				background-color: #708090;
+			}
 			canvas {
 				border : 1px solid black;
+				display: none;
 			}
 		</style>
 
@@ -26,6 +30,7 @@
 		<script type="text/javascript" src="include/keycodes.js"></script>
 		<script type="text/javascript" src="include/shapes.js"></script>
 		<script type="text/javascript" src="include/window.js"></script>
+		<script type="text/javascript" src="include/util.js"></script>
 
 		<script type="text/javascript">
 			var protocol;
@@ -43,6 +48,7 @@
 			var meta_modifier = null;
 
 			function get_modifiers(event) {
+				"use strict";
 				//convert generic modifiers "meta" and "alt" into their x11 name:
 				var modifiers = get_event_modifiers(event);
 				//FIXME: look them up!
@@ -58,6 +64,7 @@
 			}
 
 			function processKeyEvent(pressed, event) {
+				"use strict";
 				if (canvas_state==null)
 					return;
 				// MSIE hack
@@ -98,14 +105,17 @@
 			}
 
 			function onkeydown(event) {
+				"use strict";
 				processKeyEvent(true, event);
 				return false;
 			};
 			function onkeyup(event) {
+				"use strict";
 				processKeyEvent(false, event);
 				return false;
 			};
 			function onkeypress(event) {
+				"use strict";
 				var keycode = 0;
 				if (event.which)
 					keycode = event.which;
@@ -125,23 +135,27 @@
 			};
 
 			function show(text) {
+				"use strict";
 				console.log(text);
 				var msg = document.getElementById("message")
 				msg.innerHTML = msg.innerHTML + "<br />" + text;
 			}
 			function error(text) {
+				"use strict";
 				console.log(text);
 				var msg = document.getElementById("message")
 				msg.innerHTML = msg.innerHTML + "<br />" + text;
 			}
 
 			function process_startup_complete(packet) {
+				"use strict";
 				show("startup complete");
 			}
 			function process_hello(packet) {
+				"use strict";
 				//show("process_hello("+packet+")");
 				var hello = packet[1];
-				version = hello["version"];
+				var version = hello["version"];
 				try {
 					var vparts = version.split(".");
 					var vno = [];
@@ -183,10 +197,12 @@
 				//show("alt="+alt_modifier+", meta="+meta_modifier);
 			}
 			function process_disconnect(packet) {
+				"use strict";
 				reason = packet[1];
 				window.alert("Disconnected: "+reason);
 			}
 			function process_ping(packet) {
+				"use strict";
 				var echotime = packet[1];
 				var l1=0, l2=0, l3=0;
 				send(["ping_echo", echotime, l1, l2, l3, 0]);
@@ -196,7 +212,70 @@
 				//TODO!
 			}
 
+			function window_geometry_changed(win) {
+				"use strict";
+				//show("window_geometry_changed("+win+") geometry="+win.get_window_geometry().toSource());
+				var geom = win.get_internal_geometry();
+				var wid = window_to_id[win];
+				if (!win.override_redirect)
+					self.set_focus(wid);
+				send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
+			};
+			function mouse_move(win, x, y, modifiers, buttons) {
+				"use strict";
+				var wid = window_to_id[win];
+				send(["pointer-position", wid, [x, y], modifiers, buttons]);
+			};
+			function mouse_click(win, button, pressed, x, y, modifiers, buttons) {
+				"use strict";
+				var wid = window_to_id[win];
+				//show("mouse_click(..) wid("+win+")="+wid);
+				check_focus();
+				send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
+			};
+
+			function check_focus() {
+				"use strict";
+				var wid = -1;
+				var win = canvas_state.topOfStack();
+				if (win != null)
+					wid = window_to_id[win];
+				//show("check_focus() window_to_id["+win+"]="+wid+", focus="+wid+", window_to_id="+window_to_id.toSource());
+				if (wid!=focus)
+					set_focus(wid);
+			}
+
+			function set_focus(wid) {
+				"use strict";
+				focus = wid;
+				send(["focus", focus, []]);
+				//set the focused flag on all windows:
+				for (var i=0; i<window_to_id.length; i++) {
+					window_to_id[i].focused = (window_to_id[i]==win);
+				}
+			}
+
+			function get_client_properties(win) {
+				"use strict";
+				return {"encodings.rgb_formats" : RGB_FORMATS};
+			};
+
+			function make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties) {
+				"use strict";
+				var win = new XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties,
+						window_geometry_changed, mouse_move, mouse_click);
+				//show("make_new_window("+wid+", "+x+", "+y+", "+w+", "+h+", "+metadata+", "+override_redirect+", "+client_properties+")="+win);
+				id_to_window[wid] = win;
+				window_to_id[win] = wid;
+				var geom = win.get_internal_geometry();
+				if (!override_redirect) {
+					send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
+					set_focus(wid);
+				}
+			}
+
 			function process_new_common(packet, override_redirect) {
+				"use strict";
 				var wid, x, y, w, h, metadata;
 				wid = packet[1];
 				x = packet[2];
@@ -210,95 +289,44 @@
 					error("window dimensions are wrong: "+w+"x"+h);
 					w, h = 1, 1
 				}
-				client_properties = {}
+				var client_properties = {}
 				if (packet.length>=8)
 					client_properties = packet[7];
-				this.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
-			}
-
-			function window_geometry_changed(win) {
-				//show("window_geometry_changed("+win+") geometry="+win.get_window_geometry().toSource());
-				var geom = win.get_internal_geometry();
-				var wid = window_to_id[win];
-				if (!win.override_redirect)
-					self.set_focus(wid);
-				send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
-			};
-			function mouse_move(win, x, y, modifiers, buttons) {
-				var wid = window_to_id[win];
-				send(["pointer-position", wid, [x, y], modifiers, buttons]);
-			};
-			function mouse_click(win, button, pressed, x, y, modifiers, buttons) {
-				var wid = window_to_id[win];
-				//show("mouse_click(..) wid("+win+")="+wid);
-				check_focus();
-				send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
-			};
-
-			function check_focus() {
-				var wid = -1;
-				var win = canvas_state.topOfStack();
-				if (win != null)
-					wid = window_to_id[win];
-				//show("check_focus() window_to_id["+win+"]="+wid+", focus="+wid+", window_to_id="+window_to_id.toSource());
-				if (wid!=focus)
-					set_focus(wid);
-			}
-
-			function set_focus(wid) {
-				focus = wid;
-				send(["focus", focus, []]);
-				//set the focused flag on all windows:
-				for (var i=0; i<window_to_id.length; i++) {
-					window_to_id[i].focused = (window_to_id[i]==win);
-				}
-			}
-
-			function get_client_properties(win) {
-				return {"encodings.rgb_formats" : RGB_FORMATS};
-			};
-
-			function make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties) {
-				var win = new XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties,
-						window_geometry_changed, mouse_move, mouse_click);
-				//show("make_new_window("+wid+", "+x+", "+y+", "+w+", "+h+", "+metadata+", "+override_redirect+", "+client_properties+")="+win);
-				id_to_window[wid] = win;
-				window_to_id[win] = wid;
-				geom = win.get_internal_geometry();
-				if (!override_redirect) {
-					send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties()]);
-					set_focus(wid);
-				}
+				make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
 			}
 
 			function process_new_window(packet) {
+				"use strict";
 				process_new_common(packet, false);
 			}
 
 			function process_new_override_redirect(packet) {
+				"use strict";
 				process_new_common(packet, true);
 			}
 
 
 			function send_damage_sequence(wid, packet_sequence, width, height, decode_time) {
+				"use strict";
 				send(["damage-sequence", packet_sequence, wid, width, height, decode_time]);
 			}
 
 			function process_draw(packet) {
-				var start = new Date().getTime();
-				wid = packet[1];
-				x = packet[2];
-				y = packet[3];
-				width = packet[4];
-				height = packet[5];
-				coding = packet[6];
-				data = packet[7];
-				packet_sequence = packet[8];
-				rowstride = packet[9];
+				"use strict";
+				var start = new Date().getTime(),
+					wid = packet[1],
+					x = packet[2],
+					y = packet[3],
+					width = packet[4],
+					height = packet[5],
+					coding = packet[6],
+					data = packet[7],
+					packet_sequence = packet[8],
+					rowstride = packet[9],
+					options = {};
+				
 				if (packet.length>10)
 					options = packet[10];
-				else
-					options = {};
 				if (coding in OLD_ENCODING_NAMES_TO_NEW)
 					coding = OLD_ENCODING_NAMES_TO_NEW[coding];
 				var win = id_to_window[wid];
@@ -307,10 +335,11 @@
 					win.paint(x, y, width, height, coding, data, packet_sequence, rowstride, options);
 					decode_time = new Date().getTime() - start;
 				}
-				this.send_damage_sequence(wid, packet_sequence, width, height, decode_time);
+				send_damage_sequence(wid, packet_sequence, width, height, decode_time);
 			}
 
 			function process_lost_window(packet) {
+				"use strict";
 				var wid = packet[1];
 				var win = id_to_window[wid];
 				if (win!=null) {
@@ -320,6 +349,7 @@
 			}
 
 			function process_raise_window(packet) {
+				"use strict";
 				var wid = packet[1];
 				var win = id_to_window[wid];
 				if (win!=null) {
@@ -354,6 +384,7 @@
 
 
 			function guess_platform() {
+				"use strict";
 				//use python style strings for platforms:
 				if (navigator.appVersion.indexOf("Win")!=-1)
 					return "win32";
@@ -366,6 +397,7 @@
 				return "unknown";
 			}
 			function guess_platform_name() {
+				"use strict";
 				//use python style strings for platforms:
 				if (navigator.appVersion.indexOf("Win")!=-1)
 					return "Microsoft Windows";
@@ -378,6 +410,7 @@
 				return "unknown";
 			}
 			function guess_platform_processor() {
+				"use strict";
 				//mozilla property:
 				if (navigator.oscpu)
 					return navigator.oscpu;
@@ -387,6 +420,7 @@
 				return "unknown";
 			}
 			function get_DPI() {
+				"use strict";
 				var dpi_div = document.getElementById("dpi");
 				if (dpi_div != undefined) {
 					//show("dpiX="+dpi_div.offsetWidth+", dpiY="+dpi_div.offsetHeight);
@@ -401,6 +435,7 @@
 			}
 
 			function get_keyboard_layout() {
+				"use strict";
 				//IE:
 				//navigator.systemLanguage
 				//navigator.browserLanguage
@@ -417,10 +452,12 @@
 			}
 
 			function get_desktop_size() {
+				"use strict";
 				var canvas = document.getElementById('screen');
 				return [canvas.width, canvas.height];
 			}
 			function get_screen_sizes() {
+				"use strict";
 				var canvas = document.getElementById('screen');
 				var dpi = get_DPI();
 				/*
@@ -446,6 +483,7 @@
 			}
 
 			function get_keycodes() {
+				"use strict";
 				//keycodes.append((nn(keyval), nn(name), nn(keycode), nn(group), nn(level)))
 				var keycodes = [];
 				var kc;
@@ -458,6 +496,7 @@
 			}
 
 			function make_hello() {
+				"use strict";
 				return	{
 						"version"					: "0.11.0",
 						"platform"					: guess_platform(),
@@ -465,11 +504,9 @@
 						"platform.processor"		: guess_platform_processor(),
 						"platform.platform"			: navigator.appVersion,
 						"namespace"			 		: true,
-						"raw_window_icons"			: true,
 						"client_type"		   		: "HTML5",
 						"share"						: false,
 						"auto_refresh_delay"		: 500,
-						"window.raise"				: true,
 						"randr_notify"				: true,
 						"sound.server_driven"		: true,
 						"generic_window_types"		: true,
@@ -524,6 +561,7 @@
 			}
 
 			function send(packet) {
+				"use strict";
 				if (protocol!=null) {
 					try {
 						protocol.send(packet);
@@ -536,13 +574,17 @@
 			}
 
 			function start() {
+				"use strict";
 				show("start()");
 				document.onkeydown = onkeydown;
 				document.onkeyup = onkeyup;
 				document.onkeypress = onkeypress;
 
+				var canvas = document.getElementById('screen');
+				canvas.style.display = "block";
+
 				if (canvas_state==null)
-					canvas_state = new CanvasState(document.getElementById('screen'));
+					canvas_state = new CanvasState(canvas);
 				protocol = new Protocol();
 				protocol.set_packet_handler("open", process_open);
 				protocol.set_packet_handler("close", process_close);
@@ -552,6 +594,7 @@
 				show("opening connection to "+uri);
 			}
 			function stop() {
+				"use strict";
 				show("stop()");
 				id_to_window = {};
 				window_to_id = {};
@@ -567,16 +610,21 @@
 					canvas_state.destroy();
 					canvas_state = null;
 				}
+				var canvas = document.getElementById('screen');
+				canvas.style.display = "none";
 			}
 			function process_close(packet) {
+				"use strict";
 				show("process_close("+packet+")");
 				stop();
 			}
 			function process_error(packet) {
+				"use strict";
 				show("process_error("+packet+")");
 				stop();
 			}
 			function process_open(packet) {
+				"use strict";
 				show("connected to server - sending hello");
 				var packet_handlers = {
 					"startup-complete"		: process_startup_complete,
@@ -607,8 +655,18 @@
 			}
 
 			function force_refresh() {
+				"use strict";
 				if (protocol!=null) {
 					send(["buffer-refresh", -1, true, 95]);
+				}
+			}
+
+			function new_popup() {
+				"use strict";
+				var newwindow = window.open('./index.html?connect=true', 'xpra',
+				        'height=800px,width=600px,location=no,menubar=no,scrollbars=no,status=no,titlebar=no,toolbar=no');
+				if (window.focus) {
+					newwindow.focus();
 				}
 			}
 
@@ -621,6 +679,9 @@
 				// s.addShape(new Shape(s, 240, 120, 40, 40, 'rgba(2,165,165,0.7)'));
 				// add a smaller purple rectangle
 				// s.addShape(new Shape(s, 5, 60, 25, 25, 'rgba(150,150,250,0.7)'));
+				if (window.location.getParameter("connect")=="true") {
+					start();
+				}
 			}
 
 		</script>
@@ -633,6 +694,7 @@
 				<button id="connect" onclick="start();">Connect</button>
 				<button id="disconnect" onclick="stop();">Disconnect</button>
 				<button id="refresh" onclick="force_refresh();">Refresh</button>
+				<button id="popup" onclick="new_popup();">Popup</button>
 				<br />
 				</fieldset>
 				<canvas id="screen" width="1024" height="600"></canvas>
