@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-from tests.xpra.test_protocol_base import SimpleClient, SimpleServer, init_main
+from tests.xpra.net.test_protocol_base import SimpleClient, SimpleServer, init_main
 import gobject
 
 def main():

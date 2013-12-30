@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-from tests.xpra.test_protocol_base import SimpleServer, init_main
+from tests.xpra.net.test_protocol_base import SimpleServer, init_main
 import gobject
 import os.path
 import socket
@@ -26,9 +26,9 @@ if PLATFORM_GUI_INIT:
     from xpra.platform.gui import init as gui_init
     gui_init()
 
-from xpra.platform.shadow_server import ShadowServer
-from xpra.server.source import ServerSource
-from xpra.server.server_base import ServerBase
+#from xpra.platform.shadow_server import ShadowServer
+#from xpra.server.source import ServerSource
+#from xpra.server.server_base import ServerBase
 
 
 def main():
