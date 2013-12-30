@@ -17,8 +17,11 @@
 			body {
 				background-color: #708090;
 			}
+			div#disconnect_form {
+				display: none;
+			}
 			canvas {
-				border : 1px solid black;
+				border: 1px solid black;
 				display: none;
 			}
 		</style>
@@ -34,6 +37,7 @@
 
 		<script type="text/javascript">
 			var protocol;
+			var status = "ready";
 
 			var id_to_window = {};
 			var window_to_id = {};
@@ -137,14 +141,17 @@
 			function show(text) {
 				"use strict";
 				console.log(text);
-				var msg = document.getElementById("message")
-				msg.innerHTML = msg.innerHTML + "<br />" + text;
 			}
 			function error(text) {
 				"use strict";
-				console.log(text);
-				var msg = document.getElementById("message")
-				msg.innerHTML = msg.innerHTML + "<br />" + text;
+				console.error(text);
+			}
+
+			function set_ui_message(msg, color) {
+				var m = document.getElementById('message');
+				m.style.color = color || "black";
+				m.innerHTML = msg;
+				show("set_ui_message("+msg+", "+color+")");
 			}
 
 			function process_startup_complete(packet) {
@@ -198,7 +205,7 @@
 			}
 			function process_disconnect(packet) {
 				"use strict";
-				reason = packet[1];
+				var reason = packet[1];
 				window.alert("Disconnected: "+reason);
 			}
 			function process_ping(packet) {
@@ -324,7 +331,6 @@
 					packet_sequence = packet[8],
 					rowstride = packet[9],
 					options = {};
-				
 				if (packet.length>10)
 					options = packet[10];
 				if (coding in OLD_ENCODING_NAMES_TO_NEW)
@@ -573,7 +579,49 @@
 				}
 			}
 
+			function parse_port(s) {
+				try {
+					for (var i=0; i<s.length; i++) {
+						if ("0123456789".indexOf(s.charAt(i))<0) {
+							set_ui_message("invalid port", "red");
+							return 0;
+						}
+					}
+					return parseInt(s);
+				}
+				catch (e) {
+					set_ui_message("invalid port", "red");
+					return 0;
+				}
+			}
+			function parse_host(s) {
+				var ValidIpAddressRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
+				var ValidHostnameRegex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
+				if (s==null || s.length==0)
+					return "";
+				if (s.match(ValidIpAddressRegex) || s.match(ValidHostnameRegex))
+					return s;
+				set_ui_message("invalid host string", "red");
+				return "";
+			}
+
+			function get_params_from_form() {
+				"use strict";
+				var params = {};
+				params['host'] = parse_host(document.getElementById('host').value || "");
+				params['port'] = parse_port(document.getElementById('port').value || "0");
+				params['ssl'] = document.getElementById('ssl').value=="true";
+				return params;
+			}
+
 			function start() {
+				"use strict";
+				var params = get_params_from_form();
+				if (params["host"]!="" && params["port"]>0)
+					do_start(params);
+			}
+
+			function do_start(params) {
 				"use strict";
 				show("start()");
 				document.onkeydown = onkeydown;
@@ -589,9 +637,20 @@
 				protocol.set_packet_handler("open", process_open);
 				protocol.set_packet_handler("close", process_close);
 				protocol.set_packet_handler("error", process_error);
-				var uri = "ws://localhost:8080/";
-				protocol.open(uri);
-				show("opening connection to "+uri);
+				var uri = "ws://";
+				if (params["ssl"]=="true")
+					uri = "wss://";
+				uri += params["host"];
+				uri += ":"+params["port"];
+				try {
+					status = "connecting";
+					show("opening connection to "+uri);
+					set_ui_message("connecting to "+uri);
+					protocol.open(uri);
+				}
+				catch (e) {
+					set_ui_message("error connecting to "+uri+": "+e, "red");
+				}
 			}
 			function stop() {
 				"use strict";
@@ -610,8 +669,12 @@
 					canvas_state.destroy();
 					canvas_state = null;
 				}
+				document.getElementById('connect_form').style.display = "block";
+				document.getElementById('disconnect_form').style.display = "none";
+
 				var canvas = document.getElementById('screen');
 				canvas.style.display = "none";
+				status = "ready";
 			}
 			function process_close(packet) {
 				"use strict";
@@ -621,10 +684,19 @@
 			function process_error(packet) {
 				"use strict";
 				show("process_error("+packet+")");
+				if (status=="connecting")
+					set_ui_message("failed to connect", "red");
+				else
+					set_ui_message("error: "+packet[1].toSource());
 				stop();
 			}
 			function process_open(packet) {
 				"use strict";
+				status = "connected";
+				document.getElementById('connect_form').style.display = "none";
+				document.getElementById('disconnect_form').style.display = "block";
+				set_ui_message("");
+
 				show("connected to server - sending hello");
 				var packet_handlers = {
 					"startup-complete"		: process_startup_complete,
@@ -663,24 +735,68 @@
 
 			function new_popup() {
 				"use strict";
-				var newwindow = window.open('./index.html?connect=true', 'xpra',
+				var params = get_params_from_form();
+				do_popup(params);
+			}
+			function do_popup(params) {
+				"use strict";
+				params["connect"] = true;
+				var url = window.location.pathname;
+				var value, i=0;
+				for (var param in params) {
+					if (i==0)
+						url += "?";
+					else
+						url += "&";
+					url += encodeURIComponent(param);
+					value = ""+params[param];
+					show("param="+param+", value="+value);
+					if (value.length>0) {
+						url += "=";
+						url += encodeURIComponent(""+value);
+					}
+					i++;
+				}
+				var newwindow = window.open(url, 'xpra',
 				        'height=800px,width=600px,location=no,menubar=no,scrollbars=no,status=no,titlebar=no,toolbar=no');
 				if (window.focus) {
 					newwindow.focus();
 				}
 			}
 
+			function populate_form(params) {
+				"use strict";
+				document.getElementById('host').value = params["host"] || "";
+				document.getElementById('port').value = params["port"] || "";
+				document.getElementById("ssl").checked = params["ssl"]=="true";
+			}
+
+			function get_params_from_request() {
+				"use strict";
+				var params = {};
+				params['host'] = parse_host(window.location.getParameter("host"));
+				params['port'] = parse_port(window.location.getParameter("port") || "80");
+				params['ssl'] = window.location.getParameter("ssl")=="true";
+				params['popup'] = window.location.getParameter("popup")=="true";
+				params['connect'] = window.location.getParameter("connect")=="true";
+				return params;
+			}
+
 			function init() {
 				"use strict";
+
+				set_ui_message("ready", "green");
 				show("init()");
-				// add a large green rectangle
-				// s.addShape(new Shape(s, 260, 70, 60, 65, 'rgba(0,205,0,0.7)'));
-				// add a green-blue rectangle
-				// s.addShape(new Shape(s, 240, 120, 40, 40, 'rgba(2,165,165,0.7)'));
-				// add a smaller purple rectangle
-				// s.addShape(new Shape(s, 5, 60, 25, 25, 'rgba(150,150,250,0.7)'));
-				if (window.location.getParameter("connect")=="true") {
-					start();
+				//populate form:
+				var params = get_params_from_request();
+				populate_form(params);
+
+				//auto start?
+				if (params["connect"]) {
+					if (params["popup"])
+						do_popup(params)
+					else
+						do_start(params);
 				}
 			}
 
@@ -688,20 +804,41 @@
 	</head>
 
 	<body onload="init()">
-		<div>
+		<div id="connect_form">
 			<form onsubmit="return false;">
 				<fieldset>
-				<button id="connect" onclick="start();">Connect</button>
-				<button id="disconnect" onclick="stop();">Disconnect</button>
-				<button id="refresh" onclick="force_refresh();">Refresh</button>
-				<button id="popup" onclick="new_popup();">Popup</button>
-				<br />
+					<table>
+						<tr>
+							<th>Host</th>
+							<td><input id="host" type="text" size="30" maxlength="60" value="" /></td>
+							<td rowspan="3">
+								<span id="message"></span>
+							</td>
+						</tr>
+						<tr>
+							<th>Port</th>
+							<td><input id="port" type="text" size="5" maxlength="5" value="" /></td>
+						</tr>
+						<tr>
+							<th>SSL</th>
+							<td><input id="ssl" type="checkbox" /></td>
+						</tr>
+					</table>
+					<button id="connect" value="true" onclick="start();">Connect</button>
+					<button id="popup" value="true" onclick="new_popup();">Popup</button>
 				</fieldset>
-				<canvas id="screen" width="1024" height="600"></canvas>
 			</form>
 		</div>
-		<div id="message">
+		<div id="disconnect_form">
+			<form onsubmit="return false;">
+				<fieldset>				
+					<button id="disconnect" onclick="stop();">Disconnect</button>
+					<button id="refresh" onclick="force_refresh();">Refresh</button>
+				<br />
+				</fieldset>
+			</form>
 		</div>
+		<canvas id="screen" width="1024" height="600"></canvas>
 		<div id="dpi" style="width: 1in; height: 1in; left: -100%; top: -100%; position: absolute;">
 		</div>
 	</body>

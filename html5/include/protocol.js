@@ -75,15 +75,15 @@ function on_message(m) {
 //hook websock events using packet handlers:
 function on_open(m) {
 	debug("on_open("+m+")");
-	process_packet(["open"]);
+	process_packet(["open", m]);
 }
 function on_close(m) {
 	show("on_close("+m+")");
-	process_packet(["close"]);
+	process_packet(["close", m]);
 }
 function on_error(m) {
 	show("on_error("+m+")");
-	process_packet(["error"]);
+	process_packet(["error", m]);
 }
 
 
