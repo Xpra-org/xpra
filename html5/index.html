@@ -240,7 +240,7 @@
 				var win = canvas_state.topOfStack();
 				if (win != null)
 					wid = window_to_id[win];
-				show("check_focus() window_to_id["+win+"]="+wid+", focus="+wid+", window_to_id="+window_to_id.toSource());
+				//show("check_focus() window_to_id["+win+"]="+wid+", focus="+wid+", window_to_id="+window_to_id.toSource());
 				if (wid!=focus)
 					set_focus(wid);
 			}
@@ -261,7 +261,7 @@
 			function make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties) {
 				var win = new XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties,
 						window_geometry_changed, mouse_move, mouse_click);
-				show("make_new_window("+wid+", "+x+", "+y+", "+w+", "+h+", "+metadata+", "+override_redirect+", "+client_properties+")="+win);
+				//show("make_new_window("+wid+", "+x+", "+y+", "+w+", "+h+", "+metadata+", "+override_redirect+", "+client_properties+")="+win);
 				id_to_window[wid] = win;
 				window_to_id[win] = wid;
 				geom = win.get_internal_geometry();
@@ -319,6 +319,16 @@
 				}
 			}
 
+			function process_raise_window(packet) {
+				var wid = packet[1];
+				var win = id_to_window[wid];
+				if (win!=null) {
+					canvas_state.raiseShape(win);
+					focus = wid;
+					check_focus();
+				}
+			}
+			
 			function process_window_resized(packet) {
 				//TODO
 			}
@@ -336,6 +346,9 @@
 				//setcursor("default")
 			}
 			function process_desktop_size(packet) {
+				//TODO
+			}
+			function process_clipboard_token(packet) {
 				//TODO
 			}
 
@@ -463,7 +476,9 @@
 						"server-window-resize"		: true,
 						"notify-startup-complete"	: true,
 						"generic-rgb-encodings"		: true,
-						"encodings"					: ["rgb", "png", "jpeg"],
+						"window.raise"				: true,
+						"encodings"					: ["rgb"],
+						"raw_window_icons"			: true,
 						//rgb24 is not efficient in HTML so don't use it:
 						//png and jpeg will need extra code
 						//"encodings.core"			: ["rgb24", "rgb32", "png", "jpeg"],
@@ -478,6 +493,9 @@
 						"encoding.video_reinit"		: false,
 						"encoding.video_scaling"	: false,
 						"encoding.csc_modes"		: [],
+						//sound (not yet):
+						"sound.receive"				: false,
+						"sound.send"				: false,
 						//compression bits:
 						"zlib"						: true,
 						"lz4"						: false,
@@ -495,6 +513,7 @@
 						"screen_sizes"				: get_screen_sizes(),
 						"dpi"						: get_DPI(),
 						//not handled yet, but we will:
+						"clipboard_enabled"			: false,
 						"notifications"				: true,
 						"cursors"					: true,
 						"bell"						: true,
@@ -573,8 +592,10 @@
 					"lost-window"			: process_lost_window,
 					"window-resized"		: process_window_resized,
 					"window-icon"			: process_window_icon,
+					"raise-window"			: process_raise_window,
 					"desktop_size"			: process_desktop_size,
 					"bell"					: process_bell,
+					"clipboard-token"		: process_clipboard_token,
 					};
 				for (var packet_type in packet_handlers) {
 					protocol.set_packet_handler(packet_type, packet_handlers[packet_type]);
