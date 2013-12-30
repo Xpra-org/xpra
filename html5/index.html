@@ -542,10 +542,19 @@
 
 			function onresize() {
 				var container = document.getElementById('screen_container');
-				show("onresize() container size: "+container.clientWidth+"x"+container.clientHeight+", window size: "+window.innerWidth+"x"+window.innerHeight);
+				var d_form = document.getElementById('disconnect_form');
+				var c_form = document.getElementById('connect_form');
+				/*show("onresize() container size: "+container.clientWidth+"x"+container.clientHeight+
+								", window size: "+window.innerWidth+"x"+window.innerHeight+
+								", d form size: "+d_form.offsetWidth+"x"+d_form.offsetHeight+
+								", c form size: "+c_form.offsetWidth+"x"+c_form.offsetHeight);*/
 				if (canvas_state!=null) {
-					canvas_state.canvas.width = container.clientWidth;
-					canvas_state.canvas.height = container.clientHeight;
+					var width = Math.min(container.clientWidth, window.innerWidth);
+					var height = Math.max(0, window.innerHeight-d_form.offsetHeight-c_form.offsetHeight);
+					canvas_state.canvas.width = width;
+					canvas_state.canvas.height = height;
+					canvas_state.width = width;
+					canvas_state.height = height;
 					canvas_state.invalidate();
 				}
 			}
@@ -553,6 +562,8 @@
 			function do_start(params) {
 				"use strict";
 				show("start()");
+				onresize();
+
 				//hook document and window events:
 				document.onkeydown = onkeydown;
 				document.onkeyup = onkeyup;
@@ -635,6 +646,7 @@
 					document.getElementById('disconnect_form').style.display = "block";
 				else
 					document.getElementById('disconnect_form').style.display = "none";
+				onresize();
 				set_ui_message("");
 
 				show("connected to server - sending hello");
