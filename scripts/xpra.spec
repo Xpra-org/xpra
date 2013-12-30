@@ -226,7 +226,7 @@ So basically it's screen for remote X apps.
 - fix crash in decoding error path
 - forward compatibility with namespace changes
 - forward compatibility with the new generic encoding names
-  
+
 * Tue Nov 05 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.9-1
 - fix h264 decoding of padded images
 - fix plain RGB encoding with very old clients

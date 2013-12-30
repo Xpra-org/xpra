@@ -39,7 +39,7 @@ class FakeRemoteClipboard(object):
 		self.fake_packet(("clipboard-contents", num, SELECTION, "UTF8_STRING", 8, "bytes", "hello"))
 
 
-def main():	
+def main():
 	logging.basicConfig(format="%(asctime)s %(message)s")
 	logging.root.setLevel(logging.DEBUG)
 

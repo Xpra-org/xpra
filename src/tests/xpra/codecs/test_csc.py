@@ -287,7 +287,7 @@ def do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h):
     #if src_format.find("RGB")>=0 or src_format.find("BGR")>=0:
     ib = max(src_format.find("X"), src_format.find("A"))
     import binascii
-    print("pixels start=%s" % binascii.hexlify(pixels[:20]))    
+    print("pixels start=%s" % binascii.hexlify(pixels[:20]))
     print("regen  start=%s" % binascii.hexlify(rpixels[:20]))
     check_plane(info, rpixels, pixels, tolerance=5, ignore_byte=ib)
     #else:

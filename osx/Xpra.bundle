@@ -4,10 +4,10 @@
 	<meta>
 		<prefix name="default">${env:JHBUILD_PREFIX}</prefix>
 		<destination overwrite="yes">./image</destination>
-		
+
 		<!-- Comment this out to keep the install names in binaries.  -->
 		<run-install-name-tool/>
-		
+
 		<launcher-script>${project}/Xpra_Launcher</launcher-script>
 	</meta>
 

@@ -21,7 +21,7 @@ xpra (0.11.0-1) UNRELEASED; urgency=low
 xpra (0.10.10-1) UNRELEASED; urgency=low
   * fix focus regression
   * fix MS Windows clipboard copy including null byte
-  * fix h264 decoding with old versions of avcodec 
+  * fix h264 decoding with old versions of avcodec
   * fix potential invalid read past the end of the buffer
   * fix static vpx build arguments
   * fix RGB modes exposed for transparent windows

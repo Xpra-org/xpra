@@ -24,11 +24,11 @@ def get_interface_index(host):
 	log("get_interface_index(%s)", host)
 	if host == "0.0.0.0" or host =="" or host=="*":
 		return	avahi.IF_UNSPEC
-	
+
 	if not if_nametoindex:
 		log.error("cannot convert interface to index (if_nametoindex is missing), so returning 'IF_UNSPEC', avahi will publish on ALL interfaces")
 		return	avahi.IF_UNSPEC
-	
+
 	iface = get_iface(host)
 	debug("get_iface(%s)=%s", host, iface)
 	if iface is None:

@@ -43,7 +43,7 @@ class MapResizeWindow(gtk.Window):
 		print("Xdraw() window=%s, size=%sx%s" % (self.window, self.width, self.height))
 		if self.window:
 			self.window.invalidate_rect(gdk.Rectangle(0, 0, self.width, self.height), False)
-	
+
 	def Xresize(self, *args):
 		self.step += 1
 		self.width = WIDTH+20*(self.step % 20)

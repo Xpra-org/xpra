@@ -9,7 +9,7 @@
 
 /**
  * Maps web keycodes to the X11 keysym so we can generate a matching X11 keymap.
- * 
+ *
  * TODO: some values are missing..
  */
 CHARCODE_TO_NAME = {
@@ -97,7 +97,7 @@ for (i=1; i<=24; i++) {
 
 /**
  * Converts an event into a list of modifiers.
- * 
+ *
  * @param event
  * @returns {Array} of strings
  */

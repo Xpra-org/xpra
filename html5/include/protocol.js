@@ -40,12 +40,14 @@ function error(msg) {
 // Private utility routines
 //
 function hex2(i) {
+	"use strict";
 	var s = i.toString(16);
 	if (s.length<2)
 		s = "0"+s;
 	return s;
 }
 function hexstr(uintArray) {
+	"use strict";
 	var s = "";
 	for (var i=0; i<uintArray.byteLength; i++) {
 		s += hex2(uintArray[i]);
@@ -60,6 +62,7 @@ function hexstr(uintArray) {
 
 //got a packet from websock:
 function on_message(m) {
+	"use strict";
 	var blob = m.data;
 	var reader = new FileReader()
 	reader.onload = function(evt) {
@@ -86,6 +89,8 @@ function on_error(m) {
 
 //process some bytes we have received:
 function process_bytes(bytearray) {
+	"use strict";
+
 	//debug("process_bytes("+bytearray.byteLength+" bytes)");
 	//add to existing buffer:
 	var tmp = new Uint8Array(buf.length + bytearray.byteLength);
@@ -99,6 +104,8 @@ function process_bytes(bytearray) {
 
 //we have enough bytes for a header, try to parse:
 function process_buffer() {
+	"use strict";
+
 	if (buf[0]!=ord("P"))
 		throw "invalid packet header format: "+hex2(buf[0]);
 
@@ -155,6 +162,8 @@ function process_buffer() {
 }
 
 function process_packet(packet) {
+	"use strict";
+
 	var packet_type = "";
 	var fn = "";
 	try {
@@ -177,6 +186,8 @@ function process_packet(packet) {
 
 //send a packet:
 function send(packet) {
+	"use strict";
+
 	var bdata = bencode(packet);
 
 	//convert string to a byte array:
@@ -209,10 +220,12 @@ function send(packet) {
 
 // Set event handlers
 function set_packet_handler(packet_type, handler) {
-    packet_handlers[packet_type] = handler;
+	"use strict";
+	packet_handlers[packet_type] = handler;
 }
 
 function open(uri) {
+	"use strict";
 	if (ws!=null) {
 		debug("opening a new uri, closing current websocket connection");
 		close();
@@ -225,6 +238,7 @@ function open(uri) {
 }
 
 function close() {
+	"use strict";
 	if (ws!=null) {
 		ws.close();
 		ws = null;
@@ -233,6 +247,7 @@ function close() {
 
 
 function constructor() {
+	"use strict";
 	api.open				= open;
     api.send				= send;
     api.set_packet_handler	= set_packet_handler;
