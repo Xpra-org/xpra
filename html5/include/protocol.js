@@ -26,6 +26,7 @@ var api = {},         // Public API
 	log_packets = true,
 	no_log_packet_types = ["ping_echo", "key-action", "damage-sequence",
 	                       "map-window", "configure-window",
+	                       "desktop_size",
 	                       "pointer-position", "button-action", "focus"];
 
 

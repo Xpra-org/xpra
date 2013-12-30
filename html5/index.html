@@ -55,6 +55,7 @@
 			var id_to_window = {};
 			var window_to_id = {};
 			var focus = -1;
+			var screen_size_change_pending = false;
 
 			var OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
 			var RGB_FORMATS = ["RGBX", "RGBA"];
@@ -540,6 +541,20 @@
 				}
 			}
 
+			function send_new_screen_size() {
+				if (screen_size_change_pending || protocol==null)
+					return;
+				screen_size_change_pending = true;
+				setTimeout(do_send_new_screen_size, 500);
+			}
+
+			function do_send_new_screen_size() {
+				screen_size_change_pending = false;
+				var ds = get_desktop_size();
+				var ss = get_screen_sizes();
+	            send(["desktop_size", ds[0], ds[1], ss]);
+			}
+
 			function onresize() {
 				var container = document.getElementById('screen_container');
 				var d_form = document.getElementById('disconnect_form');
@@ -557,6 +572,7 @@
 					canvas_state.height = height;
 					canvas_state.invalidate();
 				}
+				send_new_screen_size();
 			}
 
 			function do_start(params) {
