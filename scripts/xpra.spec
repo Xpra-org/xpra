@@ -942,13 +942,13 @@ cd xpra-%{version}
 
 
 %build
-cd xpra-all-%{version}
+cd xpra-%{version}
 rm -rf build install
 CFLAGS=-O2 python setup.py build %{ffmpeg_build_args} %{vpx_build_args} %{x264_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-cd xpra-all-%{version}
+cd xpra-%{version}
 %{__python} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
 
 #we should pass arguments to setup.py but rpm macros make this too difficult
