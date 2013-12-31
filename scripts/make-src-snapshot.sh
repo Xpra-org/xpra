@@ -23,6 +23,9 @@ find ${DIR} -name ".svn" -exec rm -fr {} \; 2>&1 | grep -v "No such file or dire
 find ${DIR} -name ".pyc" -exec rm -fr {} \;
 find ${DIR} -name "__pycache__" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"
 find ${DIR} -name "*.pyc" -exec rm -fr {} \;
+find ${DIR} -name "*.pyo" -exec rm -fr {} \;
+find ${DIR} -name "*.pyd" -exec rm -fr {} \;
+find ${DIR} -name "*.egg" -exec rm -fr {} \;
 
 RAW_SVN_VERSION=`svnversion`
 SVN_REVISION=`python -c "x=\"$RAW_SVN_VERSION\";y=x.split(\":\");y.reverse();z=y[0];print \"\".join([c for c in z if c in \"0123456789\"])"`

@@ -42,6 +42,7 @@ gtk2_ENABLED = client_ENABLED
 gtk3_ENABLED = client_ENABLED
 qt4_ENABLED = client_ENABLED
 opengl_ENABLED = client_ENABLED
+html5_ENABLED = True
 
 rencode_ENABLED = True
 cymaths_ENABLED = True
@@ -82,7 +83,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "vpx", "vpx_static",
             "webp", "rencode", "clipboard",
             "server", "client", "x11",
-            "gtk2", "gtk3", "qt4",
+            "gtk2", "gtk3", "qt4", "html5",
             "sound", "cyxor", "cymaths", "opengl", "argb",
             "warn", "strict", "shadow", "debug", "PIC", "Xdummy", "verbose")
 HELP = "-h" in sys.argv or "--help" in sys.argv
@@ -550,6 +551,15 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
 
 
 
+def glob_recurse(srcdir):
+    m = {}
+    for root, _, files in os.walk(srcdir):
+        for f in files:
+            dirname = root[len(srcdir)+1:]
+            filename = os.path.join(root, f)
+            m.setdefault(dirname, []).append(filename)
+    return m
+
 #*******************************************************************************
 if WIN32:
     # The Microsoft C library DLLs:
@@ -843,6 +853,7 @@ if WIN32:
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
                    ('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path)),
                    ]
+    html5_dir = ''
 
     if webp_ENABLED:
         #Note: confusingly, the python bindings are called webm...
@@ -868,6 +879,7 @@ else:
                     ("share/applications", ["xdg/xpra_launcher.desktop", "xdg/xpra.desktop"]),
                     ("share/icons", ["xdg/xpra.png"])
                   ]
+    html5_dir = "share/xpra/www"
     if webp_ENABLED:
         data_files.append(('share/xpra/webm', ["xpra/codecs/webm/LICENSE"]))
 
@@ -913,6 +925,13 @@ else:
             etc_files.append(xorg_conf)
         data_files.append((etc_prefix, etc_files))
     setup_options["scripts"] = scripts
+
+
+if html5_ENABLED:
+    for k,v in glob_recurse("html5").items():
+        if (k!=""):
+            k = os.sep+k
+        data_files.append((html5_dir+k, v))
 
 
 
