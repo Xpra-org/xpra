@@ -14,5 +14,5 @@ if [ "$?" == "0" ]; then
 	MAJOR_VERSION=`echo $FULL_VERSION | sed 's+\..*++g'`
 	DIST="el${MAJOR_VERSION}"
 fi
-cp dist/xpra-all-*.tar.gz ${SOURCES}
+cp dist/xpra-*.tar.gz ${SOURCES}
 rpmbuild -ba xpra.spec --define "python_sitelib ${PYTHON_SITELIB}" --define "build_no ${BUILD_NO}" --define "dist .${DIST}" --define "${DIST} 1"

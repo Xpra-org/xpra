@@ -907,9 +907,9 @@ So basically it's screen for remote X apps.
 - first rpm spec file
 
 %prep
-rm -rf $RPM_BUILD_DIR/xpra-all-%{version}
-zcat $RPM_SOURCE_DIR/xpra-all-%{version}.tar.gz | tar -xvf -
-cd xpra-all-%{version}
+rm -rf $RPM_BUILD_DIR/xpra-%{version}
+zcat $RPM_SOURCE_DIR/xpra-%{version}.tar.gz | tar -xvf -
+cd xpra-%{version}
 %if 0%{?no_strict}
 (sed -e -i s'/strict_ENABLED = True/strict_ENABLED = False/g' setup.py)
 (echo "setup.py" >> %{S:ignored_changed_files.txt})
