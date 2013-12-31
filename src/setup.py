@@ -163,7 +163,7 @@ STATIC_COMMON_DEFS = {'include_dirs': STATIC_INCLUDE_DIRS,
 # build options, these may get modified further down..
 #
 setup_options = {}
-setup_options["name"] = "xpra-all"
+setup_options["name"] = "xpra"
 setup_options["author"] = "Antoine Martin"
 setup_options["author_email"] = "antoine@devloop.org.uk"
 setup_options["version"] = xpra.__version__

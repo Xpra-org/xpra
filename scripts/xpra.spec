@@ -157,7 +157,7 @@ Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_v
 Group: Networking
 Packager: Antoine Martin <antoine@devloop.org.uk>
 URL: http://xpra.org/
-Source: xpra-all-%{version}.tar.gz
+Source: xpra-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 %if %{defined fedora}
 BuildRequires: python, setuptool
@@ -1004,7 +1004,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/xpra*
 %{python_sitelib}/xpra
 %if %{include_egg}
-%{python_sitelib}/xpra_all-*.egg-info
+%{python_sitelib}/xpra-*.egg-info
 %endif
 /usr/share/xpra
 /usr/share/man/man1/xpra*
