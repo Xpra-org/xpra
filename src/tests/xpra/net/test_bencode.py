@@ -8,17 +8,19 @@ import time
 from xpra.util import nonl
 encode, decode = None, None
 
+from xpra.net.bencode.bencode import bencode as p_bencode, bdecode as p_bdecode
+from xpra.net.bencode.cython_bencode import bencode as c_bencode, bdecode as c_bdecode
+
 def use_cython():
     global encode, decode
-    from xpra.net.bencode.cython_bencode import bencode, bdecode
-    encode = bencode
-    decode = bdecode
+    
+    encode = c_bencode
+    decode = c_bdecode
 
 def use_python():
     global encode, decode
-    from xpra.net.bencode.bencode import bencode, bdecode
-    encode = bencode
-    decode = bdecode
+    encode = p_bencode
+    decode = p_bdecode
 
 def plog(x):
     print(x)
@@ -97,66 +99,70 @@ def test_decoding():
     te("02:aa", ValueError)
 
 
-def test_encoding():
+def t(v, encstr=None):
+    be = encode(v)
+    log("bencode(%s)=%s" % (i(v), i(be)))
+    if encstr:
+        p = 0
+        while p<min(len(encstr), len(be)):
+            if encstr[p]!=be[p]:
+                break
+            p += 1
+        assert be==encstr, "expected '%s' but got '%s', strings differ at position %s: expected '%s' but found '%s' (lengths: %s vs %s)" % (encstr, be, p, encstr[p], be[p], len(encstr), len(be))
+    restored = decode(be)
+    log("decode(%s)=%s" % (i(be), i(restored)))
+    rlist = restored[0]
+    if len(rlist)!=len(v):
+        log("MISMATCH!")
+        log("v=%s" % v)
+        log("l=%s" % rlist)
+    assert len(rlist)==2
+    assert rlist[0]==v[0]
+    for ok,ov in v[1].items():
+        d = rlist[1]
+        if ok not in d:
+            log("restored dict is missing %s" % ok)
+            return rlist
+        rv = d.get(ok)
+        if rv!=ov:
+            log("value for %s does not match: %s vs %s" % (ok, ov, rv))
+            return rlist
+    return rlist
 
-    def t(v, encstr=None):
-        be = encode(v)
-        log("bencode(%s)=%s" % (i(v), i(be)))
-        if encstr:
-            assert be==encstr
-        restored = decode(be)
-        log("decode(%s)=%s" % (i(be), i(restored)))
-        rlist = restored[0]
-        if len(rlist)!=len(v):
-            log("MISMATCH!")
-            log("v=%s" % v)
-            log("l=%s" % rlist)
-        assert len(rlist)==2
-        assert rlist[0]==v[0]
-        for ok,ov in v[1].items():
-            d = rlist[1]
-            if ok not in d:
-                log("restored dict is missing %s" % ok)
-                return rlist
-            rv = d.get(ok)
-            if rv!=ov:
-                log("value for %s does not match: %s vs %s" % (ok, ov, rv))
-                return rlist
-        return rlist
 
-    def test_hello():
-        log("test_hello()")
-        d = {}
-        d["__prerelease_version"] = "0.0.7.26"
-        #caps.put("deflate", 6);
-        d["desktop_size"] = [480,800]
-        jpeg = 4
-        d["jpeg"] =  jpeg
-        challenge = "ba59e4110119264f4a6eaf3adc075ea2c5408550"
-        d["challenge_response"] = challenge
-        hello = ["hello", d]
-        t(hello, "l5:hellod20:__prerelease_version8:0.0.7.2618:challenge_response40:ba59e4110119264f4a6eaf3adc075ea2c540855012:desktop_sizeli480ei800ee4:jpegi4eee")
-        log("")
 
-    def test_large_hello():
-        log("test_large_hello()")
-        d = {'start_time': 1325786122,
-                'resize_screen': False, 'bell': True, 'desktop_size': [800, 600], 'modifiers_nuisance': True,
-                'actual_desktop_size': [3840, 2560], 'encodings': ['rgb24', 'jpeg', 'png'],
-                'ping': True, 'damage_sequence': True, 'packet_size': True,
-                'encoding': 'rgb24', 'platform': 'linux2', 'clipboard': True, 'cursors': True,
-                'raw_keycodes_feature': True, 'focus_modifiers_feature': True, '__prerelease_version': '0.0.7.33',
-                'notifications': True, 'png_window_icons': True,
-                }
-        hello = ["hello", d]
-        t(hello, "l5:hellod20:__prerelease_version8:0.0.7.3319:actual_desktop_sizeli3840ei2560ee4:belli1e9:clipboardi1e7:cursorsi1e15:damage_sequencei1e12:desktop_sizeli800ei600ee8:encoding5:rgb249:encodingsl5:rgb244:jpeg3:pnge23:focus_modifiers_featurei1e18:modifiers_nuisancei1e13:notificationsi1e11:packet_sizei1e4:pingi1e8:platform6:linux216:png_window_iconsi1e20:raw_keycodes_featurei1e13:resize_screeni0e10:start_timei1325786122eee")
+hello = ["hello", {
+                   "__prerelease_version"   : "0.0.7.26",
+                   "desktop_size"           : [480,800],
+                   "jpeg"                   : 4,
+                   "challenge"              : "ba59e4110119264f4a6eaf3adc075ea2c5408550",
+                   "challenge_response"     : "ba59e4110119264f4a6eaf3adc075ea2c5408550",
+                   }]
+hello_output = "l5:hellod12:desktop_sizeli480ei800ee9:challenge40:ba59e4110119264f4a6eaf3adc075ea2c540855020:__prerelease_version8:0.0.7.264:jpegi4e18:challenge_response40:ba59e4110119264f4a6eaf3adc075ea2c5408550ee"
+def test_encoding_hello():
+    log("test_hello()")
+    t(hello, hello_output)
+    log("")
 
-        d['some_new_feature_we_may_add'] = {"with_a_nested_dict" : {"containing_another_dict" : ["with", "nested", "arrays", ["in", ["it"]]]}}
-        t(hello, "l5:hellod20:__prerelease_version8:0.0.7.3319:actual_desktop_sizeli3840ei2560ee4:belli1e9:clipboardi1e7:cursorsi1e15:damage_sequencei1e12:desktop_sizeli800ei600ee8:encoding5:rgb249:encodingsl5:rgb244:jpeg3:pnge23:focus_modifiers_featurei1e18:modifiers_nuisancei1e13:notificationsi1e11:packet_sizei1e4:pingi1e8:platform6:linux216:png_window_iconsi1e20:raw_keycodes_featurei1e13:resize_screeni0e27:some_new_feature_we_may_addd18:with_a_nested_dictd23:containing_another_dictl4:with6:nested6:arraysl2:inl2:iteeeee10:start_timei1325786122eee")
-        log("")
+large_hello = ["hello", {
+            'start_time': 1325786122,
+            'resize_screen': False, 'bell': True, 'desktop_size': [800, 600], 'modifiers_nuisance': True,
+            'actual_desktop_size': [3840, 2560], 'encodings': ['rgb24', 'jpeg', 'png'],
+            'ping': True, 'damage_sequence': True, 'packet_size': True,
+            'encoding': 'rgb24', 'platform': 'linux2', 'clipboard': True, 'cursors': True,
+            'raw_keycodes_feature': True, 'focus_modifiers_feature': True, '__prerelease_version': '0.0.7.33',
+            'notifications': True, 'png_window_icons': True,
+            }]
+large_hello_output = "l5:hellod19:actual_desktop_sizeli3840ei2560ee7:cursorsi1e4:belli1e12:desktop_sizeli800ei600ee10:start_timei1325786122e8:encoding5:rgb244:pingi1e15:damage_sequencei1e11:packet_sizei1e8:platform6:linux220:__prerelease_version8:0.0.7.339:clipboardi1e20:raw_keycodes_featurei1e13:resize_screeni0e9:encodingsl5:rgb244:jpeg3:pnge23:focus_modifiers_featurei1e18:modifiers_nuisancei1e13:notificationsi1e16:png_window_iconsi1eee"
+def test_encoding_large_hello():
+    log("test_large_hello()")
+    t(large_hello, large_hello_output)
 
-    test_hello()
-    test_large_hello()
+nested_dicts = ['some_new_feature_we_may_add', {"with_a_nested_dict" : {"containing_another_dict" : ["with", "nested", "arrays", ["in", ["it", "going", [["deep", 0, -1]]]]]}}]
+nested_dicts_output = "l27:some_new_feature_we_may_addd18:with_a_nested_dictd23:containing_another_dictl4:with6:nested6:arraysl2:inl2:it5:goingll4:deepi0ei-1eeeeeeeee"
+def test_nested_dicts():
+    t(nested_dicts, nested_dicts_output)
+    log("")
 
 
 def test_random():
@@ -167,19 +173,23 @@ def test_random():
     decode(s)
     log("")
 
-def test_large_dict():
-    log("test_large_dict()")
+def get_test_data_dict():
     try:
         from xpra.x11.gtk_x11 import gdk_display_source             #@UnusedImport
         from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings        #@UnresolvedImport
         keyboard_bindings = X11KeyboardBindings()
-        mappings = keyboard_bindings.get_keycode_mappings()
-        b = encode(mappings)
-        log("bencode(%s)=%s" % (i(mappings), i(b)))
-        d = decode(b)
-        log("bdecode(%s)=%s" % (i(b), i(d)))
+        return keyboard_bindings.get_keycode_mappings()
     except ImportError, e:
-        log("test_large_dict() skipped because of: %s" % e)
+        log("cannot use X11 keyboard data as test data: %s" % e);
+        return {"foo" : "bar"}
+test_dict = get_test_data_dict()
+
+def test_large_dict():
+    log("test_large_dict()")
+    b = encode(test_dict)
+    log("bencode(%s)=%s" % (i(test_dict), i(b)))
+    d = decode(b)
+    log("bdecode(%s)=%s" % (i(b), i(d)))
     log("")
 
 def test_compare_cython():
@@ -190,11 +200,13 @@ def test_compare_cython():
     for n,x in {"python" : use_python, "cython" : use_cython}.items():
         x()
         start = time.time()
-        for i in range(100):
+        for i in xrange(200):
             test_large_dict()
             test_random()
             test_decoding()
-            test_encoding()
+            test_encoding_hello()
+            test_encoding_large_hello()
+            test_nested_dicts()
         end = time.time()
         results[n] = int(1000.0*(end-start))
     use_print()
@@ -207,7 +219,9 @@ def main():
         x()
         test_random()
         test_decoding()
-        test_encoding()
+        test_encoding_hello()
+        test_encoding_large_hello()
+        test_nested_dicts()
         test_large_dict()
 
     test_compare_cython()
