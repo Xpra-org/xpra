@@ -44,6 +44,8 @@ qt4_ENABLED = client_ENABLED
 opengl_ENABLED = client_ENABLED
 html5_ENABLED = True
 
+bencode_ENABLED = True
+cython_bencode_ENABLED = True
 rencode_ENABLED = True
 cymaths_ENABLED = True
 cyxor_ENABLED = True
@@ -81,7 +83,9 @@ SWITCHES = ("enc_x264", "x264_static",
             "csc_swscale", "swscale_static",
             "csc_nvcuda", "csc_opencl", "csc_cython",
             "vpx", "vpx_static",
-            "webp", "rencode", "clipboard",
+            "webp",
+            "rencode", "bencode", "cython_bencode",
+            "clipboard",
             "server", "client", "x11",
             "gtk2", "gtk3", "qt4", "html5",
             "sound", "cyxor", "cymaths", "opengl", "argb",
@@ -1126,6 +1130,19 @@ if rencode_ENABLED:
     cython_add(Extension("xpra.net.rencode._rencode",
                 ["xpra/net/rencode/rencode.pyx"],
                 **rencode_pkgconfig))
+
+
+toggle_packages(bencode_ENABLED, "xpra.net.bencode")
+if cython_bencode_ENABLED:
+    bencode_pkgconfig = pkgconfig()
+    if not debug_ENABLED:
+        if WIN32:
+            add_to_keywords(bencode_pkgconfig, 'extra_compile_args', "/Ox")
+        else:
+            add_to_keywords(bencode_pkgconfig, 'extra_compile_args', "-O3")
+    cython_add(Extension("xpra.net.bencode.cython_bencode",
+                ["xpra/net/bencode/cython_bencode.pyx"],
+                **bencode_pkgconfig))
 
 
 if ext_modules:

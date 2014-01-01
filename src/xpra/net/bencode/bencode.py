@@ -9,6 +9,8 @@
 
 # Original version written by Petru Paler
 
+__version__ = ("Python", 0, 11)
+
 import sys
 if sys.version > '3':
     long = int              #@ReservedAssignment

@@ -328,7 +328,6 @@ class ProxyProcess(Process):
         self.client_protocol = Protocol(self, self.client_conn, self.process_client_packet, self.get_client_packet)
         self.client_protocol.restore_state(self.client_state)
         self.server_protocol = Protocol(self, self.server_conn, self.process_server_packet, self.get_server_packet)
-        self.server_protocol.enable_bencode()
         #server connection tweaks:
         self.server_protocol.large_packets.append("draw")
         self.server_protocol.large_packets.append("keymap-changed")

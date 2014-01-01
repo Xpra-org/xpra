@@ -27,7 +27,6 @@ log = Logger()
 debug = debug_if_env(log, "XPRA_NETWORK_DEBUG")
 from xpra.os_util import Queue, strtobytes, get_hex_uuid
 from xpra.daemon_thread import make_daemon_thread
-from xpra.net.bencode import bencode, bdecode
 from xpra.simple_stats import std_unit, std_unit_dec
 
 try:
@@ -58,15 +57,24 @@ try:
     try:
         from xpra.net.rencode import dumps as rencode_dumps  #@UnresolvedImport
         from xpra.net.rencode import loads as rencode_loads  #@UnresolvedImport
-        from xpra.net.rencode import __version__
-        rencode_version = __version__
+        from xpra.net.rencode import __version__ as rencode_version
         debug("found rencode version %s", rencode_version)
     except ImportError:
         log.error("rencode load error", exc_info=True)
+    print("rencode="+rencode_dumps)
 except Exception, e:
-    log.error("xpra.rencode is missing: %s", e)
+    print("xpra.rencode is missing: %s", e)
 has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
-use_rencode = has_rencode and not os.environ.get("XPRA_USE_BENCODER", "0")=="1"
+use_rencode = has_rencode and os.environ.get("XPRA_USE_RENCODER", "1")=="1"
+
+bencode, bdecode = None, None
+try:
+    from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
+except Exception, e:
+    print("xpra.bencode is missing: %s", e)
+has_bencode = bencode is not None and bdecode is not None
+use_bencode = has_bencode and os.environ.get("XPRA_USE_BENCODER", "1")=="1"
+
 
 #stupid python version breakage:
 if sys.version > '3':
@@ -124,7 +132,7 @@ def get_network_caps():
                 "chunked_compression"   : True,
                 "digest"                : ("hmac", "xor"),
                 "rencode"               : use_rencode,
-                "bencode"               : True,
+                "bencode"               : use_bencode,
                 "lz4"                   : use_lz4,
                 "zlib"                  : True,
                }
@@ -141,6 +149,8 @@ def get_network_caps():
 
     if has_rencode:
         caps["rencode.version"] = rencode_version
+    if has_bencode:
+        caps["bencode.version"] = bencode_version
     return caps
 
 
@@ -245,6 +255,7 @@ class Protocol(object):
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
         self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
         self._source_has_more = threading.Event()
+        self.enable_default_encoder()
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "aliases",
                     "chunked_compression",
@@ -470,12 +481,19 @@ class Protocol(object):
                 self.do_verify_packet(new_tree("key for value='%s'" % str(v)), k)
                 self.do_verify_packet(new_tree("value for key='%s'" % str(k)), v)
 
+    def enable_default_encoder(self):
+        if has_bencode:
+            self.enable_bencode()
+        else:
+            self.enable_rencode()
+
     def enable_bencode(self):
+        assert has_bencode, "bencode cannot be enabled: the module failed to load!"
         debug("enable_bencode()")
         self._encoder = self.bencode
 
     def enable_rencode(self):
-        assert rencode_dumps is not None, "rencode cannot be enabled: the module failed to load!"
+        assert has_rencode, "rencode cannot be enabled: the module failed to load!"
         debug("enable_rencode()")
         self._encoder = self.rencode
 
