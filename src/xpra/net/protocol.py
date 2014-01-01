@@ -58,10 +58,8 @@ try:
         from xpra.net.rencode import dumps as rencode_dumps  #@UnresolvedImport
         from xpra.net.rencode import loads as rencode_loads  #@UnresolvedImport
         from xpra.net.rencode import __version__ as rencode_version
-        debug("found rencode version %s", rencode_version)
-    except ImportError:
-        log.error("rencode load error", exc_info=True)
-    print("rencode="+rencode_dumps)
+    except ImportError, e:
+        print("rencode load error: %s" % e)
 except Exception, e:
     print("xpra.rencode is missing: %s", e)
 has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
