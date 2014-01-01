@@ -37,7 +37,7 @@ cdef int find(const char *p, char c, int start, size_t len):
 cdef decode_int(const char *x, int f, int l):
     f += 1
     cdef int newf = find(x, 'e', f, l)
-    cdef int n
+    cdef object n
     assert newf>=0, "end of int not found"
     try:
         n = int(x[f:newf])
@@ -79,10 +79,15 @@ cdef decode_list(const char *x, int f, int l):
 cdef decode_dict(const char *x, int f, int l):
     cdef object r = {}
     cdef object k
+    cdef object v               #dict value
     f += 1
     while x[f] != 'e':
         k, f = decode(x, f, l, "dictionary key")
-        r[k], f = decode(x, f, l, "dictionary value")
+        v, f = decode(x, f, l, "dictionary value")
+        try:
+            r[k] = v
+        except TypeError, e:
+            raise ValueError("failed to set dictionary key %s: %s" % (k, e))
     return (r, f + 1)
 
 
@@ -116,8 +121,7 @@ def bdecode(x):
 
 # Encoding functions:
 
-cdef encode_int(long x, r):
-    # Explicit cast, because bool.__str__ is annoying.
+cdef encode_int(x, r):
     r.extend(('i', str(x), 'e'))
 
 cdef encode_string(x, r):
@@ -168,5 +172,10 @@ cdef void encode(object v, r):
 
 def bencode(x):
     r = []
-    encode(x, r)
-    return ''.join(r)
+    try:
+        encode(x, r)
+        return ''.join(r)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        raise ValueError("cannot encode '%s'" % x)
