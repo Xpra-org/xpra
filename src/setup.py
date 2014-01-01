@@ -45,7 +45,7 @@ opengl_ENABLED = client_ENABLED
 html5_ENABLED = True
 
 bencode_ENABLED = True
-cython_bencode_ENABLED = True
+cython_bencode_ENABLED = False
 rencode_ENABLED = True
 cymaths_ENABLED = True
 cyxor_ENABLED = True
