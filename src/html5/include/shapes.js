@@ -201,14 +201,7 @@ function CanvasState(canvas) {
 		this.selectionHandles.push(new Shape(this));
 	}
 
-	// **** Then events! ****
-
-	// This is an example of a closure!
-	// Right here "this" means the CanvasState. But we are making events on the Canvas itself,
-	// and when the events are fired on the canvas the variable "this" is going to mean the canvas!
-	// Since we still want to use this particular CanvasState in the events we have to save a reference to it.
-	// This is our reference!
-
+	// Hook up the events we want to receive:
 	this.event_listeners = []
 	var listeners = [
 			['selectstart'	, false],
@@ -228,7 +221,6 @@ function CanvasState(canvas) {
 		return false;
 	}
 
-
 	// **** Options! ****
 	this.selectionColor = '#CC0000';
 	this.selectionWidth = 2;
@@ -236,6 +228,7 @@ function CanvasState(canvas) {
 	this.selectionBoxColor = 'darkred';
 	this.interval = 30;
 
+	// This is an example of a closure:
 	var self = this;
 	this.repaint_timer = setInterval(function() { self.draw(); }, self.interval);
 };

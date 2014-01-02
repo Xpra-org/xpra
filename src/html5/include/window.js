@@ -7,6 +7,12 @@
  * Based on shape.js
  */
 
+/**
+ * This is the class representing a window we draw on the canvas.
+ * It has a geometry, it may have borders and a top bar.
+ * The contents of the window is an image, which gets updated
+ * when we receive pixels from the server.
+ */
 function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties,
 		geometry_cb, mouse_move_cb, mouse_click_cb) {
 	"use strict";
@@ -70,10 +76,16 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	canvas_state.addShape(this);
 };
 
+/**
+ * toString allows us to identify windows by their unique window id.
+ */
 XpraWindow.prototype.toString = function() {
 	return "Window("+this.wid+")";
 };
 
+/**
+ * Allocates the image object containing the window's pixels.
+ */
 XpraWindow.prototype.create_image_backing = function() {
 	var previous_image = this.image;
 	var img_geom = this.get_internal_geometry();
@@ -85,18 +97,29 @@ XpraWindow.prototype.create_image_backing = function() {
 	}
 };
 
+/**
+ * Depending on the type of window (OR, fullscreen)
+ * we calculate the offsets from the edge of the window
+ * to the contents of the window.
+ */
 XpraWindow.prototype.calculate_offsets = function() {
-	if (this.override_redirect || this.maximized) {
+	if (this.override_redirect || this.fullscreen) {
+		//no borders or top bar at all:
 		this.borderWidth = 0;
 		this.topBarHeight = 0;
 	}
 	else {
+		//regular borders and top bar:
 		this.borderWidth = 2;
 		this.topBarHeight = 20;
 	}
 	this.offsets = [this.borderWidth+this.topBarHeight, this.borderWidth, this.borderWidth, this.borderWidth];
 };
 
+/**
+ * Update our metadata cache with new key-values,
+ * then call set_metadata with these new key-values.
+ */
 XpraWindow.prototype.update_metadata = function(metadata) {
 	//update our metadata cache with new key-values:
 	for (var attrname in metadata) {
@@ -105,6 +128,9 @@ XpraWindow.prototype.update_metadata = function(metadata) {
     this.set_metadata(metadata)
 };
 
+/**
+ * Apply new metadata settings.
+ */
 XpraWindow.prototype.set_metadata = function(metadata) {
     if ("fullscreen" in metadata) {
     	this.set_fullscreen(metadata["fullscreen"]==1);
@@ -117,6 +143,10 @@ XpraWindow.prototype.set_metadata = function(metadata) {
     }
 };
 
+/**
+ * Save the window geometry so we can restore it later
+ * (ie: when un-maximizing or un-fullscreening)
+ */
 XpraWindow.prototype.save_geometry = function() {
 	if (this.x==undefined || this.y==undefined)
 		return;
@@ -128,6 +158,9 @@ XpraWindow.prototype.save_geometry = function() {
     		"maximized"	: this.maximized,
     		"fullscreen" : this.fullscreen};
 }
+/**
+ * Restores the saved geometry (if it exists).
+ */
 XpraWindow.prototype.restore_geometry = function() {
 	if (this.saved_geometry==null) {
 		return;
@@ -140,59 +173,93 @@ XpraWindow.prototype.restore_geometry = function() {
 	this.fullscreen = this.saved_geometry["fullscreen"];
 };
 
+/**
+ * Maximize / unmaximizes the window.
+ */
 XpraWindow.prototype.set_maximized = function(maximized) {
 	//show("set_maximized("+maximized+")");
 	if (this.maximized==maximized) {
 		return;
 	}
-	if (maximized) {
-		this.save_geometry();
-		this.x = 0;
-		this.y = 0;
-		this.w = this.state.width;
-		this.h = this.state.height;
-	}
-	else {
-		this.restore_geometry();
-	}
+	this.max_save_restore(maximized);
 	this.maximized = maximized;
+	this.calculate_offsets();
 	this.handle_resize();
 };
+/**
+ * Fullscreen / unfullscreen the window.
+ */
 XpraWindow.prototype.set_fullscreen = function(fullscreen) {
 	//show("set_fullscreen("+fullscreen+")");
 	if (this.fullscreen==fullscreen) {
 		return;
 	}
-	if (fullscreen) {
+	this.max_save_restore(fullscreen);
+	this.fullscreen = fullscreen;
+	this.calculate_offsets();
+	this.handle_resize();
+};
+
+/**
+ * Either:
+ * - save the geometry and use all the space
+ * - or restore the geometry
+ */
+XpraWindow.prototype.max_save_restore = function(use_all_space) {
+	if (use_all_space) {
 		this.save_geometry();
-		this.x = 0;
-		this.y = 0;
-		this.w = this.state.width;
-		this.h = this.state.height;
+		this.fill_canvas();
 	}
 	else {
 		this.restore_geometry();
 	}
-	this.fullscreen = fullscreen;
-	this.handle_resize();
 };
 
+/**
+ * Use up all the canvas space
+ */
+XpraWindow.prototype.fill_canvas = function() {
+	this.x = 0;
+	this.y = 0;
+	this.w = this.state.width;
+	this.h = this.state.height;
+};
+
+/**
+ * We have resized the window, so we need to:
+ * - resize the backing image
+ * - tell the canvas to repaint us
+ * - fire the geometry_cb
+ */
 XpraWindow.prototype.handle_resize = function() {
-	this.calculate_offsets();
 	this.create_image_backing();
 	this.state.invalidate();
 	if (this.geometry_cb!=null) {
 		this.geometry_cb(this);
 	}
-}
+};
 
+/**
+ * The canvas ("screen") has been resized, we may need to resize our window to match
+ * if it is fullscreen or maximized.
+ */
+XpraWindow.prototype.canvas_resized = function() {
+	if (this.fullscreen || this.maximized) {
+		show("canvas_resized: keeping window "+this+" maximized/fullscreen");
+		this.fill_canvas();
+		this.handle_resize();
+	}
+};
 
 XpraWindow.prototype.move_resize = Shape.prototype.move_resize;
 XpraWindow.prototype.move = Shape.prototype.move;
 XpraWindow.prototype.resize = Shape.prototype.resize;
 XpraWindow.prototype.get_window_geometry = Shape.prototype.get_window_geometry;
 
-// The geometry of the window image:
+/**
+ * Returns the geometry of the window backing image,
+ * the inner window geometry (without any borders or top bar).
+ */
 XpraWindow.prototype.get_internal_geometry = function(ctx) {
 	"use strict";
 	// This should always be true:
@@ -204,6 +271,10 @@ XpraWindow.prototype.get_internal_geometry = function(ctx) {
 			 h : this.h - (this.borderWidth*2 + this.topBarHeight)};
 };
 
+/**
+ * If the click is in the "internal_geometry" (see above),
+ * then we fire "mouse_click_cb" (if it is set).
+ */
 XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modifiers, buttons) {
 	"use strict";
 	var igeom = this.get_internal_geometry();
@@ -212,6 +283,10 @@ XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modi
 	}
 };
 
+/**
+ * If the click is in the "internal_geometry" (see above),
+ * then we fire "mouse_move_cb" (if it is set).
+ */
 XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
 	"use strict";
 	var igeom = this.get_internal_geometry();
@@ -220,7 +295,12 @@ XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
 	}
 };
 
-// Draws this shape to a given context
+/**
+ * Draws this window to the given context:
+ * - draw the window frame (if not an OR window and not fullscreen)
+ * - draw the backing image (the window pixels)
+ * - draw selection borders (if the window is the one currently selected)
+ */
 XpraWindow.prototype.draw = function(ctx) {
 	"use strict";
 
@@ -237,7 +317,10 @@ XpraWindow.prototype.draw = function(ctx) {
 	}
 };
 
-// Draws window frame
+/**
+ * Draws the window frame:
+ * a simple rectangle around the edge.
+ */
 XpraWindow.prototype.draw_frame = function(ctx) {
 	"use strict";
 
@@ -253,8 +336,10 @@ XpraWindow.prototype.draw_frame = function(ctx) {
 };
 
 
-// Draws border and selection rectangles
-// which indicate that the window is selected
+/**
+ * Draws border and selection rectangles
+ * which indicate that the window is selected
+ */
 XpraWindow.prototype.draw_selection = function(ctx) {
 	"use strict";
 	if (this.maximized || this.fullscreen) {
@@ -308,7 +393,10 @@ XpraWindow.prototype.draw_selection = function(ctx) {
 	}
 };
 
-// Updates the window image with new pixel data
+/**
+ * Updates the window image with new pixel data
+ * we have received from the server.
+ */
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options) {
 	"use strict";
 	//show("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
@@ -372,7 +460,9 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 	this.state.invalidate();
 };
 
-// Close the window and free all resources
+/**
+ * Close the window and free all resources
+ */
 XpraWindow.prototype.destroy = function destroy() {
 	"use strict";
 	if (this.state!=null) {
@@ -381,7 +471,9 @@ XpraWindow.prototype.destroy = function destroy() {
 	}
 };
 
-// Determine if a point is inside the window's contents
+/**
+ * Determine if a point is inside the window's contents
+ */
 XpraWindow.prototype.contains = function(mx, my) {
 	"use strict";
 	// All we have to do is make sure the Mouse X,Y fall in the area between
@@ -390,6 +482,10 @@ XpraWindow.prototype.contains = function(mx, my) {
 					(this.y <= my) && (this.y + this.h >= my);
 };
 
+/**
+ * Determine if a point is inside the window's grab area.
+ * (the edges that are not part of the image backing)
+ */
 XpraWindow.prototype.is_grab_area = function(mx, my) {
 	"use strict";
 	if (!this.contains(mx, my))
