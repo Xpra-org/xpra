@@ -7,44 +7,58 @@
  * Based on shape.js
  */
 
-
 function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties,
 		geometry_cb, mouse_move_cb, mouse_click_cb) {
 	"use strict";
-	// This is a very simple and unsafe constructor. All we're doing is checking if the values exist.
-	// "x || 0" just means "if there is a value for x, use that. Otherwise use 0."
-	// But we aren't checking anything else! We could put "Lalala" for the value of x
 	//keep reference to the canvas:
 	this.state = canvas_state;
+	//callbacks start null until we finish init:
+	this.geometry_cb = null;
+	this.mouse_move_cb = null;
+	this.mouse_click_cb = null;
+
+	//styling:
+	this.borderColor = '#101028';
+	this.topBarColor = '#A8A8B0';
+
+	//the window "backing":
+	this.image = null;
 
 	//xpra specific attributes:
 	this.wid = wid;
-	this.metadata = metadata;
+	this.metadata = {};
 	this.override_redirect = override_redirect;
 	this.client_properties = client_properties;
 
-	// the space taken by window decorations:
-	this.borderColor = '#101028';
-	if (override_redirect) {
-		this.borderWidth = 0;
-		this.topBarHeight = 0;
-	}
-	else {
-		this.borderWidth = 2;
-		this.topBarHeight = 20;
-	}
+	//window attributes:
+	this.title = null;
+	this.fullscreen = false;
+	this.saved_geometry = null;
+	this.maximized = false;
 	this.focused = false;
-	this.topBarColor = '#A8A8B0';
-	this.offsets = [this.borderWidth+this.topBarHeight, this.borderWidth, this.borderWidth, this.borderWidth];
 
-	// account for borders, and try to make the image area map to (x,y):
-	var rx = (x || 0) - this.borderWidth;
-	var ry = (y || 0) - this.topBarHeight + this.borderWidth;
-	var rw = (w || 1) + this.borderWidth*2;
-	var rh = (h || 1) + this.borderWidth*2 + this.topBarHeight;
-	// so we can call move_resize safely without firing a callback that does not exist:
-	this.geometry_cb = null;
-	this.move_resize(rx, ry, rw, rh);
+	//not the real geometry we will use,
+	//but enough to avoid errors if update_metadata fires changes
+	this.x = x;
+	this.y = y;
+	this.w = w;
+	this.h = h;
+
+	this.update_metadata(metadata);
+
+	// the space taken by window decorations:
+	this.calculate_offsets();
+
+	if (!this.fullscreen && !this.maximized) {
+		// if fullscreen or maximized, the metadata update will have set the new size already
+		// account for borders, and try to make the image area map to (x,y):
+		var rx = (x || 0) - this.borderWidth;
+		var ry = (y || 0) - this.topBarHeight + this.borderWidth;
+		var rw = (w || 1) + this.borderWidth*2;
+		var rh = (h || 1) + this.borderWidth*2 + this.topBarHeight;
+		this.move_resize(rx, ry, rw, rh);
+		//show("after move resize: ("+this.w+", "+this.h+")");
+	}
 
 	// now safe to assign the callbacks:
 	this.geometry_cb = geometry_cb || null;
@@ -52,12 +66,124 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	this.mouse_click_cb = mouse_click_cb || null;
 
 	//create the image holding the pixels (the "backing"):
-	this.image = canvas_state.canvas.getContext('2d').createImageData(w, h);
+	this.create_image_backing();
 	canvas_state.addShape(this);
 };
 
 XpraWindow.prototype.toString = function() {
 	return "Window("+this.wid+")";
+};
+
+XpraWindow.prototype.create_image_backing = function() {
+	var previous_image = this.image;
+	var img_geom = this.get_internal_geometry();
+	//show("createImageData: "+img_geom.toSource());
+	this.image = canvas_state.canvas.getContext('2d').createImageData(img_geom.w, img_geom.h);
+	if (previous_image) {
+		//copy previous pixels to new image, ignoring bit gravity
+		//TODO!
+	}
+};
+
+XpraWindow.prototype.calculate_offsets = function() {
+	if (this.override_redirect || this.maximized) {
+		this.borderWidth = 0;
+		this.topBarHeight = 0;
+	}
+	else {
+		this.borderWidth = 2;
+		this.topBarHeight = 20;
+	}
+	this.offsets = [this.borderWidth+this.topBarHeight, this.borderWidth, this.borderWidth, this.borderWidth];
+};
+
+XpraWindow.prototype.update_metadata = function(metadata) {
+	//update our metadata cache with new key-values:
+	for (var attrname in metadata) {
+		this.metadata[attrname] = metadata[attrname];
+	}
+    this.set_metadata(metadata)
+};
+
+XpraWindow.prototype.set_metadata = function(metadata) {
+    if ("fullscreen" in metadata) {
+    	this.set_fullscreen(metadata["fullscreen"]==1);
+    }
+    if ("maximized" in metadata) {
+    	this.set_maximized(metadata["maximized"]==1);
+    }
+    if ("title" in metadata) {
+    	this.title = metadata["title"];
+    }
+};
+
+XpraWindow.prototype.save_geometry = function() {
+	if (this.x==undefined || this.y==undefined)
+		return;
+    this.saved_geometry = {
+    		"x" : this.x,
+    		"y"	: this.y,
+    		"w"	: this.w,
+    		"h" : this.h,
+    		"maximized"	: this.maximized,
+    		"fullscreen" : this.fullscreen};
+}
+XpraWindow.prototype.restore_geometry = function() {
+	if (this.saved_geometry==null) {
+		return;
+	}
+	this.x = this.saved_geometry["x"];
+	this.y = this.saved_geometry["y"];
+	this.w = this.saved_geometry["w"];
+	this.h = this.saved_geometry["h"];
+	this.maximized = this.saved_geometry["maximized"];
+	this.fullscreen = this.saved_geometry["fullscreen"];
+};
+
+XpraWindow.prototype.set_maximized = function(maximized) {
+	//show("set_maximized("+maximized+")");
+	if (this.maximized==maximized) {
+		return;
+	}
+	if (maximized) {
+		this.save_geometry();
+		this.x = 0;
+		this.y = 0;
+		this.w = this.state.width;
+		this.h = this.state.height;
+	}
+	else {
+		this.restore_geometry();
+	}
+	this.maximized = maximized;
+	this.handle_resize();
+};
+XpraWindow.prototype.set_fullscreen = function(fullscreen) {
+	//show("set_fullscreen("+fullscreen+")");
+	if (this.fullscreen==fullscreen) {
+		return;
+	}
+	if (fullscreen) {
+		this.save_geometry();
+		this.x = 0;
+		this.y = 0;
+		this.w = this.state.width;
+		this.h = this.state.height;
+	}
+	else {
+		this.restore_geometry();
+	}
+	this.fullscreen = fullscreen;
+	this.handle_resize();
+};
+
+XpraWindow.prototype.handle_resize = function() {
+	this.calculate_offsets();
+	this.create_image_backing();
+	this.state.invalidate();
+	if (this.geometry_cb!=null) {
+		this.geometry_cb(this);
+	}
 }
 
 
@@ -74,8 +200,8 @@ XpraWindow.prototype.get_internal_geometry = function(ctx) {
 	//this.image.height = this.h - (this.borderWidth*2 + this.topBarHeight);
 	return { x : this.x+this.borderWidth,
 			 y : this.y+this.borderWidth+this.topBarHeight,
-			 w : this.image.width,
-			 h : this.image.height };
+			 w : this.w - this.borderWidth*2,
+			 h : this.h - (this.borderWidth*2 + this.topBarHeight)};
 };
 
 XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modifiers, buttons) {
@@ -98,7 +224,7 @@ XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
 XpraWindow.prototype.draw = function(ctx) {
 	"use strict";
 
-	if (!this.override_redirect)
+	if (!this.override_redirect && !this.fullscreen)
 		//draw window frame:
 		this.draw_frame(ctx);
 
@@ -131,6 +257,9 @@ XpraWindow.prototype.draw_frame = function(ctx) {
 // which indicate that the window is selected
 XpraWindow.prototype.draw_selection = function(ctx) {
 	"use strict";
+	if (this.maximized || this.fullscreen) {
+		return;
+	}
 	var i, cur, half;
 
 	ctx.strokeStyle = this.state.selectionColor;
