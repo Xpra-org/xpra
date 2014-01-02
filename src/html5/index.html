@@ -271,8 +271,10 @@
 				focus = wid;
 				send(["focus", focus, []]);
 				//set the focused flag on all windows:
-				for (var i=0; i<window_to_id.length; i++) {
-					window_to_id[i].focused = (window_to_id[i]==win);
+            	var win;
+				for (var i in id_to_window) {
+					win = id_to_window[i];
+					win.focused = (i==wid);
 				}
 			}
 
@@ -549,10 +551,19 @@
 			}
 
 			function do_send_new_screen_size() {
+				//show("do_send_new_screen_size()");
+				if (protocol==null || canvas_state==null)
+					return;
 				screen_size_change_pending = false;
 				var ds = get_desktop_size();
 				var ss = get_screen_sizes();
 	            send(["desktop_size", ds[0], ds[1], ss]);
+	            //tell each window (may wish to resize too):
+            	var win;
+				for (var i in id_to_window) {
+					win = id_to_window[i];
+					win.canvas_resized();
+				}
 			}
 
 			function onresize() {

@@ -245,7 +245,6 @@ XpraWindow.prototype.handle_resize = function() {
  */
 XpraWindow.prototype.canvas_resized = function() {
 	if (this.fullscreen || this.maximized) {
-		show("canvas_resized: keeping window "+this+" maximized/fullscreen");
 		this.fill_canvas();
 		this.handle_resize();
 	}
@@ -304,9 +303,10 @@ XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
 XpraWindow.prototype.draw = function(ctx) {
 	"use strict";
 
-	if (!this.override_redirect && !this.fullscreen)
+	if (!this.override_redirect && !this.fullscreen) {
 		//draw window frame:
 		this.draw_frame(ctx);
+	}
 
 	//draw the window pixels:
 	ctx.putImageData(this.image, this.x + this.borderWidth, this.y + this.borderWidth + this.topBarHeight);
@@ -488,8 +488,9 @@ XpraWindow.prototype.contains = function(mx, my) {
  */
 XpraWindow.prototype.is_grab_area = function(mx, my) {
 	"use strict";
-	if (!this.contains(mx, my))
+	if (!this.contains(mx, my)) {
 		return false;
+	}
 	// use window relative values:
 	var x = mx - this.x;
 	var y = my - this.y;
