@@ -7,10 +7,31 @@
  * Based on shape.js
  */
 
+var window_icons = {};
+//load the window icons
+var image_names = ["maximize", "minimize", "close"];
+function load_icon(name) {
+	console.log("loading "+name);
+	var tmp_canvas = document.createElement('canvas');
+	var tmp_context = tmp_canvas.getContext('2d');
+	var image = new Image();
+	image.onload = function() {
+		show(""+name+"="+image);
+		tmp_context.drawImage(image, 0, 0);
+		var image_data = tmp_context.getImageData(0, 0, image.width, image.height);				
+		window_icons[name] = image_data;
+	};
+	image.src = '/include/'+name+'.png';
+}
+
+for (var i in image_names) {
+	load_icon(image_names[i]);
+}
+
 /**
  * A simple button we use to decorate the window.
  */
-function Button(canvas_state, name, x, y, w, h, fill, click_callback) {
+function Button(canvas_state, name, x, y, w, h, fill, icon_name, click_callback) {
 	"use strict";
 	this.state = canvas_state;
 	this.name = name;
@@ -18,13 +39,22 @@ function Button(canvas_state, name, x, y, w, h, fill, click_callback) {
 	this.y = y || 0;
 	this.w = w || 1;
 	this.h = h || 1;
-	this.fill = fill || '#AAAAAA';
+	var ctx = canvas_state.canvas.getContext('2d');
+	this.image = ctx.createImageData(w, h);
+	//var data = this.image.data;
+	for (var i=0; i<w*h*4; i++) {
+		this.image.data[i] = (fill || 0xAA) &0xFF;
+	}
+	var icon = window_icons[icon_name];
+	if (icon) {
+		this.update_image(icon.width, icon.height, "premult_argb32", icon.data);
+	}
 	this.click_callback = click_callback;
 }
 Button.prototype.draw_at = function(ctx, x, y) {
 	"use strict";
-	ctx.fillStyle = this.fill;
-	ctx.fillRect(x+this.x, y+this.y, this.w, this.h);
+	//draw the window pixels:
+	ctx.putImageData(this.image, this.x + x, this.y + y);
 };
 function rectangle_contains(rect, mx, my) {
 	"use strict";
@@ -41,6 +71,29 @@ Button.prototype.contains = function(mx, my) {
 	"use strict";
 	return rectangle_contains(this.get_geometry(), mx, my);
 };
+Button.prototype.update_image = function(w, h, pixel_format, data) {
+	"use strict";
+	if (pixel_format!="premult_argb32") {
+		return;
+	}
+	var s, d, i;
+	//to make this faster and better looking,
+	//we could draw to a temporary canvas to scale it,
+	//as per: http://stackoverflow.com/a/3449416/428751
+	//here we just scale it by hand
+	for (var x=0; x<this.w; x++) {
+		for (var y=0; y<this.h; y++) {
+			//destination index (simple)
+			d = ((y*this.w) + x) * 4;
+			//source index (scaled)
+			s = (Math.round(y*h/this.h)*w + Math.round(w*x/this.w)) * 4;
+			for (i=0; i<4; i++) {
+				this.image.data[d+i] = data[s+i];
+			}
+		}
+	}
+}
+
 /**
  * toString allows us to identify buttons:
  */
@@ -95,7 +148,7 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	this.w = w;
 	this.h = h;
 
-	this.buttons = [];
+	this.buttons = {};
 
 	this.update_metadata(metadata);
 
@@ -136,20 +189,20 @@ XpraWindow.prototype.create_buttons = function() {
 	var w = 24;
 	var h = 24;
 	var self = this;
-	this.buttons.push(new Button(this.state, "icon",		this.borderWidth,	this.borderWidth, w, h, "yellow", null));
-	this.buttons.push(new Button(this.state, "minimize",	this.w-(w+2)*3,		this.borderWidth, w, h, "red", function() {
+	this.buttons["icon"] = new Button(this.state, "icon",		this.borderWidth,	this.borderWidth, w, h, 0x11, null, null);
+	/*this.buttons["minimize"] = new Button(this.state, "minimize",	this.w-(w+2)*3,		this.borderWidth, w, h, 0x44, function() {
 		//TODO!
-	}));
-	this.buttons.push(new Button(this.state, "maximize",	this.w-(w+2)*2,		this.borderWidth, w, h, "green", function() {
+	});*/
+	this.buttons["maximize"] = new Button(this.state, "maximize",	this.w-(w+2)*2,		this.borderWidth, w, h, 0x66, "maximize", function() {
 		var m = !self.maximized;
 		self.client_properties["maximized"] = m;
 		self.set_maximized(m);
-	}));
-	this.buttons.push(new Button(this.state, "close",		this.w-(w+2)*1,		this.borderWidth, w, h, "blue", function() {
+	});
+	this.buttons["close"] = new Button(this.state, "close",		this.w-(w+2)*1,		this.borderWidth, w, h, 0x99, "close", function() {
 		if (self.window_closed_cb) {
 			self.window_closed_cb(self);
 		}
-	}));
+	});
 };
 
 
@@ -377,10 +430,10 @@ XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modi
 	//(use relative coordinates)
 	var x = mx-this.x;
 	var y = my-this.y
-	for (var i in this.buttons) {
-		var button = this.buttons[i];
+	for (var name in this.buttons) {
+		var button = this.buttons[name];
 		if (button.contains(x, y)) {
-			show("clicked on button "+button.name);
+			show("clicked on button "+name);
 			var cb = button.click_callback;
 			if (cb) {
 				cb();
@@ -405,7 +458,11 @@ XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
 
 XpraWindow.prototype.update_icon = function(w, h, pixel_format, data) {
 	"use strict";
-	//TODO!
+	var icon = this.buttons["icon"];
+	if (icon) {
+		icon.update_image(w, h, pixel_format, data);
+		this.state.invalidate();
+	}
 }
 
 /**
@@ -456,8 +513,8 @@ XpraWindow.prototype.draw_frame = function(ctx) {
 	}
 	
 	// draw buttons:
-	for (var i=0; i<this.buttons.length; i++) {
-		var button = this.buttons[i];
+	for (var name in this.buttons) {
+		var button = this.buttons[name];
 		button.draw_at(ctx, this.x, this.y);
 	}
 };
@@ -632,8 +689,8 @@ XpraWindow.prototype.is_grab_area = function(mx, my) {
 	}
 
 	// check that this isn't one of the buttons:
-	for (var i in this.buttons) {
-		var button = this.buttons[i];
+	for (var name in this.buttons) {
+		var button = this.buttons[name];
 		if (button.contains(x, y)) {
 			return false;
 		}
