@@ -439,8 +439,7 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 			return;
 		}
 	}
-	else {
-		//TODO: bounds checking?
+	else if (x+width<=this.image.width && y+height<=this.image.height) {
 		var line;
 		var in_stride = width*4;
 
@@ -456,6 +455,10 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 			ctx.putImageData(img, this.x + this.borderWidth + x, this.y + this.borderWidth + this.topBarHeight + y);
 			return;
 		}
+	}
+	else {
+		//no action taken, no need to invalidate
+		return;
 	}
 	this.state.invalidate();
 };
