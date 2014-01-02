@@ -8,13 +8,57 @@
  */
 
 /**
+ * A simple button we use to decorate the window.
+ */
+function Button(canvas_state, name, x, y, w, h, fill, click_callback) {
+	"use strict";
+	this.state = canvas_state;
+	this.name = name;
+	this.x = x || 0;
+	this.y = y || 0;
+	this.w = w || 1;
+	this.h = h || 1;
+	this.fill = fill || '#AAAAAA';
+	this.click_callback = click_callback;
+}
+Button.prototype.draw_at = function(ctx, x, y) {
+	"use strict";
+	ctx.fillStyle = this.fill;
+	ctx.fillRect(x+this.x, y+this.y, this.w, this.h);
+};
+function rectangle_contains(rect, mx, my) {
+	"use strict";
+	// All we have to do is make sure the Mouse X,Y fall in the area between
+	// the shape's X and (X + Height) and its Y and (Y + Height)
+	return	(rect.x <= mx) && (rect.x + rect.w >= mx) &&
+					(rect.y <= my) && (rect.y + rect.h >= my);
+};
+Button.prototype.get_geometry = function() {
+	"use strict";
+	return { x : this.x, y : this.y, w : this.w, h : this.h };
+};
+Button.prototype.contains = function(mx, my) {
+	"use strict";
+	return rectangle_contains(this.get_geometry(), mx, my);
+};
+/**
+ * toString allows us to identify buttons:
+ */
+Button.prototype.toString = function() {
+	"use strict";
+	return "Button("+this.name+")";
+};
+
+
+
+/**
  * This is the class representing a window we draw on the canvas.
  * It has a geometry, it may have borders and a top bar.
  * The contents of the window is an image, which gets updated
  * when we receive pixels from the server.
  */
 function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties,
-		geometry_cb, mouse_move_cb, mouse_click_cb) {
+		geometry_cb, mouse_move_cb, mouse_click_cb, window_closed) {
 	"use strict";
 	//keep reference to the canvas:
 	this.state = canvas_state;
@@ -22,10 +66,11 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	this.geometry_cb = null;
 	this.mouse_move_cb = null;
 	this.mouse_click_cb = null;
+	this.window_closed_cb = null;
 
 	//styling:
 	this.borderColor = '#101028';
-	this.topBarColor = '#A8A8B0';
+	this.topBarColor = '#B8B8C0';
 
 	//the window "backing":
 	this.image = null;
@@ -50,6 +95,8 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	this.w = w;
 	this.h = h;
 
+	this.buttons = [];
+
 	this.update_metadata(metadata);
 
 	// the space taken by window decorations:
@@ -70,16 +117,47 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	this.geometry_cb = geometry_cb || null;
 	this.mouse_move_cb = mouse_move_cb || null;
 	this.mouse_click_cb = mouse_click_cb || null;
+	this.window_closed_cb = window_closed || null;
 
+	//create the buttons:
+	if (!this.override_redirect) {
+		this.create_buttons();
+	}
 	//create the image holding the pixels (the "backing"):
 	this.create_image_backing();
 	canvas_state.addShape(this);
 };
 
 /**
+ * Creates the minimize, maximize and close buttons.
+ */
+XpraWindow.prototype.create_buttons = function() {
+	"use strict";
+	var w = 24;
+	var h = 24;
+	var self = this;
+	this.buttons.push(new Button(this.state, "icon",		this.borderWidth,	this.borderWidth, w, h, "yellow", null));
+	this.buttons.push(new Button(this.state, "minimize",	this.w-(w+2)*3,		this.borderWidth, w, h, "red", function() {
+		//TODO!
+	}));
+	this.buttons.push(new Button(this.state, "maximize",	this.w-(w+2)*2,		this.borderWidth, w, h, "green", function() {
+		var m = !self.maximized;
+		self.client_properties["maximized"] = m;
+		self.set_maximized(m);
+	}));
+	this.buttons.push(new Button(this.state, "close",		this.w-(w+2)*1,		this.borderWidth, w, h, "blue", function() {
+		if (self.window_closed_cb) {
+			self.window_closed_cb(self);
+		}
+	}));
+};
+
+
+/**
  * toString allows us to identify windows by their unique window id.
  */
 XpraWindow.prototype.toString = function() {
+	"use strict";
 	return "Window("+this.wid+")";
 };
 
@@ -87,6 +165,7 @@ XpraWindow.prototype.toString = function() {
  * Allocates the image object containing the window's pixels.
  */
 XpraWindow.prototype.create_image_backing = function() {
+	"use strict";
 	var previous_image = this.image;
 	var img_geom = this.get_internal_geometry();
 	//show("createImageData: "+img_geom.toSource());
@@ -103,6 +182,7 @@ XpraWindow.prototype.create_image_backing = function() {
  * to the contents of the window.
  */
 XpraWindow.prototype.calculate_offsets = function() {
+	"use strict";
 	if (this.override_redirect || this.fullscreen) {
 		//no borders or top bar at all:
 		this.borderWidth = 0;
@@ -111,7 +191,7 @@ XpraWindow.prototype.calculate_offsets = function() {
 	else {
 		//regular borders and top bar:
 		this.borderWidth = 2;
-		this.topBarHeight = 20;
+		this.topBarHeight = 24;
 	}
 	this.offsets = [this.borderWidth+this.topBarHeight, this.borderWidth, this.borderWidth, this.borderWidth];
 };
@@ -121,6 +201,7 @@ XpraWindow.prototype.calculate_offsets = function() {
  * then call set_metadata with these new key-values.
  */
 XpraWindow.prototype.update_metadata = function(metadata) {
+	"use strict";
 	//update our metadata cache with new key-values:
 	for (var attrname in metadata) {
 		this.metadata[attrname] = metadata[attrname];
@@ -132,6 +213,7 @@ XpraWindow.prototype.update_metadata = function(metadata) {
  * Apply new metadata settings.
  */
 XpraWindow.prototype.set_metadata = function(metadata) {
+	"use strict";
     if ("fullscreen" in metadata) {
     	this.set_fullscreen(metadata["fullscreen"]==1);
     }
@@ -140,6 +222,8 @@ XpraWindow.prototype.set_metadata = function(metadata) {
     }
     if ("title" in metadata) {
     	this.title = metadata["title"];
+    	//redraw everything (a bit wasteful):
+    	this.state.invalidate();
     }
 };
 
@@ -148,6 +232,7 @@ XpraWindow.prototype.set_metadata = function(metadata) {
  * (ie: when un-maximizing or un-fullscreening)
  */
 XpraWindow.prototype.save_geometry = function() {
+	"use strict";
 	if (this.x==undefined || this.y==undefined)
 		return;
     this.saved_geometry = {
@@ -162,6 +247,7 @@ XpraWindow.prototype.save_geometry = function() {
  * Restores the saved geometry (if it exists).
  */
 XpraWindow.prototype.restore_geometry = function() {
+	"use strict";
 	if (this.saved_geometry==null) {
 		return;
 	}
@@ -177,6 +263,7 @@ XpraWindow.prototype.restore_geometry = function() {
  * Maximize / unmaximizes the window.
  */
 XpraWindow.prototype.set_maximized = function(maximized) {
+	"use strict";
 	//show("set_maximized("+maximized+")");
 	if (this.maximized==maximized) {
 		return;
@@ -190,6 +277,7 @@ XpraWindow.prototype.set_maximized = function(maximized) {
  * Fullscreen / unfullscreen the window.
  */
 XpraWindow.prototype.set_fullscreen = function(fullscreen) {
+	"use strict";
 	//show("set_fullscreen("+fullscreen+")");
 	if (this.fullscreen==fullscreen) {
 		return;
@@ -206,6 +294,7 @@ XpraWindow.prototype.set_fullscreen = function(fullscreen) {
  * - or restore the geometry
  */
 XpraWindow.prototype.max_save_restore = function(use_all_space) {
+	"use strict";
 	if (use_all_space) {
 		this.save_geometry();
 		this.fill_canvas();
@@ -219,6 +308,7 @@ XpraWindow.prototype.max_save_restore = function(use_all_space) {
  * Use up all the canvas space
  */
 XpraWindow.prototype.fill_canvas = function() {
+	"use strict";
 	this.x = 0;
 	this.y = 0;
 	this.w = this.state.width;
@@ -232,6 +322,7 @@ XpraWindow.prototype.fill_canvas = function() {
  * - fire the geometry_cb
  */
 XpraWindow.prototype.handle_resize = function() {
+	"use strict";
 	this.create_image_backing();
 	this.state.invalidate();
 	if (this.geometry_cb!=null) {
@@ -244,6 +335,7 @@ XpraWindow.prototype.handle_resize = function() {
  * if it is fullscreen or maximized.
  */
 XpraWindow.prototype.canvas_resized = function() {
+	"use strict";
 	if (this.fullscreen || this.maximized) {
 		this.fill_canvas();
 		this.handle_resize();
@@ -279,7 +371,23 @@ XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modi
 	var igeom = this.get_internal_geometry();
 	if (this.mouse_click_cb!=null && rectangle_contains(igeom, mx, my)) {
 		this.mouse_click_cb(this, button, pressed, mx, my, modifiers, buttons);
+		return;
 	}
+	//maybe one of the buttons:
+	//(use relative coordinates)
+	var x = mx-this.x;
+	var y = my-this.y
+	for (var i in this.buttons) {
+		var button = this.buttons[i];
+		if (button.contains(x, y)) {
+			show("clicked on button "+button.name);
+			var cb = button.click_callback;
+			if (cb) {
+				cb();
+			}
+			return;
+		}
+	}	
 };
 
 /**
@@ -293,6 +401,12 @@ XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
 		this.mouse_move_cb(this, mx, my, modifiers, buttons);
 	}
 };
+
+
+XpraWindow.prototype.update_icon = function(w, h, pixel_format, data) {
+	"use strict";
+	//TODO!
+}
 
 /**
  * Draws this window to the given context:
@@ -332,7 +446,20 @@ XpraWindow.prototype.draw_frame = function(ctx) {
 
 	// draw top bar:
 	ctx.fillStyle = this.topBarColor;
-	ctx.fillRect(this.x+this.borderWidth, this.y+this.borderWidth, this.w-this.borderWidth*2, this.topBarHeight-this.borderWidth);
+	ctx.fillRect(this.x+this.borderWidth, this.y+this.borderWidth, this.w-this.borderWidth*2, this.topBarHeight);
+	// draw title:
+	if (this.title) {
+		var size = 18;
+		ctx.font = ""+size+"px sans-serif";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(this.title, this.x+32, this.y+this.borderWidth+this.topBarHeight-size/3);
+	}
+	
+	// draw buttons:
+	for (var i=0; i<this.buttons.length; i++) {
+		var button = this.buttons[i];
+		button.draw_at(ctx, this.x, this.y);
+	}
 };
 
 
@@ -494,10 +621,22 @@ XpraWindow.prototype.is_grab_area = function(mx, my) {
 	if (!this.contains(mx, my)) {
 		return false;
 	}
-	// use window relative values:
+	// use window relative values from here on:
 	var x = mx - this.x;
 	var y = my - this.y;
+
 	// must be in the border area:
-	return (y<=this.offsets[0] || my>=(this.h-this.offsets[2]) ||
-			x<=this.offsets[3] || x>=(this.w-this.offsets[1]))
+	if (!(y<=this.offsets[0] || my>=(this.h-this.offsets[2]) ||
+			x<=this.offsets[3] || x>=(this.w-this.offsets[1]))) {
+		return false;
+	}
+
+	// check that this isn't one of the buttons:
+	for (var i in this.buttons) {
+		var button = this.buttons[i];
+		if (button.contains(x, y)) {
+			return false;
+		}
+	}
+	return true;
 };

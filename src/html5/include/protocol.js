@@ -25,7 +25,7 @@ var api = {},         // Public API
 	packet_handlers = {},
 	log_packets = true,
 	no_log_packet_types = ["ping_echo", "key-action", "damage-sequence",
-	                       "map-window", "configure-window",
+	                       "map-window", "configure-window", "close-window",
 	                       "desktop_size", "hello",
 	                       "pointer-position", "button-action", "focus"];
 
@@ -75,15 +75,15 @@ function on_message(m) {
 
 //hook websock events using packet handlers:
 function on_open(m) {
-	debug("on_open("+m+")");
+	//debug("on_open("+m+")");
 	process_packet(["open", m]);
 }
 function on_close(m) {
-	show("on_close("+m+")");
+	//show("on_close("+m+")");
 	process_packet(["close", m]);
 }
 function on_error(m) {
-	show("on_error("+m+")");
+	//show("on_error("+m+")");
 	process_packet(["error", m]);
 }
 
