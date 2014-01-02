@@ -65,6 +65,12 @@
 			var alt_modifier = null;
 			var meta_modifier = null;
 
+			/**
+			 * Returns the modifiers set for the current event.
+			 * We get the list of modifiers using "get_event_modifiers"
+			 * then translate "alt" and "meta" into their keymap name.
+			 * (usually "mod1")
+			 */
 			function get_modifiers(event) {
 				"use strict";
 				//convert generic modifiers "meta" and "alt" into their x11 name:
@@ -78,9 +84,15 @@
 				index = modifiers.indexOf("meta");
 				if (index>=0)
 					modifiers[index] = meta;
+				//show("get_modifiers() modifiers="+modifiers.toSource());
 				return modifiers;
 			}
 
+			/**
+			 * Process a key event: key pressed or key released.
+			 * Figure out the keycode, keyname, modifiers, etc
+			 * And send the event to the server.
+			 */
 			function processKeyEvent(pressed, event) {
 				"use strict";
 				if (canvas_state==null)
@@ -102,7 +114,7 @@
 				if (keyname.match("_L$") && event.location==DOM_KEY_LOCATION_RIGHT)
 					keyname = keyname.replace("_L", "_R")
 
-				var modifiers = get_event_modifiers(event);
+				var modifiers = get_modifiers(event);
 				if (caps_lock)
 					modifiers.push("lock");
 				var keyval = keycode;
@@ -132,6 +144,13 @@
 				processKeyEvent(false, event);
 				return false;
 			};
+			/**
+			 * This function is only used for figuring out the caps_lock state!
+			 * onkeyup and onkeydown give us the raw keycode,
+			 * whereas here we get the keycode in lowercase/uppercase depending
+			 * on the caps_lock and shift state, which allows us to figure
+			 * out caps_lock state since we have shift state.
+			 */
 			function onkeypress(event) {
 				"use strict";
 				var keycode = 0;
@@ -139,7 +158,7 @@
 					keycode = event.which;
 				else
 					keycode = event.keyCode;
-				var modifiers = get_event_modifiers(event);
+				var modifiers = get_modifiers(event);
 
 				/* PITA: this only works for keypress event... */
 				caps_lock = false;
@@ -215,7 +234,7 @@
 						}
 					}
 				}
-				//show("alt="+alt_modifier+", meta="+meta_modifier);
+				show("alt="+alt_modifier+", meta="+meta_modifier);
 			}
 			function process_disconnect(packet) {
 				"use strict";
