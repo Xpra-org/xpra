@@ -26,7 +26,7 @@ var api = {},         // Public API
 	log_packets = true,
 	no_log_packet_types = ["ping_echo", "key-action", "damage-sequence",
 	                       "map-window", "configure-window",
-	                       "desktop_size",
+	                       "desktop_size", "hello",
 	                       "pointer-position", "button-action", "focus"];
 
 
@@ -155,7 +155,7 @@ function process_buffer() {
 		process_packet(packet);
 	}
 	catch (e) {
-		debug("error parsing packet: "+e);
+		debug("error processing packet: "+e);
 		debug("packet_data="+hexstr(packet_data));
 	}
 	if (buf.byteLength>8)
@@ -177,6 +177,7 @@ function process_packet(packet) {
 	}
 	catch (e) {
 		error("error processing '"+packet_type+"' with '"+fn+"': "+e);
+		throw e;
 	}
 }
 
