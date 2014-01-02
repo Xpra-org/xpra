@@ -204,6 +204,19 @@ XpraWindow.prototype.create_buttons = function() {
 		}
 	});
 };
+/**
+ * Ensures that the buttons are always in the same place
+ * after a resize.
+ */
+XpraWindow.prototype.move_buttons = function() {
+	var w = 24;
+	if ("maximize" in this.buttons) {
+		this.buttons["maximize"].x = this.w-(w+2)*2;
+	}
+	if ("close" in this.buttons) {
+		this.buttons["close"].x = this.w-(w+2)*1;
+	}
+}
 
 
 /**
@@ -378,6 +391,7 @@ XpraWindow.prototype.handle_resize = function() {
 	"use strict";
 	this.create_image_backing();
 	this.state.invalidate();
+	this.move_buttons();
 	if (this.geometry_cb!=null) {
 		this.geometry_cb(this);
 	}
