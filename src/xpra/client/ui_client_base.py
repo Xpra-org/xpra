@@ -355,7 +355,6 @@ class UIXpraClient(XpraClientBase):
                 decoder = get_codec(module)
                 if decoder:
                     for encoding in decoder.get_encodings():
-                        log.info("%s supports %s", module, encoding)
                         if encoding not in core_encodings:
                             core_encodings.append(encoding)
         log("get_core_encodings()=%s", core_encodings)
