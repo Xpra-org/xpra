@@ -69,7 +69,8 @@ class WindowVideoSource(WindowSource):
         #0.10 onwards should have specified csc_modes:
         self.csc_modes = self.encoding_options.get("csc_modes", def_csc_modes)
 
-        for x in ("vp8", "h264"):
+        self.video_encodings = ("vp8", "h264")
+        for x in self.video_encodings:
             if x in self.server_core_encodings:
                 self._encoders[x] = self.video_encode
 
@@ -186,7 +187,7 @@ class WindowVideoSource(WindowSource):
         #now figure out if we need to send edges separately:
         dw = w - (w & self.width_mask)
         dh = h - (h & self.height_mask)
-        if coding in ("vp8", "h264") and (dw>0 or dh>0):
+        if coding in self.video_encodings and (dw>0 or dh>0):
             if dw>0:
                 lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, dw*h)
                 WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, lossless, options)
@@ -194,6 +195,9 @@ class WindowVideoSource(WindowSource):
                 lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, w*dh)
                 WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, lossless, options)
 
+
+    def must_encode_full_frame(self, window, encoding):
+        return WindowSource.must_encode_full_frame(self, window, encoding) or (encoding in self.video_encodings)
 
     def do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
         """
@@ -204,7 +208,7 @@ class WindowVideoSource(WindowSource):
         if encoding is not None:
             #superclass knows best (usually a tray or transparent window):
             return encoding
-        if current_encoding not in ("h264", "vp8"):
+        if current_encoding not in self.video_encodings:
             return None
         if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
             #video encoder cannot handle this size!
@@ -680,7 +684,7 @@ class WindowVideoSource(WindowSource):
 
     def video_encode(self, encoding, image, options):
         """
-            This method is used by make_data_packet to encode frames using h264 or vp8.
+            This method is used by make_data_packet to encode frames using video encoders.
             Video encoders only deal with fixed dimensions,
             so we must clean and reinitialize the encoder if the window dimensions
             has changed.

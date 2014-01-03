@@ -440,7 +440,7 @@ class WindowSource(object):
             actual_encoding = options.get("encoding")
             if actual_encoding is None:
                 actual_encoding = self.get_best_encoding(False, window, w*h, ww, wh, self.encoding)
-            if actual_encoding in ("h264", "vp8") or window.is_tray() or self.full_frames_only:
+            if self.must_encode_full_frame(window, actual_encoding):
                 x, y = 0, 0
                 w, h = ww, wh
             self.batch_config.last_delays.append((now, delay))
@@ -569,7 +569,7 @@ class WindowSource(object):
             return
 
         actual_encoding = self.get_best_encoding(True, window, pixel_count, ww, wh, coding)
-        if actual_encoding in ("h264", "vp8"):
+        if self.must_encode_full_frame(window, actual_encoding):
             #use full screen dimensions:
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
             return
@@ -579,6 +579,14 @@ class WindowSource(object):
             x, y, w, h = region
             self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
 
+
+    def must_encode_full_frame(self, window, encoding):
+        if self.full_frames_only:
+            return True
+        if window.is_tray():
+            return True
+        #video encoders will override this
+        return False
 
     def get_best_encoding(self, batching, window, pixel_count, ww, wh, current_encoding):
         e = self.do_get_best_encoding(batching, window.has_alpha(), window.is_tray(), window.is_OR(), pixel_count, ww, wh, current_encoding)
