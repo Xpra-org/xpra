@@ -61,7 +61,7 @@ def load_vpx_decoders():
         #prefer native vpx ahead of avcodec:
         for module in ("dec_vpx", "dec_avcodec"):
             decoder = get_codec(module)
-            if codec in decoder.get_encodings():
+            if decoder and (codec in decoder.get_encodings()):
                 VPX_DECODERS[codec] = module
                 break
     log("vpx decoders: %s", VPX_DECODERS)
