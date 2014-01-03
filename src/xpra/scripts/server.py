@@ -550,20 +550,27 @@ def start_children(child_reaper, commands):
 
 
 def run_server(parser, opts, mode, xpra_file, extra_args):
-    if len(extra_args) != 1:
-        parser.error("need exactly 1 extra argument")
     if opts.encoding and opts.encoding=="help":
         from xpra.codecs.loader import encodings_help
         from xpra.server.server_base import ServerBase
         print("server supports the following encodings:\n * %s" % ("\n * ".join(encodings_help(ServerBase().encodings))))
         return 0
+
     assert mode in ("start", "upgrade", "shadow", "proxy")
     upgrading = mode == "upgrade"
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
     clobber = upgrading or opts.use_display
 
-    display_name = extra_args.pop(0)
+    #get the display name:
+    if shadowing and len(extra_args)==0:
+        from xpra.scripts.main import guess_X11_display
+        display_name = guess_X11_display()
+    else:
+        if len(extra_args) != 1:
+            parser.error("need exactly 1 extra argument")
+        display_name = extra_args.pop(0)
+
     if not shadowing and not proxying:
         display_name_check(display_name)
 

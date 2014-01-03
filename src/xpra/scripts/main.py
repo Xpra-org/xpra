@@ -893,6 +893,34 @@ def run_remote_server(parser, opts, args, mode):
     app.init(opts)
     do_run_client(app)
 
+def find_X11_displays(max_display_no=10):
+    displays = []
+    X11_SOCKET_DIR = "/tmp/.X11-unix/"
+    if os.path.exists(X11_SOCKET_DIR) and os.path.isdir(X11_SOCKET_DIR):
+        for x in os.listdir(X11_SOCKET_DIR):
+            if not x.startswith("X"):
+                continue
+            try:
+                v = int(x[1:])
+                #arbitrary: only shadow automatically displays below 10..
+                if v<max_display_no:
+                    displays.append(v)
+                #check that this is a socket
+                socket_path = os.path.join(X11_SOCKET_DIR, x)
+                mode = os.stat(socket_path).st_mode
+                is_socket = stat.S_ISSOCK(mode)
+                if not is_socket:
+                    continue
+            except:
+                pass
+    return displays
+
+def guess_X11_display():
+    displays = find_X11_displays()
+    assert len(displays)!=0, "could not detect any live X11 displays"
+    assert len(displays)==1, "too many live X11 displays to choose from"
+    return ":%s" % displays[0]
+
 def run_proxy(parser, opts, script_file, args, mode):
     from xpra.server.proxy import XpraProxy
     assert "gtk" not in sys.modules
@@ -910,28 +938,7 @@ def run_proxy(parser, opts, script_file, args, mode):
                 #display_name was provided:
                 display_name = args[0]
             else:
-                #try to detect the display
-                displays = []
-                X11_SOCKET_DIR = "/tmp/.X11-unix/"
-                if os.path.exists(X11_SOCKET_DIR) and os.path.isdir(X11_SOCKET_DIR):
-                    for x in os.listdir(X11_SOCKET_DIR):
-                        if not x.startswith("X"):
-                            continue
-                        try:
-                            socket_path = os.path.join(X11_SOCKET_DIR, x)
-                            mode = os.stat(socket_path).st_mode
-                            is_socket = stat.S_ISSOCK(mode)
-                            if not is_socket:
-                                continue
-                            v = int(x[1:])
-                            #arbitrary: only shadow automatically displays below 10..
-                            if v<10:
-                                displays.append(v)
-                        except:
-                            pass
-                assert len(displays)!=0, "could not detect any live X11 displays"
-                assert len(displays)==1, "too many live X11 displays to choose from"
-                display_name = ":%s" % displays[0]
+                display_name = guess_X11_display()
         cmd += args
         if opts.start_child and len(opts.start_child)>0:
             for x in opts.start_child:

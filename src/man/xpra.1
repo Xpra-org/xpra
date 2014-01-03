@@ -84,7 +84,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
 .HP
-\fBxpra\fP \fBshadow\fP \fI:DISPLAY\fP | \fIssh:[USER@]HOST[:DISPLAY]\fP
+\fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
 [\fB\-\-no\-clipboard\fP]
@@ -285,10 +285,12 @@ against an older version of xpra with a newer version, without having
 to restart your session.  Any currently-running \fBxpra attach\fP
 command will exit and need to be restarted.
 .SS xpra shadow
-This command shadows an existing X11 display. Note that this mode of
-operation uses screenscraping which is far less efficient. Using a
-video encoder (x264 or vpx) is highly recommended for this mode of
-operation.
+This command shadows an existing X11 display. If there is only one
+X11 display active and its number is below 10, it can be auto-detected.
+
+Note that this mode of operation uses screenscraping which is far less
+efficient. Using a video encoder (x264 or vpx) is highly recommended for
+this mode of operation.
 .SS xpra proxy
 This command allows a single server to proxy connections for multiple
 others, potentially serving as a load balancing or authentication
