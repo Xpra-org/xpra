@@ -871,7 +871,9 @@ def run_remote_server(parser, opts, args, mode):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     params = parse_display_name(parser.error, opts, args[0])
     #add special flags to "display_as_args"
-    proxy_args = [params["display"]]
+    proxy_args = []
+    if params["display"] is not None:
+        proxy_args.append(params["display"])
     if opts.start_child:
         for c in opts.start_child:
             proxy_args.append("--start-child=%s" % c)
@@ -894,15 +896,33 @@ def run_proxy(parser, opts, script_file, args, mode):
     from xpra.server.proxy import XpraProxy
     assert "gtk" not in sys.modules
     if mode in ("_proxy_start", "_shadow_start"):
-        assert len(args)==1, "proxy/shadow-start: expected 1 argument but got %s" % len(args)
-        display_name = args[0]
         #we must use a subprocess to avoid messing things up - yuk
         cmd = [script_file]
         if mode=="_proxy_start":
             cmd.append("start")
+            assert len(args)==1, "proxy/shadow-start: expected 1 argument but got %s" % len(args)
+            display_name = args[0]
         else:
             assert mode=="_shadow_start"
             cmd.append("shadow")
+            if len(args)==1:
+                #display_name was provided:
+                display_name = args[0]
+            else:
+                #try to detect the display
+                displays = []
+                X11_SOCKET_DIR = "/tmp/.X11-unix/"
+                if os.path.exists(X11_SOCKET_DIR) and os.path.isdir(X11_SOCKET_DIR):
+                    for x in os.listdir(X11_SOCKET_DIR):
+                        if not x.startswith("X"):
+                            continue
+                        try:
+                            displays.append(int(x[1:]))
+                        except:
+                            pass
+                assert len(displays)!=0, "could not detect any live X11 displays"
+                assert len(displays)==1, "too many live X11 displays to choose from"
+                display_name = ":%s" % displays[0]
         cmd += args
         if opts.start_child and len(opts.start_child)>0:
             for x in opts.start_child:
