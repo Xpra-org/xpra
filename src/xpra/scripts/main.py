@@ -473,9 +473,10 @@ def run_mode(script_file, parser, options, args, mode):
     configure_logging(options, mode)
 
     try:
-        if mode=="start" and len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:")):
+        ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))
+        if mode in ("start", "shadow") and ssh_display:
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
-            return run_remote_server(parser, options, args)
+            return run_remote_server(parser, options, args, mode)
         elif (mode in ("start", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
             nox()
             from xpra.scripts.server import run_server
@@ -487,9 +488,9 @@ def run_mode(script_file, parser, options, args, mode):
             return run_stopexit(mode, parser, options, args)
         elif mode == "list" and (supports_server or supports_shadow):
             return run_list(parser, options, args)
-        elif mode in ("_proxy", "_proxy_start") and (supports_server or supports_shadow):
+        elif mode in ("_proxy", "_proxy_start", "_shadow_start") and (supports_server or supports_shadow):
             nox()
-            return run_proxy(parser, options, script_file, args, mode=="_proxy_start")
+            return run_proxy(parser, options, script_file, args, mode)
         else:
             parser.error("invalid mode '%s'" % mode)
             return 1
@@ -866,7 +867,7 @@ def do_run_client(app):
     finally:
         app.cleanup()
 
-def run_remote_server(parser, opts, args):
+def run_remote_server(parser, opts, args, mode):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     params = parse_display_name(parser.error, opts, args[0])
     #add special flags to "display_as_args"
@@ -878,21 +879,31 @@ def run_remote_server(parser, opts, args):
         proxy_args.append("--exit-with-children")
     params["display_as_args"] = proxy_args
     #and use _proxy_start subcommand:
-    params["proxy_command"] = ["_proxy_start"]
+    if mode=="shadow":
+        params["proxy_command"] = ["_shadow_start"]
+    else:
+        assert mode=="start"
+        params["proxy_command"] = ["_proxy_start"]
     conn = connect_or_fail(params)
     app = make_client(parser.error, opts)
     app.setup_connection(conn)
     app.init(opts)
     do_run_client(app)
 
-def run_proxy(parser, opts, script_file, args, start_server=False):
+def run_proxy(parser, opts, script_file, args, mode):
     from xpra.server.proxy import XpraProxy
     assert "gtk" not in sys.modules
-    if start_server:
-        assert len(args)==1, "proxy-start: expected 1 argument but got %s" % len(args)
+    if mode in ("_proxy_start", "_shadow_start"):
+        assert len(args)==1, "proxy/shadow-start: expected 1 argument but got %s" % len(args)
         display_name = args[0]
         #we must use a subprocess to avoid messing things up - yuk
-        cmd = [script_file, "start"]+args
+        cmd = [script_file]
+        if mode=="_proxy_start":
+            cmd.append("start")
+        else:
+            assert mode=="_shadow_start"
+            cmd.append("shadow")
+        cmd += args
         if opts.start_child and len(opts.start_child)>0:
             for x in opts.start_child:
                 cmd.append("--start-child=%s" % x)
