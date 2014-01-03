@@ -49,7 +49,7 @@ elif sys.platform == "darwin":
     _LIBRARY_NAMES = ["libwebp.dylib"]
 
 elif os.name == "posix":
-    _LIBRARY_NAMES = ["libwebp.so.4", "libwebp.so.2"]
+    _LIBRARY_NAMES = ["libwebp.so.5", "libwebp.so.4", "libwebp.so.2"]
 
 else:
     raise ImportError(
