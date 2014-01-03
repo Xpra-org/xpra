@@ -90,6 +90,7 @@ cdef extern from "libavcodec/avcodec.h":
     AVPixelFormat PIX_FMT_NONE
     AVCodecID CODEC_ID_H264
     AVCodecID CODEC_ID_VP8
+    #AVCodecID CODEC_ID_VP9
 
     #init and free:
     void avcodec_register_all()
@@ -160,17 +161,19 @@ def get_colorspaces():
     init_colorspaces()
     return COLORSPACES
 
-_CODECS = None
-def get_codecs():
-    global _CODECS
-    if _CODECS is None:
+CODECS = None
+def get_encodings():
+    global CODECS
+    if CODECS is None:
         avcodec_register_all()
-        _CODECS = []
+        CODECS = []
         if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
-            _CODECS.append("h264")
+            CODECS.append("h264")
         if avcodec_find_decoder(CODEC_ID_VP8)!=NULL:
-            _CODECS.append("vp8")
-    return _CODECS
+            CODECS.append("vp8")
+        #if avcodec_find_decoder(CODEC_ID_VP9)!=NULL:
+        #    CODECS.append("vp9")
+    return CODECS
 
 
 #maps AVCodecContext to the Decoder that manages it

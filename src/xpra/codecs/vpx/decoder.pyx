@@ -12,6 +12,10 @@ log = Logger()
 debug = debug_if_env(log, "XPRA_VPX_DEBUG")
 error = log.error
 
+DEF ENABLE_VP8 = True
+DEF ENABLE_VP9 = False
+
+
 from libc.stdint cimport int64_t
 
 
@@ -58,7 +62,10 @@ cdef extern from "vpx/vpx_image.h":
         unsigned int y_chroma_shift
 
 cdef extern from "vpx/vp8dx.h":
-    vpx_codec_iface_t *vpx_codec_vp8_dx()
+    IF ENABLE_VP8 == True:
+        const vpx_codec_iface_t *vpx_codec_vp8_dx()
+    IF ENABLE_VP9 == True:
+        const vpx_codec_iface_t *vpx_codec_vp9_dx()
 
 cdef extern from "vpx/vpx_decoder.h":
     ctypedef struct vpx_codec_enc_cfg_t:
@@ -87,8 +94,26 @@ def get_version():
     return vpx_codec_version_str()
 
 def get_type(self):
-    return  "vp8"
+    return  "vpx"
 
+
+CODECS = []
+IF ENABLE_VP8 == True:
+    CODECS.append("vp8")
+IF ENABLE_VP9 == True:
+    CODECS.append("vp9")
+
+cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
+    IF ENABLE_VP8 == True:
+        if encoding=="vp8":
+            return vpx_codec_vp8_dx()
+    IF ENABLE_VP9 == True:
+        if encoding=="vp9":
+            return vpx_codec_vp9_dx()
+    raise Exception("unsupported encoding: %s" % encoding)
+
+def get_encodings():
+    return CODECS
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
@@ -100,7 +125,7 @@ def get_spec(colorspace):
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
     #setup cost is reasonable (usually about 5ms)
-    return codec_spec(Decoder, codec_type="vp8", setup_cost=40)
+    return codec_spec(Decoder, codec_type="vpx", setup_cost=40)
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
@@ -140,15 +165,17 @@ cdef class Decoder:
     cdef int width
     cdef int height
     cdef vpx_img_fmt_t pixfmt
-    cdef char* src_format
+    cdef char* dst_format
+    cdef object encoding
 
     def init_context(self, encoding, width, height, colorspace):
-        cdef const vpx_codec_iface_t *codec_iface = vpx_codec_vp8_dx()
-        cdef int flags = 0
-        assert encoding=="vp8"
+        assert encoding in CODECS
         assert colorspace=="YUV420P"
-        self.src_format = "YUV420P"
-        self.pixfmt = get_vpx_colorspace(self.src_format)
+        cdef int flags = 0
+        cdef const vpx_codec_iface_t *codec_iface = make_codec_dx(encoding)
+        self.encoding = encoding
+        self.dst_format = "YUV420P"
+        self.pixfmt = get_vpx_colorspace(self.dst_format)
         self.width = width
         self.height = height
         self.context = <vpx_codec_ctx_t *> xmemalign(sizeof(vpx_codec_ctx_t))
@@ -166,7 +193,7 @@ cdef class Decoder:
                 }
 
     def get_colorspace(self):
-        return self.src_format
+        return self.dst_format
 
     def get_width(self):
         return self.width
@@ -178,7 +205,7 @@ cdef class Decoder:
         return self.context==NULL
 
     def get_encoding(self):
-        return "vp8"
+        return self.encoding
 
     def get_type(self):                 #@DuplicatedSignature
         return  "vpx"
@@ -237,4 +264,5 @@ cdef class Decoder:
             pixels.append(plane)
 
             image.add_buffer(<unsigned long> padded_buf)
+        #log("vpx returning decoded %s image %s with colorspace=%s", self.encoding, image, image.get_pixel_format())
         return image

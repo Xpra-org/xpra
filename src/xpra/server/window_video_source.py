@@ -69,7 +69,7 @@ class WindowVideoSource(WindowSource):
         #0.10 onwards should have specified csc_modes:
         self.csc_modes = self.encoding_options.get("csc_modes", def_csc_modes)
 
-        self.video_encodings = ("vp8", "h264")
+        self.video_encodings = ("vp8", "vp9", "h264")
         for x in self.video_encodings:
             if x in self.server_core_encodings:
                 self._encoders[x] = self.video_encode

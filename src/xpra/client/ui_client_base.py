@@ -337,7 +337,6 @@ class UIXpraClient(XpraClientBase):
         #we always support rgb24:
         core_encodings = ["rgb24"]
         for modules, encodings in {
-              ("dec_vpx", "csc_swscale")        : ["vp8"],
               ("dec_webp",)                     : ["webp"],
               ("PIL",)                          : ["png", "png/L", "png/P", "jpeg"],
                }.items():
@@ -346,15 +345,19 @@ class UIXpraClient(XpraClientBase):
                 log("get_core_encodings() not adding %s because of missing modules: %s", encodings, missing)
                 continue
             core_encodings += encodings
-        #special case for avcodec which may be able to decode both 'vp8' and 'h264':
-        #(both of which "need" swscale - until we get more clever
-        # and test the availibility of GL windows)
-        if has_codec("csc_swscale"):        #or has_codec("csc_opencl"): (see window_backing_base)
-            avcodec_module = get_codec("dec_avcodec")
-            if avcodec_module:
-                encodings = avcodec_module.get_codecs()
-                log("avcodec supports %s", encodings)
-                core_encodings += encodings
+        #special case for "dec_avcodec" which may be able to decode both 'vp8' and 'h264':
+        #and for "dec_vpx" which may be able to decode both 'vp8' and 'vp9':
+        #(both may "need" some way of converting YUV data to RGB - at least until we get more clever
+        # and test the availibility of GL windows... but those aren't always applicable..
+        # or test if the codec can somehow gives us plain RGB out)
+        if has_codec("csc_swscale"):    # or has_codec("csc_opencl"): (see window_backing_base)
+            for module in ("dec_avcodec", "dec_avcodec2", "dec_vpx"):
+                decoder = get_codec(module)
+                if decoder:
+                    for encoding in decoder.get_encodings():
+                        log.info("%s supports %s", module, encoding)
+                        if encoding not in core_encodings:
+                            core_encodings.append(encoding)
         log("get_core_encodings()=%s", core_encodings)
         #remove duplicates and use prefered encoding order:
         return [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings)]

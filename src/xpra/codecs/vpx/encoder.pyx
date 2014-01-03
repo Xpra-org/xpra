@@ -11,6 +11,10 @@ log = Logger()
 debug = debug_if_env(log, "XPRA_VPX_DEBUG")
 error = log.error
 
+DEF ENABLE_VP8 = True
+DEF ENABLE_VP9 = False
+
+
 from libc.stdint cimport int64_t
 
 
@@ -55,7 +59,10 @@ cdef extern from "vpx/vpx_image.h":
         unsigned int y_chroma_shift
 
 cdef extern from "vpx/vp8cx.h":
-    const vpx_codec_iface_t  *vpx_codec_vp8_cx()
+    IF ENABLE_VP8 == True:
+        const vpx_codec_iface_t *vpx_codec_vp8_cx()
+    IF ENABLE_VP9 == True:
+        const vpx_codec_iface_t *vpx_codec_vp9_cx()
 
 cdef extern from "vpx/vpx_encoder.h":
     int VPX_ENCODER_ABI_VERSION
@@ -102,8 +109,24 @@ def get_version():
 def get_type():
     return "vpx"
 
+CODECS = []
+IF ENABLE_VP8 == True:
+    CODECS.append("vp8")
+IF ENABLE_VP9 == True:
+    CODECS.append("vp9")
+
 def get_encodings():
-    return ["vp8"]
+    return CODECS
+
+
+cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
+    IF ENABLE_VP8 == True:
+        if encoding=="vp8":
+            return vpx_codec_vp8_cx()
+    IF ENABLE_VP9 == True:
+        if encoding=="vp9":
+            return vpx_codec_vp9_cx()
+    raise Exception("unsupported encoding: %s" % encoding)
 
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
@@ -113,7 +136,7 @@ def get_colorspaces():
     return COLORSPACES
 
 def get_spec(encoding, colorspace):
-    assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
+    assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
     #setup cost is reasonable (usually about 5ms)
@@ -138,12 +161,14 @@ cdef class Encoder:
     cdef int width
     cdef int height
     cdef int max_threads
+    cdef object encoding
     cdef char* src_format
 
     def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
-        assert encoding=="vp8", "invalid encoding: %s" % encoding
-        assert scaling==(1,1), "vp8 does not handle scaling"
-        cdef const vpx_codec_iface_t *codec_iface
+        assert encoding in CODECS, "invalid encoding: %s" % encoding
+        assert scaling==(1,1), "vpx does not handle scaling"
+        cdef const vpx_codec_iface_t *codec_iface = make_codec_cx(encoding)
+        self.encoding = encoding
         self.width = width
         self.height = height
         self.frames = 0
@@ -156,7 +181,6 @@ cdef class Encoder:
             log.warn("error parsing number of threads: %s", e)
             self.max_threads =2
 
-        codec_iface = vpx_codec_vp8_cx()
         self.cfg = <vpx_codec_enc_cfg_t *> xmemalign(sizeof(vpx_codec_enc_cfg_t))
         if self.cfg==NULL:
             raise Exception("failed to allocate memory for vpx encoder config")
@@ -191,7 +215,7 @@ cdef class Encoder:
                 "max_threads": self.max_threads}
 
     def get_encoding(self):
-        return "vp8"
+        return self.encoding
 
     def get_width(self):
         return self.width
@@ -279,6 +303,7 @@ cdef class Encoder:
         cout = get_frame_buffer(pkt)
         img = cout[:coutsz]
         free(image)
+        #log("vpx returning %s image: %s bytes", self.encoding, len(img))
         return img
 
     def set_encoding_speed(self, int pct):

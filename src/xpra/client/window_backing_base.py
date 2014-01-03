@@ -17,7 +17,7 @@ from xpra.net.mmap_pipe import mmap_read
 from xpra.net.protocol import has_lz4, LZ4_uncompress
 from xpra.os_util import BytesIOClass, bytestostr
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
-from xpra.codecs.loader import get_codec, has_codec
+from xpra.codecs.loader import get_codec
 
 
 #logging in the draw path is expensive:
@@ -54,17 +54,17 @@ def load_csc_options():
             except:
                 log.warn("failed to load csc module %s", csc_module, exc_info=True)
 
-VPX_DECODER = None
-def load_vpx_decoder():
-    global VPX_DECODER
-    if has_codec("dec_vpx"):
-        VPX_DECODER = "dec_vpx"
-    else:
-        #try dec_avcodec:
-        avcodec_module = get_codec("dec_avcodec")
-        if avcodec_module and "vpx" in avcodec_module.get_codecs():
-            VPX_DECODER = "dec_avcodec"
-
+VPX_DECODERS = {}
+def load_vpx_decoders():
+    global VPX_DECODERS
+    for codec in ("vp8", "vp9"):
+        #prefer native vpx ahead of avcodec:
+        for module in ("dec_vpx", "dec_avcodec"):
+            decoder = get_codec(module)
+            if codec in decoder.get_encodings():
+                VPX_DECODERS[codec] = module
+                break
+    log("vpx decoders: %s", VPX_DECODERS)
 
 def fire_paint_callbacks(callbacks, success):
     for x in callbacks:
@@ -82,7 +82,7 @@ see CairoBacking and GTKWindowBacking for actual implementations
 class WindowBackingBase(object):
     def __init__(self, wid, idle_add):
         load_csc_options()
-        load_vpx_decoder()
+        load_vpx_decoders()
         self.wid = wid
         self.idle_add = idle_add
         self._has_alpha = False
@@ -373,8 +373,8 @@ class WindowBackingBase(object):
 
             img = self._video_decoder.decompress_image(img_data, options)
             if not img:
-                raise Exception("paint_with_video_decoder: wid=%s, %s decompression error on %s bytes of picture data for %sx%s pixels, options=%s" % (
-                      self.wid, coding, len(img_data), width, height, options))
+                raise Exception("paint_with_video_decoder: wid=%s, %s decompression error on %s bytes of picture data for %sx%s pixels using %s, options=%s" % (
+                      self.wid, coding, len(img_data), width, height, self._video_decoder, options))
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         finally:
             self._decoder_lock.release()
@@ -472,9 +472,9 @@ class WindowBackingBase(object):
             self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding=="h264":
             self.paint_with_video_decoder("dec_avcodec", "h264", img_data, x, y, width, height, options, callbacks)
-        elif coding=="vp8":
-            assert VPX_DECODER, "no vpx decoder available"
-            self.paint_with_video_decoder(VPX_DECODER, "vp8", img_data, x, y, width, height, options, callbacks)
+        elif coding in ("vp8", "vp9"):
+            assert coding in VPX_DECODERS, "no %s decoder available" % coding
+            self.paint_with_video_decoder(VPX_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)
         elif coding[:3]=="png" or coding=="jpeg":
