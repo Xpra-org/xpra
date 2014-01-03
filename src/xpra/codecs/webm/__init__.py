@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+The original version of python-webm can be found here:
+https://code.google.com/p/python-webm/
+This modified version adds support for lossless compression.
+
 Copyright (c) 2011, Daniele Esposti <expo@expobrain.net>
-Copyright (c) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+Copyright (c) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
