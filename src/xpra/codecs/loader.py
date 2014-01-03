@@ -190,10 +190,13 @@ def encodings_help(encodings):
 
 
 def main():
+    global debug
     import sys
     import logging
     logging.basicConfig(format="%(message)s")
     logging.root.setLevel(logging.INFO)
+    if "-v" in sys.argv or "--verbose" in sys.argv:
+        debug = log.info
 
     load_codecs()
     print("codecs/csc modules found:")
