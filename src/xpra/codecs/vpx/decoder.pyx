@@ -126,7 +126,6 @@ class VPXImageWrapper(ImageWrapper):
 
     def free_buffers(self):
         cdef void *ptr
-        ImageWrapper.free(self)
         if self.buffers:
             for x in self.buffers:
                 #cython magic:
