@@ -553,7 +553,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if opts.encoding and opts.encoding=="help":
         from xpra.codecs.loader import encodings_help
         from xpra.server.server_base import ServerBase
-        print("server supports the following encodings:\n * %s" % ("\n * ".join(encodings_help(ServerBase().encodings))))
+        print("xpra server supports the following encodings:\n * %s" % ("\n * ".join(encodings_help(ServerBase().encodings))))
         return 0
 
     assert mode in ("start", "upgrade", "shadow", "proxy")
