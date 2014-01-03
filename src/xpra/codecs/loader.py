@@ -146,7 +146,7 @@ ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale"
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg"]
+PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "webp", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg"]
 
 compressors = ["zlib"]
 try:
@@ -159,6 +159,7 @@ except:
 ENCODINGS_TO_NAME = {
       "h264"    : "H.264",
       "vp8"     : "VP8",
+      "vp9"     : "VP9",
       "png"     : "PNG (24/32bpp)",
       "png/P"   : "PNG (8bpp colour)",
       "png/L"   : "PNG (8bpp grayscale)",
@@ -170,6 +171,7 @@ ENCODINGS_TO_NAME = {
 ENCODINGS_HELP = {
       "h264"    : "H.264 video codec",
       "vp8"     : "VP8 video codec",
+      "vp9"     : "VP9 video codec",
       "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
       "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
       "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
@@ -178,7 +180,7 @@ ENCODINGS_HELP = {
       "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
       }
 
-HELP_ORDER = ("h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "jpeg")
+HELP_ORDER = ("h264", "vp8", "vp9", "webp", "png", "png/P", "png/L", "rgb", "jpeg")
 
 def encodings_help(encodings):
     h = []
