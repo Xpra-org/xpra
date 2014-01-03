@@ -7,6 +7,7 @@
 
 import sys
 import os
+import stat
 import socket
 import time
 from optparse import OptionParser, OptionGroup
@@ -917,7 +918,15 @@ def run_proxy(parser, opts, script_file, args, mode):
                         if not x.startswith("X"):
                             continue
                         try:
-                            displays.append(int(x[1:]))
+                            socket_path = os.path.join(X11_SOCKET_DIR, x)
+                            mode = os.stat(socket_path).st_mode
+                            is_socket = stat.S_ISSOCK(mode)
+                            if not is_socket:
+                                continue
+                            v = int(x[1:])
+                            #arbitrary: only shadow automatically displays below 10..
+                            if v<10:
+                                displays.append(v)
                         except:
                             pass
                 assert len(displays)!=0, "could not detect any live X11 displays"
