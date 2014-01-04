@@ -613,6 +613,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                      "username": getpass.getuser()}
         if opts.session_name:
             mdns_info["session"] = opts.session_name
+        #tcp:
+        for host, iport in bind_tcp:
+            socket = setup_tcp_socket(host, iport)
+            sockets.append(socket)
         #unix:
         socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group)
         if socket:      #win32 returns None!
@@ -621,10 +625,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                 ssh_port = get_ssh_port()
                 if ssh_port:
                     mdns_publish(display_name, "ssh", [("", ssh_port)], mdns_info)
-        #tcp:
-        for host, iport in bind_tcp:
-            socket = setup_tcp_socket(host, iport)
-            sockets.append(socket)
         if opts.mdns:
             mdns_publish(display_name, "tcp", bind_tcp, mdns_info)
     except Exception, e:
@@ -746,4 +746,5 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             log.info("upgrading: not cleaning up Xvfb or socket")
             # don't delete the new socket (not ours)
             _cleanups.remove(cleanup_socket)
+        log.info("cleanups=%s", _cleanups)
     return  0
