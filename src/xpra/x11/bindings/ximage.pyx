@@ -563,7 +563,7 @@ cdef get_image(Display * display, Pixmap pixmap, int x, int y, int width, int he
     ximage = XGetImage(display, pixmap, x, y, width, height, AllPlanes, ZPixmap)
     #log.info("get_pixels(..) ximage==NULL : %s", ximage==NULL)
     if ximage==NULL:
-        info("get_pixels(..) failed to get XImage for xpixmap %s", pixmap)
+        debug("get_pixels(..) failed to get XImage for xpixmap %s", pixmap)
         return None
     xi = XImageWrapper(x, y, width, height)
     xi.set_image(ximage)
@@ -583,7 +583,7 @@ cdef xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
     status = XGetGeometry(xdisplay, xpixmap, &root_window,
                         &x, &y, &width, &height, &border, &depth)
     if status==0:
-        info("failed to get pixmap dimensions for %s" % xpixmap)
+        debug("failed to get pixmap dimensions for %s" % xpixmap)
         XFreePixmap(xdisplay, xpixmap)
         return None
     pw = PixmapWrapper()
