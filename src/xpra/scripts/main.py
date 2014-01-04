@@ -95,7 +95,7 @@ def parse_cmdline(cmdline):
                            ] + command_options
     if supports_shadow:
         server_modes.append("shadow")
-        command_options.append("\t%prog shadow DISPLAY\n")
+        command_options.append("\t%prog shadow [DISPLAY]\n")
     if not supports_server:
         command_options.append("(This xpra installation does not support starting local servers.)")
 
