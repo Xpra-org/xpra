@@ -9,7 +9,6 @@
 import gtk.gdk
 import gobject
 gobject.threads_init()
-gtk.gdk.threads_init()
 
 from xpra.log import Logger
 log = Logger()

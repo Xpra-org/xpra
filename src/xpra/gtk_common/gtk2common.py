@@ -9,8 +9,10 @@ def gtk2main():
     pygtk.require('2.0')
     import gtk
     if gtk.main_level()==0:
+        gtk.gdk.threads_init()
         try:
             gtk.threads_enter()
             gtk.main()
         finally:
             gtk.threads_leave()
+            pass
