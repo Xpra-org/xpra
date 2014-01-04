@@ -857,6 +857,8 @@ if WIN32:
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
                    ('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path)),
                    ]
+    if enc_x264_ENABLED:
+        data_files.append(('', ['%s\\libx264.dll' % x264_bin_dir]))
     html5_dir = ''
 
     if webp_ENABLED:
