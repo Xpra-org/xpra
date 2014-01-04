@@ -83,6 +83,12 @@ def log_version_info():
 selected_device = None
 selected_platform = None
 context = None
+def reselect_device():
+    global context, selected_device,selected_platform
+    selected_device = None
+    selected_platform = None
+    context = None
+    select_device()
 def select_device():
     global context, selected_device,selected_platform
     if context is not None:
@@ -185,7 +191,6 @@ def has_same_channels(src, dst):
     #log.info("has_same_channels(%s, %s)=%s (%s - %s)", src, dst, scheck, dcheck, len(scheck)==0 and len(dcheck)==0)
     return len(scheck)==0 and len(dcheck)==0
 
-KERNELS_DEFS = {}
 def gen_yuv_to_rgb():
     global context
     from xpra.codecs.csc_opencl.opencl_kernels import gen_yuv_to_rgb_kernels, rgb_mode_to_indexes, indexes_to_rgb_mode
@@ -342,7 +347,11 @@ def gen_rgb_to_yuv():
     debug("RGB 2 YUV kernels=%s", sorted(list(set([x[0] for x in RGB_to_YUV_KERNELS.values()]))))
     return RGB_to_YUV_KERNELS
 
-
+KERNELS_DEFS = {}
+def regen_kernels():
+    global KERNELS_DEFS
+    KERNELS_DEFS = {}
+    gen_kernels()
 def gen_kernels():
     """
     The code here is complicated by the fact that we don't know
@@ -366,6 +375,10 @@ def gen_kernels():
 
 
 program = None
+def rebuild_kernels():
+    global program
+    program = None
+    build_kernels()
 def build_kernels():
     global program
     if program is not None:
@@ -425,6 +438,7 @@ def get_spec(in_colorspace, out_colorspace):
 class ColorspaceConverter(object):
 
     def __init__(self):
+        global context, program
         build_kernels()
         self.src_width = 0
         self.src_height = 0
@@ -434,15 +448,17 @@ class ColorspaceConverter(object):
         self.dst_format = ""
         self.time = 0
         self.frames = 0
+        self.context = None
+        self.program = None
         self.queue = None
         self.channel_order = None
         self.sampler = None
         self.kernel_function = None
         self.kernel_function_name = None
+        self.do_convert_image = None
 
     def init_context(self, src_width, src_height, src_format,
                            dst_width, dst_height, dst_format, csc_speed=100):  #@DuplicatedSignature
-        global context
         debug("init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, csc_speed))
         validate_in_out(src_format, dst_format)
         self.src_width = src_width
@@ -451,20 +467,26 @@ class ColorspaceConverter(object):
         self.dst_width = dst_width
         self.dst_height = dst_height
         self.dst_format = dst_format
-        self.queue = pyopencl.CommandQueue(context)
+        self.init_with_device()
+
+    def init_with_device(self):
+        global context, program
+        self.context = context
+        self.program = program
+        self.queue = pyopencl.CommandQueue(self.context)
         fm = pyopencl.filter_mode.NEAREST
-        self.sampler = pyopencl.Sampler(context, False, pyopencl.addressing_mode.CLAMP_TO_EDGE, fm)
-        k_def = KERNELS_DEFS.get((src_format, dst_format))
-        assert k_def, "no kernel found for %s to %s" % (src_format, dst_format)
+        self.sampler = pyopencl.Sampler(self.context, False, pyopencl.addressing_mode.CLAMP_TO_EDGE, fm)
+        k_def = KERNELS_DEFS.get((self.src_format, self.dst_format))
+        assert k_def, "no kernel found for %s to %s" % (self.src_format, self.dst_format)
         self.kernel_function_name, _, self.channel_order, src = k_def
-        if src_format.endswith("P"):
+        if self.src_format.endswith("P"):
             #yuv 2 rgb:
-            self.convert_image = self.convert_image_yuv
+            self.do_convert_image = self.convert_image_yuv
         else:
             #rgb 2 yuv:
-            self.convert_image = self.convert_image_rgb
+            self.do_convert_image = self.convert_image_rgb
         debug("init_context(..) kernel source=%s", src)
-        self.kernel_function = getattr(program, self.kernel_function_name)
+        self.kernel_function = getattr(self.program, self.kernel_function_name)
         debug("init_context(..) channel order=%s, filter mode=%s", CHANNEL_ORDER_TO_STR.get(self.channel_order, self.channel_order), FILTER_MODE_TO_STR.get(fm, fm))
         debug("init_context(..) kernel_function %s: %s", self.kernel_function_name, self.kernel_function)
         assert self.kernel_function
@@ -524,10 +546,6 @@ class ColorspaceConverter(object):
             self.queue = None
             self.kernel_function = None
 
-    def convert_image(self, image):
-        #we override this method during init_context
-        raise Exception("not initialized!")
-
 
     def get_work_sizes(self, wwidth, wheight):
         #ensure the local and global work size are valid, see:
@@ -551,8 +569,29 @@ class ColorspaceConverter(object):
         return globalWorkSize, localWorkSize
 
 
+    def convert_image(self, image, retry=0):
+        if self.do_convert_image==None:
+            raise Exception("not initialized!")
+        if self.context!=context or self.program!=program:
+            log.info("using new OpenCL context")
+            self.init_with_device()
+        try:
+            return self.do_convert_image(image)
+        except pyopencl.LogicError, e:
+            if retry>0:
+                raise e
+            log.warn("OpenCL error: %s", e)
+            self.reinit()
+            return self.convert_image(image, retry+1)
+
+    def reinit(self):
+        log.info("re-initializing OpenCL")
+        reselect_device()
+        regen_kernels()
+        rebuild_kernels()
+        self.init_with_device()
+
     def convert_image_yuv(self, image):
-        global program, context
         start = time.time()
         iplanes = image.get_planes()
         width = image.get_width()
@@ -583,12 +622,12 @@ class ColorspaceConverter(object):
             else:
                 flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR
             shape = strides[i], self.src_height/y_div
-            iimage = pyopencl.Image(context, flags, iformat, shape=shape, hostbuf=plane)
+            iimage = pyopencl.Image(self.context, flags, iformat, shape=shape, hostbuf=plane)
             input_images.append(iimage)
 
         #output image:
         oformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNORM_INT8)
-        oimage = pyopencl.Image(context, mem_flags.WRITE_ONLY, oformat, shape=(self.dst_width, self.dst_height))
+        oimage = pyopencl.Image(self.context, mem_flags.WRITE_ONLY, oformat, shape=(self.dst_width, self.dst_height))
 
         kernelargs += input_images + [numpy.int32(self.src_width), numpy.int32(self.src_height),
                        numpy.int32(self.dst_width), numpy.int32(self.dst_height),
@@ -615,7 +654,6 @@ class ColorspaceConverter(object):
 
 
     def convert_image_rgb(self, image):
-        global program, context
         start = time.time()
         iplanes = image.get_planes()
         width = image.get_width()
@@ -646,7 +684,7 @@ class ColorspaceConverter(object):
             flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
         else:
             flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR
-        iimage = pyopencl.Image(context, flags, iformat, shape=shape, hostbuf=pixels)
+        iimage = pyopencl.Image(self.context, flags, iformat, shape=shape, hostbuf=pixels)
 
         kernelargs = [self.queue, globalWorkSize, localWorkSize,
                       iimage, numpy.int32(self.src_width), numpy.int32(self.src_height),
@@ -663,7 +701,7 @@ class ColorspaceConverter(object):
             p_height = roundup(self.dst_height / y_div, 2)
             p_size = p_stride * p_height
             #debug("output buffer for channel %s: stride=%s, height=%s, size=%s", i, p_stride, p_height, p_size)
-            out_buf = pyopencl.Buffer(context, mem_flags.WRITE_ONLY, p_size)
+            out_buf = pyopencl.Buffer(self.context, mem_flags.WRITE_ONLY, p_size)
             out_buffers.append(out_buf)
             kernelargs += [out_buf, numpy.int32(p_stride)]
             strides.append(p_stride)
