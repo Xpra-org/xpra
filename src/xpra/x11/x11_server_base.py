@@ -323,7 +323,7 @@ class X11ServerBase(GTKServerBase):
         trap.call_synced(X11Keyboard.xtest_fake_key, keycode, press)
 
 
-    def _move_pointer(self, pos):
+    def _move_pointer(self, wid, pos):
         x, y = pos
         display = gtk.gdk.display_get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
@@ -332,12 +332,11 @@ class X11ServerBase(GTKServerBase):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
-        ss.make_keymask_match(modifiers)
-        window = self._id_to_window.get(wid)
-        if not window:
-            log("_process_mouse_common() invalid window id: %s", wid)
+        pos = gtk.gdk.get_default_root_window().get_pointer()[:2]
+        if pos==pointer:
             return
-        trap.swallow_synced(self._move_pointer, pointer)
+        trap.swallow_synced(self._move_pointer, wid, pointer)
+        ss.make_keymask_match(modifiers)
 
     def _process_button_action(self, proto, packet):
         ss = self._server_sources.get(proto)

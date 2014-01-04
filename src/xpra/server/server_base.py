@@ -1260,7 +1260,7 @@ class ServerBase(ServerCore):
         ss.user_event()
 
 
-    def _move_pointer(self, pos):
+    def _move_pointer(self, wid, pos):
         raise NotImplementedError()
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):

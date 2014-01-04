@@ -112,7 +112,7 @@ class GTKServerBase(ServerBase):
         pass
 
 
-    def _move_pointer(self, pos):
+    def _move_pointer(self, wid, pos):
         x, y = pos
         display = gtk.gdk.display_get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
