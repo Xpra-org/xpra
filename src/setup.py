@@ -920,8 +920,8 @@ else:
 
 STATIC_COMMON_DEFS = pkgconfig()
 if os.name=="posix":
-    STATIC_COMMON_DEFS.update({'include_dirs': "/usr/local/include",
-                               'library_dirs': "/usr/local/lib"})
+    STATIC_COMMON_DEFS.update({'include_dirs': ["/usr/local/include"],
+                               'library_dirs': ["/usr/local/lib"]})
 
 
 if html5_ENABLED:
