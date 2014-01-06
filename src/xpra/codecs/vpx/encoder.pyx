@@ -205,12 +205,16 @@ cdef class Encoder:
         if vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)!=0:
             free(self.context)
             raise Exception("failed to initialized vpx encoder: %s", vpx_codec_error(self.context))
+        debug("vpx_codec_enc_init_ver for %s succeeded", encoding)
 
+    def __str__(self):
+        return "vpx.Encoder(%s)" % self.encoding
 
     def get_info(self):
         return {"frames"    : self.frames,
                 "width"     : self.width,
                 "height"    : self.height,
+                "encoding"  : self.encoding,
                 "src_format": self.src_format,
                 "max_threads": self.max_threads}
 
@@ -303,7 +307,7 @@ cdef class Encoder:
         cout = get_frame_buffer(pkt)
         img = cout[:coutsz]
         free(image)
-        #log("vpx returning %s image: %s bytes", self.encoding, len(img))
+        debug("vpx returning %s image: %s bytes", self.encoding, len(img))
         return img
 
     def set_encoding_speed(self, int pct):
