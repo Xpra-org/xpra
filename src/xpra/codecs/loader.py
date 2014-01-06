@@ -86,12 +86,12 @@ def load_codecs():
     add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter")
 
     #ffmpeg v1:
-    if codec_import_check("dec_avcodec", "avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder"):
-        add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder")
-    else:
-        #ffmpeg v2:
-        codec_import_check("dec_avcodec", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
-        add_codec_version("avcodec", "xpra.codecs.dec_avcodec2.decoder")
+    codec_import_check("dec_avcodec", "avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder")
+    add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder")
+
+    #ffmpeg v2:
+    codec_import_check("dec_avcodec2", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
+    add_codec_version("avcodec2", "xpra.codecs.dec_avcodec2.decoder")
 
     import __builtin__
     if "bytearray" in __builtin__.__dict__:
@@ -142,7 +142,7 @@ NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx"}
 ALL_OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8", "rgb24" : "rgb"}
 ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"}
 
-ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale", "csc_cython", "csc_opencl", "csc_nvcuda", "dec_avcodec", "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"
+ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale", "csc_cython", "csc_opencl", "csc_nvcuda", "dec_avcodec", "dec_avcodec2", "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:

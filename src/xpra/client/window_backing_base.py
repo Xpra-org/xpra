@@ -54,17 +54,19 @@ def load_csc_options():
             except:
                 log.warn("failed to load csc module %s", csc_module, exc_info=True)
 
-VPX_DECODERS = {}
-def load_vpx_decoders():
-    global VPX_DECODERS
-    for codec in ("vp8", "vp9"):
-        #prefer native vpx ahead of avcodec:
-        for module in ("dec_vpx", "dec_avcodec"):
-            decoder = get_codec(module)
-            if decoder and (codec in decoder.get_encodings()):
-                VPX_DECODERS[codec] = module
-                break
-    log("vpx decoders: %s", VPX_DECODERS)
+VIDEO_DECODERS = None
+def load_video_decoders():
+    global VIDEO_DECODERS
+    if VIDEO_DECODERS is None:
+        VIDEO_DECODERS = {}
+        for codec in ("vp8", "vp9", "h264"):
+            #prefer native vpx ahead of avcodec:
+            for module in ("dec_vpx", "dec_avcodec", "dec_avcodec2"):
+                decoder = get_codec(module)
+                if decoder and (codec in decoder.get_encodings()):
+                    VIDEO_DECODERS[codec] = module
+                    break
+    log("video decoders: %s", VIDEO_DECODERS)
 
 def fire_paint_callbacks(callbacks, success):
     for x in callbacks:
@@ -82,7 +84,7 @@ see CairoBacking and GTKWindowBacking for actual implementations
 class WindowBackingBase(object):
     def __init__(self, wid, idle_add):
         load_csc_options()
-        load_vpx_decoders()
+        load_video_decoders()
         self.wid = wid
         self.idle_add = idle_add
         self._has_alpha = False
@@ -470,11 +472,9 @@ class WindowBackingBase(object):
             if rowstride==0:
                 rowstride = width * 4
             self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
-        elif coding=="h264":
-            self.paint_with_video_decoder("dec_avcodec", "h264", img_data, x, y, width, height, options, callbacks)
-        elif coding in ("vp8", "vp9"):
-            assert coding in VPX_DECODERS, "no %s decoder available" % coding
-            self.paint_with_video_decoder(VPX_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
+        elif coding in ("vp8", "vp9", "h264"):
+            assert coding in VIDEO_DECODERS, "no %s decoder available" % coding
+            self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)
         elif coding[:3]=="png" or coding=="jpeg":
