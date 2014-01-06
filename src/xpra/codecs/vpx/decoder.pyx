@@ -12,6 +12,8 @@ log = Logger()
 debug = debug_if_env(log, "XPRA_VPX_DEBUG")
 error = log.error
 
+VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
+
 DEF ENABLE_VP8 = True
 DEF ENABLE_VP9 = False
 
@@ -132,9 +134,6 @@ def get_spec(colorspace):
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
     return VPX_IMG_FMT_I420
-
-
-VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
 
 
 class VPXImageWrapper(ImageWrapper):
