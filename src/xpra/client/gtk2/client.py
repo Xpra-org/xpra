@@ -92,8 +92,8 @@ class XpraClient(GTKXpraClient):
     def get_supported_window_layouts(self):
         return  WINDOW_LAYOUTS
 
-    def get_core_encodings(self):
-        encodings = GTKXpraClient.get_core_encodings(self)
+    def do_get_core_encodings(self):
+        encodings = GTKXpraClient.do_get_core_encodings(self)
         if self.has_transparency():
             try:
                 #to unpremultiply rgb32 data
