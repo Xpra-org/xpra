@@ -201,7 +201,7 @@ cdef class Decoder:
         debug("vpx_codec_dec_init_ver for %s succeeded", encoding)
 
     def __str__(self):
-        return "vpx.Encoder(%s)" % self.encoding
+        return "vpx.Decoder(%s)" % self.encoding
 
     def get_info(self):
         return {"type"      : self.get_type(),
