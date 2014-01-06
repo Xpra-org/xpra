@@ -13,7 +13,8 @@ def test_roundtrip():
     for encoding in ("vp8", "vp9"):
         print("")
         print("test_roundtrip() %s" % encoding)
-        do_test_codec_roundtrip(Encoder, Decoder, encoding, "YUV420P", 640, 480)
+        for populate in (True, False):
+            do_test_codec_roundtrip(Encoder, Decoder, encoding, "YUV420P", 640, 480, populate)
 
 
 def main():
