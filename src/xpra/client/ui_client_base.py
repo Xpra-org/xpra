@@ -91,6 +91,7 @@ class UIXpraClient(XpraClientBase):
         self.server_last_info = None
         self.info_request_pending = False
         self.screen_size_change_pending = False
+        self.core_encodings = None
         self.encoding = self.get_encodings()[0]
 
         #sound:
@@ -328,7 +329,7 @@ class UIXpraClient(XpraClientBase):
         return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
 
     def get_core_encodings(self):
-        if self.core_encoding is None:
+        if self.core_encodings is None:
             self.core_encodings = self.do_get_core_encodings()
         return self.core_encodings
 
