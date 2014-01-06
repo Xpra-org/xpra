@@ -12,6 +12,8 @@ log = Logger()
 debug = debug_if_env(log, "XPRA_VPX_DEBUG")
 error = log.error
 
+VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
+
 DEF ENABLE_VP8 = True
 DEF ENABLE_VP9 = False
 
@@ -34,6 +36,12 @@ cdef extern from "Python.h":
 ctypedef unsigned char uint8_t
 ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t
+
+USAGE_STREAM_FROM_SERVER    = 0x0
+USAGE_LOCAL_FILE_PLAYBACK   = 0x1
+USAGE_CONSTRAINED_QUALITY   = 0x2
+USAGE_CONSTANT_QUALITY      = 0x3
+
 
 cdef extern from "vpx/vpx_codec.h":
     ctypedef const void *vpx_codec_iter_t
@@ -67,22 +75,58 @@ cdef extern from "vpx/vp8cx.h":
 
 cdef extern from "vpx/vpx_encoder.h":
     int VPX_ENCODER_ABI_VERSION
+    #vpx_rc_mode
+    int VPX_VBR         #Variable Bit Rate (VBR) mode
+    int VPX_CBR         #Constant Bit Rate (CBR) mode
+    int VPX_CQ          #Constant Quality (CQ) mode
+    #vpx_enc_pass:
+    int VPX_RC_ONE_PASS     
+    int VPX_RC_FIRST_PASS     
+    int VPX_RC_LAST_PASS     
+    #vpx_kf_mode:
+    int VPX_KF_FIXED
+    int VPX_KF_AUTO
     int VPX_KF_DISABLED
     long VPX_EFLAG_FORCE_KF
     ctypedef struct vpx_rational_t:
         int num     #fraction numerator
         int den     #fraction denominator
     ctypedef struct vpx_codec_enc_cfg_t:
+        unsigned int g_usage
         unsigned int g_threads
-        unsigned int rc_target_bitrate
+        unsigned int g_profile
+        unsigned int g_w
+        unsigned int g_h
+        vpx_rational_t g_timebase
+        unsigned int g_error_resilient
+        unsigned int g_pass
         unsigned int g_lag_in_frames
         unsigned int rc_dropframe_thresh
         unsigned int rc_resize_allowed
-        unsigned int g_w
-        unsigned int g_h
-        unsigned int g_error_resilient
+        unsigned int rc_resize_up_thresh
+        unsigned int rc_resize_down_thresh
+        int rc_end_usage
+        #struct vpx_fixed_buf rc_twopass_stats_in
+        unsigned int rc_target_bitrate
+        unsigned int rc_min_quantizer
+        unsigned int rc_max_quantizer
+        unsigned int rc_undershoot_pct
+        unsigned int rc_overshoot_pct
+        unsigned int rc_buf_sz
+        unsigned int rc_buf_initial_sz
+        unsigned int rc_buf_optimal_sz
+        #we don't use 2pass:
+        #unsigned int rc_2pass_vbr_bias_pct
+        #unsigned int rc_2pass_vbr_minsection_pct
+        #unsigned int rc_2pass_vbr_maxsection_pct
         unsigned int kf_mode
-        vpx_rational_t g_timebase
+        unsigned int kf_min_dist
+        unsigned int kf_max_dist
+        unsigned int ts_number_layers
+        unsigned int[5] ts_target_bitrate
+        unsigned int[5] ts_rate_decimator
+        unsigned int ts_periodicity
+        unsigned int[16] ts_layer_id
     ctypedef int vpx_codec_cx_pkt_kind
     ctypedef int64_t vpx_codec_pts_t
     ctypedef long vpx_enc_frame_flags_t
@@ -158,8 +202,6 @@ def init_module():
     #nothing to do!
     pass
 
-VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
-
 
 cdef class Encoder:
     cdef int frames
@@ -203,18 +245,21 @@ cdef class Encoder:
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
 
         self.cfg.rc_target_bitrate = width * height * self.cfg.rc_target_bitrate / self.cfg.g_w / self.cfg.g_h
+        self.cfg.g_usage = USAGE_STREAM_FROM_SERVER
         self.cfg.g_threads = self.max_threads
+        self.cfg.g_profile = 0                      #use 1 for YUV444P and RGB support
         self.cfg.g_w = width
         self.cfg.g_h = height
-        self.cfg.g_error_resilient = 0
-        self.cfg.g_lag_in_frames = 0
-        self.cfg.rc_dropframe_thresh = 0
-        self.cfg.rc_resize_allowed = 1
-        self.cfg.kf_mode = VPX_KF_DISABLED
         cdef vpx_rational_t timebase
         timebase.num = 1
-        timebase.den = 1
+        timebase.den = 1000
         self.cfg.g_timebase = timebase
+        self.cfg.g_error_resilient = 0              #we currently use TCP, guaranteed delivery
+        self.cfg.g_pass = VPX_RC_ONE_PASS
+        self.cfg.g_lag_in_frames = 0                #always give us compressed output for each frame without delay
+        self.cfg.rc_resize_allowed = 1
+        self.cfg.rc_end_usage = VPX_VBR
+        self.cfg.kf_mode = VPX_KF_AUTO    #VPX_KF_DISABLED
         if vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)!=0:
             free(self.context)
             raise Exception("failed to initialized vpx encoder: %s", vpx_codec_error(self.context))
