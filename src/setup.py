@@ -310,16 +310,6 @@ def make_constants(*paths):
             print("(re)generating %s (%s):" % (pxi_file, reason))
         make_constants_pxi(constants_file, pxi_file)
 
-#Don't ask: somehow we seem to need this despite setting
-#PKG_CONFIG_PATH=/usr/local/lib[64]/pkgconfig before running rpmbuild sometimes?
-#but only do this if we are doing a static build
-if x264_static_ENABLED or vpx_static_ENABLED or avcodec_static_ENABLED or avcodec2_static_ENABLED or swscale_static_ENABLED:
-    pkgcp = os.environ.get("PKG_CONFIG_PATH", "").split(":")
-    for x in ("/usr/local/lib64/pkgconfig", "/usr/local/lib/pkgconfig"):
-        if x not in pkgcp and os.path.exists(x):
-            pkgcp.append(x)
-    os.environ["PKG_CONFIG_PATH"] = ":".join(pkgcp)
-
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*packages_options, **ekw):
     kw = dict(ekw)
