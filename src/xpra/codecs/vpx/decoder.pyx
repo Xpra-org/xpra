@@ -87,9 +87,9 @@ cdef extern from "vpx/vpx_decoder.h":
                                             vpx_codec_dec_cfg_t *cfg, vpx_codec_flags_t flags, int ver)
 
     vpx_codec_err_t vpx_codec_decode(vpx_codec_ctx_t *ctx, const uint8_t *data,
-                                     unsigned int data_sz, void *user_priv, long deadline)
+                                     unsigned int data_sz, void *user_priv, long deadline) nogil
 
-    vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter)
+    vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
 
 
 def get_version():
@@ -244,6 +244,7 @@ cdef class Decoder:
         cdef const uint8_t *frame = input
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
+        cdef vpx_codec_err_t ret
         cdef int i = 0
         cdef object image
         cdef object plane
@@ -252,10 +253,13 @@ cdef class Decoder:
         assert self.context!=NULL
         assert PyObject_AsReadBuffer(input, <const void**> &buf, &buf_len)==0
 
-        if vpx_codec_decode(self.context, buf, buf_len, NULL, 0)!=VPX_CODEC_OK:
+        with nogil:
+            ret = vpx_codec_decode(self.context, buf, buf_len, NULL, 0)
+        if ret!=VPX_CODEC_OK:
             log.warn("error during vpx_codec_decode: %s" % vpx_codec_error(self.context))
             return None
-        img = vpx_codec_get_frame(self.context, &iter)
+        with nogil:
+            img = vpx_codec_get_frame(self.context, &iter)
         if img==NULL:
             log.warn("error during vpx_codec_get_frame: %s" % vpx_codec_error(self.context))
             return None
