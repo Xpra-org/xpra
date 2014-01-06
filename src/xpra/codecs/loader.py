@@ -146,7 +146,7 @@ ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale"
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "webp", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg"]
+PREFERED_ENCODING_ORDER = ["h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg", "vp9"]
 
 compressors = ["zlib"]
 try:
