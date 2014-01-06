@@ -373,6 +373,11 @@ When unspecified, all the available codecs are allowed and the first one is used
         if not hasattr(options, k):
             setattr(options, k, v)
 
+    if options.encoding:
+        #fix old encoding names if needed:
+        from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW
+        options.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(options.encoding, options.encoding)
+
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
     if len(args)==2 and args[0]=="attach" and args[1].startswith("xpra://"):
@@ -781,8 +786,7 @@ def run_client(parser, opts, extra_args, mode):
         app = make_client(parser.error, opts)
         if opts.encoding:
             #fix old encoding names if needed:
-            from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW, encodings_help
-            opts.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(opts.encoding, opts.encoding)
+            from xpra.codecs.loader import encodings_help
             err = opts.encoding not in app.get_encodings()
             if err and opts.encoding!="help":
                 print("invalid encoding: %s" % opts.encoding)
