@@ -360,12 +360,12 @@ class UIXpraClient(XpraClientBase):
         if has_codec("csc_swscale"):    # or has_codec("csc_opencl"): (see window_backing_base)
             for module in ("dec_avcodec", "dec_avcodec2", "dec_vpx"):
                 decoder = get_codec(module)
-                log.info("decoder(%s)=%s", module, decoder)
+                log("decoder(%s)=%s", module, decoder)
                 if decoder:
                     for encoding in decoder.get_encodings():
                         if encoding not in core_encodings:
                             core_encodings.append(encoding)
-        log.info("do_get_core_encodings()=%s", core_encodings)
+        log("do_get_core_encodings()=%s", core_encodings)
         #remove duplicates and use prefered encoding order:
         return [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings)]
 
