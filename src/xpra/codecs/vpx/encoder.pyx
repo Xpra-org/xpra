@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import os
 from xpra.codecs.codec_constants import codec_spec
 
@@ -66,6 +67,11 @@ cdef extern from "vpx/vp8cx.h":
 
 cdef extern from "vpx/vpx_encoder.h":
     int VPX_ENCODER_ABI_VERSION
+    int VPX_KF_DISABLED
+    long VPX_EFLAG_FORCE_KF
+    ctypedef struct vpx_rational_t:
+        int num     #fraction numerator
+        int den     #fraction denominator
     ctypedef struct vpx_codec_enc_cfg_t:
         unsigned int g_threads
         unsigned int rc_target_bitrate
@@ -75,6 +81,8 @@ cdef extern from "vpx/vpx_encoder.h":
         unsigned int g_w
         unsigned int g_h
         unsigned int g_error_resilient
+        unsigned int kf_mode
+        vpx_rational_t g_timebase
     ctypedef int vpx_codec_cx_pkt_kind
     ctypedef int64_t vpx_codec_pts_t
     ctypedef long vpx_enc_frame_flags_t
@@ -202,6 +210,11 @@ cdef class Encoder:
         self.cfg.g_lag_in_frames = 0
         self.cfg.rc_dropframe_thresh = 0
         self.cfg.rc_resize_allowed = 1
+        self.cfg.kf_mode = VPX_KF_DISABLED
+        cdef vpx_rational_t timebase
+        timebase.num = 1
+        timebase.den = 1
+        self.cfg.g_timebase = timebase
         if vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)!=0:
             free(self.context)
             raise Exception("failed to initialized vpx encoder: %s", vpx_codec_error(self.context))
@@ -286,23 +299,33 @@ cdef class Encoder:
         image.stride[3] = 0
         image.d_w = self.width
         image.d_h = self.height
-        image.x_chroma_shift = 0
-        image.y_chroma_shift = 0
-        image.bps = 8
+        #this is the chroma shift for YUV420P:
+        #both X and Y are downscaled by 2^1
+        image.x_chroma_shift = 1
+        image.y_chroma_shift = 1
+        image.bps = 0
+        if self.frames==0:
+            flags |= VPX_EFLAG_FORCE_KF
+        start = time.time()
         with nogil:
-            i = vpx_codec_encode(self.context, image, frame_cnt, 1, flags, VPX_DL_REALTIME)
+            i = vpx_codec_encode(self.context, image, self.frames, 1, flags, VPX_DL_REALTIME)
         if i!=0:
             free(image)
-            log.error("vp8 codec encoding error: %s", vpx_codec_destroy(self.context))
+            log.error("%s codec encoding error: %s", self.encoding, vpx_codec_destroy(self.context))
             return None
+        end = time.time()
+        debug("vpx_codec_encode for %s took %.1f", self.encoding, 1000.0*(end-start))
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
+        end = time.time()
         if get_packet_kind(pkt) != VPX_CODEC_CX_FRAME_PKT:
             free(image)
-            log.error("vp8 invalid packet type: %s", get_packet_kind(pkt))
+            log.error("%s invalid packet type: %s", self.encoding, get_packet_kind(pkt))
             return None
         self.frames += 1
-        #FIXME: we copy the pixels here, we could manage the buffer instead
+        #we copy the compressed data here, we could manage the buffer instead
+        #using vpx_codec_set_cx_data_buf every time with a wrapper for freeing it,
+        #but since this is compressed data, no big deal
         coutsz = get_frame_size(pkt)
         cout = get_frame_buffer(pkt)
         img = cout[:coutsz]
