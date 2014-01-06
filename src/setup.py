@@ -157,12 +157,6 @@ if "clean" not in sys.argv:
         exit(1)
 
 
-
-STATIC_INCLUDE_DIRS = ["/usr/local/include"]
-STATIC_LIB_DIRS = ["/usr/local/lib"]
-STATIC_COMMON_DEFS = {'include_dirs': STATIC_INCLUDE_DIRS,
-                      'library_dirs': STATIC_LIB_DIRS}
-
 #*******************************************************************************
 # build options, these may get modified further down..
 #
@@ -714,6 +708,7 @@ if WIN32:
             for flag in ('/Od', '/Zi', '/DEBUG', '/RTC1', '/GS'):
                 add_to_keywords(kw, 'extra_compile_args', flag)
             add_to_keywords(kw, 'extra_link_args', "/DEBUG")
+            kw['pyrex_gdb'] = True
         print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
         return kw
 
@@ -921,6 +916,12 @@ else:
             etc_files.append(xorg_conf)
         data_files.append((etc_prefix, etc_files))
     setup_options["scripts"] = scripts
+
+
+STATIC_COMMON_DEFS = pkgconfig()
+if os.name=="posix":
+    STATIC_COMMON_DEFS.update({'include_dirs': "/usr/local/include",
+                               'library_dirs': "/usr/local/lib"})
 
 
 if html5_ENABLED:
