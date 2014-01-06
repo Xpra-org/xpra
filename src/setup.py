@@ -225,6 +225,11 @@ def add_to_keywords(kw, key, *args):
     values = kw.setdefault(key, [])
     for arg in args:
         values.append(arg)
+def remove_from_keywords(kw, key, value):
+    values = kw.get(key)
+    if values and value in values:
+        values.remove(value)
+
 
 PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
 
@@ -919,6 +924,7 @@ else:
 
 
 STATIC_COMMON_DEFS = pkgconfig()
+remove_from_keywords(STATIC_COMMON_DEFS, 'extra_compile_args', '-fsanitize=address')
 if os.name=="posix":
     STATIC_COMMON_DEFS.update({'include_dirs': ["/usr/local/include"],
                                'library_dirs': ["/usr/local/lib"]})
