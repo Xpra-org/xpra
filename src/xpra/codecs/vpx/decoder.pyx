@@ -169,7 +169,7 @@ cdef class Decoder:
     cdef vpx_codec_ctx_t *context
     cdef int width
     cdef int height
-    cdef int threads
+    cdef int max_threads
     cdef vpx_img_fmt_t pixfmt
     cdef char* dst_format
     cdef object encoding
@@ -185,16 +185,16 @@ cdef class Decoder:
         self.width = width
         self.height = height
         try:
-            self.threads = int(VPX_THREADS)
+            self.max_threads = int(VPX_THREADS)
         except:
-            self.threads = 1
+            self.max_threads = 1
         self.context = <vpx_codec_ctx_t *> xmemalign(sizeof(vpx_codec_ctx_t))
         assert self.context!=NULL
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
         cdef vpx_codec_dec_cfg_t dec_cfg
         dec_cfg.w = width
         dec_cfg.h = height
-        dec_cfg.threads = self.threads
+        dec_cfg.threads = self.max_threads
         if vpx_codec_dec_init_ver(self.context, codec_iface, &dec_cfg,
                               flags, VPX_DECODER_ABI_VERSION)!=VPX_CODEC_OK:
             raise Exception("failed to instantiate vpx decoder: %s" % vpx_codec_error(self.context))
@@ -209,7 +209,7 @@ cdef class Decoder:
                 "height"    : self.get_height(),
                 "encoding"  : self.encoding,
                 "colorspace": self.get_colorspace(),
-                "threads"   : self.threads,
+                "max_threads" : self.max_threads,
                 }
 
     def get_colorspace(self):
