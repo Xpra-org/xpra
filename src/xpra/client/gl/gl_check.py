@@ -116,6 +116,9 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         debug("OpenGL extensions found: %s", ", ".join(extensions))
         props["extensions"] = extensions
 
+        from OpenGL.arrays.arraydatatype import ArrayDatatype
+        debug("found the following array handlers: %s", set(ArrayDatatype.getRegistry().values()))
+
         from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
         for d,s,fatal in (("vendor",     GL_VENDOR,      True),
                           ("renderer",   GL_RENDERER,    True),
