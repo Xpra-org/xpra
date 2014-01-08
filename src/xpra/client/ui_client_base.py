@@ -703,7 +703,8 @@ class UIXpraClient(XpraClientBase):
             "generic-rgb-encodings"     : True,
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
-            "encodings.rgb_formats"     : ["RGB", "RGBA"]
+            "encodings.rgb_formats"     : ["RGB", "RGBA"],
+            "control_commands"          : ["show_session_info"],
             })
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
@@ -1092,6 +1093,15 @@ class UIXpraClient(XpraClientBase):
             rh(*args)
         except Exception, e:
             log.warn("error processing rpc reply handler %s(%s) : %s", rh, args, e)
+
+
+    def _process_control(self, packet):
+        command = packet[1]
+        if command=="show_session_info":
+            log.info("calling show_session_info on server request")
+            self.show_session_info()
+        else:
+            log.warn("received invalid control command from server: %s", command)
 
 
     def start_sending_sound(self):
@@ -1640,6 +1650,7 @@ class UIXpraClient(XpraClientBase):
             "desktop_size":         self._process_desktop_size,
             "window-icon":          self._process_window_icon,
             "rpc-reply":            self._process_rpc_reply,
+            "control" :             self._process_control,
             "draw":                 self._process_draw,
             # "clipboard-*" packets are handled by a special case below.
             }.items():

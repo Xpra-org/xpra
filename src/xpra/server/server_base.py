@@ -643,7 +643,8 @@ class ServerBase(ServerCore):
                     "compression", "encoder",
                     "sound-output",
                     "scaling",
-                    "suspend", "resume", "name")
+                    "suspend", "resume", "name",
+                    "client")
         if command=="help":
             return respond(0, "control supports: %s" % (", ".join(commands)))
 
@@ -727,6 +728,14 @@ class ServerBase(ServerCore):
                 return argn_err(1)
             self.session_name = args[1]
             log.info("changed session name: %s", self.session_name)
+            return respond(0, "session name set")
+        elif command=="client":
+            if len(args)<2:
+                return argn_err("at least 2")
+            client_command = args[1:]
+            if client_command[0] not in csource.control_commands:
+                return respond(12, "client does not support control command '%s'", client_command[0])
+            csource.send_client_command(*client_command)
             return respond(0, "session name set")
         else:
             return respond(9, "internal state error: invalid command '%s'", command)

@@ -270,6 +270,7 @@ class ServerSource(object):
         self.system_tray = False
         self.generic_window_types = False
         self.notify_startup_complete = False
+        self.control_commands = []
         #sound props:
         self.pulseaudio_id = None
         self.pulseaudio_server = None
@@ -470,6 +471,7 @@ class ServerSource(object):
         self.generic_window_types = c.boolget("generic_window_types")
         self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.namespace = c.boolget("namespace")
+        self.control_commands = c.strlistget("control_commands")
 
         self.desktop_size = c.intpair("desktop_size")
         self.set_screen_sizes(c.listget("screen_sizes"))
@@ -1119,6 +1121,10 @@ class ServerSource(object):
 
     def set_deflate(self, level):
         self.send("set_deflate", level)
+
+
+    def send_client_command(self, *args):
+        self.send("control", *args)
 
 
     def rpc_reply(self, *args):
