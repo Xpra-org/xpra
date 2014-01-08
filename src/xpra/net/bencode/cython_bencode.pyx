@@ -121,13 +121,13 @@ def bdecode(x):
 
 # Encoding functions:
 
-cdef encode_int(x, r):
+cdef void encode_int(x, r) except *:
     r.extend(('i', str(x), 'e'))
 
-cdef encode_string(x, r):
+cdef void encode_string(x, r) except *:
     r.extend((str(len(x)), ':', x))
 
-cdef encode_unicode(x, r):
+cdef void encode_unicode(x, r) except *:
     global unicode_support
     x = x.encode("utf8")
     if unicode_support:
@@ -135,13 +135,13 @@ cdef encode_unicode(x, r):
     else:
         encode_string(x, r)
 
-cdef encode_list(object x, r):
+cdef void encode_list(object x, r) except *:
     r.append('l')
     for i in x:
         encode(i, r)
     r.append('e')
 
-cdef encode_dict(object x, r):
+cdef void encode_dict(object x, r) except *:
     r.append('d')
     for k, v in x.items():
         encode(k, r)
@@ -149,7 +149,7 @@ cdef encode_dict(object x, r):
     r.append('e')
 
 
-cdef void encode(object v, r):
+cdef void encode(object v, r) except *:
     cdef object t = type(v)
     if t==IntType:
         encode_int(v, r)
@@ -167,6 +167,8 @@ cdef void encode(object v, r):
         encode_dict(v, r)
     elif t==BooleanType:
         encode_int(long(v), r)
+    elif v==None:
+        raise ValueError("found None value!")
     else:
         raise ValueError("unsupported type: %s" % t)
 
