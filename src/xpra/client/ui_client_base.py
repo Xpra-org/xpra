@@ -704,8 +704,16 @@ class UIXpraClient(XpraClientBase):
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
             "encodings.rgb_formats"     : ["RGB", "RGBA"],
-            "control_commands"          : ["show_session_info"],
             })
+        control_commands = ["show_session_info", "enable_bencode", "enable_zlib"]
+        from xpra.net.protocol import use_bencode, use_rencode
+        if use_lz4:
+            control_commands.append("enable_lz4")
+        if use_bencode:
+            control_commands.append("enable_bencode")
+        if use_rencode:
+            control_commands.append("enable_rencode")
+        capabilities["control_commands"] = control_commands
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
         if self.encoding:
@@ -1101,6 +1109,23 @@ class UIXpraClient(XpraClientBase):
             args = packet[2:]
             log("calling show_session_info%s on server request", args)
             self.show_session_info(*args)
+        elif command=="enable_zlib":
+            log.info("switching to zlib on server request")
+            self._protocol.enable_zlib()
+        elif command=="enable_lz4":
+            log.info("switching to lz4 on server request")
+            self._protocol.enable_lz4()
+        elif command=="enable_bencode":
+            log.info("switching to bencode on server request")
+            self._protocol.enable_bencode()
+        elif command=="enable_rencode":
+            log.info("switching to rencode on server request")
+            self._protocol.enable_rencode()
+        elif command=="name":
+            assert len(args)>=3
+            self.session_name = args[2]
+            log.info("session name updated from server: %s", self.session_name)
+            #TODO: reset tray tooltip, session info title, etc..
         else:
             log.warn("received invalid control command from server: %s", command)
 
