@@ -365,7 +365,7 @@ class SessionInfo(gtk.Window):
         def window_deleted(*args):
             self.is_closed = True
         self.connect('delete_event', window_deleted)
-        self.show_tab(self.tabs[0][1])
+        self.show_tab(self.tabs[0][2])
         self.set_size_request(-1, 480)
         self.init_counters()
         self.populate()
@@ -399,11 +399,11 @@ class SessionInfo(gtk.Window):
         button.connect("clicked", show_tab)
         button.set_relief(gtk.RELIEF_NONE)
         self.tab_button_box.add(button)
-        self.tabs.append((button, contents, populate_cb))
+        self.tabs.append((title, button, contents, populate_cb))
 
     def show_tab(self, table):
         button = None
-        for b, t, p_cb in self.tabs:
+        for _, b, t, p_cb in self.tabs:
             if t==table:
                 button = b
                 b.set_relief(gtk.RELIEF_NORMAL)
@@ -418,8 +418,25 @@ class SessionInfo(gtk.Window):
         self.tab_box.pack_start(table, expand=True, fill=True, padding=0)
         table.show_all()
 
+
+    def set_args(self, *args):
+        #this is a generic way for keyboard shortcuts or remote commands
+        #to pass parameters to us
+        log("set_args%s", args)
+        if len(args)==0:
+            return
+        #at the moment, we only handle the tab name as argument:
+        tab_name = args[0]
+        if tab_name.lower()!="help":
+            for title, _, table, _ in self.tabs:
+                if title.lower()==tab_name.lower():
+                    self.show_tab(table)
+                    return
+            log.warn("could not find session info tab named: %s", title)
+        log.warn("The options for tab names are: %s)", [x[0] for x in self.tabs])
+
     def populate_all(self):
-        for _, _, p_cb in self.tabs:
+        for _, _, _, p_cb in self.tabs:
             if p_cb:
                 p_cb()
 

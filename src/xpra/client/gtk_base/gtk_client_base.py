@@ -76,15 +76,17 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.session_info.destroy()
         UIXpraClient.cleanup(self)
 
-    def show_session_info(self):
+    def show_session_info(self, *args):
         if self.session_info and not self.session_info.is_closed:
             #exists already: just raise its window:
+            self.session_info.set_args(*args)
             self.session_info.present()
             return
         pixbuf = self.get_pixbuf("statistics.png")
         if not pixbuf:
             pixbuf = self.get_pixbuf("xpra.png")
         self.session_info = SessionInfo(self, self.session_name, pixbuf, self._protocol._conn, self.get_pixbuf)
+        self.session_info.set_args(*args)
         self.session_info.show_all()
 
 

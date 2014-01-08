@@ -301,8 +301,8 @@ class ClientWindowBase(ClientWidgetBase):
     def void(self):
         pass
 
-    def show_session_info(self):
-        self._client.show_session_info()
+    def show_session_info(self, *args):
+        self._client.show_session_info(*args)
 
     def log(self, message=""):
         log.info(message)

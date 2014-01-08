@@ -736,7 +736,7 @@ class ServerBase(ServerCore):
             if client_command[0] not in csource.control_commands:
                 return respond(12, "client does not support control command '%s'", client_command[0])
             csource.send_client_command(*client_command)
-            return respond(0, "session name set")
+            return respond(0, "client control command '%s' forwarded" % (client_command[0]))
         else:
             return respond(9, "internal state error: invalid command '%s'", command)
 

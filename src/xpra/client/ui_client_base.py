@@ -312,7 +312,7 @@ class UIXpraClient(XpraClientBase):
         log("UIXpraClient.cleanup() done")
 
 
-    def show_session_info(self):
+    def show_session_info(self, *args):
         log.warn("show_session_info() is not implemented in %s", self)
 
 
@@ -1098,8 +1098,9 @@ class UIXpraClient(XpraClientBase):
     def _process_control(self, packet):
         command = packet[1]
         if command=="show_session_info":
-            log.info("calling show_session_info on server request")
-            self.show_session_info()
+            args = packet[2:]
+            log("calling show_session_info%s on server request", args)
+            self.show_session_info(*args)
         else:
             log.warn("received invalid control command from server: %s", command)
 

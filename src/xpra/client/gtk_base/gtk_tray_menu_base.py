@@ -187,7 +187,7 @@ class GTKTrayMenuBase(object):
         return self.menu
 
     def show_session_info(self, *args):
-        self.client.show_session_info()
+        self.client.show_session_info(*args)
 
     def get_image(self, *args):
         return self.client.get_image(*args)
@@ -298,7 +298,11 @@ class GTKTrayMenuBase(object):
         title = "Session Info"
         if self.client.session_name and self.client.session_name!="Xpra session":
             title = "Info: %s"  % self.client.session_name
-        return  self.handshake_menuitem(title, "statistics.png", None, self.show_session_info)
+        def show_session_info_cb(*args):
+            #we define a generic callback to remove the arguments
+            #(which contain the menu widget and are of no interest to the 'show_session_info' function)
+            self.show_session_info()
+        return  self.handshake_menuitem(title, "statistics.png", None, show_session_info_cb)
 
     def make_bellmenuitem(self):
         def bell_toggled(*args):
