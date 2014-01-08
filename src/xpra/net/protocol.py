@@ -572,6 +572,8 @@ class Protocol(object):
             if self._closed:
                 return [], 0
             log.error("failed to encode packet: %s", packet, exc_info=True)
+            #make the error a bit nicer to parse: undo aliases:
+            packet[0] = packet_type
             self.verify_packet(packet)
             raise e
         if len(main_packet)>LARGE_PACKET_SIZE and packet_in[0] not in self.large_packets:
