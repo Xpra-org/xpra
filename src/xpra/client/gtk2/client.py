@@ -19,7 +19,7 @@ gtk.threads_init()
 
 
 from xpra.platform.ui_thread_watcher import get_UI_watcher
-get_UI_watcher(gobject.timeout_add).start()
+UI_watcher = get_UI_watcher(gobject.timeout_add)
 
 from xpra.gtk_common.gtk2common import gtk2main
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
@@ -70,7 +70,8 @@ class XpraClient(GTKXpraClient):
         gtk2main()
 
     def cleanup(self):
-        get_UI_watcher().stop()
+        global UI_watcher
+        UI_watcher.stop()
         GTKXpraClient.cleanup(self)
 
     def client_type(self):
@@ -245,15 +246,16 @@ class XpraClient(GTKXpraClient):
                 screen = display.get_screen(i)
                 screen.connect("size-changed", self.screen_size_changed)
                 i += 1
+        global UI_watcher
+        UI_watcher.start()
         #if server supports it, enable UI thread monitoring workaround when needed:
         if self.suspend_resume:
-            w = get_UI_watcher()
             def UI_resumed():
                 self.send("resume", True, self._id_to_window.keys())
             def UI_failed():
                 self.send("suspend", True, self._id_to_window.keys())
-            w.add_resume_callback(UI_resumed)
-            w.add_fail_callback(UI_failed)
+            UI_watcher.add_resume_callback(UI_resumed)
+            UI_watcher.add_fail_callback(UI_failed)
 
 
     def get_screen_sizes(self):
