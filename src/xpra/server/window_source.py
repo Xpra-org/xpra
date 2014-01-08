@@ -274,9 +274,9 @@ class WindowSource(object):
         info[prefix+"encoding.mmap"+suffix] = bool(self._mmap) and (self._mmap_size>0)
         if self.encoding_last_used:
             info[prefix+"encoding.last_used"+suffix] = self.encoding_last_used
-        info[prefix+"suspended"+suffix] = self.suspended
-        info[prefix+"property.scaling"+suffix] = self.scaling
-        info[prefix+"property.fullscreen"+suffix] = self.fullscreen
+        info[prefix+"suspended"+suffix] = self.suspended or False
+        info[prefix+"property.scaling"+suffix] = self.scaling or (1, 1)
+        info[prefix+"property.fullscreen"+suffix] = self.fullscreen or False
         self.statistics.add_stats(info, prefix, suffix)
 
         #batch delay stats:
