@@ -570,10 +570,16 @@ class ColorspaceConverter(object):
 
 
     def convert_image(self, image, retry=0):
+        global context, program
         if self.do_convert_image==None:
             raise Exception("not initialized!")
-        if self.context!=context or self.program!=program:
-            log.info("using new OpenCL context")
+        if self.context is not context:
+            debug("old context=%s, new context=%s", self.context, context)
+            log.info("using new OpenCL context (context changed)")
+            self.init_with_device()
+        elif self.program is not program:
+            debug("old program=%s, new program=%s", self.program, program)
+            log.info("using new OpenCL context (program changed)")
             self.init_with_device()
         try:
             return self.do_convert_image(image)
