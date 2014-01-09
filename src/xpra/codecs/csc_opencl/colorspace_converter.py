@@ -573,11 +573,11 @@ class ColorspaceConverter(object):
         global context, program
         if self.do_convert_image==None:
             raise Exception("not initialized!")
-        if self.context is not context:
+        if self.context!=context:
             debug("old context=%s, new context=%s", self.context, context)
             log.info("using new OpenCL context (context changed)")
             self.init_with_device()
-        elif self.program is not program:
+        elif self.program!=program:
             debug("old program=%s, new program=%s", self.program, program)
             log.info("using new OpenCL context (program changed)")
             self.init_with_device()
