@@ -19,6 +19,7 @@ SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win") or sys.platform.s
 
 BLACKLIST = {"vendor" : ["nouveau", "Humper"]}
 
+USE_WINDOW_CONTEXT_TEST = True  #sys.platform.startswith("win")
 DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
 DEFAULT_DOUBLE_BUFFERED = 0
@@ -216,21 +217,15 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         gldrawable.gl_end()
 
 def check_support(min_texture_size=0, force_enable=False):
+    try:
+        from xpra.platform.paths import get_icon_dir
+        opengl_icon = os.path.join(get_icon_dir(), "opengl.png")
+    except:
+        opengl_icon = None
     #tricks to get py2exe to include what we need / load it from its unusual path:
-    opengl_icon = os.path.join(os.getcwd(), "icons", "opengl.png")
     if sys.platform.startswith("win"):
-        debug("is frozen: %s", hasattr(sys, "frozen"))
-        if hasattr(sys, "frozen"):
-            debug("found frozen path: %s", sys.frozen)
-            if sys.frozen in ("windows_exe", "console_exe"):
-                main_dir = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
-                debug("main_dir=%s", main_dir)
-                sys.path.insert(0, main_dir)
-                os.chdir(main_dir)
-                opengl_icon = os.path.join(main_dir, "icons", "opengl.png")
-            else:
-                sys.path.insert(0, ".")
-        #This is supposed to help py2exe (after we setup the path):
+        #This is supposed to help py2exe
+        #(must be done after we setup the sys.path in platform.win32.paths):
         from OpenGL.platform import win32   #@UnusedImport
 
     props = {}
@@ -256,8 +251,9 @@ def check_support(min_texture_size=0, force_enable=False):
     assert gtk.gdkgl.query_extension()
     glcontext, gldrawable, glext, w = None, None, None, None
     try:
-        if sys.platform.startswith("win"):
-            #FIXME: ugly win32 hack for getting a drawable and context, we must use a window...
+        if USE_WINDOW_CONTEXT_TEST:
+            #ugly hack for win32 and others (virtualbox broken GL drivers):
+            #for getting a drawable and context, we must use a window...
             #maybe using a gl.drawable would work too?
             w = gtk.Window()
             w.set_decorated(False)

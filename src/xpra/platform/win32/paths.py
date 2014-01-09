@@ -31,8 +31,15 @@ def get_default_conf_dir():
 def get_default_socket_dir():
     return _get_data_dir()
 
+APP_DIR = None
+if hasattr(sys, 'frozen') and sys.frozen in ("windows_exe", "console_exe"):    #@UndefinedVariable
+    APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
+    sys.path.insert(0, APP_DIR)
+    os.chdir(APP_DIR)
+
 def get_app_dir():
-    if getattr(sys, 'frozen', ''):
-        return os.path.dirname(os.path.abspath(sys.executable))
+    global APP_DIR
+    if APP_DIR is not None:
+        return APP_DIR
     from xpra.platform.paths import default_get_app_dir   #imported here to prevent import loop
     return default_get_app_dir()
