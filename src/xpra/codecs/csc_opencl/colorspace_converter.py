@@ -577,8 +577,14 @@ class ColorspaceConverter(object):
             debug("old context=%s, new context=%s", self.context, context)
             log.info("using new OpenCL context (context changed)")
             self.init_with_device()
-        elif self.program!=program:
-            debug("old program=%s, new program=%s", self.program, program)
+        #we should be able to compare program!=self.program
+        #but it has been reported that this does not work in some cases
+        #so the code below is a more obscure way of doing the same thing
+        #which unfortunately only works on PyOpenCL versions 2013.2 and later
+        #Note: at the moment, program only changes when the context does,
+        #so this will probably *never* even fire, for now at least.
+        elif hasattr(self.program, "int_ptr") and self.program.int_ptr!=program.int_ptr:
+            debug("old program=%s (int_ptr=%s), new program=%s (int_ptr=%s)", self.program, self.program.int_ptr, program, program.int_ptr)
             log.info("using new OpenCL context (program changed)")
             self.init_with_device()
         try:
