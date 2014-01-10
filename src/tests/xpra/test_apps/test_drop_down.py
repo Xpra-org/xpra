@@ -16,11 +16,14 @@ class TestForm(object):
 		self.window.set_default_size(320, 200)
 		self.window.set_border_width(20)
 
+		box = gtk.VBox()
+		box.add(gtk.Entry())
 		cb = gtk.combo_box_new_text()
 		cb.append_text("foo")
 		cb.append_text("bar")
+		box.add(cb)
 
-		self.window.add(cb)
+		self.window.add(box)
 		self.window.show_all()
 
 
