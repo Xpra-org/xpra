@@ -19,7 +19,6 @@ SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win") or sys.platform.s
 
 BLACKLIST = {"vendor" : ["nouveau", "Humper"]}
 
-USE_WINDOW_CONTEXT_TEST = True  #sys.platform.startswith("win")
 DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
 DEFAULT_DOUBLE_BUFFERED = 0
@@ -229,7 +228,6 @@ def check_support(min_texture_size=0, force_enable=False):
         from OpenGL.platform import win32   #@UnusedImport
 
     props = {}
-    from gtk import gdk
     import gtk.gdkgl, gtk.gtkgl
     assert gtk.gdkgl is not None and gtk.gtkgl is not None
     debug("pygdkglext version=%s", gtk.gdkgl.pygdkglext_version)
@@ -251,30 +249,36 @@ def check_support(min_texture_size=0, force_enable=False):
     assert gtk.gdkgl.query_extension()
     glcontext, gldrawable, glext, w = None, None, None, None
     try:
-        if USE_WINDOW_CONTEXT_TEST:
-            #ugly hack for win32 and others (virtualbox broken GL drivers):
-            #for getting a drawable and context, we must use a window...
-            #maybe using a gl.drawable would work too?
-            w = gtk.Window()
-            w.set_decorated(False)
-            vbox = gtk.VBox()
-            if opengl_icon and os.path.exists(opengl_icon):
-                pixbuf = gtk.gdk.pixbuf_new_from_file(opengl_icon)
-                image = gtk.image_new_from_pixbuf(pixbuf)
-                vbox.add(image)
-                w.set_default_size(pixbuf.get_width(), pixbuf.get_height())
-                w.set_resizable(False)
-            glarea = gtk.gtkgl.DrawingArea(glconfig)
-            vbox.add(glarea)
-            w.add(vbox)
-            w.show_all()
-            gtk.gdk.window_process_all_updates()
-            gldrawable = glarea.get_gl_drawable()
-            glcontext = glarea.get_gl_context()
-        else:
-            glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
-            gldrawable = glext.set_gl_capability(glconfig)
-            glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
+        #ugly code for win32 and others (virtualbox broken GL drivers)
+        #for getting a GL drawable and context: we must use a window...
+        #(which we do not even show on screen)
+        #
+        #here is the old simpler alternative which does not work on some platforms:
+        # glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
+        # gldrawable = glext.set_gl_capability(glconfig)
+        # glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
+        w = gtk.Window()
+        w.set_decorated(False)
+        vbox = gtk.VBox()
+        width, height = 32, 32
+        if opengl_icon and os.path.exists(opengl_icon):
+            pixbuf = gtk.gdk.pixbuf_new_from_file(opengl_icon)
+            image = gtk.image_new_from_pixbuf(pixbuf)
+            vbox.add(image)
+            width, height = pixbuf.get_width(), pixbuf.get_height()
+            w.set_default_size(width, height)
+            w.set_resizable(False)
+        glarea = gtk.gtkgl.DrawingArea(glconfig)
+        glarea.set_size_request(32, 32)
+        vbox.add(glarea)
+        vbox.show_all()
+        w.add(vbox)
+        #we don't need to actually show the window!
+        #w.show_all()
+        glarea.realize()
+        gtk.gdk.window_process_all_updates()
+        gldrawable = glarea.get_gl_drawable()
+        glcontext = glarea.get_gl_context()
 
         gl_props = check_GL_support(gldrawable, glcontext, min_texture_size, force_enable)
     finally:
