@@ -92,7 +92,7 @@ class WindowSource(object):
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         self.encoding_last_used = None
-        refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg", "webp")]
+        refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg")]
         client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", refresh_encodings)
         self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.server_core_encodings]
         self.core_encodings = core_encodings            #the core encodings supported by the client

@@ -180,7 +180,7 @@ ENCODINGS_HELP = {
       "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
       }
 
-HELP_ORDER = ("h264", "vp8", "vp9", "webp", "png", "png/P", "png/L", "rgb", "jpeg")
+HELP_ORDER = ("h264", "vp8", "vp9", "png", "png/P", "png/L", "rgb", "jpeg", "webp")
 
 def encodings_help(encodings):
     h = []
