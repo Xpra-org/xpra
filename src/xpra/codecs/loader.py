@@ -146,7 +146,7 @@ ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_nvenc", "csc_swscale"
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp8", "webp", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg", "vp9"]
+PREFERED_ENCODING_ORDER = ["h264", "vp8", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg", "vp9", "webp"]
 
 compressors = ["zlib"]
 try:
@@ -175,7 +175,7 @@ ENCODINGS_HELP = {
       "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
       "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
       "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
-      "webp"    : "WebP compression (lossless or lossy)",
+      "webp"    : "WebP compression (lossless or lossy) - leaks memory, do not use!",
       "jpeg"    : "JPEG lossy compression",
       "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
       }
