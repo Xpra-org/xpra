@@ -136,6 +136,10 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
 
 def make_encodingsmenu(get_current_encoding, set_encoding, encodings, server_encodings):
     encodings_submenu = gtk.Menu()
+    populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding, encodings, server_encodings)
+    return encodings_submenu
+
+def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding, encodings, server_encodings):
     encodings_submenu.get_current_encoding = get_current_encoding
     encodings_submenu.set_encoding = set_encoding
     encodings_submenu.encodings = encodings
@@ -154,9 +158,10 @@ def make_encodingsmenu(get_current_encoding, set_encoding, encodings, server_enc
                 descr += "\n(not available on this server)"
             set_tooltip_text(encoding_item, descr)
         def encoding_changed(oitem):
+            log.info("encoding_changed(%s)", oitem)
             item = ensure_item_selected(encodings_submenu, oitem)
             enc = NAME_TO_ENCODING.get(item.get_label())
-            debug("encoding_changed(%s) item=%s, enc=%s, current=%s", oitem, item, enc, encodings_submenu.get_current_encoding())
+            log.info("encoding_changed(%s) item=%s, enc=%s, current=%s", oitem, item, enc, encodings_submenu.get_current_encoding())
             if enc is not None and encodings_submenu.get_current_encoding()!=enc:
                 encodings_submenu.set_encoding(enc)
         debug("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
@@ -169,7 +174,6 @@ def make_encodingsmenu(get_current_encoding, set_encoding, encodings, server_enc
         encodings_submenu.encoding_to_index[encoding] = i
         i += 1
     encodings_submenu.show_all()
-    return encodings_submenu
 
 
 class GTKTrayMenuBase(object):

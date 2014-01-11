@@ -7,7 +7,7 @@ from xpra.gtk_common.gobject_compat import import_gtk
 gtk = import_gtk()
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.client.gtk_base.about import about
-from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase
+from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu
 from xpra.platform.paths import get_icon
 
 from xpra.log import Logger, debug_if_env
@@ -93,7 +93,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         assert self.client
         _, info_menu = self.menus.get("Info")
         info_menu.append(self.make_sessioninfomenuitem())
-        features_menu    = self.make_osxmenu("Features")
+        features_menu = self.make_osxmenu("Features")
         features_menu.add(self.make_bellmenuitem())
         features_menu.add(self.make_cursorsmenuitem())
         features_menu.add(self.make_notificationsmenuitem())
@@ -104,10 +104,23 @@ class OSXMenuHelper(GTKTrayMenuBase):
         #    sound_menu.add(self.make_speakermenuitem())
         #if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
         #    sound_menu.add(self.make_microphonemenuitem())
+        encodings_menu = self.make_osxmenu("Encoding")
+        def set_encodings_menu(*args):
+            from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+            encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+            populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding, encodings, self.client.server_encodings)
+        self.client.connect("handshake-complete", set_encodings_menu)
         actions_menu = self.make_osxmenu("Actions")
         actions_menu.add(self.make_refreshmenuitem())
         actions_menu.add(self.make_raisewindowsmenuitem())
         self.menu_bar.show_all()
+
+    #these methods are called by the superclass
+    #but we don't have a quality or speed menu, so override and ignore
+    def set_qualitymenu(self, *args):
+        pass
+    def set_speedmenu(self, *args):
+        pass
 
     def make_swapkeysmenuitem(self):
         def swapkeys_toggled(*args):
