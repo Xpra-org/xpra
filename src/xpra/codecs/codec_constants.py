@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+LOSSY_PIXEL_FORMATS = ("YUV420P", "YUV422P")
+
 PIXEL_SUBSAMPLING = {
          "YUV420P"   : ((1, 1), (2, 2), (2, 2)),
          "YUV422P"   : ((1, 1), (2, 1), (2, 1)),
