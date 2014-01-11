@@ -15,7 +15,7 @@ import gobject
 from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_OPENGL_DEBUG")
-OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "1")=="1"
+OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 
 
 from xpra.codecs.codec_constants import get_subsampling_divs
