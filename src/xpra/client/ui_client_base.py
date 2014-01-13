@@ -1430,6 +1430,20 @@ class UIXpraClient(XpraClientBase):
     def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
         client_window_classes = self.get_client_window_classes(metadata, override_redirect)
         group_leader_window = self.get_group_leader(metadata, override_redirect)
+        #horrendous OSX workaround for OR windows to prevent them from being pushed under other windows:
+        #find a "transient-for" value using the pid to find a suitable window
+        #if possible, choosing the currently focused window (if there is one..)
+        pid = metadata.get("pid", 0)
+        if override_redirect and sys.platform=="darwin" and pid>0 and metadata.get("transient-for") is None:
+            tfor = None
+            for twid, twin in self._id_to_window.items():
+                if not twin._override_redirect and twin._metadata.get("pid")==pid:
+                    tfor = twin
+                    if twid==self._focused or self._focused is None:
+                        break
+            if tfor:
+                log("%s: forcing transient for %s", sys.platform, twid)
+                metadata["transient-for"] = twid
         window = None
         for cwc in client_window_classes:
             try:
