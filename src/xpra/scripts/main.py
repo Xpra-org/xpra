@@ -377,6 +377,9 @@ When unspecified, all the available codecs are allowed and the first one is used
         #fix old encoding names if needed:
         from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW
         options.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(options.encoding, options.encoding)
+        if options.encoding=="webp":
+            #warn that webp should not be used:
+            print("Warning: webp encoding may leak memory!")
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
