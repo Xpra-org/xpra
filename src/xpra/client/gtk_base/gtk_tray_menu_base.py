@@ -158,10 +158,10 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
                 descr += "\n(not available on this server)"
             set_tooltip_text(encoding_item, descr)
         def encoding_changed(oitem):
-            log.info("encoding_changed(%s)", oitem)
+            debug("encoding_changed(%s)", oitem)
             item = ensure_item_selected(encodings_submenu, oitem)
             enc = NAME_TO_ENCODING.get(item.get_label())
-            log.info("encoding_changed(%s) item=%s, enc=%s, current=%s", oitem, item, enc, encodings_submenu.get_current_encoding())
+            debug("encoding_changed(%s) item=%s, enc=%s, current=%s", oitem, item, enc, encodings_submenu.get_current_encoding())
             if enc is not None and encodings_submenu.get_current_encoding()!=enc:
                 encodings_submenu.set_encoding(enc)
         debug("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
