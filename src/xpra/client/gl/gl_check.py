@@ -228,6 +228,7 @@ def check_support(min_texture_size=0, force_enable=False):
         from OpenGL.platform import win32   #@UnusedImport
 
     props = {}
+    import gtk.gdk
     import gtk.gdkgl, gtk.gtkgl
     assert gtk.gdkgl is not None and gtk.gtkgl is not None
     debug("pygdkglext version=%s", gtk.gdkgl.pygdkglext_version)
