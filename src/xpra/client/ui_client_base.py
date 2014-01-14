@@ -349,7 +349,7 @@ class UIXpraClient(XpraClientBase):
                }.items():
             missing = [x for x in modules if not has_codec(x)]
             if len(missing)>0:
-                log.info("do_get_core_encodings() not adding %s because of missing modules: %s", encodings, missing)
+                log("do_get_core_encodings() not adding %s because of missing modules: %s", encodings, missing)
                 continue
             core_encodings += encodings
         #special case for "dec_avcodec" which may be able to decode both 'vp8' and 'h264':
