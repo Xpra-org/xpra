@@ -25,7 +25,6 @@ Vcs-Browser: http://xpra.org/trac/browser/
 Package: xpra
 Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
-        ,libwebp2
         ,python-gtk2
         ,x11-xserver-utils
         ,xserver-xorg-video-dummy

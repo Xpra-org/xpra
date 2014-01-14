@@ -16,7 +16,7 @@ SRC_URI="http://xpra.org/src/${P}.tar.bz2"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="amd64 x86 amd64-linux x86-linux"
-IUSE="+clipboard ffmpeg jpeg libnotify png sound +rencode server ssh x264 vpx webp opengl"
+IUSE="+clipboard ffmpeg jpeg libnotify png sound +rencode server ssh x264 vpx -webp opengl"
 
 S="${WORKDIR}/${PF}"
 

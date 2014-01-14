@@ -142,6 +142,8 @@
 %endif
 
 
+#remove dependency on webp for now since it leaks memory:
+%define requires_webp %{nil}
 %if 0%{?no_sound}
 %define requires_sound %{nil}
 %endif
