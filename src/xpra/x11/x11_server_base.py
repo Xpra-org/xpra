@@ -72,6 +72,7 @@ class X11ServerBase(GTKServerBase):
         self.init_x11_atoms()
         self.randr = RandR.has_randr()
         if self.randr and len(RandR.get_screen_sizes())<=1:
+            log.info("no RandR support")
             #disable randr when we are dealing with a Xvfb
             #with only one resolution available
             #since we don't support adding them on the fly yet
