@@ -479,7 +479,7 @@ class ServerBase(ServerCore):
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
-                          self.get_transient_for,
+                          self.get_transient_for, self.get_focus,
                           get_window_id,
                           self.supports_mmap,
                           self.core_encodings, self.encodings, self.default_encoding,
@@ -907,6 +907,11 @@ class ServerBase(ServerCore):
     def _focus(self, server_source, wid, modifiers):
         log("_focus(%s,%s)", wid, modifiers)
 
+    def get_focus(self):
+        #can be overriden by subclasses that do manage focus
+        #(ie: not shadow servers which only have a single window)
+        #default: no focus
+        return -1
 
     def _add_new_window_common(self, window):
         wid = self._max_window_id

@@ -467,6 +467,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
             server_source.make_keymask_match(modifiers)
         self._has_focus = wid
 
+    def get_focus(self):
+        return self._has_focus
+
 
     def _send_new_window_packet(self, window):
         geometry = self._desktop_manager.window_geometry(window)

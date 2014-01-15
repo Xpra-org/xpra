@@ -122,6 +122,7 @@ class WindowSource(object):
         self.timeout_timer = None
         self.expire_timer = None
 
+        self.is_OR = window.get_property("override-redirect")
         self.window_dimensions = 0, 0
         self.fullscreen = window.get_property("fullscreen")
         self.scaling = window.get_property("scaling")
@@ -303,8 +304,8 @@ class WindowSource(object):
             add_last_rec_info(sp, self._encoding_speed)
         self.batch_config.add_stats(info, prefix, suffix)
 
-    def calculate_batch_delay(self):
-        calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics)
+    def calculate_batch_delay(self, has_focus):
+        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, self.is_OR, self.batch_config, self.global_statistics, self.statistics)
 
     def update_speed(self):
         if self.suspended:

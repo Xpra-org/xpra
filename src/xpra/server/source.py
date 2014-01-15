@@ -174,7 +174,7 @@ class ServerSource(object):
     """
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 get_transient_for,
+                 get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap,
                  core_encodings, encodings, default_encoding,
@@ -183,7 +183,7 @@ class ServerSource(object):
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
         log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 get_transient_for,
+                 get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap,
                  core_encodings, encodings, default_encoding,
@@ -199,6 +199,7 @@ class ServerSource(object):
         self.timeout_add = timeout_add
         self.source_remove = source_remove
         self.get_transient_for = get_transient_for
+        self.get_focus = get_focus
         self.get_window_id = get_window_id
         # mmap:
         self.supports_mmap = supports_mmap
@@ -318,6 +319,7 @@ class ServerSource(object):
             return
         self.statistics.update_averages()
         wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
+        focus = self.get_focus()
         for wid in wids:
             self.calculate_window_ids.remove(wid)
             ws = self.window_sources.get(wid)
@@ -325,7 +327,7 @@ class ServerSource(object):
                 continue
             try:
                 ws.statistics.update_averages()
-                ws.calculate_batch_delay()
+                ws.calculate_batch_delay(wid==focus)
                 ws.reconfigure()
             except:
                 log.error("error on window %s", wid, exc_info=True)

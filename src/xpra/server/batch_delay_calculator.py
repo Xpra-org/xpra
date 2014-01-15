@@ -26,7 +26,7 @@ def get_low_limit(mmap_enabled, window_dimensions):
     return low_limit
 
 
-def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, statistics):
+def calculate_batch_delay(wid, window_dimensions, has_focus, is_OR, batch, global_statistics, statistics):
     """
         Calculates a new batch delay.
         We first gather some statistics,
@@ -42,6 +42,9 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
     #damage pixels waiting in the packet queue: (extract data for our window id only)
     time_values = global_statistics.get_damage_pixels(wid)
     factors.append(queue_inspect("damage-packet-queue-pixels", time_values, div=low_limit, smoothing=sqrt))
+    #boost window that has focus and OR windows:
+    factors.append(("focus", {"has_focus" : has_focus}, int(not has_focus), int(has_focus)))
+    factors.append(("override-redirect", {"is_OR" : is_OR}, int(not is_OR), int(is_OR)))
     #now use those factors to drive the delay change:
     update_batch_delay(batch, factors)
 
