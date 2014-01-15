@@ -131,7 +131,7 @@
 %define vpx_build_args --without-vpx
 %else
 %if 0%{?static_ffmpeg}
-%define ffmpeg_build_args --with-dec_avcodec --with-avcodec_static --with-csc_swscale --with-swscale_static
+%define ffmpeg_build_args --without-dec_avcodec --with-dec_avcodec2 --with-avcodec2_static --with-csc_swscale --with-swscale_static
 %endif
 %if 0%{?static_vpx}
 %define vpx_build_args --with-vpx --with-vpx_static
