@@ -1,5 +1,8 @@
 #!/bin/sh
 
+#by default use avcodec2 (ffmpeg2):
+BUILD_ARGS="--without-dec_avcodec --with-dec_avcodec2"
+
 echo "*******************************************************************************"
 echo "Deleting existing xpra modules and temporary directories"
 PYTHON_PREFIX=`python-config --prefix`
@@ -15,7 +18,7 @@ pushd ../src
 svn upgrade ../.. >& /dev/null
 python -c "from add_build_info import record_src_info;record_src_info()"
 ./setup.py clean
-./setup.py install
+./setup.py install ${BUILD_ARGS}
 if [ "$?" != "0" ]; then
 	echo "ERROR: install failed"
 	exit 1
