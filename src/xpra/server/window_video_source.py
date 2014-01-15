@@ -608,6 +608,7 @@ class WindowVideoSource(WindowSource):
             we try to create a working pipeline, trying each option
             until one succeeds.
         """
+        assert width>0 and height>0, "invalid dimensions: %sx%s" % (width, height)
         start = time.time()
         debug("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
@@ -658,6 +659,9 @@ class WindowVideoSource(WindowSource):
                     if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
                         debug("scaling is now enabled, so skipping %s", encoder_spec)
                         continue
+                if width<=0 or height<=0:
+                    #log.warn("skipping invalid dimensions..")
+                    continue
                 enc_start = time.time()
                 self._video_encoder = encoder_spec.codec_class()
                 self._video_encoder.init_context(enc_width, enc_height, enc_in_format, encoder_spec.encoding, quality, speed, encoder_scaling, self.encoding_options)
