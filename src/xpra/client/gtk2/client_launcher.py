@@ -21,7 +21,6 @@ import gtk
 from gtk import gdk
 import gobject
 gobject.threads_init()
-gtk.threads_init()
 import pango
 
 
