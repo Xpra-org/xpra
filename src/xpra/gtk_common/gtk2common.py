@@ -15,4 +15,3 @@ def gtk2main():
             gtk.main()
         finally:
             gtk.threads_leave()
-            pass
