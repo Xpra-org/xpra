@@ -630,7 +630,9 @@ if WIN32:
             break
     vpx_include_dir     = os.path.join(vpx_path, "include")
     vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
-    if os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
+    if os.path.exists(os.path.join(vpx_lib_dir, "vpx.lib")):
+        vpx_lib_names = ["vpx"]               #for libvpx 1.3.0
+    elif os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
         vpx_lib_names = ["vpxmd"]             #for libvpx 1.2.0
     else:
         vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
