@@ -387,10 +387,10 @@ class GLPixmapBacking(GTK2WindowBacking):
         #FIXME: we ought to be able to use
         #OpenGL blending and use premultiplied pixels directly... beats me!
         rgba = self.unpremultiply(img_data)
-        self._do_paint_rgb(32, rgba, x, y, width, height, rowstride, options, callbacks)
+        return self._do_paint_rgb(32, rgba, x, y, width, height, rowstride, options, callbacks)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options, callbacks)
+        return self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options, callbacks)
 
     def _do_paint_rgb(self, bpp, img_data, x, y, width, height, rowstride, options, callbacks):
         debug("%s._do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d)", self, bpp, len(img_data), x, y, width, height, rowstride)
