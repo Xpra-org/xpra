@@ -196,23 +196,46 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Wed Dec 04 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+* Thu Jan 16 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
 - NVENC hardware h264 encoding acceleration
 - OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
+- support for sharing a TCP port with a web server
 - server control command for modifying settings at runtime
 - server exit command, which leaves Xvfb running
 - publish session via mDNS
 - OSX client two way clipboard support
-- support for transparency in 8-bit PNG modes
+- support for transparency with 8-bit PNG modes
 - support for more authentication mechanisms
-- lz4 compression
+- support remote shadow start via ssh
+- support faster lz4 compression
+- faster bencoder, rewritten in Cython
+- builtin fallback colourspace conversion module
 - real time frame latency graphs
-- improved system tray forwarding support
+- improved system tray forwarding support and native integration
 - removed most of the Cython/C code duplication
 - stricter and safer value parsing
 - more detailed status information via UI and "xpra info"
+- experimental HTML5 client
 - drop non xpra clients with a more friendly response
+
+* Tue Jan 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.10.12-1
+- fix missing auto-refresh with lossy colourspace conversion
+- fix spurious warning from Nvidia OpenGL driver
+- fix OpenGL client crash with some drivers (ie: VirtualBox)
+- fix crash in bencoder caused by empty data to encode
+- fix ffmpeg2 h264 decoding (ie: Fedora 20+)
+- big warnings about webp leaking memory
+- generated debuginfo RPMs
+
+* Tue Jan 07 2014 Antoine Martin <antoine@devloop.org.uk> 0.10.11-1
+- fix popup windows focus issue
+- fix "xpra upgrade" subcommand
+- fix server backtrace in error handler
+- restore server target information in tray tooltip
+- fix bencoder error with no-windows switch (missing encoding)
+- add support for RGBX pixel format required by some clients
+- avoid ffmpeg "data is not aligned" warning on client
 
 * Wed Dec 04 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.10-1
 - fix focus regression
