@@ -369,7 +369,7 @@ def pkgconfig(*packages_options, **ekw):
     if debug_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', '-g')
         add_to_keywords(kw, 'extra_compile_args', '-ggdb')
-        kw['pyrex_gdb'] = True
+        kw['cython_gdb'] = True
         if get_gcc_version()>=4.8:
             add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
             add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
@@ -720,7 +720,7 @@ if WIN32:
             for flag in ('/Od', '/Zi', '/DEBUG', '/RTC1', '/GS'):
                 add_to_keywords(kw, 'extra_compile_args', flag)
             add_to_keywords(kw, 'extra_link_args', "/DEBUG")
-            kw['pyrex_gdb'] = True
+            kw['cython_gdb'] = True
         print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
         return kw
 
