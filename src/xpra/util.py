@@ -102,6 +102,14 @@ class typedict(dict):
 
 
 def log_screen_sizes(root_w, root_h, ss):
+    try:
+        do_log_screen_sizes(root_w, root_h, ss)
+    except Exception, e:
+        from xpra.log import Logger
+        log = Logger()
+        log.warn("failed to parse screen size information: %s", e)
+
+def do_log_screen_sizes(root_w, root_h, ss):
     from xpra.log import Logger
     log = Logger()
     log.info("root size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
@@ -110,7 +118,11 @@ def log_screen_sizes(root_w, root_h, ss):
             return default
         #prettify strings on win32
         return s.lstrip("0\\").lstrip(".\\").replace("0\\", "-")
+    #old format, used by some clients (android):
+    if len(ss)==2 and type(ss[0])==int and type(ss[1])==int:
+        return
     for s in ss:
+        log.info("s=%s=%s", s, type(s))
         if len(s)<10:
             log.info(" %s", s)
             continue
