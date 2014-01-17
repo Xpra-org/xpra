@@ -871,8 +871,9 @@ class WindowSource(object):
             #will modify the pixel array in-place!
             dpixels = image.get_pixels()[:]
             store = sequence
-            if self.last_pixmap_data is not None:
-                lw, lh, lcoding, lsequence, ldata = self.last_pixmap_data
+            lpd = self.last_pixmap_data
+            if lpd is not None:
+                lw, lh, lcoding, lsequence, ldata = lpd
                 if lw==w and lh==h and lcoding==coding and len(ldata)==len(dpixels):
                     #xor with the last frame:
                     delta = lsequence
