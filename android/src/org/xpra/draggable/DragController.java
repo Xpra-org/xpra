@@ -238,7 +238,7 @@ public class DragController {
 	/**
 	 * Draw the view into a bitmap.
 	 */
-	private Bitmap getViewBitmap(View v) {
+	private static Bitmap getViewBitmap(View v) {
 		v.clearFocus();
 		v.setPressed(false);
 
