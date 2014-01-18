@@ -61,6 +61,7 @@ TRICKLE_SHAPING_OPTIONS = [NO_SHAPING, (1024, 1024, 20)]
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
 TRICKLE_SHAPING_OPTIONS = [NO_SHAPING, (1024, 256, 20), (1024, 256, 300), (128, 32, 100), (32, 8, 200)]
 TRICKLE_SHAPING_OPTIONS = [NO_SHAPING, (1024, 256, 20), (256, 64, 50), (128, 32, 100), (32, 8, 200)]
+TRICKLE_SHAPING_OPTIONS = [NO_SHAPING]
 
 #tools we use:
 IPTABLES_CMD = ["sudo", "/usr/sbin/iptables"]
@@ -135,7 +136,7 @@ else:
 TEST_CANDIDATES = [screensaver("deluxe")]
 TEST_CANDIDATES = X11_TESTS + SOME_SCREENSAVER_TESTS + GAMES_TESTS
 TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS + GAMES_TESTS
-TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS + SOUND_TESTS + VIDEO_TESTS
+TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS + SOUND_TESTS + VIDEO_TESTS + GAMES_TESTS
 
 
 #now we filter all the test commands and only keep the valid ones:
@@ -198,20 +199,28 @@ XPRA_COMPRESSION_OPTIONS = [0, 3]
 XPRA_COMPRESSION_OPTIONS = [None]
 XPRA_CONNECT_OPTIONS = [("ssh", None), ("tcp", None), ("unix", None)]
 XPRA_CONNECT_OPTIONS = [("tcp", None)]
-if XPRA_VERSION_NO>=[0, 7]:
-    XPRA_CONNECT_OPTIONS.append(("tcp", "AES"))
+#if XPRA_VERSION_NO>=[0, 7]:
+#    XPRA_CONNECT_OPTIONS.append(("tcp", "AES"))
 print ("XPRA_VERSION_NO=%s" % XPRA_VERSION_NO)
 XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
-if XPRA_VERSION_NO>=[0, 7]:
-    XPRA_TEST_ENCODINGS.append("webp")
+#webp leaks - don't test it:
+#if XPRA_VERSION_NO>=[0, 7]:
+#    XPRA_TEST_ENCODINGS.append("webp")
+XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
 XPRA_ENCODING_QUALITY_OPTIONS = {"jpeg" : XPRA_QUALITY_OPTIONS,
                                  "webp" : XPRA_QUALITY_OPTIONS,
                                  "x264" : XPRA_QUALITY_OPTIONS+[-1],
                                  }
+XPRA_ENCODING_QUALITY_OPTIONS = {"jpeg" : [-1],
+                                 "x264" : [-1],
+                                 }
+XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
 XPRA_OPENGL_OPTIONS = {"x264" : [True, False],
                        "vpx" : [True, False] }
+#only test default opengl setting:
+XPRA_OPENGL_OPTIONS = {}
 
 
 XPRA_SPEAKER_OPTIONS = [None]
@@ -230,6 +239,7 @@ if TEST_SOUND:
         XPRA_SPEAKER_OPTIONS = [None]
 
 
+XPRA_USE_PASSWORD = True
 password_filename = "./test-password.txt"
 try:
     import uuid
@@ -481,7 +491,11 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
 
     server_process = None
     test_command_process = None
-    env = os.environ.copy()
+    env = {}
+    for k,v in os.environ.items():
+    #whitelist what we want to keep:
+        if k in ("LOGNAME", "XDG_RUNTIME_DIR", "USER", "HOME", "PATH", "LD_LIBRARY_PATH", "XAUTHORITY", "SHELL", "TERM", "USERNAME", "HOSTNAME", "PWD"):
+            env[k] = v
     env["DISPLAY"] = ":%s" % DISPLAY_NO
     errors = 0
     results = []
@@ -501,7 +515,11 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     print("starting server: %s" % str(start_server_command))
                     server_process = subprocess.Popen(start_server_command, stdin=None)
                     #give it time to settle down:
-                    time.sleep(SERVER_SETTLE_TIME)
+                    t = SERVER_SETTLE_TIME
+                    if count==1:
+                        #first run, give it enough time to cleanup the socket
+                        t += 5
+                    time.sleep(t)
                     server_pid = server_process.pid
                     code = server_process.poll()
                     assert code is None, "server failed to start, return code is %s, please ensure that you can run the server command line above and that a server does not already exist on that port or DISPLAY" % code
@@ -513,17 +531,16 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     if USE_VIRTUALGL:
                         if type(test_command)==str:
                             cmd = VGLRUN_BIN + test_command
-                        elif type(test_command)==list:
-                            cmd = [VGLRUN_BIN] + test_command
-                        elif type(test_command)==tuple:
+                        elif type(test_command) in (list, tuple):
                             cmd = [VGLRUN_BIN] + list(test_command)
                         else:
                             raise Exception("invalid test command type: %s for %s" % (type(test_command), test_command))
                     else:
                         cmd = test_command
 
-                    print("starting test command: %s, settle time=%s" % (str(cmd), test_command_settle_time))
-                    test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=type(cmd)==str)
+                    print("starting test command: %s with env=%s, settle time=%s" % (cmd, env, test_command_settle_time))
+                    shell = type(cmd)==str
+                    test_command_process = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=shell)
 
                     if PREVENT_SLEEP:
                         subprocess.Popen(PREVENT_SLEEP_COMMAND)
@@ -531,6 +548,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     time.sleep(test_command_settle_time)
                     code = test_command_process.poll()
                     assert code is None, "test command %s failed to start: exit code is %s" % (test_command, code)
+                    print("test command %s is running with pid=%s" % (cmd, test_command_process.pid))
 
                     #run the client test
                     result = [name, tech_name, server_version, client_version, " ".join(sys.argv[1:]), SVN_VERSION]
@@ -621,7 +639,7 @@ def xpra_get_stats(last_record=None):
     if XPRA_VERSION_NO<[0, 3]:
         return  no_stats(last_record)
     info_cmd = XPRA_INFO_COMMAND
-    if password_filename:
+    if XPRA_USE_PASSWORD and password_filename:
         info_cmd.append("--password-file=%s" % password_filename)
     out = getoutput(info_cmd)
     if not out:
@@ -683,7 +701,9 @@ def get_xpra_start_server_command():
         cmd.append("--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_BIN, XORG_LOG, XORG_CONFIG))
     if XPRA_VERSION_NO>=[0, 5]:
         cmd.append("--no-notifications")
-    cmd.append("--password-file=%s" % password_filename)
+    if XPRA_USE_PASSWORD:
+        cmd.append("--password-file=%s" % password_filename)
+    cmd.append("--no-pulseaudio")
     cmd += ["start", ":%s" % DISPLAY_NO]
     return cmd
 
@@ -700,7 +720,9 @@ def test_xpra():
         for down,up,latency in shaping_options:
             for x11_test_command in X11_TEST_COMMANDS:
                 for encoding in XPRA_TEST_ENCODINGS:
-                    if XPRA_VERSION_NO>=[0, 9]:
+                    if XPRA_VERSION_NO>=[0, 10]:
+                        opengl_options = XPRA_OPENGL_OPTIONS.get(encoding, [True])
+                    elif XPRA_VERSION_NO>=[0, 9]:
                         opengl_options = XPRA_OPENGL_OPTIONS.get(encoding, [False])
                     else:
                         opengl_options = [False]
