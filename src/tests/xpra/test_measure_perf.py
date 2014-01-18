@@ -494,7 +494,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
     env = {}
     for k,v in os.environ.items():
     #whitelist what we want to keep:
-        if k in ("LOGNAME", "XDG_RUNTIME_DIR", "USER", "HOME", "PATH", "LD_LIBRARY_PATH", "XAUTHORITY", "SHELL", "TERM", "USERNAME", "HOSTNAME", "PWD"):
+        if k.startswith("XPRA") or k in ("LOGNAME", "XDG_RUNTIME_DIR", "USER", "HOME", "PATH", "LD_LIBRARY_PATH", "XAUTHORITY", "SHELL", "TERM", "USERNAME", "HOSTNAME", "PWD"):
             env[k] = v
     env["DISPLAY"] = ":%s" % DISPLAY_NO
     errors = 0
@@ -530,7 +530,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     #start the test command:
                     if USE_VIRTUALGL:
                         if type(test_command)==str:
-                            cmd = VGLRUN_BIN + test_command
+                            cmd = VGLRUN_BIN + " "+ test_command
                         elif type(test_command) in (list, tuple):
                             cmd = [VGLRUN_BIN] + list(test_command)
                         else:
@@ -547,7 +547,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
 
                     time.sleep(test_command_settle_time)
                     code = test_command_process.poll()
-                    assert code is None, "test command %s failed to start: exit code is %s" % (test_command, code)
+                    assert code is None, "test command %s failed to start: exit code is %s" % (cmd, code)
                     print("test command %s is running with pid=%s" % (cmd, test_command_process.pid))
 
                     #run the client test
