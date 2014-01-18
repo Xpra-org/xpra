@@ -122,7 +122,6 @@ def do_log_screen_sizes(root_w, root_h, ss):
     if len(ss)==2 and type(ss[0])==int and type(ss[1])==int:
         return
     for s in ss:
-        log.info("s=%s=%s", s, type(s))
         if len(s)<10:
             log.info(" %s", s)
             continue
