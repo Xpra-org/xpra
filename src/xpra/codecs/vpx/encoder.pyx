@@ -80,9 +80,9 @@ cdef extern from "vpx/vpx_encoder.h":
     int VPX_CBR         #Constant Bit Rate (CBR) mode
     int VPX_CQ          #Constant Quality (CQ) mode
     #vpx_enc_pass:
-    int VPX_RC_ONE_PASS     
-    int VPX_RC_FIRST_PASS     
-    int VPX_RC_LAST_PASS     
+    int VPX_RC_ONE_PASS
+    int VPX_RC_FIRST_PASS
+    int VPX_RC_LAST_PASS
     #vpx_kf_mode:
     int VPX_KF_FIXED
     int VPX_KF_AUTO

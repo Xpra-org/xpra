@@ -10,11 +10,11 @@ from xpra.util import nonl
 encode, decode = None, None
 
 from xpra.net.bencode.bencode import bencode as p_bencode, bdecode as p_bdecode
-from xpra.net.bencode.cython_bencode import bencode as c_bencode, bdecode as c_bdecode
+from xpra.net.bencode.cython_bencode import bencode as c_bencode, bdecode as c_bdecode  #@UnresolvedImport
 
 def use_cython():
     global encode, decode
-    
+
     encode = c_bencode
     decode = c_bdecode
 

@@ -1,12 +1,12 @@
 /**
  * Utility functions.
- * 
+ *
  */
 
 
 /**
  * Adds window.location.getParameter to those browsers that don't have it:
- * 
+ *
  * See:
  * http://stackoverflow.com/a/8812157/428751
  */
@@ -27,7 +27,7 @@ if (!window.location.getParameter ) {
 		}
 
 		if (!this.queryStringParams)
-				this.queryStringParams = parseParams(); 
+				this.queryStringParams = parseParams();
 
 		return this.queryStringParams[key];
 	};
