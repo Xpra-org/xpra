@@ -1642,7 +1642,8 @@ class UIXpraClient(XpraClientBase):
             self.destroy_window(wid, window)
         if len(self._id_to_window)==0:
             log("last window gone, clearing key repeat")
-            self.keyboard_helper.clear_repeat()
+            if self.keyboard_helper:
+                self.keyboard_helper.clear_repeat()
 
     def destroy_window(self, wid, window):
         log("destroy_window(%s, %s)", wid, window)
