@@ -536,7 +536,6 @@ class WindowVideoSource(WindowSource):
             Checks that the current pipeline is still valid
             for the given input. If not, close it and make a new one.
         """
-        debug("check_pipeline%s", (encoding, width, height, src_format))
         #must be called with video lock held!
         if self.do_check_pipeline(encoding, width, height, src_format):
             return True  #OK!
@@ -556,7 +555,6 @@ class WindowVideoSource(WindowSource):
             Checks that the current pipeline is still valid
             for the given input. If not, close it and make a new one.
         """
-        debug("do_check_pipeline%s", (encoding, width, height, src_format))
         #must be called with video lock held!
         if self._video_encoder is None:
             return False
@@ -577,20 +575,20 @@ class WindowVideoSource(WindowSource):
                                             self._csc_encoder.get_dst_format(), self._video_encoder.get_src_format(), self._csc_encoder.get_info())
                 return False
 
-            encoder_src_format = self._csc_encoder.get_dst_format()
+            #encoder will take its input from csc:
             encoder_src_width = self._csc_encoder.get_dst_width()
             encoder_src_height = self._csc_encoder.get_dst_height()
         else:
             #direct to video encoder without csc:
-            encoder_src_format = src_format
             encoder_src_width = width & self.width_mask
             encoder_src_height = height & self.height_mask
 
-        if self._video_encoder.get_src_format()!=encoder_src_format:
-            debug("check_pipeline video: invalid source format %s, expected %s",
-                                            self._video_encoder.get_src_format(), encoder_src_format)
-            return False
-        elif self._video_encoder.get_encoding()!=encoding:
+            if self._video_encoder.get_src_format()!=src_format:
+                debug("check_pipeline video: invalid source format %s, expected %s",
+                                                self._video_encoder.get_src_format(), src_format)
+                return False
+
+        if self._video_encoder.get_encoding()!=encoding:
             debug("check_pipeline video: invalid encoding %s, expected %s",
                                             self._video_encoder.get_encoding(), encoding)
             return False
