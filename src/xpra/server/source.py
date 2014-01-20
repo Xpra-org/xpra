@@ -333,6 +333,9 @@ class ServerSource(object):
                 log.error("error on window %s", wid, exc_info=True)
             if self.is_closed():
                 return
+            #allow other threads to run
+            #(ideally this would be a low priority thread)
+            time.sleep(0)
         #calculate weighted average as new global default delay:
         now = time.time()
         wdimsum, wdelay = 0, 0
