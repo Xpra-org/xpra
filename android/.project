@@ -3,6 +3,8 @@
 	<name>Xpra-android</name>
 	<comment></comment>
 	<projects>
+		<project>xpra-java</project>
+		<project>ZoomerWithKeys</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
