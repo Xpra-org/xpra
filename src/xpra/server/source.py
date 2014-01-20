@@ -367,7 +367,7 @@ class ServerSource(object):
         if delta>RECALCULATE_DELAY:
             add_work_item(recalculate_work)
         else:
-            self.timeout_add(int(1000*(RECALCULATE_DELAY-delta)), recalculate_work)
+            self.timeout_add(int(1000*(RECALCULATE_DELAY-delta)), add_work_item, recalculate_work)
 
     def close(self):
         self.close_event.set()
