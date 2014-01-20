@@ -196,7 +196,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Jan 16 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+* Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
 - NVENC hardware h264 encoding acceleration
 - OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
@@ -205,6 +205,7 @@ So basically it's screen for remote X apps.
 - server exit command, which leaves Xvfb running
 - publish session via mDNS
 - OSX client two way clipboard support
+- support for transparency with OpenGL window rendering
 - support for transparency with 8-bit PNG modes
 - support for more authentication mechanisms
 - support remote shadow start via ssh

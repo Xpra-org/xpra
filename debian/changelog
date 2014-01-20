@@ -7,6 +7,7 @@ xpra (0.11.0-1) UNRELEASED; urgency=low
   * server exit command, which leaves Xvfb running
   * publish session via mDNS
   * OSX client two way clipboard support
+  * support for transparency with OpenGL window rendering
   * support for transparency with 8-bit PNG modes
   * support for more authentication mechanisms
   * support remote shadow start via ssh
@@ -21,7 +22,7 @@ xpra (0.11.0-1) UNRELEASED; urgency=low
   * experimental HTML5 client
   * drop non xpra clients with a more friendly response
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 16 Jan 2014 18:41:52 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 20 Jan 2014 17:33:48 +0700
 
 xpra (0.10.12-1) UNRELEASED; urgency=low
   * fix missing auto-refresh with lossy colourspace conversion
