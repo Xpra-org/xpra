@@ -2,7 +2,6 @@
 
 import os.path
 import sys
-import xpra.scripts.main
 import gobject
 
 from pycallgraph import start_trace, make_dot_graph, GlobbingFilter
@@ -483,6 +482,7 @@ if runtime>0:
     gobject.timeout_add((runtime+delay)*1000, force_exit)
 
 print("calling xpra with: %s" % str(sys.argv))
+import xpra.scripts.main
 x = xpra.scripts.main.main(__file__, sys.argv)
 
 filename = 'pycallgraph.png'
