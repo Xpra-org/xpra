@@ -149,8 +149,11 @@ class GTKServerBase(ServerBase):
 
     def process_clipboard_packet(self, ss, packet):
         #overriden so we can inject the nesting check:
-        if self.clipboard_nesting_check(ss):
-            ServerBase.process_clipboard_packet(self, ss, packet)
+        def do_check():
+            if self.clipboard_nesting_check(ss):
+                ServerBase.process_clipboard_packet(self, ss, packet)
+        #the nesting check calls gtk, so we must call it from the main thread:
+        self.idle_add(do_check)
 
     def clipboard_nesting_check(self, ss):
         log("clipboard_nesting_check(%s)", ss)
