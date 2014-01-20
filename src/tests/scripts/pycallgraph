@@ -171,7 +171,8 @@ one_offs = ['xpra.<module>',
             'xpra.client.*.__init__',
             'xpra.platform.*.add_client_options', 'xpra.platform.*.add_*_option',
             'socket._socketobject.meth',
-            'xpra.*.*hello',
+            'xpra.*.*hello*',
+            'xpra.util.typedict.*',
             'xpra.*.get_machine_id',
             'xpra.*.init_packet_handlers',
             'xpra.*.get_screen_sizes',
@@ -283,7 +284,7 @@ dialogs = [
 connection = ['xpra.*server*.send_hello',
               'xpra.*server*.make_hello',
               'xpra.*server*._get_desktop_size_capability',
-              'xpra.*server*.hello',
+              'xpra.*server*.*hello*',
               'xpra.*server*.parse_hello',
               'xpra.*server*.batch_value',
               'xpra.*server*.parse_batch_int',
@@ -338,8 +339,12 @@ connection = ['xpra.*server*.send_hello',
 ALL = std + x11 + damage + codecs + net + mouse + keyboard + cursor + bell + misc + xsettings + clipboard + sound + gl + logging + libs + one_offs + dialogs + connection
 
 COMMON_THREAD_NAMES = ["write", "read", "parse", "format"]
-SERVER_THREAD_NAMES = ["encode", "calculate_delay"]
-CLIENT_THREAD_NAMES = ["draw"]
+SERVER_THREAD_NAMES = ["encode",
+                       #only used in proxy
+                       "server message queue",
+                       #not handled yet: "Worker_Thread"
+                       ]
+CLIENT_THREAD_NAMES = ["draw", "UI thread polling"]
 THREAD_NAMES = COMMON_THREAD_NAMES + SERVER_THREAD_NAMES + CLIENT_THREAD_NAMES
 SETS = ["ALL", "std", "x11", "damage", "codecs", "net", "cursor", "mouse", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "logging", "libs", "one_offs", "dialogs", "connection"]
 
