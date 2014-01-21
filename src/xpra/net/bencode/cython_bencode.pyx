@@ -143,7 +143,8 @@ cdef void encode_list(object x, r) except *:
 
 cdef void encode_dict(object x, r) except *:
     r.append('d')
-    for k, v in x.items():
+    for k in sorted(x.keys()):
+        v = x[k]
         encode(k, r)
         encode(v, r)
     r.append('e')

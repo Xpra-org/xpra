@@ -124,7 +124,8 @@ def encode_list(x, r):
 
 def encode_dict(x,r):
     r.append('d')
-    for k, v in x.items():
+    for k in sorted(x.keys()):
+        v = x[k]
         encode_func[type(k)](k, r)
         encode_func[type(v)](v, r)
     r.append('e')
