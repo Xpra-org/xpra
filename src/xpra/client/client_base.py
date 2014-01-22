@@ -138,6 +138,7 @@ class XpraClientBase(object):
         self._protocol.large_packets.append("keymap-changed")
         self._protocol.large_packets.append("server-settings")
         self._protocol.set_compression_level(self.compression_level)
+        self._protocol.receive_aliases.update(self._aliases)
         self.have_more = self._protocol.source_has_more
 
     def init_packet_handlers(self):
@@ -439,7 +440,7 @@ class XpraClientBase(object):
             assert key, "encryption key is missing"
             if not self.set_server_encryption(c, key):
                 return False
-        self._protocol.aliases = c.dictget("aliases", {})
+        self._protocol.send_aliases = c.dictget("aliases", {})
         if self.pings:
             self.timeout_add(1000, self.send_ping)
         else:
@@ -468,8 +469,6 @@ class XpraClientBase(object):
         try:
             handler = None
             packet_type = packet[0]
-            if type(packet_type)==int:
-                packet_type = self._aliases.get(packet_type)
             handler = self._packet_handlers.get(packet_type)
             if handler:
                 handler(packet)

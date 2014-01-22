@@ -301,6 +301,7 @@ class ServerCore(object):
         protocol.large_packets.append("info-response")
         protocol.authenticator = None
         protocol.invalid_header = self.invalid_header
+        protocol.receive_aliases.update(self._aliases)
         self._potential_protocols.append(protocol)
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
@@ -533,7 +534,7 @@ class ServerCore(object):
     def accept_client(self, proto, c):
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
-        proto.aliases = c.dictget("aliases")
+        proto.send_aliases = c.dictget("aliases")
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
 
@@ -638,8 +639,6 @@ class ServerCore(object):
         try:
             handler = None
             packet_type = packet[0]
-            if type(packet_type)==int:
-                packet_type = self._aliases.get(packet_type)
             assert isinstance(packet_type, types.StringTypes), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
             handler = self._default_packet_handlers.get(packet_type)
             if handler:

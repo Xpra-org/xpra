@@ -233,7 +233,8 @@ class Protocol(object):
         self.max_packet_size = 32*1024
         self.abs_max_packet_size = 32*1024*1024
         self.large_packets = ["hello"]
-        self.aliases = {}
+        self.send_aliases = {}
+        self.receive_aliases = {}
         self.chunked_compression = True
         self._log_stats = None          #None here means auto-detect
         self._closed = False
@@ -255,7 +256,7 @@ class Protocol(object):
         self._source_has_more = threading.Event()
         self.enable_default_encoder()
 
-    STATE_FIELDS = ("max_packet_size", "large_packets", "aliases",
+    STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
                     "chunked_compression",
                     "cipher_in", "cipher_in_name", "cipher_in_block_size",
                     "cipher_out", "cipher_out_name", "cipher_out_block_size",
@@ -345,9 +346,12 @@ class Protocol(object):
         elif self._compress==lz4_compress:
             info[prefix+"compression" + suffix] = "lz4"
         info[prefix+"max_packet_size" + suffix] = self.max_packet_size
-        for k,v in self.aliases.items():
-            info[prefix+"alias." + k + suffix] = v
-            info[prefix+"alias." + str(v) + suffix] = k
+        for k,v in self.send_aliases.items():
+            info[prefix+"send_alias." + str(k) + suffix] = v
+            info[prefix+"send_alias." + str(v) + suffix] = k
+        for k,v in self.receive_aliases.items():
+            info[prefix+"receive_alias." + str(k) + suffix] = v
+            info[prefix+"receive_alias." + str(v) + suffix] = k
         try:
             info[prefix+"encoder" + suffix] = self._encoder.__name__
         except:
@@ -563,9 +567,9 @@ class Protocol(object):
                 log.warn("unexpected data type in %s packet: %s", packet[0], ti)
         #now the main packet (or what is left of it):
         packet_type = packet[0]
-        if USE_ALIASES and self.aliases and packet_type in self.aliases:
+        if USE_ALIASES and self.send_aliases and packet_type in self.send_aliases:
             #replace the packet type with the alias:
-            packet[0] = self.aliases[packet_type]
+            packet[0] = self.send_aliases[packet_type]
         try:
             main_packet, proto_version = self._encoder(packet)
         except Exception, e:
@@ -852,8 +856,13 @@ class Protocol(object):
                         packet[index] = raw_data
                     raw_packets = {}
 
+                packet_type = packet[0]
+                if self.receive_aliases and type(packet_type)==int and packet_type in self.receive_aliases:
+                    packet_type = self.receive_aliases.get(packet_type)
+                    packet[0] = packet_type
+
                 self.input_packetcount += 1
-                debug("processing packet %s", packet[0])
+                debug("processing packet %s", packet_type)
                 self._process_packet_cb(self, packet)
 
     def flush_then_close(self, last_packet):

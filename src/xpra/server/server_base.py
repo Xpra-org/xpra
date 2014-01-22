@@ -468,7 +468,7 @@ class ServerBase(ServerCore):
             self.update_server_settings({'resource-manager' : ""})
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
-        proto.aliases = c.dictget("aliases")
+        proto.send_aliases = c.dictget("aliases")
         #use blocking sockets from now on:
         self.set_socket_timeout(proto._conn, None)
 
@@ -1416,8 +1416,6 @@ class ServerBase(ServerCore):
         try:
             handler = None
             packet_type = packet[0]
-            if type(packet_type)==int:
-                packet_type = self._aliases.get(packet_type)
             assert isinstance(packet_type, (str, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
             if packet_type.startswith("clipboard-"):
                 handler = self.process_clipboard_packet
