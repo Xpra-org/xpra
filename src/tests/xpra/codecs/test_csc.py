@@ -301,7 +301,11 @@ def do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h):
 
 
 def test_all(colorspace_converter):
+    print("test_all(%s)" % colorspace_converter)
     colorspace_converter.init_module()
+    if hasattr(colorspace_converter, "get_info"):
+        info = getattr(colorspace_converter, "get_info")
+        print("info=%s" % info())
     test_csc_rgb(colorspace_converter)
     test_csc_planar(colorspace_converter)
     test_csc_roundtrip(colorspace_converter)
