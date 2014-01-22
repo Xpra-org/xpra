@@ -207,6 +207,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     v = cd[i] or ""
                     info["cursor." + x] = v
                 i += 1
+        return info
+
+    def get_ui_info(self, proto, wids, *args):
+        info = X11ServerBase.get_ui_info(self, proto, wids, *args)
         #now cursor size info:
         display = gtk.gdk.display_get_default()
         for prop, size in {"default" : display.get_default_cursor_size(),
@@ -215,6 +219,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 continue
             info["cursor.%s_size" % prop] = size
         return info
+
 
     def get_window_info(self, window):
         info = X11ServerBase.get_window_info(self, window)
