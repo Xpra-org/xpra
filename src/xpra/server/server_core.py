@@ -117,6 +117,7 @@ class ServerCore(object):
         self.encryption_keyfile = None
         self.password_file = None
         self.compression_level = 1
+        self.exit_with_client = False
 
         self.init_packet_handlers()
         self.init_aliases()
@@ -139,6 +140,7 @@ class ServerCore(object):
         self.encryption_keyfile = opts.encryption_keyfile
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
+        self.exit_with_client = opts.exit_with_client
 
         self.init_auth(opts)
 

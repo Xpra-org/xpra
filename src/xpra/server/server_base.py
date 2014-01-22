@@ -396,13 +396,17 @@ class ServerBase(ServerCore):
     def cleanup_source(self, protocol):
         #this ensures that from now on we ignore any incoming packets coming
         #from this connection as these could potentially set some keys pressed, etc
+        if protocol in self._potential_protocols:
+            self._potential_protocols.remove(protocol)
         source = self._server_sources.get(protocol)
         if source:
             source.close()
             del self._server_sources[protocol]
-            log.info("xpra client disconnected.")
-        if protocol in self._potential_protocols:
-            self._potential_protocols.remove(protocol)
+            if self.exit_with_client:
+                log.info("Last client has disconnected, terminating")
+                self.quit(0)
+            else:
+                log.info("xpra client disconnected.")
         return source
 
     def is_timedout(self, protocol):

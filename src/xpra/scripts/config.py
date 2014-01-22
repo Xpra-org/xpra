@@ -252,6 +252,7 @@ OPTION_TYPES = {
                     "windows"           : bool,
                     "autoconnect"       : bool,
                     "exit-with-children": bool,
+                    "exit-with-client"  : bool,
                     "opengl"            : bool,
                     "mdns"              : bool,
                     #arrays of strings (default value, allowed options):
@@ -337,6 +338,7 @@ def get_defaults():
                     "windows"           : True,
                     "autoconnect"       : False,
                     "exit-with-children": False,
+                    "exit-with-client"  : False,
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : True,
                     "speaker-codec"     : [],

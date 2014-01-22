@@ -133,13 +133,20 @@ def parse_cmdline(cmdline):
                       + " If a relative filename is specified the it is relative to --socket-dir,"
                       + " the value of '$DISPLAY' will be substituted with the actual display used"
                       )
+    else:
+        hidden_options["daemon"] = False
+        hidden_options["log_file"] = defaults.log_file
+        
+    if (supports_server or supports_shadow):
         group.add_option("--no-mdns", action="store_false",
                           dest="mdns", default=True,
                           help="Don't publish session information via mDNS")
+        group.add_option("--exit-with-client", action="store_true",
+                          dest="exit_with_client", default=False,
+                          help="Terminate the server when the last client disconnects")
     else:
-        hidden_options["daemon"] = False
         hidden_options["mdns"] = False
-        hidden_options["log_file"] = defaults.log_file
+        hidden_options["exit_with_client"] = False
     if supports_server:
         group.add_option("--use-display", action="store_true",
                           dest="use_display", default=defaults.use_display,
@@ -952,6 +959,8 @@ def run_proxy(parser, opts, script_file, args, mode):
                 cmd.append("--start-child=%s" % x)
         if opts.exit_with_children:
             cmd.append("--exit-with-children")
+        if opts.exit_with_client or mode=="_shadow_start":
+            cmd.append("--exit-with-client")
         def setsid():
             os.setsid()
         Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, preexec_fn=setsid)
