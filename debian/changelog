@@ -1,3 +1,8 @@
+xpra (0.12.0-1) UNRELEASED; urgency=low
+  * TODO!
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 22 Jan 2014 15:36:39 +0700
+
 xpra (0.11.0-1) UNRELEASED; urgency=low
   * NVENC hardware h264 encoding acceleration
   * OpenCL and CUDA colourspace conversion acceleration
