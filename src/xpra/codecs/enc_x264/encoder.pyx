@@ -15,6 +15,7 @@ X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 include "constants.pxi"
 
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, codec_spec
+from xpra.deque import maxdeque
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
@@ -208,6 +209,7 @@ cdef class Encoder:
     cdef int speed
     cdef long long bytes_in
     cdef long long bytes_out
+    cdef object last_frame_times
 
     def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
         global COLORSPACES
@@ -223,6 +225,7 @@ cdef class Encoder:
         self.src_format = src_format
         self.colorspace = cs_info[0]
         self.frames = 0
+        self.last_frame_times = maxdeque(200)
         self.time = 0
         self.profile = self._get_profile(options, self.src_format)
         if self.profile is not None and self.profile not in cs_info[2]:
@@ -276,6 +279,17 @@ cdef class Encoder:
             pps = float(self.width) * float(self.height) * float(self.frames) / self.time
             info["total_time_ms"] = int(self.time*1000.0)
             info["pixels_per_second"] = int(pps)
+        #calculate fps:
+        cdef int f = 0
+        cdef double now = time.time()
+        cdef double last_time = now
+        cdef double cut_off = now-10.0
+        for v in list(self.last_frame_times):
+            if v>cut_off:
+                f += 1
+                last_time = min(last_time, v)
+        if f>0 and last_time<now:
+            info["fps"] = int(f/(now-last_time))
         return info
 
     def __str__(self):
@@ -397,6 +411,7 @@ cdef class Encoder:
             end = time.time()
             self.time += end-start
             self.frames += 1
+            self.last_frame_times.append(end)
             return  cdata, self.get_client_options(options)
         finally:
             if speed_override>=0 and saved_speed!=speed_override:
