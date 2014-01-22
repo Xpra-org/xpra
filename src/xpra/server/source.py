@@ -10,6 +10,7 @@ import os
 import time
 from collections import deque
 from threading import Event
+from math import sqrt
 
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -338,17 +339,23 @@ class ServerSource(object):
             time.sleep(0)
         #calculate weighted average as new global default delay:
         now = time.time()
-        wdimsum, wdelay = 0, 0
+        wdimsum, wdelay, tsize, tcount = 0, 0, 0, 0
         for ws in list(self.window_sources.values()):
             if ws.batch_config.last_updated<=0:
                 continue
             w, h = ws.window_dimensions
+            tsize += w*h
+            tcount += 1
             time_w = 2.0+(now-ws.batch_config.last_updated)     #add 2 seconds to even things out
             weight = w*h*time_w
             wdelay += ws.batch_config.delay*weight
             wdimsum += weight
-        if wdimsum>0:
-            delay = wdelay / wdimsum
+        if wdimsum>0 and tcount>0:
+            #weighted delay:
+            avg_size = tsize/tcount
+            wdelay = wdelay / wdimsum
+            #store the delay as a normalized value per megapixel:
+            delay = wdelay * 1000000 / avg_size
             self.global_batch_config.last_delays.append((now, delay))
             self.global_batch_config.delay = delay
 
@@ -1369,8 +1376,17 @@ class ServerSource(object):
     def make_window_source(self, wid, window):
         ws = self.window_sources.get(wid)
         if ws is None:
-            batch_config = self.global_batch_config.clone()
+            batch_config = self.default_batch_config.clone()
             batch_config.wid = wid
+            #scale initial delay based on window size
+            #(the global value is normalized to 1MPixel)
+            #but use sqrt to smooth things and prevent excesses
+            #(ie: a 4MPixel window, will start at 2 times the global delay)
+            #(ie: a 0.5MPixel window will start at 0.7 times the global delay)
+            w, h = window.get_dimensions()
+            ratio = float(w*h) / 1000000
+            batch_config.delay = self.global_batch_config.delay * sqrt(ratio)
+
             ws = WindowVideoSource(self.idle_add, self.timeout_add, self.source_remove,
                               self.queue_damage, self.queue_packet,
                               self.statistics,
