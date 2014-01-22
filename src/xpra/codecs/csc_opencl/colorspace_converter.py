@@ -416,7 +416,35 @@ def get_type():
     return "opencl"
 
 def get_version():
-    return pyopencl.version.VERSION_TEXT
+    return pyopencl.version.VERSION
+
+def get_info():
+    global selected_device, selected_platform, context, KERNELS_DEFS
+    info = {"version"               : pyopencl.version.VERSION,
+            "version.text"          : pyopencl.VERSION_TEXT,
+            "version.status"        : pyopencl.VERSION_STATUS,
+            "version.cl_header"     : pyopencl.get_cl_header_version(),
+            "opengl"                : pyopencl.have_gl(),
+            #"kernels"               : KERNELS_DEFS.keys()
+            }
+    if selected_platform:
+        info.update({
+            "platform.name"         : selected_platform.name,
+            "platform.vendor"       : selected_platform.vendor,
+            "platform.devices"      : len(selected_platform.get_devices()),
+            })
+    if selected_device:
+        if hasattr(selected_device, "opencl_c_version"):
+            info["device.opencl_c_version"] = getattr(selected_device, "opencl_c_version")
+        info.update({
+            "device.type"           : device_type(selected_device),
+            "device.name"           : selected_device.name.strip(),
+            "device.version"        : selected_device.version,
+            "device.max_work_group_size"        : selected_device.max_work_group_size,
+            "device.max_work_item_dimensions"   : selected_device.max_work_item_dimensions,
+            "device.max_work_item_sizes"        : selected_device.max_work_item_sizes})
+    return info
+            
 
 def get_input_colorspaces():
     build_kernels()
@@ -492,13 +520,14 @@ class ColorspaceConverter(object):
         assert self.kernel_function
 
     def get_info(self):
-        info = {"frames"    : self.frames,
-                "src_width" : self.src_width,
-                "src_height": self.src_height,
-                "src_format": self.src_format,
-                "dst_width" : self.dst_width,
-                "dst_height": self.dst_height,
-                "dst_format": self.dst_format}
+        info = get_info()
+        info.update({"frames"    : self.frames,
+                     "src_width" : self.src_width,
+                     "src_height": self.src_height,
+                     "src_format": self.src_format,
+                     "dst_width" : self.dst_width,
+                     "dst_height": self.dst_height,
+                     "dst_format": self.dst_format})
         if self.frames>0 and self.time>0:
             pps = float(self.src_width) * float(self.src_height) * float(self.frames) / self.time
             info["total_time_ms"] = int(self.time*1000.0)

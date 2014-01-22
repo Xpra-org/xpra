@@ -1108,6 +1108,9 @@ def get_version():
 def get_type():
     return "nvenc"
 
+def get_info():
+    return  {"version"          : get_version()}
+
 def get_encodings():
     return ["h264"]
 
@@ -1316,10 +1319,14 @@ cdef class Encoder:
         debug("init_cuda() device_id=%s", self.device_id)
         try:
             self.cuda_device = driver.Device(DEFAULT_CUDA_DEVICE_ID)
-            self.cuda_device_info = device_info(self.cuda_device)
-            debug("init_cuda() cuda_device=%s (%s)", self.cuda_device, self.cuda_device_info)
+            debug("init_cuda() cuda_device=%s (%s)", self.cuda_device, device_info(self.cuda_device))
             self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
             debug("init_cuda() cuda_context=%s", self.cuda_context)
+            self.cuda_device_info = {
+                "device.name"       : self.cuda_device.name(),
+                "device.pci_bus_id" : self.cuda_device.pci_bus_id()
+                "device.memory"     : self.cuda_device.total_memory()/1024/1024,
+                "api_version"       : self.cuda_context.get_api_version()}
         except driver.MemoryError, e:
             context_failures_history.append((time.time(), context_counter.get()))
             debug("init_cuda() %s", e)
@@ -1437,7 +1444,7 @@ cdef class Encoder:
             if presetConfig!=NULL:
                 free(presetConfig)
 
-    def get_info(self):
+    def get_info(self):                     #@DuplicatedSignature
         cdef float pps
         info = {"width"     : self.width,
                 "height"    : self.height,
@@ -1451,8 +1458,7 @@ cdef class Encoder:
                 "input_width"       : self.input_width,
                 "input_height"      : self.input_height,
                 "scaling"           : self.scaling})
-        if self.cuda_device_info:
-            info["device"] = self.cuda_device_info
+        info.update(self.cuda_device_info)
         if self.src_format:
             info["src_format"] = self.src_format
         if self.pixel_format:

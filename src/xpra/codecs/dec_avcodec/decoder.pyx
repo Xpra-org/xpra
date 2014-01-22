@@ -112,12 +112,6 @@ cdef extern from "libavcodec/avcodec.h":
     void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
 
 
-def get_version():
-    return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
-
-def get_type():
-    return "avcodec"
-
 MIN_AVCODEC_VERSION = 54
 COLORSPACES = None
 FORMAT_TO_ENUM = {}
@@ -174,6 +168,18 @@ def get_encodings():
         #if avcodec_find_decoder(CODEC_ID_VP9)!=NULL:
         #    CODECS.append("vp9")
     return CODECS
+
+def get_version():
+    return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
+
+def get_info():
+    return  {"version"      : get_version(),
+             "encodings"    : get_encodings(),
+             "formats"      : get_colorspaces(),
+             }
+
+def get_type():
+    return "avcodec"
 
 
 #maps AVCodecContext to the Decoder that manages it
@@ -473,13 +479,14 @@ cdef class Decoder:
     def __str__(self):                      #@DuplicatedSignature
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
-    def get_info(self):
-        info = {
+    def get_info(self):                     #@DuplicatedSignature
+        info = get_info()
+        info.update({
                 "type"      : self.get_type(),
                 "frames"    : self.frames,
                 "width"     : self.width,
                 "height"    : self.height,
-                }
+                })
         if self.framewrappers is not None:
             info["buffers"] = len(self.framewrappers)
         if self.colorspace:

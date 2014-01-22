@@ -129,20 +129,6 @@ cdef extern from "enc_x264.h":
     void set_f_rf(x264_param_t *param, float v)
 
 
-def get_version():
-    return constants["X264_BUILD"]
-
-def get_type():
-    return "x264"
-
-def get_encodings():
-    return ["h264"]
-
-def init_module():
-    #nothing to do!
-    pass
-
-
 #we choose presets from 1 to 7
 #(we exclude placebo)
 cdef int get_preset_for_speed(int speed):
@@ -181,6 +167,26 @@ for x264_enum, colorspace, default_profile, profiles in \
         debug("enc_x264: this build does not support %s / %s", x264_enum, colorspace)
         continue
     COLORSPACES[colorspace] = (enum_val, default_profile, profiles)
+
+
+def get_version():
+    return constants["X264_BUILD"]
+
+def get_type():
+    return "x264"
+
+def get_info():
+    global COLORSPACES
+    return {"version"   : get_version(),
+            "formats"   : COLORSPACES.keys()}
+
+def get_encodings():
+    return ["h264"]
+
+def init_module():
+    #nothing to do!
+    pass
+
 
 #copy C list of colorspaces to a python list:
 def get_colorspaces():
@@ -258,19 +264,20 @@ cdef class Encoder:
         self.context = x264_encoder_open(&param)
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
-    def get_info(self):
+    def get_info(self):             #@DuplicatedSignature
         cdef double pps
         if self.profile is None:
             return {}
-        info = {"profile"   : self.profile,
-                "preset"    : get_preset_names()[self.preset],
-                "frames"    : self.frames,
-                "width"     : self.width,
-                "height"    : self.height,
-                "speed"     : self.speed,
-                "quality"   : self.quality,
-                "src_format": self.src_format,
-                "version"   : get_version()}
+        info = get_info()
+        info.update({"profile"   : self.profile,
+                     "preset"    : get_preset_names()[self.preset],
+                     "frames"    : self.frames,
+                     "width"     : self.width,
+                     "height"    : self.height,
+                     "speed"     : self.speed,
+                     "quality"   : self.quality,
+                     "src_format": self.src_format,
+                     "version"   : get_version()})
         if self.bytes_in>0 and self.bytes_out>0:
             info["bytes_in"] = self.bytes_in
             info["bytes_out"] = self.bytes_out

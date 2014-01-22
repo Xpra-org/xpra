@@ -140,7 +140,14 @@ def get_type():
     return "nvcuda"
 
 def get_version():
-    return pycuda.VERSION_TEXT
+    return pycuda.VERSION
+
+def get_info():
+    return {"version"               : pycuda.VERSION,
+            "version.text"          : pycuda.VERSION_TEXT,
+            "version.status"        : pycuda.VERSION_STATUS,
+            "driver.version"        : driver.get_version(),
+            "driver.driver_version" : driver.get_driver_version()}
 
 def get_input_colorspaces():
     return sorted(COLORSPACES_MAP.keys())
@@ -172,7 +179,7 @@ class ColorspaceConverter(object):
         self.time = 0
         self.frames = 0
         self.cuda_device = None
-        self.cuda_device_info = ""
+        self.cuda_device_info = {}
         self.cuda_context = None
         self.max_block_sizes = 0
         self.max_grid_sizes = 0
@@ -196,8 +203,7 @@ class ColorspaceConverter(object):
 
     def init_cuda(self):
         self.cuda_device = driver.Device(self.device_id)
-        self.cuda_device_info = device_info(self.cuda_device)
-        debug("init_cuda() device_id=%s, device info: %s", self.device_id, self.cuda_device_info)
+        debug("init_cuda() device_id=%s, device info: %s", self.device_id, device_info(self.cuda_device))
         self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
         #use alias to make code easier to read:
         d = self.cuda_device
@@ -219,16 +225,22 @@ class ColorspaceConverter(object):
 
         self.convert_image_fn = self.convert_image_rgb
         debug("init_context(..) convert_image=%s", self.convert_image)
+        self.cuda_device_info = {
+            "context.api_version"   : self.cuda_context.get_api_version(),
+            "device.name"           : d.name(),
+            "device.pci_bus_id"     : d.pci_bus_id(),
+            }
 
     def get_info(self):
-        info = {"frames"    : self.frames,
-                "src_width" : self.src_width,
-                "src_height": self.src_height,
-                "src_format": self.src_format,
-                "dst_width" : self.dst_width,
-                "dst_height": self.dst_height,
-                "dst_format": self.dst_format,
-                "device"    : self.cuda_device_info}
+        info = get_info()
+        info.update({"frames"       : self.frames,
+                     "src_width"    : self.src_width,
+                     "src_height"   : self.src_height,
+                     "src_format"   : self.src_format,
+                     "dst_width"    : self.dst_width,
+                     "dst_height"   : self.dst_height,
+                     "dst_format"   : self.dst_format})
+        info.update(self.cuda_device_info)
         if self.frames>0 and self.time>0:
             pps = float(self.src_width) * float(self.src_height) * float(self.frames) / self.time
             info["total_time_ms"] = int(self.time*1000.0)

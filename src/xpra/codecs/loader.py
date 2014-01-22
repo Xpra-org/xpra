@@ -45,6 +45,10 @@ def add_codec_version(name, top_module, version="get_version()"):
             v = v()
         global codec_versions
         codec_versions[name] = v
+        #optional info:
+        if hasattr(module, "get_info"):
+            info = getattr(module, "get_info")
+            debug("info(%s)=%s", top_module, info())
     except ImportError, e:
         debug("cannot import %s: %s", name, e)
         #not present

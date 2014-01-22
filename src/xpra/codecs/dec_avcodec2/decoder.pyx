@@ -107,13 +107,6 @@ cdef extern from "libavcodec/avcodec.h":
     void av_frame_unref(AVFrame *frame) nogil
 
 
-def get_version():
-    return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
-
-def get_type():
-    return "avcodec2"
-
-
 COLORSPACES = None
 FORMAT_TO_ENUM = {}
 ENUM_TO_FORMAT = {}
@@ -163,6 +156,19 @@ def get_encodings():
         #if avcodec_find_decoder(CODEC_ID_VP9)!=NULL:
         #    CODECS.append("vp9")
     return CODECS
+
+
+def get_version():
+    return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
+
+def get_type():
+    return "avcodec2"
+
+def get_info():
+    return  {"version"      : get_version(),
+             "encodings"    : get_encodings(),
+             "formats"      : get_colorspaces(),
+             }
 
 
 cdef void clear_frame(AVFrame *frame):
@@ -366,8 +372,9 @@ cdef class Decoder:
     def __str__(self):                      #@DuplicatedSignature
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
-    def get_info(self):
-        info = {
+    def get_info(self):                      #@DuplicatedSignature
+        info = get_info()
+        info.update({
                 "type"      : self.get_type(),
                 "frames"    : self.frames,
                 "width"     : self.width,

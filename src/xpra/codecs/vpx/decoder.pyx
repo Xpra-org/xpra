@@ -94,18 +94,44 @@ cdef extern from "vpx/vpx_decoder.h":
     vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
 
 
-def get_version():
-    return vpx_codec_version_str()
-
-def get_type(self):
-    return  "vpx"
-
+#https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
+#"RGB is not supported.  You need to convert your source to YUV, and then compress that."
+COLORSPACES = ["YUV420P"]
+def get_colorspaces():
+    return COLORSPACES
 
 CODECS = []
 IF ENABLE_VP8 == True:
     CODECS.append("vp8")
 IF ENABLE_VP9 == True:
     CODECS.append("vp9")
+
+
+def get_abi_version():
+    return VPX_DECODER_ABI_VERSION
+
+def get_version():
+    return vpx_codec_version_str()
+
+def get_type():
+    return "vpx"
+
+def get_encodings():
+    return CODECS
+
+def get_info():
+    global CODECS
+    return {"version"       : get_version(),
+            "encodings"     : CODECS,
+            "abi_version"   : get_abi_version()}
+
+
+def get_spec(colorspace):
+    assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
+    #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
+    #setup cost is reasonable (usually about 5ms)
+    return codec_spec(Decoder, codec_type="vpx", setup_cost=40)
+
 
 cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
     IF ENABLE_VP8 == True:
@@ -115,21 +141,6 @@ cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
         if encoding=="vp9":
             return vpx_codec_vp9_dx()
     raise Exception("unsupported encoding: %s" % encoding)
-
-def get_encodings():
-    return CODECS
-
-#https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
-#"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES = ["YUV420P"]
-def get_colorspaces():
-    return COLORSPACES
-
-def get_spec(colorspace):
-    assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
-    #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
-    #setup cost is reasonable (usually about 5ms)
-    return codec_spec(Decoder, codec_type="vpx", setup_cost=40)
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
@@ -202,7 +213,7 @@ cdef class Decoder:
     def __str__(self):
         return "vpx.Decoder(%s)" % self.encoding
 
-    def get_info(self):
+    def get_info(self):                 #@DuplicatedSignature
         return {"type"      : self.get_type(),
                 "width"     : self.get_width(),
                 "height"    : self.get_height(),

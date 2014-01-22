@@ -171,6 +171,11 @@ def get_type():
 def get_version():
     return (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)
 
+def get_info():
+    global COLORSPACES
+    return {"version"   : get_version(),
+            "formats"   : COLORSPACES}
+
 def get_input_colorspaces():
     return COLORSPACES
 
@@ -288,14 +293,15 @@ cdef class ColorspaceConverter:
         debug("sws context=%s", hex(<long> self.context))
         assert self.context!=NULL, "sws_getContext returned NULL"
 
-    def get_info(self):
-        info = {
+    def get_info(self):         #@DuplicatedSignature
+        info = get_info()
+        info.update({
                 "flags"     : get_swscale_flags_strs(self.flags),
                 "frames"    : self.frames,
                 "src_width" : self.src_width,
                 "src_height": self.src_height,
                 "dst_width" : self.dst_width,
-                "dst_height": self.dst_height}
+                "dst_height": self.dst_height})
         if self.src_format:
             info["src_format"] = self.src_format
         if self.dst_format:

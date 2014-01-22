@@ -152,6 +152,19 @@ cdef extern from "vpxlib.h":
     size_t get_frame_size(const vpx_codec_cx_pkt_t *pkt)
 
 
+#https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
+#"RGB is not supported.  You need to convert your source to YUV, and then compress that."
+COLORSPACES = ["YUV420P"]
+def get_colorspaces():
+    return COLORSPACES
+
+CODECS = []
+IF ENABLE_VP8 == True:
+    CODECS.append("vp8")
+IF ENABLE_VP9 == True:
+    CODECS.append("vp9")
+
+
 def get_abi_version():
     return VPX_ENCODER_ABI_VERSION
 
@@ -161,14 +174,14 @@ def get_version():
 def get_type():
     return "vpx"
 
-CODECS = []
-IF ENABLE_VP8 == True:
-    CODECS.append("vp8")
-IF ENABLE_VP9 == True:
-    CODECS.append("vp9")
-
 def get_encodings():
     return CODECS
+
+def get_info():
+    global CODECS
+    return {"version"       : get_version(),
+            "encodings"     : CODECS,
+            "abi_version"   : get_abi_version()}
 
 
 cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
@@ -180,12 +193,6 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
             return vpx_codec_vp9_cx()
     raise Exception("unsupported encoding: %s" % encoding)
 
-
-#https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
-#"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES = ["YUV420P"]
-def get_colorspaces():
-    return COLORSPACES
 
 def get_spec(encoding, colorspace):
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
@@ -268,13 +275,15 @@ cdef class Encoder:
     def __str__(self):
         return "vpx.Encoder(%s)" % self.encoding
 
-    def get_info(self):
-        return {"frames"    : self.frames,
-                "width"     : self.width,
-                "height"    : self.height,
-                "encoding"  : self.encoding,
-                "src_format": self.src_format,
-                "max_threads": self.max_threads}
+    def get_info(self):                     #@DuplicatedSignature
+        info = get_info()
+        info.update({"frames"    : self.frames,
+                     "width"     : self.width,
+                     "height"    : self.height,
+                     "encoding"  : self.encoding,
+                     "src_format": self.src_format,
+                     "max_threads": self.max_threads})
+        return info
 
     def get_encoding(self):
         return self.encoding

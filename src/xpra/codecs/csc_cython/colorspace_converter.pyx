@@ -51,6 +51,9 @@ def get_type():
 def get_version():
     return (0, 1)
 
+def get_info():
+    return {"version"   : get_version()}
+
 def get_input_colorspaces():
     return ["BGRX"]
 
