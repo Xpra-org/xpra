@@ -476,12 +476,20 @@ class WindowSource(object):
             self.timeout_timer = self.timeout_add(self.batch_config.max_delay, self.delayed_region_timeout, delayed_region_time)
 
     def delayed_region_timeout(self, delayed_region_time):
-        if self._damage_delayed:
-            region_time = self._damage_delayed[0]
-            if region_time==delayed_region_time:
-                #same region!
-                log.warn("delayed_region_timeout: sending now - something is wrong!")
-                self.do_send_delayed_region()
+        if self._damage_delayed is None:
+            #delayed region got sent
+            return False
+        region_time = self._damage_delayed[0]
+        if region_time!=delayed_region_time:
+            #this is a different region
+            return False
+        #ouch: same region!
+        window      = self._damage_delayed[1]
+        options     = self._damage_delayed[4]
+        log.warn("delayed_region_timeout: something is wrong, is the connection dead?")
+        #re-try:
+        self._damage_delayed = None
+        self.full_quality_refresh(window, options)
         return False
 
     def may_send_delayed(self):
@@ -751,25 +759,6 @@ class WindowSource(object):
                 else:
                     debug("schedule_auto_refresh: high quality (%s%%) small area, ignoring", actual_quality)
                 return
-        def full_quality_refresh():
-            debug("full_quality_refresh() for %sx%s window", w, h)
-            if self._damage_delayed:
-                #there is already a new damage region pending
-                return  False
-            if not window.is_managed():
-                #this window is no longer managed
-                return  False
-            self.refresh_timer = None
-            new_options = damage_options.copy()
-            encoding = self.auto_refresh_encodings[0]
-            new_options["encoding"] = encoding
-            new_options["optimize"] = False
-            new_options["quality"] = AUTO_REFRESH_QUALITY
-            new_options["speed"] = AUTO_REFRESH_SPEED
-            debug("full_quality_refresh() with options=%s", new_options)
-            self.damage(window, 0, 0, ww, wh, options=new_options)
-            return False
-            #self.process_damage_region(time.time(), window, 0, 0, ww, wh, coding, new_options)
         self.cancel_refresh_timer()
         if self._damage_delayed:
             debug("auto refresh: delayed region already exists")
@@ -777,7 +766,29 @@ class WindowSource(object):
             return
         delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
         debug("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
-        self.refresh_timer = self.timeout_add(delay, full_quality_refresh)
+        def timer_full_refresh():
+            self.refresh_timer = None
+            self.full_quality_refresh(window, damage_options)
+            return False
+        self.refresh_timer = self.timeout_add(delay, timer_full_refresh)
+
+    def full_quality_refresh(self, window, damage_options):
+        if self._damage_delayed:
+            #there is already a new damage region pending
+            return  False
+        if not window.is_managed():
+            #this window is no longer managed
+            return  False
+        w, h = window.get_dimensions()
+        debug("full_quality_refresh() for %sx%s window", w, h)
+        new_options = damage_options.copy()
+        encoding = self.auto_refresh_encodings[0]
+        new_options["encoding"] = encoding
+        new_options["optimize"] = False
+        new_options["quality"] = AUTO_REFRESH_QUALITY
+        new_options["speed"] = AUTO_REFRESH_SPEED
+        debug("full_quality_refresh() with options=%s", new_options)
+        self.damage(window, 0, 0, w, h, options=new_options)
 
     def queue_damage_packet(self, packet, damage_time, process_damage_time):
         """
