@@ -195,7 +195,7 @@ class WindowPerformanceStatistics(object):
     def get_client_backlog(self):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
         if len(self.damage_ack_pending)>0:
-            sent_before = time.time()-self.target_latency
+            sent_before = time.time()-(self.target_latency+0.020)
             dropped_acks_time = time.time()-60      #1 minute
             drop_missing_acks = []
             for sequence, (start_send_at, start_bytes, end_send_at, end_bytes, pixels) in list(self.damage_ack_pending.items()):
@@ -221,7 +221,7 @@ class WindowPerformanceStatistics(object):
     def get_packets_backlog(self):
         packets_backlog = 0
         if len(self.damage_ack_pending)>0:
-            sent_before = time.time()-self.target_latency
+            sent_before = time.time()-(self.target_latency+0.020)
             for _, (start_send_at, _, end_send_at, _, _) in list(self.damage_ack_pending.items()):
                 if end_send_at>0 and start_send_at<=sent_before:
                     packets_backlog += 1

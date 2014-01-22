@@ -432,7 +432,7 @@ class WindowSource(object):
         packets_backlog = self.statistics.get_packets_backlog()
         pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
         #only send without batching when things are going well:
-        # - no packets packlog from the client
+        # - no packets backlog from the client
         # - the amount of pixels waiting to be encoded is less than one full frame refresh
         # - no more than 10 regions waiting to be encoded
         if (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10) and \
