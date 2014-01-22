@@ -122,7 +122,7 @@ class WindowSource(object):
         self.timeout_timer = None
         self.expire_timer = None
 
-        self.is_OR = window.get_property("override-redirect")
+        self.is_OR = window.is_OR()
         self.window_dimensions = 0, 0
         self.fullscreen = window.get_property("fullscreen")
         self.scaling = window.get_property("scaling")
