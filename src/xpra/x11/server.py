@@ -177,6 +177,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.last_cursor_serial = None
         self.send_cursor_pending = False
         self.cursor_data = None
+        self.cursor_sizes = None
         def get_default_cursor():
             self.default_cursor_data = X11Keyboard.get_cursor_image()
             log("get_default_cursor=%s", self.default_cursor_data)
@@ -197,15 +198,22 @@ class XpraServer(gobject.GObject, X11ServerBase):
         cd = self.cursor_data
         if cd is None:
             info["cursor"] = "None"
-            return info
-        #pixels:
-        info["cursor.is_default"] = bool(self.default_cursor_data and len(self.default_cursor_data)>=8 and len(cd)>=8 and cd[7]==cd[7])
-        i = 0
-        for x in ("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name"):
-            if x:
-                v = cd[i] or ""
-                info["cursor." + x] = v
-            i += 1
+        else:
+            info["cursor.is_default"] = bool(self.default_cursor_data and len(self.default_cursor_data)>=8 and len(cd)>=8 and cd[7]==cd[7])
+            #all but pixels:
+            i = 0
+            for x in ("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name"):
+                if x:
+                    v = cd[i] or ""
+                    info["cursor." + x] = v
+                i += 1
+        #now cursor size info:
+        display = gtk.gdk.display_get_default()
+        for prop, size in {"default" : display.get_default_cursor_size(),
+                           "max"     : display.get_maximal_cursor_size()}.items():
+            if size is None:
+                continue
+            info["cursor.%s_size" % prop] = size
         return info
 
     def get_window_info(self, window):
@@ -288,8 +296,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 x, y, w, h = self._desktop_manager.window_geometry(window)
                 wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)
-        ss.send_cursor(self.cursor_data)
-
+        #cursors: get sizes and send:
+        display = gtk.gdk.display_get_default()
+        self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
+        ss.send_cursor(self.cursor_data, self.cursor_sizes)
 
 
     def _new_window_signaled(self, wm, window):
@@ -402,6 +412,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def send_cursor(self):
         self.send_cursor_pending = False
         self.cursor_data = X11Keyboard.get_cursor_image()
+        display = gtk.gdk.display_get_default()
+        self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
         if self.cursor_data is not None:
             pixels = self.cursor_data[7]
             log("send_cursor() cursor=%s", self.cursor_data[:7]+["%s bytes" % len(pixels)]+self.cursor_data[8:])
@@ -418,7 +430,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         else:
             log("send_cursor() failed to get cursor image")
         for ss in self._server_sources.values():
-            ss.send_cursor(self.cursor_data)
+            ss.send_cursor(self.cursor_data, self.cursor_sizes)
         return False
 
     def _bell_signaled(self, wm, event):

@@ -1090,10 +1090,11 @@ class ServerSource(object):
             return
         self.send(*packet)
 
-    def send_cursor(self, cursor_data):
+    def send_cursor(self, cursor_data, sizes):
         if not self.send_cursors or self.suspended:
             return
         self.cursor_data = cursor_data
+        self.cursor_sizes = sizes
         if not self.send_cursor_pending:
             self.send_cursor_pending = True
             delay = max(10, int(self.global_batch_config.delay*4))
@@ -1102,10 +1103,12 @@ class ServerSource(object):
     def do_send_cursor(self):
         self.send_cursor_pending = False
         if self.cursor_data:
-            #only newer versions support cursor names:
             if not self.named_cursors:
-                self.cursor_data = self.cursor_data[:8]
-            self.send("cursor", *self.cursor_data)
+                #old versions have limited support (no cursor names, no sizes):
+                args = self.cursor_data[:8]
+            else:
+                args = list(self.cursor_data[:9]) + list(self.cursor_sizes)
+            self.send("cursor", *args)
         else:
             self.send("cursor", "")
 

@@ -56,6 +56,7 @@ class GTKServerBase(ServerBase):
         capabilities = ServerBase.make_hello(self)
         capabilities["display"] = gtk.gdk.display_get_default().get_name()
         capabilities["cursor.default_size"] = gtk.gdk.display_get_default().get_default_cursor_size()
+        capabilities["cursor.max_size"] = gtk.gdk.display_get_default().get_maximal_cursor_size()
         add_gtk_version_info(capabilities, gtk, "", True)
         return capabilities
 

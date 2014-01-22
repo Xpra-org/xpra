@@ -321,10 +321,17 @@ class XpraClient(GTKXpraClient):
         pixbuf = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
         x = max(0, min(xhot, w-1))
         y = max(0, min(yhot, h-1))
-        size = gdk.display_get_default().get_default_cursor_size()
-        log("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s", xhot,yhot, serial, w,h, len(pixels), size)
-        if size>0 and (size<w or size<h) and False:
-            ratio = float(max(w,h))/size
+        display = gdk.display_get_default()
+        csize = display.get_default_cursor_size()
+        cmaxw, cmaxh = display.get_maximal_cursor_size()
+        if len(cursor_data)>=11:
+            ssize = cursor_data[9]
+            smax = cursor_data[10]
+            log("server cursor sizes: default=%s, max=%s", ssize, smax)
+        log("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", xhot,yhot, serial, w,h, len(pixels), csize, (cmaxw, cmaxh))
+        ratio = 1
+        if w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
+            ratio = max(float(w)/cmaxw, float(h)/cmaxh, float(max(w,h))/csize)
             log("downscaling cursor by %.2f", ratio)
             pixbuf = pixbuf.scale_simple(int(w/ratio), int(h/ratio), gdk.INTERP_BILINEAR)
             x = int(x/ratio)
