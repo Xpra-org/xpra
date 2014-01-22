@@ -52,6 +52,7 @@ cdef extern from "vpx/vpx_codec.h":
     const char *vpx_codec_error(vpx_codec_ctx_t  *ctx)
     vpx_codec_err_t vpx_codec_destroy(vpx_codec_ctx_t *ctx)
     const char *vpx_codec_version_str()
+    const char *vpx_codec_build_config()
 
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
@@ -181,7 +182,8 @@ def get_info():
     global CODECS
     return {"version"       : get_version(),
             "encodings"     : CODECS,
-            "abi_version"   : get_abi_version()}
+            "abi_version"   : get_abi_version(),
+            "build_config"  : vpx_codec_build_config()}
 
 
 cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
