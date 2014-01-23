@@ -125,9 +125,10 @@ cdef class SWSFlags:
 
 #keeping this array in scope ensures the strings don't go away!
 FLAGS_OPTIONS = [
-            (30, ("SWS_BICUBIC", "SWS_ACCURATE_RND")),
-            (60, ("SWS_BICUBLIN", "SWS_ACCURATE_RND")),
-            (80, ("SWS_FAST_BILINEAR", "SWS_ACCURATE_RND")),
+            (30, ("SWS_BICUBIC", )),
+            (40, ("SWS_BICUBLIN", )),
+            (60, ("SWS_BILINEAR", )),
+            (80, ("SWS_FAST_BILINEAR", )),
         ]
 cdef int flags                                          #@DuplicatedSignature
 FLAGS = []
@@ -145,18 +146,31 @@ for speed, flags_strs in FLAGS_OPTIONS:
 debug("swscale flags: %s", FLAGS)
 
 
-cdef get_swscale_flags(int speed):
+cdef int get_swscale_flags(int speed, int scaling, int subsampling, dst_format):
+    if not scaling and not subsampling:
+        speed = 100
+    cdef int flags = 0
     for s, swsflags in FLAGS:
         if s>=speed:
-            return swsflags.get_flags()
-    _, swsflags = FLAGS[-1]
-    return swsflags.get_flags()
+            flags = swsflags.get_flags()
+            break
+    #not found? use the highest one:
+    if flags==0:
+        _, swsflags = FLAGS[-1]
+        flags = swsflags.get_flags()
+    #look away now: we get an acceleration warning with XRGB
+    #when we don't add SWS_ACCURATE_RND...
+    #but we don't want the flag otherwise, unless we are scaling or downsampling:
+    if ((scaling or subsampling) and speed<100) or dst_format=="XRGB":
+        flags |= SWS_ACCURATE_RND
+    return flags
+
 
 def get_swscale_flags_strs(int flags):
     strs = []
-    for flag in ("SWS_BICUBIC", "SWS_BICUBLIN", "SWS_FAST_BILINEAR", "SWS_ACCURATE_RND"):
+    for flag in ("SWS_BICUBIC", "SWS_BICUBLIN", "SWS_FAST_BILINEAR", "SWS_ACCURATE_RND", "SWS_BITEXACT"):
         flag_value = constants.get(flag, 0)
-        if flag_value & flags>0:
+        if (flag_value & flags)>0:
             strs.append(flag)
     return strs
 
@@ -268,9 +282,12 @@ cdef class ColorspaceConverter:
         self.dst_format_enum = dst.av_enum
         #pre-calculate plane heights:
         self.buffer_size = 0
+        cdef int subsampling = False
         for i in range(4):
             self.out_height[i] = (int) (dst_height * dst.height_mult[i])
             self.out_stride[i] = roundup((int) (dst_width * dst.width_mult[i]), 16)
+            if i!=3 and (dst.height_mult[i]!=1.0 or dst.width_mult[i]!=1.0):
+                subsampling = True
             #add one extra line to height so we can read a full rowstride
             #no matter where we start to read on the last line.
             #MEMALIGN may be redundant here but it is very cheap
@@ -283,7 +300,9 @@ cdef class ColorspaceConverter:
         self.dst_width = dst_width
         self.dst_height = dst_height
 
-        self.flags = get_swscale_flags(speed)
+        cdef int scaling = (src_width!=dst_width) or (src_height!=dst_height)
+        self.flags = get_swscale_flags(speed, scaling, subsampling, dst_format)
+        #debug("sws get_swscale_flags(%s, %s, %s)=%s", speed, scaling, subsampling, get_swscale_flags_strs(self.flags))
         self.time = 0
         self.frames = 0
 
