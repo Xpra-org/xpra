@@ -168,7 +168,7 @@ cdef int get_swscale_flags(int speed, int scaling, int subsampling, dst_format):
 
 def get_swscale_flags_strs(int flags):
     strs = []
-    for flag in ("SWS_BICUBIC", "SWS_BICUBLIN", "SWS_FAST_BILINEAR", "SWS_ACCURATE_RND", "SWS_BITEXACT"):
+    for flag in ("SWS_BICUBIC", "SWS_BICUBLIN", "SWS_FAST_BILINEAR", "SWS_ACCURATE_RND"):
         flag_value = constants.get(flag, 0)
         if (flag_value & flags)>0:
             strs.append(flag)
