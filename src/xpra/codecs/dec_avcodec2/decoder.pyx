@@ -379,7 +379,7 @@ cdef class Decoder:
                 "frames"    : self.frames,
                 "width"     : self.width,
                 "height"    : self.height,
-                }
+                })
         if self.framewrappers is not None:
             info["buffers"] = len(self.framewrappers)
         if self.colorspace:
