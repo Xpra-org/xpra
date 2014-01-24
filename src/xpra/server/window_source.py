@@ -916,8 +916,8 @@ class WindowSource(object):
         #actual network packet:
         packet = ["draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()
-        debug("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%%, delta=%s",
-                 (end-start)*1000.0, w, h, coding, 100.0*len(data)/isize, delta)
+        debug("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%% (%sKB to %sKB), delta=%s",
+                 (end-start)*1000.0, w, h, coding, 100.0*len(data)/isize, isize/1024, len(data)/1024, delta)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
