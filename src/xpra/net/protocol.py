@@ -734,7 +734,6 @@ class Protocol(object):
                     if bl<8:
                         break   #packet still too small
                     #packet format: struct.pack('cBBBL', ...) - 8 bytes
-                    #debug("packet header: %s", binascii.hexlify(head))
                     _, protocol_flags, compression_level, packet_index, data_size = unpack_header(head)
 
                     #sanity check size (will often fail if not an xpra client):
@@ -745,7 +744,7 @@ class Protocol(object):
                     bl = len(read_buffer)-8
                     if protocol_flags & Protocol.FLAGS_CIPHER:
                         if self.cipher_in_block_size==0 or not self.cipher_in_name:
-                            log.warn("received cipher block but we don't have a cipher do decrypt it with, not an xpra client?")
+                            log.warn("received cipher block but we don't have a cipher to decrypt it with, not an xpra client?")
                             self._invalid_header(read_buffer)
                             return
                         padding = (self.cipher_in_block_size - data_size % self.cipher_in_block_size) * " "
@@ -757,17 +756,17 @@ class Protocol(object):
                     assert payload_size>0
                     read_buffer = read_buffer[8:]
 
-                if payload_size>self.max_packet_size:
-                    #this packet is seemingly too big, but check again from the main UI thread
-                    #this gives 'set_max_packet_size' a chance to run from "hello"
-                    def check_packet_size(size_to_check, packet_header):
-                        if not self._closed:
-                            debug("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
-                            if size_to_check>self.max_packet_size:
-                                self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
-                                                              (size_to_check, self.max_packet_size, repr_ellipsized(packet_header)))
-                        return False
-                    self.scheduler.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
+                    if payload_size>self.max_packet_size:
+                        #this packet is seemingly too big, but check again from the main UI thread
+                        #this gives 'set_max_packet_size' a chance to run from "hello"
+                        def check_packet_size(size_to_check, packet_header):
+                            if not self._closed:
+                                debug("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
+                                if size_to_check>self.max_packet_size:
+                                    self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
+                                                                  (size_to_check, self.max_packet_size, repr_ellipsized(packet_header)))
+                            return False
+                        self.scheduler.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
 
                 if bl<payload_size:
                     # incomplete packet, wait for the rest to arrive
