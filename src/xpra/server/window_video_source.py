@@ -24,7 +24,7 @@ def envint(name, d):
     except:
         return d
 
-MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 2048)
+MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
 MAX_NONVIDEO_OR_INITIAL_PIXELS = envint("XPRA_MAX_NONVIDEO_OR_INITIAL_PIXELS", 1024*64)
 
 ENCODER_TYPE = os.environ.get("XPRA_ENCODER_TYPE", "")  #ie: "x264" or "nvenc"
@@ -222,13 +222,18 @@ class WindowVideoSource(WindowSource):
 
         max_nvoip = MAX_NONVIDEO_OR_INITIAL_PIXELS
         max_nvp = MAX_NONVIDEO_PIXELS
+        if self._sequence<=5 and is_OR and pixel_count<max_nvoip:
+            #first 5 frames of a small-ish OR window, those are generally short lived
+            #so delay using a video encoder
+            return switch_to_lossless("frame number %s of a small OR window" % self._sequence)
+        #when we have bandwidth to spare, allow more lossless pixels:
         if not batching:
             max_nvoip *= 128
             max_nvp *= 128
         if self._sequence==1 and is_OR and pixel_count<max_nvoip:
-            #first frame of a small-ish OR window, those are generally short lived
+            #first frame of an OR window, those are generally short lived
             #so delay using a video encoder until the next frame:
-            return switch_to_lossless("first small frame of an OR window")
+            return switch_to_lossless("first frame of a small OR window")
         #ensure the dimensions we use for decision making are the ones actually used:
         ww = ww & self.width_mask
         wh = wh & self.height_mask
