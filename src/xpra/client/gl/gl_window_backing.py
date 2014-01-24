@@ -49,6 +49,21 @@ from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
 
 
+PIXEL_FORMAT_TO_CONSTANT = {
+                       "BGR"    : GL_BGR,
+                       "RGB"    : GL_RGB,
+                       "BGRA"   : GL_BGRA,
+                       "BGRA"   : GL_BGRA,
+                       "RGBA"   : GL_RGBA,
+                       }
+CONSTANT_TO_PIXEL_FORMAT = {
+                       GL_BGR   : "BGR",
+                       GL_RGB   : "RGB",
+                       GL_BGRA  : "BGRA",
+                       GL_RGBA  : "RGBA",
+                       }
+
+
 #debugging variables:
 GL_DEBUG_OUTPUT = None
 GL_DEBUG_OUTPUT_SYNCHRONOUS = None
@@ -131,11 +146,19 @@ class GLPixmapBacking(GTK2WindowBacking):
             else:
                 log.warn("failed to enable transparency on screen %s", screen)
                 self._has_alpha = False
+        #this is how many bpp we keep in the texture
+        #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
+        if self._has_alpha:
+            self.texture_pixel_format = GL_RGBA
+        else:
+            self.texture_pixel_format = GL_RGB
+        #this is the pixel format we are currently updating the fbo with
+        #can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
+        self.pixel_format = None
         self._backing.show()
         self._backing.connect("expose_event", self.gl_expose_event)
         self.textures = None # OpenGL texture IDs
         self.shaders = None
-        self.pixel_format = None
         self.size = 0, 0
         self.texture_size = 0, 0
         self.gl_setup = False
@@ -254,7 +277,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -418,28 +441,24 @@ class GLPixmapBacking(GTK2WindowBacking):
 
             rgb_format = options.get("rgb_format", None)
             self.gl_marker("%s %sbpp update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (rgb_format, bpp, x, y, width, height, rowstride, row_length, alignment))
-            # Upload data as temporary RGB texture
+            #Older clients may not tell us the pixel format, so we must infer it:
             if bpp==24:
-                if rgb_format=="BGR":
-                    pformat = GL_BGR
-                else:
-                    assert rgb_format in ("RGB", None), "invalid 24-bit format: %s" % rgb_format
-                    pformat = GL_RGB
+                default_format = "RGB"
             else:
                 assert bpp==32
-                if rgb_format=="BGRA":
-                    pformat = GL_BGRA
-                else:
-                    assert rgb_format in ("RGBA", None), "invalid 32-bit format: %s" % rgb_format
-                    pformat = GL_RGBA
+                default_format = "RGBA"
+            #convert it to a GL constant:
+            pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format or default_format)
+            assert pformat is not None
 
+            # Upload data as temporary RGB texture
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
             glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
 
             # Draw textured RGB quad at the right coordinates
             glBegin(GL_QUADS)
