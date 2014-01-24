@@ -705,6 +705,9 @@ class UIXpraClient(XpraClientBase):
             "encodings.core"            : self.get_core_encodings(),
             "encodings.rgb_formats"     : ["RGB", "RGBA"],
             })
+        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+            #win32 and osx cannot handle transparency, so don't bother with RGBA
+            capabilities["encodings.rgb_formats"] = ["RGB", ]
         control_commands = ["show_session_info", "enable_bencode", "enable_zlib"]
         from xpra.net.protocol import use_bencode, use_rencode
         if use_lz4:
