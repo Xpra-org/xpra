@@ -252,7 +252,6 @@ cdef class XImageWrapper:
                 self.pixel_format = BGRA
         else:
             raise Exception("invalid image depth: %s bpp" % self.depth)
-        assert self.pixel_format in RGB_FORMATS
 
     def __str__(self):
         return "XImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
