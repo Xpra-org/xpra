@@ -154,7 +154,7 @@ cdef class ColorspaceConverter:
         self.frames = 0
 
 
-    def get_info(self):
+    def get_info(self):                     #@DuplicatedSignature
         info = {
                 "frames"    : self.frames,
                 "src_width" : self.src_width,
@@ -216,7 +216,9 @@ cdef class ColorspaceConverter:
         cdef unsigned short Rsum
         cdef unsigned short Gsum
         cdef unsigned short Bsum
-        cdef unsigned char *Y, *U, *V
+        cdef unsigned char *Y
+        cdef unsigned char *U
+        cdef unsigned char *V
 
         start = time.time()
         iplanes = image.get_planes()
