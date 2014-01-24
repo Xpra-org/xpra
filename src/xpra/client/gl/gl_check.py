@@ -45,7 +45,7 @@ def get_DISPLAY_MODE():
 def get_MODE_names(mode):
     import gtk.gdkgl
     friendly_mode_names = {gtk.gdkgl.MODE_RGB       : "RGB",
-                           gtk.gdkgl.MODE_RGB       : "RGBA",
+                           gtk.gdkgl.MODE_RGBA      : "RGBA",
                            gtk.gdkgl.MODE_ALPHA     : "ALPHA",
                            gtk.gdkgl.MODE_DEPTH     : "DEPTH",
                            gtk.gdkgl.MODE_DOUBLE    : "DOUBLE",
