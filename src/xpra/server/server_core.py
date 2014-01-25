@@ -400,7 +400,8 @@ class ServerCore(object):
 
         proto.chunked_compression = c.boolget("chunked_compression")
         if proto.chunked_compression:
-            proto.set_compression_level(c.intget("compression_level", self.compression_level))
+            self.compression_level = c.intget("compression_level", self.compression_level)
+            proto.set_compression_level(self.compression_level)
         if use_rencode and c.boolget("rencode"):
             proto.enable_rencode()
         else:

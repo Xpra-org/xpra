@@ -178,6 +178,7 @@ class ServerSource(object):
                  get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap,
+                 compression_level,
                  core_encodings, encodings, default_encoding,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
@@ -187,6 +188,7 @@ class ServerSource(object):
                  get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap,
+                 compression_level,
                  core_encodings, encodings, default_encoding,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
@@ -202,6 +204,7 @@ class ServerSource(object):
         self.get_transient_for = get_transient_for
         self.get_focus = get_focus
         self.get_window_id = get_window_id
+        self.compression_level = compression_level
         # mmap:
         self.supports_mmap = supports_mmap
         self.mmap = None
@@ -1391,6 +1394,7 @@ class ServerSource(object):
                               self.queue_damage, self.queue_packet,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
+                              self.compression_level,
                               self.server_core_encodings, self.server_encodings,
                               self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
                               self.default_encoding_options,

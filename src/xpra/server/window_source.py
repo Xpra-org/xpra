@@ -73,6 +73,7 @@ class WindowSource(object):
     def __init__(self, idle_add, timeout_add, source_remove,
                     queue_damage, queue_packet, statistics,
                     wid, window, batch_config, auto_refresh_delay,
+                    compression_level,
                     server_core_encodings, server_encodings,
                     encoding, encodings, core_encodings, encoding_options, rgb_formats,
                     default_encoding_options,
@@ -88,6 +89,7 @@ class WindowSource(object):
         self.global_statistics = statistics             #shared/global statistics from ServerSource
         self.statistics = WindowPerformanceStatistics()
 
+        self.compression_level = compression_level
         self.server_core_encodings = server_core_encodings
         self.server_encodings = server_encodings
         self.encoding = encoding                        #the current encoding
@@ -209,6 +211,7 @@ class WindowSource(object):
         self.supports_transparency = HAS_ALPHA and properties.get("encoding.transparency", self.supports_transparency)
         self.encodings = properties.get("encodings", self.encodings)
         self.core_encodings = properties.get("encodings.core", self.core_encodings)
+        self.compression_level = properties.get("encodings.compression_level", self.compression_level)
         #unless the client tells us it does support alpha, assume it does not:
         self.rgb_formats = properties.get("encodings.rgb_formats", [x for x in self.rgb_formats if x.find("A")<0])
         debug("set_client_properties: window rgb_formats=%s", self.rgb_formats)
@@ -994,35 +997,38 @@ class WindowSource(object):
         #compress here and return a wrapper so network code knows it is already zlib compressed:
         pixels = image.get_pixels()
 
-        level = 0
-        if self.rgb_zlib or self.rgb_lz4:
-            if len(pixels)<1024:
-                min_level = 0
-            else:
-                min_level = 1
-            level = max(min_level, min(5, int(110-self.get_current_speed())/20))
+        #compression
         #by default, wire=raw:
         raw_data = str(pixels)
         wire_data = raw_data
+        level = 0
         algo = "not"
-        if level>0:
-            lz4 = use_lz4 and self.rgb_lz4 and level<=3
-            wire_data = compressed_wrapper(coding, pixels, level=level, lz4=lz4)
-            raw_data = wire_data.data
-            #debug("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
-            #         coding, pixel_format, len(pixels), len(raw_data), int(100.0*len(raw_data)/len(pixels)), self.rgb_lz4)
-            if len(raw_data)>=(len(pixels)-32):
-                #compressed is actually bigger! (use uncompressed)
-                level = 0
-                wire_data = str(pixels)
-                raw_data = wire_data
-            else:
-                if lz4:
-                    options["lz4"] = True
-                    algo = "lz4"
+        #check the global compression level, and skip compression when set to 0
+        if self.compression_level>0:
+            if self.rgb_zlib or self.rgb_lz4:
+                if len(pixels)<1024:
+                    min_level = 0
                 else:
-                    options["zlib"] = level
-                    algo = "zlib"
+                    min_level = 1
+                level = max(min_level, min(5, int(110-self.get_current_speed())/20))
+            if level>0:
+                lz4 = use_lz4 and self.rgb_lz4 and level<=3
+                wire_data = compressed_wrapper(coding, pixels, level=level, lz4=lz4)
+                raw_data = wire_data.data
+                #debug("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
+                #         coding, pixel_format, len(pixels), len(raw_data), int(100.0*len(raw_data)/len(pixels)), self.rgb_lz4)
+                if len(raw_data)>=(len(pixels)-32):
+                    #compressed is actually bigger! (use uncompressed)
+                    level = 0
+                    wire_data = str(pixels)
+                    raw_data = wire_data
+                else:
+                    if lz4:
+                        options["lz4"] = True
+                        algo = "lz4"
+                    else:
+                        options["zlib"] = level
+                        algo = "zlib"
         if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
             bpp = 32
         else:

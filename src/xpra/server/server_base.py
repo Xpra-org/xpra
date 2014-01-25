@@ -486,6 +486,7 @@ class ServerBase(ServerCore):
                           self.get_transient_for, self.get_focus,
                           get_window_id,
                           self.supports_mmap,
+                          self.compression_level,
                           self.core_encodings, self.encodings, self.default_encoding,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
