@@ -34,6 +34,9 @@ class RootWindowModel(object):
     def uses_XShm(self):
         return False
 
+    def is_shadow(self):
+        return True
+
     def acknowledge_changes(self):
         pass
 

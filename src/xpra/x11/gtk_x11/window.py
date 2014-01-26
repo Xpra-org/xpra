@@ -348,6 +348,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def is_managed(self):
         return self._managed
 
+    def is_shadow(self):
+        return False
+
+
     def _forward_contents_changed(self, obj, event):
         if self._managed:
             self.emit("client-contents-changed", event)

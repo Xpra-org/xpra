@@ -123,6 +123,9 @@ class WindowSource(object):
         self.refresh_timer = None
         self.timeout_timer = None
         self.expire_timer = None
+        self.max_delta_size = MAX_DELTA_SIZE
+        if window.is_shadow():
+            self.max_delta_size = -1
 
         self.is_OR = window.is_OR()
         self.window_dimensions = 0, 0
@@ -880,7 +883,7 @@ class WindowSource(object):
         #if client supports delta pre-compression for this encoding, use it if we can:
         delta = -1
         store = -1
-        if DELTA and coding in self.supports_delta and image.get_size()<MAX_DELTA_SIZE:
+        if DELTA and coding in self.supports_delta and self.max_delta_size>=0 and image.get_size()<self.max_delta_size:
             #we need to copy the pixels because some delta encodings
             #will modify the pixel array in-place!
             dpixels = image.get_pixels()[:]
