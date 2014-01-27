@@ -104,8 +104,10 @@ if sys.version_info[0]<3:
 
 
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
+
+READ_BUFFER_SIZE = int(os.environ.get("XPRA_READ_BUFFER_SIZE", 65536))
 #merge header and packet if packet is smaller than:
-PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 32768))
+PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE))
 LARGE_PACKET_SIZE = 4096
 #inline compressed data in packet if smaller than:
 INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 2048))
@@ -653,7 +655,7 @@ class Protocol(object):
     def _read_thread_loop(self):
         self._io_thread_loop("read", self._read)
     def _read(self):
-        buf = self._conn.read(8192)
+        buf = self._conn.read(READ_BUFFER_SIZE)
         #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
         self._read_queue.put(buf)
         if not buf:
