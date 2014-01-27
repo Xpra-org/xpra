@@ -80,7 +80,7 @@ GLX_TESTS = [GLX_SPHERES, GLX_GEARS]
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
 XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
 FAKE_CONSOLE_USER_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "PYTHONPATH=`pwd` ./tests/xpra/simulate_console_user.py"]
-GTKPERF_TEST = "while true; do gtkperf -a; done"
+GTKPERF_TEST = "bash -c 'while true; do gtkperf -a; done'"
 X11_TESTS = [X11_PERF, FAKE_CONSOLE_USER_TEST, GTKPERF_TEST]
 X11_TESTS = [X11_PERF, XTERM_TEST, FAKE_CONSOLE_USER_TEST, GTKPERF_TEST]
 
@@ -533,9 +533,9 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     #start the test command:
                     if USE_VIRTUALGL:
                         if type(test_command)==str:
-                            cmd = VGLRUN_BIN + " "+ test_command
+                            cmd = VGLRUN_BIN + " -- "+ test_command
                         elif type(test_command) in (list, tuple):
-                            cmd = [VGLRUN_BIN] + list(test_command)
+                            cmd = [VGLRUN_BIN, "--"] + list(test_command)
                         else:
                             raise Exception("invalid test command type: %s for %s" % (type(test_command), test_command))
                     else:
