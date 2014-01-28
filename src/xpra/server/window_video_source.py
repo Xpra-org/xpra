@@ -9,7 +9,7 @@ import time
 from threading import Lock
 
 from xpra.net.protocol import Compressed
-from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException
+from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException, codec_spec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.window_source import WindowSource, log
 from xpra.server.background_worker import add_work_item
@@ -91,6 +91,27 @@ class WindowVideoSource(WindowSource):
         self.last_pipeline_params = None
         self.last_pipeline_scores = []
         WindowVideoSource._video_helper.may_init()
+        self.video_helper = WindowVideoSource._video_helper.clone()
+        if self.encoding_options.get("proxy.video", False):
+            #enabling video proxy:
+            try:
+                self.parse_proxy_video()
+            except:
+                log.error("failed to parse proxy video", exc_info=True)
+
+    def parse_proxy_video(self):
+        from xpra.codecs.enc_proxy.encoder import Encoder
+        for encoding, colorspace_specs in self.encoding_options.get("proxy.video.encodings").items():
+            #ensure we do register it as a video format:
+            self._encoders[encoding] = self.video_encode
+            for colorspace, spec_props in colorspace_specs.items():
+                for spec_prop in spec_props:
+                    #make a new spec based on spec_props:
+                    spec = codec_spec(Encoder)
+                    for k,v in spec_prop.items():
+                        setattr(spec, k, v)
+                    debug("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
+                    self.video_helper.add_encoder_spec(encoding, colorspace, spec)
 
     def add_stats(self, info, suffix=""):
         WindowSource.add_stats(self, info, suffix)
@@ -323,7 +344,7 @@ class WindowVideoSource(WindowSource):
             Each solution is rated and we return all of them in descending
             score (best solution comes first).
         """
-        encoder_specs = WindowVideoSource._video_helper.get_encoder_specs(encoding)
+        encoder_specs = self.video_helper.get_encoder_specs(encoding)
         assert len(encoder_specs)>0, "no encoders found for '%s'" % encoding
         scores = []
         debug("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self.get_min_speed(), int(self.get_current_quality()), self.get_min_quality())
@@ -350,7 +371,7 @@ class WindowVideoSource(WindowSource):
         if src_format in self.csc_modes and (not FORCE_CSC or src_format==FORCE_CSC_MODE):
             add_scores("direct (no csc)", None, src_format)
         #now add those that require a csc step:
-        csc_specs = WindowVideoSource._video_helper.get_csc_specs(src_format)
+        csc_specs = self.video_helper.get_csc_specs(src_format)
         if csc_specs:
             #debug("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
             #we have csc module(s) that can get us from pixel_format to out_csc:
@@ -454,6 +475,7 @@ class WindowVideoSource(WindowSource):
                 ecsc_score = max(0, 80 - csc_spec.setup_cost*80.0/100.0)
             else:
                 ecsc_score = 80
+            ecsc_score += csc_spec.score_boost
             runtime_score *= csc_spec.get_runtime_factor()
             enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, scaling)
             encoder_scaling = (1, 1)
@@ -471,6 +493,7 @@ class WindowVideoSource(WindowSource):
            self._video_encoder.get_width()!=enc_width or self._video_encoder.get_height()!=enc_height:
             #account for new encoder setup cost:
             ee_score = 100 - encoder_spec.setup_cost
+            ee_score += encoder_spec.score_boost
         #edge resistance score: average of csc and encoder score:
         er_score = (ecsc_score + ee_score) / 2.0
         score = int((qscore+sscore+er_score)*runtime_score/100.0/3.0)

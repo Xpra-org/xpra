@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,14 +17,20 @@ singleton = None
 class VideoHelper(object):
 
     def __init__(self):
-        global singleton
-        assert singleton is None
         self._video_encoder_specs = {}
         self._csc_encoder_specs = {}
         #bits needed to ensure we can initialize just once
         #even when called from multiple threads:
         self._initialized = False
         self._lock = Lock()
+
+    def clone(self):
+        assert self._initialized
+        clone = VideoHelper()
+        clone._video_encoder_specs = self._video_encoder_specs.copy()
+        clone._csc_encoder_specs = self._csc_encoder_specs.copy()
+        clone._initialized = True
+        return clone
 
     def get_info(self):
         d = {}
@@ -51,6 +57,9 @@ class VideoHelper(object):
             self._initialized = True
         finally:
             self._lock.release()
+
+    def get_encodings(self):
+        return self._video_encoder_specs.keys()
 
     def get_encoder_specs(self, encoding):
         return self._video_encoder_specs.get(encoding, [])
@@ -93,10 +102,13 @@ class VideoHelper(object):
         encodings = encoder_module.get_encodings()
         debug("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
         for encoding in encodings:
-            encoder_specs = self._video_encoder_specs.setdefault(encoding, {})
             for colorspace in colorspaces:
                 spec = encoder_module.get_spec(encoding, colorspace)
-                encoder_specs.setdefault(colorspace, []).append(spec)
+                self.add_encoder_spec(encoding, colorspace, spec)
+
+    def add_encoder_spec(self, encoding, colorspace, spec):
+        self._video_encoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec)
+
 
     def init_csc_options(self):
         try:
@@ -137,13 +149,16 @@ class VideoHelper(object):
             return
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
-            csc_specs = self._csc_encoder_specs.setdefault(in_csc, [])
             out_cscs = csc_module.get_output_colorspaces(in_csc)
             debug("init_csc_option(..) %s.get_output_colorspaces(%s)=%s", csc_module.get_type(), in_csc, out_cscs)
             for out_csc in out_cscs:
                 spec = csc_module.get_spec(in_csc, out_csc)
-                item = out_csc, spec
-                csc_specs.append(item)
+                self.add_csc_spec(in_csc, out_csc, spec)
+
+    def add_csc_spec(self, in_csc, out_csc, spec):
+        item = out_csc, spec
+        self._csc_encoder_specs.setdefault(in_csc, []).append(item)
+
 
 singleton = VideoHelper()
 def getVideoHelper():
