@@ -49,7 +49,7 @@ class XpraProxy(object):
         try:
             while not self._closed:
                 debug("%s: waiting for data", log_name)
-                buf = untilConcludes(self.is_active, from_conn.read, 4096)
+                buf = untilConcludes(self.is_active, from_conn.read, 65536)
                 if not buf:
                     debug("%s: connection lost", log_name)
                     self.quit()
