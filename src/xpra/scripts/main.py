@@ -129,7 +129,7 @@ def parse_cmdline(cmdline):
                           help="Don't daemonize when running as a server")
         group.add_option("--log-file", action="store",
                       dest="log_file", default=defaults.log_file,
-                      help="When daemonizing, this is where the log messages will go (default: %s)."
+                      help="When daemonizing, this is where the log messages will go (default: %default)."
                       + " If a relative filename is specified the it is relative to --socket-dir,"
                       + " the value of '$DISPLAY' will be substituted with the actual display used"
                       )
@@ -291,11 +291,11 @@ When unspecified, all the available codecs are allowed and the first one is used
                       help="The name of this session, which may be used in notifications, menus, etc. Default: Xpra")
     group.add_option("--client-toolkit", action="store",
                       dest="client_toolkit", default=defaults.client_toolkit,
-                      help="The type of client toolkit. Use the value 'help' to get a list of options. Default: %s")
+                      help="The type of client toolkit. Use the value 'help' to get a list of options. Default: %default")
     group.add_option("--window-layout", action="store",
                       dest="window_layout", default=defaults.window_layout,
                       help="The type of window layout to use, each client toolkit may provide different layouts."
-                        "use the value 'help' to get a list of possible layouts. Default: %s")
+                        "use the value 'help' to get a list of possible layouts. Default: %default")
     group.add_option("--title", action="store",
                       dest="title", default=defaults.title,
                       help="Text which is shown as window title, may use remote metadata variables (default: '%default')")
