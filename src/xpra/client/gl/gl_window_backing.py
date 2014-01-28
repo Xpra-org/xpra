@@ -53,7 +53,9 @@ PIXEL_FORMAT_TO_CONSTANT = {
                        "BGR"    : GL_BGR,
                        "RGB"    : GL_RGB,
                        "BGRA"   : GL_BGRA,
+                       "BGRX"   : GL_BGRA,
                        "RGBA"   : GL_RGBA,
+                       "RGBX"   : GL_RGBA,
                        }
 CONSTANT_TO_PIXEL_FORMAT = {
                        GL_BGR   : "BGR",
@@ -448,7 +450,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                 default_format = "RGBA"
             #convert it to a GL constant:
             pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format or default_format)
-            assert pformat is not None
+            assert pformat is not None, "could not find pixel format for %s or %s (bpp=%s)" % (rgb_format, default_format, bpp)
 
             # Upload data as temporary RGB texture
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
