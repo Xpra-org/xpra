@@ -53,6 +53,7 @@ clipboard_ENABLED = True
 Xdummy_ENABLED = None           #none means auto-detect
 sound_ENABLED = True
 
+enc_proxy_ENABLED = True
 enc_x264_ENABLED = True
 x264_static_ENABLED = False
 vpx_ENABLED = True
@@ -1044,6 +1045,7 @@ if cymaths_ENABLED:
 
 toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
 toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
+toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 if nvenc_ENABLED:
