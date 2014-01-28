@@ -10,6 +10,7 @@ import signal
 import gobject
 gobject.threads_init()
 from threading import Timer
+from multiprocessing import Process, Queue as MQueue
 
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -30,15 +31,6 @@ from xpra.scripts.config import parse_number, parse_bool
 PROXY_SOCKET_TIMEOUT = float(os.environ.get("XPRA_PROXY_SOCKET_TIMEOUT", "0.1"))
 assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
 PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
-USE_THREADING = os.environ.get("XPRA_USE_THREADING", "0")=="1"
-if USE_THREADING:
-    #use threads
-    from threading import Thread as Process     #@UnusedImport
-    MQueue = Queue
-else:
-    #use processes:
-    from multiprocessing import Process         #@Reimport
-    from multiprocessing import Queue as MQueue #@Reimport
 
 
 #for testing only: passthrough as RGB:
@@ -320,10 +312,9 @@ class ProxyProcess(Process):
 
         log.info("new proxy started for client %s and server %s", self.client_conn, self.server_conn)
 
-        if not USE_THREADING:
-            signal.signal(signal.SIGTERM, self.signal_quit)
-            signal.signal(signal.SIGINT, self.signal_quit)
-            debug("registered signal handler %s", self.signal_quit)
+        signal.signal(signal.SIGTERM, self.signal_quit)
+        signal.signal(signal.SIGINT, self.signal_quit)
+        debug("registered signal handler %s", self.signal_quit)
 
         make_daemon_thread(self.server_message_queue, "server message queue").start()
 
