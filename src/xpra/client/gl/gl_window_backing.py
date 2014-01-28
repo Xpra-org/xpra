@@ -53,7 +53,6 @@ PIXEL_FORMAT_TO_CONSTANT = {
                        "BGR"    : GL_BGR,
                        "RGB"    : GL_RGB,
                        "BGRA"   : GL_BGRA,
-                       "BGRA"   : GL_BGRA,
                        "RGBA"   : GL_RGBA,
                        }
 CONSTANT_TO_PIXEL_FORMAT = {
@@ -436,7 +435,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             # If number of extra bytes is greater than the alignment value,
             # then we also have to set row_length
             # Otherwise it remains at 0 (= width implicitely)
-            if (rowstride - width * bytes_per_pixel) > a:
+            if (rowstride - width * bytes_per_pixel) >= alignment:
                 row_length = width + (rowstride - width * bytes_per_pixel) / bytes_per_pixel
 
             rgb_format = options.get("rgb_format", None)
