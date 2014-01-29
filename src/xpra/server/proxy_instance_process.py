@@ -291,9 +291,12 @@ class ProxyInstanceProcess(Process):
             packet = ("hello", caps)
         elif packet_type=="info-response":
             #adds proxy info:
+            #note: this is only seen by the client application
+            #"xpra info" is a new connection, which talks to the proxy server...
             info = packet[1]
             info.update(get_server_info("proxy."))
             info.update(get_thread_info("proxy.", proto))
+            info.update(self.get_encoder_info())
         elif packet_type=="lost-window":
             wid = packet[1]
             ve = self.video_encoders.get(wid)
@@ -384,6 +387,17 @@ class ProxyInstanceProcess(Process):
                 if etype==spec.codec_type:
                     return spec
         raise Exception("no encoder found for encoding %s and rgb format %s" % (encoding, rgb_format))
+
+    def get_encoder_info(self):
+        info = {}
+        for wid, encoder in list(self.video_encoders.items()):
+            ipath = "window[%s].proxy.encoder" % wid
+            info[ipath] = encoder.get_type()
+            vi = encoder.get_info()
+            for k,v in vi.items():
+                info[ipath+k] = v
+        return info
+
 
     def process_client_packet(self, proto, packet):
         packet_type = packet[0]
