@@ -97,6 +97,14 @@ class codec_spec(object):
 
     def info(self):
         try:
-            return "%s.%s" % ((self.codec_type.__module__ or self.codec_class), self.codec_class.__name__)
+            s = str(self.codec_class)
+            #regexp it?
+            p = s.find("xpra.codecs.")
+            if p>=0:
+                s = s[p+len("xpra.codecs."):]
+            p = s.find(".encoder.Encoder")
+            if p>0:
+                s = s[:p]
+            return "%s:%s" % (self.codec_type, s)
         except:
             return "%s" % (self.codec_type or self.codec_class)
