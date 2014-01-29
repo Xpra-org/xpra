@@ -242,6 +242,15 @@ class WindowVideoSource(WindowSource):
 
         #calculate the threshold for using video vs small regions:
         max_nvp = MAX_NONVIDEO_PIXELS
+        if pixel_count<=max_nvp:
+            #small window!
+            return switch_to_lossless("small window: %sx%s" % (ww, wh))
+
+        s = self.get_current_speed()
+        if s>75:
+            #if speed is high, assume we have bandwidth to spare
+            #and prefer non-video:
+            max_nvp *= (1.0+(s-75.0)/5.0)
         if is_OR:
             #OR windows tend to be static:
             max_nvp *= 4
