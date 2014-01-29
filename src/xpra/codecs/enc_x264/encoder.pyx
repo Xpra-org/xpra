@@ -449,7 +449,7 @@ cdef class Encoder:
     def set_encoding_quality(self, int pct):
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
         assert self.context!=NULL, "context is closed!"
-        if int(self.quality/2) == int(pct/2):
+        if abs(self.quality - pct)<=4 and pct!=100:
             #not enough of a change to bother
             return
         cdef x264_param_t param                  #@DuplicatedSignature
