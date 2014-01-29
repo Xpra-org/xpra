@@ -49,6 +49,10 @@ class ProxyServer(ServerCore):
         self.timeout_add = gobject.timeout_add
         self.source_remove = gobject.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
+        #ensure we cache the platform info before intercepting SIGCHLD
+        #as this will cause a fork and SIGCHLD to be emitted: 
+        from xpra.version_util import get_platform_info
+        get_platform_info()
         signal.signal(signal.SIGCHLD, self.sigchld)
 
     def init(self, opts):
