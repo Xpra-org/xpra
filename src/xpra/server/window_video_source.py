@@ -25,7 +25,6 @@ def envint(name, d):
         return d
 
 MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
-MAX_NONVIDEO_OR_INITIAL_PIXELS = envint("XPRA_MAX_NONVIDEO_OR_INITIAL_PIXELS", 1024*64)
 
 ENCODER_TYPE = os.environ.get("XPRA_ENCODER_TYPE", "")  #ie: "x264" or "nvenc"
 CSC_TYPE = os.environ.get("XPRA_CSC_TYPE", "")          #ie: "swscale" or "opencl"
@@ -241,34 +240,28 @@ class WindowVideoSource(WindowSource):
             debug("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
             return  coding
 
-        max_nvoip = MAX_NONVIDEO_OR_INITIAL_PIXELS
+        #calculate the threshold for using video vs small regions:
         max_nvp = MAX_NONVIDEO_PIXELS
-        if self._sequence<=5 and is_OR and pixel_count<max_nvoip:
-            #first 5 frames of a small-ish OR window, those are generally short lived
-            #so delay using a video encoder
-            return switch_to_lossless("frame number %s of a small OR window" % self._sequence)
-        #when we have bandwidth to spare, allow more lossless pixels:
+        if is_OR:
+            #OR windows tend to be static:
+            max_nvp *= 4
+        if self._sequence<=5:
+            #discount the first frames, the window may be temporary:
+            max_nvp *= 10-self._sequence
         if not batching:
-            max_nvoip *= 128
-            max_nvp *= 128
-        if self._sequence==1 and is_OR and pixel_count<max_nvoip:
-            #first frame of an OR window, those are generally short lived
-            #so delay using a video encoder until the next frame:
-            return switch_to_lossless("first frame of a small OR window")
+            #if we're not batching, allow more pixels:
+            max_nvp *= 4
+
+        if pixel_count<=max_nvp:
+            #below threshold
+            return switch_to_lossless("frame number %s: %s pixels (threshold=%s)" % (self._sequence, pixel_count, max_nvp))
+
         #ensure the dimensions we use for decision making are the ones actually used:
         ww = ww & self.width_mask
         wh = wh & self.height_mask
         if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
+            #failsafe:
             return switch_to_lossless("window dimensions are unsuitable for this encoder/csc")
-        if pixel_count<ww*wh*0.01:
-            #less than one percent of total area
-            return switch_to_lossless("few pixels (%.2f%% of window)" % (100.0*pixel_count/ww/wh))
-        if pixel_count>max_nvp:
-            #too many pixels, use current video encoder
-            return self.get_core_encoding(has_alpha, current_encoding)
-        if pixel_count<0.5*ww*wh and not batching:
-            #less than 50% of the full window and we're not batching
-            return switch_to_lossless("%i%% of image, not batching" % (100.0*pixel_count/ww/wh))
         return self.get_core_encoding(has_alpha, current_encoding)
 
 
