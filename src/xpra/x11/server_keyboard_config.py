@@ -210,13 +210,6 @@ class KeyboardConfig(object):
             debug("keyname_for_mod=%s", self.keynames_for_mod)
         except:
             log.error("error setting xmodmap", exc_info=True)
-        if (client_platform and client_platform.startswith("win")) and not self.is_native_keymap:
-            self.modifiers_filter = ["lock"]
-            num_mods = [mod for mod,keynames in self.keynames_for_mod.items() if "Num_Lock" in keynames]
-            if len(num_mods)==1:
-                self.modifiers_filter.append(num_mods[0])
-            else:
-                log.warn("found more than one modifier for 'Num_Lock': %s", num_mods)
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         """
@@ -257,13 +250,8 @@ class KeyboardConfig(object):
                     return True
             return False
 
-        def filter_modifiers(mods):
-            if len(self.modifiers_filter)==0:
-                return mods
-            return [x for x in mods if x in self.modifiers_filter]
-
-        current = set(filter_modifiers(get_current_mask()))
-        wanted = set(filter_modifiers(modifier_list))
+        current = set(get_current_mask())
+        wanted = set(modifier_list)
         if current==wanted:
             return
         debug("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
