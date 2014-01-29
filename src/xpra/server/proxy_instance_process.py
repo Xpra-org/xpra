@@ -372,7 +372,7 @@ class ProxyInstanceProcess(Process):
         data, client_options = ve.compress_image(image, encoder_options)
         #update packet:
         packet[7] = Compressed(encoding, data)
-        packet[10]
+        packet[10] = client_options
         debug("returning %s bytes from %s", len(data), len(pixels))
 
     def _find_video_encoder(self, encoding, rgb_format):
