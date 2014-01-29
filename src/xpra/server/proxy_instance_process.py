@@ -369,6 +369,11 @@ class ProxyInstanceProcess(Process):
             ve = spec.codec_class()
             ve.init_context(width, height, rgb_format, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
+        else:
+            if quality>=0:
+                ve.set_encoding_quality(quality)
+            if speed>=0:
+                ve.set_encoding_speed(speed)
         #actual video compression:
         debug("proxy compression using %s", ve)
         image = ImageWrapper(0, 0, width, height, pixels, rgb_format, depth, rowstride, planes=ImageWrapper.PACKED)
