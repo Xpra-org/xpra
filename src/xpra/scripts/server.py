@@ -512,7 +512,11 @@ def verify_display_ready(xvfb, display_name, shadowing):
     # Now we can safely load gtk and connect:
     assert "gtk" not in sys.modules
     import gtk.gdk          #@Reimport
-    glib.threads_init()
+    try:
+        glib.threads_init()
+    except:
+        #old versions do not have this method
+        pass
     display = gtk.gdk.Display(display_name)
     manager = gtk.gdk.display_manager_get()
     default_display = manager.get_default_display()
