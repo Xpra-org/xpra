@@ -50,8 +50,6 @@ class WindowVideoSource(WindowSource):
         A WindowSource that handles video codecs.
     """
 
-    _video_helper = getVideoHelper()
-
     def __init__(self, *args):
         WindowSource.__init__(self, *args)
         #client uses uses_swscale (has extra limits on sizes)
@@ -89,9 +87,11 @@ class WindowVideoSource(WindowSource):
 
         self.last_pipeline_params = None
         self.last_pipeline_scores = []
-        WindowVideoSource._video_helper.may_init()
-        self.video_helper = WindowVideoSource._video_helper.clone()
+        self.video_helper = getVideoHelper()
         if self.encoding_options.get("proxy.video", False):
+            #if we "proxy video", we will modify the video helper to add
+            #new encoders, so we must make a deep copy to preserve the original:
+            self.video_helper = getVideoHelper().clone(deep=True)
             #enabling video proxy:
             try:
                 self.parse_proxy_video()

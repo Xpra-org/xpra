@@ -164,7 +164,7 @@ class ProxyInstanceProcess(Process):
             #pass list of encoding specs to client:
             from xpra.codecs.video_helper import getVideoHelper
             self.video_helper = getVideoHelper()
-            self.video_helper.may_init()
+            self.video_helper.init()
             #serialize encodings defs into a dict:
             encoding_defs = {}
             e_found = []

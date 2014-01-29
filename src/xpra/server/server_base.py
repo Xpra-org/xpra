@@ -126,7 +126,7 @@ class ServerBase(ServerCore):
     def threaded_init(self):
         log("threaded_init() start")
         #try to load video encoders in advance as this can take some time:
-        getVideoHelper().may_init()
+        getVideoHelper().init()
         log("threaded_init() end")
 
     def init_encodings(self):

@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import copy
 from threading import Lock
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -11,26 +12,30 @@ debug = debug_if_env(log, "XPRA_VIDEOPIPELINE_DEBUG")
 
 from xpra.codecs.loader import get_codec
 
-singleton = None
+instance = None
 
 
 class VideoHelper(object):
 
-    def __init__(self):
-        self._video_encoder_specs = {}
-        self._csc_encoder_specs = {}
+    def __init__(self, vspecs={}, cscspecs={}, init=False):
+        self._video_encoder_specs = vspecs
+        self._csc_encoder_specs = cscspecs
         #bits needed to ensure we can initialize just once
         #even when called from multiple threads:
-        self._initialized = False
+        self._initialized = init
         self._lock = Lock()
 
-    def clone(self):
-        assert self._initialized
-        clone = VideoHelper()
-        clone._video_encoder_specs = self._video_encoder_specs.copy()
-        clone._csc_encoder_specs = self._csc_encoder_specs.copy()
-        clone._initialized = True
-        return clone
+    def clone(self, deep=False):
+        if not self._initialized:
+            self.init()
+        if deep:
+            ves = copy.deepcopy(self._video_encoder_specs)
+            ces = copy.deepcopy(self._csc_encoder_specs)
+        else:
+            ves = self._video_encoder_specs.copy()
+            ces = self._csc_encoder_specs.copy()
+        #make a deep copy:
+        return VideoHelper(ves, ces, True)
 
     def get_info(self):
         d = {}
@@ -43,10 +48,7 @@ class VideoHelper(object):
                     d.setdefault("encoding."+in_csc+"_to_"+encoding, []).append(spec.codec_type)
         return d
 
-    def may_init(self):
-        #check without lock (usual fast path):
-        if self._initialized:
-            return
+    def init(self):
         try:
             self._lock.acquire()
             #check again with lock held (in case of race):
@@ -160,7 +162,7 @@ class VideoHelper(object):
         self._csc_encoder_specs.setdefault(in_csc, []).append(item)
 
 
-singleton = VideoHelper()
+instance = VideoHelper()
 def getVideoHelper():
-    global singleton
-    return singleton
+    global instance
+    return instance
