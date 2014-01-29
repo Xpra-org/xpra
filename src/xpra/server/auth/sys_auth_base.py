@@ -28,11 +28,13 @@ class SysAuthenticator(object):
             self.pw = None
 
     def get_uid(self):
-        assert self.pw, "username not found"
+        if self.pw is None:
+            raise Exception("username %s not found" % self.username)
         return self.pw.pw_uid
 
     def get_gid(self):
-        assert self.pw, "username not found"
+        if self.pw is None:
+            raise Exception("username %s not found" % self.username)
         return self.pw.pw_gid
 
     def get_challenge(self):
