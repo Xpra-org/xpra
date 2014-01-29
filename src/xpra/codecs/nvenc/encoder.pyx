@@ -1324,7 +1324,7 @@ cdef class Encoder:
             debug("init_cuda() cuda_context=%s", self.cuda_context)
             self.cuda_device_info = {
                 "device.name"       : self.cuda_device.name(),
-                "device.pci_bus_id" : self.cuda_device.pci_bus_id()
+                "device.pci_bus_id" : self.cuda_device.pci_bus_id(),
                 "device.memory"     : self.cuda_device.total_memory()/1024/1024,
                 "api_version"       : self.cuda_context.get_api_version()}
         except driver.MemoryError, e:
