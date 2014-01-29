@@ -7,11 +7,11 @@
 def gtk2main():
     import pygtk
     pygtk.require('2.0')
-    import gtk
+    import gtk.gdk
     if gtk.main_level()==0:
         gtk.gdk.threads_init()
         try:
-            gtk.threads_enter()
+            gtk.gdk.threads_enter()
             gtk.main()
         finally:
-            gtk.threads_leave()
+            gtk.gdk.threads_leave()
