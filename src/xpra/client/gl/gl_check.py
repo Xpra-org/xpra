@@ -298,7 +298,11 @@ def main():
     def log_error(msg):
         log.error("ERROR: %s", msg)
     gl_check_error = log_error
-    check_support(True)
+    props = check_support(True)
+    log.info("OpenGL properties:")
+    for k,v in props.items():
+        if k!="extensions":
+            log.info("  %s : %s", str(k).ljust(24), v)
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
         sys.stdin.readline()
