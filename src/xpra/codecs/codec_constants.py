@@ -102,7 +102,9 @@ class codec_spec(object):
             p = s.find("xpra.codecs.")
             if p>=0:
                 s = s[p+len("xpra.codecs."):]
-            p = s.find(".encoder.Encoder")
+            p = s.find(".encoder.")
+            if p<0:
+                p = s.find(".colorspace_converter.")
             if p>0:
                 s = s[:p]
             return "%s:%s" % (self.codec_type, s)
