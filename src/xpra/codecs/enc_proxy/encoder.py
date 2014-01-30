@@ -58,6 +58,7 @@ class Encoder(object):
                      "height"    : self.height,
                      "speed"     : self.speed,
                      "quality"   : self.quality,
+                     "encoding"  : self.encoding,
                      "src_format": self.src_format,
                      "version"   : get_version()})
         if self.scaling!=(1,1):
@@ -114,6 +115,8 @@ class Encoder(object):
                 #redundant metadata:
                 #"width"     : image.get_width(),
                 #"height"    : image.get_height(),
+                "quality"   : options.get("quality", self.quality),
+                "speed"     : options.get("speed", self.speed),
                 "rowstride" : image.get_rowstride(),
                 "depth"     : image.get_depth(),
                 "rgb_format": image.get_pixel_format(),
@@ -134,7 +137,7 @@ class Encoder(object):
         return  pixels, client_options
 
     def set_encoding_speed(self, pct):
-        self.speed = min(100, max(0, pct))
+        self.speed = int(min(100, max(0, pct)))
 
     def set_encoding_quality(self, pct):
-        self.quality = min(100, max(0, pct))
+        self.quality = int(min(100, max(0, pct)))
