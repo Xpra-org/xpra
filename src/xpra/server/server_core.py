@@ -119,6 +119,9 @@ class ServerCore(object):
         self.compression_level = 1
         self.exit_with_client = False
 
+        #control mode:
+        self.control_commands = ["hello"]
+
         self.init_packet_handlers()
         self.init_aliases()
 
@@ -420,6 +423,11 @@ class ServerCore(object):
                 log.info("processing info request from %s", proto._conn)
                 self.send_hello_info(proto)
                 return
+            command_req = c.strlistget("command_request")
+            if len(command_req)>0:
+                #call from UI thread:
+                self.idle_add(self.handle_command_request, proto, command_req)
+                return
             #continue processing hello packet:
             try:
                 self.hello_oked(proto, packet, c, auth_caps)
@@ -531,6 +539,32 @@ class ServerCore(object):
 
     def hello_oked(self, proto, packet, c, auth_caps):
         pass
+
+
+    def control_command_response(self, proto, command, error=0, response=""):
+        log("control_command_response(%s)=%s", command, response)
+        hello = {"command_response"  : (error, response)}
+        proto.send_now(("hello", hello))
+
+    def handle_command_request(self, proto, args):
+        try:
+            assert len(args)>0
+            command = args[0]
+            if command not in self.control_commands:
+                log.warn("invalid command: %s (must be one of: %s)", command, self.control_commands)
+                return self.control_command_response(proto, command, 6, "invalid command")
+            self.do_handle_command_request(proto, command, args[1:])
+        except Exception, e:
+            log.error("error processing command %s", args, exc_info=True)
+            proto.send_now(("hello", {"command_response"  : (127, "error processing command: %s" % e)}))
+
+    def do_handle_command_request(self, proto, command, args):
+        log("handle_command_request(%s, %s, %s)", proto, command, args)
+        if command=="hello":
+            return self.control_command_response(proto, command, 0, "hello")
+        assert command=="help"
+        return self.control_command_response(proto, command, 0,
+                    "control supports: %s" % (", ".join(self.control_commands)))
 
 
     def accept_client(self, proto, c):

@@ -1362,6 +1362,13 @@ class ServerSource(object):
         elog("set_speed(%s) prev_speed=%s, default_encoding_options=%s", speed, prev_speed, self.default_encoding_options)
         self.reconfigure(force_reload=(speed>99 and prev_speed<=99) or (speed<=99 and prev_speed>99))
 
+    def full_quality_refresh(self, wid, window, damage_options):
+        if not self.can_send_window(window):
+            return
+        ws = self.window_sources.get(wid)
+        if ws:
+            ws.full_quality_refresh(window, damage_options)
+
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):
             return

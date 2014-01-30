@@ -37,7 +37,7 @@ class ProxyServer(ServerCore):
     """
 
     def __init__(self):
-        log("ProxyServer.__init__()")
+        debug("ProxyServer.__init__()")
         ServerCore.__init__(self)
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self.main_loop = None
@@ -49,6 +49,7 @@ class ProxyServer(ServerCore):
         self.timeout_add = gobject.timeout_add
         self.source_remove = gobject.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
+        self.control_commands = ["hello", "stop"]
         #ensure we cache the platform info before intercepting SIGCHLD
         #as this will cause a fork and SIGCHLD to be emitted: 
         from xpra.version_util import get_platform_info
@@ -56,7 +57,7 @@ class ProxyServer(ServerCore):
         signal.signal(signal.SIGCHLD, self.sigchld)
 
     def init(self, opts):
-        log("ProxyServer.init(%s)", opts)
+        debug("ProxyServer.init(%s)", opts)
         if not opts.auth:
             raise Exception("The proxy server requires an authentication mode")
         ServerCore.init(self, opts)
@@ -71,15 +72,35 @@ class ProxyServer(ServerCore):
         self.main_loop = gobject.MainLoop()
         self.main_loop.run()
 
+    def do_handle_command_request(self, proto, command, args):
+        if command in ("help", "hello"):
+            return ServerCore.do_handle_command_request(self, proto, command, args)
+        assert command=="stop"
+        if len(args)!=1:
+            return ServerCore.control_command_response(self, proto, command, 4, "invalid number of arguments, usage: 'xpra control stop DISPLAY'")
+        display = args[0]
+        debug("stop command: will try to find proxy process for display %s", display)
+        for process, v in list(self.processes.items()):
+            disp,mq = v
+            if disp==display:
+                pid = process.pid
+                log.info("stop command: found process %s with pid %s for display %s, sending it 'stop' request", process, pid, display)
+                mq.put("stop")
+                return self.control_command_response(proto, command, 0, "stopped proxy process with pid %s" % pid)
+        return self.control_command_response(proto, command, 14, "no proxy found for display %s" % display)
+
+
     def stop_all_proxies(self):
         processes = self.processes
         self.processes = {}
-        log("stop_all_proxies() will stop proxy processes: %s", processes)
+        debug("stop_all_proxies() will stop proxy processes: %s", processes)
         for process, v in processes.items():
+            if not process.is_alive():
+                continue
             disp,mq = v
-            log("stop_all_proxies() stopping process %s for display %s", process, disp)
+            debug("stop_all_proxies() stopping process %s for display %s", process, disp)
             mq.put("stop")
-        log("stop_all_proxies() done")
+        debug("stop_all_proxies() done")
 
     def cleanup(self):
         self.stop_all_proxies()
