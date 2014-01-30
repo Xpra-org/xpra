@@ -17,7 +17,7 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 #(other platforms should fix their packages instead)
 SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win") or sys.platform.startswith("darwin")
 
-BLACKLIST = {"vendor" : ["nouveau", "Humper", "VMWare, Inc."]}
+BLACKLIST = {"vendor" : ["nouveau", "Humper", "VMware, Inc."]}
 
 DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
