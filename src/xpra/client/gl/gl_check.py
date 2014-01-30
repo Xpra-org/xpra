@@ -295,10 +295,18 @@ def main():
     logging.root.setLevel(logging.DEBUG)
     #replace ImportError with a log message:
     global gl_check_error
+    errors = []
     def log_error(msg):
         log.error("ERROR: %s", msg)
+        errors.append(msg)
     gl_check_error = log_error
     props = check_support(True)
+    log.info("")
+    if len(errors)>0:
+        log.info("OpenGL errors:")
+        for e in errors:
+            log.info("  %s", e)
+    log.info("")
     log.info("OpenGL properties:")
     for k,v in props.items():
         if k!="extensions":
