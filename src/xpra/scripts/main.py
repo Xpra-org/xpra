@@ -138,14 +138,10 @@ def parse_cmdline(cmdline):
         hidden_options["log_file"] = defaults.log_file
         
     if (supports_server or supports_shadow):
-        group.add_option("--no-mdns", action="store_false",
-                          dest="mdns", default=True,
-                          help="Don't publish session information via mDNS")
         group.add_option("--exit-with-client", action="store_true",
                           dest="exit_with_client", default=False,
                           help="Terminate the server when the last client disconnects")
     else:
-        hidden_options["mdns"] = False
         hidden_options["exit_with_client"] = False
     if supports_server:
         group.add_option("--use-display", action="store_true",
@@ -167,6 +163,12 @@ def parse_cmdline(cmdline):
                             + " You may specify this option multiple times with different host and port combinations")
     else:
         hidden_options["bind_tcp"] = []
+    if (supports_server or supports_shadow):
+        group.add_option("--no-mdns", action="store_false",
+                          dest="mdns", default=True,
+                          help="Don't publish session information via mDNS")
+    else:
+        hidden_options["mdns"] = False
     if supports_server:
         group.add_option("--no-pulseaudio", action="store_false",
                       dest="pulseaudio", default=defaults.pulseaudio,
