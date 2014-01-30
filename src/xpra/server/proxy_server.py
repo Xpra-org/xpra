@@ -112,7 +112,12 @@ class ProxyServer(ServerCore):
         #find the target server session:
         def disconnect(msg):
             self.send_disconnect(client_proto, msg)
-        sessions = client_proto.authenticator.get_sessions()
+        try:
+            sessions = client_proto.authenticator.get_sessions()
+        except Exception, e:
+            log.error("failed to get the list of sessions: %s", e)
+            disconnect("authentication error")
+            return
         if sessions is None:
             disconnect("no sessions found")
             return
