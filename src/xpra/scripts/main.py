@@ -152,9 +152,14 @@ def parse_cmdline(cmdline):
                           default=defaults.xvfb,
                           metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
+        group.add_option("--no-fake-xinerama", action="store_false",
+                          dest="fake_xinerama",
+                          default=defaults.fake_xinerama,
+                          help="Turn off fake xinerama support (default: '%default')")
     else:
         hidden_options["use_display"] = False
         hidden_options["xvfb"] = ''
+        hidden_options["fake_xinerama"] = False
     if supports_server or supports_shadow:
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=defaults.bind_tcp,

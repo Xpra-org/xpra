@@ -533,12 +533,24 @@ def verify_display_ready(xvfb, display_name, shadowing):
         return  None
     return display
 
-def start_children(child_reaper, commands):
+def start_children(child_reaper, commands, fake_xinerama):
     assert os.name=="posix"
     from xpra.log import Logger
     log = Logger()
-    #disable ubuntu's global menu using env vars:
     env = os.environ.copy()
+    #add fake xinerama:
+    if fake_xinerama:
+        #locate the fakeXinerama lib:
+        #it would be better to rely on dlopen to find the paths
+        #but I cannot find a way of getting ctypes to tell us the path
+        #it found the library in
+        for libpath in ["/usr/lib64", "/usr/lib", "/usr/local/lib64", "/usr/local/lib"]:
+            if not os.path.exists(libpath):
+                continue
+            libfakeXinerama_so = "%s/%s" % (libpath, "libfakeXinerama.so.1")
+            if os.path.exists(libfakeXinerama_so):
+                env["LD_PRELOAD"] = libfakeXinerama_so
+    #disable ubuntu's global menu using env vars:
     env.update({
         "UBUNTU_MENUPROXY"          : "",
         "QT_X11_NO_NATIVE_MENUBAR"  : "1"})
@@ -561,10 +573,11 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         return 0
 
     assert mode in ("start", "upgrade", "shadow", "proxy")
+    starting  = mode == "start"
     upgrading = mode == "upgrade"
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
-    clobber = upgrading or opts.use_display
+    clobber   = upgrading or opts.use_display
 
     #get the display name:
     if shadowing and len(extra_args)==0:
@@ -672,6 +685,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         app = ProxyServer()
         app.init(opts)
     else:
+        assert starting or upgrading
         from xpra.x11.gtk_x11 import gdk_display_source
         assert gdk_display_source
         #(now we can access the X11 server)
@@ -730,7 +744,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             assert opts.start_child, "exit-with-children was specified but start-child is missing!"
         if opts.start_child:
             assert os.name=="posix", "start-child cannot be used on %s" % os.name
-            start_children(child_reaper, opts.start_child)
+            start_children(child_reaper, opts.start_child, (opts.fake_xinerama and not shadowing))
 
     try:
         e = app.run()
