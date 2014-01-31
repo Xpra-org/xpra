@@ -260,6 +260,9 @@ class WindowVideoSource(WindowSource):
         if not batching:
             #if we're not batching, allow more pixels:
             max_nvp *= 4
+        if self._video_encoder:
+            #if we have a video encoder already, make it more likely we'll use it:
+            max_nvp /= 2
 
         if pixel_count<=max_nvp:
             #below threshold
