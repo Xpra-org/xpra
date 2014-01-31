@@ -368,7 +368,7 @@ class WindowSource(object):
             return
         quality = self._fixed_quality
         if quality<0:
-            min_quality = self.default_encoding_options.get("min-quality", -1)
+            min_quality = self.get_min_quality()
             info, target_quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_quality)
             #make a copy to work on (and discard "info")
             ves_copy = [(event_time, speed) for event_time, _, speed in list(self._encoding_quality)]
