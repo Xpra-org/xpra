@@ -78,6 +78,7 @@ class ServerBase(ServerCore):
 
         #control mode:
         self.control_commands = ["hello", "help",
+                    "quality", "min-quality", "speed", "min-speed",
                     "compression", "encoder", "refresh",
                     "sound-output",
                     "scaling",
@@ -632,7 +633,7 @@ class ServerBase(ServerCore):
             hello = {"command_response"  : (error, response)}
             proto.send_now(("hello", hello))
         def argn_err(argn):
-            respond(4, "invalid number of arguments: %s expected" % argn)
+            respond(4, "invalid number of arguments, expected: %s" % argn)
         def arg_err(n, msg):
             respond(5, "invalid argument %s: %s" % (n, msg))
         def success():
@@ -648,6 +649,29 @@ class ServerBase(ServerCore):
                     log.info("client command '%s' not forwarded to client %s (not supported)", client_command, source)
                     return  False
                 source.send_client_command(*client_command)
+
+        def for_all_window_sources(wid_str, callback):
+            if wid_str=="*":
+                wids = list(self._id_to_window.keys())
+            else:
+                window = None
+                try:
+                    wid = int(wid_str)
+                    window = self._id_to_window[wid]
+                    wids = [wid]
+                except:
+                    pass
+                if window is None:
+                    raise Exception("cannot find window id %s" % wid_str)
+    
+            for csource in sources:
+                for wid in wids:
+                    window = self._id_to_window.get(wid)
+                    if not window:
+                        continue
+                    ws = csource.window_sources.get(wid)
+                    if ws:
+                        callback(ws, wid, window)
 
         #handle commands that either don't require a client,
         #or can work on more than one connected client:
@@ -709,39 +733,57 @@ class ServerBase(ServerCore):
                 csource.resume(True, self._id_to_window)
             return respond(0, "resumed %s clients" % len(sources))
         elif command=="refresh":
-            widwin = list(self._id_to_window.items())
+            if len(args)>0:
+                widwin = []
+                for x in args:
+                    try:
+                        wid = int(x)
+                        widwin.append((wid, self._id_to_window[wid]))
+                    except:
+                        return respond(4, "invalid window id %s" % x)
+            else:
+                widwin = list(self._id_to_window.items())
             for wid, window in widwin:
                 for csource in sources:
                     csource.full_quality_refresh(wid, window, {})
             return respond(0, "refreshed %s window for %s clients" % (len(widwin), len(sources)))
         elif command=="scaling":
             if len(args)!=2:
-                return argn_err(2)
+                return argn_err("2: window ID (or '*') and scaling value")
             from xpra.server.window_video_source import parse_scaling_value
             try:
                 scaling = parse_scaling_value(args[1])
             except:
                 return respond(11, "invalid scaling value %s" % args[1])
-            if args[0]=="*":
-                wids = list(self._id_to_window.keys())
-            else:
-                try:
-                    wid = int(args[0])
-                    window = self._id_to_window[wid]
-                    wids = [wid]
-                except:
-                    return respond(10, "cannot find window id %s" % args[0])
-
-            for csource in sources:
-                for wid in wids:
-                    window = self._id_to_window.get(wid)
-                    if not window:
-                        continue
-                    ws = csource.window_sources.get(wid)
-                    if ws:
-                        ws.set_scaling(scaling)
-                        csource.refresh(wid, window, {})
-            return respond(0, "scaling set to %s on window %s for %s clients" % (str(scaling), args[0], len(sources)))
+            def set_scaling(ws, wid, window):
+                ws.set_scaling(scaling)
+                ws.refresh(window)
+            wid_str = args[0]
+            for_all_window_sources(wid_str, set_scaling)
+            return respond(0, "scaling set to %s on window %s for %s clients" % (str(scaling), wid_str, len(sources)))
+        elif command in ("quality", "min-quality", "speed", "min-speed"):
+            if len(args)!=2:
+                return argn_err(2)
+            try:
+                v = int(args[1])
+            except:
+                v = -9999999
+            if v!=-1 and (v<0 or v>100):
+                return respond(11, "invalid quality value (must be a number between 0 and 100, or -1 to disable) %s" % args[1])
+            def set_value(ws, wid, window):
+                if command=="quality":
+                    ws.set_quality(v)
+                elif command=="min-quality":
+                    ws.set_min_quality(v)
+                elif command=="speed":
+                    ws.set_speed(v)
+                elif command=="min-speed":
+                    ws.set_min_speed(v)
+                else:
+                    assert False, "invalid command: %s" % command
+            wid_str = args[0]
+            for_all_window_sources(wid_str, set_value)
+            return respond(0, "%s set to %s on window %s for %s clients" % (command, v, wid_str, len(sources)))
         elif command=="client":
             if len(args)==0:
                 return argn_err("at least 1")

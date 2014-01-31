@@ -1329,38 +1329,21 @@ class ServerSource(object):
             add_list_stats(info, "damage.out_latency",  out_latencies, show_percentile=[9])
         self.global_batch_config.add_stats(info, "", suffix)
 
-    def reconfigure(self, force_reload=False):
-        for ws in self.window_sources.values():
-            ws.reconfigure(force_reload)
-
     def set_min_quality(self, min_quality):
-        self.default_encoding_options["min-quality"] = min_quality
-        elog("set_min_quality(%s) default_encoding_options=%s", min_quality, self.default_encoding_options)
-        self.reconfigure()
+        for ws in list(self.window_sources.values()):
+            ws.set_min_quality(min_quality)
 
     def set_quality(self, quality):
-        if quality<=0:
-            if "quality" in self.default_encoding_options:
-                del self.default_encoding_options["quality"]
-        else:
-            self.default_encoding_options["quality"] = max(quality, self.default_encoding_options.get("min-quality", 0))
-        elog("set_quality(%s) default_encoding_options=%s", quality, self.default_encoding_options)
-        self.reconfigure()
+        for ws in list(self.window_sources.values()):
+            ws.set_quality(quality)
 
     def set_min_speed(self, min_speed):
-        self.default_encoding_options["min-speed"] = min_speed
-        elog("set_min_speed(%s) default_encoding_options=%s", min_speed, self.default_encoding_options)
-        self.reconfigure()
+        for ws in list(self.window_sources.values()):
+            ws.set_min_speed(min_speed)
 
     def set_speed(self, speed):
-        prev_speed = self.default_encoding_options.get("speed", 0)
-        if speed<=0:
-            if "speed" in self.default_encoding_options:
-                del self.default_encoding_options["speed"]
-        else:
-            self.default_encoding_options["speed"] = max(speed, self.default_encoding_options.get("min-speed", 0))
-        elog("set_speed(%s) prev_speed=%s, default_encoding_options=%s", speed, prev_speed, self.default_encoding_options)
-        self.reconfigure(force_reload=(speed>99 and prev_speed<=99) or (speed<=99 and prev_speed>99))
+        for ws in list(self.window_sources.values()):
+            ws.set_speed(speed)
 
     def full_quality_refresh(self, wid, window, damage_options):
         if not self.can_send_window(window):

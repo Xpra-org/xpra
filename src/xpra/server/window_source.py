@@ -99,8 +99,6 @@ class WindowSource(object):
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
-        self.default_encoding_options = default_encoding_options    #default encoding options, like "quality", "min-quality", etc
-                                                        #may change at runtime (ie: see ServerSource.set_quality)
         self.encoding_client_options = encoding_options.boolget("client_options")
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.boolget("rgb24zlib")
@@ -140,6 +138,11 @@ class WindowSource(object):
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = maxdeque(100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
         self._encoding_speed = maxdeque(100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
+        # they may have fixed values:
+        self._fixed_quality = default_encoding_options.get("quality", -1)
+        self._fixed_min_quality = default_encoding_options.get("min-quality", -1)
+        self._fixed_speed = default_encoding_options.get("speed", -1)
+        self._fixed_min_speed = default_encoding_options.get("min-speed", -1)
 
         # for managing/cancelling damage requests:
         self._damage_delayed = None                     #may store a delayed region when batching in progress
@@ -177,8 +180,11 @@ class WindowSource(object):
         self.cancel_damage()
         self.statistics.reset()
         self.suspended = False
+        self.refresh(window, {"quality" : 100})
+
+    def refresh(self, window, options={}):
         w, h = window.get_dimensions()
-        self.damage(window, 0, 0, w, h, {"quality" : 100})
+        self.damage(window, 0, 0, w, h, options)
 
 
     def set_new_encoding(self, encoding):
@@ -287,7 +293,12 @@ class WindowSource(object):
         #batch delay stats:
         self.batch_config.add_stats(info, "", suffix)
 
-        #speed / quality:
+        #speed / quality properties (not necessarily the same as the video encoder settings..):
+        info[prefix+"property.min_speed"+suffix] = self._fixed_min_speed
+        info[prefix+"property.speed"+suffix] = self._fixed_speed
+        info[prefix+"property.min_quality"+suffix] = self._fixed_min_quality
+        info[prefix+"property.quality"+suffix] = self._fixed_quality
+        
         def add_last_rec_info(prefix, recs):
             #must make a list to work on (again!)
             l = list(recs)
@@ -313,7 +324,7 @@ class WindowSource(object):
     def update_speed(self):
         if self.suspended:
             return
-        speed = self.default_encoding_options.get("speed", -1)
+        speed = self._fixed_speed
         if speed<0:
             min_speed = self.get_min_speed()
             #make a copy to work on (and discard "info")
@@ -328,12 +339,24 @@ class WindowSource(object):
         elog("update_speed() info=%s, speed=%s", info, speed)
         self._encoding_speed.append((time.time(), info, speed))
 
+    def set_min_speed(self, min_speed):
+        if self._fixed_min_speed!=min_speed:
+            self._fixed_min_speed = min_speed
+            self.reconfigure()
+
     def get_min_speed(self):
-        return self.default_encoding_options.get("min-speed", -1)
+        return self._fixed_min_speed
+
+    def set_speed(self, speed):
+        if self._fixed_speed != speed:
+            prev_speed = self.get_current_speed()
+            self._fixed_speed = speed
+            #force a reload when switching to/from 100% speed:
+            self.reconfigure(force_reload=(speed>99 and prev_speed<=99) or (speed<=99 and prev_speed>99))
 
     def get_current_speed(self):
         ms = self.get_min_speed()
-        s = min(100, self.default_encoding_options.get("speed", -1))
+        s = min(100, self._fixed_speed)
         if s>=0:
             return max(ms, s)
         if len(self._encoding_speed)==0:
@@ -343,7 +366,7 @@ class WindowSource(object):
     def update_quality(self):
         if self.suspended:
             return
-        quality = self.default_encoding_options.get("quality", -1)
+        quality = self._fixed_quality
         if quality<0:
             min_quality = self.default_encoding_options.get("min-quality", -1)
             info, target_quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_quality)
@@ -358,12 +381,18 @@ class WindowSource(object):
         elog("update_quality() info=%s, quality=%s", info, quality)
         self._encoding_quality.append((time.time(), info, quality))
 
+    def set_min_quality(self, min_quality):
+        self._fixed_min_quality = min_quality
+
     def get_min_quality(self):
-        return self.default_encoding_options.get("min-quality", -1)
+        return self._fixed_min_quality
+
+    def set_quality(self, quality):
+        self._fixed_quality = quality
 
     def get_current_quality(self):
         mq = self.get_min_quality()
-        q = min(100, self.default_encoding_options.get("quality", -1))
+        q = min(100, self._fixed_quality)
         if q>=0:
             return max(mq, q)
         if len(self._encoding_quality)==0:
