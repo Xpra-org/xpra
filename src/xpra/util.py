@@ -109,15 +109,16 @@ def log_screen_sizes(root_w, root_h, ss):
         log = Logger()
         log.warn("failed to parse screen size information: %s", e)
 
+def prettify_plug_name(s, default=""):
+    if not s:
+        return default
+    #prettify strings on win32
+    return s.lstrip("0\\").lstrip(".\\").replace("0\\", "-")
+
 def do_log_screen_sizes(root_w, root_h, ss):
     from xpra.log import Logger
     log = Logger()
     log.info("root size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
-    def prstr(s, default=""):
-        if not s:
-            return default
-        #prettify strings on win32
-        return s.lstrip("0\\").lstrip(".\\").replace("0\\", "-")
     #old format, used by some clients (android):
     if len(ss)==2 and type(ss[0])==int and type(ss[1])==int:
         return
@@ -129,7 +130,7 @@ def do_log_screen_sizes(root_w, root_h, ss):
         display_name, width, height, width_mm, height_mm, \
         monitors, work_x, work_y, work_width, work_height = s[:11]
         log.info("  '%s' %sx%s (%sx%s mm) workarea: %sx%s at %sx%s",
-                    prstr(display_name), width, height, width_mm, height_mm,
+                    prettify_plug_name(display_name), width, height, width_mm, height_mm,
                     work_width, work_height, work_x, work_y)
         i = 0
         for m in monitors:
@@ -138,7 +139,7 @@ def do_log_screen_sizes(root_w, root_h, ss):
                 log.info("    %s", m)
                 continue
             plug_name, x, y, width, height, wmm, hmm = m[:8]
-            log.info("    '%s' %sx%s at %sx%s (%sx%s mm)", prstr(plug_name, "monitor %s" % i), width, height, x, y, wmm, hmm)
+            log.info("    '%s' %sx%s at %sx%s (%sx%s mm)", prettify_plug_name(plug_name, "monitor %s" % i), width, height, x, y, wmm, hmm)
 
 
 def std(_str, extras="-,./ "):

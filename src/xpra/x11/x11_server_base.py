@@ -27,7 +27,7 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.log import Logger
 log = Logger()
 
-from xpra.util import log_screen_sizes
+from xpra.util import log_screen_sizes, prettify_plug_name
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.xsettings import XSettingsManager
@@ -310,13 +310,15 @@ class X11ServerBase(GTKServerBase):
         #generate the data:
         data = ["# %s monitors:" % len(monitors),
                 "%s" % len(monitors)]
+        i = 0
         for m in monitors:
             if len(m)<7:
                 log.warn("cannot save fake xinerama settings: incomplete monitor data for monitor: %s", m)
                 continue
             plug_name, x, y, width, height, wmm, hmm = m[:8]
-            data.append("# %s (%smm x %smm)" % (plug_name, wmm, hmm))
+            data.append("# %s (%smm x %smm)" % (prettify_plug_name(plug_name, "monitor %s" % i), wmm, hmm))
             data.append("%s %s %s %s" % (x, y, width, height))
+            i += 1
         data.append("")
         contents = "\n".join(data)
         for filename in xinerama_files:
