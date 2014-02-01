@@ -334,6 +334,7 @@ class X11ServerBase(GTKServerBase):
                 if f:
                     f.close()
         log("saved %s monitors to fake xinerama files: %s", len(monitors), xinerama_files)
+        return True
 
     def _process_server_settings(self, proto, packet):
         settings = packet[1]
