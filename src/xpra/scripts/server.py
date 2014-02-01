@@ -544,8 +544,11 @@ def start_children(child_reaper, commands, fake_xinerama):
         #it would be better to rely on dlopen to find the paths
         #but I cannot find a way of getting ctypes to tell us the path
         #it found the library in
-        for libpath in ["/usr/lib64", "/usr/lib", "/usr/local/lib64", "/usr/local/lib"]:
-            if not os.path.exists(libpath):
+        libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
+        libpaths.append("/usr/lib64")
+        libpaths.append("/usr/lib")
+        for libpath in libpaths:
+            if not libpath or not os.path.exists(libpath):
                 continue
             libfakeXinerama_so = "%s/%s" % (libpath, "libfakeXinerama.so.1")
             if os.path.exists(libfakeXinerama_so):
