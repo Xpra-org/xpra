@@ -26,26 +26,30 @@ Equipment Corporation.
 #include <X11/Xlibint.h>
 #include <X11/extensions/Xinerama.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
-static int num_screens = -1;
+//#define DEBUG
+
+static time_t mtime = 0;
+static int num_screens = 0;
 static struct
 {
 	int x_org, y_org;
 	int width, height;
-} screen_info[ 10 ];
+} screen_info[10];
 
-static void skipComments( FILE* f )
+static void skipComments(FILE* f)
 {
-	char tmp[ 4096 ];
+	char tmp[4096];
 	for(;;)
 	{
 		int c;
 		for(;;)
 		{
-			c = fgetc( f );
-			if( c == EOF )
+			c = fgetc(f);
+			if (c == EOF)
 				return;
-			if( c != ' ' && c != '\t' && c != '\n' )
+			if (c != ' ' && c != '\t' && c != '\n')
 				break;
 		}
 		if (c != '#')
@@ -59,32 +63,59 @@ static void skipComments( FILE* f )
 
 static void initFakeXinerama()
 {
+	struct stat sb;
 	const char* home;
 	const char* display;
-	char buf[ 4096 ];
-	FILE* f;
+	char buf[4096];
+	FILE* f = NULL;
 	int i;
 
-	if (num_screens != -1)
-		return;
-	num_screens = 0;
+#ifdef DEBUG
+	fprintf(stderr, "libfakeXinerama.initFakeXinerama()\n");
+#endif
+
 	home = getenv("HOME");
 
 	if (home == NULL)
 		return;
 
-	f = NULL;
 	display = getenv("DISPLAY");
+#ifdef DEBUG
+	fprintf(stderr, "libfakeXinerama.initFakeXinerama() DISPLAY=%s, HOME=%s\n", display, home);
+#endif
 	if (display != NULL) {
-		sprintf(buf, "%s/.%s-fakexinerama", display, home);
-		f = fopen(buf, "r");
+		sprintf(buf, "%s/.%s-fakexinerama", home, display);
+		if (stat(buf, &sb) == 0) {
+			//the file was found
+			if (sb.st_mtime<=mtime)
+				//unchanged or older than what we have loaded already
+				//don't test for the generic file below, this one takes precedence
+				return;
+			f = fopen(buf, "r");
+#ifdef DEBUG
+			fprintf(stderr, "fakexinerama: new(er) file found: %s\n", buf);
+#endif
+		}
 	}
 	if (f == NULL) {
 		sprintf(buf, "%s/.fakexinerama", home);
-		f = fopen(buf, "r");
+		if (stat(buf, &sb) == 0) {
+			//the file was found
+			if (sb.st_mtime<=mtime)
+				//unchanged or older than what we have loaded already
+				return;
+			f = fopen(buf, "r");
+#ifdef DEBUG
+			fprintf(stderr, "fakexinerama: new(er) file found: %s\n", buf);
+#endif
+		}
 	}
 	if (f == NULL)
 		return;
+	//keep track of the mtime of the file we load from:
+	mtime = sb.st_mtime;
+
+	//start parsing:
 	skipComments(f);
 	if (fscanf(f, "%d\n", &num_screens) != 1)
 	{
@@ -105,6 +136,9 @@ static void initFakeXinerama()
 			return;
 		}
 	}
+#ifdef DEBUG
+	fprintf(stderr, "libfakeXinerama.initFakeXinerama() found %i screens\n", num_screens);
+#endif
 	fclose(f);
 }
 
@@ -128,7 +162,7 @@ Bool XineramaIsActive(Display *dpy)
 {
 	(void) dpy;
 	initFakeXinerama();
-	return num_screens != 0;
+	return num_screens>0;
 }
 
 XineramaScreenInfo *XineramaQueryScreens(Display *dpy, int *number)
@@ -136,15 +170,15 @@ XineramaScreenInfo *XineramaQueryScreens(Display *dpy, int *number)
 	XineramaScreenInfo	*scrnInfo = NULL;
 	initFakeXinerama();
 
-	if (num_screens) {
-		if((scrnInfo = Xmalloc(sizeof(XineramaScreenInfo) * num_screens))) {
+	if (num_screens>0) {
+		if ((scrnInfo = Xmalloc(sizeof(XineramaScreenInfo) * num_screens))) {
 			int i;
 			for(i = 0; i < num_screens; i++) {
 				scrnInfo[i].screen_number = i;
-				scrnInfo[i].x_org 	  = screen_info[ i ].x_org;
-				scrnInfo[i].y_org 	  = screen_info[ i ].y_org;
-				scrnInfo[i].width 	  = screen_info[ i ].width;
-				scrnInfo[i].height 	  = screen_info[ i ].height;
+				scrnInfo[i].x_org 	  = screen_info[i].x_org;
+				scrnInfo[i].y_org 	  = screen_info[i].y_org;
+				scrnInfo[i].width 	  = screen_info[i].width;
+				scrnInfo[i].height 	  = screen_info[i].height;
 			}
 			*number = num_screens;
 		}
