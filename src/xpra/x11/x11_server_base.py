@@ -66,6 +66,7 @@ class X11ServerBase(GTKServerBase):
         self.xsettings_enabled = opts.xsettings
         self.clobber = clobber
         self.fake_xinerama = opts.fake_xinerama
+        self.current_xinerama_config = None
         self.x11_init()
         GTKServerBase.init(self, opts)
 
@@ -229,7 +230,7 @@ class X11ServerBase(GTKServerBase):
 
     def set_screen_size(self, desired_w, desired_h):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
-        if desired_w==root_w and desired_h==root_h:
+        if desired_w==root_w and desired_h==root_h and not self.fake_xinerama:
             return    root_w,root_h    #unlikely: perfect match already!
         #try to find the best screen size to resize to:
         new_size = None
@@ -247,13 +248,31 @@ class X11ServerBase(GTKServerBase):
         log("best resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
         #now actually apply the new settings:
         w, h = new_size
-        xinerama_saved = self.save_fakexinerama_config()
+        xinerama_changed = self.save_fakexinerama_config()
         #we can only keep things unchanged if xinerama was also unchanged
-        #(it seems that some apps will only query xinerama again if randr is used?)
-        if (w==root_w and h==root_h) and not xinerama_saved:
+        #(many apps will only query xinerama again if they get a randr notification)
+        if (w==root_w and h==root_h) and not xinerama_changed:
             log.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
             return  root_w, root_h
         try:
+            if (w==root_w and h==root_h) and xinerama_changed:
+                #xinerama was changed, but the RandR resolution will not be...
+                #and we need a RandR change to force applications to re-query it
+                #so we temporarily switch to another resolution to force
+                #the change! (ugly! but this works)
+                temp = {}
+                for tw,th in RandR.get_screen_sizes():
+                    if tw!=w or th!=h:
+                        #use the number of extra pixels as key:
+                        #(so we can choose the closest resolution)
+                        temp[abs((tw*th) - (w*h))] = (tw, th)
+                if len(temp)==0:
+                    log.warn("cannot find a temporary resolution for Xinerama workaround!")
+                else:
+                    k = sorted(temp.keys())[0]
+                    tw, th = temp[k]
+                    log.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
+                    RandR.set_screen_size(tw, th)
             log.debug("calling RandR.set_screen_size(%s, %s)", w, h)
             RandR.set_screen_size(w, h)
             log.debug("calling RandR.get_screen_size()")
@@ -269,54 +288,59 @@ class X11ServerBase(GTKServerBase):
         return  root_w, root_h
 
     def save_fakexinerama_config(self):
+        """ returns True if the fakexinerama config was modified """
         xinerama_files = [
                           #the new fakexinerama file:
                           os.path.expanduser("~/.%s-fakexinerama" % os.environ.get("DISPLAY")),
                           #compat file for "old" version found on github:
                           os.path.expanduser("~/.fakexinerama"),
                           ]
-        def delfile():
+        def delfile(msg):
+            if msg:
+                log.warn(msg)
             for f in xinerama_files:
                 if os.path.exists(f) and os.path.isfile(f):
                     try:
                         os.unlink(f)
                     except Exception, e:
                         log.warn("failed to delete fake xinerama file %s: %s", f, e)
-        if not self.fake_xinerama or len(self._server_sources)!=1:
-            return delfile()
+            oldconf = self.current_xinerama_config
+            self.current_xinerama_config = None
+            return oldconf is not None
+        if not self.fake_xinerama:
+            return delfile(None)
+        if len(self._server_sources)!=1:
+            return delfile("fakeXinerama can only be enabled for a single client")
         source = self._server_sources.values()[0]
         ss = source.screen_sizes
         if len(ss)==0:
-            log.warn("cannot save fake xinerama settings: no display found")
-            return delfile()
+            return delfile("cannot save fake xinerama settings: no display found")
         if len(ss)>1:
-            log.warn("cannot save fake xinerama settings: more than one display found")
-            return delfile()
+            return delfile("cannot save fake xinerama settings: more than one display found")
         if len(ss)==2 and type(ss[0])==int and type(ss[1])==int:
             #just WxH, not enough display information
-            log.warn("cannot save fake xinerama settings: missing display data from client %s", source)
-            return delfile()
+            return delfile("cannot save fake xinerama settings: missing display data from client %s" % source)
         display_info = ss[0]
         if len(display_info)<10:
-            log.warn("cannot save fake xinerama settings: incomplete display data from client %s", source)
-            return delfile()
+            return delfile("cannot save fake xinerama settings: incomplete display data from client %s" % source)
         #display_name, width, height, width_mm, height_mm, \
         #monitors, work_x, work_y, work_width, work_height = s[:11]
         monitors = display_info[5]
         if len(monitors)>=10:
-            log.warn("cannot save fake xinerama settings: too many monitors! (%s)" % len(monitors))
-            return delfile()
-        #generate the data:
+            return delfile("cannot save fake xinerama settings: too many monitors! (%s)" % len(monitors))
+        #generate the file data:
         data = ["# %s monitors:" % len(monitors),
                 "%s" % len(monitors)]
+        #the new config (numeric values only)
+        config = [len(monitors)]
         i = 0
         for m in monitors:
             if len(m)<7:
-                log.warn("cannot save fake xinerama settings: incomplete monitor data for monitor: %s", m)
-                continue
+                return delfile("cannot save fake xinerama settings: incomplete monitor data for monitor: %s" % m)
             plug_name, x, y, width, height, wmm, hmm = m[:8]
             data.append("# %s (%smm x %smm)" % (prettify_plug_name(plug_name, "monitor %s" % i), wmm, hmm))
             data.append("%s %s %s %s" % (x, y, width, height))
+            config.append((x, y, width, height))
             i += 1
         data.append("")
         contents = "\n".join(data)
@@ -333,7 +357,10 @@ class X11ServerBase(GTKServerBase):
                 if f:
                     f.close()
         log("saved %s monitors to fake xinerama files: %s", len(monitors), xinerama_files)
-        return True
+        oldconf = self.current_xinerama_config
+        self.current_xinerama_config = config
+        return oldconf!=config
+
 
     def _process_server_settings(self, proto, packet):
         settings = packet[1]
