@@ -15,6 +15,7 @@ log = Logger()
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
+from xpra.util import log_screen_sizes
 from xpra.os_util import thread, get_hex_uuid
 from xpra.version_util import add_version_info
 from xpra.util import alnum
@@ -498,6 +499,12 @@ class ServerBase(ServerCore):
                           self.default_speed, self.default_min_speed)
         log("process_hello serversource=%s", ss)
         ss.parse_hello(c)
+        try:
+            dw, dh = ss.desktop_size
+            log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
+            log_screen_sizes(ss.screen_sizes)
+        except:
+            pass
         self._server_sources[proto] = ss
         root_w, root_h = self.set_best_screen_size()
         self.calculate_workarea()
@@ -1020,6 +1027,9 @@ class ServerBase(ServerCore):
         self.set_screen_size(width, height)
         if len(packet)>=4:
             ss.set_screen_sizes(packet[3])
+            log.info("received new display dimensions from client %s:", ss.uuid)
+            log.info("client root window size is %sx%s with %s displays:", width, height, len(ss.screen_sizes))
+            log_screen_sizes(ss.screen_sizes)
             self.calculate_workarea()
 
     def calculate_workarea(self):

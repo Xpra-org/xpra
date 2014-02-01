@@ -513,8 +513,8 @@ class UIXpraClient(XpraClientBase):
             root_w, root_h = self.get_root_size()
             ss = self.get_screen_sizes()
             log("update_screen_size() sizes=%s", ss)
-            log.info("sending updated screen size to server:")
-            log_screen_sizes(root_w, root_h, ss)
+            log.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h)
+            log_screen_sizes(ss)
             self.send("desktop_size", root_w, root_h, ss)
             #update the max packet size (may have gone up):
             self.set_max_packet_size()
@@ -636,7 +636,8 @@ class UIXpraClient(XpraClientBase):
         root_w, root_h = self.get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
         ss = self.get_screen_sizes()
-        log_screen_sizes(root_w, root_h, ss)
+        log.info("root size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
+        log_screen_sizes(ss)
         capabilities["screen_sizes"] = ss
         if self.keyboard_helper:
             key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()

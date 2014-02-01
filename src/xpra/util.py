@@ -101,9 +101,9 @@ class typedict(dict):
         return v
 
 
-def log_screen_sizes(root_w, root_h, ss):
+def log_screen_sizes(sizes):
     try:
-        do_log_screen_sizes(root_w, root_h, ss)
+        do_log_screen_sizes(sizes)
     except Exception, e:
         from xpra.log import Logger
         log = Logger()
@@ -115,14 +115,13 @@ def prettify_plug_name(s, default=""):
     #prettify strings on win32
     return s.lstrip("0\\").lstrip(".\\").replace("0\\", "-")
 
-def do_log_screen_sizes(root_w, root_h, ss):
+def do_log_screen_sizes(sizes):
     from xpra.log import Logger
     log = Logger()
-    log.info("root size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
     #old format, used by some clients (android):
-    if len(ss)==2 and type(ss[0])==int and type(ss[1])==int:
+    if len(sizes)==2 and type(sizes[0])==int and type(sizes[1])==int:
         return
-    for s in ss:
+    for s in sizes:
         if len(s)<10:
             log.info(" %s", s)
             continue
