@@ -27,11 +27,14 @@ BALLOON_EVENTS = {
 WM_WTSSESSION_CHANGE        = 0x02b1
 WM_DWMNCRENDERINGCHANGED    = 0x31F
 IGNORE_EVENTS = {
-            win32con.WM_DESTROY         : "WM_DESTROY",
-            win32con.WM_COMMAND         : "WM_COMMAND",
-            win32con.WM_DEVICECHANGE    : "WM_DEVICECHANGE",
-            WM_WTSSESSION_CHANGE        : "WM_WTSSESSION_CHANGE",
-            WM_DWMNCRENDERINGCHANGED    : "WM_DWMNCRENDERINGCHANGED",
+            win32con.WM_DESTROY             : "WM_DESTROY",
+            win32con.WM_COMMAND             : "WM_COMMAND",
+            win32con.WM_DEVICECHANGE        : "WM_DEVICECHANGE",
+            win32con.WM_DISPLAYCHANGE       : "WM_DISPLAYCHANGE",       #already taken care of by gtk event
+            win32con.WM_WINDOWPOSCHANGING   : "WM_WINDOWPOSCHANGING",
+            win32con.WM_GETMINMAXINFO       : "WM_GETMINMAXINFO",       #could be used to limit window size?
+            WM_WTSSESSION_CHANGE            : "WM_WTSSESSION_CHANGE",
+            WM_DWMNCRENDERINGCHANGED        : "WM_DWMNCRENDERINGCHANGED",
             }
 KNOWN_WM_EVENTS = {}
 for x in dir(win32con):
