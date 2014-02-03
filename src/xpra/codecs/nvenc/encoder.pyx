@@ -1278,6 +1278,7 @@ cdef class Encoder:
             preset_quality = PRESET_QUALITY.get(x, 50)
             v = abs(preset_speed-self.speed) + abs(preset_quality-self.quality)
             options.setdefault(v, []).append(x)
+        debug("get_preset(%s) speed=%s, quality=%s, options=%s", guidstr(codec), self.speed, self.quality, options)
         for v in sorted(options.keys()):
             for preset in options.get(v):
                 if preset and (preset in presets):
