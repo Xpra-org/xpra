@@ -1486,12 +1486,15 @@ cdef class Encoder:
         cdef double now = time.time()
         cdef double last_time = now
         cdef double cut_off = now-10.0
-        for v in list(self.last_frame_times):
-            if v>cut_off:
+        cdef double ms_per_frame = 0
+        for start,end in list(self.last_frame_times):
+            if end>cut_off:
                 f += 1
-                last_time = min(last_time, v)
+                last_time = min(last_time, end)
+                ms_per_frame += (end-start)
         if f>0 and last_time<now:
             info["fps"] = int(f/(now-last_time))
+            info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
         return info
 
     def __str__(self):
@@ -1711,7 +1714,7 @@ cdef class Encoder:
         global free_memory, total_memory
         free_memory, total_memory = driver.mem_get_info()
 
-        self.last_frame_times.append(end)
+        self.last_frame_times.append((start, end))
         self.time += end-start
         debug("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
         #debug("pixels head: %s", binascii.hexlify(data[:128]))

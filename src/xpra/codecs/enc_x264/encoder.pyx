@@ -291,12 +291,15 @@ cdef class Encoder:
         cdef double now = time.time()
         cdef double last_time = now
         cdef double cut_off = now-10.0
-        for v in list(self.last_frame_times):
-            if v>cut_off:
+        cdef double ms_per_frame = 0
+        for start,end in list(self.last_frame_times):
+            if end>cut_off:
                 f += 1
-                last_time = min(last_time, v)
+                last_time = min(last_time, end)
+                ms_per_frame += (end-start)
         if f>0 and last_time<now:
             info["fps"] = int(f/(now-last_time))
+            info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
         return info
 
     def __str__(self):
@@ -418,7 +421,7 @@ cdef class Encoder:
             end = time.time()
             self.time += end-start
             self.frames += 1
-            self.last_frame_times.append(end)
+            self.last_frame_times.append((start, end))
             return  cdata, self.get_client_options(options)
         finally:
             if speed_override>=0 and saved_speed!=speed_override:
