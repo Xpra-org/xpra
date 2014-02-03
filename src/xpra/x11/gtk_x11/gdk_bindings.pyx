@@ -201,10 +201,23 @@ cdef extern from "X11/Xlib.h":
         Window parent  # Same as xany.window, confusingly.
         Window window
         int place
+    # For pointer grabs:
+    ctypedef struct XCrossingEvent:
+        unsigned long serial
+        Bool send_event
+        Window window
+        Window root
+        Window subwindow
+        int mode                # NotifyNormal, NotifyGrab, NotifyUngrab
+        Bool focus
+        unsigned int state
     # Focus handling
     ctypedef struct XFocusChangeEvent:
         Window window
-        int mode, detail
+        int mode                #NotifyNormal, NotifyGrab, NotifyUngrab
+        int detail              #NotifyAncestor, NotifyVirtual, NotifyInferior, 
+                                #NotifyNonlinear,NotifyNonlinearVirtual, NotifyPointer,
+                                #NotifyPointerRoot, NotifyDetailNone
     # We have to generate synthetic ConfigureNotify's:
     ctypedef struct XConfigureEvent:
         Window event    # Same as xany.window, confusingly.
@@ -245,6 +258,7 @@ cdef extern from "X11/Xlib.h":
         XConfigureRequestEvent xconfigurerequest
         XCirculateRequestEvent xcirculaterequest
         XConfigureEvent xconfigure
+        XCrossingEvent xcrossing
         XFocusChangeEvent xfocus
         XClientMessageEvent xclient
         XMapEvent xmap
@@ -814,13 +828,13 @@ def _route_event(event, signal, parent_signal):
         return
     if event.window is event.delivered_to:
         if signal is not None:
-            l("  delivering event to window itself")
+            l("  delivering event to window itself: %s  (signal=%s)", event.window, signal)
             _maybe_send_event(event.window, signal, event)
         else:
             l("  received event on window itself but have no signal for that")
     else:
         if parent_signal is not None:
-            l("  delivering event to parent window")
+            l("  delivering event to parent window: %s (signal=%s)", event.delivered_to, parent_signal)
             _maybe_send_event(event.delivered_to, parent_signal, event)
         else:
             l("  received event on a parent window but have no parent signal")
