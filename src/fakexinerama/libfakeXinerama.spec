@@ -6,7 +6,7 @@
 
 Name:           libfakeXinerama
 Version:        0.1.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Url:            https://www.xpra.org/trac/wiki/FakeXinerama
 Summary:        Fake Xinerama library for exposing virtual screens to X11 client applications
 License:        MIT
@@ -25,16 +25,13 @@ which use the Xinerama extension.
 %prep
 %setup -q
 
-# % debug_package
-
 %build
 gcc -O2 -Wall fakeXinerama.c -fPIC -o libfakeXinerama.so.1.0 -shared
-ln -sf libfakeXinerama.so.1.0 libfakeXinerama.so.1
 
 %install
 mkdir -p %{buildroot}%{_libdir}
 install -p libfakeXinerama.so.* %{buildroot}%{_libdir}/
-#cp -p mycommand %{buildroot}%{_bindir}/
+ln -sf libfakeXinerama.so.1.0 %{buildroot}%{_libdir}/libfakeXinerama.so.1
 
 %clean
 rm -rf %{buildroot}
@@ -44,6 +41,10 @@ rm -rf %{buildroot}
 %doc README.TXT
 %{_libdir}/libfakeXinerama.so.1*
 
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
 %changelog
-* Sat Feb 01 2014 Antoine Martin <antoine@devloop.org.uk - 0.1.0-1.0
+* Mon Feb 03 2014 Antoine Martin <antoine@devloop.org.uk - 0.1.0-3.0
 - First version
