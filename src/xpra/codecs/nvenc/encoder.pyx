@@ -1251,6 +1251,7 @@ cdef class Encoder:
     #statistics, etc:
     cdef double time
     cdef int frames
+    cdef object last_frame_times
     cdef long long bytes_in
     cdef long long bytes_out
     cdef int api_warning
@@ -1305,6 +1306,7 @@ cdef class Encoder:
         self.cuda_device = None
         self.cuda_context = None
         self.pixel_format = ""
+        self.last_frame_times = maxdeque(200)
         start = time.time()
 
         self.device_id = options.get("cuda_device", DEFAULT_CUDA_DEVICE_ID)
@@ -1478,6 +1480,17 @@ cdef class Encoder:
             info["free_memory"] = int(free_memory)
             info["total_memory"] = int(total_memory)
             info["free_memory_pct"] = int(100.0*free_memory/total_memory)
+        #calculate fps:
+        cdef int f = 0
+        cdef double now = time.time()
+        cdef double last_time = now
+        cdef double cut_off = now-10.0
+        for v in list(self.last_frame_times):
+            if v>cut_off:
+                f += 1
+                last_time = min(last_time, v)
+        if f>0 and last_time<now:
+            info["fps"] = int(f/(now-last_time))
         return info
 
     def __str__(self):
@@ -1697,6 +1710,7 @@ cdef class Encoder:
         global free_memory, total_memory
         free_memory, total_memory = driver.mem_get_info()
 
+        self.last_frame_times.append(end)
         self.time += end-start
         debug("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
         #debug("pixels head: %s", binascii.hexlify(data[:128]))
