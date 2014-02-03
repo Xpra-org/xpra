@@ -436,6 +436,9 @@ class WindowVideoSource(WindowSource):
             #then it isn't very suitable:
             mss = max(0, speed - ms)*100/max(1, 100-ms)
             sscore = (sscore + mss)/2.0
+        #then always favour fast encoders:
+        sscore += speed
+        sscore /= 2
         return sscore
 
     def get_score(self, csc_format, csc_spec, encoder_spec, width, height):
