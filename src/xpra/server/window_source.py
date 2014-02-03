@@ -119,6 +119,9 @@ class WindowSource(object):
         self.refresh_timer = None
         self.timeout_timer = None
         self.expire_timer = None
+        self.soft_timer = None
+        self.soft_expired = 0
+        self.max_soft_expired = 5
         self.max_delta_size = MAX_DELTA_SIZE
         if window.is_shadow():
             self.max_delta_size = -1
@@ -238,6 +241,7 @@ class WindowSource(object):
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
         self.cancel_expire_timer()
+        self.cancel_soft_timer()
         self.cancel_refresh_timer()
         self.cancel_timeout_timer()
         #if a region was delayed, we can just drop it now:
@@ -258,6 +262,11 @@ class WindowSource(object):
         if self.expire_timer:
             self.source_remove(self.expire_timer)
             self.expire_timer = None
+
+    def cancel_soft_timer(self):
+        if self.soft_timer:
+            self.source_remove(self.soft_timer)
+            self.soft_timer = None
 
     def cancel_refresh_timer(self):
         if self.refresh_timer:
@@ -319,7 +328,7 @@ class WindowSource(object):
         self.batch_config.add_stats(info, prefix, suffix)
 
     def calculate_batch_delay(self, has_focus):
-        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, self.is_OR, self.batch_config, self.global_statistics, self.statistics)
+        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
 
     def update_speed(self):
         if self.suspended:
@@ -490,22 +499,42 @@ class WindowSource(object):
         self._damage_delayed = now, window, region, actual_encoding, options or {}
         debug("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
-        self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region)
+        self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
 
-    def expire_delayed_region(self):
+    def expire_delayed_region(self, delay):
         """ mark the region as expired so damage_packet_acked can send it later,
             and try to send it now.
         """
         self.expire_timer = None
         self._damage_delayed_expired = True
         self.may_send_delayed()
-        if self._damage_delayed:
-            #NOTE: this should never happen
-            #the region has not been sent and it should now get sent
-            #when we eventually receive the pending ACKs
-            #but if somehow they go missing... try with a timer:
+        if self._damage_delayed is None:
+            #region has been sent
+            return
+        #the region has not been sent yet because we are waiting for damage ACKs from the client
+        if self.soft_expired<self.max_soft_expired:
+            #there aren't too many regions soft expired yet
+            #so use the "soft timer":
+            self.soft_expired += 1
+            #we have already waited for "delay" to get here, wait more as we soft expire more regions:
+            self.soft_timer = self.timeout_add(int(self.soft_expired*delay), self.delayed_region_soft_timeout)
+        else:
+            #NOTE: this should never happen...
+            #the region should now get sent when we eventually receive the pending ACKs
+            #but if somehow they go missing... clean it up from a timeout:
             delayed_region_time = self._damage_delayed[0]
             self.timeout_timer = self.timeout_add(self.batch_config.max_delay, self.delayed_region_timeout, delayed_region_time)
+
+    def delayed_region_soft_timeout(self):
+        self.soft_timer = None
+        if self._damage_delayed is None:
+            return
+        damage_time = self._damage_delayed[0]
+        now = time.time()
+        actual_delay = 1000.0*(now-damage_time)
+        self.batch_config.last_actual_delays.append((now, actual_delay))
+        self.do_send_delayed_region()
+        return False
 
     def delayed_region_timeout(self, delayed_region_time):
         if self._damage_delayed is None:
@@ -532,7 +561,7 @@ class WindowSource(object):
         damage_time = self._damage_delayed[0]
         packets_backlog = self.statistics.get_packets_backlog()
         now = time.time()
-        actual_delay = 1000.0*(time.time()-damage_time)
+        actual_delay = 1000.0*(now-damage_time)
         if packets_backlog>0:
             if actual_delay<self.batch_config.max_delay:
                 debug("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
@@ -558,7 +587,8 @@ class WindowSource(object):
             elif enc_backlog_count>10:
                 debug("send_delayed for wid %s, delaying again because too many damage regions are waiting to be encoded: %s", self.wid, enc_backlog_count)
                 return check_again()
-            #no backlog, so ok to send:
+            #no backlog, so ok to send, clear soft-expired counter:
+            self.soft_expired = 0
             debug("send_delayed for wid %s, batch delay is %.1f, elapsed time is %.1f ms", self.wid, self.batch_config.delay, actual_delay)
         self.batch_config.last_actual_delays.append((now, actual_delay))
         self.do_send_delayed_region()
@@ -566,6 +596,7 @@ class WindowSource(object):
 
     def do_send_delayed_region(self):
         self.cancel_timeout_timer()
+        self.cancel_soft_timer()
         delayed = self._damage_delayed
         self._damage_delayed = None
         self.send_delayed_regions(*delayed)
@@ -876,6 +907,8 @@ class WindowSource(object):
             self.last_pixmap_data = None
         if self._damage_delayed is not None and self._damage_delayed_expired:
             self.idle_add(self.may_send_delayed)
+        if not self._damage_delayed:
+            self.soft_expired = 0
 
     def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options):
         """
