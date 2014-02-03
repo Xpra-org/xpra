@@ -86,6 +86,13 @@ cdef extern from "X11/Xlib.h":
         Bool send_event
         Display * display
         Window window
+    ctypedef struct XConfigureEvent:
+        Window event    # Same as xany.window, confusingly.
+                        # The selected-on window.
+        Window window   # The effected window.
+        int x, y, width, height, border_width
+        Window above
+        Bool override_redirect
     # Needed to broadcast that we are a window manager, among other things:
     union payload_for_XClientMessageEvent:
         char b[20]
@@ -95,51 +102,6 @@ cdef extern from "X11/Xlib.h":
         Atom message_type
         int format
         payload_for_XClientMessageEvent data
-    # SubstructureRedirect-related events:
-    ctypedef struct XMapRequestEvent:
-        Window parent  # Same as xany.window, confusingly.
-        Window window
-    ctypedef struct XConfigureRequestEvent:
-        Window parent  # Same as xany.window, confusingly.
-        Window window
-        int x, y, width, height, border_width
-        Window above
-        int detail
-        unsigned long value_mask
-    ctypedef struct XReparentEvent:
-        Window window
-        Window parent
-        int x, y
-    ctypedef struct XCirculateRequestEvent:
-        Window parent  # Same as xany.window, confusingly.
-        Window window
-        int place
-    # Focus handling
-    ctypedef struct XFocusChangeEvent:
-        Window window
-        int mode, detail
-    # We have to generate synthetic ConfigureNotify's:
-    ctypedef struct XConfigureEvent:
-        Window event    # Same as xany.window, confusingly.
-                        # The selected-on window.
-        Window window   # The effected window.
-        int x, y, width, height, border_width
-        Window above
-        Bool override_redirect
-    # The only way we can learn about override redirects is through MapNotify,
-    # which means we need to be able to get MapNotify for windows we have
-    # never seen before, which means we can't rely on GDK:
-    ctypedef struct XMapEvent:
-        Window window
-        Bool override_redirect
-    ctypedef struct XUnmapEvent:
-        Window window
-    ctypedef struct XDestroyWindowEvent:
-        Window window
-    ctypedef struct XPropertyEvent:
-        Atom atom
-    ctypedef struct XKeyEvent:
-        unsigned int keycode, state
     ctypedef struct XButtonEvent:
         Window root
         Window subwindow
@@ -149,22 +111,15 @@ cdef extern from "X11/Xlib.h":
         unsigned int state      # key or button mask
         unsigned int button
         Bool same_screen
+    # The only way we can learn about override redirects is through MapNotify,
+    # which means we need to be able to get MapNotify for windows we have
+    # never seen before, which means we can't rely on GDK:
     ctypedef union XEvent:
         int type
         XAnyEvent xany
-        XKeyEvent xkey
         XButtonEvent xbutton
-        XMapRequestEvent xmaprequest
-        XConfigureRequestEvent xconfigurerequest
-        XCirculateRequestEvent xcirculaterequest
         XConfigureEvent xconfigure
-        XFocusChangeEvent xfocus
         XClientMessageEvent xclient
-        XMapEvent xmap
-        XUnmapEvent xunmap
-        XReparentEvent xreparent
-        XDestroyWindowEvent xdestroywindow
-        XPropertyEvent xproperty
 
     Status XSendEvent(Display *, Window target, Bool propagate,
                       unsigned long event_mask, XEvent * event)
