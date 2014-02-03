@@ -26,7 +26,7 @@ def get_low_limit(mmap_enabled, window_dimensions):
     return low_limit
 
 
-def calculate_batch_delay(wid, window_dimensions, has_focus, is_OR, batch, global_statistics, statistics):
+def calculate_batch_delay(wid, window_dimensions, has_focus, is_OR, soft_expired, batch, global_statistics, statistics):
     """
         Calculates a new batch delay.
         We first gather some statistics,
@@ -45,6 +45,8 @@ def calculate_batch_delay(wid, window_dimensions, has_focus, is_OR, batch, globa
     #boost window that has focus and OR windows:
     factors.append(("focus", {"has_focus" : has_focus}, int(not has_focus), int(has_focus)))
     factors.append(("override-redirect", {"is_OR" : is_OR}, int(not is_OR), int(is_OR)))
+    #soft expired regions is a strong indicator of problems:
+    factors.append(("soft-expired", {"soft_expired" : soft_expired}, int(soft_expired), int(soft_expired)))
     #now use those factors to drive the delay change:
     update_batch_delay(batch, factors)
 
