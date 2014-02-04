@@ -122,6 +122,7 @@ class ProxyInstanceProcess(Process):
         self.server_protocol = Protocol(self, self.server_conn, self.process_server_packet, self.get_server_packet)
         #server connection tweaks:
         self.server_protocol.large_packets.append("draw")
+        self.server_protocol.large_packets.append("window-icon")
         self.server_protocol.large_packets.append("keymap-changed")
         self.server_protocol.large_packets.append("server-settings")
         self.server_protocol.set_compression_level(self.session_options.get("compression_level", 0))
