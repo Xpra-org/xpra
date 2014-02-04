@@ -166,6 +166,9 @@ class ServerCore(object):
         elif auth=="allow":
             from xpra.server.auth import allow_auth
             auth_module = allow_auth
+        elif auth=="none":
+            from xpra.server.auth import none_auth
+            auth_module = none_auth
         elif auth=="file":
             from xpra.server.auth import file_auth
             auth_module = file_auth
@@ -487,7 +490,7 @@ class ServerCore(object):
             auth_caps = None
 
         #verify authentication if required:
-        if proto.authenticator:
+        if proto.authenticator and proto.authenticator.requires_challenge():
             challenge_response = c.strget("challenge_response")
             client_salt = c.strget("challenge_client_salt")
             log("processing authentication with %s, response=%s, client_salt=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""))

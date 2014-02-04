@@ -122,6 +122,9 @@ class Authenticator(object):
         self.salt = None
         self.sessions = None
 
+    def requires_challenge(self):
+        return True
+
     def get_challenge(self):
         if self.salt is not None:
             log.error("challenge already sent!")

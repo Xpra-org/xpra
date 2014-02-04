@@ -59,7 +59,7 @@ class ProxyServer(ServerCore):
     def init(self, opts):
         debug("ProxyServer.init(%s)", opts)
         if not opts.auth:
-            raise Exception("The proxy server requires an authentication mode")
+            raise Exception("The proxy server requires an authentication mode (use 'none' to disable authentication)")
         ServerCore.init(self, opts)
 
     def get_server_mode(self):

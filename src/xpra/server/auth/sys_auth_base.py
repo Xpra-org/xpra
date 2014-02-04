@@ -37,6 +37,9 @@ class SysAuthenticator(object):
             raise Exception("username %s not found" % self.username)
         return self.pw.pw_gid
 
+    def requires_challenge(self):
+        return True
+
     def get_challenge(self):
         if self.salt is not None:
             log.error("challenge already sent!")

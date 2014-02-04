@@ -3,32 +3,34 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import get_hex_uuid
+from xpra.server.auth.sys_auth_base import SysAuthenticator
+import os
+
 
 def init(opts):
     pass
 
-class Authenticator(object):
+class Authenticator(SysAuthenticator):
+
     def __init__(self, username):
-        pass
+        self.salt = None
+        self.pw = None
+        try:
+            import pwd
+            self.pw = pwd.getpwuid(os.getuid())
+            self.username = self.pw.pw_name
+        except:
+            import getpass
+            self.username = getpass.getuser()
 
     def requires_challenge(self):
         return False
 
     def get_challenge(self):
-        return get_hex_uuid(), "hmac"
-
-    def get_uid(self):
-        return -1
-
-    def get_gid(self):
-        return -1
+        return None
 
     def get_password(self):
         return None
 
     def authenticate(self, challenge_response, client_salt):
-        return False
-
-    def get_sessions(self):
-        return None
+        return True
