@@ -1123,7 +1123,7 @@ def device_info(d):
 
 cdef cuda_init_devices():
     start = time.time()
-    log.info("CUDA initialization (this may take a few seconds)")
+    log.info("PyCUDA initialization (this may take a few seconds)")
     driver.init()
     ngpus = driver.Device.count()
     debug("PyCUDA found %s devices:", ngpus)
@@ -1153,9 +1153,12 @@ def get_cuda_devices():
     global cuda_devices
     if cuda_devices is None:
         cuda_devices = cuda_init_devices()
-        log.info("found %s CUDA devices:", len(cuda_devices))
-        for device_id in sorted(cuda_devices.keys()):
-            log.info(" + %s", cuda_devices.get(device_id))
+        if len(cuda_devices)>1:
+            log.info(" found %s CUDA devices:", len(cuda_devices))
+            for device_id in sorted(cuda_devices.keys()):
+                log.info(" + %s", cuda_devices.get(device_id))
+        else:
+            log.info(" using GPU device: %s", cuda_devices.values()[0])
     return cuda_devices
 
 

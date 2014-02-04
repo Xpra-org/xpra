@@ -41,10 +41,9 @@ def device_type(d):
         return d.type
 
 def device_info(d):
-    dtype = device_type(d)
     if hasattr(d, "opencl_c_version"):
-        return "%s: %s (%s / %s)" % (dtype, d.name.strip(), d.version, d.opencl_c_version)
-    return "%s: %s (%s)" % (dtype, d.name.strip(), d.version)
+        return "%s (%s / %s)" % (d.name.strip(), d.version, d.opencl_c_version)
+    return "%s (%s)" % (d.name.strip(), d.version)
 def platform_info(platform):
     return "%s (%s)" % (platform.name, platform.vendor)
 
@@ -55,7 +54,7 @@ def is_supported(platform_name):
 def log_device_info(device):
     if not device:
         return
-    log.info(" using device: %s", device_info(device))
+    log.info(" using %s device: %s", device_type(device), device_info(device))
     debug("max_work_group_size=%s", device.max_work_group_size)
     debug("max_work_item_dimensions=%s", device.max_work_item_dimensions)
     debug("max_work_item_sizes=%s", device.max_work_item_sizes)
@@ -72,7 +71,7 @@ def log_platforms_info():
             p = "-"
             if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT) and is_supported(platform.name):
                 p = "+"
-            debug(" %s %s", p, device_info(d))
+            debug(" %s %s: %s", p, device_type(d), device_info(d))
 
 def log_version_info():
     log.info("PyOpenCL loaded, header version: %s, GL support: %s",
@@ -122,7 +121,7 @@ def select_device():
     for d, p in best_options+other_options:
         try:
             debug("trying platform: %s", platform_info(p))
-            debug("with device: %s", device_info(d))
+            debug("with %s device: %s", device_type(d), device_info(d))
             context = pyopencl.Context([d])
             selected_platform = p
             selected_device = d
@@ -131,7 +130,7 @@ def select_device():
             return
         except Exception, e:
             log.warn("failed to use %s", platform_info(p))
-            log.warn("with device %s", device_info(d))
+            log.warn("with %s device %s", device_type(d), device_info(d))
             log.warn("Error: %s", e, exc_info=True)
     #fallback to pyopencl auto mode:
     log.warn("OpenCL Error: failed to find a working platform and device combination... trying with pyopencl's 'create_some_context'")
