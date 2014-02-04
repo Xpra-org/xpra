@@ -172,13 +172,13 @@ class ProxyServer(ServerCore):
             log.warn("parse error on %s: %s", display, args)
             raise Exception("parse error on %s: %s" % (display, args))
         opts = make_defaults_struct()
-        opts.username = c.strget("username")
+        opts.username = client_proto.authenticator.username
         disp_desc = parse_display_name(parse_error, opts, display)
         debug("display description(%s) = %s", display, disp_desc)
         try:
             server_conn = connect_to(disp_desc)
         except Exception, e:
-            log.error("cannot start proxy connection to %s: %s", disp_desc, e)
+            log.error("cannot start proxy connection to %s: %s", disp_desc, e, exc_info=True)
             disconnect("failed to connect to display")
             return
         debug("server connection=%s", server_conn)
