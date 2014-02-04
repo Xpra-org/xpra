@@ -234,9 +234,9 @@ class ProxyServer(ServerCore):
             del self.processes[p]
 
     def sigchld(self, *args):
-        log.info("sigchld(%s)", args)
+        debug("sigchld(%s)", args)
         self.idle_add(self.reap)
-        log.info("processes: %s", self.processes)
+        debug("processes: %s", self.processes)
 
     def get_info(self, proto, *args):
         info = {"server.type" : "Python/GObject/proxy"}
