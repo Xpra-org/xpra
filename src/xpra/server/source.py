@@ -259,6 +259,7 @@ class ServerSource(object):
         self.send_notifications = False
         self.send_windows = True
         self.window_raise = False
+        self.pointer_grabs = False
         self.randr_notify = False
         self.named_cursors = False
         self.clipboard_enabled = False
@@ -468,6 +469,7 @@ class ServerSource(object):
         self.lz4 = c.boolget("lz4", False)
         self.send_windows = c.boolget("windows", True)
         self.window_raise = c.boolget("window.raise")
+        self.pointer_grabs = c.boolget("pointer.grabs")
         self.server_window_resize = c.boolget("server-window-resize")
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.send_bell = c.boolget("bell")
@@ -1096,6 +1098,16 @@ class ServerSource(object):
         if not self.clipboard_enabled or self.suspended:
             return
         self.send(*packet)
+
+
+    def pointer_grab(self, wid):
+        if self.pointer_grabs:
+            self.send("pointer-grab", wid)
+
+    def pointer_ungrab(self, wid):
+        if self.pointer_grabs:
+            self.send("pointer-ungrab", wid)
+
 
     def send_cursor(self, cursor_data, sizes):
         if not self.send_cursors or self.suspended:

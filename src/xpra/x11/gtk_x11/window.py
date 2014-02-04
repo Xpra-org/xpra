@@ -42,6 +42,7 @@ from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
 from xpra.x11.gtk_x11.error import trap, XError
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.composite import CompositeHelper
+from xpra.x11.gtk_x11.pointer_grab import PointerGrabHelper
 
 from xpra.log import Logger
 log = Logger()
@@ -228,6 +229,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Does the window use transparency", "",
                        False,
                        gobject.PARAM_READABLE),
+        "has-grab": (gobject.TYPE_BOOLEAN,
+                       "Does the window own a grab", "",
+                       False,
+                       gobject.PARAM_READABLE),
         "fullscreen": (gobject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
                        False,
@@ -260,8 +265,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         }
     __gsignals__ = {
         "client-contents-changed": one_arg_signal,
-        "raised": one_arg_signal,
-        "unmanaged": one_arg_signal,
+        "raised"                : one_arg_signal,
+        "unmanaged"             : one_arg_signal,
+
+        "pointer-grab"          : one_arg_signal,
+        "pointer-ungrab"        : one_arg_signal,
 
 # this signal must be defined in the subclasses to be seen by the event stuff:
 #        "xpra-configure-event": one_arg_signal,
@@ -282,6 +290,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
+        self._pointer_grab = PointerGrabHelper(self.client_window)
         self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "role", "group-leader", "xid", "has-alpha"]
 
     def get_property_names(self):
@@ -327,6 +336,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             except Exception, ex:
                 log.error("error in cleanup handler: %s", ex)
             raise Unmanageable(e)
+        self._pointer_grab.setup()
+        self._pointer_grab.connect("grab", self.pointer_grab_event)
+        self._pointer_grab.connect("ungrab", self.pointer_ungrab_event)
         self._setup_done = True
         log("call_setup() ended, property_handlers=%s", self._property_handlers)
 
@@ -417,6 +429,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 self._damage_forward_handle = None
             self._composite.destroy()
             self._composite = None
+        if self._pointer_grab:
+            self._pointer_grab.destroy()
+            self._pointer_grab = None
 
     def _read_initial_properties(self):
         def pget(key, ptype, raise_xerrors=True):
@@ -573,6 +588,16 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             log("do_xpra_client_message_event(%s)", event)
         self._last_wm_state_serial = event.serial
 
+    #bits to do with grabs: just re-emit the signal
+    def pointer_grab_event(self, gh, event):
+        log("pointer_grab_event(%s, %s) forwarding it", gh, event)
+        self._internal_set_property("has-grab", True)
+        self.emit("pointer-grab", event)
+
+    def pointer_ungrab_event(self, gh, event):
+        log("pointer_ungrab_event(%s, %s) forwarding it", gh, event)
+        self._internal_set_property("has-grab", False)
+        self.emit("pointer-ungrab", event)
 
 
 gobject.type_register(BaseWindowModel)
@@ -650,10 +675,6 @@ class SystemTrayWindowModel(OverrideRedirectWindowModel):
     def _read_initial_properties(self):
         BaseWindowModel._read_initial_properties(self)
         self._internal_set_property("tray", True)
-
-    def composite_configure_event(self, composite_window, event):
-        BaseWindowModel.composite_configure_event(self, composite_window, event)
-        log("SystemTrayWindowModel.composite_configure_event(%s, %s) client window geometry=%s", composite_window, event, self.client_window.get_geometry())
 
     def move_resize(self, x, y, width, height):
         #Used by clients to tell us where the tray is located on screen

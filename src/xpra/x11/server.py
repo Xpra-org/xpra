@@ -188,6 +188,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def make_hello(self):
         capabilities = X11ServerBase.make_hello(self)
         capabilities["window.raise"] = True
+        capabilities["pointer.grabs"] = True
         return capabilities
 
 
@@ -320,6 +321,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
         window.managed_connect("raised", self._raised_window)
+        window.managed_connect("pointer-grab", self._pointer_grab)
+        window.managed_connect("pointer-ungrab", self._pointer_ungrab)
         return wid
 
     _window_export_properties = ("title", "size-hints", "fullscreen", "maximized")
@@ -522,6 +525,20 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _contents_changed(self, window, event):
         if window.is_OR() or self._desktop_manager.visible(window):
             self._damage(window, event.x, event.y, event.width, event.height)
+
+
+    def _pointer_grab(self, window, event):
+        log("pointer_grab(%s, %s)", window, event)
+        wid = self._window_to_id[window]
+        for ss in self._server_sources.values():
+            ss.pointer_grab(wid)
+
+    def _pointer_ungrab(self, window, event):
+        log("pointer_ungrab(%s, %s)", window, event)
+        wid = self._window_to_id[window]
+        for ss in self._server_sources.values():
+            ss.pointer_ungrab(wid)
+
 
     def _raised_window(self, window, event):
         wid = self._window_to_id[window]

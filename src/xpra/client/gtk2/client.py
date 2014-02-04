@@ -235,7 +235,14 @@ class XpraClient(GTKXpraClient):
         capabilities = GTKXpraClient.make_hello(self)
         if xor_str is not None:
             capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()]
+        capabilities["pointer.grabs"] = True
         return capabilities
+
+    def init_packet_handlers(self):
+        GTKXpraClient.init_packet_handlers(self)
+        self._ui_packet_handlers["pointer-grab"] = self._process_pointer_grab
+        self._ui_packet_handlers["pointer-ungrab"] = self._process_pointer_ungrab
+
 
     def process_ui_capabilities(self, capabilities):
         GTKXpraClient.process_ui_capabilities(self, capabilities)
@@ -356,6 +363,21 @@ class XpraClient(GTKXpraClient):
             #trays don't have a gdk window
             if gdkwin:
                 gdkwin.set_cursor(cursor)
+
+
+    def _process_pointer_grab(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        if window:
+            log("grabbing %s", window)
+            mask = gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK | gtk.gdk.POINTER_MOTION_MASK  | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.ENTER_NOTIFY_MASK | gtk.gdk.LEAVE_NOTIFY_MASK
+            gtk.gdk.pointer_grab(window.gdk_window(), owner_events=True, event_mask=mask)
+
+    def _process_pointer_ungrab(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        log("ungrabbing %s", window)
+        gtk.gdk.pointer_ungrab()
 
 
     def init_opengl(self, enable_opengl):
