@@ -298,8 +298,8 @@ class ServerSource(object):
         self.last_ping_echoed_time = 0
         # ready for processing:
         protocol.set_packet_source(self.next_packet)
-        self.datapacket_thread = make_daemon_thread(self.data_to_packet, "encode")
-        self.datapacket_thread.start()
+        self.encode_thread = make_daemon_thread(self.data_to_packet, "encode")
+        self.encode_thread.start()
         #for managing the recalculate_delays work:
         self.calculate_window_ids = set()
         self.calculate_due = False
