@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -163,6 +163,9 @@ class ServerCore(object):
         if auth=="fail":
             from xpra.server.auth import fail_auth
             auth_module = fail_auth
+        elif auth=="reject":
+            from xpra.server.auth import reject_auth
+            auth_module = reject_auth
         elif auth=="allow":
             from xpra.server.auth import allow_auth
             auth_module = allow_auth
