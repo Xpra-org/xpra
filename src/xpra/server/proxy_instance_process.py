@@ -50,9 +50,12 @@ class ProxyInstanceProcess(Process):
         self.server_protocol = None
         self.main_queue = None
         self.message_queue = message_queue
+        self.encode_queue = None            #holds draw packets to encode
+        self.encode_thread = None
         self.video_encoder_types = ["nvenc", "x264"]
         self.video_encoders = {}
         self.video_helper = None
+        self.lost_windows = None
 
     def server_message_queue(self):
         while True:
@@ -122,6 +125,11 @@ class ProxyInstanceProcess(Process):
         self.server_protocol.large_packets.append("keymap-changed")
         self.server_protocol.large_packets.append("server-settings")
         self.server_protocol.set_compression_level(self.session_options.get("compression_level", 0))
+
+        self.lost_windows = set()
+        self.encode_queue = Queue()
+        self.encode_thread = make_daemon_thread(self.encode_loop, "encode")
+        self.encode_thread.start()
 
         debug("starting network threads")
         self.server_protocol.start()
@@ -245,9 +253,41 @@ class ProxyInstanceProcess(Process):
         q = Queue()
         q.put(None)
         self.main_queue = q
+        #empty the encode queue:
+        q = Queue()
+        q.put(None)
+        self.encode_queue = q
         for proto in (self.client_protocol, self.server_protocol):
             if proto and proto!=skip_proto:
                 proto.flush_then_close(["disconnect", reason])
+
+
+    def queue_client_packet(self, packet):
+        debug("queueing client packet: %s", packet[0])
+        self.client_packets.put(packet)
+        self.client_protocol.source_has_more()
+
+    def get_client_packet(self):
+        #server wants a packet
+        p = self.client_packets.get()
+        debug("sending to client: %s", p[0])
+        return p, None, None, self.client_packets.qsize()>0
+
+    def process_client_packet(self, proto, packet):
+        packet_type = packet[0]
+        debug("process_client_packet: %s", packet_type)
+        if packet_type==Protocol.CONNECTION_LOST:
+            self.stop("client connection lost", proto)
+            return
+        elif packet_type=="set_deflate":
+            #echo it back to the client:
+            self.client_packets.put(packet)
+            self.client_protocol.source_has_more()
+            return
+        elif packet_type=="hello":
+            log.warn("invalid hello packet received after initial authentication (dropped)")
+            return
+        self.queue_server_packet(packet)
 
 
     def queue_server_packet(self, packet):
@@ -260,17 +300,6 @@ class ProxyInstanceProcess(Process):
         p = self.server_packets.get()
         debug("sending to server: %s", p[0])
         return p, None, None, self.server_packets.qsize()>0
-
-    def queue_client_packet(self, packet):
-        debug("queueing client packet: %s", packet[0])
-        self.client_packets.put(packet)
-        self.client_protocol.source_has_more()
-
-    def get_client_packet(self):
-        #server wants a packet
-        p = self.client_packets.get()
-        debug("sending to client: %s", p[0])
-        return p, None, None, self.client_packets.qsize()>0
 
     def process_server_packet(self, proto, packet):
         packet_type = packet[0]
@@ -299,12 +328,16 @@ class ProxyInstanceProcess(Process):
             info.update(self.get_encoder_info())
         elif packet_type=="lost-window":
             wid = packet[1]
-            ve = self.video_encoders.get(wid)
-            if ve:
-                ve.clean()
-                del self.video_encoders[wid]
+            #mark it as lost so we can drop any current/pending frames
+            self.lost_windows.add(wid)
+            #queue it so it gets cleaned safely (for video encoders mostly):
+            self.encode_queue.put(packet)
+            #and fall through so tell the client immediately
         elif packet_type=="draw":
-            self.process_draw(packet)
+            #use encoder thread:
+            self.encode_queue.put(packet)
+            #which will queue the packet itself when done:
+            return
         elif packet_type=="cursor":
             #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
             #or:
@@ -317,17 +350,44 @@ class ProxyInstanceProcess(Process):
                     packet[8] = compressed_wrapper("cursor", pixels)
         self.queue_client_packet(packet)
 
+
+    def encode_loop(self):
+        """ thread for slower encoding related work """
+        while True:
+            packet = self.encode_queue.get()
+            if packet is None:
+                return
+            try:
+                packet_type = packet[0]
+                if packet_type=="lost-window":
+                    wid = packet[1]
+                    self.lost_windows.remove(wid)
+                    ve = self.video_encoders.get(wid)
+                    if ve:
+                        del self.video_encoders[wid]
+                        ve.clean()
+                elif packet_type=="draw":
+                    #modify the packet with the video encoder:
+                    if self.process_draw(packet):
+                        #then send it as normal:
+                        self.queue_client_packet(packet)
+                else:
+                    log.warn("unexpected encode packet: %s", packet_type)
+            except:
+                log.warn("error encoding packet", exc_info=True)
+
+
     def process_draw(self, packet):
         wid, x, y, width, height, encoding, pixels, _, rowstride, client_options = packet[1:11]
-
+        #never modify mmap packets
         if encoding=="mmap":
-            #never modify mmap packets
-            return
+            return True
+
         if not self.video_encoder_types or not client_options or not client_options.get("proxy", False):
             #ensure we don't try to re-compress the pixel data in the network layer:
             #(re-add the "compressed" marker that gets lost when we re-assemble packets)
-            packet[7] = Compressed("%s pixels" % encoding, pixels)
-            return
+            packet[7] = Compressed("%s pixels" % encoding, packet[7])
+            return True
 
         #we have a proxy video packet:
         assert x==0 and y==0, "invalid position for video: %sx%s" % (x, y)
@@ -343,11 +403,15 @@ class ProxyInstanceProcess(Process):
             packet[6] = "rgb32"
             packet[9] = client_options.get("rowstride", 0)
             packet[10] = {"rgb_format" : rgb_format}
-            return
+            return  True
 
         #video encoding:
         ve = self.video_encoders.get(wid)
         if ve:
+            if ve in self.lost_windows:
+                #we cannot clean it here, there may be more frames queue up
+                #"lost-window" in encode_loop will take care of it
+                return  False
             #we must verify that the encoder is still valid
             #and scrap it if not (ie: when window is resized)
             if ve.get_width()!=width or ve.get_height()!=height:
@@ -382,6 +446,7 @@ class ProxyInstanceProcess(Process):
         packet[7] = Compressed(encoding, data)
         packet[10] = client_options
         debug("returning %s bytes from %s", len(data), len(pixels))
+        return (ve not in self.lost_windows)
 
     def _find_video_encoder(self, encoding, rgb_format):
         colorspace_specs = self.video_helper.get_encoder_specs(encoding)
@@ -402,20 +467,3 @@ class ProxyInstanceProcess(Process):
             for k,v in vi.items():
                 info[ipath+k] = v
         return info
-
-
-    def process_client_packet(self, proto, packet):
-        packet_type = packet[0]
-        debug("process_client_packet: %s", packet_type)
-        if packet_type==Protocol.CONNECTION_LOST:
-            self.stop("client connection lost", proto)
-            return
-        elif packet_type=="set_deflate":
-            #echo it back to the client:
-            self.client_packets.put(packet)
-            self.client_protocol.source_has_more()
-            return
-        elif packet_type=="hello":
-            log.warn("invalid hello packet received after initial authentication (dropped)")
-            return
-        self.queue_server_packet(packet)
