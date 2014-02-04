@@ -59,7 +59,7 @@ class ProxyInstanceProcess(Process):
 
     def server_message_queue(self):
         while True:
-            log.info("waiting for server message on %s", self.message_queue)
+            debug("waiting for server message on %s", self.message_queue)
             m = self.message_queue.get()
             log.info("proxy server message: %s", m)
             if m=="stop":
