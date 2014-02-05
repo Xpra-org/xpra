@@ -1585,12 +1585,20 @@ cdef class Encoder:
         picParams.encodePicFlags = NV_ENC_PIC_FLAG_EOS
         raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "flushing encoder buffer")
 
-    def compress_image(self, image, options={}):
+    def compress_image(self, image, options={}, retry=0):
         self.cuda_context.push()
         try:
-            return self.do_compress_image(image, options)
-        finally:
-            self.cuda_context.pop()
+            try:
+                return self.do_compress_image(image, options)
+            finally:
+                self.cuda_context.pop()
+        except pycuda.LogicError, e:
+            if retry>0:
+                raise e
+            log.warn("PyCUDA error: %s", e)
+            self.clean()
+            self.init_cuda()
+            return self.convert_image(image, options, retry+1)
 
     cdef do_compress_image(self, image, options={}):
         cdef const void* buf = NULL
