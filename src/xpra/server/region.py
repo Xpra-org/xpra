@@ -32,11 +32,25 @@ if try_gdk:
         return region.get_rectangles()
 
 else:
+    from xpra.util import AdHocStruct
+    class rectangle(AdHocStruct):
+        def __init__(self, x, y, w, h):
+            self.x = x
+            self.y = y
+            self.width = w
+            self.height = h
+            
+        def __eq__(self, other):
+            if isinstance(other, rectangle):
+                return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height 
+            return False
+
     #FIXME: add region merging, etc
     def new_region():
         return list()
-    def add_rectangle(region, rectangle):
-        if rectangle not in region:
-            region.append(rectangle)
+    def add_rectangle(region, x, y, w, h):
+        rect = rectangle(x, y, w, h)
+        if rect not in region:
+            region.append(rect)
     def get_rectangles(region):
         return region
