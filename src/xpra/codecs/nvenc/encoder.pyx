@@ -1592,7 +1592,7 @@ cdef class Encoder:
                 return self.do_compress_image(image, options)
             finally:
                 self.cuda_context.pop()
-        except pycuda.LogicError, e:
+        except driver.LogicError, e:
             if retry>0:
                 raise e
             log.warn("PyCUDA error: %s", e)
