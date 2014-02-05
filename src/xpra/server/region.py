@@ -39,10 +39,10 @@ else:
             self.y = y
             self.width = w
             self.height = h
-            
+
         def __eq__(self, other):
             if isinstance(other, rectangle):
-                return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height 
+                return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height
             return False
 
     #FIXME: add region merging, etc
