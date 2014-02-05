@@ -339,7 +339,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_unmap_event(self, event):
-        self.info("do_unmap_event(%s)", event)
         self._unfocus()
         if not self._override_redirect:
             self.send("unmap-window", self._id)
