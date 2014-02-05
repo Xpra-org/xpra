@@ -102,7 +102,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self._iconified = True
                 self._unfocus()
                 if not self._override_redirect:
-                    self.send("unmap-window", self._id)
+                    self.send("unmap-window", self._id, True)
             else:
                 assert not iconified and self._iconified
                 self._iconified = False
@@ -341,7 +341,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def do_unmap_event(self, event):
         self._unfocus()
         if not self._override_redirect:
-            self.send("unmap-window", self._id)
+            self.send("unmap-window", self._id, False)
 
     def do_delete_event(self, event):
         self.send("close-window", self._id)
