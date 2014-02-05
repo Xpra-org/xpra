@@ -51,6 +51,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def init_window(self, metadata):
         self._fullscreen = None
+        self._iconified = False
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         ClientWindowBase.init_window(self, metadata)
 
@@ -89,8 +90,23 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def window_state_updated(self, widget, event):
         self._fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
         maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
+        iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
         self._client_properties["maximized"] = maximized
-        self.debug("window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s, maximized=%s", widget, repr(event), event.new_window_state, self._fullscreen, maximized)
+        self.debug("window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s, maximized=%s, iconified=%s", widget, repr(event), event.new_window_state, self._fullscreen, maximized, iconified)
+        if iconified!=self._iconified:
+            #handle iconification as map events:
+            assert not self._override_redirect
+            if iconified:
+                assert not self._iconified
+                #usually means it is unmapped
+                self._iconified = True
+                self._unfocus()
+                if not self._override_redirect:
+                    self.send("unmap-window", self._id)
+            else:
+                assert not iconified and self._iconified
+                self._iconified = False
+                self.process_map_event()
 
     def set_fullscreen(self, fullscreen):
         if self._fullscreen is None or self._fullscreen!=fullscreen:
@@ -243,22 +259,25 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if xid:
             self.set_xid(xid)
         if not self._override_redirect:
-            x, y, w, h = self.get_window_geometry()
-            if not self._been_mapped:
-                workspace = self.set_workspace()
-            else:
-                #window has been mapped, so these attributes can be read (if present):
-                self._client_properties["screen"] = self.get_screen().get_number()
-                workspace = self.get_window_workspace()
-                if workspace<0:
-                    workspace = self.get_current_workspace()
-            if workspace>=0:
-                self._client_properties["workspace"] = workspace
-            self.debug("map-window for wid=%s with client props=%s", self._id, self._client_properties)
-            self.send("map-window", self._id, x, y, w, h, self._client_properties)
-            self._pos = (x, y)
-            self._size = (w, h)
-            self.idle_add(self._focus_change, "initial")
+            self.process_map_event()
+
+    def process_map_event(self):
+        x, y, w, h = self.get_window_geometry()
+        if not self._been_mapped:
+            workspace = self.set_workspace()
+        else:
+            #window has been mapped, so these attributes can be read (if present):
+            self._client_properties["screen"] = self.get_screen().get_number()
+            workspace = self.get_window_workspace()
+            if workspace<0:
+                workspace = self.get_current_workspace()
+        if workspace>=0:
+            self._client_properties["workspace"] = workspace
+        self.debug("map-window for wid=%s with client props=%s", self._id, self._client_properties)
+        self.send("map-window", self._id, x, y, w, h, self._client_properties)
+        self._pos = (x, y)
+        self._size = (w, h)
+        self.idle_add(self._focus_change, "initial")
 
     def do_configure_event(self, event):
         self.debug("Got configure event: %s", event)
@@ -320,6 +339,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_unmap_event(self, event):
+        self.info("do_unmap_event(%s)", event)
         self._unfocus()
         if not self._override_redirect:
             self.send("unmap-window", self._id)

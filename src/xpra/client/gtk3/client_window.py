@@ -32,7 +32,8 @@ class ClientWindow(GTKClientWindowBase):
     SCROLL_MAP = {}
 
     WINDOW_STATE_FULLSCREEN = Gdk.WindowState.FULLSCREEN
-    WINDOW_STATE_MAXIMIZED = Gdk.WindowState.MAXIMIZED
+    WINDOW_STATE_MAXIMIZED  = Gdk.WindowState.MAXIMIZED
+    WINDOW_STATE_ICONIFIED  = Gdk.WindowState.ICONIFIED
 
 
     def init_window(self, metadata):
