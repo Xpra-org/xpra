@@ -4,7 +4,7 @@ import gtk
 
 def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	window.set_size_request(400, 200)
+	window.set_size_request(600, 200)
 	window.connect("delete_event", gtk.mainquit)
 	vbox = gtk.VBox(False, 0)
 	hbox = gtk.HBox(False, 0)
@@ -27,6 +27,13 @@ def main():
 		window.fullscreen()
 	fullscreen_btn.connect('clicked', fullscreen)
 	hbox.pack_start(fullscreen_btn, expand=False, fill=False, padding=10)
+
+	unfullscreen_btn = gtk.Button("unfullscreen me")
+	def unfullscreen(*args):
+		window.unfullscreen()
+	unfullscreen_btn.connect('clicked', unfullscreen)
+	hbox.pack_start(unfullscreen_btn, expand=False, fill=False, padding=10)
+
 	window.add(vbox)
 	window.show_all()
 	gtk.main()
