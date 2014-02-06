@@ -75,6 +75,7 @@ warn_ENABLED = True
 strict_ENABLED = True
 debug_ENABLED = False
 PIC_ENABLED = True
+bundle_tests_ENABLED = False
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ("enc_x264", "x264_static",
@@ -90,7 +91,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "server", "client", "x11",
             "gtk2", "gtk3", "qt4", "html5",
             "sound", "cyxor", "cymaths", "opengl", "argb",
-            "warn", "strict", "shadow", "debug", "PIC", "Xdummy", "verbose")
+            "warn", "strict", "shadow", "debug", "PIC", "Xdummy", "verbose", "bundle_tests")
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
@@ -771,6 +772,7 @@ if WIN32:
                     {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},
                     {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
                     {'script': 'xpra/sound/sink.py',                    'icon_resources': [(1, "win32/speaker.ico")],   "dest_base": "Sound_Play",},
+                    {'script': 'win32/python_execfile.py',              'icon_resources': [(1, "win32/python.ico")],    "dest_base": "Python_execfile",},
               ]
     if opengl_ENABLED:
         console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})
@@ -1013,6 +1015,14 @@ if argb_ENABLED:
     toggle_packages(True, "xpra.codecs.argb")
     cython_add(Extension("xpra.codecs.argb.argb",
                 ["xpra/codecs/argb/argb.pyx"]))
+
+
+if bundle_tests_ENABLED:
+    #bundle the tests directly (not in library.zip):
+    for k,v in glob_recurse("tests").items():
+        if (k!=""):
+            k = os.sep+k
+        data_files.append(("tests"+k, v))
 
 toggle_packages(client_ENABLED, "xpra.client", "xpra.client.notifications")
 toggle_packages(client_ENABLED and gtk2_ENABLED or gtk3_ENABLED, "xpra.client.gtk_base")
