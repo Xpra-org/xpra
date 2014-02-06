@@ -57,7 +57,7 @@ Recommends:
         ,keyboard-configuration
 Suggests: openssh-server
 # optional - only really useful with GPU opencl implementations:
-        ,ocl-icd-libopencl1
+        ,python-pyopencl
         ,pulseaudio
         ,pulseaudio-utils
         ,python-dbus
