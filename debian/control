@@ -56,6 +56,8 @@ Recommends:
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server
+# optional - only really useful with GPU opencl implementations:
+        ,ocl-icd-libopencl1
         ,pulseaudio
         ,pulseaudio-utils
         ,python-dbus
