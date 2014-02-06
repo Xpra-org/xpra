@@ -280,11 +280,11 @@ class ServerCore(object):
         for p in list(self._tcp_proxy_clients):
             p.quit()
         log("cleanup will disconnect: %s", self._potential_protocols)
+        if self._upgrading:
+            reason = "upgrading/exiting"
+        else:
+            reason = "shutting down"
         for proto in list(self._potential_protocols):
-            if self._upgrading:
-                reason = "upgrading/exiting"
-            else:
-                reason = "shutting down"
             self.disconnect_client(proto, reason)
         self._potential_protocols = []
 
