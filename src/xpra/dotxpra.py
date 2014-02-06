@@ -52,9 +52,9 @@ class DotXpra(object):
             assert char in "0123456789", "invalid character in display name: %s" % char
         return local_display_name
 
-    def make_path(self, local_display_name, dirpath ):
+    def make_path(self, local_display_name, dirpath):
         local_display_name = self._normalize_local_display_name(local_display_name)
-        return os.path.join( dirpath , self._prefix + local_display_name[1:])
+        return os.path.join(dirpath, self._prefix + local_display_name[1:])
 
     def socket_path(self, local_display_name):
         return self.make_path(local_display_name, self._sockdir)
@@ -66,13 +66,16 @@ class DotXpra(object):
     DEAD = "DEAD"
     UNKNOWN = "UNKNOWN"
     def server_state(self, local_display_name, timeout=5):
-        path = self.socket_path(local_display_name)
-        if not os.path.exists(path):
+        socket_path = self.socket_path(local_display_name)
+        return self.get_server_state(socket_path, timeout)
+
+    def get_server_state(self, socket_path, timeout=5):
+        if not os.path.exists(socket_path):
             return self.DEAD
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(timeout)
         try:
-            sock.connect(path)
+            sock.connect(socket_path)
         except socket.error, e:
             err = e.args[0]
             if err==errno.ECONNREFUSED:
@@ -119,7 +122,10 @@ class DotXpra(object):
                     if s.st_uid!=check_uid:
                         #socket uid does not match
                         continue
-                local_display = ":" + path[len(base):]
-                state = self.server_state(local_display)
+                state = self.get_server_state(path)
+                local_display = path[len(base):]
+                if len([x for x in local_display if x not in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]])==0:
+                    #just numbers, assume it is a display number and prepend ":":
+                    local_display = ":"+local_display
                 results.append((state, local_display))
         return results
