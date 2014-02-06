@@ -23,22 +23,28 @@ from xpra.os_util import Queue, SIGNAMES
 from xpra.util import typedict
 from xpra.daemon_thread import make_daemon_thread
 from xpra.scripts.config import parse_number, parse_bool
+from xpra.scripts.server import create_unix_domain_socket
+from xpra.scripts.main import SOCKET_TIMEOUT
+from xpra.dotxpra import DotXpra
+from xpra.net.bytestreams import SocketConnection
 from multiprocessing import Process
 
 
 PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
 #for testing only: passthrough as RGB:
 PASSTHROUGH = False
+MAX_CONCURRENT_CONNECTIONS = 20
 
 
 class ProxyInstanceProcess(Process):
 
-    def __init__(self, uid, gid, env_options, session_options, client_conn, client_state, cipher, encryption_key, server_conn, caps, message_queue):
+    def __init__(self, uid, gid, env_options, session_options, socket_dir, client_conn, client_state, cipher, encryption_key, server_conn, caps, message_queue):
         Process.__init__(self, name=str(client_conn))
         self.uid = uid
         self.gid = gid
         self.env_options = env_options
         self.session_options = self.sanitize_session_options(session_options)
+        self.socket_dir = socket_dir
         self.client_conn = client_conn
         self.client_state = client_state
         self.cipher = cipher
@@ -48,6 +54,7 @@ class ProxyInstanceProcess(Process):
         debug("ProxyProcess%s", (uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, "{..}"))
         self.client_protocol = None
         self.server_protocol = None
+        self.exit = False
         self.main_queue = None
         self.message_queue = message_queue
         self.encode_queue = None            #holds draw packets to encode
@@ -56,6 +63,12 @@ class ProxyInstanceProcess(Process):
         self.video_encoders = {}
         self.video_helper = None
         self.lost_windows = None
+        #for handling the local unix domain socket:
+        self.control_socket = None
+        self.control_socket_thread = None
+        self.control_socket_path = None
+        self.potential_protocols = []
+        self.max_connections = MAX_CONCURRENT_CONNECTIONS
 
     def server_message_queue(self):
         while True:
@@ -69,6 +82,7 @@ class ProxyInstanceProcess(Process):
     def signal_quit(self, signum, frame):
         log.info("")
         log.info("proxy process pid %s got signal %s, exiting", os.getpid(), SIGNAMES.get(signum, signum))
+        self.exit = True
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(SIGNAMES.get(signum, signum))
@@ -113,6 +127,11 @@ class ProxyInstanceProcess(Process):
 
         make_daemon_thread(self.server_message_queue, "server message queue").start()
 
+        if self.create_control_socket():
+            self.control_socket_thread = make_daemon_thread(self.control_socket_loop, "control")
+            self.control_socket_thread.start()
+        
+
         self.main_queue = Queue()
         #setup protocol wrappers:
         self.server_packets = Queue(PROXY_QUEUE_SIZE)
@@ -147,6 +166,107 @@ class ProxyInstanceProcess(Process):
                 self.stop(str(e))
         finally:
             debug("ProxyProcess.run() ending %s", os.getpid())
+
+    def create_control_socket(self):
+        dotxpra = DotXpra(self.socket_dir)
+        name = "proxy-%s" % os.getpid()
+        sockpath = dotxpra.norm_make_path(name, dotxpra.sockdir())
+        state = dotxpra.get_server_state(sockpath)
+        if state in (DotXpra.LIVE, DotXpra.UNKNOWN):
+            log.warn("You already have a proxy server running at %s, the control socket will not be created!", sockpath)
+            return False
+        try:
+            sock = create_unix_domain_socket(sockpath, None)
+            sock.listen(5)
+        except Exception, e:
+            log.warn("failed to setup control socket %s: %s", sockpath, e)
+            return False
+        self.control_socket = sock
+        self.control_socket_path = sockpath
+        log.info("proxy instance now also available using unix domain socket: %s", self.control_socket_path)
+        return True
+
+    def control_socket_loop(self):
+        while not self.exit:
+            log("waiting for connection on %s", self.control_socket_path)
+            sock, address = self.control_socket.accept()
+            self.new_control_connection(sock, address)
+
+    def new_control_connection(self, sock, address):
+        if len(self.potential_protocols)>=self.max_connections:
+            log.error("too many connections (%s), ignoring new one", len(self.potential_protocols))
+            sock.close()
+            return  True
+        try:
+            peername = sock.getpeername()
+        except:
+            peername = str(address)
+        sockname = sock.getsockname()
+        target = peername or sockname
+        #sock.settimeout(0)
+        log("new_control_connection() sock=%s, sockname=%s, address=%s, peername=%s", sock, sockname, address, peername)
+        sc = SocketConnection(sock, sockname, address, target, "unix-domain")
+        log.info("New proxy instance control connection received: %s", sc)
+        protocol = Protocol(self, sc, self.process_control_packet)
+        protocol.large_packets.append("info-response")
+        self.potential_protocols.append(protocol)
+        protocol.start()
+        self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
+        return True
+
+    def verify_connection_accepted(self, protocol):
+        if not protocol._closed and protocol in self.potential_protocols:
+            log.error("connection timedout: %s", protocol)
+            self.send_disconnect(protocol, "login timeout")
+
+    def process_control_packet(self, proto, packet):
+        try:
+            self.do_process_control_packet(proto, packet)
+        except:
+            log.error("error processing control packet", exc_info=True)
+            self.send_disconnect(proto, "error processing request")
+
+    def do_process_control_packet(self, proto, packet):
+        log("process_control_packet(%s, %s)", proto, packet)
+        packet_type = packet[0]
+        if packet_type==Protocol.CONNECTION_LOST:
+            log.info("Connection lost")
+            if proto in self.potential_protocols:
+                self.potential_protocols.remove(proto)
+            return
+        if packet_type=="hello":
+            caps = packet[1]
+            if caps.get("info_request", False):
+                proto.send_now(("hello", self.get_proxy_info(proto)))
+                self.timeout_add(5*1000, self.send_disconnect, "info sent")
+                return
+            elif caps.get("stop_request", False):
+                self.stop("socket request", None)
+                return
+            elif caps.get("version_request", False):
+                from xpra import __version__
+                proto.send_now(("hello", {"version" : __version__}))
+                self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
+                return
+        self.send_disconnect(proto, "this socket only handles 'hello', 'version' and 'stop' requests")
+
+    def send_disconnect(self, proto, reason):
+        log("send_disconnect(%s, %s)", proto, reason)
+        if proto._closed:
+            return
+        proto.send_now(["disconnect", reason])
+        self.timeout_add(1000, self.force_disconnect, proto)
+
+    def force_disconnect(self, proto):
+        proto.close()
+
+
+    def get_proxy_info(self, proto):
+        info = {}
+        info.update(get_server_info("proxy."))
+        info.update(get_thread_info("proxy.", proto))
+        info.update(self.get_encoder_info())
+        return info
 
 
     def sanitize_session_options(self, options):
@@ -232,7 +352,7 @@ class ProxyInstanceProcess(Process):
     def run_queue(self):
         debug("run_queue() queue has %s items already in it", self.main_queue.qsize())
         #process "idle_add"/"timeout_add" events in the main loop:
-        while True:
+        while not self.exit:
             debug("run_queue() size=%s", self.main_queue.qsize())
             v = self.main_queue.get()
             debug("run_queue() item=%s", v)
@@ -246,9 +366,17 @@ class ProxyInstanceProcess(Process):
                     self.main_queue.put(v)
             except:
                 log.error("error during main loop callback %s", fn, exc_info=True)
+        self.exit = True
+        log.info("proxy instance %s stopped", os.getpid())
 
     def stop(self, reason="proxy terminating", skip_proto=None):
         debug("stop(%s, %s)", reason, skip_proto)
+        self.exit = True
+        if self.control_socket_path:
+            try:
+                os.unlink(self.control_socket_path)
+            except:
+                pass
         self.main_queue.put(None)
         #empty the main queue:
         q = Queue()
@@ -324,9 +452,7 @@ class ProxyInstanceProcess(Process):
             #note: this is only seen by the client application
             #"xpra info" is a new connection, which talks to the proxy server...
             info = packet[1]
-            info.update(get_server_info("proxy."))
-            info.update(get_thread_info("proxy.", proto))
-            info.update(self.get_encoder_info())
+            info.update(self.get_proxy_info())
         elif packet_type=="lost-window":
             wid = packet[1]
             #mark it as lost so we can drop any current/pending frames
@@ -354,7 +480,7 @@ class ProxyInstanceProcess(Process):
 
     def encode_loop(self):
         """ thread for slower encoding related work """
-        while True:
+        while not self.exit:
             packet = self.encode_queue.get()
             if packet is None:
                 return

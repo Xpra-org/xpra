@@ -42,7 +42,7 @@ class DotXpra(object):
     def confdir(self):
         return self._confdir
 
-    def _normalize_local_display_name(self, local_display_name):
+    def normalize_local_display_name(self, local_display_name):
         if not local_display_name.startswith(":"):
             local_display_name = ":" + local_display_name
         if "." in local_display_name:
@@ -52,15 +52,14 @@ class DotXpra(object):
             assert char in "0123456789", "invalid character in display name: %s" % char
         return local_display_name
 
-    def make_path(self, local_display_name, dirpath):
-        local_display_name = self._normalize_local_display_name(local_display_name)
-        return os.path.join(dirpath, self._prefix + local_display_name[1:])
+    def norm_make_path(self, name, dirpath):
+        return os.path.join(dirpath, self._prefix + name)
 
     def socket_path(self, local_display_name):
-        return self.make_path(local_display_name, self._sockdir)
+        return self.norm_make_path(local_display_name[1:], self._sockdir)
 
     def log_path(self, local_display_name):
-        return self.make_path(local_display_name, self._confdir)
+        return self.norm_make_path(local_display_name[1:], self._confdir)
 
     LIVE = "LIVE"
     DEAD = "DEAD"
@@ -123,9 +122,6 @@ class DotXpra(object):
                         #socket uid does not match
                         continue
                 state = self.get_server_state(path)
-                local_display = path[len(base):]
-                if len([x for x in local_display if x not in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]])==0:
-                    #just numbers, assume it is a display number and prepend ":":
-                    local_display = ":"+local_display
+                local_display = ":"+path[len(base):]
                 results.append((state, local_display))
         return results

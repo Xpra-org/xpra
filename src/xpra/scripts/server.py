@@ -327,6 +327,7 @@ def setup_local_socket(dotxpra, display_name, clobber, mmap_group):
     log = Logger()
     #print("creating server socket %s" % sockpath)
     try:
+        display_name = dotxpra.normalize_local_display_name(display_name)
         sockpath = dotxpra.server_socket_path(display_name, clobber, wait_for_unknown=5)
     except ServerSockInUse:
         raise Exception("You already have an xpra server running at %s\n"
