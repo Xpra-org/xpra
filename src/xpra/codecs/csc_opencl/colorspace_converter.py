@@ -81,6 +81,9 @@ def log_version_info():
 #select a platform and device:
 selected_device = None
 selected_platform = None
+selected_device_cpu_cost = 50
+selected_device_gpu_cost = 50
+
 context = None
 def reselect_device():
     global context, selected_device,selected_platform
@@ -127,6 +130,15 @@ def select_device():
             selected_device = d
             log.info(" using platform: %s", platform_info(selected_platform))
             log_device_info(selected_device)
+            #save device costs:
+            global selected_device_cpu_cost, selected_device_gpu_cost
+            if device_type(d)=="GPU":
+                selected_device_cpu_cost = 0
+                selected_device_gpu_cost = 50
+            else:
+                selected_device_cpu_cost = 100
+                selected_device_gpu_cost = 0
+            debug("device is a %s, using CPU cost=%s, GPU cost=%s", device_type(d), selected_device_cpu_cost, selected_device_gpu_cost)
             return
         except Exception, e:
             log.warn("failed to use %s", platform_info(p))
@@ -443,7 +455,7 @@ def get_info():
             "device.max_work_item_dimensions"   : selected_device.max_work_item_dimensions,
             "device.max_work_item_sizes"        : selected_device.max_work_item_sizes})
     return info
-            
+
 
 def get_input_colorspaces():
     build_kernels()
@@ -459,7 +471,9 @@ def validate_in_out(in_colorspace, out_colorspace):
 
 def get_spec(in_colorspace, out_colorspace):
     validate_in_out(in_colorspace, out_colorspace)
-    return codec_spec(ColorspaceConverter, codec_type=get_type(), speed=100, setup_cost=10, cpu_cost=10, gpu_cost=50, min_w=128, min_h=128, can_scale=True)
+    global selected_device_cpu_cost, selected_device_gpu_cost
+    return codec_spec(ColorspaceConverter, codec_type=get_type(), speed=100, setup_cost=10,
+                      cpu_cost=selected_device_cpu_cost, gpu_cost=selected_device_gpu_cost, min_w=128, min_h=128, can_scale=True)
 
 
 class ColorspaceConverter(object):
