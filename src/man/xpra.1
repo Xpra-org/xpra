@@ -19,6 +19,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
 [\fB\-\-use\-display\fP]
 [\fB\-\-xvfb\fP=\fICMD\fP]
+[\fB\-\-video\-encoders\fP=\fIENCODERS\fP]
+[\fB\-\-csc\-modules\fP=\fIMODULES\fP]
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP]
 [\fB\-\-no\-clipboard\fP]
@@ -483,6 +485,20 @@ TCP servers, usually a web server.
 xpra clients will connect as usual, but any client that does not
 speak the xpra protocol will be forwarded to the alternative
 server.
+
+.TP
+\fB\-\-video\-encoders\fP=\fIENCODERS\fP
+Specifies the video encoders to try to load.
+By default, all of them are loaded, but one may want to specify
+a more restrictive list of encoders.
+Use the special value 'help' to get a list of options.
+
+.TP
+\fB\-\-csc\-modules\fP=\fIMODULES\fP
+Specifies the colourspace conversion modules to try to load.
+By default, all of them are loaded, but one may want to specify
+a more restrictive list of modules.
+Use the special value 'help' to get a list of options.
 
 
 .SS Options for start, upgrade and attach

@@ -257,6 +257,8 @@ OPTION_TYPES = {
                     "opengl"            : bool,
                     "mdns"              : bool,
                     #arrays of strings (default value, allowed options):
+                    "video-encoders"    : list,
+                    "csc-modules"       : list,
                     "speaker-codec"     : list,
                     "microphone-codec"  : list,
                     "key-shortcut"      : list,
@@ -343,6 +345,8 @@ def get_defaults():
                     "exit-with-client"  : False,
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : True,
+                    "video-encoders"    : [],
+                    "csc-modules"       : [],
                     "speaker-codec"     : [],
                     "microphone-codec"  : [],
                     "key-shortcut"      : ["Meta+Shift+F4:quit", "Meta+Shift+F8:magic_key", "Meta+Shift+F11:show_session_info"],

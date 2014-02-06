@@ -141,8 +141,22 @@ def parse_cmdline(cmdline):
         group.add_option("--exit-with-client", action="store_true",
                           dest="exit_with_client", default=False,
                           help="Terminate the server when the last client disconnects")
+        from xpra.codecs.video_helper import DEFAULT_VIDEO_ENCODERS, DEFAULT_CSC_MODULES
+        #if we don't have any values yet from the config file(s), use the defaults we detect:
+        if len(defaults.video_encoders)==0:
+            defaults.video_encoders = ",".join(DEFAULT_VIDEO_ENCODERS)
+        if len(defaults.csc_modules)==0:
+            defaults.csc_modules = ",".join(DEFAULT_CSC_MODULES)
+        group.add_option("--video-encoders", action="store",
+                          dest="video_encoders", default=defaults.video_encoders,
+                          help="Specify which video encoders to enable, to get a list of all the options specify 'help' (default: %default)")
+        group.add_option("--csc-modules", action="store",
+                          dest="csc_modules", default=defaults.csc_modules,
+                          help="Specify which colourspace conversion modules to enable, to get a list of all the options specify 'help' (default: %default)")
     else:
         hidden_options["exit_with_client"] = False
+        hidden_options["encoders"] = []
+        hidden_options["csc-modules"] = []
     if supports_server:
         group.add_option("--use-display", action="store_true",
                           dest="use_display", default=defaults.use_display,
@@ -152,10 +166,15 @@ def parse_cmdline(cmdline):
                           default=defaults.xvfb,
                           metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
+        def enabled_str(v):
+            if v:
+                return "enabled"
+            else:
+                return "disabled"
         group.add_option("--no-fake-xinerama", action="store_false",
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
-                          help="Turn off fake xinerama support (default: '%default')")
+                          help="Turn off fake xinerama support (default: %s)" % enabled_str(defaults.fake_xinerama))
     else:
         hidden_options["use_display"] = False
         hidden_options["xvfb"] = ''
@@ -394,6 +413,19 @@ When unspecified, all the available codecs are allowed and the first one is used
         if options.encoding=="webp":
             #warn that webp should not be used:
             print("Warning: webp encoding may leak memory!")
+
+    #special case for video encoders and csc, stored as lists, but command line option is a CSV string:
+    if (supports_server or supports_shadow):
+        if type(options.video_encoders)==str:
+            if options.video_encoders=="help":
+                print("the following video encoders are available: %s" % ", ".join(DEFAULT_VIDEO_ENCODERS))
+                sys.exit(0)
+            options.video_encoders = [x.strip() for x in options.video_encoders.split(",")]
+        if type(options.csc_modules)==str:
+            if options.csc_modules=="help":
+                print("the following csc modules are available: %s" % ", ".join(DEFAULT_CSC_MODULES))
+                sys.exit(0)
+            options.csc_modules = [x.strip() for x in options.csc_modules.split(",")]
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
