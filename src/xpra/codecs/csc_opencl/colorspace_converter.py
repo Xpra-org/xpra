@@ -83,6 +83,7 @@ selected_device = None
 selected_platform = None
 selected_device_cpu_cost = 50
 selected_device_gpu_cost = 50
+selected_device_setup_cost = 50
 
 context = None
 def reselect_device():
@@ -131,13 +132,15 @@ def select_device():
             log.info(" using platform: %s", platform_info(selected_platform))
             log_device_info(selected_device)
             #save device costs:
-            global selected_device_cpu_cost, selected_device_gpu_cost
+            global selected_device_cpu_cost, selected_device_gpu_cost, selected_device_setup_cost
             if device_type(d)=="GPU":
                 selected_device_cpu_cost = 0
                 selected_device_gpu_cost = 50
+                selected_device_setup_cost = 40
             else:
                 selected_device_cpu_cost = 100
                 selected_device_gpu_cost = 0
+                selected_device_setup_cost = 20
             debug("device is a %s, using CPU cost=%s, GPU cost=%s", device_type(d), selected_device_cpu_cost, selected_device_gpu_cost)
             return
         except Exception, e:
@@ -471,8 +474,9 @@ def validate_in_out(in_colorspace, out_colorspace):
 
 def get_spec(in_colorspace, out_colorspace):
     validate_in_out(in_colorspace, out_colorspace)
-    global selected_device_cpu_cost, selected_device_gpu_cost
-    return codec_spec(ColorspaceConverter, codec_type=get_type(), speed=100, setup_cost=10,
+    global selected_device_cpu_cost, selected_device_gpu_cost, selected_device_setup_cost
+    return codec_spec(ColorspaceConverter, codec_type=get_type(), speed=100,
+                      setup_cost=selected_device_setup_cost,
                       cpu_cost=selected_device_cpu_cost, gpu_cost=selected_device_gpu_cost, min_w=128, min_h=128, can_scale=True)
 
 
