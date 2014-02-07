@@ -12,7 +12,6 @@ log = Logger("window")
 
 #pretend to draw the windows, but don't actually do anything
 USE_FAKE_BACKING = os.environ.get("XPRA_USE_FAKE_BACKING", "0")=="1"
-DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 
 
 class ClientWidgetBase(object):

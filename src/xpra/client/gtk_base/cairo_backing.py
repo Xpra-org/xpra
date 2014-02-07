@@ -6,11 +6,8 @@
 
 import cairo
 
-from xpra.log import Logger
-log = Logger("cairo")
-
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
-from xpra.client.window_backing_base import fire_paint_callbacks, DRAW_DEBUG
+from xpra.client.window_backing_base import fire_paint_callbacks, log
 from xpra.os_util import BytesIOClass, data_to_buffer
 from xpra.codecs.loader import get_codec
 
@@ -83,8 +80,7 @@ class CairoBacking(GTKWindowBacking):
 
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
-        if DRAW_DEBUG:
-            log.info("cairo_paint_rgb24(..,%s,%s,%s,%s,%s,%s,%s)", x, y, width, height, rowstride, options, callbacks)
+        log("cairo.do_paint_rgb24(..,%s,%s,%s,%s,%s,%s,%s)", x, y, width, height, rowstride, options, callbacks)
         if self._backing is None:
             fire_paint_callbacks(callbacks, False)
             return  False

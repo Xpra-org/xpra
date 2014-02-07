@@ -12,10 +12,10 @@ import sys
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.log import Logger
 log = Logger("window")
+plog = Logger("paint")
 
 #pretend to draw the windows, but don't actually do anything
 USE_FAKE_BACKING = os.environ.get("XPRA_USE_FAKE_BACKING", "0")=="1"
-DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 if sys.version < '3':
     import codecs
     def u(x):
@@ -246,8 +246,7 @@ class ClientWindowBase(ClientWidgetBase):
         """ Note: this runs from the draw thread (not UI thread) """
         assert self._backing, "window %s has no backing!" % self._id
         def after_draw_refresh(success):
-            if DRAW_DEBUG:
-                self.info("after_draw_refresh(%s) %sx%s at %sx%s encoding=%s, options=%s", success, width, height, x, y, coding, options)
+            plog("after_draw_refresh(%s) %sx%s at %sx%s encoding=%s, options=%s", success, width, height, x, y, coding, options)
             if self._backing is None:
                 return
             if success and self._backing.draw_needs_refresh:

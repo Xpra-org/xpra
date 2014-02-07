@@ -14,20 +14,10 @@ from xpra.util import std
 from xpra.x11.gtk_x11.error import trap
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
+
 from xpra.log import Logger
 log = Logger("x11", "keyboard")
-
-
-KEYBOARD_DEBUG = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")=="1"
-if KEYBOARD_DEBUG:
-    debug = log.info
-else:
-    debug = log.debug
-KEYBOARD_VERBOSE = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")=="2"
-if KEYBOARD_VERBOSE:
-    verbose = log.info
-else:
-    verbose = log.debug
+vlog = Logger("x11", "keyboard", "verbose")
 
 
 def exec_keymap_command(args, stdin=None):
@@ -75,7 +65,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
     """
     #First we try to use data from setxkbmap -query
     if xkbmap_query:
-        log.debug("do_set_keymap using xkbmap_query")
+        log("do_set_keymap using xkbmap_query")
         """ The xkbmap_query data will look something like this:
         rules:      evdev
         model:      evdev
@@ -111,7 +101,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
             log.info("setting keymap options: %s", std(str(settings.get("options"))))
             exec_keymap_command(["setxkbmap", "-option", "", "-option", settings.get("options")])
     elif xkbmap_print:
-        debug("do_set_keymap using xkbmap_print")
+        log("do_set_keymap using xkbmap_print")
         #try to guess the layout by parsing "setxkbmap -print"
         try:
             sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)")
@@ -174,7 +164,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         We return a translation map for keycodes after setting them up,
         the key is (keycode, keysym) and the value is the server keycode.
     """
-    debug("set_all_keycodes(%s.., %s.., %s.., %s)", str(xkbmap_x11_keycodes)[:60], str(xkbmap_keycodes)[:60], str(preserve_server_keycodes)[:60], modifiers)
+    log("set_all_keycodes(%s.., %s.., %s.., %s)", str(xkbmap_x11_keycodes)[:60], str(xkbmap_keycodes)[:60], str(preserve_server_keycodes)[:60], modifiers)
 
     #so we can validate entries:
     keysym_to_modifier = {}
@@ -185,7 +175,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                 log.error("ERROR: keysym %s is mapped to both %s and %s !", keysym, modifier, existing_mod)
             else:
                 keysym_to_modifier[keysym] = modifier
-    debug("keysym_to_modifier=%s", keysym_to_modifier)
+    log("keysym_to_modifier=%s", keysym_to_modifier)
 
     def modifiers_for(entries):
         """ entries can only point to a single modifier - verify """
@@ -206,30 +196,30 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
             #now remove entries for keysyms we don't have:
             f_entries = set([(keysym, index) for keysym, index in entries if X11Keyboard.parse_keysym(keysym) is not None])
             if len(f_entries)==0:
-                debug("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
+                log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
                 continue
             filtered[keycode] = f_entries
         return filtered
 
     #get the list of keycodes (either from x11 keycodes or gtk keycodes):
     if xkbmap_x11_keycodes and len(xkbmap_x11_keycodes)>0:
-        debug("using x11 keycodes: %s", xkbmap_x11_keycodes)
+        log("using x11 keycodes: %s", xkbmap_x11_keycodes)
         dump_dict(xkbmap_x11_keycodes)
         keycodes = indexed_mappings(xkbmap_x11_keycodes)
     else:
-        debug("using gtk keycodes: %s", xkbmap_keycodes)
+        log("using gtk keycodes: %s", xkbmap_keycodes)
         keycodes = gtk_keycodes_to_mappings(xkbmap_keycodes)
     #filter to ensure only valid entries remain:
-    debug("keycodes=%s", keycodes)
+    log("keycodes=%s", keycodes)
     keycodes = filter_mappings(keycodes)
 
     #now lookup the current keycodes (if we need to preserve them)
     preserve_keycode_entries = {}
     if preserve_server_keycodes:
         preserve_keycode_entries = X11Keyboard.get_keycode_mappings()
-        debug("preserved mappings:")
+        log("preserved mappings:")
         dump_dict(preserve_keycode_entries)
-        debug("preserve_keycode_entries=%s", preserve_keycode_entries)
+        log("preserve_keycode_entries=%s", preserve_keycode_entries)
         preserve_keycode_entries = filter_mappings(indexed_mappings(preserve_keycode_entries))
 
     kcmin, kcmax = X11Keyboard.get_minmax_keycodes()
@@ -239,12 +229,12 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
             break
     instructions = keymap_to_xmodmap(new_keycodes)
     unset = apply_xmodmap(instructions)
-    debug("unset=%s", unset)
+    log("unset=%s", unset)
     return trans
 
 def dump_dict(d):
     for k,v in d.items():
-        debug("%s\t\t=\t%s", k, v)
+        log("%s\t\t=\t%s", k, v)
 
 def group_by_keycode(entries):
     keycodes = {}
@@ -309,7 +299,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         Note: a client_keycode of '0' is valid (osx uses that),
         but server_keycode generally starts at 8...
     """
-    debug("translate_keycodes(%s, %s, %s, %s, %s, %s)", kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
+    log("translate_keycodes(%s, %s, %s, %s, %s, %s)", kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
     #list of free keycodes we can use:
     free_keycodes = [i for i in range(kcmin, kcmax) if i not in preserve_keycode_entries]
     keycode_trans = {}              #translation map from client keycode to our server keycode
@@ -327,25 +317,25 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
             in which case we update the entries and populate 'keycode_trans'
         """
         if server_keycode in server_keycodes:
-            debug("assign: keycode %s already in use: %s", server_keycode, server_keycodes.get(server_keycode))
+            log("assign: keycode %s already in use: %s", server_keycode, server_keycodes.get(server_keycode))
             server_keycode = -1
         elif server_keycode>0 and (server_keycode<kcmin or server_keycode>kcmax):
-            debug("assign: keycode %s out of range (%s to %s)", server_keycode, kcmin, kcmax)
+            log("assign: keycode %s out of range (%s to %s)", server_keycode, kcmin, kcmax)
             server_keycode = -1
         if server_keycode<=0:
             if len(free_keycodes)>0:
                 server_keycode = free_keycodes[0]
-                debug("set_keycodes key %s using free keycode=%s", entries, server_keycode)
+                log("set_keycodes key %s using free keycode=%s", entries, server_keycode)
             else:
                 msg = "set_keycodes: no free keycodes!, cannot translate %s: %s", server_keycode, entries
                 if try_harder:
                     log.error(*msg)
                 else:
-                    debug(*msg)
+                    log(*msg)
                 missing_keycodes.append(entries)
                 server_keycode = -1
         if server_keycode>0:
-            verbose("set_keycodes key %s (%s) mapped to keycode=%s", keycode, entries, server_keycode)
+            vlog("set_keycodes key %s (%s) mapped to keycode=%s", keycode, entries, server_keycode)
             #can't use it any more!
             if server_keycode in free_keycodes:
                 free_keycodes.remove(server_keycode)
@@ -378,17 +368,17 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 preserve_keycode_matches[keycode] = preserve_keycode_entries.get(keycode)
 
         if len(preserve_keycode_matches)==0:
-            debug("no preserve matches for %s", entries)
+            log("no preserve matches for %s", entries)
             return do_assign(client_keycode, -1, entries)         #nothing to preserve
 
-        debug("preserve matches for %s : %s", entries, preserve_keycode_matches)
+        log("preserve matches for %s : %s", entries, preserve_keycode_matches)
         #direct superset:
         for p_keycode, p_entries in preserve_keycode_matches.items():
             if entries.issubset(p_entries):
-                debug("found direct preserve superset for %s : %s -> %s : %s", client_keycode, entries, p_keycode, p_entries)
+                vlog("found direct preserve superset for %s : %s -> %s : %s", client_keycode, entries, p_keycode, p_entries)
                 return do_assign(client_keycode, p_keycode, p_entries)
             if p_entries.issubset(entries):
-                debug("found direct superset of preserve for %s : %s -> %s : %s", client_keycode, entries, p_keycode, p_entries)
+                vlog("found direct superset of preserve for %s : %s -> %s : %s", client_keycode, entries, p_keycode, p_entries)
                 return do_assign(client_keycode, p_keycode, entries)
 
         #ignoring indexes, but requiring at least as many keysyms:
@@ -396,10 +386,10 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
             p_keysyms = set([keysym for keysym,_ in p_entries])
             if keysyms.issubset(p_keysyms):
                 if len(p_entries)>len(entries):
-                    debug("found keysym preserve superset with more keys for %s : %s", entries, p_entries)
+                    vlog("found keysym preserve superset with more keys for %s : %s", entries, p_entries)
                     return do_assign(client_keycode, p_keycode, p_entries)
             if p_keysyms.issubset(keysyms):
-                debug("found keysym superset of preserve with more keys for %s : %s", entries, p_entries)
+                vlog("found keysym superset of preserve with more keys for %s : %s", entries, p_entries)
                 return do_assign(client_keycode, p_keycode, entries)
 
         if try_harder:
@@ -409,16 +399,16 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 for p_keycode, p_entries in preserve_keycode_matches.items():
                     p_keysyms = set([keysym for keysym,_ in p_entries])
                     if main_key.issubset(p_entries):
-                        debug("found main key superset for %s : %s", main_key, p_entries)
+                        vlog("found main key superset for %s : %s", main_key, p_entries)
                         return do_assign(client_keycode, p_keycode, p_entries)
 
-        debug("no matches for %s", entries)
+        log("no matches for %s", entries)
         return do_assign(client_keycode, -1, entries)
 
     #now try to assign each keycode:
     for keycode in sorted(keycodes.keys()):
         entries = keycodes.get(keycode)
-        debug("assign(%s, %s)", keycode, entries)
+        log("assign(%s, %s)", keycode, entries)
         assign(keycode, entries)
 
     #add all the other preserved ones that have not been mapped to any client keycode:
@@ -431,18 +421,18 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
     for entries in server_keycodes.values():
         for x in [keysym for keysym, _ in entries]:
             all_keysyms.add(x)
-    debug("all_keysyms=%s", all_keysyms)
+    log("all_keysyms=%s", all_keysyms)
 
     #defined keysyms for modifiers if some are missing:
     for keysym, modifier in keysym_to_modifier.items():
         if keysym not in all_keysyms:
-            debug("found missing keysym %s for modifier %s, will add it", keysym, modifier)
+            log("found missing keysym %s for modifier %s, will add it", keysym, modifier)
             new_keycode = set([(keysym, 0)])
             server_keycode = assign(-1, new_keycode)
-            debug("assigned keycode %s for key '%s' of modifier '%s'", server_keycode, keysym, modifier)
+            log("assigned keycode %s for key '%s' of modifier '%s'", server_keycode, keysym, modifier)
 
-    debug("translated keycodes=%s", keycode_trans)
-    debug("%s free keycodes=%s", len(free_keycodes), free_keycodes)
+    log("translated keycodes=%s", keycode_trans)
+    log("%s free keycodes=%s", len(free_keycodes), free_keycodes)
     return keycode_trans, server_keycodes, missing_keycodes
 
 
@@ -481,12 +471,12 @@ def keymap_to_xmodmap(trans_keycodes):
         #remove empty keysyms:
         while len(keysyms)>0 and keysyms[0] is None:
             keysyms = keysyms[1:]
-        debug("%s: %s -> %s", server_keycode, names, keysyms)
+        log("%s: %s -> %s", server_keycode, names, keysyms)
         instructions.append(("keycode", server_keycode, keysyms))
 
     if len(missing_keysyms)>0:
         log.error("cannot find the X11 keysym for the following key names: %s", set(missing_keysyms))
-    debug("instructions=%s", instructions)
+    log("instructions=%s", instructions)
     return  instructions
 
 
@@ -511,18 +501,18 @@ def set_modifiers(modifiers):
             instructions.append(("add", mod, keynames))
         else:
             log.error("set_modifiers_from_dict: unknown modifier %s", modifier)
-    debug("set_modifiers: %s", instructions)
+    log("set_modifiers: %s", instructions)
     def apply_or_trim(instructions):
         err = apply_xmodmap(instructions)
-        debug("set_modifiers: err=%s", err)
+        log("set_modifiers: err=%s", err)
         if len(err):
             log("set_modifiers %s failed, retrying one more at a time", instructions)
             l = len(instructions)
             for i in range(1, l):
                 subset = instructions[:i]
-                debug("set_modifiers testing with [:%s]=%s", i, subset)
+                log("set_modifiers testing with [:%s]=%s", i, subset)
                 err = apply_xmodmap(subset)
-                debug("err=%s", err)
+                log("err=%s", err)
                 if len(err)>0:
                     log.warn("removing problematic modifier mapping: %s", instructions[i-1])
                     instructions = instructions[:i-1]+instructions[i:]
@@ -540,7 +530,7 @@ def get_modifiers_from_meanings(xkbmap_mod_meanings):
     modifiers = {}
     for keyname, modifier in xkbmap_mod_meanings.items():
         modifiers.setdefault(modifier, set()).add(keyname)
-    debug("get_modifiers_from_meanings(%s) modifier dict=%s", xkbmap_mod_meanings, modifiers)
+    log("get_modifiers_from_meanings(%s) modifier dict=%s", xkbmap_mod_meanings, modifiers)
     return modifiers
 
 def get_modifiers_from_keycodes(xkbmap_keycodes):
@@ -552,8 +542,8 @@ def get_modifiers_from_keycodes(xkbmap_keycodes):
     pref = DEFAULT_MODIFIER_MEANINGS
     #keycodes are: {keycode : (keyval, name, keycode, group, level)}
     matches = {}
-    debug("get_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes))
-    debug("get_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes)[:160])
+    log("get_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes))
+    log("get_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes)[:160])
     all_keynames = set()
     for entry in xkbmap_keycodes:
         _, keyname, _, _, _ = entry
@@ -573,7 +563,7 @@ def get_modifiers_from_keycodes(xkbmap_keycodes):
         elif modifier in ["shift", "lock", "control", "mod1", "mod2"] or keyname=="ISO_Level3_Shift":
             #these ones we always add them, even if a record for this modifier already exists
             matches.setdefault(modifier, set()).add(keyname)
-    debug("get_modifiers_from_keycodes(...) adding defaults: %s", defaults)
+    log("get_modifiers_from_keycodes(...) adding defaults: %s", defaults)
     matches.update(defaults)
-    debug("get_modifiers_from_keycodes(...)=%s", matches)
+    log("get_modifiers_from_keycodes(...)=%s", matches)
     return matches

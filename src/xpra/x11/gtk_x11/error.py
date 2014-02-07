@@ -33,13 +33,12 @@ import os
 
 #run xpra in synchronized mode to debug X11 errors:
 XPRA_SYNCHRONIZE = os.environ.get("XPRA_SYNCHRONIZE", "1")=="1"
-#useful for debugging X11 errors that get swallowed:
-XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
 
 import gtk.gdk
 
 from xpra.log import Logger
 log = Logger("x11", "util")
+elog = Logger("x11", "util", "error")
 
 class XError(Exception):
     def __init__(self, message):
@@ -102,10 +101,8 @@ class _ErrorManager(object):
             self._enter()
             value = fun(*args, **kwargs)
         except Exception, e:
-            if XPRA_X11_DEBUG:
-                log.error("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e, exc_info=True)
-            else:
-                log("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e)
+            elog("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e, exc_info=True)
+            log("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e)
             try:
                 self._exit(need_sync)
             except XError, ee:

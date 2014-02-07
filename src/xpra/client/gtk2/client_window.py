@@ -11,8 +11,10 @@ import gobject
 import gtk
 from gtk import gdk
 
+from xpra.log import Logger
+log = Logger("paint")
+
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
-from xpra.client.client_window_base import DRAW_DEBUG
 from xpra.client.gtk2.window_backing import HAS_ALPHA
 
 USE_CAIRO = os.environ.get("XPRA_USE_CAIRO_BACKING", "0")=="1"
@@ -176,9 +178,8 @@ class ClientWindow(GTKClientWindowBase):
             self.warn("ignoring draw received for a window which is not realized yet!")
 
     def do_expose_event(self, event):
-        if DRAW_DEBUG:
-            #cannot use self
-            self.debug("do_expose_event(%s) area=%s", event, event.area)
+        #cannot use self
+        log("do_expose_event(%s) area=%s", event, event.area)
         if not (self.flags() & gtk.MAPPED) or self._backing is None:
             return
         w,h = self.window.get_size()

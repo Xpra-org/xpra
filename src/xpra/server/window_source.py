@@ -10,8 +10,8 @@ import time
 import os
 
 from xpra.log import Logger
-log = Logger("window")
-elog = Logger("encoding")
+log = Logger("window", "encoding")
+
 
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 90))
@@ -25,16 +25,6 @@ DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "1")=="1"
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
-
-XPRA_DAMAGE_DEBUG = os.environ.get("XPRA_DAMAGE_DEBUG", "0")!="0"
-if XPRA_DAMAGE_DEBUG:
-    debug = log.info
-    rgblog = log.info
-else:
-    def noop(*args, **kwargs):
-        pass
-    debug = noop
-    rgblog = noop
 
 
 from xpra.deque import maxdeque
@@ -345,7 +335,7 @@ class WindowSource(object):
         else:
             info = {}
             speed = min(100, speed)
-        elog("update_speed() info=%s, speed=%s", info, speed)
+        log("update_speed() info=%s, speed=%s", info, speed)
         self._encoding_speed.append((time.time(), info, speed))
 
     def set_min_speed(self, min_speed):
@@ -387,7 +377,7 @@ class WindowSource(object):
         else:
             info = {}
             quality = min(100, quality)
-        elog("update_quality() info=%s, quality=%s", info, quality)
+        log("update_quality() info=%s, quality=%s", info, quality)
         self._encoding_quality.append((time.time(), info, quality))
 
     def set_min_quality(self, min_quality):
@@ -755,7 +745,7 @@ class WindowSource(object):
             log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
         rgb_request_time = time.time()
-        image = window.get_image(x, y, w, h, logger=rgblog)
+        image = window.get_image(x, y, w, h, logger=log)
         if image is None:
             log("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
             return

@@ -6,7 +6,6 @@
 
 import os
 import zlib
-import binascii
 
 from xpra.log import Logger
 log = Logger("paint")
@@ -21,7 +20,6 @@ from xpra.codecs.loader import get_codec
 
 
 #logging in the draw path is expensive:
-DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 XPRA_CLIENT_CSC = os.environ.get("XPRA_CLIENT_CSC", "swscale")
 
 #ie:
@@ -207,9 +205,8 @@ class WindowBackingBase(object):
             decode = dec_webp.DecodeRGB
             rowstride = width*3
             paint_rgb = self.do_paint_rgb24
-        if DRAW_DEBUG:
-            log.info("paint_webp(%s) using decode=%s, paint=%s",
-                 ("%s bytes" % len(img_data), x, y, width, height, options, callbacks), decode, paint_rgb)
+        log("paint_webp(%s) using decode=%s, paint=%s",
+             ("%s bytes" % len(img_data), x, y, width, height, options, callbacks), decode, paint_rgb)
         rgb_data = decode(img_data)
         pixels = str(rgb_data.bitmap)
         self.idle_add(paint_rgb, pixels, x, y, width, height, rowstride, options, callbacks)
@@ -350,28 +347,22 @@ class WindowBackingBase(object):
 
             if self._video_decoder:
                 if self._video_decoder.get_encoding()!=coding:
-                    if DRAW_DEBUG:
-                        log.info("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_encoding(), coding)
+                    log("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_encoding(), coding)
                     self.do_clean_video_decoder()
                 elif self._video_decoder.get_width()!=enc_width or self._video_decoder.get_height()!=enc_height:
-                    if DRAW_DEBUG:
-                        log.info("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (enc_width, enc_height))
+                    log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
                 elif self._video_decoder.get_colorspace()!=decoder_colorspace:
-                    if DRAW_DEBUG:
-                        log.info("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), decoder_colorspace)
+                    log("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), decoder_colorspace)
                     self.do_clean_video_decoder()
                 elif options.get("frame")==0:
-                    if DRAW_DEBUG:
-                        log.info("paint_with_video_decoder: first frame of new stream")
+                    log("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
-                if DRAW_DEBUG:
-                    log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, decoder_colorspace)
+                log("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, decoder_colorspace)
                 self._video_decoder = factory()
                 self._video_decoder.init_context(coding, enc_width, enc_height, decoder_colorspace)
-                if DRAW_DEBUG:
-                    log.info("paint_with_video_decoder: info=%s", self._video_decoder.get_info())
+                log("paint_with_video_decoder: info=%s", self._video_decoder.get_info())
 
             img = self._video_decoder.decompress_image(img_data, options)
             if not img:
@@ -392,21 +383,17 @@ class WindowBackingBase(object):
         pixel_format = img.get_pixel_format()
         if self._csc_decoder is not None:
             if self._csc_decoder.get_src_format()!=pixel_format:
-                if DRAW_DEBUG:
-                    log.info("do_video_paint csc: switching src format from %s to %s", self._csc_decoder.get_src_format(), pixel_format)
+                log("do_video_paint csc: switching src format from %s to %s", self._csc_decoder.get_src_format(), pixel_format)
                 self.do_clean_csc_decoder()
             elif self._csc_decoder.get_dst_format() not in target_rgb_formats:
-                if DRAW_DEBUG:
-                    log.info("do_video_paint csc: switching dst format from %s to %s", self._csc_decoder.get_dst_format(), target_rgb_formats)
+                log("do_video_paint csc: switching dst format from %s to %s", self._csc_decoder.get_dst_format(), target_rgb_formats)
                 self.do_clean_csc_decoder()
             elif self._csc_decoder.get_src_width()!=enc_width or self._csc_decoder.get_src_height()!=enc_height:
-                if DRAW_DEBUG:
-                    log.info("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                log("do_video_paint csc: switching src size from %sx%s to %sx%s",
                          enc_width, enc_height, self._csc_decoder.get_src_width(), self._csc_decoder.get_src_height())
                 self.do_clean_csc_decoder()
             elif self._csc_decoder.get_dst_width()!=width or self._csc_decoder.get_dst_height()!=height:
-                if DRAW_DEBUG:
-                    log.info("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                log("do_video_paint csc: switching src size from %sx%s to %sx%s",
                          width, height, self._csc_decoder.get_dst_width(), self._csc_decoder.get_dst_height())
                 self.do_clean_csc_decoder()
         if self._csc_decoder is None:
@@ -417,13 +404,10 @@ class WindowBackingBase(object):
             csc_speed = int(min(100, 100-q, 100.0 * (enc_width*enc_height) / (width*height)))
             self._csc_decoder = self.make_csc(enc_width, enc_height, pixel_format,
                                            width, height, target_rgb_formats, csc_speed)
-            if DRAW_DEBUG:
-                log.info("do_video_paint new csc decoder: %s", self._csc_decoder)
+            log("do_video_paint new csc decoder: %s", self._csc_decoder)
         rgb_format = self._csc_decoder.get_dst_format()
         rgb = self._csc_decoder.convert_image(img)
-        if DRAW_DEBUG:
-            log.info("do_video_paint rgb using %s.convert_image(%s)=%s", self._csc_decoder, img, rgb)
-            log.info("pixels head=%s", binascii.hexlify(rgb.get_pixels()[:32]))
+        log("do_video_paint rgb using %s.convert_image(%s)=%s", self._csc_decoder, img, rgb)
         img.free()
         assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
         #this will also take care of firing callbacks (from the UI thread):
@@ -459,8 +443,7 @@ class WindowBackingBase(object):
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
         """ dispatches the paint to one of the paint_XXXX methods """
-        if DRAW_DEBUG:
-            log.info("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
+        log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
         coding = bytestostr(coding)
         if coding == "mmap":
             self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)

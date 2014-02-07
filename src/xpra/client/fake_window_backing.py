@@ -9,9 +9,9 @@ from xpra.gtk_common.gobject_compat import import_gobject
 gobject = import_gobject()
 import os
 
-from xpra.client.window_backing_base import DRAW_DEBUG, fire_paint_callbacks
+from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.log import Logger
-log = Logger("window")
+log = Logger("window", "fake")
 
 
 FAKE_BACKING_DELAY = int(os.environ.get("XPRA_FAKE_BACKING_DELAY", "5"))
@@ -28,8 +28,7 @@ class FakeBacking(object):
         pass
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
-        if DRAW_DEBUG:
-            log.info("draw_region(..) faking it after %sms", self.fake_delay)
+        log("draw_region(..) faking it after %sms", self.fake_delay)
         gobject.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
 
     def cairo_draw(self, context, x, y):

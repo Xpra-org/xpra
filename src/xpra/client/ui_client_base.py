@@ -12,6 +12,7 @@ import ctypes
 
 from xpra.log import Logger
 log = Logger("client")
+paintlog = Logger("paint")
 soundlog = log.debug
 
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -32,7 +33,6 @@ try:
 except:
     ALL_CLIPBOARDS = []
 
-DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 
@@ -1538,21 +1538,18 @@ class UIXpraClient(XpraClientBase):
         options = {}
         if len(packet)>10:
             options = packet[10]
-        if DRAW_DEBUG:
-            log.info("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
+        paintlog("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
         start = time.time()
         def record_decode_time(success):
             if success:
                 end = time.time()
                 decode_time = int(end*1000*1000-start*1000*1000)
                 self.pixel_counter.append((start, end, width*height))
-                if DRAW_DEBUG:
-                    dms = "%sms" % (int(decode_time/100)/10.0)
-                    log.info("record_decode_time(%s) wid=%s, %s: %sx%s, %s", success, wid, coding, width, height, dms)
+                dms = "%sms" % (int(decode_time/100)/10.0)
+                paintlog("record_decode_time(%s) wid=%s, %s: %sx%s, %s", success, wid, coding, width, height, dms)
             else:
                 decode_time = -1
-                if DRAW_DEBUG:
-                    log.info("record_decode_time(%s) decoding error on wid=%s, %s: %sx%s", success, wid, coding, width, height)
+                paintlog("record_decode_time(%s) decoding error on wid=%s, %s: %sx%s", success, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time)
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
