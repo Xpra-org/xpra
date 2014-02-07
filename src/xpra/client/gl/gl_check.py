@@ -290,8 +290,7 @@ def check_support(min_texture_size=0, force_enable=False):
 
 
 def main():
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.DEBUG)
+    log.enable_debug()
     #replace ImportError with a log message:
     global gl_check_error
     errors = []

@@ -114,10 +114,7 @@ class AppindicatorTray(TrayBase):
 
 
 def main():
-    import logging
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.DEBUG)
-
+    log.enable_debug()
     appindicator = get_appindicator()
     if not appindicator:
         log("appindicator not available")

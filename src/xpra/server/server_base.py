@@ -688,11 +688,16 @@ class ServerBase(ServerCore):
             #generic case:
             return ServerCore.do_handle_command_request(self, proto, command, args)
         elif command=="debug":
+            def debug_usage():
+                return arg_err("usage: 'debug enable|disable category' or 'debug status'")
+            if len(args)==1 and args[0]=="status":
+                from xpra.log import get_all_loggers
+                return respond(0, "logging is enabled for: %s" % str(list([str(x) for x in get_all_loggers() if x.is_debug_enabled()])))
             if len(args)<2:
-                return arg_err("usage: 'debug enable|disable category")
+                return debug_usage()
             log_cmd = args[0]
             if log_cmd not in ("enable", "disable"):
-                return arg_err("usage: 'debug enable|disable category")
+                return debug_usage()
             category = args[1]
             from xpra.log import add_debug_category, remove_debug_category, enable_debug_for, disable_debug_for
             if log_cmd=="enable":

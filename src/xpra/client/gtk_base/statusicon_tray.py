@@ -115,10 +115,7 @@ class GTKStatusIconTray(TrayBase):
 
 
 def main():
-    import logging
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.DEBUG)
-
+    log.enable_debug()
     from xpra.gtk_common.gobject_compat import import_gobject
     gobject = import_gobject()
     s = GTKStatusIconTray(None, "test", "xpra.png", None, None, None, gtk.main_quit)

@@ -286,10 +286,7 @@ def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_p
 
 
 def main():
-    import logging
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.INFO)
-
+    log.enable_debug()
     log.info("GStreamer plugins found: %s", ", ".join(get_all_plugin_names()))
     log.info("")
     log.info("encoders supported: %s", [x for x in CODEC_ORDER if has_encoder(x)])

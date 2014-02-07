@@ -197,10 +197,7 @@ def add_pulseaudio_capabilities(capabilities):
 
 
 def main():
-    import logging
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.INFO)
-
+    log.enable_debug()
     for monitors in (True, False):
         for io in (True, False):
             devices = get_pa_device_options(monitors, io)

@@ -485,8 +485,10 @@ def configure_logging(options, mode):
             from xpra.sound.gstreamer_util import show_sound_codec_help
             show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             return 0
-        logging.basicConfig(format="%(asctime)s %(message)s")
     else:
+        #a bit naughty here, but it's easier to let xpra.log initialize
+        #the logging system every time, and just undo things here..
+        logging.root.handlers = []
         logging.root.addHandler(logging.StreamHandler(sys.stdout))
 
     from xpra.log import add_debug_category, enable_debug_for, KNOWN_FILTERS

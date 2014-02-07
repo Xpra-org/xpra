@@ -142,10 +142,8 @@ def main():
             codec = MP3
             print("using default codec: %s" % codec)
 
+    log.enable_debug()
     from threading import Lock
-    import logging
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.INFO)
     f = open(filename, "wb")
     from xpra.sound.pulseaudio_util import get_pa_device_options
     monitor_devices = get_pa_device_options(True, False)

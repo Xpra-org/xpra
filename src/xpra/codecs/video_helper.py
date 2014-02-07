@@ -198,12 +198,7 @@ def getVideoHelper():
 
 
 def main():
-    global debug
-    import logging
-    logging.basicConfig(format="%(message)s")
-    logging.root.setLevel(logging.INFO)
-    debug = log.info
-
+    log.enable_debug()
     vh = getVideoHelper()
     vh.init()
 

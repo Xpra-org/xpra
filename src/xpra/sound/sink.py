@@ -210,9 +210,7 @@ def main():
             print("assuming this is an mp3 file...")
             codec = MP3
 
-    import logging
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.DEBUG)
+    log.enable_debug()
     f = open(filename, "rb")
     data = f.read()
     f.close()

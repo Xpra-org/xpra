@@ -10,6 +10,9 @@ import logging
 import weakref
 # This module is used by non-GUI programs and thus must not import gtk.
 
+logging.basicConfig(format="%(message)s")
+logging.root.setLevel(logging.INFO)
+
 #so we can keep a reference to all the loggers in use
 #we may have multiple loggers for the same key, so use a dict
 #but we don't want to prevent garbage collection so use a list of weakrefs
@@ -34,7 +37,6 @@ def get_all_loggers():
 
 debug_categories = set()
 def add_debug_category(cat):
-    print("adding debug category: %s" % cat)
     global debug_categories
     debug_categories.add(cat)
 
@@ -101,19 +103,27 @@ KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "vid
 
 class Logger(object):
     def __init__(self, *categories):
+        self.categories = list(categories)
         caller = sys._getframe(1).f_globals["__name__"]
-        categories = list(categories)
-        categories.append(caller)
+        if caller=="__main__":
+            caller = ".".join(categories)
+        else:
+            self.categories.append(caller)
         self.logger = logging.getLogger(caller)
         self.logger.setLevel(logging.INFO)
         self.disable_debug()
-        for cat in categories:
+        for cat in self.categories:
             if "all" in debug_categories or cat in debug_categories or os.environ.get("XPRA_%s_DEBUG" % cat.upper(), "0")=="1":
-                print("enabling debug for %s / %s" % (categories, caller))
                 self.enable_debug()
                 break
         #ready, keep track of it:
-        add_logger(categories, self)
+        add_logger(self.categories, self)
+
+    def __str__(self):
+        return "Logger(%s)" % ", ".join(self.categories)
+
+    def is_debug_enabled(self):
+        return self.logger.isEnabledFor(logging.DEBUG)
 
     def enable_debug(self):
         self.logger.setLevel(logging.DEBUG)

@@ -604,6 +604,7 @@ class ApplicationWindow:
 
 
 def main():
+    from xpra.log import enable_debug_for
     if sys.platform.startswith("win"):
         from xpra.platform.win32 import set_log_filename
         set_log_filename("Xpra-Launcher.log")
@@ -614,12 +615,8 @@ def main():
     #logging init:
     from xpra.scripts.main import parse_cmdline
     _, options, args = parse_cmdline(sys.argv)
-    import logging
-    logging.basicConfig(format="%(asctime)s %(message)s")
     if options.debug:
-        logging.root.setLevel(logging.DEBUG)
-    else:
-        logging.root.setLevel(logging.INFO)
+        enable_debug_for("all")
 
     app = ApplicationWindow()
     def app_signal(signum, frame):
@@ -638,7 +635,7 @@ def main():
     if has_file:
         app.update_options_from_file(args[0])
     if app.config.debug:
-        logging.root.setLevel(logging.DEBUG)
+        enable_debug_for("all")
     app.create_window()
     try:
         app.update_gui_from_config()

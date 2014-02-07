@@ -203,9 +203,6 @@ def load_binary_file(filename):
 
 
 def main():
-    import logging
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.INFO)
     from xpra.log import Logger
     log = Logger("util")
     sp = sys.platform
