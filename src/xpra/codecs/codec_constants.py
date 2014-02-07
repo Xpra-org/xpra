@@ -107,6 +107,10 @@ class codec_spec(object):
                 p = s.find(".colorspace_converter.")
             if p>0:
                 s = s[:p]
+            if s=="csc_%s" % self.codec_type:
+                return self.codec_type
+            if s=="enc_%s" % self.codec_type:
+                return self.codec_type
             return "%s:%s" % (self.codec_type, s)
         except:
             return "%s" % (self.codec_type or self.codec_class)
