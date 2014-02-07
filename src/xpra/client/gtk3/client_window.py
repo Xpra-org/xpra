@@ -12,9 +12,9 @@ from gi.repository import Gdk                   #@UnresolvedImport @UnusedImport
 
 from xpra.client.gtk_base.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
-from xpra.client.client_window_base import DRAW_DEBUG
 from xpra.log import Logger
 log = Logger("gtk", "window")
+paintlog = Logger("paint")
 
 
 """
@@ -117,8 +117,7 @@ class ClientWindow(GTKClientWindowBase):
         self.queue_draw_area(x, y, width, height)
 
     def do_draw(self, context):
-        if DRAW_DEBUG:
-            log.info("do_draw(%s)", context)
+        paintlog("do_draw(%s)", context)
         if self.get_mapped() and self._backing:
             self._backing.cairo_draw(context)
 

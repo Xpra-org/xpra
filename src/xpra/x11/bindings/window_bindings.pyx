@@ -15,18 +15,6 @@ from xpra.x11.gtk_x11.error import trap, XError
 from xpra.log import Logger
 log = Logger("x11", "bindings", "window")
 
-XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
-XPRA_X11_LOG = XPRA_X11_DEBUG or os.environ.get("XPRA_X11_LOG", "0")!="0"
-if XPRA_X11_LOG:
-    debug = log.debug
-    info = log.info
-else:
-    def noop(*args, **kwargs):
-        pass
-    debug = noop
-    info = noop
-warn = log.warn
-error = log.error
 
 ###################################
 # Headers, python magic
@@ -369,7 +357,7 @@ cdef class X11WindowBindings(X11CoreBindings):
                 cminor = minor
                 if (query_version)(self.display, &cmajor, &cminor):
                     # See X.org bug #14511:
-                    debug("found X11 extension %s with version %s.%s", extension, major, minor)
+                    log("found X11 extension %s with version %s.%s", extension, major, minor)
                     if major == cmajor and minor <= cminor:
                         self.display_data[key] = True
                     else:
@@ -451,7 +439,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef Window w = 0
         cdef int revert_to = 0
         XGetInputFocus(self.display, &w, &revert_to)
-        debug("Current focus: %s, %s", hex(w), revert_to)
+        log("Current focus: %s, %s", hex(w), revert_to)
 
 
     ###################################
@@ -497,7 +485,7 @@ cdef class X11WindowBindings(X11CoreBindings):
             self.ensure_XComposite_support()
             return  True
         except Exception, e:
-            error("%s", e)
+            log.error("%s", e)
         return False
 
     def XCompositeRedirectWindow(self, xwindow):
@@ -575,7 +563,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef XEvent e
         t = xtarget
         w = xwindow
-        debug("sendClientMessage(%s)", (hex(xtarget), hex(w), hex(propagate), hex(event_mask),
+        log("sendClientMessage(%s)", (hex(xtarget), hex(w), hex(propagate), hex(event_mask),
                                         message_type, data0, data1, data2, data3, data4))
         e.type = ClientMessage
         e.xany.display = self.display
@@ -597,7 +585,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef Window r
         w = xtarget
         r = XDefaultRootWindow(self.display)
-        debug("sending message to %s", hex(w))
+        log("sending message to %s", hex(w))
         cdef XEvent e                       #@DuplicatedSignature
         e.type = ButtonPress
         e.xany.display = self.display
@@ -666,7 +654,7 @@ cdef class X11WindowBindings(X11CoreBindings):
                                      0, 0,
                                      &dest_x, &dest_y, &child):
             # Window seems to have disappeared, so never mind.
-            debug("couldn't TranslateCoordinates (maybe window is gone)")
+            log("couldn't TranslateCoordinates (maybe window is gone)")
             return
 
         # Send synthetic ConfigureNotify (ICCCM 4.2.3, for example)
