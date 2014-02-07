@@ -1,15 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import ctypes
 from xpra.os_util import strtobytes
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_MMAP_DEBUG")
-warn = log.warn
+from xpra.log import Logger
+log = Logger("mmap")
 
 """
 Utility functions for communicating via mmap
@@ -23,7 +21,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None):
         The caller must keep hold of temp_file to ensure it does not get deleted!
         This is used by the client.
     """
-    debug("init_mmap(%s, %s, %s)", token, mmap_group, socket_filename)
+    log("init_mmap(%s, %s, %s)", token, mmap_group, socket_filename)
     try:
         import mmap
         import tempfile
@@ -44,7 +42,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None):
             os.fchown(fd, -1, s.st_gid)
             os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
         mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
-        debug("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
+        log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
         SEEK_SET = 0        #os.SEEK_SET==0 but this is not available in python2.4
         os.lseek(fd, mmap_size-1, SEEK_SET)
         assert os.write(fd, strtobytes('\x00'))
@@ -58,7 +56,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None):
         return False, None, 0, None, None
 
 def clean_mmap(mmap_filename):
-    debug("clean_mmap(%s)", mmap_filename)
+    log("clean_mmap(%s)", mmap_filename)
     if mmap_filename and os.path.exists(mmap_filename):
         os.unlink(mmap_filename)
 
@@ -66,7 +64,7 @@ MAX_TOKEN_BYTES = 128
 
 def write_mmap_token(mmap_area, token, index=512):
     #write the 16 byte token one byte at a time - no endianness
-    debug("mmap_token=%s", token)
+    log("mmap_token=%s", token)
     v = token
     for i in range(0, MAX_TOKEN_BYTES):
         poke = ctypes.c_ubyte.from_buffer(mmap_area, 512+i)
@@ -98,7 +96,7 @@ def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
         if mmap_token:
             #verify the token:
             v = read_mmap_token(mmap_area)
-            debug("mmap_token=%s, verification=%s", mmap_token, v)
+            log("mmap_token=%s, verification=%s", mmap_token, v)
             if v!=mmap_token:
                 log.warn("WARNING: mmap token verification failed, not using mmap area!")
                 log.warn("expected '%s', found '%s'", mmap_token, v)
@@ -172,7 +170,7 @@ def mmap_write(mmap_area, mmap_size, data):
     #update global mmap stats:
     mmap_free_size = available-l
     if mmap_free_size<=0:
-        warn("mmap area full: we need more than %s but only %s left! ouch!", l, available)
+        log.warn("mmap area full: we need more than %s but only %s left! ouch!", l, available)
         return None, mmap_free_size
     if l<chunk:
         """ data fits in the first chunk """
@@ -207,5 +205,5 @@ def mmap_write(mmap_area, mmap_size, data):
             l2 = l-chunk
             data = [(end, chunk), (8, l2)]
             mmap_data_end.value = 8+l2
-    debug("sending damage with mmap: %s", data)
+    log("sending damage with mmap: %s", data)
     return data, mmap_free_size

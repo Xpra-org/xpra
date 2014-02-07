@@ -1,12 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_OPENCL_DEBUG")
-error = log.error
+from xpra.log import Logger
+log = Logger("csc", "opencl")
 
 import time
 import os
@@ -55,23 +53,23 @@ def log_device_info(device):
     if not device:
         return
     log.info(" using %s device: %s", device_type(device), device_info(device))
-    debug("max_work_group_size=%s", device.max_work_group_size)
-    debug("max_work_item_dimensions=%s", device.max_work_item_dimensions)
-    debug("max_work_item_sizes=%s", device.max_work_item_sizes)
+    log("max_work_group_size=%s", device.max_work_group_size)
+    log("max_work_item_dimensions=%s", device.max_work_item_dimensions)
+    log("max_work_item_sizes=%s", device.max_work_item_sizes)
 
 def log_platforms_info():
-    debug("found %s OpenCL platforms:", len(opencl_platforms))
+    log("found %s OpenCL platforms:", len(opencl_platforms))
     for platform in opencl_platforms:
         devices = platform.get_devices()
         p = "*"
         if not is_supported(platform.name):
             p = "-"
-        debug("%s %s - %s devices:", p, platform_info(platform), len(devices))
+        log("%s %s - %s devices:", p, platform_info(platform), len(devices))
         for d in devices:
             p = "-"
             if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT) and is_supported(platform.name):
                 p = "+"
-            debug(" %s %s: %s", p, device_type(d), device_info(d))
+            log(" %s %s: %s", p, device_type(d), device_info(d))
 
 def log_version_info():
     log.info("PyOpenCL loaded, header version: %s, GL support: %s",
@@ -112,7 +110,7 @@ def select_device():
                     (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0):
                     add_to = best_options
                 if not is_supported(platform.name) and (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)<0):
-                    debug("ignoring unsupported platform/device: %s / %s", platform.name, d.name)
+                    log("ignoring unsupported platform/device: %s / %s", platform.name, d.name)
                     continue
                 #Intel SDK does not work (well?) on AMD CPUs:
                 if platform.name.startswith("Intel") and d.name.startswith("AMD"):
@@ -120,12 +118,12 @@ def select_device():
                     add_to.append((d, platform))
                 else:
                     add_to.insert(0, (d, platform))
-    debug("best device/platform options: %s", best_options)
-    debug("other device/platform options: %s", other_options)
+    log("best device/platform options: %s", best_options)
+    log("other device/platform options: %s", other_options)
     for d, p in best_options+other_options:
         try:
-            debug("trying platform: %s", platform_info(p))
-            debug("with %s device: %s", device_type(d), device_info(d))
+            log("trying platform: %s", platform_info(p))
+            log("with %s device: %s", device_type(d), device_info(d))
             context = pyopencl.Context([d])
             selected_platform = p
             selected_device = d
@@ -141,7 +139,7 @@ def select_device():
                 selected_device_cpu_cost = 100
                 selected_device_gpu_cost = 0
                 selected_device_setup_cost = 20
-            debug("device is a %s, using CPU cost=%s, GPU cost=%s", device_type(d), selected_device_cpu_cost, selected_device_gpu_cost)
+            log("device is a %s, using CPU cost=%s, GPU cost=%s", device_type(d), selected_device_cpu_cost, selected_device_gpu_cost)
             return
         except Exception, e:
             log.warn("failed to use %s", platform_info(p))
@@ -175,7 +173,7 @@ for rgb_mode, channel_order_name in (
                   ("RGB" ,  "RGB"),    #pyopencl.channel_order.RGB
                   ):
     if not hasattr(pyopencl.channel_order, channel_order_name):
-        debug("this build does not have support for %s", channel_order_name)
+        log("this build does not have support for %s", channel_order_name)
         continue
     channel_order = getattr(pyopencl.channel_order, channel_order_name)
     IN_CHANNEL_ORDER.append((rgb_mode, channel_order))
@@ -213,12 +211,12 @@ def gen_yuv_to_rgb():
     #for YUV to RGB support we need to be able to handle the channel_order in WRITE_ONLY mode
     #so we can download the result of the CSC:
     sif = pyopencl.get_supported_image_formats(context, mem_flags.WRITE_ONLY,  pyopencl.mem_object_type.IMAGE2D)
-    debug("get_supported_image_formats(WRITE_ONLY, IMAGE2D)=%s", sif)
+    log("get_supported_image_formats(WRITE_ONLY, IMAGE2D)=%s", sif)
     missing = []
     found_rgb = set()
     def add_yuv_to_rgb(dst_rgb_mode, kernel_rgb_mode, download_rgb_mode, channel_order):
         """ add the kernels converting yuv-to-rgb for the rgb_mode given (and record the channel order)"""
-        debug("add_yuv_to_rgb%s", (dst_rgb_mode, kernel_rgb_mode, download_rgb_mode, CHANNEL_ORDER_TO_STR.get(channel_order)))
+        log("add_yuv_to_rgb%s", (dst_rgb_mode, kernel_rgb_mode, download_rgb_mode, CHANNEL_ORDER_TO_STR.get(channel_order)))
         kernels = gen_yuv_to_rgb_kernels(kernel_rgb_mode)
         for (yuv_mode, krgb_mode), (kname, ksrc) in kernels.items():
             assert krgb_mode==kernel_rgb_mode
@@ -228,7 +226,7 @@ def gen_yuv_to_rgb():
     for rgb_mode, channel_order in IN_CHANNEL_ORDER:
         #why do we discard RGBX download mode? because it doesn't work, don't ask me why
         if not has_image_format(sif, channel_order, pyopencl.channel_type.UNSIGNED_INT8) or rgb_mode=="RGBX":
-            debug("YUV 2 RGB: channel order %s is not supported directly in WRITE_ONLY + UNSIGNED_INT8 mode", CHANNEL_ORDER_TO_STR.get(channel_order))
+            log("YUV 2 RGB: channel order %s is not supported directly in WRITE_ONLY + UNSIGNED_INT8 mode", CHANNEL_ORDER_TO_STR.get(channel_order))
             missing.append((rgb_mode, channel_order))
             continue
         #it is supported natively, so this is easy:
@@ -237,25 +235,25 @@ def gen_yuv_to_rgb():
         add_yuv_to_rgb(rgb_mode, "RGBX", rgb_mode, channel_order)
 
     if len(YUV_to_RGB_KERNELS)>0 and len(missing)>0:
-        debug("YUV 2 RGB: trying to find alternatives for: %s", missing)
+        log("YUV 2 RGB: trying to find alternatives for: %s", missing)
         #now look for rgb byte order workarounds (doing the byteswapping ourselves):
         for dst_rgb_mode, _ in missing:
             if dst_rgb_mode in found_rgb:
                 #we already have an alternative channel_order for this rgb mode
                 #ie: RGBx and RGBA both map to "RGBX" or "RGBA"
-                debug("%s already found", dst_rgb_mode)
+                log("%s already found", dst_rgb_mode)
                 continue
             #we want a mode which is supported and has the same component channels
             for _, download_rgb_mode, channel_order, _ in YUV_to_RGB_KERNELS.values():
                 if len(download_rgb_mode)!=len(dst_rgb_mode):
                     #skip mode if it has fewer channels (could drop one we need)
-                    debug("skipping %s (number of channels different from %s)", download_rgb_mode, dst_rgb_mode)
+                    log("skipping %s (number of channels different from %s)", download_rgb_mode, dst_rgb_mode)
                     continue
                 ok = has_same_channels(download_rgb_mode, dst_rgb_mode)
-                debug("testing %s as byteswap alternative to %s : %s", download_rgb_mode, dst_rgb_mode, ok)
+                log("testing %s as byteswap alternative to %s : %s", download_rgb_mode, dst_rgb_mode, ok)
                 if not ok:
                     continue
-                debug("YUV 2 RGB: using download mode %s to support %s via generated CL kernel byteswapping", download_rgb_mode, dst_rgb_mode)
+                log("YUV 2 RGB: using download mode %s to support %s via generated CL kernel byteswapping", download_rgb_mode, dst_rgb_mode)
                 #now we "just" need to add a kernel which will give us
                 #dst_rgb_mode after the ???X image data is downloaded as download_rgb_mode
                 #ie: we may want BGRX as output, but are downloading the pixels to RGBX (OpenCL does byteswapping)
@@ -267,18 +265,18 @@ def gen_yuv_to_rgb():
                 rindex = {} #reverse index
                 for i in range(4):
                     rindex[dli.index(i)] = i                    #ie: {2:0, 1:1, 0:2, 3:3}
-                debug("YUV 2 RGB: reverse map for download mode %s (%s): %s", download_rgb_mode, dli, rindex)
+                log("YUV 2 RGB: reverse map for download mode %s (%s): %s", download_rgb_mode, dli, rindex)
                 virt_mode = indexes_to_rgb_mode([rindex[x] for x in wanti])
-                debug("YUV 2 RGB: virtual mode for %s (%s): %s", dst_rgb_mode, wanti, virt_mode)
+                log("YUV 2 RGB: virtual mode for %s (%s): %s", dst_rgb_mode, wanti, virt_mode)
                 add_yuv_to_rgb(dst_rgb_mode, virt_mode, download_rgb_mode, channel_order)
                 break
             if dst_rgb_mode not in found_rgb:
                 #not matched:
                 log("YUV 2 RGB: channel order %s is not supported: we don't have a byteswapping alternative", dst_rgb_mode)
                 continue
-    debug("YUV 2 RGB conversions=%s", sorted(YUV_to_RGB_KERNELS.keys()))
-    #debug("YUV 2 RGB kernels=%s", YUV_to_RGB_KERNELS)
-    debug("YUV 2 RGB kernels=%s", sorted(list(set([x[0] for x in YUV_to_RGB_KERNELS.values()]))))
+    log("YUV 2 RGB conversions=%s", sorted(YUV_to_RGB_KERNELS.keys()))
+    #log("YUV 2 RGB kernels=%s", YUV_to_RGB_KERNELS)
+    log("YUV 2 RGB kernels=%s", sorted(list(set([x[0] for x in YUV_to_RGB_KERNELS.values()]))))
     return YUV_to_RGB_KERNELS
 
 
@@ -291,9 +289,9 @@ def gen_rgb_to_yuv():
     RGB_to_YUV_KERNELS = {}
     sif = pyopencl.get_supported_image_formats(context, mem_flags.WRITE_ONLY,  pyopencl.mem_object_type.IMAGE2D)
     sif_copy = pyopencl.get_supported_image_formats(context, mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR,  pyopencl.mem_object_type.IMAGE2D)
-    debug("get_supported_image_formats(READ_ONLY | COPY_HOST_PTR, IMAGE2D)=%s", sif)
+    log("get_supported_image_formats(READ_ONLY | COPY_HOST_PTR, IMAGE2D)=%s", sif)
     sif_use = pyopencl.get_supported_image_formats(context, mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR,  pyopencl.mem_object_type.IMAGE2D)
-    debug("get_supported_image_formats(READ_ONLY | USE_HOST_PTR, IMAGE2D)=%s", sif)
+    log("get_supported_image_formats(READ_ONLY | USE_HOST_PTR, IMAGE2D)=%s", sif)
     if not has_image_format(sif_copy, pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8) or \
        not has_image_format(sif_use, pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8):
         log.error("cannot convert to YUV without support for READ_ONLY R channel with both COPY_HOST_PTR and USE_HOST_PTR")
@@ -301,9 +299,9 @@ def gen_rgb_to_yuv():
     missing = []
     found_rgb = set()
     def add_rgb_to_yuv(src_rgb_mode, kernel_rgb_mode, upload_rgb_mode, channel_order):
-        debug("add_rgb_to_yuv%s", (src_rgb_mode, kernel_rgb_mode, upload_rgb_mode, CHANNEL_ORDER_TO_STR.get(channel_order)))
+        log("add_rgb_to_yuv%s", (src_rgb_mode, kernel_rgb_mode, upload_rgb_mode, CHANNEL_ORDER_TO_STR.get(channel_order)))
         kernels = gen_rgb_to_yuv_kernels(kernel_rgb_mode)
-        #debug("kernels(%s)=%s", rgb_mode, kernels)
+        #log("kernels(%s)=%s", rgb_mode, kernels)
         for key, k_def in kernels.items():
             ksrc, dst = key
             assert ksrc==kernel_rgb_mode
@@ -317,7 +315,7 @@ def gen_rgb_to_yuv():
         if not has_image_format(sif_use, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
             errs.append("USE_HOST_PTR")
         if len(errs)>0:
-            debug("RGB 2 YUV: channel order %s is not supported in READ_ONLY mode(s): %s", src_rgb_mode, " or ".join(errs))
+            log("RGB 2 YUV: channel order %s is not supported in READ_ONLY mode(s): %s", src_rgb_mode, " or ".join(errs))
             missing.append((src_rgb_mode, channel_order))
             continue
         #OpenCL handles this rgb mode natively,
@@ -325,30 +323,30 @@ def gen_rgb_to_yuv():
         #(and let the copy to device deal natively with the format given)
         add_rgb_to_yuv(src_rgb_mode, "RGBX", src_rgb_mode, channel_order)
     if len(missing)>0:
-        debug("RGB 2 YUV: trying to find alternatives for: %s", missing)
+        log("RGB 2 YUV: trying to find alternatives for: %s", missing)
         #now look for rgb byte order workarounds (doing the byteswapping ourselves):
         for src_rgb_mode, _ in missing:
             if src_rgb_mode in found_rgb:
                 #we already have an alternative channel_order for this rgb mode
                 #ie: RGBx and RGBA both map to "RGBX" or "RGBA"
-                debug("%s already found", src_rgb_mode)
+                log("%s already found", src_rgb_mode)
                 continue
             #we want a mode which is supported and has the same component channels
             for _, upload_rgb_mode, channel_order, _ in RGB_to_YUV_KERNELS.values():
                 if len(upload_rgb_mode)!=len(src_rgb_mode):
                     #skip mode if it has fewer channels (could drop one we need)
-                    debug("skipping %s (number of channels different from %s)", upload_rgb_mode, src_rgb_mode)
+                    log("skipping %s (number of channels different from %s)", upload_rgb_mode, src_rgb_mode)
                     continue
                 ok = has_same_channels(upload_rgb_mode, src_rgb_mode)
-                debug("testing %s as byteswap alternative to %s : %s", upload_rgb_mode, src_rgb_mode, ok)
+                log("testing %s as byteswap alternative to %s : %s", upload_rgb_mode, src_rgb_mode, ok)
                 if not ok:
                     continue
-                debug("RGB 2 YUV: using upload mode %s to support %s via generated CL kernel byteswapping", upload_rgb_mode, src_rgb_mode)
+                log("RGB 2 YUV: using upload mode %s to support %s via generated CL kernel byteswapping", upload_rgb_mode, src_rgb_mode)
                 #easier than in YUV 2 RGB above, we just need to work out the starting positions of the RGB pixels:
                 spos = rgb_mode_to_indexes(src_rgb_mode)     #ie: BGRX -> [2,1,0,3]
                 uli = rgb_mode_to_indexes(upload_rgb_mode)   #ie: RGBX -> [0,1,2,3]
                 virt_mode = indexes_to_rgb_mode([uli[x] for x in spos])   #ie: [2,1,0,3]
-                debug("RGB 2 YUV: virtual mode for %s: %s", src_rgb_mode, virt_mode)
+                log("RGB 2 YUV: virtual mode for %s: %s", src_rgb_mode, virt_mode)
                 add_rgb_to_yuv(src_rgb_mode, virt_mode, upload_rgb_mode, channel_order)
                 break
             if src_rgb_mode not in found_rgb:
@@ -356,9 +354,9 @@ def gen_rgb_to_yuv():
                 log("RGB 2 YUV: channel order %s is not supported: we don't have a byteswapping alternative", src_rgb_mode)
                 continue
 
-    debug("RGB 2 YUV conversions=%s", sorted(RGB_to_YUV_KERNELS.keys()))
-    #debug("RGB 2 YUV kernels=%s", RGB_to_YUV_KERNELS)
-    debug("RGB 2 YUV kernels=%s", sorted(list(set([x[0] for x in RGB_to_YUV_KERNELS.values()]))))
+    log("RGB 2 YUV conversions=%s", sorted(RGB_to_YUV_KERNELS.keys()))
+    #log("RGB 2 YUV kernels=%s", RGB_to_YUV_KERNELS)
+    log("RGB 2 YUV kernels=%s", sorted(list(set([x[0] for x in RGB_to_YUV_KERNELS.values()]))))
     return RGB_to_YUV_KERNELS
 
 KERNELS_DEFS = {}
@@ -380,7 +378,7 @@ def gen_kernels():
 
     KERNELS_DEFS = RGB_to_YUV_KERNELS.copy()
     KERNELS_DEFS.update(YUV_to_RGB_KERNELS)
-    debug("all supported conversions=%s", sorted(KERNELS_DEFS.keys()))
+    log("all supported conversions=%s", sorted(KERNELS_DEFS.keys()))
     #work out the unique kernels we have generated (kname -> ksrc)
     NAMES_TO_KERNELS = {}
     for name, _, _, kernel in KERNELS_DEFS.values():
@@ -405,16 +403,16 @@ def build_kernels():
             if len(build_warnings)>0:
                 logfn("%s build warnings:", len(build_warnings))
                 for x in build_warnings:
-                    debug(str(x))
+                    log(str(x))
             logfn("all warnings:%s", "\n* ".join(set([str(x) for x in w])))
         try:
             warnings.simplefilter("always")
-            debug("building %s OpenCL kernels: %s", len(NAMES_TO_KERNELS), ", ".join(sorted(NAMES_TO_KERNELS.keys())))
+            log("building %s OpenCL kernels: %s", len(NAMES_TO_KERNELS), ", ".join(sorted(NAMES_TO_KERNELS.keys())))
             program = pyopencl.Program(context, "\n".join(NAMES_TO_KERNELS.values()))
             program.build()
-            dump_warnings(debug)
+            dump_warnings(log.debug)
         except Exception, e:
-            error("cannot build the OpenCL program: %s", e, exc_info=True)
+            log.error("cannot build the OpenCL program: %s", e, exc_info=True)
             dump_warnings(log.warn)
             raise ImportError("cannot build the OpenCL program: %s" % e)
 
@@ -504,7 +502,7 @@ class ColorspaceConverter(object):
 
     def init_context(self, src_width, src_height, src_format,
                            dst_width, dst_height, dst_format, csc_speed=100):  #@DuplicatedSignature
-        debug("init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, csc_speed))
+        log("init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, csc_speed))
         validate_in_out(src_format, dst_format)
         self.src_width = src_width
         self.src_height = src_height
@@ -530,10 +528,10 @@ class ColorspaceConverter(object):
         else:
             #rgb 2 yuv:
             self.do_convert_image = self.convert_image_rgb
-        debug("init_context(..) kernel source=%s", src)
+        log("init_context(..) kernel source=%s", src)
         self.kernel_function = getattr(self.program, self.kernel_function_name)
-        debug("init_context(..) channel order=%s, filter mode=%s", CHANNEL_ORDER_TO_STR.get(self.channel_order, self.channel_order), FILTER_MODE_TO_STR.get(fm, fm))
-        debug("init_context(..) kernel_function %s: %s", self.kernel_function_name, self.kernel_function)
+        log("init_context(..) channel order=%s, filter mode=%s", CHANNEL_ORDER_TO_STR.get(self.channel_order, self.channel_order), FILTER_MODE_TO_STR.get(fm, fm))
+        log("init_context(..) kernel_function %s: %s", self.kernel_function_name, self.kernel_function)
         assert self.kernel_function
 
     def get_info(self):
@@ -586,7 +584,7 @@ class ColorspaceConverter(object):
 
 
     def clean(self):                        #@DuplicatedSignature
-        debug("clean() queue=%s", self.queue)
+        log("clean() queue=%s", self.queue)
         if self.queue:
             self.queue.finish()
             self.queue = None
@@ -597,7 +595,7 @@ class ColorspaceConverter(object):
         #ensure the local and global work size are valid, see:
         #http://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
         local_w, local_h = 64, 64
-        #debug("max_work_item_sizes=%s, max_work_group_size=%s", selected_device.max_work_item_sizes, selected_device.max_work_group_size)
+        #log("max_work_item_sizes=%s, max_work_group_size=%s", selected_device.max_work_item_sizes, selected_device.max_work_group_size)
         maxw_w, maxw_h = selected_device.max_work_item_sizes[:2]
         while local_w*local_h>selected_device.max_work_group_size or local_w>maxw_w or local_h>maxw_h:
             if local_w>maxw_w:
@@ -620,7 +618,7 @@ class ColorspaceConverter(object):
         if self.do_convert_image==None:
             raise Exception("not initialized!")
         if self.context!=context:
-            debug("old context=%s, new context=%s", self.context, context)
+            log("old context=%s, new context=%s", self.context, context)
             log.info("using new OpenCL context (context changed)")
             self.init_with_device()
         #we should be able to compare program!=self.program
@@ -630,7 +628,7 @@ class ColorspaceConverter(object):
         #Note: at the moment, program only changes when the context does,
         #so this will probably *never* even fire, for now at least.
         elif hasattr(self.program, "int_ptr") and self.program.int_ptr!=program.int_ptr:
-            debug("old program=%s (int_ptr=%s), new program=%s (int_ptr=%s)", self.program, self.program.int_ptr, program, program.int_ptr)
+            log("old program=%s (int_ptr=%s), new program=%s (int_ptr=%s)", self.program, self.program.int_ptr, program, program.int_ptr)
             log.info("using new OpenCL context (program changed)")
             self.init_with_device()
         try:
@@ -692,7 +690,7 @@ class ColorspaceConverter(object):
                        self.sampler, oimage]
 
         kstart = time.time()
-        debug("convert_image(%s) calling %s%s after upload took %.1fms",
+        log("convert_image(%s) calling %s%s after upload took %.1fms",
               image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
         self.kernel_function(*kernelargs)
         self.queue.finish()
@@ -700,12 +698,12 @@ class ColorspaceConverter(object):
         for iimage in input_images:
             iimage.release()
         kend = time.time()
-        debug("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
+        log("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
 
         out_array = numpy.empty(self.dst_width*self.dst_height*4, dtype=numpy.byte)
         pyopencl.enqueue_read_image(self.queue, oimage, (0, 0), (self.dst_width, self.dst_height), out_array)
         self.queue.finish()
-        debug("readback using %s took %.1fms", CHANNEL_ORDER_TO_STR.get(self.channel_order), 1000.0*(time.time()-kend))
+        log("readback using %s took %.1fms", CHANNEL_ORDER_TO_STR.get(self.channel_order), 1000.0*(time.time()-kend))
         self.time += time.time()-start
         self.frames += 1
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, self.dst_width*4, planes=ImageWrapper.PACKED)
@@ -718,7 +716,7 @@ class ColorspaceConverter(object):
         height = image.get_height()
         stride = image.get_rowstride()
         pixels = image.get_pixels()
-        #debug("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
+        #log("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
         assert iplanes==ImageWrapper.PACKED, "we only handle packed data as input!"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
         assert width>=self.src_width and height>=self.src_height, "expected source image with dimensions of at least %sx%s but got %sx%s" % (self.src_width, self.src_height, width, height)
@@ -733,7 +731,7 @@ class ColorspaceConverter(object):
         #input image:
         iformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNSIGNED_INT8)
         shape = (stride/4, self.src_height)
-        debug("convert_image() input image format=%s, shape=%s, work size: local=%s, global=%s", iformat, shape, localWorkSize, globalWorkSize)
+        log("convert_image() input image format=%s, shape=%s, work size: local=%s, global=%s", iformat, shape, localWorkSize, globalWorkSize)
         if type(pixels)==str:
             #str is not a buffer, so we have to copy the data
             #alternatively, we could copy it first ourselves using this:
@@ -758,7 +756,7 @@ class ColorspaceConverter(object):
             p_stride = roundup(self.dst_width / x_div, max(2, localWorkSize[0]))
             p_height = roundup(self.dst_height / y_div, 2)
             p_size = p_stride * p_height
-            #debug("output buffer for channel %s: stride=%s, height=%s, size=%s", i, p_stride, p_height, p_size)
+            #log("output buffer for channel %s: stride=%s, height=%s, size=%s", i, p_stride, p_height, p_size)
             out_buf = pyopencl.Buffer(self.context, mem_flags.WRITE_ONLY, p_size)
             out_buffers.append(out_buf)
             kernelargs += [out_buf, numpy.int32(p_stride)]
@@ -766,13 +764,13 @@ class ColorspaceConverter(object):
             out_sizes.append(p_size)
 
         kstart = time.time()
-        debug("convert_image(%s) calling %s%s after %.1fms", image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
+        log("convert_image(%s) calling %s%s after %.1fms", image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
         self.kernel_function(*kernelargs)
         self.queue.finish()
         #free input image:
         iimage.release()
         kend = time.time()
-        debug("%s took %.1fms", self.kernel_function_name, 1000.0*(kend-kstart))
+        log("%s took %.1fms", self.kernel_function_name, 1000.0*(kend-kstart))
 
         #read back:
         pixels = []
@@ -781,10 +779,10 @@ class ColorspaceConverter(object):
             pixels.append(out_array.data)
             pyopencl.enqueue_read_buffer(self.queue, out_buffers[i], out_array, is_blocking=False)
         readstart = time.time()
-        debug("queue read events took %.1fms (3 planes of size %s, with strides=%s)", 1000.0*(readstart-kend), out_sizes, strides)
+        log("queue read events took %.1fms (3 planes of size %s, with strides=%s)", 1000.0*(readstart-kend), out_sizes, strides)
         self.queue.finish()
         readend = time.time()
-        debug("wait for read events took %.1fms", 1000.0*(readend-readstart))
+        log("wait for read events took %.1fms", 1000.0*(readend-readstart))
         #free output buffers:
         for out_buf in out_buffers:
             out_buf.release()

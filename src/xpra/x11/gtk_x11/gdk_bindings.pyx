@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,7 +16,7 @@ from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.x11.gtk_x11.error import trap, XError
 
 from xpra.log import Logger
-log = Logger("xpra.gtk_x11.gdk_bindings")
+log = Logger("x11", "bindings", "gtk")
 
 def noop(*args, **kwargs):
     pass

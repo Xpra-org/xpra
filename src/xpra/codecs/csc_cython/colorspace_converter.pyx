@@ -1,15 +1,15 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import time
 import struct
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_CSC_CYTHON_DEBUG")
+from xpra.log import Logger
+log = Logger("csc", "cython")
+debug = log.debug
 error = log.error
 
 from xpra.codecs.codec_constants import codec_spec

@@ -1,14 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import weakref
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_AVCODEC_DEBUG")
-error = log.error
+from xpra.log import Logger
+log = Logger("decoder", "avcodec")
 
 #some consumers need a writeable buffer (ie: OpenCL...)
 READ_ONLY = False
@@ -142,14 +140,14 @@ def init_colorspaces():
          }.items():
         av_enum = constants.get(av_enum_str)
         if av_enum is None:
-            debug("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
+            log("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
             continue
         FORMAT_TO_ENUM[pix_fmt] = av_enum
         ENUM_TO_FORMAT[av_enum] = pix_fmt
         COLORSPACES.append(pix_fmt)
-    debug("colorspaces supported by avcodec %s: %s", get_version(), COLORSPACES)
+    log("colorspaces supported by avcodec %s: %s", get_version(), COLORSPACES)
     if len(COLORSPACES)==0:
-        error("avcodec installation problem: no colorspaces found!")
+        log.error("avcodec installation problem: no colorspaces found!")
 
 def get_colorspaces():
     init_colorspaces()
@@ -241,7 +239,7 @@ cdef int avcodec_get_buffer(AVCodecContext *avctx, AVFrame *frame) with gil:
         frame_key = frame_alloc_counter.increase()
         frame.opaque = <void*> frame_key
         decoder.add_framewrapper(frame_wrapper, frame_key)
-    #debug("avcodec_get_buffer(%s, %s) ret=%s, decoder=%s, frame pointer=%s",
+    #log("avcodec_get_buffer(%s, %s) ret=%s, decoder=%s, frame pointer=%s",
     #        hex(<unsigned long> avctx), hex(frame_key), ret, decoder, hex(frame_key))
     return ret
 
@@ -251,7 +249,7 @@ cdef void avcodec_release_buffer(AVCodecContext *avctx, AVFrame *frame) with gil
     """
     cdef unsigned long frame_key = get_frame_key(frame)
     cdef Decoder decoder                        #@DuplicatedSignature
-    debug("avcodec_release_buffer(%s, %s) frame_key=%s", hex(<unsigned long> avctx), hex(<unsigned long> frame), hex(frame_key))
+    log("avcodec_release_buffer(%s, %s) frame_key=%s", hex(<unsigned long> avctx), hex(<unsigned long> frame), hex(frame_key))
     decoder = get_decoder(avctx)
     decoder.av_free(frame_key)
 
@@ -271,10 +269,10 @@ cdef class AVFrameWrapper:
         self.frame = frame
         self.av_freed = 0
         self.xpra_freed = 0
-        debug("%s.set_context(%s, %s)", self, hex(<long> avctx), hex(<long> frame))
+        log("%s.set_context(%s, %s)", self, hex(<long> avctx), hex(<long> frame))
 
     def __dealloc__(self):
-        #debug("CSCImage.__dealloc__()")
+        #log("CSCImage.__dealloc__()")
         #By the time this wrapper is garbage collected,
         #we must have freed it!
         assert self.av_freed, "AVFrameWrapper falling out of scope before being freed by avcodec!"
@@ -287,7 +285,7 @@ cdef class AVFrameWrapper:
         return "AVFrameWrapper(%s)" % hex(self.get_key())
 
     def xpra_free(self):
-        debug("%s.xpra_free() av_freed=%s", self, self.av_freed)
+        log("%s.xpra_free() av_freed=%s", self, self.av_freed)
         self.xpra_freed = 1
         if self.av_freed==0:
             return False
@@ -295,7 +293,7 @@ cdef class AVFrameWrapper:
         return True
 
     def av_free(self):
-        debug("%s.av_free() xpra_freed=%s", self, self.xpra_freed)
+        log("%s.av_free() xpra_freed=%s", self, self.xpra_freed)
         self.av_freed = 1
         if self.xpra_freed==0:
             return False
@@ -303,7 +301,7 @@ cdef class AVFrameWrapper:
         return True
 
     cdef free(self):
-        debug("%s.free() context=%s, frame=%s", self, hex(<unsigned long> self.avctx), hex(<unsigned long> self.frame))
+        log("%s.free() context=%s, frame=%s", self, hex(<unsigned long> self.avctx), hex(<unsigned long> self.frame))
         if self.avctx!=NULL and self.frame!=NULL:
             avcodec_default_release_buffer(self.avctx, self.frame)
             self.frame = NULL
@@ -323,17 +321,17 @@ class AVImageWrapper(ImageWrapper):
         return ImageWrapper.__str__(self)+"-(%s)" % self.av_frame
 
     def free(self):                             #@DuplicatedSignature
-        debug("AVImageWrapper.free()")
+        log("AVImageWrapper.free()")
         ImageWrapper.free(self)
         self.xpra_free_frame()
 
     def clone_pixel_data(self):
-        debug("AVImageWrapper.clone_pixel_data()")
+        log("AVImageWrapper.clone_pixel_data()")
         ImageWrapper.clone_pixel_data(self)
         self.xpra_free_frame()
 
     def xpra_free_frame(self):
-        debug("AVImageWrapper.xpra_free_frame() av_frame=%s", self.av_frame)
+        log("AVImageWrapper.xpra_free_frame() av_frame=%s", self.av_frame)
         if self.av_frame:
             assert self.decoder, "no decoder set!"
             self.decoder.xpra_free(self.av_frame.get_key())
@@ -373,11 +371,11 @@ cdef class Decoder:
                 self.colorspace = x
                 break
         if self.colorspace==NULL:
-            error("invalid pixel format: %s", colorspace)
+            log.error("invalid pixel format: %s", colorspace)
             return  False
         self.pix_fmt = FORMAT_TO_ENUM.get(colorspace, PIX_FMT_NONE)
         if self.pix_fmt==PIX_FMT_NONE:
-            error("invalid pixel format: %s", colorspace)
+            log.error("invalid pixel format: %s", colorspace)
             return  False
         self.actual_pix_fmt = self.pix_fmt
 
@@ -386,19 +384,19 @@ cdef class Decoder:
         if self.encoding=="h264":
             self.codec = avcodec_find_decoder(CODEC_ID_H264)
             if self.codec==NULL:
-                error("codec H264 not found!")
+                log.error("codec H264 not found!")
                 return  False
         else:
             assert self.encoding=="vp8"
             self.codec = avcodec_find_decoder(CODEC_ID_VP8)
             if self.codec==NULL:
-                error("codec VP8 not found!")
+                log.error("codec VP8 not found!")
                 return  False
 
         #from here on, we have to call clean_decoder():
         self.codec_ctx = avcodec_alloc_context3(self.codec)
         if self.codec_ctx==NULL:
-            error("failed to allocate codec context!")
+            log.error("failed to allocate codec context!")
             self.clean_decoder()
             return  False
 
@@ -413,12 +411,12 @@ cdef class Decoder:
         self.codec_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
         r = avcodec_open2(self.codec_ctx, self.codec, NULL)
         if r<0:
-            error("could not open codec: %s", self.av_error_str(r))
+            log.error("could not open codec: %s", self.av_error_str(r))
             self.clean_decoder()
             return  False
         self.frame = avcodec_alloc_frame()
         if self.frame==NULL:
-            error("could not allocate an AVFrame for decoding")
+            log.error("could not allocate an AVFrame for decoding")
             self.clean_decoder()
             return  False
         self.frames = 0
@@ -431,7 +429,7 @@ cdef class Decoder:
         global DECODERS
         cdef unsigned long ctx_key = get_context_key(self.codec_ctx)
         DECODERS[ctx_key] = self
-        debug("dec_avcodec.Decoder.init_context(%s, %s, %s) self=%s", width, height, colorspace, self.get_info())
+        log("dec_avcodec.Decoder.init_context(%s, %s, %s) self=%s", width, height, colorspace, self.get_info())
         return True
 
     def clean(self):
@@ -439,7 +437,7 @@ cdef class Decoder:
 
     def clean_decoder(self):
         cdef int r                      #@DuplicateSignature
-        debug("%s.clean_decoder()", self)
+        log("%s.clean_decoder()", self)
         #we may have images handed out, ensure we don't reference any memory
         #that needs to be freed using avcodec_release_buffer(..)
         #as this requires the context to still be valid!
@@ -447,17 +445,17 @@ cdef class Decoder:
         if self.weakref_images:
             images = [y for y in [x() for x in self.weakref_images] if y is not None]
             self.weakref_images = []
-            debug("clean_decoder() cloning pixels for images still in use: %s", images)
+            log("clean_decoder() cloning pixels for images still in use: %s", images)
             for img in images:
                 img.clone_pixel_data()
 
-        debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
+        log("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
         if self.frame!=NULL:
             avcodec_free_frame(&self.frame)
             #redundant: self.frame = NULL
 
         cdef unsigned long ctx_key          #@DuplicatedSignature
-        debug("clean_decoder() freeing AVCodecContext: %s", hex(<unsigned long> self.codec_ctx))
+        log("clean_decoder() freeing AVCodecContext: %s", hex(<unsigned long> self.codec_ctx))
         if self.codec_ctx!=NULL:
             r = avcodec_close(self.codec_ctx)
             if r!=0:
@@ -468,7 +466,7 @@ cdef class Decoder:
             if ctx_key in DECODERS:
                 DECODERS[ctx_key] = self
             self.codec_ctx = NULL
-        debug("clean_decoder() done")
+        log("clean_decoder() done")
 
     cdef av_error_str(self, errnum):
         cdef char[128] err_str
@@ -554,7 +552,7 @@ cdef class Decoder:
             if self.actual_pix_fmt not in ENUM_TO_FORMAT:
                 self.frame_error()
                 raise Exception("unknown output pixel format: %s, expected %s (%s)" % (self.actual_pix_fmt, self.pix_fmt, self.colorspace))
-            debug("avcodec actual output pixel format is %s (%s), expected %s (%s)", self.actual_pix_fmt, self.get_actual_colorspace(), self.pix_fmt, self.colorspace)
+            log("avcodec actual output pixel format is %s (%s), expected %s (%s)", self.actual_pix_fmt, self.get_actual_colorspace(), self.pix_fmt, self.colorspace)
 
         #print("decompress image: colorspace=%s / %s" % (self.colorspace, self.get_colorspace()))
         cs = self.get_actual_colorspace()
@@ -608,7 +606,7 @@ cdef class Decoder:
         self.weakref_images = [x for x in self.weakref_images if x() is not None]
         ref = weakref.ref(img)
         self.weakref_images.append(ref)
-        debug("%s.decompress_image(%s:%s, %s)=%s", self, type(input), buf_len, options, img)
+        log("%s.decompress_image(%s:%s, %s)=%s", self, type(input), buf_len, options, img)
         return img
 
 
@@ -632,14 +630,14 @@ cdef class Decoder:
     cdef add_framewrapper(self, AVFrameWrapper frame_wrapper, unsigned long frame_key):
         if len(self.framewrappers)>50:
             log.warn("too many frames kept in memory - dec_avcodec is probably leaking memory")
-        debug("add_framewrapper(%s, %s) known frame keys: %s", frame_wrapper, hex(frame_key),
+        log("add_framewrapper(%s, %s) known frame keys: %s", frame_wrapper, hex(frame_key),
                                 [hex(x) for x in self.framewrappers.keys()])
         self.framewrappers[int(frame_key)] = frame_wrapper
 
     cdef av_free(self, unsigned long frame_key):        #@DuplicatedSignature
         cdef AVFrameWrapper framewrapper                #@DuplicatedSignature
         framewrapper = self.get_framewrapper(frame_key, True)
-        debug("av_free(%s) framewrapper=%s", hex(frame_key), framewrapper)
+        log("av_free(%s) framewrapper=%s", hex(frame_key), framewrapper)
         if framewrapper is not None and framewrapper.av_free():
             #frame has been freed - remove it from dict:
             del self.framewrappers[frame_key]
@@ -647,7 +645,7 @@ cdef class Decoder:
     def xpra_free(self, unsigned long frame_key):       #@DuplicatedSignature
         cdef AVFrameWrapper framewrapper                #@DuplicatedSignature
         framewrapper = self.get_framewrapper(frame_key)
-        debug("xpra_free(%s) framewrapper=%s", hex(frame_key), framewrapper)
+        log("xpra_free(%s) framewrapper=%s", hex(frame_key), framewrapper)
         if framewrapper.xpra_free():
             #frame has been freed - remove it from dict:
             del self.framewrappers[frame_key]

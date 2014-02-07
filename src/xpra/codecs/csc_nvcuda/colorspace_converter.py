@@ -1,15 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.codecs.csc_nvcuda.CUDA_kernels import gen_rgb_to_yuv_kernels
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_CUDA_DEBUG")
-error = log.error
+from xpra.log import Logger
+log = Logger("csc", "cuda")
 
 import threading
 import os
@@ -54,14 +52,14 @@ def get_CUDA_kernel(device_id, src_format, dst_format):
     global KERNEL_cubins
     cubin = KERNEL_cubins.get((device_id, function_name))
     if cubin is None:
-        debug("compiling for device %s: %s=%s", device_id, function_name, ksrc)
+        log("compiling for device %s: %s=%s", device_id, function_name, ksrc)
         cubin = compile(ksrc)
         KERNEL_cubins[(device_id, function_name)] = cubin
     #now load from cubin:
     mod = driver.module_from_buffer(cubin)
     CUDA_function = mod.get_function(function_name)
     end = time.time()
-    debug("compilation of %s took %.1fms", function_name, 1000.0*(end-start))
+    log("compilation of %s took %.1fms", function_name, 1000.0*(end-start))
     return function_name, CUDA_function
 
 
@@ -82,9 +80,9 @@ def select_device():
         if host_mem:
             pre = "+"
         log.info(" %s %s", pre, device_info(d))
-        #debug("CAN_MAP_HOST_MEMORY=%s", host_mem)
+        #log("CAN_MAP_HOST_MEMORY=%s", host_mem)
         #attr = d.get_attributes()
-        #debug("compute_capability=%s, attributes=%s", d.compute_capability(), attr)
+        #log("compute_capability=%s, attributes=%s", d.compute_capability(), attr)
         if host_mem and (device is None or i==DEFAULT_CUDA_DEVICE_ID):
             device = d
             device_id = i
@@ -117,11 +115,11 @@ def init_module():
     log_sys_info()
     device_id, device = select_device()
     context = device.make_context(flags=driver.ctx_flags.SCHED_YIELD | driver.ctx_flags.MAP_HOST)
-    debug("testing with context=%s", context)
-    debug("api version=%s", context.get_api_version())
+    log("testing with context=%s", context)
+    log("api version=%s", context.get_api_version())
     free, total = driver.mem_get_info()
-    debug("using device %s",  device_info(device))
-    debug("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
+    log("using device %s",  device_info(device))
+    log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
     context_wrapper = CudaContextWrapper(context)
 
     #generate kernel sources:
@@ -203,28 +201,28 @@ class ColorspaceConverter(object):
 
     def init_cuda(self):
         self.cuda_device = driver.Device(self.device_id)
-        debug("init_cuda() device_id=%s, device info: %s", self.device_id, device_info(self.cuda_device))
+        log("init_cuda() device_id=%s, device info: %s", self.device_id, device_info(self.cuda_device))
         self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
         #use alias to make code easier to read:
         d = self.cuda_device
         da = driver.device_attribute
         try:
-            debug("init_cuda() cuda_device=%s, cuda_context=%s, thread=%s", self.cuda_device, self.cuda_context, threading.currentThread())
+            log("init_cuda() cuda_device=%s, cuda_context=%s, thread=%s", self.cuda_device, self.cuda_context, threading.currentThread())
             #compile/get kernel:
             self.kernel_function_name, self.kernel_function = get_CUDA_kernel(self.device_id, self.src_format, self.dst_format)
 
             self.max_block_sizes = d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z)
             self.max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z)
-            debug("max_block_sizes=%s", self.max_block_sizes)
-            debug("max_grid_sizes=%s", self.max_grid_sizes)
+            log("max_block_sizes=%s", self.max_block_sizes)
+            log("max_grid_sizes=%s", self.max_grid_sizes)
 
             self.max_threads_per_block = self.kernel_function.get_attribute(driver.function_attribute.MAX_THREADS_PER_BLOCK)
-            debug("max_threads_per_block=%s", self.max_threads_per_block)
+            log("max_threads_per_block=%s", self.max_threads_per_block)
         finally:
             self.cuda_context.pop()
 
         self.convert_image_fn = self.convert_image_rgb
-        debug("init_context(..) convert_image=%s", self.convert_image)
+        log("init_context(..) convert_image=%s", self.convert_image)
         self.cuda_device_info = {
             "context.api_version"   : self.cuda_context.get_api_version(),
             "device.name"           : d.name(),
@@ -282,7 +280,7 @@ class ColorspaceConverter(object):
 
 
     def clean(self):                        #@DuplicatedSignature
-        debug("%s.clean() context=%s", self, self.cuda_context)
+        log("%s.clean() context=%s", self, self.cuda_context)
         if self.cuda_context:
             self.cuda_context.detach()
             self.cuda_context = None
@@ -290,7 +288,7 @@ class ColorspaceConverter(object):
     def convert_image(self, image):
         try:
             self.cuda_context.push()
-            debug("convert_image(%s) calling %s with context %s pushed on thread %s", image, self.convert_image_fn, self.cuda_context, threading.currentThread())
+            log("convert_image(%s) calling %s with context %s pushed on thread %s", image, self.convert_image_fn, self.cuda_context, threading.currentThread())
             return self.convert_image_fn(image)
         finally:
             self.cuda_context.pop()
@@ -303,7 +301,7 @@ class ColorspaceConverter(object):
         h = image.get_height()
         stride = image.get_rowstride()
         pixels = image.get_pixels()
-        debug("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
+        log("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
         assert iplanes==ImageWrapper.PACKED, "must use packed format as input"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
         divs = get_subsampling_divs(self.dst_format)
@@ -331,7 +329,7 @@ class ColorspaceConverter(object):
         stream.synchronize()
         #we can now unpin the host memory:
         hmem.base.unregister()
-        debug("allocation and upload took %.1fms", 1000.0*(time.time() - upload_start))
+        log("allocation and upload took %.1fms", 1000.0*(time.time() - upload_start))
 
         kstart = time.time()
         kargs = [in_buf, numpy.int32(stride)]
@@ -348,13 +346,13 @@ class ColorspaceConverter(object):
         gridh = max(1, h/blockh/ydiv)
         if gridh*2*blockh<h:
             gridh += 1
-        debug("calling %s%s, with grid=%s, block=%s", self.kernel_function_name, tuple(kargs), (gridw, gridh), (blockw, blockh, 1))
+        log("calling %s%s, with grid=%s, block=%s", self.kernel_function_name, tuple(kargs), (gridw, gridh), (blockw, blockh, 1))
         self.kernel_function(*kargs, block=(blockw,blockh,1), grid=(gridw, gridh))
 
         #we can now free the GPU source buffer:
         in_buf.free()
         kend = time.time()
-        debug("%s took %.1fms", self.kernel_function_name, (kend-kstart)*1000.0)
+        log("%s took %.1fms", self.kernel_function_name, (kend-kstart)*1000.0)
         self.frames += 1
 
         #copy output YUV channel data to host memory:
@@ -377,6 +375,6 @@ class ColorspaceConverter(object):
             out_buf.free()
         self.cuda_context.synchronize()
         read_end = time.time()
-        debug("strides=%s", strides)
-        debug("read back took %.1fms, total time: %.1f", (read_end-read_start)*1000.0, 1000.0*(time.time()-start))
+        log("strides=%s", strides)
+        log("read back took %.1fms, total time: %.1f", (read_end-read_start)*1000.0, 1000.0*(time.time()-start))
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, pixels, self.dst_format, 24, strides, planes=ImageWrapper._3_PLANES)

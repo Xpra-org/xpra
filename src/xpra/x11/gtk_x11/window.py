@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -45,7 +45,7 @@ from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.pointer_grab import PointerGrabHelper
 
 from xpra.log import Logger
-log = Logger()
+log = Logger("x11", "window")
 
 if gtk.pygtk_version<(2,17):
     log.error("your version of PyGTK is too old - expect some bugs")

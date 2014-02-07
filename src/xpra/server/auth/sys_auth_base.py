@@ -1,14 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.dotxpra import DotXpra
 from xpra.util import xor
 from xpra.os_util import get_hex_uuid
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_AUTH_DEBUG")
+from xpra.log import Logger
+log = Logger("auth")
 
 
 socket_dir = None

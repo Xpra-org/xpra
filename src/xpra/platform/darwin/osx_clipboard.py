@@ -1,12 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import gobject
 
+from xpra.log import Logger
+log = Logger("clipboard", "osx")
+
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-from xpra.clipboard.clipboard_base import ClipboardProxy, TEXT_TARGETS, debug, log
+from xpra.clipboard.clipboard_base import ClipboardProxy, TEXT_TARGETS
 
 def update_clipboard_change_count():
     return 0
@@ -26,16 +29,16 @@ try:
             global change_count
             c = change_count
             change_count = pasteboard.changeCount()
-            debug("timer_clipboard_check() was %s, now %s", c, change_count)
+            log("timer_clipboard_check() was %s, now %s", c, change_count)
             if c!=change_count:
                 for x in change_callbacks:
                     try:
                         x()
                     except Exception, e:
-                        debug("error in change callback %s: %s", x, e)
+                        log("error in change callback %s: %s", x, e)
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         w = get_UI_watcher()
-        debug("UI watcher=%s", w)
+        log("UI watcher=%s", w)
         if w:
             w.add_alive_callback(timer_clipboard_check)
 except ImportError, e:
@@ -76,7 +79,7 @@ class OSXClipboardProxy(ClipboardProxy):
 
     def got_token(self, targets, target_data):
         # We got the anti-token.
-        debug("got token, selection=%s, targets=%s, target_data=%s", self._selection, targets, target_data)
+        log("got token, selection=%s, targets=%s, target_data=%s", self._selection, targets, target_data)
         self._block_owner_change = True
         self._have_token = True
         for target in targets:
@@ -86,15 +89,15 @@ class OSXClipboardProxy(ClipboardProxy):
             for text_target in TEXT_TARGETS:
                 if text_target in target_data:
                     text_data = target_data.get(text_target)
-                    debug("clipboard %s set to '%s'", self._selection, text_data)
+                    log("clipboard %s set to '%s'", self._selection, text_data)
                     self._clipboard.set_text(text_data)
         #prevent our change from firing another clipboard update:
         c = update_clipboard_change_count()
-        debug("change count now at %s", c)
+        log("change count now at %s", c)
         gobject.idle_add(self.remove_block)
 
     def local_clipboard_changed(self):
-        debug("local_clipboard_changed() greedy_client=%s", self._greedy_client)
+        log("local_clipboard_changed() greedy_client=%s", self._greedy_client)
         if (self._greedy_client or not self._have_token) and not self._block_owner_change:
             self._have_token = False
             self.emit("send-clipboard-token", self._selection)

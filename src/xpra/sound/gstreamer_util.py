@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_SOUND_DEBUG")
+from xpra.log import Logger
+log = Logger("sound")
 
 SOUND_TEST_MODE = os.environ.get("XPRA_SOUND_TEST", "0")!="0"
 
@@ -144,14 +143,14 @@ def get_all_plugin_names():
         registry = gst.registry_get_default()
         all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
         all_plugin_names.sort()
-        debug("found the following plugins: %s", all_plugin_names)
+        log("found the following plugins: %s", all_plugin_names)
     return all_plugin_names
 
 def has_plugins(*names):
     allp = get_all_plugin_names()
     missing = [name for name in names if (name is not None and name not in allp)]
     if len(missing)>0:
-        debug("missing %s from %s (all=%s)", missing, names, allp)
+        log("missing %s from %s (all=%s)", missing, names, allp)
     return len(missing)==0
 
 def get_encoder_formatter(name):
@@ -228,7 +227,7 @@ def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_p
             codec = None
         if codec is None:
             codec = ordered_codecs[0]
-        debug("using sound codec %s", codec)
+        log("using sound codec %s", codec)
         from xpra.sound.src import SoundSource
         if SOUND_TEST_MODE:
             sound_source = SoundSource("audiotestsrc", {"wave":2, "freq":110, "volume":0.4}, codec, volume, {})
@@ -240,7 +239,7 @@ def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_p
                 log.error("pulseaudio not supported - sound disabled")
                 return    None
             pa_server = get_pulse_server()
-            debug("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote_pulseaudio_server, pa_server)
+            log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote_pulseaudio_server, pa_server)
             #only worth comparing if we have a real server string
             #one that starts with {UUID}unix:/..
             if pa_server and pa_server.startswith("{") and \
@@ -248,12 +247,12 @@ def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_p
                 log.error("identical pulseaudio server, refusing to create a sound loop - sound disabled")
                 return    None
             pa_id = get_pulse_id()
-            debug("start sound, client id=%s, server id=%s", remote_pulseaudio_id, pa_id)
+            log("start sound, client id=%s, server id=%s", remote_pulseaudio_id, pa_id)
             if remote_pulseaudio_id and remote_pulseaudio_id==pa_id:
                 log.error("identical pulseaudio ID, refusing to create a sound loop - sound disabled")
                 return    None
             monitor_devices = get_pa_device_options(True, False)
-            debug("found pulseaudio monitor devices: %s", monitor_devices)
+            log("found pulseaudio monitor devices: %s", monitor_devices)
             if len(monitor_devices)==0:
                 log.error("could not detect any pulseaudio monitor devices - sound forwarding is disabled")
                 return    None

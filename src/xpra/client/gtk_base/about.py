@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2009-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2009-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,7 +19,7 @@ from xpra.scripts.config import get_build_info
 from xpra import __version__
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.log import Logger
-log = Logger()
+log = Logger("info")
 
 
 APPLICATION_NAME = "Xpra"

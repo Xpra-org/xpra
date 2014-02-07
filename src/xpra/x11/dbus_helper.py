@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import dbus
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_DBUS_DEBUG")
+from xpra.log import Logger
+log = Logger("dbus")
 
 
 class DBusHelper(object):
@@ -20,18 +19,18 @@ class DBusHelper(object):
         try:
             #remote_object = self.bus.get_object("com.example.SampleService","/SomeObject")
             obj = self.bus.get_object(bus_name, path)
-            debug("dbus.get_object(%s, %s)=%s", bus_name, path, obj)
+            log("dbus.get_object(%s, %s)=%s", bus_name, path, obj)
         except dbus.DBusException:
             err_cb("failed to locate object at: %s:%s" % (bus_name, path))
             return
         try:
             fn = obj.get_dbus_method(function, interface)
-            debug("%s.get_dbus_method(%s, %s)=%s", obj, function, interface, fn)
+            log("%s.get_dbus_method(%s, %s)=%s", obj, function, interface, fn)
         except:
             err_cb("failed to locate remote function '%s' on %s" % (function, obj))
             return
         try:
-            debug("calling %s(%s)", fn, args)
+            log("calling %s(%s)", fn, args)
             fn(*args, dbus_interface=interface, reply_handler=ok_cb, error_handler=err_cb)
         except Exception, e:
             err_cb("error invoking %s on %s: %s", function, obj, e)

@@ -1,13 +1,13 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import gtk.gdk
 
 from xpra.log import Logger
-log = Logger()
+log = Logger("shadow")
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata

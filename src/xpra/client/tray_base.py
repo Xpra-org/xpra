@@ -1,16 +1,15 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 
 from xpra.platform.paths import get_icon_dir
-from xpra.log import Logger, debug_if_env
+from xpra.log import Logger
 from xpra.deque import maxdeque
-log = Logger()
-debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
+log = Logger("tray")
 
 
 class TrayBase(object):
@@ -40,11 +39,11 @@ class TrayBase(object):
 
     def get_tray_icon_filename(self, cmdlineoverride=None):
         if cmdlineoverride and os.path.exists(cmdlineoverride):
-            debug("get_tray_icon_filename using %s from command line", cmdlineoverride)
+            log("get_tray_icon_filename using %s from command line", cmdlineoverride)
             return  cmdlineoverride
         f = os.path.join(get_icon_dir(), self.default_icon_name)
         if os.path.exists(f):
-            debug("get_tray_icon_filename using default: %s", f)
+            log("get_tray_icon_filename using default: %s", f)
             return  f
         return  None
 
@@ -95,11 +94,11 @@ class TrayBase(object):
             log.error("could not find icon '%s' for name '%s'", filename, basefilename)
             return
         abspath = os.path.abspath(filename)
-        debug("set_icon(%s) using filename=%s", basefilename, abspath)
+        log("set_icon(%s) using filename=%s", basefilename, abspath)
         self.set_icon_from_file(abspath)
 
     def set_icon_from_file(self, filename):
-        debug("set_icon_from_file(%s) tray_widget=%s", filename, self.tray_widget)
+        log("set_icon_from_file(%s) tray_widget=%s", filename, self.tray_widget)
         if not self.tray_widget:
             return
         self.do_set_icon_from_file(filename)

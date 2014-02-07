@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -362,7 +362,7 @@ When unspecified, all the available codecs are allowed and the first one is used
         debug_default = "all"
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=debug_default, metavar="FILTER1,FILTER2,...",
-                      help="List of categories to enable debugging for (or \"all\")")
+                      help="List of categories to enable debugging for (or \"all\", \"help\")")
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",
                       help="How to run ssh (default: '%default')")
@@ -489,35 +489,25 @@ def configure_logging(options, mode):
     else:
         logging.root.addHandler(logging.StreamHandler(sys.stdout))
 
-    def toggle_logging(level):
-        if not options.debug:
-            logging.root.setLevel(level)
-            return
+    from xpra.log import add_debug_category, enable_debug_for, KNOWN_FILTERS
+    if options.debug:
         categories = options.debug.split(",")
         for cat in categories:
-            if cat.startswith("-"):
-                logging.getLogger(cat[1:]).setLevel(logging.INFO)
-            if cat == "all":
-                logger = logging.root
-            else:
-                logger = logging.getLogger(cat)
-            logger.setLevel(level)
+            if cat=="help":
+                print("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
+                sys.exit(1)
+            #this sets up our own logging utility:
+            add_debug_category(cat)
+            enable_debug_for(cat)
 
-    #set debug log on if required:
-    if options.debug:
-        toggle_logging(logging.DEBUG)
-    else:
-        toggle_logging(logging.INFO)
+    #always log debug level, we just use it selectively (see above)
+    logging.root.setLevel(logging.DEBUG)
 
     #register posix signals for debugging:
     if os.name=="posix":
         def sigusr1(*args):
             dump_frames()
-            toggle_logging(logging.DEBUG)
-        def sigusr2(*args):
-            toggle_logging(logging.INFO)
         signal.signal(signal.SIGUSR1, sigusr1)
-        signal.signal(signal.SIGUSR2, sigusr2)
 
 
 def run_mode(script_file, parser, options, args, mode):

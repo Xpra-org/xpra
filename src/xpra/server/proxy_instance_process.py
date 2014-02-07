@@ -11,9 +11,9 @@ import gobject
 gobject.threads_init()
 from threading import Timer
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_PROXY_DEBUG")
+from xpra.log import Logger
+log = Logger("proxy")
+
 
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
@@ -51,7 +51,7 @@ class ProxyInstanceProcess(Process):
         self.encryption_key = encryption_key
         self.server_conn = server_conn
         self.caps = caps
-        debug("ProxyProcess%s", (uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, "{..}"))
+        log("ProxyProcess%s", (uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, "{..}"))
         self.client_protocol = None
         self.server_protocol = None
         self.exit = False
@@ -72,7 +72,7 @@ class ProxyInstanceProcess(Process):
 
     def server_message_queue(self):
         while True:
-            debug("waiting for server message on %s", self.message_queue)
+            log("waiting for server message on %s", self.message_queue)
             m = self.message_queue.get()
             log.info("proxy server message: %s", m)
             if m=="stop":
@@ -107,13 +107,13 @@ class ProxyInstanceProcess(Process):
         timer.start()
 
     def run(self):
-        debug("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), os.getuid(), os.getgid())
+        log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), os.getuid(), os.getgid())
         #change uid and gid:
         if os.getgid()!=self.gid:
             os.setgid(self.gid)
         if os.getuid()!=self.uid:
             os.setuid(self.uid)
-        debug("ProxyProcess.run() new uid=%s, gid=%s", os.getuid(), os.getgid())
+        log("ProxyProcess.run() new uid=%s, gid=%s", os.getuid(), os.getgid())
 
         if self.env_options:
             #TODO: whitelist env update?
@@ -123,7 +123,7 @@ class ProxyInstanceProcess(Process):
 
         signal.signal(signal.SIGTERM, self.signal_quit)
         signal.signal(signal.SIGINT, self.signal_quit)
-        debug("registered signal handler %s", self.signal_quit)
+        log("registered signal handler %s", self.signal_quit)
 
         make_daemon_thread(self.server_message_queue, "server message queue").start()
 
@@ -151,7 +151,7 @@ class ProxyInstanceProcess(Process):
         self.encode_thread = make_daemon_thread(self.encode_loop, "encode")
         self.encode_thread.start()
 
-        debug("starting network threads")
+        log("starting network threads")
         self.server_protocol.start()
         self.client_protocol.start()
 
@@ -165,7 +165,7 @@ class ProxyInstanceProcess(Process):
             except KeyboardInterrupt, e:
                 self.stop(str(e))
         finally:
-            debug("ProxyProcess.run() ending %s", os.getpid())
+            log("ProxyProcess.run() ending %s", os.getpid())
 
     def create_control_socket(self):
         dotxpra = DotXpra(self.socket_dir)
@@ -308,7 +308,7 @@ class ProxyInstanceProcess(Process):
                         continue
                     for spec in especs:                             #ie: codec_spec("x264")
                         if spec.codec_type not in self.video_encoder_types:
-                            debug("skipping encoder %s", spec.codec_type)
+                            log("skipping encoder %s", spec.codec_type)
                             continue
                         spec_props = spec.to_dict()
                         del spec_props["codec_class"]               #not serializable!
@@ -350,12 +350,12 @@ class ProxyInstanceProcess(Process):
 
 
     def run_queue(self):
-        debug("run_queue() queue has %s items already in it", self.main_queue.qsize())
+        log("run_queue() queue has %s items already in it", self.main_queue.qsize())
         #process "idle_add"/"timeout_add" events in the main loop:
         while not self.exit:
-            debug("run_queue() size=%s", self.main_queue.qsize())
+            log("run_queue() size=%s", self.main_queue.qsize())
             v = self.main_queue.get()
-            debug("run_queue() item=%s", v)
+            log("run_queue() item=%s", v)
             if v is None:
                 break
             fn, args, kwargs = v
@@ -370,7 +370,7 @@ class ProxyInstanceProcess(Process):
         log.info("proxy instance %s stopped", os.getpid())
 
     def stop(self, reason="proxy terminating", skip_proto=None):
-        debug("stop(%s, %s)", reason, skip_proto)
+        log("stop(%s, %s)", reason, skip_proto)
         self.exit = True
         if self.control_socket_path:
             try:
@@ -392,19 +392,19 @@ class ProxyInstanceProcess(Process):
 
 
     def queue_client_packet(self, packet):
-        debug("queueing client packet: %s", packet[0])
+        log("queueing client packet: %s", packet[0])
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
 
     def get_client_packet(self):
         #server wants a packet
         p = self.client_packets.get()
-        debug("sending to client: %s", p[0])
+        log("sending to client: %s", p[0])
         return p, None, None, self.client_packets.qsize()>0
 
     def process_client_packet(self, proto, packet):
         packet_type = packet[0]
-        debug("process_client_packet: %s", packet_type)
+        log("process_client_packet: %s", packet_type)
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop("client connection lost", proto)
             return
@@ -420,19 +420,19 @@ class ProxyInstanceProcess(Process):
 
 
     def queue_server_packet(self, packet):
-        debug("queueing server packet: %s", packet[0])
+        log("queueing server packet: %s", packet[0])
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
 
     def get_server_packet(self):
         #server wants a packet
         p = self.server_packets.get()
-        debug("sending to server: %s", p[0])
+        log("sending to server: %s", p[0])
         return p, None, None, self.server_packets.qsize()>0
 
     def process_server_packet(self, proto, packet):
         packet_type = packet[0]
-        debug("process_server_packet: %s", packet_type)
+        log("process_server_packet: %s", packet_type)
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop("server connection lost", proto)
             return
@@ -519,7 +519,7 @@ class ProxyInstanceProcess(Process):
         #we have a proxy video packet:
         assert x==0 and y==0, "invalid position for video: %sx%s" % (x, y)
         rgb_format = client_options.get("rgb_format", "")
-        debug("proxy draw: client_options=%s", client_options)
+        log("proxy draw: client_options=%s", client_options)
         if PASSTHROUGH:
             #for testing only: passthrough as plain RGB:
             newdata = bytearray(pixels)
@@ -542,7 +542,7 @@ class ProxyInstanceProcess(Process):
             #we must verify that the encoder is still valid
             #and scrap it if not (ie: when window is resized)
             if ve.get_width()!=width or ve.get_height()!=height:
-                debug("closing existing video encoder %s because dimensions have changed from %sx%s to %sx%s", ve, ve.get_width(), ve.get_height(), width, height)
+                log("closing existing video encoder %s because dimensions have changed from %sx%s to %sx%s", ve, ve.get_width(), ve.get_height(), width, height)
                 ve.clean()
                 ve = None
         #scaling and depth are proxy-encoder attributes:
@@ -556,7 +556,7 @@ class ProxyInstanceProcess(Process):
         if not ve:
             #make a new one:
             spec = self._find_video_encoder(encoding, rgb_format)
-            debug("creating new video encoder %s for window %s", spec, wid)
+            log("creating new video encoder %s for window %s", spec, wid)
             ve = spec.codec_class()
             ve.init_context(width, height, rgb_format, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
@@ -566,13 +566,13 @@ class ProxyInstanceProcess(Process):
             if speed>=0:
                 ve.set_encoding_speed(speed)
         #actual video compression:
-        debug("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
+        log("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
         image = ImageWrapper(0, 0, width, height, pixels, rgb_format, depth, rowstride, planes=ImageWrapper.PACKED)
         data, client_options = ve.compress_image(image, encoder_options)
         #update packet:
         packet[7] = Compressed(encoding, data)
         packet[10] = client_options
-        debug("returning %s bytes from %s", len(data), len(pixels))
+        log("returning %s bytes from %s", len(data), len(pixels))
         return (ve not in self.lost_windows)
 
     def _find_video_encoder(self, encoding, rgb_format):

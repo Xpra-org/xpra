@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,9 +7,8 @@ import time
 
 from xpra.signal_object import SignalObject
 from xpra.sound.gstreamer_util import gst
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_SOUND_DEBUG")
+from xpra.log import Logger
+log = Logger("sound")
 
 
 class SoundPipeline(SignalObject):
@@ -49,9 +48,9 @@ class SoundPipeline(SignalObject):
         return info
 
     def setup_pipeline_and_bus(self, elements):
-        debug("pipeline elements=%s", elements)
+        log("pipeline elements=%s", elements)
         pipeline_str = " ! ".join([x for x in elements if x is not None])
-        debug("pipeline=%s", pipeline_str)
+        log("pipeline=%s", pipeline_str)
         self.start_time = time.time()
         self.pipeline = gst.parse_launch(pipeline_str)
         self.bus = self.pipeline.get_bus()
@@ -77,19 +76,19 @@ class SoundPipeline(SignalObject):
         #self.emit("bitrate-changed", new_bitrate)
 
     def start(self):
-        debug("SoundPipeline.start()")
+        log("SoundPipeline.start()")
         self.state = "active"
         self.pipeline.set_state(gst.STATE_PLAYING)
-        debug("SoundPipeline.start() done")
+        log("SoundPipeline.start() done")
 
     def stop(self):
-        debug("SoundPipeline.stop()")
+        log("SoundPipeline.stop()")
         self.state = "stopped"
         self.pipeline.set_state(gst.STATE_NULL)
-        debug("SoundPipeline.stop() done")
+        log("SoundPipeline.stop() done")
 
     def cleanup(self):
-        debug("SoundPipeline.cleanup()")
+        log("SoundPipeline.cleanup()")
         SignalObject.cleanup(self)
         self.stop()
         if self.bus:
@@ -101,10 +100,10 @@ class SoundPipeline(SignalObject):
         self.codec = None
         self.bitrate = -1
         self.state = None
-        debug("SoundPipeline.cleanup() done")
+        log("SoundPipeline.cleanup() done")
 
     def on_message(self, bus, message):
-        #debug("on_message(%s, %s)", bus, message)
+        #log("on_message(%s, %s)", bus, message)
         t = message.type
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
@@ -139,20 +138,20 @@ class SoundPipeline(SignalObject):
             else:
                 log.info("unknown tag message: %s", message)
         elif t == gst.MESSAGE_STREAM_STATUS:
-            debug("stream status: %s", message)
+            log("stream status: %s", message)
         elif t in (gst.MESSAGE_LATENCY, gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
-            debug("%s", message)
+            log("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
             if isinstance(message.src, gst.Pipeline):
                 _, new_state, _ = message.parse_state_changed()
-                debug("new-state=%s", gst.element_state_get_name(new_state))
+                log("new-state=%s", gst.element_state_get_name(new_state))
                 self.state = self.do_get_state(new_state)
                 self.emit("state-changed", self.state)
             else:
-                debug("state changed: %s", message)
+                log("state changed: %s", message)
         elif t == gst.MESSAGE_DURATION:
             d = message.parse_duration()
-            debug("duration changed: %s", d)
+            log("duration changed: %s", d)
         elif t == gst.MESSAGE_LATENCY:
             log.info("Latency message from %s: %s", message.src, message)
         elif t == gst.MESSAGE_WARNING:

@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ gtk = import_gtk()
 gdk = import_gdk()
 
 from xpra.log import Logger
-log = Logger()
+log = Logger("gtk", "util")
 
 GTK_VERSION_INFO = {}
 if hasattr(gtk, "pygtk_version"):

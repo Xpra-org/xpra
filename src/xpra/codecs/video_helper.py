@@ -6,9 +6,8 @@
 
 import copy
 from threading import Lock
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_VIDEOPIPELINE_DEBUG")
+from xpra.log import Logger
+log = Logger("codec", "video")
 
 from xpra.codecs.loader import get_codec
 
@@ -17,8 +16,8 @@ instance = None
 #all the modules we know about:
 ALL_VIDEO_ENCODER_OPTIONS = ["vpx", "x264", "nvenc"]
 ALL_CSC_MODULE_OPTIONS = ["swscale", "cython", "opencl", "nvcuda"]
-debug("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
-debug("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
+log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
+log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 
 def get_video_module_name(x):
         if x.find("enc")>=0:
@@ -38,8 +37,8 @@ for x in list(ALL_VIDEO_ENCODER_OPTIONS):
         assert v is not None
         DEFAULT_VIDEO_ENCODERS.append(x)
     except Exception, e:
-        debug("video encoder %s cannot be imported: %s", e)
-debug("video_helper: DEFAULT_VIDEO_ENCODERS=%s", DEFAULT_VIDEO_ENCODERS)
+        log("video encoder %s cannot be imported: %s", e)
+log("video_helper: DEFAULT_VIDEO_ENCODERS=%s", DEFAULT_VIDEO_ENCODERS)
 for x in list(ALL_CSC_MODULE_OPTIONS):
     try:
         cscmod = get_csc_module_name(x)
@@ -47,8 +46,8 @@ for x in list(ALL_CSC_MODULE_OPTIONS):
         assert v is not None
         DEFAULT_CSC_MODULES.append(x)
     except Exception, e:
-        debug("csc module %s cannot be imported: %s", e)
-debug("video_helper: DEFAULT_CSC_MODULES=%s", DEFAULT_CSC_MODULES)
+        log("csc module %s cannot be imported: %s", e)
+log("video_helper: DEFAULT_CSC_MODULES=%s", DEFAULT_CSC_MODULES)
     
 
 class VideoHelper(object):
@@ -125,11 +124,11 @@ class VideoHelper(object):
                 self.init_video_encoder_option(module_name)
             except:
                 log.warn("init_video_encoders_options() cannot add %s encoder", x, exc_info=True)
-        debug("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)
+        log("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)
 
     def init_video_encoder_option(self, encoder_name):
         encoder_module = get_codec(encoder_name)
-        debug("init_video_encoder_option(%s) module=%s", encoder_name, encoder_module)
+        log("init_video_encoder_option(%s) module=%s", encoder_name, encoder_module)
         if not encoder_module:
             return
         encoder_type = encoder_module.get_type()
@@ -139,9 +138,9 @@ class VideoHelper(object):
             log.warn("cannot use %s module %s: %s", encoder_type, encoder_module, e, exc_info=True)
             return
         colorspaces = encoder_module.get_colorspaces()
-        debug("init_video_encoder_option(%s) %s input colorspaces=%s", encoder_module, encoder_type, colorspaces)
+        log("init_video_encoder_option(%s) %s input colorspaces=%s", encoder_module, encoder_type, colorspaces)
         encodings = encoder_module.get_encodings()
-        debug("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
+        log("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
         for encoding in encodings:
             for colorspace in colorspaces:
                 spec = encoder_module.get_spec(encoding, colorspace)
@@ -158,18 +157,18 @@ class VideoHelper(object):
                 self.init_csc_option(module_name)
             except:
                 log.warn("init_csc_options() cannot add %s csc", x, exc_info=True)
-        debug("init_csc_options() csc specs: %s", self._csc_encoder_specs)
+        log("init_csc_options() csc specs: %s", self._csc_encoder_specs)
         for src_format, specs in sorted(self._csc_encoder_specs.items()):
-            debug("%s - %s options:", src_format, len(specs))
+            log("%s - %s options:", src_format, len(specs))
             d = {}
             for dst_format, spec in sorted(specs):
                 d.setdefault(dst_format, set()).add(spec.info())
             for dst_format, specs in sorted(d.items()):
-                debug(" * %s via: %s", dst_format, sorted(list(specs)))
+                log(" * %s via: %s", dst_format, sorted(list(specs)))
 
     def init_csc_option(self, csc_name):
         csc_module = get_codec(csc_name)
-        debug("init_csc_option(%s) module=%s", csc_name, csc_module)
+        log("init_csc_option(%s) module=%s", csc_name, csc_module)
         if csc_module is None:
             return
         csc_type = csc_module.get_type()
@@ -181,7 +180,7 @@ class VideoHelper(object):
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
             out_cscs = csc_module.get_output_colorspaces(in_csc)
-            debug("init_csc_option(..) %s.get_output_colorspaces(%s)=%s", csc_module.get_type(), in_csc, out_cscs)
+            log("init_csc_option(..) %s.get_output_colorspaces(%s)=%s", csc_module.get_type(), in_csc, out_cscs)
             for out_csc in out_cscs:
                 spec = csc_module.get_spec(in_csc, out_csc)
                 self.add_csc_spec(in_csc, out_csc, spec)

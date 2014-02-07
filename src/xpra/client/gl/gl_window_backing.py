@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,9 +12,8 @@ import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
 assert gtk.gdkgl is not None and gtk.gtkgl is not None
 import gobject
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_OPENGL_DEBUG")
+from xpra.log import Logger
+log = Logger("opengl", "paint")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 
 
@@ -77,7 +76,7 @@ if OPENGL_DEBUG:
     try:
         from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
     except ImportError:
-        debug("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
+        log("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
     try:
         from OpenGL.GL.GREMEDY.string_marker import glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
         from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
@@ -87,8 +86,8 @@ if OPENGL_DEBUG:
         gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
     except ImportError:
         # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
-        debug("Unable to import GREMEDY OpenGL extension. Debug output will be more limited.")
-    debug("OpenGL debugging settings: "+
+        log("Unable to import GREMEDY OpenGL extension. Debug output will be more limited.")
+    log("OpenGL debugging settings: "+
           "GL_DEBUG_OUTPUT=%s, GL_DEBUG_OUTPUT_SYNCHRONOUS=%s"+
           "gl_debug_callback=%s, "+
           "glInitStringMarkerGREMEDY=%s, glStringMarkerGREMEDY=%s, glInitFrameTerminatorGREMEDY=%s, glFrameTerminatorGREMEDY=%s",
@@ -180,14 +179,14 @@ class GLPixmapBacking(GTK2WindowBacking):
             self.size = w, h
 
     def gl_marker(self, msg):
-        debug("%s.gl_marker(%s)", self, msg)
+        log("%s.gl_marker(%s)", self, msg)
         if not bool(glStringMarkerGREMEDY):
             return
         c_string = c_char_p(msg)
         glStringMarkerGREMEDY(0, c_string)
 
     def gl_frame_terminator(self):
-        debug("%s.gl_frame_terminator()", self)
+        log("%s.gl_frame_terminator()", self)
         # Mark the end of the frame
         # This makes the debug output more readable especially when doing single-buffered rendering
         if not bool(glFrameTerminatorGREMEDY):
@@ -225,7 +224,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         assert self.shaders is None
         self.textures = glGenTextures(5)
         self.offscreen_fbo = glGenFramebuffers(1)
-        debug("%s.gl_init_textures() textures: %s, offscreen fbo: %s", self, self.textures, self.offscreen_fbo)
+        log("%s.gl_init_textures() textures: %s, offscreen fbo: %s", self, self.textures, self.offscreen_fbo)
 
     def gl_init_shaders(self):
         assert self.shaders is None
@@ -243,7 +242,7 @@ class GLPixmapBacking(GTK2WindowBacking):
     def gl_init(self):
         drawable = self.gl_begin()
         w, h = self.size
-        debug("%s.gl_init() GL Pixmap backing size: %d x %d, drawable=%s", self, w, h, drawable)
+        log("%s.gl_init() GL Pixmap backing size: %d x %d, drawable=%s", self, w, h, drawable)
         if not drawable:
             return  None
 
@@ -383,7 +382,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
         # Show the backbuffer on screen
         if drawable.is_double_buffered():
-            debug("%s.present_fbo() swapping buffers now", self)
+            log("%s.present_fbo() swapping buffers now", self)
             drawable.swap_buffers()
             # Clear the new backbuffer to illustrate that its contents are undefined
             glClear(GL_COLOR_BUFFER_BIT)
@@ -395,10 +394,10 @@ class GLPixmapBacking(GTK2WindowBacking):
 
         self.unset_rgb_paint_state()
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
-        debug("%s.present_fbo() done", self)
+        log("%s.present_fbo() done", self)
 
     def gl_expose_event(self, glarea, event):
-        debug("%s.gl_expose_event(%s, %s)", self, glarea, event)
+        log("%s.gl_expose_event(%s, %s)", self, glarea, event)
         drawable = self.gl_init()
         if not drawable:
             return
@@ -417,10 +416,10 @@ class GLPixmapBacking(GTK2WindowBacking):
         return self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options, callbacks)
 
     def _do_paint_rgb(self, bpp, img_data, x, y, width, height, rowstride, options, callbacks):
-        debug("%s._do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d)", self, bpp, len(img_data), x, y, width, height, rowstride)
+        log("%s._do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d)", self, bpp, len(img_data), x, y, width, height, rowstride)
         drawable = self.gl_init()
         if not drawable:
-            debug("%s._do_paint_rgb(..) drawable is not set!", self)
+            log("%s._do_paint_rgb(..) drawable is not set!", self)
             return False
 
         try:
@@ -491,7 +490,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
             drawable = self.gl_init()
             if not drawable:
-                debug("%s.gl_paint_planar() drawable is not set!", self)
+                log("%s.gl_paint_planar() drawable is not set!", self)
                 fire_paint_callbacks(callbacks, False)
                 return
             try:
@@ -515,7 +514,7 @@ class GLPixmapBacking(GTK2WindowBacking):
     def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
         assert x==0 and y==0
         assert self.textures is not None, "no OpenGL textures!"
-        debug("%s.update_planar_textures%s", self, (x, y, width, height, img, pixel_format))
+        log("%s.update_planar_textures%s", self, (x, y, width, height, img, pixel_format))
 
         divs = get_subsampling_divs(pixel_format)
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
@@ -552,7 +551,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
             pixel_data = img_data[index]
-            debug("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes", index, divs[index], rowstrides[index], width/div_w, height/div_h, len(pixel_data))
+            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes", index, divs[index], rowstrides[index], width/div_w, height/div_h, len(pixel_data))
             glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div_w, height/div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
             if index == 1:
                 U_width = width/div_w
@@ -564,7 +563,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                     log.error("Height of V plane is %d, differs from height of corresponding U plane (%d), pixel_format is %d", height/div_h, U_height, pixel_format)
 
     def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
-        debug("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
+        log("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP"):
             #not ready to render yet
             return
@@ -579,7 +578,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
 
         tw, th = self.texture_size
-        debug("%s.render_planar_update(..) texture_size=%s, size=%s", self, self.texture_size, self.size)
+        log("%s.render_planar_update(..) texture_size=%s, size=%s", self, self.texture_size, self.size)
         glBegin(GL_QUADS)
         for x,y in ((rx, ry), (rx, ry+rh), (rx+rw, ry+rh), (rx+rw, ry)):
             ax = min(tw, x)

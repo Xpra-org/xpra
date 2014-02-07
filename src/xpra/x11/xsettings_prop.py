@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,9 +16,8 @@ It is used by xpra.x11.gtk_x11.prop
 
 import sys
 import struct
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_XSETTINGS_DEBUG")
+from xpra.log import Logger
+log = Logger("x11", "util")
 
 
 #undocumented XSETTINGS endianess values:
@@ -49,9 +48,9 @@ def get_settings(disp, d):
     #parse xsettings according to
     #http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
     assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
-    debug("get_settings(%s)", list(d))
+    log("get_settings(%s)", list(d))
     byte_order, _, _, _, serial, n_settings = struct.unpack("=BBBBII", d[:12])
-    debug("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s", byte_order, get_local_byteorder(), serial, n_settings)
+    log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s", byte_order, get_local_byteorder(), serial, n_settings)
     settings = []
     pos = 12
     while n_settings>len(settings) and len(d)>0:
@@ -66,7 +65,7 @@ def get_settings(disp, d):
         assert len(d)>=pos+4, "not enough data (%s bytes) to extract serial (4 bytes needed)" % (len(d)-pos)
         last_change_serial = struct.unpack("=I", d[pos:pos+4])[0]
         pos += 4
-        debug("get_settings(..) found property %s of type %s, serial=%s", prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
+        log("get_settings(..) found property %s of type %s, serial=%s", prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
         #extract value:
         if setting_type==XSettingsTypeInteger:
             assert len(d)>=pos+4, "not enough data (%s bytes) to extract int (4 bytes needed)" % (len(d)-pos)
@@ -87,21 +86,21 @@ def get_settings(disp, d):
             log.error("invalid setting type: %s, cannot continue parsing XSETTINGS!", setting_type)
             break
         setting = setting_type, prop_name, value, last_change_serial
-        debug("get_settings(..) %s -> %s", list(d[istart:pos]), setting)
+        log("get_settings(..) %s -> %s", list(d[istart:pos]), setting)
         settings.append(setting)
-    debug("get_settings(..) settings=%s", settings)
+    log("get_settings(..) settings=%s", settings)
     return  serial, settings
 
 def set_settings(disp, d):
     #TODO: detect old clients
     assert len(d)==2, "invalid format for XSETTINGS: %s" % str(d)
     serial, settings = d
-    debug("set_settings(%s) serial=%s, %s settings", d, serial, len(settings))
+    log("set_settings(%s) serial=%s, %s settings", d, serial, len(settings))
     all_bin_settings = None
     n_settings = 0
     for setting in settings:
         setting_type, prop_name, value, last_change_serial = setting
-        debug("set_settings(..) processing property %s of type %s", prop_name, XSettingsNames.get(setting_type, "INVALID!"))
+        log("set_settings(..) processing property %s of type %s", prop_name, XSettingsNames.get(setting_type, "INVALID!"))
         x = struct.pack("=BBH", setting_type, 0, len(prop_name))
         x += struct.pack("="+"s"*len(prop_name), *list(prop_name))
         pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
@@ -122,7 +121,7 @@ def set_settings(disp, d):
         else:
             log.error("invalid xsetting type: %s, skipped %s", setting_type, prop_name)
             continue
-        debug("set_settings(..) %s -> %s", setting, list(x))
+        log("set_settings(..) %s -> %s", setting, list(x))
         if all_bin_settings is None:
             all_bin_settings = x
         else:
@@ -132,5 +131,5 @@ def set_settings(disp, d):
     v = struct.pack("=BBBBII", get_local_byteorder(), 0, 0, 0, serial, n_settings)
     v += all_bin_settings   #values
     v += '\0'               #null terminated
-    debug("set_settings(%s)=%s", d, list(v))
+    log("set_settings(%s)=%s", d, list(v))
     return  v

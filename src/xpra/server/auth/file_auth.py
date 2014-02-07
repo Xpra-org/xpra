@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,9 +17,8 @@ import hmac
 from xpra.os_util import get_hex_uuid
 from xpra.util import xor
 from xpra.dotxpra import DotXpra
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_AUTH_DEBUG")
+from xpra.log import Logger
+log = Logger("auth")
 
 
 password_file = None
@@ -77,7 +76,7 @@ def load_auth_file():
             line = line.strip()
             if len(line)==0 or line.startswith("#"):
                 continue
-            debug("line %s: %s", i, line)
+            log("line %s: %s", i, line)
             if line.find("|")<0:
                 #assume old style file with just the password
                 #get all the displays for the current user:
@@ -85,10 +84,10 @@ def load_auth_file():
                 results = sockdir.sockets()
                 displays = [display for state, display in results if state==DotXpra.LIVE]
                 auth_data[""] = line, os.getuid(), os.getgid(), displays, {}, {}
-                debug("Warning: assuming this is a single password for all users")
+                log("Warning: assuming this is a single password for all users")
                 continue
             ldata = line.split("|")
-            debug("found %s fields at line %s", len(ldata), i)
+            log("found %s fields at line %s", len(ldata), i)
             if len(ldata)<4:
                 log.warn("skipped line %s of %s: not enough fields", i, password_file)
                 continue
@@ -112,7 +111,7 @@ def load_auth_file():
             if len(ldata)>=7:
                 session_options = parseOptions(ldata[6])
             auth_data[username] = password, uid, gid, displays, env_options, session_options
-    debug("loaded auth data from file %s: %s", password_file, auth_data)
+    log("loaded auth data from file %s: %s", password_file, auth_data)
     return auth_data
 
 
@@ -170,9 +169,9 @@ class Authenticator(object):
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
         verify = hmac.HMAC(fpassword, salt).hexdigest()
-        debug("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(salt), verify)
+        log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(salt), verify)
         if verify!=challenge_response:
-            debug("expected '%s' but got '%s'", verify, challenge_response)
+            log("expected '%s' but got '%s'", verify, challenge_response)
             log.error("hmac password challenge for %s does not match", self.username)
             return False
         self.sessions = uid, gid, displays, env_options, session_options

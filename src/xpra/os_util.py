@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -114,7 +114,7 @@ def set_application_name(name):
         return
     NAME_SET = True
     from xpra.log import Logger
-    log = Logger()
+    log = Logger("util")
     if sys.version_info[:2]<(2,5):
         log.warn("Python %s is too old!", sys.version_info)
         return
@@ -207,7 +207,7 @@ def main():
     logging.basicConfig(format="%(asctime)s %(message)s")
     logging.root.setLevel(logging.INFO)
     from xpra.log import Logger
-    log = Logger("")
+    log = Logger("util")
     sp = sys.platform
     log.info("platform_name(%s)=%s", sp, platform_name(sp, ""))
     log.info("get_machine_id()=%s", get_machine_id())

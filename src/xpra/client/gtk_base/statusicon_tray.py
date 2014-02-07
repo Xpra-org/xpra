@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 
-from xpra.client.tray_base import TrayBase, debug
+from xpra.client.tray_base import TrayBase, log
 from xpra.gtk_common.gtk_util import set_tooltip_text
 
 ORIENTATION = {}
@@ -44,13 +44,13 @@ class GTKStatusIconTray(TrayBase):
             self.recalculate_geometry(x, y, w, h)
 
     def activate_menu(self, widget, *args):
-        debug("activate_menu(%s, %s)", widget, args)
+        log("activate_menu(%s, %s)", widget, args)
         self.may_guess()
         self.click_cb(1, 1)
         self.click_cb(1, 0)
 
     def popup_menu(self, widget, button, time, *args):
-        debug("popup_menu(%s, %s, %s, %s)", widget, button, time, args)
+        log("popup_menu(%s, %s, %s, %s)", widget, button, time, args)
         self.may_guess()
         self.click_cb(button, 1, 0)
         self.click_cb(button, 0, 0)
@@ -81,7 +81,7 @@ class GTKStatusIconTray(TrayBase):
 
     def get_geometry(self):
         ag = self.tray_widget.get_geometry()
-        debug("GTKStatusIconTray.get_geometry() %s.get_geometry()=%s", self.tray_widget, ag)
+        log("GTKStatusIconTray.get_geometry() %s.get_geometry()=%s", self.tray_widget, ag)
         if ag is None:
             #probably win32 or OSX...
             return self.geometry_guess

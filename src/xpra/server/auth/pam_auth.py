@@ -1,11 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 
-from xpra.server.auth.sys_auth_base import SysAuthenticator, log, debug
+from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 
 check = None
@@ -36,7 +36,7 @@ try:
             return    resp
 
     def check(username, password):
-        debug("PAM check(%s, [..])", username)
+        log("PAM check(%s, [..])", username)
         auth = PAM.pam()
         auth.start(PAM_SERVICE)
         auth.set_item(PAM.PAM_USER, username)
@@ -53,16 +53,16 @@ try:
             log.error("PAM.authenticate() internal error: %s", e)
             return    False
 except Exception, e:
-    debug("PAM module not available: %s", e)
+    log("PAM module not available: %s", e)
 
 try:
     from xpra.server.auth import pam
     assert pam
     def check(username, password):
-        debug("pam check(%s, [..])", username)
+        log("pam check(%s, [..])", username)
         return pam.authenticate(username, password)
 except:
-    debug("pam module not available: %s", e)
+    log("pam module not available: %s", e)
 
 
 if check is None:

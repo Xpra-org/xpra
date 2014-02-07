@@ -1,15 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import time
 import os
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_X264_DEBUG")
-error = log.error
+from xpra.log import Logger
+log = Logger("encoder", "x264")
 X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 
 include "constants.pxi"
@@ -164,7 +162,7 @@ for x264_enum, colorspace, default_profile, profiles in \
     ("X264_CSP_RGB",   "RGB",        PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES):
     enum_val = constants.get(x264_enum)
     if enum_val is None:
-        debug("enc_x264: this build does not support %s / %s", x264_enum, colorspace)
+        log("enc_x264: this build does not support %s / %s", x264_enum, colorspace)
         continue
     COLORSPACES[colorspace] = (enum_val, default_profile, profiles)
 

@@ -1,12 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 import gtk.gdk
 
-from xpra.client.tray_base import TrayBase, debug, log
+from xpra.log import Logger
+log = Logger("tray", "osx")
+
+from xpra.client.tray_base import TrayBase
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 from xpra.platform.darwin.gui import set_exit_cb
 from xpra.platform.gui import ready as gui_ready
@@ -37,7 +40,7 @@ class OSXTray(TrayBase):
         pass
 
     def quit(self, *args):
-        debug("quit(%s) exit_cb=%s", args, self.exit_cb)
+        log("quit(%s) exit_cb=%s", args, self.exit_cb)
         if self.exit_cb:
             self.exit_cb()
             return True     #we've handled the quit request ourselves - I hope..
@@ -79,18 +82,18 @@ class OSXTray(TrayBase):
         #using the basic the simple menu from build_menu_bar()
         self.macapp.set_menu_bar(self.menu)
         mh.add_full_menu()
-        debug("OSXTray.set_global_menu() done")
+        log("OSXTray.set_global_menu() done")
 
     def set_dock_menu(self):
         #dock menu
-        debug("OSXTray.set_dock_menu()")
+        log("OSXTray.set_dock_menu()")
         self.dock_menu = gtk.Menu()
         self.disconnect_dock_item = gtk.MenuItem("Disconnect")
         self.disconnect_dock_item.connect("activate", self.quit)
         self.dock_menu.add(self.disconnect_dock_item)
         self.dock_menu.show_all()
         self.macapp.set_dock_menu(self.dock_menu)
-        debug("OSXTray.set_dock_menu() done")
+        log("OSXTray.set_dock_menu() done")
 
     def set_dock_icon(self):
         if not self.default_icon_filename:
@@ -99,6 +102,6 @@ class OSXTray(TrayBase):
         if not os.path.exists(filename):
             log.warn("cannot set dock icon, file '%s' not found!", filename)
             return
-        debug("OSXTray.set_dock_icon() loading icon from %s", filename)
+        log("OSXTray.set_dock_icon() loading icon from %s", filename)
         pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)

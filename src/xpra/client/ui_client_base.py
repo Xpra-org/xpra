@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,9 +10,9 @@ import sys
 import time
 import ctypes
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-soundlog = debug_if_env(log, "XPRA_SOUND_DEBUG")
+from xpra.log import Logger
+log = Logger("client")
+soundlog = log.debug
 
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
@@ -908,7 +908,7 @@ class UIXpraClient(XpraClientBase):
         self.send("buffer-refresh", wid, True, 95)
 
     def send_refresh_all(self):
-        log.debug("Automatic refresh for all windows ")
+        log("Automatic refresh for all windows ")
         self.send_refresh(-1)
 
 
@@ -975,12 +975,12 @@ class UIXpraClient(XpraClientBase):
         self.server_actual_desktop_size = c.intpair("actual_desktop_size")
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.server_randr = c.boolget("resize_screen")
-        log.debug("server has randr: %s", self.server_randr)
+        log("server has randr: %s", self.server_randr)
         self.server_sound_sequence = c.boolget("sound_sequence")
         self.server_info_request = c.boolget("info-request")
         e = c.strget("encoding")
         if e and e!=self.encoding:
-            log.debug("server is using %s encoding" % e)
+            log("server is using %s encoding" % e)
             self.encoding = e
         i = " ".join(os_info(self._remote_platform, self._remote_platform_release, self._remote_platform_platform, self._remote_platform_linux_distribution))
         r = self._remote_version

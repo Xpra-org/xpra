@@ -1,14 +1,14 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os as os
 import sys as sys
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_IMPORT_DEBUG")
+from xpra.log import Logger
+log = Logger("platform", "import")
+
 
 _init_done = False
 def init():
@@ -34,7 +34,7 @@ def platform_import(where, pm, required, *imports):
     module = "xpra.platform.%s" % p
     if pm:
         module += ".%s" % pm
-    debug("importing %s from %s (required=%s)" % (imports, module, required))
+    log("importing %s from %s (required=%s)" % (imports, module, required))
     platform_module = __import__(module, {}, {}, imports)
     assert platform_module
     for x in imports:
@@ -43,10 +43,10 @@ def platform_import(where, pm, required, *imports):
             if required:
                 raise Exception("could not find %s in %s" % (x, module))
             else:
-                debug("%s=%s (unchanged)", x, where[x])
+                log("%s=%s (unchanged)", x, where[x])
                 continue
         v = getattr(platform_module, x)
-        debug("%s=%s" % (x, str(v).replace("\n", "\\n")))
+        log("%s=%s" % (x, str(v).replace("\n", "\\n")))
         where[x] = v
 
 platform_import(globals(), None, True, "do_init")

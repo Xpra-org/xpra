@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,10 +7,8 @@ import time
 import os
 from xpra.codecs.codec_constants import codec_spec
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_VPX_DEBUG")
-error = log.error
+from xpra.log import Logger
+log = Logger("encoder", "vpx")
 
 VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
 
@@ -272,7 +270,7 @@ cdef class Encoder:
         if vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)!=0:
             free(self.context)
             raise Exception("failed to initialized vpx encoder: %s", vpx_codec_error(self.context))
-        debug("vpx_codec_enc_init_ver for %s succeeded", encoding)
+        log("vpx_codec_enc_init_ver for %s succeeded", encoding)
 
     def __str__(self):
         return "vpx.Encoder(%s)" % self.encoding
@@ -370,7 +368,7 @@ cdef class Encoder:
             log.error("%s codec encoding error: %s", self.encoding, vpx_codec_destroy(self.context))
             return None
         end = time.time()
-        debug("vpx_codec_encode for %s took %.1f", self.encoding, 1000.0*(end-start))
+        log("vpx_codec_encode for %s took %.1f", self.encoding, 1000.0*(end-start))
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
         end = time.time()
@@ -386,7 +384,7 @@ cdef class Encoder:
         cout = get_frame_buffer(pkt)
         img = cout[:coutsz]
         free(image)
-        debug("vpx returning %s image: %s bytes", self.encoding, len(img))
+        log("vpx returning %s image: %s bytes", self.encoding, len(img))
         return img
 
     def set_encoding_speed(self, int pct):

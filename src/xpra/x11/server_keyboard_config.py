@@ -1,16 +1,16 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import gtk.gdk
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_KEYBOARD_DEBUG")
+from xpra.log import Logger
+log = Logger("keyboard")
+
 
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, mask_to_names
@@ -133,13 +133,13 @@ class KeyboardConfig(object):
                     if entries:
                         for keycode, _, _ in entries:
                             self.keycodes_for_modifier_keynames.setdefault(keyname, set()).add(keycode)
-        debug("compute_modifier_keynames: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
+        log("compute_modifier_keynames: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
 
     def compute_client_modifier_keycodes(self):
         """ The keycodes for all modifiers (those are *client* keycodes!) """
         try:
             server_mappings = X11Keyboard.get_modifier_mappings()
-            debug("get_modifier_mappings=%s", server_mappings)
+            log("get_modifier_mappings=%s", server_mappings)
             #update the mappings to use the keycodes the client knows about:
             reverse_trans = {}
             for k,v in self.keycode_translation.items():
@@ -152,13 +152,13 @@ class KeyboardConfig(object):
                     if client_keycode:
                         client_keycodes.append((client_keycode, keyname))
                 self.modifier_client_keycodes[modifier] = client_keycodes
-            debug("compute_client_modifier_keycodes() mappings=%s", self.modifier_client_keycodes)
+            log("compute_client_modifier_keycodes() mappings=%s", self.modifier_client_keycodes)
         except Exception, e:
             log.error("do_set_keymap: %s" % e, exc_info=True)
 
     def compute_modifier_map(self):
         self.modifier_map = grok_modifier_map(gtk.gdk.display_get_default(), self.xkbmap_mod_meanings)
-        debug("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
+        log("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
 
 
     def set_keymap(self, client_platform):
@@ -202,12 +202,12 @@ class KeyboardConfig(object):
 
             #now set the new modifier mappings:
             clean_keyboard_state()
-            debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
+            log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
             if self.keynames_for_mod:
                 set_modifiers(self.keynames_for_mod)
             self.compute_modifier_keynames()
             self.compute_client_modifier_keycodes()
-            debug("keyname_for_mod=%s", self.keynames_for_mod)
+            log("keyname_for_mod=%s", self.keynames_for_mod)
         except:
             log.error("error setting xmodmap", exc_info=True)
 
@@ -236,7 +236,7 @@ class KeyboardConfig(object):
             return mask_to_names(current_mask, self.modifier_map)
 
         if not self.keynames_for_mod:
-            debug("make_keymask_match: ignored as keynames_for_mod not assigned yet")
+            log("make_keymask_match: ignored as keynames_for_mod not assigned yet")
             return
         if ignored_modifier_keynames is None:
             ignored_modifier_keynames = self.xkbmap_mod_pointermissing
@@ -246,7 +246,7 @@ class KeyboardConfig(object):
                 return False
             for imk in ignored_modifier_keynames:
                 if imk in modifier_keynames:
-                    debug("modifier ignored (ignored keyname=%s)", imk)
+                    log("modifier ignored (ignored keyname=%s)", imk)
                     return True
             return False
 
@@ -254,19 +254,19 @@ class KeyboardConfig(object):
         wanted = set(modifier_list)
         if current==wanted:
             return
-        debug("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
+        log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
 
         def change_mask(modifiers, press, info):
             for modifier in modifiers:
                 if self.xkbmap_mod_managed and modifier in self.xkbmap_mod_managed:
-                    debug("modifier is server managed: %s", modifier)
+                    log("modifier is server managed: %s", modifier)
                     continue
                 keynames = self.keynames_for_mod.get(modifier)
                 if not keynames:
                     log.error("unknown modifier: %s", modifier)
                     continue
                 if is_ignored(keynames):
-                    debug("modifier %s ignored (in ignored keynames=%s)", modifier, keynames)
+                    log("modifier %s ignored (in ignored keynames=%s)", modifier, keynames)
                     continue
                 #find the keycodes that match the keynames for this modifier
                 keycodes = []
@@ -276,7 +276,7 @@ class KeyboardConfig(object):
                         #found the key which was pressed to set this modifier
                         for keycode, name in self.keys_pressed.items():
                             if name==keyname:
-                                debug("found the key pressed for %s: %s", modifier, name)
+                                log("found the key pressed for %s: %s", modifier, name)
                                 keycodes.insert(0, keycode)
                     keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname)
                     if keycodes_for_keyname:
@@ -284,12 +284,12 @@ class KeyboardConfig(object):
                             if keycode not in keycodes:
                                 keycodes.append(keycode)
                 if ignored_modifier_keycode is not None and ignored_modifier_keycode in keycodes:
-                    debug("modifier %s ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
+                    log("modifier %s ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
                     continue
                 #nuisance keys (lock, num, scroll) are toggled by a
                 #full key press + key release (so act accordingly in the loop below)
                 nuisance = modifier in DEFAULT_MODIFIER_NUISANCE
-                debug("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
+                log("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
                 for keycode in keycodes:
                     if nuisance:
                         X11Keyboard.xtest_fake_key(keycode, True)
@@ -298,11 +298,11 @@ class KeyboardConfig(object):
                         X11Keyboard.xtest_fake_key(keycode, press)
                     new_mask = get_current_mask()
                     success = (modifier in new_mask)==press
-                    debug("make_keymask_match(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
+                    log("make_keymask_match(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
                     if success:
                         break
                     elif not nuisance:
-                        debug("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
+                        log("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
                         X11Keyboard.xtest_fake_key(keycode, not press)
                         new_mask = get_current_mask()
                         #maybe doing the full keypress (down+up or u+down) worked:

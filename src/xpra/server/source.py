@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -12,10 +12,10 @@ from collections import deque
 from threading import Event
 from math import sqrt
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
-soundlog = debug_if_env(log, "XPRA_SOUND_DEBUG")
+from xpra.log import Logger
+log = Logger("server")
+elog = Logger("encoding")
+soundlog = Logger("sound")
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_video_source import WindowVideoSource
@@ -316,7 +316,7 @@ class ServerSource(object):
         """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
             and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
         """
-        debug("recalculate_delays()")
+        log("recalculate_delays()")
         if self.is_closed():
             return
         self.statistics.update_averages()
@@ -393,7 +393,7 @@ class ServerSource(object):
             self.protocol = None
 
     def suspend(self, ui, wd):
-        log.debug("suspend(%s, %s) suspended=%s, sound_source=%s",
+        log("suspend(%s, %s) suspended=%s, sound_source=%s",
                   ui, wd, self.suspended, self.sound_source)
         if ui:
             self.suspended = True
@@ -403,7 +403,7 @@ class ServerSource(object):
                 ws.suspend()
 
     def resume(self, ui, wd):
-        log.debug("resume(%s, %s) suspended=%s, sound_source=%s",
+        log("resume(%s, %s) suspended=%s, sound_source=%s",
                   ui, wd, self.suspended, self.sound_source)
         if ui:
             self.suspended = False
@@ -451,7 +451,7 @@ class ServerSource(object):
         self.default_batch_config.max_pixels = batch_value("max_pixels", DamageBatchConfig.MAX_PIXELS)
         self.default_batch_config.time_unit = batch_value("time_unit", DamageBatchConfig.TIME_UNIT, 1)
         self.default_batch_config.delay = batch_value("delay", DamageBatchConfig.START_DELAY, 0)
-        log.debug("default batch config: %s", self.default_batch_config)
+        log("default batch config: %s", self.default_batch_config)
         #client uuid:
         self.uuid = c.strget("uuid")
         self.machine_id = c.strget("machine_id")
@@ -1088,7 +1088,7 @@ class ServerSource(object):
                 newlist = newlist[:p] + list(old_encoding_names) + newlist[p+1:]
             if l!=newlist:
                 d[k] = newlist
-                debug("rewrite_encoding_values for key '%s': %s replaced by %s", k, l, newlist)
+                log("rewrite_encoding_values for key '%s': %s replaced by %s", k, l, newlist)
 
 
     def send_clipboard_enabled(self, reason=""):

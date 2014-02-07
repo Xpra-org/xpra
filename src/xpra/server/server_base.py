@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,7 +11,7 @@ import sys
 import time
 
 from xpra.log import Logger
-log = Logger()
+log = Logger("server")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
@@ -79,6 +79,7 @@ class ServerBase(ServerCore):
 
         #control mode:
         self.control_commands = ["hello", "help",
+                    "debug",
                     "quality", "min-quality", "speed", "min-speed",
                     "compression", "encoder", "refresh",
                     "sound-output",
@@ -641,11 +642,11 @@ class ServerBase(ServerCore):
             hello = {"command_response"  : (error, response)}
             proto.send_now(("hello", hello))
         def argn_err(argn):
-            respond(4, "invalid number of arguments, expected: %s" % argn)
-        def arg_err(n, msg):
-            respond(5, "invalid argument %s: %s" % (n, msg))
+            respond(4, "invalid number of arguments, '%s' expects: %s" % (command, argn))
+        def arg_err(msg):
+            respond(5, "invalid argument for '%s': %s" % (command, msg))
         def success():
-            respond(0, "success")
+            respond(0, "%s success" % command)
 
         sources = list(self._server_sources.values())
         protos = list(self._server_sources.keys())
@@ -686,6 +687,22 @@ class ServerBase(ServerCore):
         if command in ("help", "hello"):
             #generic case:
             return ServerCore.do_handle_command_request(self, proto, command, args)
+        elif command=="debug":
+            if len(args)<2:
+                return arg_err("usage: 'debug enable|disable category")
+            log_cmd = args[0]
+            if log_cmd not in ("enable", "disable"):
+                return arg_err("usage: 'debug enable|disable category")
+            category = args[1]
+            from xpra.log import add_debug_category, remove_debug_category, enable_debug_for, disable_debug_for
+            if log_cmd=="enable":
+                add_debug_category(category)
+                enable_debug_for(category)
+            else:
+                assert log_cmd=="disable"
+                remove_debug_category(category)
+                disable_debug_for(category)
+            return respond(0, "logging %sd for %s" % (log_cmd, category))
         elif command=="name":
             if len(args)!=1:
                 return argn_err(1)
@@ -708,7 +725,7 @@ class ServerBase(ServerCore):
                     cproto.enable_zlib()
                 forward_all_clients(["enable_zlib"])
                 return success()
-            return arg_err(1, "must be one of: %s" % (", ".join(opts)))
+            return arg_err("must be one of: %s" % (", ".join(opts)))
         elif command=="encoder":
             if len(args)!=1:
                 return argn_err(1)
@@ -724,7 +741,7 @@ class ServerBase(ServerCore):
                     cproto.enable_rencode()
                 forward_all_clients(["enable_rencode"])
                 return success()
-            return arg_err(1, "must be one of: %s" % (", ".join(opts)))
+            return arg_err("must be one of: %s" % (", ".join(opts)))
         elif command=="sound-output":
             if len(args)<1:
                 return argn_err("more than 1")

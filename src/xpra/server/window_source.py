@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,9 +9,9 @@
 import time
 import os
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
+from xpra.log import Logger
+log = Logger("window")
+elog = Logger("encoding")
 
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 90))
@@ -172,7 +172,7 @@ class WindowSource(object):
         self.cancel_damage()
         self._damage_cancelled = float("inf")
         self.statistics.reset()
-        debug("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
+        log("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
 
     def suspend(self):
         self.cancel_damage()
@@ -202,7 +202,7 @@ class WindowSource(object):
 
     def _scaling_changed(self, window, *args):
         self.scaling = window.get_property("scaling")
-        debug("window recommended scaling changed: %s", self.scaling)
+        log("window recommended scaling changed: %s", self.scaling)
         self.reconfigure(False)
 
     def set_scaling(self, scaling):
@@ -211,11 +211,11 @@ class WindowSource(object):
 
     def _fullscreen_changed(self, window, *args):
         self.fullscreen = window.get_property("fullscreen")
-        debug("window fullscreen state changed: %s", self.fullscreen)
+        log("window fullscreen state changed: %s", self.fullscreen)
         self.reconfigure(False)
 
     def set_client_properties(self, properties):
-        debug("set_client_properties(%s)", properties)
+        log("set_client_properties(%s)", properties)
         self.maximized = properties.get("maximized", False)
         self.full_frames_only = properties.get("encoding.full_frames_only", self.full_frames_only)
         self.supports_transparency = HAS_ALPHA and properties.get("encoding.transparency", self.supports_transparency)
@@ -223,7 +223,7 @@ class WindowSource(object):
         self.core_encodings = properties.get("encodings.core", self.core_encodings)
         #unless the client tells us it does support alpha, assume it does not:
         self.rgb_formats = properties.get("encodings.rgb_formats", [x for x in self.rgb_formats if x.find("A")<0])
-        debug("set_client_properties: window rgb_formats=%s", self.rgb_formats)
+        log("set_client_properties: window rgb_formats=%s", self.rgb_formats)
 
 
     def unmap(self):
@@ -237,7 +237,7 @@ class WindowSource(object):
         damage requests for a window.
         Damage methods will check this value via 'is_cancelled(sequence)'.
         """
-        debug("cancel_damage() wid=%s, dropping delayed region %s and all sequences up to %s", self.wid, self._damage_delayed, self._sequence)
+        log("cancel_damage() wid=%s, dropping delayed region %s and all sequences up to %s", self.wid, self._damage_delayed, self._sequence)
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
         self.cancel_expire_timer()
@@ -453,7 +453,7 @@ class WindowSource(object):
                 for k,v in options.items():
                     if override or k not in existing_options:
                         existing_options[k] = v
-            debug("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s region created %.1fms ago",
+            log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s region created %.1fms ago",
                 x, y, w, h, options, self.wid, self._damage_delayed[3], now-self._damage_delayed[0])
             return
         elif self.batch_config.delay < self.batch_config.min_delay:
@@ -479,7 +479,7 @@ class WindowSource(object):
         if (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10) and \
             not self.batch_config.always and delay<self.batch_config.min_delay:
             #send without batching:
-            debug("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
+            log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
             actual_encoding = options.get("encoding")
             if actual_encoding is None:
                 actual_encoding = self.get_best_encoding(False, window, w*h, ww, wh, self.encoding)
@@ -497,7 +497,7 @@ class WindowSource(object):
         self._damage_delayed_expired = False
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = now, window, region, actual_encoding, options or {}
-        debug("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
+        log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
 
@@ -556,7 +556,7 @@ class WindowSource(object):
     def may_send_delayed(self):
         """ send the delayed region for processing if there is no client backlog """
         if not self._damage_delayed:
-            debug("window %s delayed region already sent", self.wid)
+            log("window %s delayed region already sent", self.wid)
             return False
         damage_time = self._damage_delayed[0]
         packets_backlog = self.statistics.get_packets_backlog()
@@ -564,7 +564,7 @@ class WindowSource(object):
         actual_delay = 1000.0*(now-damage_time)
         if packets_backlog>0:
             if actual_delay<self.batch_config.max_delay:
-                debug("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
+                log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
                         self.wid, packets_backlog, self.batch_config.delay, actual_delay)
                 #this method will get fired again damage_packet_acked
                 return False
@@ -582,14 +582,14 @@ class WindowSource(object):
             pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
             ww, wh = self.window_dimensions
             if pixels_encoding_backlog>=(ww*wh):
-                debug("send_delayed for wid %s, delaying again because too many pixels are waiting to be encoded: %s", self.wid, ww*wh)
+                log("send_delayed for wid %s, delaying again because too many pixels are waiting to be encoded: %s", self.wid, ww*wh)
                 return check_again()
             elif enc_backlog_count>10:
-                debug("send_delayed for wid %s, delaying again because too many damage regions are waiting to be encoded: %s", self.wid, enc_backlog_count)
+                log("send_delayed for wid %s, delaying again because too many damage regions are waiting to be encoded: %s", self.wid, enc_backlog_count)
                 return check_again()
             #no backlog, so ok to send, clear soft-expired counter:
             self.soft_expired = 0
-            debug("send_delayed for wid %s, batch delay is %.1f, elapsed time is %.1f ms", self.wid, self.batch_config.delay, actual_delay)
+            log("send_delayed for wid %s, batch delay is %.1f, elapsed time is %.1f ms", self.wid, self.batch_config.delay, actual_delay)
         self.batch_config.last_actual_delays.append((now, actual_delay))
         self.do_send_delayed_region()
         return False
@@ -612,7 +612,7 @@ class WindowSource(object):
         ww,wh = window.get_dimensions()
         def send_full_window_update():
             actual_encoding = self.get_best_encoding(True, window, ww*wh, ww, wh, coding)
-            debug("send_delayed_regions: using full window update %sx%s with %s", ww, wh, actual_encoding)
+            log("send_delayed_regions: using full window update %sx%s with %s", ww, wh, actual_encoding)
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
         if window.is_tray() or self.full_frames_only:
@@ -636,7 +636,7 @@ class WindowSource(object):
                     send_full_window_update()
                     return
                 regions.append((rect.x, rect.y, rect.width, rect.height))
-            debug("send_delayed_regions: to regions: %s items, %s pixels", len(regions), pixel_count)
+            log("send_delayed_regions: to regions: %s items, %s pixels", len(regions), pixel_count)
         except Exception, e:
             log.error("send_delayed_regions: error processing region %s: %s", damage, e, exc_info=True)
             return
@@ -678,7 +678,7 @@ class WindowSource(object):
         if is_tray:
             #tray needs a lossless encoder
             coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
-            debug("do_get_best_encoding(..) using %s encoder for %s tray pixels", coding, pixel_count)
+            log("do_get_best_encoding(..) using %s encoder for %s tray pixels", coding, pixel_count)
             return coding
         if AUTO_SWITCH_TO_RGB and not batching and pixel_count<MAX_PIXELS_PREFER_RGB and current_encoding in ("png", "webp"):
             if has_alpha and self.supports_transparency:
@@ -696,9 +696,9 @@ class WindowSource(object):
             encs = ("png", "rgb32", "webp")
         for x in encs:
             if x in self.server_core_encodings and x in self.core_encodings:
-                debug("do_get_best_encoding(..) using %s for alpha channel support", x)
+                log("do_get_best_encoding(..) using %s for alpha channel support", x)
                 return x
-        debug("no alpha channel encodings supported: no %s in %s", encs, [x for x in self.server_core_encodings if x in self.core_encodings])
+        log("no alpha channel encodings supported: no %s in %s", encs, [x for x in self.server_core_encodings if x in self.core_encodings])
         return None
 
     def get_core_encoding(self, has_alpha, current_encoding):
@@ -744,7 +744,7 @@ class WindowSource(object):
         if w==0 or h==0:
             return
         if not window.is_managed():
-            debug("the window %s is not composited!?", window)
+            log("the window %s is not composited!?", window)
             return
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
@@ -752,12 +752,12 @@ class WindowSource(object):
 
         sequence = self._sequence + 1
         if self.is_cancelled(sequence):
-            debug("get_window_pixmap: dropping damage request with sequence=%s", sequence)
+            log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
         rgb_request_time = time.time()
         image = window.get_image(x, y, w, h, logger=rgblog)
         if image is None:
-            debug("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
+            log("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
             return
         if self.is_cancelled(sequence):
             image.free()
@@ -765,7 +765,7 @@ class WindowSource(object):
         process_damage_time = time.time()
         data = (damage_time, process_damage_time, self.wid, image, coding, sequence, options)
         self._sequence += 1
-        debug("process_damage_regions: wid=%s, adding pixel data %s to queue, elapsed time: %.1f ms, request rgb time: %.1f ms",
+        log("process_damage_regions: wid=%s, adding pixel data %s to queue, elapsed time: %.1f ms, request rgb time: %.1f ms",
                 self.wid, data[:6], 1000.0*(time.time()-damage_time), 1000.0*(time.time()-rgb_request_time))
         def make_data_packet_cb(*args):
             #NOTE: this function is called from the damage data thread!
@@ -804,7 +804,7 @@ class WindowSource(object):
         actual_quality = client_options.get("quality")
         lossy_csc = client_options.get("csc") in LOSSY_PIXEL_FORMATS
         if actual_quality is None and not lossy_csc:
-            debug("schedule_auto_refresh: was a lossless %s packet, ignoring", coding)
+            log("schedule_auto_refresh: was a lossless %s packet, ignoring", coding)
             #lossless already: small region sent lossless or encoding is lossless
             #don't change anything: if we have a timer, keep it
             return
@@ -816,19 +816,19 @@ class WindowSource(object):
         if client_options.get("scaled_size") is None and not lossy_csc:
             if actual_quality>=AUTO_REFRESH_THRESHOLD:
                 if w*h>=ww*wh:
-                    debug("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
+                    log("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
                     #got enough pixels at high quality, cancel timer:
                     self.cancel_refresh_timer()
                 else:
-                    debug("schedule_auto_refresh: high quality (%s%%) small area, ignoring", actual_quality)
+                    log("schedule_auto_refresh: high quality (%s%%) small area, ignoring", actual_quality)
                 return
         self.cancel_refresh_timer()
         if self._damage_delayed:
-            debug("auto refresh: delayed region already exists")
+            log("auto refresh: delayed region already exists")
             #there is already a new damage region pending, let it re-schedule when it gets sent
             return
         delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
-        debug("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
+        log("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
         def timer_full_refresh():
             self.refresh_timer = None
             self.full_quality_refresh(window, damage_options)
@@ -843,14 +843,14 @@ class WindowSource(object):
             #this window is no longer managed
             return  False
         w, h = window.get_dimensions()
-        debug("full_quality_refresh() for %sx%s window", w, h)
+        log("full_quality_refresh() for %sx%s window", w, h)
         new_options = damage_options.copy()
         encoding = self.auto_refresh_encodings[0]
         new_options["encoding"] = encoding
         new_options["optimize"] = False
         new_options["quality"] = AUTO_REFRESH_QUALITY
         new_options["speed"] = AUTO_REFRESH_SPEED
-        debug("full_quality_refresh() with options=%s", new_options)
+        log("full_quality_refresh() with options=%s", new_options)
         self.damage(window, 0, 0, w, h, options=new_options)
 
     def queue_damage_packet(self, packet, damage_time, process_damage_time):
@@ -890,12 +890,12 @@ class WindowSource(object):
             we record the 'client decode time' (provided by the client itself)
             and the "client latency".
         """
-        debug("packet decoding sequence %s for window %s %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
+        log("packet decoding sequence %s for window %s %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
             self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
         pending = self.statistics.damage_ack_pending.get(damage_packet_sequence)
         if pending is None:
-            debug("cannot find sent time for sequence %s", damage_packet_sequence)
+            log("cannot find sent time for sequence %s", damage_packet_sequence)
             return
         del self.statistics.damage_ack_pending[damage_packet_sequence]
         if decode_time:
@@ -924,13 +924,13 @@ class WindowSource(object):
             * 'rgb24' and 'rgb32' use 'rgb_encode'
         """
         if self.is_cancelled(sequence) or self.suspended:
-            debug("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
+            log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         x, y, w, h, _ = image.get_geometry()
 
         isize = image.get_size()
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
-        debug("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
+        log("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
         start = time.time()
         if self._mmap and self._mmap_size>0 and isize>256:
             data = self.mmap_send(image)
@@ -963,7 +963,7 @@ class WindowSource(object):
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and (self.is_cancelled(sequence)  or self.suspended):
-            debug("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
+            log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         if data is None:
             #something went wrong.. nothing we can do about it here!
@@ -981,7 +981,7 @@ class WindowSource(object):
         #actual network packet:
         packet = ["draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()
-        debug("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%% (%sKB to %sKB), delta=%s",
+        log("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%% (%sKB to %sKB), delta=%s",
                  (end-start)*1000.0, w, h, coding, 100.0*len(data)/isize, isize/1024, len(data)/1024, delta)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
@@ -993,7 +993,7 @@ class WindowSource(object):
         totals[1] = totals[1] + w*h
         self._last_sequence_queued = sequence
         self.encoding_last_used = coding
-        #debug("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
+        #log("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
         return packet
 
 
@@ -1033,12 +1033,12 @@ class WindowSource(object):
             enc = getattr(enc_webp, lossless_enc)
             kwargs = {}
             client_options = {}
-            debug("webp_encode(%s, %s) using lossless encoder=%s for %s", image, options, enc, pixel_format)
+            log("webp_encode(%s, %s) using lossless encoder=%s for %s", image, options, enc, pixel_format)
         if enc is None:
             enc = getattr(enc_webp, lossy_enc)
             kwargs = {"quality" : q}
             client_options = {"quality" : q}
-            debug("webp_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, options, enc, q, pixel_format)
+            log("webp_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, options, enc, q, pixel_format)
         handler = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
         bpp = 24
         if has_alpha:
@@ -1048,7 +1048,7 @@ class WindowSource(object):
 
     def rgb_encode(self, coding, image, options):
         pixel_format = image.get_pixel_format()
-        #debug("rgb_encode(%s, %s, %s) rgb_formats=%s", coding, image, options, self.rgb_formats)
+        #log("rgb_encode(%s, %s, %s) rgb_formats=%s", coding, image, options, self.rgb_formats)
         if pixel_format not in self.rgb_formats:
             if not self.rgb_reformat(image):
                 raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, self.rgb_formats))
@@ -1074,7 +1074,7 @@ class WindowSource(object):
             lz4 = use_lz4 and self.rgb_lz4 and level<=3
             wire_data = compressed_wrapper(coding, pixels, level=level, lz4=lz4)
             raw_data = wire_data.data
-            #debug("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
+            #log("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
             #         coding, pixel_format, len(pixels), len(raw_data), int(100.0*len(raw_data)/len(pixels)), self.rgb_lz4)
             if len(raw_data)>=(len(pixels)-32):
                 #compressed is actually bigger! (use uncompressed)
@@ -1092,7 +1092,7 @@ class WindowSource(object):
             bpp = 32
         else:
             bpp = 24
-        debug("rgb_encode using level=%s, %s compressed %sx%s in %s/%s: %s bytes down to %s", level, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(raw_data))
+        log("rgb_encode using level=%s, %s compressed %sx%s in %s/%s: %s bytes down to %s", level, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(raw_data))
         if not self.encoding_client_options or not self.supports_rgb24zlib:
             return  coding, wire_data, {}, image.get_width(), image.get_height(), image.get_rowstride(), bpp
         #wrap it using "Compressed" so the network layer receiving it
@@ -1182,7 +1182,7 @@ class WindowSource(object):
                 client_options["transparency"] = 255
                 kwargs["transparency"] = 255
             im.save(buf, "PNG", **kwargs)
-        debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
+        log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
         data = buf.getvalue()
         buf.close()
         return coding, Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
@@ -1258,7 +1258,7 @@ class WindowSource(object):
         image.set_rowstride(rowstride)
         image.set_pixel_format(target_format)
         end = time.time()
-        debug("rgb_reformat(%s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s", image, pixel_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
+        log("rgb_reformat(%s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s", image, pixel_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
         return True
 
     def mmap_send(self, image):
@@ -1273,7 +1273,7 @@ class WindowSource(object):
         mmap_data, mmap_free_size = mmap_write(self._mmap, self._mmap_size, data)
         self.global_statistics.mmap_free_size = mmap_free_size
         elapsed = time.time()-start+0.000000001 #make sure never zero!
-        debug("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
+        log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
         if mmap_data is None:
             return None
         self.global_statistics.mmap_bytes_sent += len(data)

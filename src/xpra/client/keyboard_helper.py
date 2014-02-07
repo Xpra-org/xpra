@@ -1,18 +1,16 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_KEYBOARD_DEBUG")
+from xpra.log import Logger
+log = Logger("keyboard")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.platform.keyboard import Keyboard
 from xpra.util import nn, nonl
-
 
 
 class KeyboardHelper(object):
@@ -65,7 +63,7 @@ class KeyboardHelper(object):
             whereas now it is enough to define one (any shortcut)
             """
             strs = ["meta+shift+F4:quit"]
-        debug("parse_shortcuts(%s)" % str(strs))
+        log("parse_shortcuts(%s)" % str(strs))
         shortcuts = {}
         #modifier names contains the internal modifiers list, ie: "mod1", "control", ...
         #but the user expects the name of the key to be used, ie: "alt" or "super"
@@ -136,7 +134,7 @@ class KeyboardHelper(object):
                     continue
             keyname = keyspec[len(keyspec)-1]
             shortcuts[keyname] = (modifiers, action, args)
-        debug("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
+        log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
         return  shortcuts
 
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
@@ -153,7 +151,7 @@ class KeyboardHelper(object):
             return  True
         try:
             method = getattr(window, action)
-            debug("key_handled_as_shortcut(%s,%s,%s,%s) has been handled by shortcut=%s", window, key_name, modifiers, depressed, shortcut)
+            log("key_handled_as_shortcut(%s,%s,%s,%s) has been handled by shortcut=%s", window, key_name, modifiers, depressed, shortcut)
         except AttributeError, e:
             log.error("key dropped, invalid method name in shortcut %s: %s", action, e)
             return  True
@@ -177,7 +175,7 @@ class KeyboardHelper(object):
         self.keyboard.process_key_event(self.send_key_action, wid, key_event)
 
     def send_key_action(self, wid, key_event):
-        debug("send_key_action(%s, %s)", wid, key_event)
+        log("send_key_action(%s, %s)", wid, key_event)
         packet = ["key-action", wid]
         for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
             packet.append(getattr(key_event, x))
@@ -199,7 +197,7 @@ class KeyboardHelper(object):
         if not pressed and key in self.keys_pressed:
             """ stop the timer and clear this keycode: """
             timer = self.keys_pressed[key]
-            debug("key repeat: clearing timer %s for %s / %s", timer, keyname, keycode)
+            log("key repeat: clearing timer %s for %s / %s", timer, keyname, keycode)
             self.source_remove(timer)
             del self.keys_pressed[key]
         elif pressed and key not in self.keys_pressed:
@@ -209,14 +207,14 @@ class KeyboardHelper(object):
             MIN_DELAY = 5
             delay = max(self.key_repeat_delay-LATENCY_JITTER, MIN_DELAY)
             interval = max(self.key_repeat_interval-LATENCY_JITTER, MIN_DELAY)
-            debug("scheduling key repeat for %s: delay=%s, interval=%s (from %s and %s)", keyname, delay, interval, self.key_repeat_delay, self.key_repeat_interval)
+            log("scheduling key repeat for %s: delay=%s, interval=%s (from %s and %s)", keyname, delay, interval, self.key_repeat_delay, self.key_repeat_interval)
             def send_key_repeat():
                 modifiers = self.get_current_modifiers()
                 self.send_now("key-repeat", wid, keyname, keyval, keycode, modifiers)
             def continue_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and continue, otherwise stop
-                debug("continue_key_repeat for %s / %s", keyname, keycode)
+                log("continue_key_repeat for %s / %s", keyname, keycode)
                 if key in self.keys_pressed:
                     send_key_repeat()
                     return  True
@@ -226,14 +224,14 @@ class KeyboardHelper(object):
             def start_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and start repeat:
-                debug("start_key_repeat for %s / %s", keyname, keycode)
+                log("start_key_repeat for %s / %s", keyname, keycode)
                 if key in self.keys_pressed:
                     send_key_repeat()
                     self.keys_pressed[key] = self.timeout_add(interval, continue_key_repeat)
                 else:
                     del self.keys_pressed[key]
                 return  False   #never run this timer again
-            debug("key repeat: starting timer for %s / %s with delay %s and interval %s", keyname, keycode, delay, interval)
+            log("key repeat: starting timer for %s / %s with delay %s and interval %s", keyname, keycode, delay, interval)
             self.keys_pressed[key] = self.timeout_add(delay, start_key_repeat)
 
     def clear_repeat(self):
@@ -248,11 +246,11 @@ class KeyboardHelper(object):
         self.xkbmap_keycodes = self.get_full_keymap()
         self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()
         self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self.keyboard.get_keymap_modifiers()
-        debug("layout=%s, variant=%s", self.xkbmap_layout, self.xkbmap_variant)
-        debug("print=%s, query=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query))
-        debug("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
-        debug("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
-        debug("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
+        log("layout=%s, variant=%s", self.xkbmap_layout, self.xkbmap_variant)
+        log("print=%s, query=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query))
+        log("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
+        log("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
+        log("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
 
     def get_full_keymap(self):
         return []

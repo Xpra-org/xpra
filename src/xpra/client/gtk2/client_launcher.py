@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2009-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2009-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -38,7 +38,7 @@ from xpra.platform import init as platform_init
 from xpra.platform.gui import init as gui_init, ready as gui_ready
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
-log = Logger()
+log = Logger("launcher")
 
 
 black = gdk.color_parse("black")

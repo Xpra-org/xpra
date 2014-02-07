@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys, os, time
 
-from xpra.sound.sound_pipeline import SoundPipeline, debug
+from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, MP3, CODECS, gst
 from xpra.os_util import thread
 from xpra.log import Logger
-log = Logger()
+log = Logger("sound")
 
 
 SINKS = ["autoaudiosink"]
@@ -99,17 +99,17 @@ class SoundSink(SoundPipeline):
 
     def queue_pushing(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        debug("sound sink queue pushing: level=%s", ltime)
+        log("sound sink queue pushing: level=%s", ltime)
         self.queue_state = "pushing"
 
     def queue_running(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        debug("sound sink queue running: level=%s", ltime)
+        log("sound sink queue running: level=%s", ltime)
         self.queue_state = "running"
 
     def queue_underrun(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        debug("sound sink queue underrun: level=%s", ltime)
+        log("sound sink queue underrun: level=%s", ltime)
         self.queue_state = "underrun"
 
     def queue_overrun(self, *args):
@@ -118,9 +118,9 @@ class SoundSink(SoundPipeline):
         #no overruns for the first 2 seconds:
         elapsed = time.time()-self.start_time
         if elapsed<2.0 or ltime<(QUEUE_TIME/MS_TO_NS/2*75/100):
-            debug("sound sink queue overrun ignored: level=%s, elapsed time=%.1f", ltime, elapsed)
+            log("sound sink queue overrun ignored: level=%s, elapsed time=%.1f", ltime, elapsed)
             return
-        debug("sound sink queue overrun: level=%s", ltime)
+        log("sound sink queue overrun: level=%s", ltime)
         self.overruns += 1
         self.emit("overrun", ltime)
 
@@ -130,7 +130,7 @@ class SoundSink(SoundPipeline):
         self.src = None
 
     def eos(self):
-        debug("eos()")
+        log("eos()")
         if self.src:
             self.src.emit('end-of-stream')
         self.cleanup()
@@ -157,7 +157,7 @@ class SoundSink(SoundPipeline):
             d = metadata.get("duration")
             if d is not None:
                 buf.duration = d
-        debug("add_data(..) queue_state=%s", self.queue_state)
+        log("add_data(..) queue_state=%s", self.queue_state)
         self.push_buffer(buf)
 
     def push_buffer(self, buf):
@@ -175,7 +175,7 @@ class SoundSink(SoundPipeline):
         self.buffer_count += 1
         self.byte_count += len(buf.data)
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        debug("sound sink: pushed %s bytes, new buffer level: %sms", len(buf.data), ltime)
+        log("sound sink: pushed %s bytes, new buffer level: %sms", len(buf.data), ltime)
         return True
 
 

@@ -1,12 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 
 import gtk.gdk
-from xpra.platform.keyboard_base import KeyboardBase, debug
+from xpra.platform.keyboard_base import KeyboardBase, log
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 
 
@@ -39,13 +39,13 @@ class Keyboard(KeyboardBase):
         self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R")
         self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R")
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
-        debug("set_modifier_mappings(..) meta=%s, control=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.num_lock_modifier)
+        log("set_modifier_mappings(..) meta=%s, control=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.num_lock_modifier)
         #find the keysyms and keycodes to use for each key we may translate:
         for orig_keysym in KEYS_TRANSLATION_OPTIONS.keys():
             new_def = self.find_translation(orig_keysym)
             if new_def is not None:
                 self.key_translations[orig_keysym] = new_def
-        debug("set_modifier_mappings(..) swap keys translations=%s", self.key_translations)
+        log("set_modifier_mappings(..) swap keys translations=%s", self.key_translations)
 
     def find_translation(self, orig_keysym):
         new_def = None
@@ -80,12 +80,12 @@ class Keyboard(KeyboardBase):
             meta_set = self.meta_modifier in names
             control_set = self.control_modifier in names
             if meta_on and not control_set:
-                debug("mask_to_names swapping meta for control: %s for %s", self.meta_modifier, self.control_modifier)
+                log("mask_to_names swapping meta for control: %s for %s", self.meta_modifier, self.control_modifier)
                 names.append(self.control_modifier)
                 if meta_set:
                     names.remove(self.meta_modifier)
             elif control_set and not meta_on:
-                debug("mask_to_names swapping control for meta: %s for %s", self.control_modifier, self.meta_modifier)
+                log("mask_to_names swapping control for meta: %s for %s", self.control_modifier, self.meta_modifier)
                 names.remove(self.control_modifier)
                 if not meta_set:
                     names.append(self.meta_modifier)
@@ -95,17 +95,17 @@ class Keyboard(KeyboardBase):
                 names.append(self.num_lock_modifier)
             elif not self.num_lock_state and self.num_lock_modifier in names:
                 names.remove(self.num_lock_modifier)
-        debug("mask_to_names(%s)=%s", mask, names)
+        log("mask_to_names(%s)=%s", mask, names)
         return names
 
     def process_key_event(self, send_key_action_cb, wid, key_event):
         if self.swap_keys:
             trans = self.key_translations.get(key_event.keyname)
             if trans:
-                debug("swap keys: translating key '%s' to %s", key_event, trans)
+                log("swap keys: translating key '%s' to %s", key_event, trans)
                 key_event.keycode, key_event.keyname = trans
         if key_event.keycode==self.num_lock_keycode and not key_event.pressed:
-            debug("toggling numlock")
+            log("toggling numlock")
             self.num_lock_state = not self.num_lock_state
             getOSXMenuHelper().update_numlock(self.num_lock_state)
         send_key_action_cb(wid, key_event)

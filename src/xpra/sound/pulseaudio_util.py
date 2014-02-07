@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,9 +9,8 @@ import os.path
 
 from xpra.scripts.exec_util import safe_exec
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_SOUND_DEBUG")
+from xpra.log import Logger
+log = Logger("sound")
 
 
 def which(name):
@@ -53,7 +52,7 @@ def pactl_output(*pactl_args):
     cmd = [pactl_bin] + list(pactl_args)
     try:
         code, out, _ = safe_exec(cmd)
-        debug("pactl_output%s returned %s", pactl_args, code)
+        log("pactl_output%s returned %s", pactl_args, code)
         return  code, out
     except Exception, e:
         log.error("failed to execute %s: %s", cmd, e)
@@ -70,7 +69,7 @@ def get_x11_property(atom_name):
         if p is None:
             return ""
         v = p[2]
-        debug("get_x11_property(%s)=%s", atom_name, v)
+        log("get_x11_property(%s)=%s", atom_name, v)
         return v
     except:
         return ""
@@ -84,7 +83,7 @@ def has_pa_x11_property():
 
 def is_pa_installed():
     pactl_bin = get_pactl_bin()
-    debug("is_pa_installed() pactl_bin=%s", pactl_bin)
+    log("is_pa_installed() pactl_bin=%s", pactl_bin)
     return len(pactl_bin)>0
 
 def has_pa():
@@ -110,7 +109,7 @@ def get_pactl_stat_line(prefix):
         if line.startswith(prefix):
             stat = line[len(prefix):].strip()
             break
-    debug("get_pactl_stat_line(%s)=%s", prefix, stat)
+    log("get_pactl_stat_line(%s)=%s", prefix, stat)
     return stat
 
 def get_default_sink():

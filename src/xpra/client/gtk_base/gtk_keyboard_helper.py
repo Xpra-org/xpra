@@ -1,14 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger()
-
-from xpra.client.keyboard_helper import KeyboardHelper, nn, debug
+from xpra.client.keyboard_helper import KeyboardHelper, nn, log
 from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
 from xpra.gtk_common.keymap import get_gtk_keymap
 gdk = import_gdk()
@@ -31,7 +28,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             self._keymap.connect("keys-changed", self._keys_changed)
 
     def _keys_changed(self, *args):
-        debug("keys_changed")
+        log("keys_changed")
         self._keymap = gdk.keymap_get_default()
         if not self._keymap_changing:
             self._keymap_changing = True
@@ -45,7 +42,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             self.keyboard.update_modifier_map(gdk.display_get_default(), self.xkbmap_mod_meanings)
         except:
             pass
-        debug("do_keys_changed() modifier_map=%s" % self.keyboard.modifier_map)
+        log("do_keys_changed() modifier_map=%s" % self.keyboard.modifier_map)
         if sendkeymap:
             if self.xkbmap_layout:
                 self.send_layout()

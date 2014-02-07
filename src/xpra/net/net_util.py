@@ -9,15 +9,14 @@
 import socket
 import sys
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_NETWORK_DEBUG")
+from xpra.log import Logger
+log = Logger("network", "util")
 
 
 has_netifaces = True
 try:
 	import netifaces				#@UnresolvedImport
-	debug("netifaces loaded sucessfully")
+	log("netifaces loaded sucessfully")
 except Exception, e:
 	has_netifaces = False
 	log.warn("python netifaces package is missing")
@@ -43,7 +42,7 @@ def do_get_bind_IPs():
 	global iface_ipmasks
 	ips = []
 	ifaces = netifaces.interfaces()
-	debug("ifaces=%s", ifaces)
+	log("ifaces=%s", ifaces)
 	for iface in ifaces:
 		if_ipmasks = []
 		try:
@@ -57,7 +56,7 @@ def do_get_bind_IPs():
 		except Exception, e:
 			log.error("error on %s: %s", iface, e)
 		iface_ipmasks[iface] = if_ipmasks
-	debug("do_get_bind_IPs()=%s", ips)
+	log("do_get_bind_IPs()=%s", ips)
 	return ips
 
 def do_get_bind_ifacemask(iface):
@@ -74,7 +73,7 @@ def do_get_bind_ifacemask(iface):
 						ipmasks.append((addr,mask))
 					except Exception, e:
 						log.error("do_get_bind_ifacemask(%s) error on %s", iface, addr, e)
-	debug("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
+	log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
 	return ipmasks
 
 def get_iface(ip):
@@ -113,7 +112,7 @@ def get_iface(ip):
 					best_match = iface
 			except Exception, e:
 				log.error("error parsing ip (%s) or its mask (%s): %s", test_ip, mask, e)
-	debug("get_iface(%s)=%s", ip, best_match)
+	log("get_iface(%s)=%s", ip, best_match)
 	return	best_match
 
 
@@ -136,7 +135,7 @@ if not sys.platform.startswith("win"):
 		cdll.LoadLibrary(library)
 		#<CDLL 'libc.so.6', handle 7fcac419b000 at 7fcac1ab0c10>
 		_libc = CDLL(library)
-		debug("successfully loaded socket C library from %s", library)
+		log("successfully loaded socket C library from %s", library)
 	except ImportError, e:
 		log.error("library %s not found: %s", library, e)
 	except OSError, e:

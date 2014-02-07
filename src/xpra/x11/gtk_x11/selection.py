@@ -26,7 +26,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                 )
 
 from xpra.log import Logger
-log = Logger()
+log = Logger("x11", "util")
 
 class AlreadyOwned(Exception):
     pass

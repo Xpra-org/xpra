@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,9 +7,8 @@ import os
 import time
 from threading import Event
 from xpra.daemon_thread import make_daemon_thread
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_UIWATCHER_DEBUG")
+from xpra.log import Logger
+log = Logger("util")
 
 from xpra.platform.features import UI_THREAD_POLLING
 FAKE_UI_LOCKUPS = int(os.environ.get("XPRA_FAKE_UI_LOCKUPS", "0"))
@@ -51,7 +50,7 @@ class UI_thread_watcher(object):
         if self.polling_timeout>0:
             make_daemon_thread(self.poll_UI_loop, "UI thread polling").start()
         else:
-            debug("not starting an IO polling thread")
+            log("not starting an IO polling thread")
         if FAKE_UI_LOCKUPS>0:
             #watch out: sleeping in UI thread!
             def sleep_in_ui_thread(*args):
@@ -79,7 +78,7 @@ class UI_thread_watcher(object):
                 log.error("failed to run %s", x, exc_info=True)
 
     def UI_thread_wakeup(self):
-        debug("UI_thread_wakeup()")
+        log("UI_thread_wakeup()")
         self.last_UI_thread_time = time.time()
         #UI thread was blocked?
         if self.UI_blocked:
@@ -89,10 +88,10 @@ class UI_thread_watcher(object):
         return False
 
     def poll_UI_loop(self):
-        debug("poll_UI_loop() running")
+        log("poll_UI_loop() running")
         while not self.exit.isSet():
             delta = time.time()-self.last_UI_thread_time
-            debug("poll_UI_loop() last_UI_thread_time was %.1f seconds ago, UI_blocked=%s", delta, self.UI_blocked)
+            log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago, UI_blocked=%s", delta, self.UI_blocked)
             if delta>self.max_delta:
                 #UI thread is (still?) blocked:
                 if not self.UI_blocked:
@@ -101,7 +100,7 @@ class UI_thread_watcher(object):
                     self.run_callbacks(self.fail_callbacks)
             else:
                 #seems to be ok:
-                debug("poll_UI_loop() ok, firing %s", self.alive_callbacks)
+                log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
                 self.run_callbacks(self.alive_callbacks)
             self.timeout_add(0, self.UI_thread_wakeup)
             self.exit.wait(self.polling_timeout/1000.0)

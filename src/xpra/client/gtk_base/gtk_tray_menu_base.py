@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,9 +13,8 @@ gobject = import_gobject()
 from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, set_checkeditems, menuitem
 from xpra.client.gtk_base.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
+from xpra.log import Logger
+log = Logger("tray")
 
 
 #compression is fine with default value (3), no need to clutter the UI
@@ -89,7 +88,7 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
                 s = ts
                 break
         if s>=0 and s!=ss.get_current_value():
-            debug("setting %s to %s", title, s)
+            log("setting %s to %s", title, s)
             ss.set_value_cb(s)
             #deselect other items:
             for x in ss.menu_items.values():
@@ -114,7 +113,7 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
                 s = ts
                 break
         if s>=0 and s!=ss.get_current_min_value():
-            debug("setting min-%s to %s", title, s)
+            log("setting min-%s to %s", title, s)
             ss.set_min_value_cb(s)
             #deselect other min items:
             for x in ss.min_menu_items.values():
@@ -158,13 +157,13 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
                 descr += "\n(not available on this server)"
             set_tooltip_text(encoding_item, descr)
         def encoding_changed(oitem):
-            debug("encoding_changed(%s)", oitem)
+            log("encoding_changed(%s)", oitem)
             item = ensure_item_selected(encodings_submenu, oitem)
             enc = NAME_TO_ENCODING.get(item.get_label())
-            debug("encoding_changed(%s) item=%s, enc=%s, current=%s", oitem, item, enc, encodings_submenu.get_current_encoding())
+            log("encoding_changed(%s) item=%s, enc=%s, current=%s", oitem, item, enc, encodings_submenu.get_current_encoding())
             if enc is not None and encodings_submenu.get_current_encoding()!=enc:
                 encodings_submenu.set_encoding(enc)
-        debug("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
+        log("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
         encoding_item.set_active(encoding==get_current_encoding())
         encoding_item.set_sensitive(encoding in server_encodings)
         encoding_item.set_draw_as_radio(True)
@@ -244,7 +243,7 @@ class GTKTrayMenuBase(object):
         return menu
 
     def cleanup(self):
-        debug("cleanup() session_info=%s", self.session_info)
+        log("cleanup() session_info=%s", self.session_info)
         if self.session_info:
             self.session_info.destroy()
             self.session_info = None
@@ -315,7 +314,7 @@ class GTKTrayMenuBase(object):
             self.client.bell_enabled = v
             if changed and self.client.toggle_cursors_bell_notify:
                 self.client.send_bell_enabled()
-            debug("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
+            log("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
         self.bell_menuitem = self.checkitem("Bell", bell_toggled)
         self.bell_menuitem.set_sensitive(False)
         def set_bell_menuitem(*args):
@@ -339,7 +338,7 @@ class GTKTrayMenuBase(object):
                 self.client.send_cursors_enabled()
             if not self.client.cursors_enabled:
                 self.client.reset_cursor()
-            debug("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
+            log("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
         self.cursors_menuitem = self.checkitem("Cursors", cursors_toggled)
         self.cursors_menuitem.set_sensitive(False)
         def set_cursors_menuitem(*args):
@@ -361,7 +360,7 @@ class GTKTrayMenuBase(object):
             self.client.notifications_enabled = v
             if changed and self.client.toggle_cursors_bell_notify:
                 self.client.send_notify_enabled()
-            debug("notifications_toggled(%s) notifications_enabled=%s", args, self.client.notifications_enabled)
+            log("notifications_toggled(%s) notifications_enabled=%s", args, self.client.notifications_enabled)
         self.notifications_menuitem = self.checkitem("Notifications", notifications_toggled)
         self.notifications_menuitem.set_sensitive(False)
         def set_notifications_menuitem(*args):
@@ -379,7 +378,7 @@ class GTKTrayMenuBase(object):
     def make_clipboard_togglemenuitem(self):
         def menu_clipboard_toggled(*args):
             new_state = self.clipboard_menuitem.get_active()
-            debug("clipboard_toggled(%s) clipboard_enabled=%s, new_state=%s", args, self.client.clipboard_enabled, new_state)
+            log("clipboard_toggled(%s) clipboard_enabled=%s, new_state=%s", args, self.client.clipboard_enabled, new_state)
             if self.client.clipboard_enabled!=new_state:
                 self.client.clipboard_enabled = new_state
                 self.client.emit("clipboard-toggled")
@@ -411,7 +410,7 @@ class GTKTrayMenuBase(object):
             self.popup_menu_workaround(clipboard_submenu)
             c = self.client
             can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard and c.server_supports_clipboard
-            debug("set_clipboard_menu(%s) can_clipboard=%s, server=%s, client=%s", args, can_clipboard, c.server_supports_clipboard, c.client_supports_clipboard)
+            log("set_clipboard_menu(%s) can_clipboard=%s, server=%s, client=%s", args, can_clipboard, c.server_supports_clipboard, c.client_supports_clipboard)
             clipboard_menu.set_sensitive(can_clipboard)
             LABEL_TO_NAME = {"Disabled"  : None,
                             "Clipboard" : "CLIPBOARD",
@@ -426,7 +425,7 @@ class GTKTrayMenuBase(object):
                     label = item.get_label()
                     remote_clipboard = LABEL_TO_NAME.get(label)
                     old_state = self.client.clipboard_enabled
-                    debug("remote_clipboard_changed(%s) remote_clipboard=%s, old_state=%s", item, remote_clipboard, old_state)
+                    log("remote_clipboard_changed(%s) remote_clipboard=%s, old_state=%s", item, remote_clipboard, old_state)
                     send_tokens = False
                     if remote_clipboard is not None:
                         #clipboard is not disabled
@@ -439,7 +438,7 @@ class GTKTrayMenuBase(object):
                         self.client.clipboard_helper = None
                         send_tokens = False
                         new_state = False
-                    debug("remote_clipboard_changed(%s) label=%s, remote_clipboard=%s, old_state=%s, new_state=%s",
+                    log("remote_clipboard_changed(%s) label=%s, remote_clipboard=%s, old_state=%s, new_state=%s",
                              item, label, remote_clipboard, old_state, new_state)
                     if new_state!=old_state:
                         self.client.clipboard_enabled = new_state
@@ -481,7 +480,7 @@ class GTKTrayMenuBase(object):
                 set_tooltip_text(self.keyboard_sync_menuitem, "Enable keyboard state synchronization")
         def keyboard_sync_toggled(*args):
             self.client.keyboard_sync = self.keyboard_sync_menuitem.get_active()
-            debug("keyboard_sync_toggled(%s) keyboard_sync=%s", args, self.client.keyboard_sync)
+            log("keyboard_sync_toggled(%s) keyboard_sync=%s", args, self.client.keyboard_sync)
             set_keyboard_sync_tooltip()
             self.client.emit("keyboard-sync-toggled")
         self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization", keyboard_sync_toggled)
@@ -496,7 +495,7 @@ class GTKTrayMenuBase(object):
     def make_openglmenuitem(self):
         gl = self.checkitem("OpenGL")
         def gl_set(*args):
-            debug("gl_set(%s) opengl_enabled=%s, window_unmap=%s", args, self.client.opengl_enabled, self.client.window_unmap)
+            log("gl_set(%s) opengl_enabled=%s, window_unmap=%s", args, self.client.opengl_enabled, self.client.window_unmap)
             gl.set_active(self.client.opengl_enabled)
             gl.set_sensitive(self.client.window_unmap)
             if not self.client.window_unmap:
@@ -639,10 +638,10 @@ class GTKTrayMenuBase(object):
 
 
     def spk_on(self, *args):
-        debug("spk_on(%s)", args)
+        log("spk_on(%s)", args)
         self.client.start_receiving_sound()
     def spk_off(self, *args):
-        debug("spk_off(%s)", args)
+        log("spk_off(%s)", args)
         self.client.stop_receiving_sound()
     def make_speakermenuitem(self):
         speaker = self.menuitem("Speaker", "speaker.png", "Forward sound output from the server")
@@ -660,10 +659,10 @@ class GTKTrayMenuBase(object):
         return speaker
 
     def mic_on(self, *args):
-        debug("mic_on(%s)", args)
+        log("mic_on(%s)", args)
         self.client.start_sending_sound()
     def mic_off(self, *args):
-        debug("mic_off(%s)", args)
+        log("mic_off(%s)", args)
         self.client.stop_sending_sound()
     def make_microphonemenuitem(self):
         microphone = self.menuitem("Microphone", "microphone.png", "Forward sound input to the server", None)
@@ -704,7 +703,7 @@ class GTKTrayMenuBase(object):
         def client_signalled_change(obj):
             menu.ignore_events = True
             is_on = is_on_cb()
-            debug("sound: client_signalled_change(%s) is_on=%s", obj, is_on)
+            log("sound: client_signalled_change(%s) is_on=%s", obj, is_on)
             if is_on:
                 if not on.get_active():
                     on.set_active(True)
@@ -734,7 +733,7 @@ class GTKTrayMenuBase(object):
                 layout = item.keyboard_layout
                 variant = item.keyboard_variant
                 if layout!=self.client.xkbmap_layout or variant!=self.client.xkbmap_variant:
-                    debug("keyboard layout selected: %s / %s", layout, variant)
+                    log("keyboard layout selected: %s / %s", layout, variant)
                     self.client.xkbmap_layout = layout
                     self.client.xkbmap_variant = variant
                     self.client.send_layout()
@@ -801,7 +800,7 @@ class GTKTrayMenuBase(object):
             item = ensure_item_selected(self.compression_submenu, item)
             c = int(item.get_label().replace("None", "0"))
             if c!=self.client.compression_level:
-                debug("setting compression level to %s", c)
+                log("setting compression level to %s", c)
                 self.client.set_deflate_level(c)
         for i in range(0, 10):
             c = CheckMenuItem(str(compression_options.get(i, i)))
@@ -818,7 +817,7 @@ class GTKTrayMenuBase(object):
 
     def make_refreshmenuitem(self):
         def force_refresh(*args):
-            debug("force refresh")
+            log("force refresh")
             self.client.send_refresh_all()
         return self.handshake_menuitem("Refresh", "retry.png", None, force_refresh)
 
@@ -850,11 +849,11 @@ class GTKTrayMenuBase(object):
             This code must be added to all the sub-menus of the popup menu too!
         """
         def enter_menu(*args):
-            debug("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
+            log("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
             self.mouse_in_tray_menu_counter += 1
             self.mouse_in_tray_menu = True
         def leave_menu(*args):
-            debug("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
+            log("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
             self.mouse_in_tray_menu_counter += 1
             self.mouse_in_tray_menu = False
             def check_menu_left(expected_counter):
@@ -866,6 +865,6 @@ class GTKTrayMenuBase(object):
             gobject.timeout_add(500, check_menu_left, self.mouse_in_tray_menu_counter)
         self.mouse_in_tray_menu_counter = 0
         self.mouse_in_tray_menu = False
-        debug("popup_menu_workaround: adding events callbacks")
+        log("popup_menu_workaround: adding events callbacks")
         menu.connect("enter-notify-event", enter_menu)
         menu.connect("leave-notify-event", leave_menu)

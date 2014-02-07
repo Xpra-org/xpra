@@ -1,15 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import time
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_SWSCALE_DEBUG")
-error = log.error
+from xpra.log import Logger
+log = Logger("csc", "swscale")
 
 from xpra.codecs.codec_constants import codec_spec
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -94,13 +92,13 @@ FORMATS = {}
 for av_enum_name, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
     av_enum = constants.get(av_enum_name)
     if av_enum is None:
-        debug("av pixel mode %s is not available", av_enum_name)
+        log("av pixel mode %s is not available", av_enum_name)
         continue
     FORMATS[pix_fmt] = CSCPixelFormat(av_enum, av_enum_name, width_mult, height_mult, pix_fmt)
     if pix_fmt not in COLORSPACES:
         COLORSPACES.append(pix_fmt)
-debug("swscale pixel formats: %s", FORMATS)
-debug("colorspaces: %s", COLORSPACES)
+log("swscale pixel formats: %s", FORMATS)
+log("colorspaces: %s", COLORSPACES)
 
 
 cdef int roundup(int n, int m):
@@ -139,11 +137,11 @@ for speed, flags_strs in FLAGS_OPTIONS:
         if flag_val is None:
             log.warn("av flag %s is missing!", flags_str)
             continue
-        debug("%s=%s", flags_str, flag_val)
+        log("%s=%s", flags_str, flag_val)
         flags |= flag_val
-    debug("%s=%s", flags_strs, flags)
+    log("%s=%s", flags_strs, flags)
     FLAGS.append((speed, SWSFlags(flags, flags_strs)))
-debug("swscale flags: %s", FLAGS)
+log("swscale flags: %s", FLAGS)
 
 
 cdef int get_swscale_flags(int speed, int scaling, int subsampling, dst_format):
@@ -219,11 +217,11 @@ cdef class CSCImage:
         self.buf[plane] = buf
 
     def __dealloc__(self):
-        #debug("CSCImage.__dealloc__()")
+        #log("CSCImage.__dealloc__()")
         self.free()
 
     def free(self):
-        #debug("CSCImage.free() freed=%s", bool(self.freed))
+        #log("CSCImage.free() freed=%s", bool(self.freed))
         if self.freed==0:
             self.freed = 1
             if self.buf[0]==NULL:
@@ -236,7 +234,7 @@ cdef class CSCImage:
 class CSCImageWrapper(ImageWrapper):
 
     def free(self):                             #@DuplicatedSignature
-        debug("CSCImageWrapper.free() csc_image=%s", self.csc_image)
+        log("CSCImageWrapper.free() csc_image=%s", self.csc_image)
         ImageWrapper.free(self)
         if self.csc_image:
             self.csc_image.free()
@@ -265,18 +263,18 @@ cdef class ColorspaceConverter:
 
     def init_context(self, int src_width, int src_height, src_format,
                            int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
-        debug("swscale.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
+        log("swscale.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
         cdef CSCPixelFormat src
         cdef CSCPixelFormat dst
         #src:
         src = FORMATS.get(src_format)
-        debug("source format=%s", src)
+        log("source format=%s", src)
         assert src, "invalid source format: %s" % src_format
         self.src_format = src.pix_fmt
         self.src_format_enum = src.av_enum
         #dst:
         dst = FORMATS.get(dst_format)
-        debug("destination format=%s", dst)
+        log("destination format=%s", dst)
         assert dst, "invalid destination format: %s" % dst_format
         self.dst_format = dst.pix_fmt
         self.dst_format_enum = dst.av_enum
@@ -293,7 +291,7 @@ cdef class ColorspaceConverter:
             #MEMALIGN may be redundant here but it is very cheap
             self.out_size[i] = pad(self.out_stride[i] * (self.out_height[i]+1))
             self.buffer_size += self.out_size[i]
-        debug("buffer size=%s", self.buffer_size)
+        log("buffer size=%s", self.buffer_size)
 
         self.src_width = src_width
         self.src_height = src_height
@@ -302,14 +300,14 @@ cdef class ColorspaceConverter:
 
         cdef int scaling = (src_width!=dst_width) or (src_height!=dst_height)
         self.flags = get_swscale_flags(speed, scaling, subsampling, dst_format)
-        #debug("sws get_swscale_flags(%s, %s, %s)=%s", speed, scaling, subsampling, get_swscale_flags_strs(self.flags))
+        #log("sws get_swscale_flags(%s, %s, %s)=%s", speed, scaling, subsampling, get_swscale_flags_strs(self.flags))
         self.time = 0
         self.frames = 0
 
         self.context = sws_getContext(self.src_width, self.src_height, self.src_format_enum,
                                       self.dst_width, self.dst_height, self.dst_format_enum,
                                       self.flags, NULL, NULL, NULL)
-        debug("sws context=%s", hex(<long> self.context))
+        log("sws context=%s", hex(<long> self.context))
         assert self.context!=NULL, "sws_getContext returned NULL"
 
     def get_info(self):         #@DuplicatedSignature
@@ -363,7 +361,7 @@ cdef class ColorspaceConverter:
 
 
     def clean(self):                        #@DuplicatedSignature
-        debug("swscale.ColorspaceConverter.clean()")
+        log("swscale.ColorspaceConverter.clean()")
         if self.context!=NULL:
             sws_freeContext(self.context)
             self.context = NULL
@@ -434,7 +432,7 @@ cdef class ColorspaceConverter:
             out = PyBuffer_FromMemory(<void *>output_image[0], self.out_height[0] * self.out_stride[0])
             csci.set_plane(0, output_image[0])
         elapsed = time.time()-start
-        debug("%s took %.1fms", self, 1000.0*elapsed)
+        log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
         out_image = CSCImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, oplanes)

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from xpra.util import AdHocStruct
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.client.qt4.pixmap_backing import QtPixmapBacking
 from xpra.log import Logger
-log = Logger()
+log = Logger("window")
 debug = log.info
 
 MODIFIERS = {Qt.AltModifier     : "mod1",

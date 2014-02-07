@@ -10,9 +10,9 @@ import gobject
 gobject.threads_init()
 from multiprocessing import Queue as MQueue
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_PROXY_DEBUG")
+from xpra.log import Logger
+log = Logger("proxy")
+
 
 from xpra.server.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
@@ -37,7 +37,7 @@ class ProxyServer(ServerCore):
     """
 
     def __init__(self):
-        debug("ProxyServer.__init__()")
+        log("ProxyServer.__init__()")
         ServerCore.__init__(self)
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self.main_loop = None
@@ -58,7 +58,7 @@ class ProxyServer(ServerCore):
         signal.signal(signal.SIGCHLD, self.sigchld)
 
     def init(self, opts):
-        debug("ProxyServer.init(%s)", opts)
+        log("ProxyServer.init(%s)", opts)
         if not opts.auth:
             raise Exception("The proxy server requires an authentication mode (use 'none' to disable authentication)")
         self._socket_dir = opts.socket_dir
@@ -81,7 +81,7 @@ class ProxyServer(ServerCore):
         if len(args)!=1:
             return ServerCore.control_command_response(self, proto, command, 4, "invalid number of arguments, usage: 'xpra control stop DISPLAY'")
         display = args[0]
-        debug("stop command: will try to find proxy process for display %s", display)
+        log("stop command: will try to find proxy process for display %s", display)
         for process, v in list(self.processes.items()):
             disp,mq = v
             if disp==display:
@@ -95,14 +95,14 @@ class ProxyServer(ServerCore):
     def stop_all_proxies(self):
         processes = self.processes
         self.processes = {}
-        debug("stop_all_proxies() will stop proxy processes: %s", processes)
+        log("stop_all_proxies() will stop proxy processes: %s", processes)
         for process, v in processes.items():
             if not process.is_alive():
                 continue
             disp,mq = v
-            debug("stop_all_proxies() stopping process %s for display %s", process, disp)
+            log("stop_all_proxies() stopping process %s for display %s", process, disp)
             mq.put("stop")
-        debug("stop_all_proxies() done")
+        log("stop_all_proxies() done")
 
     def cleanup(self):
         self.stop_all_proxies()
@@ -144,9 +144,9 @@ class ProxyServer(ServerCore):
         if sessions is None:
             disconnect("no sessions found")
             return
-        debug("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
+        log("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         uid, gid, displays, env_options, session_options = sessions
-        #debug("unused options: %s, %s", env_options, session_options)
+        #log("unused options: %s, %s", env_options, session_options)
         if len(displays)==0:
             disconnect("no displays found")
             return
@@ -168,7 +168,7 @@ class ProxyServer(ServerCore):
                 return
             display = displays[0]
 
-        debug("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
+        log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
         def parse_error(*args):
             disconnect("invalid display string")
             log.warn("parse error on %s: %s", display, args)
@@ -176,14 +176,14 @@ class ProxyServer(ServerCore):
         opts = make_defaults_struct()
         opts.username = client_proto.authenticator.username
         disp_desc = parse_display_name(parse_error, opts, display)
-        debug("display description(%s) = %s", display, disp_desc)
+        log("display description(%s) = %s", display, disp_desc)
         try:
             server_conn = connect_to(disp_desc)
         except Exception, e:
             log.error("cannot start proxy connection to %s: %s", disp_desc, e, exc_info=True)
             disconnect("failed to connect to display")
             return
-        debug("server connection=%s", server_conn)
+        log("server connection=%s", server_conn)
 
         client_conn = client_proto.steal_connection()
         client_state = client_proto.save_state()
@@ -193,12 +193,12 @@ class ProxyServer(ServerCore):
             cipher = auth_caps.get("cipher")
             if cipher:
                 encryption_key = self.get_encryption_key(client_proto.authenticator)
-        debug("start_proxy(..) client connection=%s", client_conn)
-        debug("start_proxy(..) client state=%s", client_state)
+        log("start_proxy(..) client connection=%s", client_conn)
+        log("start_proxy(..) client state=%s", client_state)
 
         #this may block, so run it in a thread:
         def do_start_proxy():
-            debug("do_start_proxy()")
+            log("do_start_proxy()")
             try:
                 #stop IO in proxy:
                 #(it may take up to _socket_timeout until the thread exits)
@@ -214,9 +214,9 @@ class ProxyServer(ServerCore):
                 assert uid!=0 and gid!=0
                 message_queue = MQueue()
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir, client_conn, client_state, cipher, encryption_key, server_conn, c, message_queue)
-                debug("starting %s from pid=%s", process, os.getpid())
+                log("starting %s from pid=%s", process, os.getpid())
                 process.start()
-                debug("process started")
+                log("process started")
                 #FIXME: remove processes that have terminated
                 self.processes[process] = (display, message_queue)
             finally:
@@ -236,9 +236,9 @@ class ProxyServer(ServerCore):
             del self.processes[p]
 
     def sigchld(self, *args):
-        debug("sigchld(%s)", args)
+        log("sigchld(%s)", args)
         self.idle_add(self.reap)
-        debug("processes: %s", self.processes)
+        log("processes: %s", self.processes)
 
     def get_info(self, proto, *args):
         info = {"server.type" : "Python/GObject/proxy"}

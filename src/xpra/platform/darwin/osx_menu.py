@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,9 +10,9 @@ from xpra.client.gtk_base.about import about
 from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu
 from xpra.platform.paths import get_icon
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
+from xpra.log import Logger
+log = Logger("tray", "osx")
+
 
 #for attention_request:
 CRITICAL_REQUEST = 0
@@ -39,7 +39,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
     def __init__(self, client=None):
         GTKTrayMenuBase.__init__(self, client)
-        debug("OSXMenuHelper(%s)", client)
+        log("OSXMenuHelper(%s)", client)
         self.menu_bar = None
         self.hidden_window = None
         self.keyboard = None
@@ -52,21 +52,21 @@ class OSXMenuHelper(GTKTrayMenuBase):
             self.keyboard = client.keyboard_helper.keyboard
 
     def build(self):
-        debug("OSXMenuHelper.build()")
+        log("OSXMenuHelper.build()")
         if self.menu_bar is None:
             self.menu_bar = gtk.MenuBar()
             self.build_menu_bar()
         return self.menu_bar
 
     def rebuild(self):
-        debug("OSXMenuHelper.rebuild()")
+        log("OSXMenuHelper.rebuild()")
         if self.menu_bar:
             self.remove_all_menus()
             self.build_menu_bar()
         return self.build()
 
     def remove_all_menus(self):
-        debug("OSXMenuHelper.remove_all_menus()")
+        log("OSXMenuHelper.remove_all_menus()")
         if self.menu_bar:
             for x in self.menus.values():
                 self.menu_bar.remove(x)
@@ -83,13 +83,13 @@ class OSXMenuHelper(GTKTrayMenuBase):
         return submenu
 
     def build_menu_bar(self):
-        debug("OSXMenuHelper.build_menu_bar()")
+        log("OSXMenuHelper.build_menu_bar()")
         info_menu = self.make_osxmenu("Info")
         info_menu.add(self.menuitem("About Xpra", "information.png", None, about))
         self.menu_bar.show_all()
 
     def add_full_menu(self):
-        debug("OSXMenuHelper.add_full_menu()")
+        log("OSXMenuHelper.add_full_menu()")
         assert self.client
         _, info_menu = self.menus.get("Info")
         info_menu.append(self.make_sessioninfomenuitem())
@@ -125,16 +125,16 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def make_swapkeysmenuitem(self):
         def swapkeys_toggled(*args):
             v = self.swapkeys_menuitem.get_active()
-            debug("swapkeys_toggled(%s) swap keys enabled=%s", args, v)
+            log("swapkeys_toggled(%s) swap keys enabled=%s", args, v)
             if self.keyboard:
                 self.keyboard.swap_keys = v
         self.swapkeys_menuitem = self.checkitem("Control/Option Key Swap", swapkeys_toggled)
         def set_swapkeys_menuitem(*args):
             if self.keyboard:
-                debug("set_swapkeys_menuitem(%s) swap_keys=%s", args, self.keyboard.swap_keys)
+                log("set_swapkeys_menuitem(%s) swap_keys=%s", args, self.keyboard.swap_keys)
                 self.swapkeys_menuitem.set_active(self.keyboard.swap_keys)
             else:
-                debug("set_swapkeys_menuitem(%s) no keyboard!", args)
+                log("set_swapkeys_menuitem(%s) no keyboard!", args)
                 self.swapkeys_menuitem.set_sensitive(False)
         self.client.connect("handshake-complete", set_swapkeys_menuitem)
         return  self.swapkeys_menuitem
@@ -142,17 +142,17 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def make_numlockmenuitem(self):
         def numlock_toggled(*args):
             v = self.numlock_menuitem.get_active()
-            debug("numlock_toggled(%s) %s", args, v)
+            log("numlock_toggled(%s) %s", args, v)
             if self.keyboard:
                 self.keyboard.num_lock_state = v
         self.numlock_menuitem = self.checkitem("Num Lock", cb=numlock_toggled)
         self.numlock_menuitem.set_active(True)
         def set_numlock_menuitem(*args):
             if self.keyboard:
-                debug("set_numlock_menuitem(%s) num_lock_state=%s", args, self.keyboard.num_lock_state)
+                log("set_numlock_menuitem(%s) num_lock_state=%s", args, self.keyboard.num_lock_state)
                 self.numlock_menuitem.set_active(self.keyboard.num_lock_state)
             else:
-                debug("set_numlock_menuitem(%s) no keyboard!", args)
+                log("set_numlock_menuitem(%s) no keyboard!", args)
                 self.swapkeys_menuitem.set_sensitive(False)
         self.client.connect("handshake-complete", set_numlock_menuitem)
         return self.numlock_menuitem
@@ -162,7 +162,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             self.numlock_menuitem.set_active(on)
 
     def build_dock_menu(self):
-        debug("OSXMenuHelper.build_dock_menu()")
+        log("OSXMenuHelper.build_dock_menu()")
         self.dock_menu = gtk.Menu()
         self.dock_menu.add(self.menuitem("About Xpra", "information.png", None, about))
         self.dock_menu.show_all()
@@ -173,7 +173,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def get_image(self, icon_name, size=None):
         try:
             pixbuf = get_icon(icon_name)
-            debug("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
+            log("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
             if not pixbuf:
                 return  None
             if size:

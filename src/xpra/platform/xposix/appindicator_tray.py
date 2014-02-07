@@ -1,13 +1,17 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Ubuntu re-invents the wheel, and it's a broken one
 
 import os
-from xpra.client.tray_base import TrayBase, debug
+
+from xpra.log import Logger
+log = Logger("tray", "posix")
+
+from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir
 
 
@@ -84,7 +88,7 @@ class AppindicatorTray(TrayBase):
         import tempfile
         try:
             _, filename = tempfile.mkstemp(suffix="png")
-            debug("set_icon_from_data%s using temporary file %s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
+            log("set_icon_from_data%s using temporary file %s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
             tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
             tray_icon.save(filename, "png")
             self.do_set_icon_from_file(filename)
@@ -98,13 +102,13 @@ class AppindicatorTray(TrayBase):
             return
         head, icon_name = os.path.split(filename)
         if head:
-            debug("do_set_icon_from_file(%s) setting icon theme path=%s", filename, head)
+            log("do_set_icon_from_file(%s) setting icon theme path=%s", filename, head)
             self.tray_widget.set_icon_theme_path(head)
         #remove extension (wtf?)
         dot = icon_name.rfind(".")
         if dot>0:
             icon_name = icon_name[:dot]
-        debug("do_set_icon_from_file(%s) setting icon=%s", filename, icon_name)
+        log("do_set_icon_from_file(%s) setting icon=%s", filename, icon_name)
         self.tray_widget.set_icon(icon_name)
         self._has_icon = True
 
@@ -116,11 +120,11 @@ def main():
 
     appindicator = get_appindicator()
     if not appindicator:
-        debug("appindicator not available")
+        log("appindicator not available")
         return
 
     if not can_use_appindicator():
-        debug("appindicator may not be shown...")
+        log("appindicator may not be shown...")
 
     from xpra.gtk_common.gobject_compat import import_gobject, import_gtk
     gobject = import_gobject()

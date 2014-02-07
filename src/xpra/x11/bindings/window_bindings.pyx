@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from xpra.util import dump_exc, AdHocStruct
 from xpra.x11.gtk_x11.error import trap, XError
 
 from xpra.log import Logger
-log = Logger("xpra.x11.lowlevel")
+log = Logger("x11", "bindings", "window")
 
 XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
 XPRA_X11_LOG = XPRA_X11_DEBUG or os.environ.get("XPRA_X11_LOG", "0")!="0"

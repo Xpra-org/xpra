@@ -1,13 +1,13 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import socket
 
 from xpra.log import Logger
-log = Logger()
+log = Logger("shadow")
 
 from xpra.net.protocol import Compressed
 from xpra.server.batch_config import DamageBatchConfig

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,10 +7,8 @@ import os
 from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_VPX_DEBUG")
-error = log.error
+from xpra.log import Logger
+log = Logger("decoder", "vpx")
 
 VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
 
@@ -210,7 +208,7 @@ cdef class Decoder:
         if vpx_codec_dec_init_ver(self.context, codec_iface, &dec_cfg,
                               flags, VPX_DECODER_ABI_VERSION)!=VPX_CODEC_OK:
             raise Exception("failed to instantiate vpx decoder: %s" % vpx_codec_error(self.context))
-        debug("vpx_codec_dec_init_ver for %s succeeded", encoding)
+        log("vpx_codec_dec_init_ver for %s succeeded", encoding)
 
     def __str__(self):
         return "vpx.Decoder(%s)" % self.encoding
@@ -300,5 +298,5 @@ cdef class Decoder:
             pixels.append(plane)
 
             image.add_buffer(<unsigned long> padded_buf)
-        debug("vpx returning decoded %s image %s with colorspace=%s", self.encoding, image, image.get_pixel_format())
+        log("vpx returning decoded %s image %s with colorspace=%s", self.encoding, image, image.get_pixel_format())
         return image

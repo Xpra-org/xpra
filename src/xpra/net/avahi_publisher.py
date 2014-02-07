@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,9 +11,8 @@ import dbus
 
 XPRA_MDNS_TYPE = '_xpra._tcp.'
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_MDNS_DEBUG")
+from xpra.log import Logger
+log = Logger("network", "mdns")
 
 from xpra.net.net_util import get_iface, if_nametoindex, if_indextoname
 
@@ -30,12 +29,12 @@ def get_interface_index(host):
 		return	avahi.IF_UNSPEC
 
 	iface = get_iface(host)
-	debug("get_iface(%s)=%s", host, iface)
+	log("get_iface(%s)=%s", host, iface)
 	if iface is None:
 		return	avahi.IF_UNSPEC
 
 	index = if_nametoindex(iface)
-	debug("if_nametoindex(%s)=%s", iface, index)
+	log("if_nametoindex(%s)=%s", iface, index)
 	if iface is None:
 		return	avahi.IF_UNSPEC
 	return index
@@ -53,7 +52,7 @@ class AvahiPublishers:
 		self.publishers = []
 		for host, port in listen_on:
 			iface_index = get_interface_index(host)
-			debug("iface_index(%s)=%s", host, iface_index)
+			log("iface_index(%s)=%s", host, iface_index)
 			td = text_dict
 			if SHOW_INTERFACE and if_indextoname and iface_index is not None:
 				td = text_dict.copy()
@@ -91,7 +90,7 @@ class AvahiPublishers:
 				log.error("error on publisher %s: %s", publisher, e)
 
 	def stop(self):
-		debug("stopping: %s", self.publishers)
+		log("stopping: %s", self.publishers)
 		for publisher in self.publishers:
 			try:
 				publisher.stop()
@@ -102,7 +101,7 @@ class AvahiPublishers:
 class AvahiPublisher:
 
 	def __init__(self, name, port, stype=XPRA_MDNS_TYPE, domain="", host="", text="", interface=avahi.IF_UNSPEC):
-		debug("AvahiPublisher%s", (name, port, stype, domain, host, text, interface))
+		log("AvahiPublisher%s", (name, port, stype, domain, host, text, interface))
 		self.name = name
 		self.stype = stype
 		self.domain = domain
@@ -125,16 +124,16 @@ class AvahiPublisher:
 			args = (self.interface, avahi.PROTO_UNSPEC,dbus.UInt32(0),
 						 self.name, self.stype, self.domain, self.host,
 						 dbus.UInt16(self.port), self.text)
-			debug("calling %s%s", g, args)
+			log("calling %s%s", g, args)
 			g.AddService(*args)
 			g.Commit()
 			self.group = g
-			debug("dbus service added")
+			log("dbus service added")
 		except Exception, e:
 			log.warn("failed to start %s: %s", self, e)
 
 	def stop(self):
-		debug("%s.stop() group=%s", self, self.group)
+		log("%s.stop() group=%s", self, self.group)
 		if self.group:
 			self.group.Reset()
 

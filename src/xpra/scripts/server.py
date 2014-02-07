@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -60,7 +60,7 @@ class ChildReaper(object):
         self._children_pids = {}
         self._dead_pids = set()
         from xpra.log import Logger
-        self._logger = Logger()
+        self._logger = Logger("server", "util")
         old_python = sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0)
         if old_python:
             POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
@@ -254,7 +254,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         if not MDNS_WARNING:
             MDNS_WARNING = True
             from xpra.log import Logger
-            log = Logger()
+            log = Logger("mdns")
             log.error("failed to load the mdns avahi publisher: %s", e)
             log.error("either fix your installation or use the '--no-mdns' flag")
         return
@@ -292,7 +292,7 @@ def create_tcp_socket(host, iport):
 
 def setup_tcp_socket(host, iport):
     from xpra.log import Logger
-    log = Logger()
+    log = Logger("net")
     tcp_socket = create_tcp_socket(host, iport)
     def cleanup_tcp_socket():
         log.info("closing tcp socket %s:%s", host, iport)
@@ -324,7 +324,7 @@ def setup_local_socket(dotxpra, display_name, clobber, mmap_group):
     if sys.platform.startswith("win"):
         return None, None
     from xpra.log import Logger
-    log = Logger()
+    log = Logger("net")
     #print("creating server socket %s" % sockpath)
     try:
         display_name = dotxpra.normalize_local_display_name(display_name)
@@ -427,7 +427,7 @@ def sanitize_env():
 
 def start_pulseaudio(child_reaper, pulseaudio_command):
     from xpra.log import Logger
-    log = Logger()
+    log = Logger("sound")
     log("pulseaudio_command=%s", pulseaudio_command)
     pa_proc = subprocess.Popen(pulseaudio_command, stdin=subprocess.PIPE, shell=True, close_fds=True)
     child_reaper.add_process(pa_proc, "pulseaudio")
@@ -493,7 +493,7 @@ def check_xvfb_process(xvfb=None):
         #process is running
         return True
     from xpra.log import Logger
-    log = Logger()
+    log = Logger("server")
     log.error("")
     log.error("Xvfb command has terminated! xpra cannot continue")
     log.error("")
@@ -501,7 +501,7 @@ def check_xvfb_process(xvfb=None):
 
 def verify_display_ready(xvfb, display_name, shadowing):
     from xpra.log import Logger
-    log = Logger()
+    log = Logger("server")
     from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
@@ -537,7 +537,7 @@ def verify_display_ready(xvfb, display_name, shadowing):
 def start_children(child_reaper, commands, fake_xinerama):
     assert os.name=="posix"
     from xpra.log import Logger
-    log = Logger()
+    log = Logger("server")
     env = os.environ.copy()
     #add fake xinerama:
     if fake_xinerama:
@@ -621,7 +621,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     write_runner_shell_script(dotxpra, script)
 
     from xpra.log import Logger
-    log = Logger()
+    log = Logger("server")
 
     try:
         # Initialize the sockets before the display,

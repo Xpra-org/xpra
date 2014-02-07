@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys, os
 import gobject
 
-from xpra.sound.sound_pipeline import SoundPipeline, debug
+from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, MP3, CODECS
 from xpra.log import Logger
-log = Logger()
+log = Logger("sound")
 
 
 SOURCES = ["autoaudiosrc"]
@@ -90,7 +90,7 @@ class SoundSource(SoundPipeline):
 
     def on_new_preroll(self, appsink):
         buf = appsink.emit('pull-preroll')
-        debug('new preroll: %s bytes', len(buf))
+        log('new preroll: %s bytes', len(buf))
         self.emit_buffer(buf)
 
     def on_new_buffer(self, bus):

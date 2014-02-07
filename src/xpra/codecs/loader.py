@@ -1,34 +1,31 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_CODEC_DEBUG")
-error = log.error
-warn = log.warn
+from xpra.log import Logger
+log = Logger("codec", "loader")
 
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, *classnames):
-    debug("codec_import_check%s", (name, description, top_module, class_module, classnames))
+    log("codec_import_check%s", (name, description, top_module, class_module, classnames))
     try:
         try:
             __import__(top_module, {}, {}, [])
-            debug(" %s found, will check for %s in %s", top_module, classnames, class_module)
+            log(" %s found, will check for %s in %s", top_module, classnames, class_module)
             for classname in classnames:
                 ic =  __import__(class_module, {}, {}, classname)
-                #warn("codec_import_check(%s, ..)=%s" % (name, ic))
-                debug(" found %s : %s", name, ic)
+                #log.warn("codec_import_check(%s, ..)=%s" % (name, ic))
+                log(" found %s : %s", name, ic)
                 codecs[name] = ic
                 return ic
         except ImportError, e:
-            debug(" cannot import %s (%s): %s", name, description, e)
+            log(" cannot import %s (%s): %s", name, description, e)
             #the required module does not exist
-            debug(" xpra was probably built with the option: --without-%s", name)
+            log(" xpra was probably built with the option: --without-%s", name)
     except Exception, e:
-        warn("cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
+        log.warn("cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
     return None
 codec_versions = {}
 def add_codec_version(name, top_module, version="get_version()"):
@@ -38,7 +35,7 @@ def add_codec_version(name, top_module, version="get_version()"):
             fieldname = version[:-2]
         module = __import__(top_module, {}, {}, [fieldname])
         if not hasattr(module, fieldname):
-            warn("cannot find %s in %s", fieldname, module)
+            log.warn("cannot find %s in %s", fieldname, module)
             return
         v = getattr(module, fieldname)
         if version.endswith("()") and v:
@@ -48,13 +45,13 @@ def add_codec_version(name, top_module, version="get_version()"):
         #optional info:
         if hasattr(module, "get_info"):
             info = getattr(module, "get_info")
-            debug("info(%s)=%s", top_module, info())
+            log("info(%s)=%s", top_module, info())
     except ImportError, e:
-        debug("cannot import %s: %s", name, e)
+        log("cannot import %s: %s", name, e)
         #not present
         pass
     except Exception, e:
-        warn("error during codec import: %s", e)
+        log.warn("error during codec import: %s", e)
 
 
 loaded = False
@@ -63,7 +60,7 @@ def load_codecs():
     if loaded:
         return
     loaded = True
-    debug("loading codecs")
+    log("loading codecs")
     codec_import_check("PIL", "Python Imaging Library", "PIL", "PIL", "Image")
     add_codec_version("PIL", "PIL.Image", "VERSION")
 
@@ -121,16 +118,16 @@ def load_codecs():
             if not webp_handlers:
                 nowebp()
         except Exception, e:
-            warn("cannot load webp: " % e)
+            log.warn("cannot load webp: " % e)
             nowebp()
-    debug("done loading codecs")
-    debug("found:")
+    log("done loading codecs")
+    log("found:")
     #print("codec_status=%s" % codecs)
     for name in ALL_CODECS:
-        debug("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), codecs.get(name, "")))
-    debug("codecs versions:")
+        log("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), codecs.get(name, "")))
+    log("codecs versions:")
     for name, version in codec_versions.items():
-        debug("* %s : %s" % (name.ljust(20), version))
+        log("* %s : %s" % (name.ljust(20), version))
 
 
 def get_codec(name):

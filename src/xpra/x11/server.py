@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -31,7 +31,7 @@ from xpra.x11.gtk_x11.window import OverrideRedirectWindowModel, SystemTrayWindo
 from xpra.x11.gtk_x11.error import trap
 
 from xpra.log import Logger
-log = Logger()
+log = Logger("server")
 
 import xpra
 from xpra.os_util import StringIOClass

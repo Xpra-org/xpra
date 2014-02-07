@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,9 +13,8 @@ import win32con                    #@UnresolvedImport
 
 import sys, os
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
+from xpra.log import Logger
+log = Logger("tray", "win32")
 
 #found here:
 #http://msdn.microsoft.com/en-us/library/windows/desktop/ff468877(v=vs.85).aspx
@@ -84,14 +83,14 @@ class win32NotifyIcon(object):
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON))
 
     def do_set_icon(self, hicon):
-        debug("do_set_icon(%s)", hicon)
+        log("do_set_icon(%s)", hicon)
         self.current_icon = hicon
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON))
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
         #TODO: use native code somehow to avoid saving to file
-        debug("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride))
+        log("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride))
         from PIL import Image, ImageOps           #@UnresolvedImport
         if has_alpha:
             rgb_format = "RGBA"
@@ -144,7 +143,7 @@ class win32NotifyIcon(object):
             if mask_bitmap:
                 pyiconinfo = (True, 0, 0, mask_bitmap, bitmap)
                 hicon = win32gui.CreateIconIndirect(pyiconinfo)
-                debug("CreateIconIndirect(%s)=%s", pyiconinfo, hicon)
+                log("CreateIconIndirect(%s)=%s", pyiconinfo, hicon)
                 if hicon==0:
                     hicon = FALLBACK_ICON
             self.do_set_icon(hicon)
@@ -164,14 +163,14 @@ class win32NotifyIcon(object):
             if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
                 img_type = win32con.IMAGE_BITMAP
                 icon_flags |= win32con.LR_CREATEDIBSECTION | win32con.LR_LOADTRANSPARENT
-            debug("LoadImage(%s) using image type=%s", iconPathName,
+            log("LoadImage(%s) using image type=%s", iconPathName,
                                         {win32con.IMAGE_ICON    : "ICON",
                                          win32con.IMAGE_BITMAP  : "BITMAP"}.get(img_type))
             v = win32gui.LoadImage(self.hinst, iconPathName, img_type, 0, 0, icon_flags)
         except Exception, e:
             log.error("Failed to load icon at %s: %s", iconPathName, e)
             v = fallback
-        debug("LoadImage(%s)=%s", iconPathName, v)
+        log("LoadImage(%s)=%s", iconPathName, v)
         return v
 
     @classmethod
@@ -188,7 +187,7 @@ class win32NotifyIcon(object):
     @classmethod
     def OnCommand(cls, hwnd, msg, wparam, lparam):
         cc = cls.command_callbacks.get(hwnd)
-        debug("OnCommand(%s,%s,%s,%s) command callback=%s", hwnd, msg, wparam, lparam, cc)
+        log("OnCommand(%s,%s,%s,%s) command callback=%s", hwnd, msg, wparam, lparam, cc)
         if cc:
             cid = win32api.LOWORD(wparam)
             cc(hwnd, cid)
@@ -196,16 +195,16 @@ class win32NotifyIcon(object):
     @classmethod
     def OnDestroy(cls, hwnd, msg, wparam, lparam):
         ec = cls.exit_callbacks.get(hwnd)
-        debug("OnDestroy(%s,%s,%s,%s) exit_callback=%s", hwnd, msg, wparam, lparam, ec)
+        log("OnDestroy(%s,%s,%s,%s) exit_callback=%s", hwnd, msg, wparam, lparam, ec)
         if hwnd not in cls.live_hwnds:
             return
         cls.live_hwnds.remove(hwnd)
         cls.remove_callbacks(hwnd)
         try:
             nid = (hwnd, 0)
-            debug("OnDestroy(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
+            log("OnDestroy(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
             win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
-            debug("OnDestroy(..) calling exit_callback=%s", ec)
+            log("OnDestroy(..) calling exit_callback=%s", ec)
             if ec:
                 ec()
         except:
@@ -215,14 +214,14 @@ class win32NotifyIcon(object):
     def OnTaskbarNotify(cls, hwnd, msg, wparam, lparam):
         bm = BUTTON_MAP.get(lparam)
         cc = cls.click_callbacks.get(hwnd)
-        debug("OnTaskbarNotify(%s,%s,%s,%s) button(s) lookup: %s, callback=%s", hwnd, msg, wparam, lparam, bm, cc)
+        log("OnTaskbarNotify(%s,%s,%s,%s) button(s) lookup: %s, callback=%s", hwnd, msg, wparam, lparam, bm, cc)
         if bm is not None and cc:
             for button_event in bm:
                 cc(*button_event)
         return 1
 
     def close(self):
-        debug("win32NotifyIcon.close()")
+        log("win32NotifyIcon.close()")
         win32NotifyIcon.remove_callbacks(self.hwnd)
         win32NotifyIcon.OnDestroy(self.hwnd, None, None, None)
 

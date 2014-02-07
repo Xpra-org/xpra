@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,9 +19,8 @@ if is_gtk3():
 else:
     PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_CLIPBOARD_DEBUG")
+from xpra.log import Logger
+log = Logger("clipboard")
 
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gtk_common.nested_main import NestedMainLoop
@@ -105,7 +104,7 @@ class ClipboardProtocolHelperBase(object):
             proxy.set_greedy_client(greedy)
 
     def set_want_targets_client(self, want_targets):
-        debug("set_want_targets_client(%s)", want_targets)
+        log("set_want_targets_client(%s)", want_targets)
         self._want_targets = want_targets
 
     def init_packet_handlers(self):
@@ -128,7 +127,7 @@ class ClipboardProtocolHelperBase(object):
             proxy.connect("get-clipboard-from-remote", self._get_clipboard_from_remote_handler)
             proxy.show()
             self._clipboard_proxies[clipboard] = proxy
-        debug("%s.init_proxies : %s", type(self), self._clipboard_proxies)
+        log("%s.init_proxies : %s", type(self), self._clipboard_proxies)
 
     def local_to_remote(self, selection):
         #overriden in some subclasses (see: translated_clipboard)
@@ -152,7 +151,7 @@ class ClipboardProtocolHelperBase(object):
         if not proxy.is_enabled():
             log.warn("ignoring token for clipboard proxy name '%s' (disabled)", name)
             return
-        debug("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
+        log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         targets = None
         target_data = None
         if len(packet)>=3:
@@ -167,14 +166,14 @@ class ClipboardProtocolHelperBase(object):
     def _get_clipboard_from_remote_handler(self, proxy, selection, target):
         request_id = self._clipboard_request_counter
         self._clipboard_request_counter += 1
-        debug("get clipboard from remote handler id=%s", request_id)
+        log("get clipboard from remote handler id=%s", request_id)
         loop = NestedMainLoop()
         self._clipboard_outstanding_requests[request_id] = loop
         if self.progress_cb:
             self.progress_cb(len(self._clipboard_outstanding_requests), None)
         self.send("clipboard-request", request_id, self.local_to_remote(selection), target)
         result = loop.main(1 * 1000, 2 * 1000)
-        debug("get clipboard from remote result(%s)=%s", request_id, result)
+        log("get clipboard from remote result(%s)=%s", request_id, result)
         del self._clipboard_outstanding_requests[request_id]
         if self.progress_cb:
             self.progress_cb(len(self._clipboard_outstanding_requests), None)
@@ -182,21 +181,21 @@ class ClipboardProtocolHelperBase(object):
 
     def _clipboard_got_contents(self, request_id, dtype, dformat, data):
         loop = self._clipboard_outstanding_requests.get(request_id)
-        debug("got clipboard contents for id=%s len=%s, loop=%s (type=%s, format=%s)",
+        log("got clipboard contents for id=%s len=%s, loop=%s (type=%s, format=%s)",
               request_id, len(data or []), loop, dtype, dformat)
         if loop is None:
-            debug("got unexpected response to clipboard request %s", request_id)
+            log("got unexpected response to clipboard request %s", request_id)
             return
         loop.done({"type": dtype, "format": dformat, "data": data})
 
     def _send_clipboard_token_handler(self, proxy, selection):
-        debug("send clipboard token: %s", selection)
+        log("send clipboard token: %s", selection)
         rsel = self.local_to_remote(selection)
         if self._want_targets:
             #send the token with the target and data once we get them:
             #first get the targets, then get the contents for targets we want to send (if any)
             def got_targets(dtype, dformat, targets):
-                debug("got_targets for selection %s: %s, %s, %s", selection, dtype, dformat, targets)
+                log("got_targets for selection %s: %s, %s, %s", selection, dtype, dformat, targets)
                 #if there is a text target, send that too (just the first one that matches for now..)
                 send_now = [x for x in targets if x in TEXT_TARGETS]
                 def send_targets_only():
@@ -206,7 +205,7 @@ class ClipboardProtocolHelperBase(object):
                     return
                 target = send_now[0]
                 def got_contents(dtype, dformat, data):
-                    debug("got_contents for selection %s: %s, %s, %s", selection, dtype, dformat, data)
+                    log("got_contents for selection %s: %s, %s, %s", selection, dtype, dformat, data)
                     #code mostly duplicated from _process_clipboard_request
                     #see there for details
                     if dtype is None or data is None:
@@ -221,7 +220,7 @@ class ClipboardProtocolHelperBase(object):
                         send_targets_only()
                         return
                     target_data = (target, dtype, dformat, wire_encoding, wire_data)
-                    debug("sending token with target data: %s", target_data)
+                    log("sending token with target data: %s", target_data)
                     self.send("clipboard-token", rsel, targets, *target_data)
                 proxy.get_contents(target, got_contents)
             proxy.get_contents("TARGETS", got_targets)
@@ -232,7 +231,7 @@ class ClipboardProtocolHelperBase(object):
         # Some types just cannot be marshalled:
         if type in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
                     "PIXEL", "COLORMAP"):
-            debug("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data))
+            log("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data))
             return None, None
         if target=="TARGETS" and dtype=="ATOM":
             #targets is special cased here
@@ -251,14 +250,14 @@ class ClipboardProtocolHelperBase(object):
         f = list(targets)
         for t in remove:
             f.remove(t)
-        debug("_filter_targets(%s)=%s", targets, f)
+        log("_filter_targets(%s)=%s", targets, f)
         return f
 
     def _do_munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         """ this method is overriden in xclipboard to parse X11 atoms """
         # Other types need special handling, and all types need to be
         # converting into an endian-neutral format:
-        debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s)", target, dtype, dformat, type(data), len(data or ""))
+        log("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s)", target, dtype, dformat, type(data), len(data or ""))
         if dformat == 32:
             #you should be using gdk_clipboard for atom support!
             if dtype in ("ATOM", "ATOM_PAIR") and os.name=="posix":
@@ -288,7 +287,7 @@ class ClipboardProtocolHelperBase(object):
             return None, None
 
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
-        debug("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s", encoding, dtype, dformat, len(data))
+        log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s", encoding, dtype, dformat, len(data))
         if encoding == "bytes":
             return data
         elif encoding == "integers":
@@ -301,7 +300,7 @@ class ClipboardProtocolHelperBase(object):
             else:
                 raise Exception("unknown encoding format: %s" % dformat)
             fstr = "@" + format_char * len(data)
-            debug("struct.pack(%s, %s)", fstr, data)
+            log("struct.pack(%s, %s)", fstr, data)
             return struct.pack(fstr, *data)
         else:
             raise Exception("unhanled encoding: %s" % encoding)
@@ -311,7 +310,7 @@ class ClipboardProtocolHelperBase(object):
         def no_contents():
             self.send("clipboard-contents-none", request_id, selection)
         name = self.remote_to_local(selection)
-        debug("process clipboard request, request_id=%s, selection=%s, local name=%s, target=%s", request_id, selection, name, target)
+        log("process clipboard request, request_id=%s, selection=%s, local name=%s, target=%s", request_id, selection, name, target)
         proxy = self._clipboard_proxies.get(name)
         if proxy is None:
             #err, we were asked about a clipboard we don't handle..
@@ -326,14 +325,14 @@ class ClipboardProtocolHelperBase(object):
             log.warn("clipboard request %s dropped for testing!", request_id)
             return
         def got_contents(dtype, dformat, data):
-            debug("got_contents(%s, %s, %s:%s) data=0x%s..",
+            log("got_contents(%s, %s, %s:%s) data=0x%s..",
                   dtype, dformat, type(data), len(data or ""), binascii.hexlify(str(data)[:200]))
             if dtype is None or data is None:
                 no_contents()
                 return
             munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
             wire_encoding, wire_data = munged
-            debug("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
+            log("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
             if wire_encoding is None:
                 no_contents()
                 return
@@ -354,13 +353,13 @@ class ClipboardProtocolHelperBase(object):
 
     def _process_clipboard_contents(self, packet):
         request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:8]
-        debug("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
+        log("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
         raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
-        debug("clipboard wire -> raw: %r -> %r", (dtype, dformat, wire_encoding, wire_data), raw_data)
+        log("clipboard wire -> raw: %r -> %r", (dtype, dformat, wire_encoding, wire_data), raw_data)
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 
     def _process_clipboard_contents_none(self, packet):
-        debug("process clipboard contents none")
+        log("process clipboard contents none")
         request_id = packet[1]
         self._clipboard_got_contents(request_id, None, None, None)
 
@@ -371,7 +370,7 @@ class ClipboardProtocolHelperBase(object):
 
     def process_clipboard_packet(self, packet):
         packet_type = packet[0]
-        debug("process clipboard packet type=%s", packet_type)
+        log("process clipboard packet type=%s", packet_type)
         self._packet_handlers[packet_type](packet)
 
 
@@ -451,18 +450,18 @@ class ClipboardProxy(gtk.Invisible):
         return self._enabled
 
     def set_enabled(self, enabled):
-        debug("%s.set_enabled(%s)", self, enabled)
+        log("%s.set_enabled(%s)", self, enabled)
         self._enabled = enabled
 
     def set_greedy_client(self, greedy):
-        debug("%s.set_greedy_client(%s)", self, greedy)
+        log("%s.set_greedy_client(%s)", self, greedy)
         self._greedy_client = greedy
 
     def __str__(self):
         return  "ClipboardProxy(%s)" % self._selection
 
     def do_owner_changed(self, *args):
-        debug("do_owner_changed(%s) greedy_client=%s, block_owner_change=%s", args, self._greedy_client, self._block_owner_change)
+        log("do_owner_changed(%s) greedy_client=%s, block_owner_change=%s", args, self._greedy_client, self._block_owner_change)
         if self._enabled and self._greedy_client and not self._block_owner_change:
             self._block_owner_change = True
             self._have_token = False
@@ -471,7 +470,7 @@ class ClipboardProxy(gtk.Invisible):
             gobject.idle_add(self.remove_block)
 
     def do_selection_request_event(self, event):
-        debug("do_selection_request_event(%s)", event)
+        log("do_selection_request_event(%s)", event)
         self._selection_request_events += 1
         if not self._enabled:
             gtk.Invisible.do_selection_request_event(self, event)
@@ -512,19 +511,19 @@ class ClipboardProxy(gtk.Invisible):
             pass
         elif target == "MULTIPLE":
             if not self.prop_get:
-                debug("MULTIPLE for property '%s' not handled due to missing xpra.x11.gtk_x11 bindings", event.property)
+                log("MULTIPLE for property '%s' not handled due to missing xpra.x11.gtk_x11 bindings", event.property)
                 gtk.Invisible.do_selection_request_event(self, event)
                 return
             atoms = self.prop_get(event.window, event.property, ["multiple-conversion"])
-            debug("MULTIPLE clipboard atoms: %r", atoms)
+            log("MULTIPLE clipboard atoms: %r", atoms)
             if atoms:
                 targets = atoms[::2]
                 for t in targets:
                     self.selection_add_target(self._selection, t, 0)
         else:
-            debug("target for %s: %r", self._selection, target)
+            log("target for %s: %r", self._selection, target)
             self.selection_add_target(self._selection, target, 0)
-        debug("do_selection_request_event(%s) target=%s, selection=%s", event, target, self._selection)
+        log("do_selection_request_event(%s) target=%s, selection=%s", event, target, self._selection)
         gtk.Invisible.do_selection_request_event(self, event)
 
     # This function is called by GTK+ when we own the clipboard and a local
@@ -535,26 +534,26 @@ class ClipboardProxy(gtk.Invisible):
         # main loop.
         if not self._enabled:
             return
-        debug("do_selection_get(%s, %s, %s) selection=%s", selection_data, info, time, selection_data.selection)
+        log("do_selection_get(%s, %s, %s) selection=%s", selection_data, info, time, selection_data.selection)
         self._selection_get_events += 1
         assert self._selection == str(selection_data.selection)
         target = str(selection_data.target)
         self._request_contents_events += 1
         result = self.emit("get-clipboard-from-remote", self._selection, target)
         if result is None or result["type"] is None:
-            debug("remote selection fetch timed out or empty")
+            log("remote selection fetch timed out or empty")
             selection_data.set("STRING", 8, "")
             return
         data = result["data"]
         dformat = result["format"]
         dtype = result["type"]
-        debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)",
+        log("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)",
               selection_data, info, time, dtype, dformat, type(data), len(data or ""))
         selection_data.set(dtype, dformat, data)
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
-        debug("do_selection_clear_event(%s) have_token=%s, block_owner_change=%s selection=%s", event, self._have_token, self._block_owner_change, self._selection)
+        log("do_selection_clear_event(%s) have_token=%s, block_owner_change=%s selection=%s", event, self._have_token, self._block_owner_change, self._selection)
         self._selection_clear_events += 1
         if self._enabled:
             #if greedy_client is set, do_owner_changed will fire the token
@@ -575,7 +574,7 @@ class ClipboardProxy(gtk.Invisible):
 
     def got_token(self, targets, target_data):
         # We got the anti-token.
-        debug("got token, selection=%s, targets=%s, target_data=%s", self._selection, targets, target_data)
+        log("got token, selection=%s, targets=%s, target_data=%s", self._selection, targets, target_data)
         if not self._enabled:
             return
         self._got_token_events += 1
@@ -605,7 +604,7 @@ class ClipboardProxy(gtk.Invisible):
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
     def get_contents(self, target, cb):
-        debug("get_contents(%s,%s) selection=%s", target, cb, self._selection)
+        log("get_contents(%s,%s) selection=%s", target, cb, self._selection)
         if not self._enabled:
             cb(None, None, None)
             return
@@ -618,23 +617,23 @@ class ClipboardProxy(gtk.Invisible):
         if target=="TARGETS":
             #handle TARGETS using "request_targets"
             def got_targets(c, targets, *args):
-                debug("got_targets(%s, %s, %s)", c, targets, args)
+                log("got_targets(%s, %s, %s)", c, targets, args)
                 cb("ATOM", 32, targets)
             self._clipboard.request_targets(got_targets)
             return
         def unpack(clipboard, selection_data, user_data):
-            debug("unpack %s: %s", clipboard, type(selection_data))
+            log("unpack %s: %s", clipboard, type(selection_data))
             if selection_data is None:
                 cb(None, None, None)
                 return
-            debug("unpack: %s", selection_data)
+            log("unpack: %s", selection_data)
             data = selection_data.data
-            debug("unpack(..) type=%s, format=%s, data=%s:%s", selection_data.type, selection_data.format,
+            log("unpack(..) type=%s, format=%s, data=%s:%s", selection_data.type, selection_data.format,
                         type(data), len(data or ""))
             if self._strip_nullbyte and selection_data.type in ("UTF8_STRING", "STRING") and selection_data.format==8:
                 #we may have to strip the nullbyte:
                 if data and data[-1]=='\0':
-                    debug("stripping end of string null byte")
+                    log("stripping end of string null byte")
                     data = data[:-1]
             cb(str(selection_data.type), selection_data.format, data)
         self._clipboard.request_contents(target, unpack)

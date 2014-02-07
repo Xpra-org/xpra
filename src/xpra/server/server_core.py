@@ -17,7 +17,7 @@ import threading
 import thread
 
 from xpra.log import Logger
-log = Logger()
+log = Logger("server")
 
 import xpra
 from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect

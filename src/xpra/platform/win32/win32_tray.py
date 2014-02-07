@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,8 +9,11 @@
 
 import win32ts, win32con, win32api, win32gui        #@UnresolvedImport
 
+from xpra.log import Logger
+log = Logger("tray", "win32")
+
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon, WM_TRAY_EVENT, BUTTON_MAP
-from xpra.client.tray_base import TrayBase, log, debug
+from xpra.client.tray_base import TrayBase
 
 #had to look this up online:
 NIN_BALLOONSHOW         = win32con.WM_USER + 2
@@ -70,12 +73,12 @@ class Win32Tray(TrayBase):
         return    self.tray_widget.hwnd
 
     def cleanup(self):
-        debug("Win32Tray.cleanup() tray_widget=%s", self.tray_widget)
+        log("Win32Tray.cleanup() tray_widget=%s", self.tray_widget)
         if self.tray_widget:
             self.stop_win32_session_events(self.getHWND())
             self.tray_widget.close()
             self.tray_widget = None
-        debug("Win32Tray.cleanup() ended")
+        log("Win32Tray.cleanup() ended")
 
     def set_tooltip(self, name):
         if self.tray_widget:
@@ -116,13 +119,13 @@ class Win32Tray(TrayBase):
         size = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
         self.recalculate_geometry(x, y, size, size)
         if lParam in BALLOON_EVENTS:
-            debug("WM_TRAY_EVENT: %s", BALLOON_EVENTS.get(lParam))
+            log("WM_TRAY_EVENT: %s", BALLOON_EVENTS.get(lParam))
         elif lParam==win32con.WM_MOUSEMOVE:
-            debug("WM_TRAY_EVENT: WM_MOUSEMOVE")
+            log("WM_TRAY_EVENT: WM_MOUSEMOVE")
             if self.mouseover_cb:
                 self.mouseover_cb(x, y)
         elif lParam in BUTTON_MAP:
-            debug("WM_TRAY_EVENT: click %s", BUTTON_MAP.get(lParam))
+            log("WM_TRAY_EVENT: click %s", BUTTON_MAP.get(lParam))
         else:
             log.warn("WM_TRAY_EVENT: unknown event: %s / %s", wParam, lParam)
 
@@ -140,7 +143,7 @@ class Win32Tray(TrayBase):
             log.warn("detect_win32_session_events(%s) missing handle!", app_hwnd)
             return
         try:
-            debug("detect_win32_session_events(%s)", app_hwnd)
+            log("detect_win32_session_events(%s)", app_hwnd)
             #register our interest in those events:
             #http://timgolden.me.uk/python/win32_how_do_i/track-session-events.html#isenslogon
             #http://stackoverflow.com/questions/365058/detect-windows-logout-in-python
@@ -155,11 +158,11 @@ class Win32Tray(TrayBase):
     def MyWndProc(self, hWnd, msg, wParam, lParam):
         assert hWnd==self.getHWND(), "invalid hwnd: %s (expected %s)" % (hWnd, self.getHWND())
         if msg in IGNORE_EVENTS:
-            debug("%s: %s / %s", IGNORE_EVENTS.get(msg), wParam, lParam)
+            log("%s: %s / %s", IGNORE_EVENTS.get(msg), wParam, lParam)
         elif msg==WM_TRAY_EVENT:
             self.tray_event(wParam, lParam)
         elif msg==win32con.WM_ACTIVATEAPP:
-            debug("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
+            log("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
         else:
             log.warn("unexpected message: %s / %s / %s", KNOWN_WM_EVENTS.get(msg, msg), wParam, lParam)
         # Pass all messages to the original WndProc

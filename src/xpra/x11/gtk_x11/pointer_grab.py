@@ -15,9 +15,8 @@ from xpra.x11.gtk_x11.error import trap
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_GRAB_DEBUG")
+from xpra.log import Logger
+log = Logger("x11", "window")
 
 
 NotifyNormal    = constants["NotifyNormal"]
@@ -75,7 +74,7 @@ class PointerGrabHelper(gobject.GObject):
         try:
             trap.call_synced(self.do_setup_listening)
         except Exception, e:
-            debug("PointerGrabHelper._setup_listening() failed: %s", e)
+            log("PointerGrabHelper._setup_listening() failed: %s", e)
 
     def do_setup_listening(self):
         assert self._listening is None
@@ -95,15 +94,15 @@ class PointerGrabHelper(gobject.GObject):
             add_event_receiver(win, self, max_receivers=-1)
             self._listening.append(win)
             win = get_parent(win)
-        debug("grab: listening for: %s", self._listening)
+        log("grab: listening for: %s", self._listening)
 
     def do_xpra_unmap_event(self, event):
-        debug("grab: unmap")
+        log("grab: unmap")
         #can windows be unmapped with a grab held?
         self.force_ungrab(event)
 
     def do_xpra_reparent_event(self, event):
-        debug("grab: reparent")
+        log("grab: reparent")
         #maybe this isn't needed?
         self.force_ungrab(event)
         #setup new tree:
@@ -117,20 +116,20 @@ class PointerGrabHelper(gobject.GObject):
 
 
     def do_xpra_focus_in_event(self, event):
-        debug("focus_in_event(%s) mode=%s", event, GRAB_CONSTANTS.get(event.mode))
+        log("focus_in_event(%s) mode=%s", event, GRAB_CONSTANTS.get(event.mode))
         self._focus_event(event)
 
     def do_xpra_focus_out_event(self, event):
-        debug("focus_out_event(%s) mode=%s", event, GRAB_CONSTANTS.get(event.mode))
+        log("focus_out_event(%s) mode=%s", event, GRAB_CONSTANTS.get(event.mode))
         self._focus_event(event)
 
     def _focus_event(self, event):
         if event.mode==NotifyGrab and not self._has_grab:
-            debug("emitting grab on %s", self)
+            log("emitting grab on %s", self)
             self._has_grab = True
             self.emit("grab", event)
         if event.mode==NotifyUngrab:
-            debug("emitting ungrab on %s", self)
+            log("emitting ungrab on %s", self)
             self._has_grab = False
             self.emit("ungrab", event)
 

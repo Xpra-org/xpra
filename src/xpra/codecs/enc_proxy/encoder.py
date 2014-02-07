@@ -5,10 +5,8 @@
 
 import time
 
-from xpra.log import Logger, debug_if_env
-log = Logger()
-debug = debug_if_env(log, "XPRA_PROXYVIDEO_DEBUG")
-error = log.error
+from xpra.log import Logger
+log = Logger("encoder", "proxy")
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.deque import maxdeque
@@ -126,14 +124,14 @@ class Encoder(object):
         return options
 
     def compress_image(self, image, options={}):
-        debug("compress_image(%s, %s)", image, options)
+        log("compress_image(%s, %s)", image, options)
         #pass the pixels as they are
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         pixels = str(image.get_pixels())
         self.frames += 1
         self.last_frame_times.append(time.time())
         client_options = self.get_client_options(image, options)
-        debug("compress_image(%s, %s) returning %s bytes and options=%s", image, options, len(pixels), client_options)
+        log("compress_image(%s, %s) returning %s bytes and options=%s", image, options, len(pixels), client_options)
         return  pixels, client_options
 
     def set_encoding_speed(self, pct):
