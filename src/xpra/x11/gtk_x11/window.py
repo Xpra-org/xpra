@@ -525,12 +525,12 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
         #try XShm:
         try:
-            logger("get_image(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
+            #logger("get_image(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
             shm = self._composite.get_property("shm-handle")
-            logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
+            #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
             if shm is not None:
                 shm_image = trap.call_synced(shm.get_image, handle.get_pixmap(), x, y, width, height)
-                logger("get_image(..) XShm image: %s", shm_image)
+                #logger("get_image(..) XShm image: %s", shm_image)
                 if shm_image:
                     return shm_image
         except Exception, e:
