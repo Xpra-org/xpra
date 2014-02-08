@@ -8,7 +8,7 @@ import time
 from math import log as mathlog, sqrt
 
 from xpra.log import Logger
-log = Logger("server")
+log = Logger("server", "stats")
 
 from xpra.server.stats.maths import queue_inspect, logp, time_weighted_average
 
