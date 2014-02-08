@@ -251,7 +251,7 @@ cdef class ColorspaceConverter:
                     Gsum = 0
                     Bsum = 0
                     sum = 0
-                    for i in (0, 1, 2, 3):
+                    for i in range(4):
                         dx = i%2
                         dy = i/2
                         if x*2+dx<self.src_width and y*2+dy<self.src_height:
