@@ -690,7 +690,7 @@ cpdef int get_XDamage_event_base():
 
 
 cpdef init_x11_events():
-    global _x_event_signals, event_type_names, XKBNotify, CursorNotify, DamageNotify
+    global _x_event_signals, event_type_names, debug_route_events, XKBNotify, CursorNotify, DamageNotify
     XKBNotify = get_XKB_event_base()
     CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
     DamageNotify = XDamageNotify+get_XDamage_event_base()
@@ -757,19 +757,32 @@ cpdef init_x11_events():
     verbose("names_to_event_type=%s", names_to_event_type)
 
     XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
-    if XPRA_X11_DEBUG_EVENTS=="*":
-        debug_events = names_to_event_type.keys()
-    else:
-        debug_events = XPRA_X11_DEBUG_EVENTS.split(",")
-    for n in debug_events:
+    debug_set = set()
+    ignore_set = set()
+    for n in XPRA_X11_DEBUG_EVENTS.split(","):
         name = n.strip()
         if len(name)==0:
             continue
+        if name[0]=="-":
+            event_set = ignore_set
+            name = name[1:]
+        else:
+            event_set = debug_set
+        if name=="*":
+            events = names_to_event_type.keys()
+        else:
+            events = [name]
+        #add to correct set:
+        for e in events:
+            event_set.add(e)
+    #
+    events = debug_set.difference(ignore_set)
+    for name in events:
         event_type = names_to_event_type.get(name)
         if event_type is None:
             log.warn("could not find event type '%s' in %s", name, ", ".join(names_to_event_type.keys()))
-        else:
-            debug_route_events.append(event_type)
+            continue
+        debug_route_events.append(event_type)
     if len(debug_route_events)>0:
         log.warn("debugging of X11 events enabled for: %s", [event_type_names.get(x, x) for x in debug_route_events])
 
