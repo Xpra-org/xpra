@@ -55,6 +55,12 @@ class XpraClientBase(object):
     """
 
     def __init__(self):
+        #this may be called more than once,
+        #skip doing internal init again:
+        if not hasattr(self, "exit_code"):
+            self.defaults_init()
+
+    def defaults_init(self):
         self.exit_code = None
         self.compression_level = 0
         self.display = None
