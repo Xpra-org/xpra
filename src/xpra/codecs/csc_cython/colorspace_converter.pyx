@@ -9,8 +9,6 @@ import struct
 
 from xpra.log import Logger
 log = Logger("csc", "cython")
-debug = log.debug
-error = log.error
 
 from xpra.codecs.codec_constants import codec_spec
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -42,7 +40,7 @@ cdef int BGRA_A = tmp.find('\3')
 
 def init_module():
     #nothing to do!
-    debug("csc_cython.init_module()")
+    log("csc_cython.init_module()")
 
 
 def get_type():
@@ -70,7 +68,7 @@ def get_spec(in_colorspace, out_colorspace):
 class CythonImageWrapper(ImageWrapper):
 
     def free(self):                             #@DuplicatedSignature
-        debug("CythonImageWrapper.free() cython_buffer=%s", hex(<unsigned long> self.cython_buffer))
+        log("CythonImageWrapper.free() cython_buffer=%#x", <unsigned long> self.cython_buffer)
         ImageWrapper.free(self)
         if self.cython_buffer>0:
             free(<void *> (<unsigned long> self.cython_buffer))
@@ -129,7 +127,7 @@ cdef class ColorspaceConverter:
         assert dst_format in get_output_colorspaces(src_format), "invalid output colorspace: %s (must be one of %s)" % (dst_format, get_output_colorspaces(src_format))
         assert src_width==dst_width
         assert src_height==dst_height
-        debug("csc_cython.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
+        log("csc_cython.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
         self.src_width = src_width
         self.src_height = src_height
         self.dst_width = dst_width
@@ -211,7 +209,6 @@ cdef class ColorspaceConverter:
         cdef int x,y,i,o,dx,dy,sum          #@DuplicatedSignature
         cdef int workw, workh
         cdef int Ystride, Ustride, Vstride
-        cdef object plane, input
         cdef unsigned char R, G, B
         cdef unsigned short Rsum
         cdef unsigned short Gsum
@@ -227,7 +224,7 @@ cdef class ColorspaceConverter:
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         input = image.get_pixels()
         input_stride = image.get_rowstride()
-        debug("convert_image(%s) input=%s, strides=%s" % (image, len(input), input_stride))
+        log("convert_image(%s) input=%s, strides=%s" % (image, len(input), input_stride))
 
         PyObject_AsReadBuffer(input, <const void**> &input_image, &pic_buf_len)
         #allocate output buffer:
@@ -243,7 +240,7 @@ cdef class ColorspaceConverter:
         workw = roundup(self.dst_width/2, 2)
         workh = roundup(self.dst_height/2, 2)
         #from now on, we can release the gil:
-        #debug("work: %sx%s from %sx%s, RGB indexes: %s", workw, workh, self.dst_width, self.dst_height, (BGRA_R, BGRA_G, BGRA_B))
+        #log("work: %sx%s from %sx%s, RGB indexes: %s", workw, workh, self.dst_width, self.dst_height, (BGRA_R, BGRA_G, BGRA_B))
         with nogil:
             for y in xrange(workh):
                 for x in xrange(workw):
@@ -254,7 +251,7 @@ cdef class ColorspaceConverter:
                     Gsum = 0
                     Bsum = 0
                     sum = 0
-                    for i in range(4):
+                    for i in (0, 1, 2, 3):
                         dx = i%2
                         dy = i/2
                         if x*2+dx<self.src_width and y*2+dy<self.src_height:
@@ -277,16 +274,16 @@ cdef class ColorspaceConverter:
                         U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
                         V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
         #create python buffer from each plane:
+        planes = []
         strides = []
-        out = []
         for i in range(3):
             strides.append(self.dst_strides[i])
             plane = PyBuffer_FromMemory(<void *> (<unsigned long> (output_image + self.offsets[i])), self.dst_sizes[i])
-            out.append(plane)
+            planes.append(plane)
         elapsed = time.time()-start
-        debug("%s took %.1fms", self, 1000.0*elapsed)
+        log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
-        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
+        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
         out_image.cython_buffer = <unsigned long> output_image
         return out_image
