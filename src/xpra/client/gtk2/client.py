@@ -56,6 +56,7 @@ class XpraClient(GTKXpraClient):
         #avoid ugly "not implemented" warning on win32
         self.supports_group_leader = not sys.platform.startswith("win")
 
+        self.window_with_grab = None
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
 
@@ -377,12 +378,17 @@ class XpraClient(GTKXpraClient):
             log("grabbing %s", window)
             mask = gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK | gtk.gdk.POINTER_MOTION_MASK  | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.ENTER_NOTIFY_MASK | gtk.gdk.LEAVE_NOTIFY_MASK
             gtk.gdk.pointer_grab(window.gdk_window(), owner_events=True, event_mask=mask)
+            #also grab the keyboard so the user won't Alt-Tab away:
+            gtk.gdk.keyboard_grab(window.gdk_window(), owner_events=False)
+            self.window_with_grab = wid
 
     def _process_pointer_ungrab(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)
         log("ungrabbing %s", window)
         gtk.gdk.pointer_ungrab()
+        gtk.gdk.keyboard_ungrab()
+        self.window_with_grab = None
 
 
     def init_opengl(self, enable_opengl):

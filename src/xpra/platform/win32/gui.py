@@ -6,8 +6,14 @@
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
+import os
 from xpra.log import Logger
 log = Logger("win32")
+
+from xpra.platform.win32.win32_events import KNOWN_WM_EVENTS, get_win32_event_listener
+from xpra.util import AdHocStruct
+
+UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
 
 def get_native_notifier_classes():
@@ -34,11 +40,67 @@ def get_native_system_tray_classes(*args):
 
 class ClientExtras(object):
     def __init__(self, client):
+        self.client = client
+        self._kh_warning = False
         self.setup_console_event_listener()
+        try:
+            import win32con                 #@UnresolvedImport
+            el = get_win32_event_listener(True)
+            if el:
+                el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
+        except:
+            log.error("cannot register focus callback")
 
     def cleanup(self):
         self.setup_console_event_listener(False)
         log("ClientExtras.cleanup() ended")
+        el = get_win32_event_listener(False)
+        if el:
+            el.cleanup()
+        self.client = None
+
+    def activateapp(self, wParam, lParam):
+        log("WM_ACTIVATEAPP: %s/%s UNGRAB_KEY=%s, client=%s", wParam, lParam, UNGRAB_KEY, self.client)
+        if wParam==0 and self.client:
+            #our app has lost focus
+            wid = self.client.window_with_grab
+            if wid is not None and UNGRAB_KEY:
+                self.force_ungrab(wid)
+
+    def force_ungrab(self, wid):
+        kh = self.client.keyboard_helper
+        if not kh:
+            if not self._kh_warning:
+                self._kh_warning = True
+                log.warn("no keyboard support, cannot simulate keypress to lose grab!")
+            return
+        #xkbmap_keycodes is a list of: (keyval, name, keycode, group, level)
+        ungrab_keys = [x for x in kh.xkbmap_keycodes if x[1]==UNGRAB_KEY]
+        if len(ungrab_keys)==0:
+            if not self._kh_warning:
+                self._kh_warning = True
+                log.warn("ungrab key %s not found, cannot simulate keypress to lose grab!", UNGRAB_KEY)
+            return
+        #ungrab_keys.append((65307, "Escape", 27, 0, 0))     #ugly hardcoded default value
+        ungrab_key = ungrab_keys[0]
+        log("lost focus whilst window has grab, simulating keypress: %s", ungrab_key)
+        key_event = AdHocStruct()
+        key_event.keyname = "Escape"
+        key_event.pressed = True
+        key_event.modifiers = []
+        key_event.keyval = ungrab_key[0]
+        keycode = ungrab_key[2]
+        try:
+            key_event.string = chr(keycode)
+        except:
+            key_event.string = str(keycode)
+        key_event.keycode = keycode
+        key_event.group = 0
+        #press:
+        kh.send_key_action(wid, key_event)
+        #unpress:
+        key_event.pressed = False
+        kh.send_key_action(wid, key_event)
 
     def setup_console_event_listener(self, enable=1):
         try:
@@ -52,12 +114,14 @@ class ClientExtras(object):
     def handle_console_event(self, event):
         log("handle_console_event(%s)", event)
         import win32con         #@UnresolvedImport
-        events = {win32con.CTRL_C_EVENT         : "CTRL_C",
-                  win32con.CTRL_LOGOFF_EVENT    : "LOGOFF",
-                  win32con.CTRL_BREAK_EVENT     : "BREAK",
-                  win32con.CTRL_SHUTDOWN_EVENT  : "SHUTDOWN",
-                  win32con.CTRL_CLOSE_EVENT     : "CLOSE"
-                  }
-        if event in events:
-            log.info("received win32 console event %s", events.get(event))
+        event_name = KNOWN_WM_EVENTS.get(event, event)
+        info_events = [win32con.CTRL_C_EVENT,
+                       win32con.CTRL_LOGOFF_EVENT,
+                       win32con.CTRL_BREAK_EVENT,
+                       win32con.CTRL_SHUTDOWN_EVENT,
+                       win32con.CTRL_CLOSE_EVENT]
+        if event in info_events:
+            log.info("received win32 console event %s", event_name)
+        else:
+            log.warn("unknown console event: %s", event_name)
         return 0
