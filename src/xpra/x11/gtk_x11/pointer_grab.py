@@ -16,7 +16,7 @@ from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@Unr
 X11Window = X11WindowBindings()
 
 from xpra.log import Logger
-log = Logger("x11", "window")
+log = Logger("x11", "window", "pointer")
 
 
 NotifyNormal    = constants["NotifyNormal"]
@@ -27,6 +27,7 @@ GRAB_CONSTANTS = {
                   NotifyGrab    : "NotifyGrab",
                   NotifyUngrab  : "NotifyUngrab"
                  }
+log("pointer grab constants: %s", GRAB_CONSTANTS)
 
 
 class PointerGrabHelper(gobject.GObject):
