@@ -545,21 +545,17 @@ cdef class X11WindowBindings(X11CoreBindings):
             time = CurrentTime
         return XSetSelectionOwner(self.display, self.get_xatom(atom), xwindow, time)
 
-    def sendClientMessage(self, xtarget, xwindow, propagate, event_mask,
+    def sendClientMessage(self, Window xtarget, Window xwindow, propagate, event_mask,
                           message_type, data0, data1, data2, data3, data4):
         # data0 etc. are passed through get_xatom, so they can be integers, which
         # are passed through directly, or else they can be strings, which are
         # converted appropriately.
-        cdef Window t
-        cdef Window w
         cdef XEvent e
-        t = xtarget
-        w = xwindow
-        log("sendClientMessage(%#x, %#x, %#x, %#x, %s, %s, %s, %s, %s, %s)", xtarget, w, propagate, event_mask,
+        log("sendClientMessage(%#x, %#x, %#x, %#x, %s, %s, %s, %s, %s, %s)", xtarget, xwindow, propagate, event_mask,
                                         message_type, data0, data1, data2, data3, data4)
         e.type = ClientMessage
         e.xany.display = self.display
-        e.xany.window = w
+        e.xany.window = xwindow
         e.xclient.message_type = self.get_xatom(message_type)
         e.xclient.format = 32
         e.xclient.data.l[0] = cast_to_long(self.get_xatom(data0))
@@ -568,20 +564,18 @@ cdef class X11WindowBindings(X11CoreBindings):
         e.xclient.data.l[3] = cast_to_long(self.get_xatom(data3))
         e.xclient.data.l[4] = cast_to_long(self.get_xatom(data4))
         cdef Status s
-        s = XSendEvent(self.display, t, propagate, event_mask, &e)
+        s = XSendEvent(self.display, xtarget, propagate, event_mask, &e)
         if s == 0:
             raise ValueError("failed to serialize ClientMessage")
 
-    def sendClick(self, xtarget, button, onoff, x_root, y_root, x, y):
-        cdef Window w                       #@DuplicatedSignature
+    def sendClick(self, Window xtarget, int button, onoff, x_root, y_root, x, y):
         cdef Window r
-        w = xtarget
         r = XDefaultRootWindow(self.display)
-        log("sending message to %#x", w)
+        log("sending message to %#x", xtarget)
         cdef XEvent e                       #@DuplicatedSignature
         e.type = ButtonPress
         e.xany.display = self.display
-        e.xany.window = w
+        e.xany.window = xtarget
         #e.xclient.message_type = get_xatom(message_type)
         e.xclient.format = 32
         if button==1:
@@ -598,11 +592,11 @@ cdef class X11WindowBindings(X11CoreBindings):
         e.xbutton.y = y
         e.xbutton.state = int(onoff)
         cdef Status s                       #@DuplicatedSignature
-        s = XSendEvent(self.display, w, False, 0, &e)
+        s = XSendEvent(self.display, xtarget, False, 0, &e)
         if s == 0:
             raise ValueError("failed to serialize ButtonPress Message")
 
-    def send_xembed_message(self, xwindow, opcode, detail, data1, data2):
+    def send_xembed_message(self, Window xwindow, opcode, detail, data1, data2):
         """
          Display* dpy, /* display */
          Window w, /* receiver */
@@ -611,11 +605,9 @@ cdef class X11WindowBindings(X11CoreBindings):
          long data1  /* message data 1 */
          long data2  /* message data 2 */
          """
-        cdef Window w                       #@DuplicatedSignature
         cdef XEvent e                       #@DuplicatedSignature
-        w = xwindow
         e.xany.display = self.display
-        e.xany.window = w
+        e.xany.window = xwindow
         e.xany.type = ClientMessage
         e.xclient.message_type = self.get_xatom("_XEMBED")
         e.xclient.format = 32
@@ -675,7 +667,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         # of a ConfigureRequest (along with the other arguments they are passing
         # to us).  This also means we need to be careful to zero out any bits
         # besides these, because they could be set to anything.
-        all_optional_fields_we_know = CWX | CWY | CWWidth | CWHeight
+        cdef int all_optional_fields_we_know = CWX | CWY | CWWidth | CWHeight
         if fields is None:
             fields = all_optional_fields_we_know
         else:
@@ -723,7 +715,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         # "64k is enough for anybody"
         # (Except, I've found window icons that are strictly larger, hence the
         # added * 5...)
-        buffer_size = 64 * 1024 * 5
+        cdef int buffer_size = 64 * 1024 * 5
         cdef Atom xactual_type = <Atom> 0
         cdef int actual_format = 0
         cdef unsigned long nitems = 0, bytes_after = 0
@@ -765,7 +757,7 @@ cdef class X11WindowBindings(X11CoreBindings):
             bytes_per_item = sizeof(long)
         else:
             assert False
-        nbytes = bytes_per_item * nitems
+        cdef int nbytes = bytes_per_item * nitems
         if bytes_after:
             raise PropertyOverflow(nbytes + bytes_after)
         data = (<char *> prop)[:nbytes]
@@ -783,7 +775,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         (type, format, data) = value
         assert format in (8, 16, 32), "invalid format for property: %s" % format
         assert (len(data) % (format / 8)) == 0, "size of data is not a multiple of %s" % (format/8)
-        nitems = len(data) / (format / 8)
+        cdef int nitems = len(data) / (format / 8)
         if format == 32:
             data = _munge_packed_ints_to_longs(data)
         cdef char * data_str
