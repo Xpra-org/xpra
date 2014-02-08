@@ -682,7 +682,7 @@ class Protocol(object):
         self.invalid_header(self, data)
 
     def invalid_header(self, proto, data):
-        err = "invalid packet header byte: '%s'" % hex(ord(data[0]))
+        err = "invalid packet header byte: '%#x'" % ord(data[0])
         if len(data)>1:
             err += " read buffer=0x%s" % repr_ellipsized(data)
         self.gibberish(err, data)

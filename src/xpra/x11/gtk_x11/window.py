@@ -276,7 +276,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         }
 
     def __init__(self, client_window):
-        log("new window %s - %s", hex(client_window.xid), hex(get_xwindow(client_window)))
+        log("new window %#x - %#x", client_window.xid, get_xwindow(client_window))
         super(BaseWindowModel, self).__init__()
         self.client_window = client_window
         self.client_window_saved_events = self.client_window.get_events()
@@ -322,7 +322,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             trap.call_synced(self._composite.setup)
         except XError, e:
             remove_event_receiver(self.client_window, self)
-            log("window %s does not support compositing: %s", hex(get_xwindow(self.client_window)), e)
+            log("window %#x does not support compositing: %s", get_xwindow(self.client_window), e)
             trap.swallow_synced(self._composite.destroy)
             self._composite = None
             raise Unmanageable(e)
@@ -343,7 +343,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         log("call_setup() ended, property_handlers=%s", self._property_handlers)
 
     def setup_failed(self, e):
-        log("cannot manage %s: %s", hex(get_xwindow(self.client_window)), e)
+        log("cannot manage %#x: %s", get_xwindow(self.client_window), e)
         self.do_unmanaged(False)
 
     def setup(self):
@@ -401,7 +401,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             def synced_update():
                 xwin = get_xwindow(self.client_window)
                 self._geometry = X11Window.geometry_with_border(xwin)
-                log("BaseWindowModel.synced_update() geometry(%s)=%s", hex(xwin), self._geometry)
+                log("BaseWindowModel.synced_update() geometry(%#x)=%s", xwin, self._geometry)
             try:
                 trap.call_unsynced(synced_update)
             except XError:
@@ -520,7 +520,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def get_image(self, x, y, width, height, logger=log.debug):
         handle = self._composite.get_property("contents-handle")
         if handle is None:
-            logger("get_image(..) pixmap is None for window %s", hex(get_xwindow(self.client_window)))
+            logger("get_image(..) pixmap is None for window %#x", get_xwindow(self.client_window))
             return  None
 
         #try XShm:
@@ -1385,7 +1385,7 @@ class WindowModel(BaseWindowModel):
         else:
             title = self.get_property("title")
             xid = self.get_property("xid")
-            log.warn("window %s ('%s') does not support WM_DELETE_WINDOW... using force_quit()", hex(xid), title)
+            log.warn("window %#x ('%s') does not support WM_DELETE_WINDOW... using force_quit()", xid, title)
             # You don't wanna play ball?  Then no more Mr. Nice Guy!
             self.force_quit()
 

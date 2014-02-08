@@ -1356,10 +1356,10 @@ cdef class Encoder:
 
             #allocate CUDA input buffer (on device) 32-bit RGB:
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(self.input_width*4, self.input_height, 16)
-            log("CUDA Input Buffer=%s, pitch=%s", hex(int(self.cudaInputBuffer)), self.inputPitch)
+            log("CUDA Input Buffer=%#x, pitch=%s", int(self.cudaInputBuffer), self.inputPitch)
             #allocate CUDA output buffer (on device):
             self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3/plane_size_div, 16)
-            log("CUDA Output Buffer=%s, pitch=%s", hex(int(self.cudaOutputBuffer)), self.outputPitch)
+            log("CUDA Output Buffer=%#x, pitch=%s", int(self.cudaOutputBuffer), self.outputPitch)
             #allocate input buffer on host:
             self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.input_height, dtype=numpy.byte)
             log("inputBuffer=%s (size=%s)", self.inputBuffer, self.inputPitch*self.input_height)
@@ -1433,7 +1433,7 @@ cdef class Encoder:
             registerResource.pitch = self.outputPitch
             raiseNVENC(self.functionList.nvEncRegisterResource(self.context, &registerResource), "registering CUDA input buffer")
             self.inputHandle = registerResource.registeredResource
-            log("input handle for CUDA buffer: %s", hex(<long> self.inputHandle))
+            log("input handle for CUDA buffer: %#x", <unsigned long> self.inputHandle)
 
             #allocate output buffer:
             memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
@@ -1443,7 +1443,7 @@ cdef class Encoder:
             createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
             raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
-            log("output bitstream buffer=%s", hex(<long> self.bitstreamBuffer))
+            log("output bitstream buffer=%#x", <unsigned long> self.bitstreamBuffer)
         finally:
             if presetConfig!=NULL:
                 free(presetConfig)
@@ -1508,7 +1508,7 @@ cdef class Encoder:
         self.clean()
 
     def clean(self):                        #@DuplicatedSignature
-        log("clean() cuda_context=%s, encoder context=%s", self.cuda_context, hex(<long> self.context))
+        log("clean() cuda_context=%s, encoder context=%#x", self.cuda_context, <unsigned long> self.context)
         if self.cuda_context:
             self.cuda_context.push()
             try:
@@ -1522,26 +1522,26 @@ cdef class Encoder:
         if self.context!=NULL:
             self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
-            log("clean() unregistering CUDA output buffer input handle %s", hex(<long> self.inputHandle))
+            log("clean() unregistering CUDA output buffer input handle %#x", <unsigned long> self.inputHandle)
             raiseNVENC(self.functionList.nvEncUnregisterResource(self.context, self.inputHandle), "unregistering CUDA input buffer")
             self.inputHandle = NULL
         if self.inputBuffer is not None:
             log("clean() freeing CUDA host buffer %s", self.inputBuffer)
             self.inputBuffer = None
         if self.cudaInputBuffer is not None:
-            log("clean() freeing CUDA input buffer %s", hex(int(self.cudaInputBuffer)))
+            log("clean() freeing CUDA input buffer %#x", int(self.cudaInputBuffer))
             self.cudaInputBuffer.free()
             self.cudaInputBuffer = None
         if self.cudaOutputBuffer is not None:
-            log("clean() freeing CUDA output buffer %s", hex(int(self.cudaOutputBuffer)))
+            log("clean() freeing CUDA output buffer %#x", int(self.cudaOutputBuffer))
             self.cudaOutputBuffer.free()
             self.cudaOutputBuffer = None
         if self.context!=NULL:
             if self.bitstreamBuffer!=NULL:
-                log("clean() destroying output bitstream buffer %s", hex(<long> self.bitstreamBuffer))
+                log("clean() destroying output bitstream buffer %#x", <unsigned long> self.bitstreamBuffer)
                 raiseNVENC(self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer), "destroying output buffer")
                 self.bitstreamBuffer = NULL
-            log("clean() destroying encoder %s", hex(<long> self.context))
+            log("clean() destroying encoder %#x", <unsigned long> self.context)
             raiseNVENC(self.functionList.nvEncDestroyEncoder(self.context), "destroying context")
             self.context = NULL
             global context_counter
@@ -1668,7 +1668,7 @@ cdef class Encoder:
         mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
         mapInputResource.registeredResource  = self.inputHandle
         raiseNVENC(self.functionList.nvEncMapInputResource(self.context, &mapInputResource), "mapping input resource")
-        log("compress_image(..) device buffer mapped to %s", hex(<long> mapInputResource.mappedResource))
+        log("compress_image(..) device buffer mapped to %#x", <unsigned long> mapInputResource.mappedResource)
 
         size = 0
         try:
@@ -1709,7 +1709,7 @@ cdef class Encoder:
             lockOutputBuffer.doNotWait = 0
             lockOutputBuffer.outputBitstream = self.bitstreamBuffer
             raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer), "locking output buffer")
-            log("compress_image(..) output buffer locked, bitstreamBufferPtr=%s", hex(<long> lockOutputBuffer.bitstreamBufferPtr))
+            log("compress_image(..) output buffer locked, bitstreamBufferPtr=%#x", <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
 
             #copy to python buffer:
             size = lockOutputBuffer.bitstreamSizeInBytes
@@ -1751,7 +1751,7 @@ cdef class Encoder:
             if NVENCAPI_VERSION==0x20:
                 log("failed to get preset config for %s", name)
                 if not API_V2_WARNING:
-                    log.warn("API version %s fails on nvEncGetEncodePresetConfig (no further warnings will be shown)", hex(NVENCAPI_VERSION))
+                    log.warn("API version %#x fails on nvEncGetEncodePresetConfig (no further warnings will be shown)", NVENCAPI_VERSION)
                 API_V2_WARNING = True
             else:
                 log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(ret, ret))
@@ -1783,7 +1783,7 @@ cdef class Encoder:
                 if presetConfig!=NULL:
                     try:
                         encConfig = presetConfig.presetCfg
-                        #log("presetConfig.presetCfg=%s", <long> encConfig)
+                        #log("presetConfig.presetCfg=%s", <unsigned long> encConfig)
                         log("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
                     finally:
                         free(presetConfig)
@@ -1839,11 +1839,11 @@ cdef class Encoder:
             assert inputFmtsRetCount==inputFmtCount
             for x in range(inputFmtCount):
                 inputFmt = inputFmts[x]
-                log("* %s", hex(inputFmt))
+                log("* %#x", inputFmt)
                 for format_mask in sorted(BUFFER_FORMAT.keys()):
                     if format_mask>0 and (format_mask & inputFmt)>0:
                         format_name = BUFFER_FORMAT.get(format_mask)
-                        log(" + %s : %s", hex(format_mask), format_name)
+                        log(" + %#x : %s", format_mask, format_name)
                         input_formats[format_name] = hex(format_mask)
         finally:
             free(inputFmts)
@@ -1927,7 +1927,7 @@ cdef class Encoder:
         params.device = <void*> cuda_context
         params.clientKeyPtr = &CLIENT_KEY_GUID
         params.apiVersion = NVENCAPI_VERSION
-        log("calling nvEncOpenEncodeSessionEx @ %s", hex(<long> self.functionList.nvEncOpenEncodeSessionEx))
+        log("calling nvEncOpenEncodeSessionEx @ %#x", <unsigned long> self.functionList.nvEncOpenEncodeSessionEx)
         cdef int ret            #@DuplicatedSignature
         ret = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if ret==NV_ENC_ERR_UNSUPPORTED_DEVICE:
@@ -1937,7 +1937,7 @@ cdef class Encoder:
             raise TransientCodecException(msg)
         raiseNVENC(ret, "opening session")
         context_counter.increase()
-        log("success, encoder context=%s (%s contexts in use)", hex(<long> self.context), context_counter)
+        log("success, encoder context=%#x (%s contexts in use)", <unsigned long> self.context, context_counter)
 
 
 def init_module():

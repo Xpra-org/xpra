@@ -470,7 +470,7 @@ cdef class XShmWrapper(object):
         assert self.closed, "XShmWrapper %s cannot be freed: it is not closed yet" % self
         has_shm = self.shminfo.shmaddr!=<char *> -1
         if XSHM_DEBUG:
-            xshmlog("XShmWrapper.free() has_shm=%s, image=%s, shmid=%s", has_shm, hex(<unsigned long> self.image), self.shminfo.shmid)
+            xshmlog("XShmWrapper.free() has_shm=%s, image=%#x, shmid=%s", has_shm, <unsigned long> self.image, self.shminfo.shmid)
         if has_shm:
             XShmDetach(self.display, &self.shminfo)
         if self.image!=NULL:

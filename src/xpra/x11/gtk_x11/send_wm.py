@@ -16,7 +16,7 @@ def send_wm_take_focus(target, time):
     if time<0:
         time = 0    #should mean CurrentTime which is better than nothing
     elif time>0xFFFFFFFF:
-        raise OverflowError("invalid time: %s" % hex(time))
+        raise OverflowError("invalid time: %#x" % time)
     X11Window.sendClientMessage(get_xwindow(target), get_xwindow(target), False, 0,                     #@UndefinedVariable"
                       "WM_PROTOCOLS",
                       "WM_TAKE_FOCUS", time, 0, 0, 0)

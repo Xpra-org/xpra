@@ -431,7 +431,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef Window w = 0
         cdef int revert_to = 0
         XGetInputFocus(self.display, &w, &revert_to)
-        log("Current focus: %s, %s", hex(w), revert_to)
+        log("Current focus: %#x, %s", w, revert_to)
 
 
     ###################################
@@ -555,8 +555,8 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef XEvent e
         t = xtarget
         w = xwindow
-        log("sendClientMessage(%s)", (hex(xtarget), hex(w), hex(propagate), hex(event_mask),
-                                        message_type, data0, data1, data2, data3, data4))
+        log("sendClientMessage(%#x, %#x, %#x, %#x, %s, %s, %s, %s, %s, %s)", xtarget, w, propagate, event_mask,
+                                        message_type, data0, data1, data2, data3, data4)
         e.type = ClientMessage
         e.xany.display = self.display
         e.xany.window = w
@@ -577,7 +577,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef Window r
         w = xtarget
         r = XDefaultRootWindow(self.display)
-        log("sending message to %s", hex(w))
+        log("sending message to %#x", w)
         cdef XEvent e                       #@DuplicatedSignature
         e.type = ButtonPress
         e.xany.display = self.display
@@ -788,7 +788,7 @@ cdef class X11WindowBindings(X11CoreBindings):
             data = _munge_packed_ints_to_longs(data)
         cdef char * data_str
         data_str = data
-        #print("XChangeProperty(%s, %s, %s) data=%s" % (hex(xwindow), property, value, str([hex(x) for x in data_str])))
+        #print("XChangeProperty(%#x, %s, %s) data=%s" % (xwindow, property, value, str([hex(x) for x in data_str])))
         XChangeProperty(self.display, xwindow,
                          self.get_xatom(property),
                          self.get_xatom(type),

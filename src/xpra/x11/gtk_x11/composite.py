@@ -62,7 +62,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         _, _, _, _, self._border_width = X11Window.geometry_with_border(xwin)
         self.invalidate_pixmap()
         self._damage_handle = X11Window.XDamageCreate(xwin)
-        log("CompositeHelper.setup() damage handle(%s)=%s", hex(xwin), hex(self._damage_handle))
+        log("CompositeHelper.setup() damage handle(%#x)=%#x", xwin, self._damage_handle)
         add_event_receiver(self._window, self)
 
     def destroy(self):

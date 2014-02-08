@@ -86,7 +86,7 @@ class ClientWindow(QWidget, ClientWindowBase):
         self.setWindowRole(role)
 
     def set_type_hint(self, hint):
-        debug("set_type_hint(%s)", hex(hint))
+        debug("set_type_hint(%#x)", hint)
         if self._override_redirect:
             hint |= Qt.FramelessWindowHint
         self.setWindowFlags(hint)

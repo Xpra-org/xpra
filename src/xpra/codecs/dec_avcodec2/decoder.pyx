@@ -187,7 +187,7 @@ cdef class AVFrameWrapper:
     cdef set_context(self, AVCodecContext *avctx, AVFrame *frame):
         self.avctx = avctx
         self.frame = frame
-        log("%s.set_context(%s, %s)", self, hex(<unsigned long> avctx), hex(<unsigned long> frame))
+        log("%s.set_context(%#x, %#x)", self, <unsigned long> avctx, <unsigned long> frame)
 
     def __dealloc__(self):
         #By the time this wrapper is garbage collected,
@@ -197,14 +197,14 @@ cdef class AVFrameWrapper:
     def __str__(self):
         if self.frame==NULL:
             return "AVFrameWrapper(NULL)"
-        return "AVFrameWrapper(%s)" % hex(<unsigned long> self.frame)
+        return "AVFrameWrapper(%#x)" % <unsigned long> self.frame
 
     def xpra_free(self):
         log("%s.xpra_free()", self)
         self.free()
 
     cdef free(self):
-        log("%s.free() context=%s, frame=%s", self, hex(<unsigned long> self.avctx), hex(<unsigned long> self.frame))
+        log("%s.free() context=%#x, frame=%#x", self, <unsigned long> self.avctx, <unsigned long> self.frame)
         if self.avctx!=NULL and self.frame!=NULL:
             av_frame_unref(self.frame)
             self.frame = NULL
@@ -346,17 +346,17 @@ cdef class Decoder:
             for img in images:
                 img.clone_pixel_data()
 
-        log("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
+        log("clean_decoder() freeing AVFrame: %#x", <unsigned long> self.frame)
         if self.frame!=NULL:
             av_frame_free(&self.frame)
             #redundant: self.frame = NULL
 
         cdef unsigned long ctx_key          #@DuplicatedSignature
-        log("clean_decoder() freeing AVCodecContext: %s", hex(<unsigned long> self.codec_ctx))
+        log("clean_decoder() freeing AVCodecContext: %#x", <unsigned long> self.codec_ctx)
         if self.codec_ctx!=NULL:
             r = avcodec_close(self.codec_ctx)
             if r!=0:
-                log.warn("error closing decoder context %s: %s", hex(<unsigned long> self.codec_ctx), self.av_error_str(r))
+                log.warn("error closing decoder context %#x: %s", <unsigned long> self.codec_ctx, self.av_error_str(r))
             av_free(self.codec_ctx)
             self.codec_ctx = NULL
         log("clean_decoder() done")

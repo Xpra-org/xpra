@@ -307,7 +307,7 @@ cdef class ColorspaceConverter:
         self.context = sws_getContext(self.src_width, self.src_height, self.src_format_enum,
                                       self.dst_width, self.dst_height, self.dst_format_enum,
                                       self.flags, NULL, NULL, NULL)
-        log("sws context=%s", hex(<long> self.context))
+        log("sws context=%#x", <unsigned long> self.context)
         assert self.context!=NULL, "sws_getContext returned NULL"
 
     def get_info(self):         #@DuplicatedSignature

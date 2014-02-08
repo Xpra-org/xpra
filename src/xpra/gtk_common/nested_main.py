@@ -98,7 +98,7 @@ class NestedMainLoop(object):
     _stack = []
 
     def __str(self):
-        return  "NestedMainLoop(%s)" % hex(id(self))
+        return  "NestedMainLoop(%#x)" % id(self)
 
     @classmethod
     def _quit_while_top_done(cls):
@@ -112,12 +112,12 @@ class NestedMainLoop(object):
         #we need to pop the ones above it that have timedout,
         #starting with "top", so we can get to it:
         done_pending = bool([o for o in cls._stack if o!=top and o._done])
-        log("NestedMainLoop: top loop=%s, done=%s, soft timeout=%s, hard timeout=%s, done_pending=%s",
-            hex(id(top)), top._done, top._hard_timed_out, top._soft_timed_out, done_pending)
+        log("NestedMainLoop: top loop=%#x, done=%s, soft timeout=%s, hard timeout=%s, done_pending=%s",
+            id(top), top._done, top._hard_timed_out, top._soft_timed_out, done_pending)
         if top._done or top._hard_timed_out or \
             (top._soft_timed_out and done_pending):
-            log("exiting nested main loop %s, leaving level %s",
-                hex(id(top)), gtk.main_level())
+            log("exiting nested main loop %#x, leaving level %s",
+                id(top), gtk.main_level())
             gtk.main_quit()
             return True     #check new top of stack again
         #not done / timedout yet:
@@ -127,17 +127,17 @@ class NestedMainLoop(object):
         gobject.timeout_add(0, self._quit_while_top_done)
 
     def _soft_timeout_cb(self):
-        log("%s: soft timeout", hex(id(self)))
+        log("%#x: soft timeout", id(self))
         self._soft_timed_out = True
         self._wakeup()
 
     def _hard_timeout_cb(self):
-        log("%s: hard timeout", hex(id(self)))
+        log("%#x: hard timeout", id(self))
         self._hard_timed_out = True
         self._wakeup()
 
     def done(self, result):
-        log("%s: done: %s", hex(id(self)), result)
+        log("%#x: done: %s", id(self), result)
         self._result = result
         self._done = True
         self._wakeup()
@@ -152,15 +152,15 @@ class NestedMainLoop(object):
         self._stack.append(self)
         soft = gobject.timeout_add(soft_timeout, self._soft_timeout_cb)
         hard = gobject.timeout_add(hard_timeout, self._hard_timeout_cb)
-        log("Entering nested loop %s (level %s)",
-            hex(id(self)), gtk.main_level())
+        log("Entering nested loop %#x (level %s)",
+            id(self), gtk.main_level())
         try:
             gtk.main()
-            log("%s: returned from nested main loop", hex(id(self)))
+            log("%#x: returned from nested main loop", id(self))
         finally:
             assert self._stack.pop() is self
             gobject.source_remove(soft)
             gobject.source_remove(hard)
-        log("%s: done=%s, soft=%s, hard=%s, result=%s",
-            hex(id(self)), self._done, self._soft_timed_out, self._hard_timed_out, self._result)
+        log("%s: done=%#x, soft=%s, hard=%s, result=%s",
+            id(self), self._done, self._soft_timed_out, self._hard_timed_out, self._result)
         return self._result

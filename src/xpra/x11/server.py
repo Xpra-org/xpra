@@ -120,10 +120,10 @@ class DesktopManager(gtk.Widget):
         transient_for = window.get_property("transient-for")
         if transient_for is None:
             return None
-        log("found transient_for=%s, xid=%s", transient_for, hex(transient_for.xid))
+        log("found transient_for=%s, xid=%#x", transient_for, transient_for.xid)
         #try to find the model for this window:
         for model in self._models.keys():
-            log("testing model %s: %s", model, hex(model.client_window.xid))
+            log("testing model %s: %#x", model, model.client_window.xid)
             if model.client_window.xid==transient_for.xid:
                 wid = window_to_id.get(model)
                 log("found match, window id=%s", wid)
@@ -131,7 +131,7 @@ class DesktopManager(gtk.Widget):
         root = gtk.gdk.get_default_root_window()
         if root.xid==transient_for.xid:
             return -1       #-1 is the backwards compatible marker for root...
-        log("not found transient_for=%s, xid=%s", transient_for, hex(transient_for.xid))
+        log("not found transient_for=%s, xid=%#x", transient_for, transient_for.xid)
         return  None
 
 
@@ -350,24 +350,24 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if raw_window.get_window_type()==gtk.gdk.WINDOW_TEMP:
             #ignoring one of gtk's temporary windows
             #all the windows we manage should be gtk.gdk.WINDOW_FOREIGN
-            log("ignoring TEMP window %s", hex(xid))
+            log("ignoring TEMP window %#x", xid)
             return
         WINDOW_MODEL_KEY = "_xpra_window_model_"
         wid = raw_window.get_data(WINDOW_MODEL_KEY)
         window = self._id_to_window.get(wid)
         if window:
             if window.is_managed():
-                log("found existing window model %s for %s, will refresh it", type(window), hex(xid))
+                log("found existing window model %s for %#x, will refresh it", type(window), xid)
                 geometry = window.get_property("geometry")
                 _, _, w, h = geometry
                 self._damage(window, 0, 0, w, h, options={"min_delay" : 50})
                 return
-            log("found existing model %s (but no longer managed!) for %s", type(window), hex(xid))
+            log("found existing model %s (but no longer managed!) for %#x", type(window), xid)
             #we could try to re-use the existing model and window ID,
             #but for now it is just easier to create a new one:
             self._lost_window(window)
         tray_window = get_tray_window(raw_window)
-        log("Discovered new override-redirect window: %s (tray=%s)", hex(xid), tray_window)
+        log("Discovered new override-redirect window: %#x (tray=%s)", xid, tray_window)
         try:
             if tray_window is not None:
                 assert self._tray
@@ -391,14 +391,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 if window in self._window_to_id:
                     self._lost_window(window, False)
             else:
-                log.warn("cannot add %s: %s", hex(xid), e)
+                log.warn("cannot add window %#x: %s", xid, e)
             #from now on, we return to the gtk main loop,
             #so we *should* get a signal when the window goes away
 
     def _or_window_geometry_changed(self, window, pspec=None):
         (x, y, w, h) = window.get_property("geometry")
         if w>=32768 or h>=32768:
-            self.error("not sending new invalid window dimensions: %x%s !", w, h)
+            self.error("not sending new invalid window dimensions: %ix%i !", w, h)
             return
         log("or_window_geometry_changed: %s (window=%s)", window.get_property("geometry"), window)
         wid = self._window_to_id[window]

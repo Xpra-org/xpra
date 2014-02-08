@@ -207,7 +207,7 @@ class ClipboardStateInfoWindow(object):
         if icon:
             self.window.set_icon(icon)
         try:
-            self.add_event("ALL", "window=%s, xid=%s" % (self.window, hex(self.window.get_window().xid)))
+            self.add_event("ALL", "window=%s, xid=%#x" % (self.window, self.window.get_window().xid))
         except:
             self.add_event("ALL", "window=%s" % self.window)
 

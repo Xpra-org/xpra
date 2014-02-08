@@ -130,7 +130,7 @@ class SystemTray(gobject.GObject):
         xtray = get_xwindow(self.tray_window)
         set_tray_visual(self.tray_window, visual)
         set_tray_orientation(self.tray_window, TRAY_ORIENTATION_HORZ)
-        log("setup tray: tray window %s", hex(xtray))
+        log("setup tray: tray window %#x", xtray)
         display.request_selection_notification(SELECTION)
         setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
         log("setup tray: set selection owner returned %s", setsel)
@@ -182,7 +182,7 @@ class SystemTray(gobject.GObject):
             title = prop_get(window, "WM_NAME", "latin1", ignore_errors=True)
         if title is None:
             title = ""
-        log("dock_tray(%s) window=%s, geometry=%s, title=%s, visual.depth=%s", hex(xid), window, window.get_geometry(), title, window.get_visual().depth)
+        log("dock_tray(%s) window=%#x, geometry=%s, title=%s, visual.depth=%s", xid, window, window.get_geometry(), title, window.get_visual().depth)
         event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
         tray_window = gtk.gdk.Window(root, width=w, height=h,
                                            window_type=gtk.gdk.WINDOW_TOPLEVEL,
@@ -193,19 +193,19 @@ class SystemTray(gobject.GObject):
                                            override_redirect=True,
                                            visual=window.get_visual(),
                                            colormap=window.get_colormap())
-        log("dock_tray(%s) setting tray properties", hex(xid))
+        log("dock_tray(%#x) setting tray properties", xid)
         set_tray_window(tray_window, window)
         tray_window.show()
         self.tray_windows[window] = tray_window
         self.window_trays[tray_window] = window
-        log("dock_tray(%s) resizing and reparenting", hex(xid))
+        log("dock_tray(%#x) resizing and reparenting", xid)
         window.resize(w, h)
         xwin = get_xwindow(window)
         xtray = get_xwindow(tray_window)
         X11Window.Withdraw(xwin)
         X11Window.Reparent(xwin, xtray, 0, 0)
         X11Window.MapRaised(xwin)
-        log("dock_tray(%s) new tray container window %s", hex(xid), hex(xtray))
+        log("dock_tray(%#x) new tray container window %#x", xid, xtray)
         tray_window.invalidate_rect(gtk.gdk.Rectangle(width=w, height=h), True)
         X11Window.send_xembed_message(xwin, XEMBED_EMBEDDED_NOTIFY, 0, xtray, XEMBED_VERSION)
 

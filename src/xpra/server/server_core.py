@@ -325,7 +325,7 @@ class ServerCore(object):
             if data[:4]=="GET ":
                 self.start_tcp_proxy(proto, data)
                 return
-        err = "invalid packet header byte: '%s', not an xpra client?" % hex(ord(data[0]))
+        err = "invalid packet header byte: '%#x', not an xpra client?" % ord(data[0])
         if len(data)>1:
             err += " read buffer=0x%s" % repr_ellipsized(data)
         proto.gibberish(err, data)

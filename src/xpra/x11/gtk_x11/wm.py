@@ -65,7 +65,7 @@ def wm_check(display, upgrading=False):
             if upgrading and name and name==WM_WINDOW_NAME:
                 log.info("found previous Xpra instance")
             else:
-                log.warn("Warning: found an existing window manager on screen %s using window id %s: %s", i, hex(get_xwindow(ewmh_wm)), name or "unknown")
+                log.warn("Warning: found an existing window manager on screen %s using window %#x: %s", i, get_xwindow(ewmh_wm), name or "unknown")
             if (wm_so is None or wm_so==0) and (cwm_so is None or cwm_so==0):
                 log.error("it does not own the selection '%s' or '%s' so we cannot take over and make it exit", wm_prop, cwm_prop)
                 log.error("please stop %s so you can run xpra on this display", name or "the existing window manager")
