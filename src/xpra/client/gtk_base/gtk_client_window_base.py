@@ -5,10 +5,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.client_window_base import ClientWindowBase
+from xpra.log import Logger
+focuslog = Logger("focus")
 
 from xpra.util import AdHocStruct, nn
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
+from xpra.client.client_window_base import ClientWindowBase
 gtk = import_gtk()
 gdk = import_gdk()
 
@@ -67,9 +69,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not self._override_redirect:
             self.connect("notify::has-toplevel-focus", self._focus_change)
         def focus_in(*args):
-            self.debug("focus-in-event for wid=%s", self._id)
+            focuslog("focus-in-event for wid=%s", self._id)
         def focus_out(*args):
-            self.debug("focus-out-event for wid=%s", self._id)
+            focuslog("focus-out-event for wid=%s", self._id)
         self.connect("focus-in-event", focus_in)
         self.connect("focus-out-event", focus_out)
         if self._can_set_workspace:
@@ -384,6 +386,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def _focus_change(self, *args):
         assert not self._override_redirect
         htf = self.get_property("has-toplevel-focus")
-        self.debug("_focus_change(%s) wid=%s, has-toplevel-focus=%s, _been_mapped=%s", args, self._id, htf, self._been_mapped)
+        focuslog("_focus_change(%s) wid=%s, has-toplevel-focus=%s, _been_mapped=%s", args, self._id, htf, self._been_mapped)
         if self._been_mapped:
             self._client.update_focus(self._id, htf)

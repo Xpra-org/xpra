@@ -13,7 +13,8 @@ import ctypes
 from xpra.log import Logger
 log = Logger("client")
 paintlog = Logger("paint")
-soundlog = log.debug
+focuslog = Logger("focus")
+soundlog = Logger("sound")
 
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
@@ -600,11 +601,11 @@ class UIXpraClient(XpraClientBase):
 
 
     def send_focus(self, wid):
-        log("send_focus(%s)", wid)
+        focuslog("send_focus(%s)", wid)
         self.send("focus", wid, self.get_current_modifiers())
 
     def update_focus(self, wid, gotit):
-        log("update_focus(%s, %s) _focused=%s", wid, gotit, self._focused)
+        focuslog("update_focus(%s, %s) _focused=%s", wid, gotit, self._focused)
         if gotit and self._focused is not wid:
             if self.keyboard_helper:
                 self.keyboard_helper.clear_repeat()
