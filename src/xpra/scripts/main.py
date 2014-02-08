@@ -406,6 +406,15 @@ When unspecified, all the available codecs are allowed and the first one is used
         if not hasattr(options, k):
             setattr(options, k, v)
 
+    #process "help" arguments early:
+    from xpra.log import KNOWN_FILTERS
+    if options.debug:
+        categories = options.debug.split(",")
+        for cat in categories:
+            if cat=="help":
+                print("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
+                sys.exit(1)
+
     if options.encoding:
         #fix old encoding names if needed:
         from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW
@@ -491,14 +500,10 @@ def configure_logging(options, mode):
         logging.root.handlers = []
         logging.root.addHandler(logging.StreamHandler(sys.stdout))
 
-    from xpra.log import add_debug_category, enable_debug_for, KNOWN_FILTERS
+    from xpra.log import add_debug_category, enable_debug_for
     if options.debug:
         categories = options.debug.split(",")
         for cat in categories:
-            if cat=="help":
-                print("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
-                sys.exit(1)
-            #this sets up our own logging utility:
             add_debug_category(cat)
             enable_debug_for(cat)
 
