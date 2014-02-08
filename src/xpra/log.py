@@ -35,23 +35,26 @@ def get_all_loggers():
                 a.add(v)
     return a
 
-debug_categories = set()
+debug_enabled_categories = set()
+debug_disabled_categories = set()
 def add_debug_category(cat):
-    global debug_categories
-    debug_categories.add(cat)
+    remove_disabled_category(cat)
+    debug_enabled_categories.add(cat)
 
 def remove_debug_category(cat):
-    global debug_categories
-    if cat in debug_categories:
-        debug_categories.remove(cat)
+    if cat in debug_enabled_categories:
+        debug_enabled_categories.remove(cat)
 
-def get_debug_categories():
-    global debug_categories
-    return debug_categories
+def add_disabled_category(cat):
+    remove_debug_category(cat)
+    debug_disabled_categories.add(cat)
+
+def remove_disabled_category(cat):
+    if cat in debug_disabled_categories:
+        debug_disabled_categories.remove(cat)
 
 
 def enable_debug_for(cat):
-    global all_loggers
     loggers = all_loggers.get(cat)
     if loggers:
         for l in loggers:
@@ -61,7 +64,6 @@ def enable_debug_for(cat):
                 v.enable_debug()
 
 def disable_debug_for(cat):
-    global all_loggers
     loggers = all_loggers.get(cat)
     if loggers:
         for l in loggers:
@@ -111,11 +113,17 @@ class Logger(object):
             self.categories.append(caller)
         self.logger = logging.getLogger(caller)
         self.logger.setLevel(logging.INFO)
-        self.disable_debug()
+        disabled = False
+        enabled = False
         for cat in self.categories:
-            if "all" in debug_categories or cat in debug_categories or os.environ.get("XPRA_%s_DEBUG" % cat.upper(), "0")=="1":
-                self.enable_debug()
-                break
+            if cat in debug_disabled_categories:
+                disabled = True
+            if "all" in debug_enabled_categories or cat in debug_enabled_categories or os.environ.get("XPRA_%s_DEBUG" % cat.upper(), "0")=="1":
+                enabled = True
+        if enabled and not disabled:
+            self.enable_debug()
+        else:
+            self.disable_debug()
         #ready, keep track of it:
         add_logger(self.categories, self)
 

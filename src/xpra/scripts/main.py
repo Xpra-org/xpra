@@ -500,12 +500,18 @@ def configure_logging(options, mode):
         logging.root.handlers = []
         logging.root.addHandler(logging.StreamHandler(sys.stdout))
 
-    from xpra.log import add_debug_category, enable_debug_for
+    from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
     if options.debug:
         categories = options.debug.split(",")
         for cat in categories:
-            add_debug_category(cat)
-            enable_debug_for(cat)
+            if len(cat)==0:
+                continue
+            if cat[0]=="-":
+                add_disabled_category(cat[1:])
+                disable_debug_for(cat[1:])
+            else:
+                add_debug_category(cat)
+                enable_debug_for(cat)
 
     #always log debug level, we just use it selectively (see above)
     logging.root.setLevel(logging.DEBUG)

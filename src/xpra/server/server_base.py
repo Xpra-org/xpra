@@ -699,13 +699,13 @@ class ServerBase(ServerCore):
             if log_cmd not in ("enable", "disable"):
                 return debug_usage()
             category = args[1]
-            from xpra.log import add_debug_category, remove_debug_category, enable_debug_for, disable_debug_for
+            from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
             if log_cmd=="enable":
                 add_debug_category(category)
                 enable_debug_for(category)
             else:
                 assert log_cmd=="disable"
-                remove_debug_category(category)
+                add_disabled_category(category)
                 disable_debug_for(category)
             return respond(0, "logging %sd for %s" % (log_cmd, category))
         elif command=="name":
