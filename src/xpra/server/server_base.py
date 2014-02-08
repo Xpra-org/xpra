@@ -12,6 +12,7 @@ import time
 
 from xpra.log import Logger
 log = Logger("server")
+keylog = Logger("keyboard")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
@@ -271,7 +272,7 @@ class ServerBase(ServerCore):
             log.error("failed to setup clipboard helper: %s" % e)
 
     def init_keyboard(self):
-        log("init_keyboard()")
+        keylog("init_keyboard()")
         ## These may get set by the client:
         self.xkbmap_mod_meanings = {}
 
@@ -1207,7 +1208,7 @@ class ServerBase(ServerCore):
 
     def _process_keyboard_sync_enabled_status(self, proto, packet):
         self.keyboard_sync = bool(packet[1])
-        log("toggled keyboard-sync to %s", self.keyboard_sync)
+        keylog("toggled keyboard-sync to %s", self.keyboard_sync)
 
 
     def _process_server_settings(self, proto, packet):
@@ -1286,22 +1287,22 @@ class ServerBase(ServerCore):
             Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
-        log("handle_key(%s,%s,%s,%s,%s,%s) keyboard_sync=%s", wid, pressed, name, keyval, keycode, modifiers, self.keyboard_sync)
+        keylog("handle_key(%s,%s,%s,%s,%s,%s) keyboard_sync=%s", wid, pressed, name, keyval, keycode, modifiers, self.keyboard_sync)
         if pressed and (wid is not None) and (wid not in self._id_to_window):
-            log("window %s is gone, ignoring key press", wid)
+            keylog("window %s is gone, ignoring key press", wid)
             return
         if keycode<0:
-            log.warn("ignoring invalid keycode=%s", keycode)
+            keylog.warn("ignoring invalid keycode=%s", keycode)
             return
         if keycode in self.keys_timedout:
             del self.keys_timedout[keycode]
         def press():
-            log("handle keycode pressing %s: key %s", keycode, name)
+            keylog("handle keycode pressing %s: key %s", keycode, name)
             if self.keyboard_sync:
                 self.keys_pressed[keycode] = name
             self.fake_key(keycode, True)
         def unpress():
-            log("handle keycode unpressing %s: key %s", keycode, name)
+            keylog("handle keycode unpressing %s: key %s", keycode, name)
             if self.keyboard_sync:
                 del self.keys_pressed[keycode]
             self.fake_key(keycode, False)
@@ -1313,12 +1314,12 @@ class ServerBase(ServerCore):
                     #it immediately
                     unpress()
             else:
-                log("handle keycode %s: key %s was already pressed, ignoring", keycode, name)
+                keylog("handle keycode %s: key %s was already pressed, ignoring", keycode, name)
         else:
             if keycode in self.keys_pressed:
                 unpress()
             else:
-                log("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
+                keylog("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
         is_mod = self.is_modifier(name, keycode)
         if not is_mod and self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
@@ -1327,14 +1328,14 @@ class ServerBase(ServerCore):
         """ Schedules/cancels the key repeat timeouts """
         timer = self.keys_repeat_timers.get(keycode, None)
         if timer:
-            log("cancelling key repeat timer: %s for %s / %s", timer, keyname, keycode)
+            keylog("cancelling key repeat timer: %s for %s / %s", timer, keyname, keycode)
             self.source_remove(timer)
         if pressed:
             delay_ms = min(1500, max(250, delay_ms))
-            log("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
+            keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             def _key_repeat_timeout(when):
                 now = time.time()
-                log("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
+                keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
                 self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
                 self.keys_timedout[keycode] = now
             now = time.time()
@@ -1360,7 +1361,7 @@ class ServerBase(ServerCore):
             now = time.time()
             if when_timedout and (now-when_timedout)<30:
                 #not so long ago, just re-press it now:
-                log("key %s/%s, had timed out, re-pressing it", keycode, keyname)
+                keylog("key %s/%s, had timed out, re-pressing it", keycode, keyname)
                 self.keys_pressed[keycode] = keyname
                 self.fake_key(keycode, True)
         self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
