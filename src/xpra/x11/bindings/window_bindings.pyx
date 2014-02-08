@@ -282,14 +282,14 @@ cdef extern from "X11/extensions/Xdamage.h":
 
 
 
-def _munge_packed_ints_to_longs(data):
+cpdef _munge_packed_ints_to_longs(data):
     assert len(data) % sizeof(int) == 0
     n = len(data) / sizeof(int)
     format_from = "@" + "i" * n
     format_to = "@" + "l" * n
     return struct.pack(format_to, *struct.unpack(format_from, data))
 
-def _munge_packed_longs_to_ints(data):
+cpdef _munge_packed_longs_to_ints(data):
     assert len(data) % sizeof(long) == 0
     n = len(data) / sizeof(long)
     format_from = "@" + "l" * n
@@ -384,57 +384,49 @@ cdef class X11WindowBindings(X11CoreBindings):
         string = str_or_int
         return XInternAtom(self.display, string, False)
 
-    def MapRaised(self, xwindow):
-        cdef Window window = 0              #@DuplicatedSignature
+    cpdef MapRaised(self, Window xwindow):
         XMapRaised(self.display, xwindow)
 
-    def Withdraw(self, xwindow, screen_number=0):
+    cpdef Withdraw(self, Window xwindow, int screen_number=0):
         return XWithdrawWindow(self.display, xwindow, screen_number)
 
-    def Reparent(self, xwindow, xparent, x, y):
-        cdef Window window = 0                    #@DuplicatedSignature
-        cdef Window parent = 0                    #@DuplicatedSignature
-        window = xwindow
-        parent = xparent
-        XReparentWindow(self.display, window, parent, x, y)
+    cpdef Reparent(self, Window xwindow, Window xparent, int x, int y):
+        XReparentWindow(self.display, xwindow, xparent, x, y)
 
     ###################################
     # XUnmapWindow
     ###################################
-    def Unmap(self, xwindow):
+    cpdef Unmap(self, Window xwindow):
         serial = NextRequest(self.display)
         XUnmapWindow(self.display, xwindow)
         return serial
 
     # Mapped status
-    def is_mapped(self, xwindow):
+    cpdef is_mapped(self, Window xwindow):
         cdef XWindowAttributes attrs
-        cdef Window w = xwindow
-        XGetWindowAttributes(self.display,  w, &attrs)
+        XGetWindowAttributes(self.display, xwindow, &attrs)
         return attrs.map_state != IsUnmapped
 
     # Override-redirect status
-    def is_override_redirect(self, xwindow):
+    cpdef is_override_redirect(self, Window xwindow):
         cdef XWindowAttributes or_attrs
-        cdef Window w = xwindow                         #@DuplicatedSignature
-        XGetWindowAttributes(self.display, w, &or_attrs)
+        XGetWindowAttributes(self.display, xwindow, &or_attrs)
         return or_attrs.override_redirect
 
-    def geometry_with_border(self, xwindow):
+    cpdef geometry_with_border(self, Window xwindow):
         cdef XWindowAttributes geom_attrs
-        cdef Window w = xwindow                         #@DuplicatedSignature
-        XGetWindowAttributes(self.display, w, &geom_attrs)
+        XGetWindowAttributes(self.display, xwindow, &geom_attrs)
         return (geom_attrs.x, geom_attrs.y, geom_attrs.width, geom_attrs.height, geom_attrs.border_width)
 
     # Focus management
-    def XSetInputFocus(self, xwindow, time=None):
+    cpdef XSetInputFocus(self, Window xwindow, object time=None):
         # Always does RevertToParent
         if time is None:
             time = CurrentTime
         XSetInputFocus(self.display, xwindow, RevertToParent, time)
         self.printFocus()
 
-    def printFocus(self):
+    cpdef printFocus(self):
         # Debugging
         cdef Window w = 0
         cdef int revert_to = 0
@@ -445,14 +437,14 @@ cdef class X11WindowBindings(X11CoreBindings):
     ###################################
     # XKillClient
     ###################################
-    def XKillClient(self, xwindow):
+    cpdef XKillClient(self, Window xwindow):
         XKillClient(self.display, xwindow)
 
 
     ###################################
     # XTest
     ###################################
-    def _ensure_XTest_support(self):
+    cpdef _ensure_XTest_support(self):
         cdef int ignored = 0
         if self.display_data("XTest-support") is None:
             self.display_data["XTest-support"] = \
@@ -461,11 +453,11 @@ cdef class X11WindowBindings(X11CoreBindings):
         if not self.display_data("XTest-support"):
             raise ValueError("XTest not supported")
 
-    def XTestFakeKeyEvent(self, keycode, is_press):
+    cpdef XTestFakeKeyEvent(self, keycode, is_press):
         self._ensure_XTest_support()
         XTestFakeKeyEvent(self.display, keycode, is_press, 0)
 
-    def XTestFakeButtonEvent(self, button, is_press):
+    cpdef XTestFakeButtonEvent(self, button, is_press):
         self._ensure_XTest_support()
         XTestFakeButtonEvent(self.display, button, is_press, 0)
 
@@ -488,16 +480,16 @@ cdef class X11WindowBindings(X11CoreBindings):
             log.error("%s", e)
         return False
 
-    def XCompositeRedirectWindow(self, xwindow):
+    cpdef XCompositeRedirectWindow(self, Window xwindow):
         XCompositeRedirectWindow(self.display, xwindow, CompositeRedirectManual)
 
-    def XCompositeRedirectSubwindows(self, xwindow):
+    cpdef XCompositeRedirectSubwindows(self, Window xwindow):
         XCompositeRedirectSubwindows(self.display, xwindow, CompositeRedirectManual)
 
-    def XCompositeUnredirectWindow(self, xwindow):
+    cpdef XCompositeUnredirectWindow(self, Window xwindow):
         XCompositeUnredirectWindow(self.display, xwindow, CompositeRedirectManual)
 
-    def XCompositeUnredirectSubwindows(self, xwindow):
+    cpdef XCompositeUnredirectSubwindows(self, Window xwindow):
         XCompositeUnredirectSubwindows(self.display, xwindow, CompositeRedirectManual)
 
 
@@ -510,13 +502,13 @@ cdef class X11WindowBindings(X11CoreBindings):
                                   XDamageQueryExtension,
                                   XDamageQueryVersion)
 
-    def XDamageCreate(self, xwindow):
+    cpdef Damage XDamageCreate(self, Window xwindow):
         return XDamageCreate(self.display, xwindow, XDamageReportDeltaRectangles)
 
-    def XDamageDestroy(self, handle):
+    cpdef XDamageDestroy(self, Damage handle):
         XDamageDestroy(self.display, handle)
 
-    def XDamageSubtract(self, handle):
+    cpdef XDamageSubtract(self, Damage handle):
         # def xdamage_acknowledge(display_source, handle, x, y, width, height):
         # cdef XRectangle rect
         # rect.x = x
@@ -545,10 +537,10 @@ cdef class X11WindowBindings(X11CoreBindings):
     # Smarter convenience wrappers
     ###################################
 
-    def XGetSelectionOwner(self, atom):
+    cpdef XGetSelectionOwner(self, atom):
         return XGetSelectionOwner(self.display, self.get_xatom(atom))
 
-    def XSetSelectionOwner(self, xwindow, atom, time=None):
+    cpdef XSetSelectionOwner(self, Window xwindow, atom, time=None):
         if time is None:
             time = CurrentTime
         return XSetSelectionOwner(self.display, self.get_xatom(atom), xwindow, time)
@@ -636,10 +628,8 @@ cdef class X11WindowBindings(X11CoreBindings):
         if s == 0:
             raise ValueError("failed to serialize XEmbed Message")
 
-    def sendConfigureNotify(self, xwindow):
-        cdef Window window                  #@DuplicatedSignature
+    cpdef sendConfigureNotify(self, Window xwindow):
         cdef Window root_window
-        window = xwindow
         root_window = XDefaultRootWindow(self.display)
 
         # Get basic attributes
@@ -649,7 +639,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         # Figure out where the window actually is in root coordinate space
         cdef int dest_x = 0, dest_y = 0
         cdef Window child = 0
-        if not XTranslateCoordinates(self.display, window,
+        if not XTranslateCoordinates(self.display, xwindow,
                                      root_window,
                                      0, 0,
                                      &dest_x, &dest_y, &child):
@@ -660,8 +650,8 @@ cdef class X11WindowBindings(X11CoreBindings):
         # Send synthetic ConfigureNotify (ICCCM 4.2.3, for example)
         cdef XEvent e                       #@DuplicatedSignature
         e.type = ConfigureNotify
-        e.xconfigure.event = window
-        e.xconfigure.window = window
+        e.xconfigure.event = xwindow
+        e.xconfigure.window = xwindow
         e.xconfigure.x = dest_x
         e.xconfigure.y = dest_y
         e.xconfigure.width = attrs.width
@@ -671,14 +661,11 @@ cdef class X11WindowBindings(X11CoreBindings):
         e.xconfigure.override_redirect = attrs.override_redirect
 
         cdef Status s                       #@DuplicatedSignature
-        s = XSendEvent(self.display, window, False, StructureNotifyMask, &e)
+        s = XSendEvent(self.display, xwindow, False, StructureNotifyMask, &e)
         if s == 0:
             raise ValueError("failed to serialize ConfigureNotify")
 
-    def configureAndNotify(self, xwindow, x, y, width, height, fields=None):
-        cdef Window window                  #@DuplicatedSignature
-        window = xwindow
-
+    cpdef configureAndNotify(self, Window xwindow, x, y, width, height, fields=None):
         # Reconfigure the window.  We have to use XConfigureWindow directly
         # instead of GdkWindow.resize, because GDK does not give us any way to
         # squash the border.
@@ -702,19 +689,19 @@ cdef class X11WindowBindings(X11CoreBindings):
         changes.width = width
         changes.height = height
         changes.border_width = 0
-        XConfigureWindow(self.display, window, fields, &changes)
+        XConfigureWindow(self.display, xwindow, fields, &changes)
         # Tell the client.
-        self.sendConfigureNotify(window)
+        self.sendConfigureNotify(xwindow)
 
 
-    def addXSelectInput(self, xwindow, add_mask):
+    cpdef addXSelectInput(self, Window xwindow, add_mask):
         cdef XWindowAttributes curr
         XGetWindowAttributes(self.display, xwindow, &curr)
         mask = curr.your_event_mask
         mask = mask | add_mask
         XSelectInput(self.display, xwindow, mask)
 
-    def substructureRedirect(self, xwindow):
+    cpdef substructureRedirect(self, Window xwindow):
         """Enable SubstructureRedirect on the given window.
 
         This enables reception of MapRequest and ConfigureRequest events.  At the
@@ -727,12 +714,11 @@ cdef class X11WindowBindings(X11CoreBindings):
         no way to actually send it.)"""
         self.addXSelectInput(xwindow, SubstructureRedirectMask)
 
-    def selectFocusChange(self, xwindow):
+    cpdef selectFocusChange(self, Window xwindow):
         self.addXSelectInput(xwindow, FocusChangeMask)
 
 
-
-    def XGetWindowProperty(self, xwindow, property, req_type):
+    cpdef XGetWindowProperty(self, Window xwindow, property, req_type):
         # NB: Accepts req_type == 0 for AnyPropertyType
         # "64k is enough for anybody"
         # (Except, I've found window icons that are strictly larger, hence the
@@ -789,10 +775,10 @@ cdef class X11WindowBindings(X11CoreBindings):
         else:
             return data
 
-    def XDeleteProperty(self, xwindow, property):
+    cpdef XDeleteProperty(self, Window xwindow, property):
         XDeleteProperty(self.display, xwindow, self.get_xatom(property))
 
-    def XChangeProperty(self, xwindow, property, value):
+    cpdef XChangeProperty(self, Window xwindow, property, value):
         "Set a property on a window."
         (type, format, data) = value
         assert format in (8, 16, 32), "invalid format for property: %s" % format
@@ -813,8 +799,8 @@ cdef class X11WindowBindings(X11CoreBindings):
 
 
     # Save set handling
-    def XAddToSaveSet(self, xwindow):
+    cpdef XAddToSaveSet(self, Window xwindow):
         XAddToSaveSet(self.display, xwindow)
 
-    def XRemoveFromSaveSet(self, xwindow):
+    cpdef XRemoveFromSaveSet(self, Window xwindow):
         XRemoveFromSaveSet(self.display, xwindow)

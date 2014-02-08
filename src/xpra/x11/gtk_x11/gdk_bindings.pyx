@@ -371,10 +371,10 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
 
 # Basic utilities:
 
-def get_xwindow(pywindow):
+cpdef get_xwindow(pywindow):
     return GDK_WINDOW_XID(<cGdkWindow*>unwrap(pywindow, gtk.gdk.Window))
 
-def get_pywindow(display_source, xwindow):
+cpdef get_pywindow(display_source, xwindow):
     if xwindow==0:
         return None
     disp = get_display_for(display_source)
@@ -384,7 +384,7 @@ def get_pywindow(display_source, xwindow):
         raise XError(BadWindow)
     return win
 
-def get_display_for(obj):
+cpdef get_display_for(obj):
     if obj is None:
         raise TypeError("Cannot get a display: instance is None!")
     if isinstance(obj, gtk.gdk.Display):
@@ -414,7 +414,7 @@ cdef Display * get_xdisplay_for(obj) except? NULL:
     return GDK_DISPLAY_XDISPLAY(get_raw_display_for(obj))
 
 
-def get_xatom(str_or_xatom):
+cpdef get_xatom(str_or_xatom):
     """Returns the X atom corresponding to the given Python string or Python
     integer (assumed to already be an X atom)."""
     if isinstance(str_or_xatom, int):
@@ -431,7 +431,7 @@ def get_xatom(str_or_xatom):
         return  0
     return gdk_x11_get_xatom_by_name(str_or_xatom)
 
-def get_pyatom(display_source, xatom):
+cpdef get_pyatom(display_source, xatom):
     if long(xatom) > long(2) ** 32:
         raise Exception("weirdly huge purported xatom: %s" % xatom)
     if xatom==0:
@@ -466,10 +466,12 @@ class NoSuchProperty(PropertyError):
 
 
 # Children listing
-def _query_tree(pywindow):
+cdef _query_tree(pywindow):
     cdef Window root = 0, parent = 0
     cdef Window * children = <Window *> 0
     cdef unsigned int nchildren = 0
+    cdef object pychildren
+    cdef object pyparent
     if not XQueryTree(get_xdisplay_for(pywindow),
                       get_xwindow(pywindow),
                       &root, &parent, &children, &nchildren):
@@ -490,11 +492,11 @@ def _query_tree(pywindow):
         pyparent = None
     return (pyparent, pychildren)
 
-def get_children(pywindow):
+cpdef get_children(pywindow):
     (pyparent, pychildren) = _query_tree(pywindow)
     return pychildren
 
-def get_parent(pywindow):
+cpdef get_parent(pywindow):
     (pyparent, pychildren) = _query_tree(pywindow)
     return pyparent
 
@@ -509,13 +511,13 @@ cdef extern from "gtk-2.0/gdk/gdkwindow.h":
                                    unsigned int flags, int width, int height,
                                    int * new_width, int * new_height)
 
-def calc_constrained_size(width, height, hints):
+cpdef calc_constrained_size(int width, int height, object hints):
     if hints is None:
         return (width, height, width, height)
 
     cdef cGdkGeometry geom
     cdef int new_width = 0, new_height = 0
-    flags = 0
+    cdef int flags = 0
 
     if hints.max_size is not None:
         flags = flags | gtk.gdk.HINT_MAX_SIZE
@@ -614,7 +616,7 @@ cdef extern from "gtk-2.0/gdk/gdkevents.h":
 # clients that are selecting for that mask they are sent with.
 
 _ev_receiver_key = "xpra-route-events-to"
-def add_event_receiver(window, receiver, max_receivers=3):
+cpdef add_event_receiver(window, receiver, max_receivers=3):
     receivers = window.get_data(_ev_receiver_key)
     if receivers is None:
         receivers = set()
@@ -626,7 +628,7 @@ def add_event_receiver(window, receiver, max_receivers=3):
     if receiver not in receivers:
         receivers.add(receiver)
 
-def remove_event_receiver(window, receiver):
+cpdef remove_event_receiver(window, receiver):
     receivers = window.get_data(_ev_receiver_key)
     if receivers is None:
         return
@@ -643,7 +645,7 @@ names_to_event_type = {}
 #sometimes we may want to debug routing for certain X11 event types
 debug_route_events = []
 
-def get_error_text(code):
+cpdef get_error_text(code):
     if type(code)!=int:
         return code
     cdef Display * display                              #@DuplicatedSignature
@@ -652,7 +654,7 @@ def get_error_text(code):
     XGetErrorText(display, code, buffer, 128)
     return str(buffer[:128])
 
-def get_XKB_event_base():
+cpdef int get_XKB_event_base():
     cdef int opcode = 0
     cdef int event_base = 0
     cdef int error_base = 0
@@ -663,9 +665,9 @@ def get_XKB_event_base():
     xdisplay = get_xdisplay_for(display)
     XkbQueryExtension(xdisplay, &opcode, &event_base, &error_base, &major, &minor)
     verbose("get_XKB_event_base(%s)=%s", display.get_name(), int(event_base))
-    return int(event_base)
+    return event_base
 
-def get_XFixes_event_base():
+cpdef int get_XFixes_event_base():
     cdef int event_base = 0                             #@DuplicatedSignature
     cdef int error_base = 0                             #@DuplicatedSignature
     cdef Display * xdisplay                             #@DuplicatedSignature
@@ -673,9 +675,9 @@ def get_XFixes_event_base():
     xdisplay = get_xdisplay_for(display)
     XFixesQueryExtension(xdisplay, &event_base, &error_base)
     verbose("get_XFixes_event_base(%s)=%s", display.get_name(), int(event_base))
-    return int(event_base)
+    return event_base
 
-def get_XDamage_event_base():
+cpdef int get_XDamage_event_base():
     cdef int event_base = 0                             #@DuplicatedSignature
     cdef int error_base = 0                             #@DuplicatedSignature
     cdef Display * xdisplay                             #@DuplicatedSignature
@@ -683,11 +685,11 @@ def get_XDamage_event_base():
     xdisplay = get_xdisplay_for(display)
     XDamageQueryExtension(xdisplay, &event_base, &error_base)
     verbose("get_XDamage_event_base(%s)=%s", display.get_name(), int(event_base))
-    return int(event_base)
+    return event_base
 
 
 
-def init_x11_events():
+cpdef init_x11_events():
     global _x_event_signals, event_type_names, XKBNotify, CursorNotify, DamageNotify
     XKBNotify = get_XKB_event_base()
     CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
@@ -772,43 +774,43 @@ def init_x11_events():
         log.warn("debugging of X11 events enabled for: %s", [event_type_names.get(x, x) for x in debug_route_events])
 
 #and change this debugging on the fly, programmatically:
-def add_debug_route_event(event_type):
+cpdef add_debug_route_event(event_type):
     global debug_route_events
     debug_route_events.append(event_type)
-def remove_debug_route_event(event_type):
+cpdef remove_debug_route_event(event_type):
     global debug_route_events
     debug_route_events.remove(event_type)
 
-def _route_event(event, signal, parent_signal):
+cdef void _maybe_send_event(l, window, signal, event):
+    handlers = window.get_data(_ev_receiver_key)
+    if handlers is not None:
+        # Copy the 'handlers' list, because signal handlers might cause items
+        # to be added or removed from it while we are iterating:
+        for handler in list(handlers):
+            signals = gobject.signal_list_names(handler)
+            if signal in signals:
+                l("  forwarding event to a %s handler's %s signal", type(handler).__name__, signal)
+                handler.emit(signal, event)
+                l("  forwarded")
+            else:
+                l("  not forwarding to %s handler, it has no %s signal (it has: %s)",
+                    type(handler).__name__, signal, signals)
+    else:
+        l("  no handler registered for this window, ignoring event")
+
+def noop(*args):
+    pass
+
+cdef _route_event(event, signal, parent_signal):
     # Sometimes we get GDK events with event.window == None, because they are
     # for windows we have never created a GdkWindow object for, and GDK
     # doesn't do so just for this event.  As far as I can tell this only
     # matters for override redirect windows when they disappear, and we don't
     # care about those anyway.
     global debug_route_events
-    def noop(*args):
-        pass
     l = noop
     if event.type in debug_route_events:
         l = log.info
-    def _maybe_send_event(window, signal, event):
-        handlers = window.get_data(_ev_receiver_key)
-        if handlers is not None:
-            # Copy the 'handlers' list, because signal handlers might cause items
-            # to be added or removed from it while we are iterating:
-            for handler in list(handlers):
-                signals = gobject.signal_list_names(handler)
-                if signal in signals:
-                    l("  forwarding event to a %s handler's %s signal",
-                        type(handler).__name__, signal)
-                    handler.emit(signal, event)
-                    l("  forwarded")
-                else:
-                    l("  not forwarding to %s handler, it has no %s signal (it has: %s)",
-                        type(handler).__name__, signal, signals)
-        else:
-            l("  no handler registered for this window, ignoring event")
-
     l("%s event %s", event_type_names.get(event.type, event.type), event.serial)
     if event.window is None:
         l("  event.window is None, ignoring")
@@ -818,18 +820,18 @@ def _route_event(event, signal, parent_signal):
     if event.window is event.delivered_to:
         if signal is not None:
             l("  delivering event to window itself: %s  (signal=%s)", event.window, signal)
-            _maybe_send_event(event.window, signal, event)
+            _maybe_send_event(l, event.window, signal, event)
         else:
             l("  received event on window itself but have no signal for that")
     else:
         if parent_signal is not None:
             l("  delivering event to parent window: %s (signal=%s)", event.delivered_to, parent_signal)
-            _maybe_send_event(event.delivered_to, parent_signal, event)
+            _maybe_send_event(l, event.delivered_to, parent_signal, event)
         else:
             l("  received event on a parent window but have no parent signal")
 
 
-def _gw(display, xwin):
+cdef object _gw(display, Window xwin):
     if xwin==0:
         return None
     gtk.gdk.error_trap_push()
@@ -861,14 +863,21 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     cdef XFixesCursorNotifyEvent * cursor_e
     cdef XkbAnyEvent * xkb_e
     cdef XkbBellNotifyEvent * bell_e
+    cdef double start
+    cdef object my_events
+    cdef object event_args
+    cdef object d
+    cdef object pyev
     e = <XEvent*>e_gdk
+    event_type = event_type_names.get(e.type, e.type)
     if e.xany.send_event and e.type not in (ClientMessage, UnmapNotify):
+        log("x_event_filter ignoring %s send_event", event_type)
         return GDK_FILTER_CONTINUE
     start = time.time()
     try:
         my_events = _x_event_signals
         event_args = my_events.get(e.type)
-        log("x_event_filter event=%s/%s window=%s", event_args, event_type_names.get(e.type, e.type), e.xany.window)
+        log("x_event_filter event=%s/%s window=%#x", event_args, event_type, e.xany.window)
         if event_args is not None:
             d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
             pyev = AdHocStruct()
@@ -880,7 +889,16 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
             try:
                 if e.type != XKBNotify:
                     pyev.delivered_to = _gw(d, e.xany.window)
-                if e.type == MapRequest:
+
+                if e.type == DamageNotify:
+                    damage_e = <XDamageNotifyEvent*>e
+                    pyev.window = _gw(d, e.xany.window)
+                    pyev.damage = damage_e.damage
+                    pyev.x = damage_e.area.x
+                    pyev.y = damage_e.area.y
+                    pyev.width = damage_e.area.width
+                    pyev.height = damage_e.area.height
+                elif e.type == MapRequest:
                     pyev.window = _gw(d, e.xmaprequest.window)
                 elif e.type == ConfigureRequest:
                     pyev.window = _gw(d, e.xconfigurerequest.window)
@@ -987,24 +1005,17 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.delivered_to = pyev.window
                     pyev.window_model = None
                     pyev.bell_name = get_pyatom(pyev.window, bell_e.name)
-                elif e.type == DamageNotify:
-                    damage_e = <XDamageNotifyEvent*>e
-                    pyev.window = _gw(d, e.xany.window)
-                    pyev.damage = damage_e.damage
-                    pyev.x = damage_e.area.x
-                    pyev.y = damage_e.area.y
-                    pyev.width = damage_e.area.width
-                    pyev.height = damage_e.area.height
             except XError, ex:
                 if ex.msg==BadWindow:
                     log("Some window in our event disappeared before we could " \
-                        + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type_names.get(e.type), event_args, pyev)
+                        + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type, event_args, pyev)
                 else:
-                    msg = "X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", get_error_text(ex.msg), e.type, event_type_names.get(e.type), event_args, pyev
+                    msg = "X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", get_error_text(ex.msg), e.type, event_type, event_args, pyev
                     log.error(*msg)
             else:
-                _route_event(pyev, *event_args)
-        log("x_event_filter event=%s/%s took %sms", event_args, event_type_names.get(e.type, e.type), int(100000*(time.time()-start))/100.0)
+                signal, parent_signal = event_args
+                _route_event(pyev, signal, parent_signal)
+        log("x_event_filter event=%s/%s took %.1fms", event_args, event_type, 1000.0*(time.time()-start))
     except (KeyboardInterrupt, SystemExit):
         verbose("exiting on KeyboardInterrupt/SystemExit")
         gtk_main_quit_really()
@@ -1014,7 +1025,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
 
 
 _INIT_X11_FILTER_DONE = False
-def init_x11_filter():
+cpdef init_x11_filter():
     global _INIT_X11_FILTER_DONE
     if _INIT_X11_FILTER_DONE:
         return
