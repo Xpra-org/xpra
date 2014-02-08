@@ -17,7 +17,6 @@ from xpra.server.stats.maths import logp, calculate_time_weighted_average, calcu
 from xpra.simple_stats import add_list_stats
 
 NRECS = 500
-debug = log.debug
 
 
 class GlobalPerformanceStatistics(object):
@@ -73,7 +72,7 @@ class GlobalPerformanceStatistics(object):
         echo_diff = now-end_send_at
         send_latency = max(0, send_diff-decode_time/1000.0/1000.0)
         echo_latency = max(0, echo_diff-decode_time/1000.0/1000.0)
-        debug("record_latency: took %.1f ms round trip (%.1f just for echo), %.1f for decoding of %s pixels, %s bytes sent over the network in %.1f ms (%.1f ms for echo)",
+        log("record_latency: took %.1f ms round trip (%.1f just for echo), %.1f for decoding of %s pixels, %s bytes sent over the network in %.1f ms (%.1f ms for echo)",
                 send_diff*1000, echo_diff*1000, decode_time/1000, pixels, bytecount, send_latency*1000, echo_latency*1000)
         if self.min_client_latency is None or self.min_client_latency>send_latency:
             self.min_client_latency = send_latency
@@ -164,7 +163,7 @@ class GlobalPerformanceStatistics(object):
             total_pixels += pixels
             total_time += decode_time
             region_sizes.append(pixels)
-        debug("total_time=%s, total_pixels=%s", total_time, total_pixels)
+        log("total_time=%s, total_pixels=%s", total_time, total_pixels)
         if total_time>0:
             pixels_decoded_per_second = int(total_pixels *1000*1000 / total_time)
             info["encoding.pixels_decoded_per_second%s" % suffix] = pixels_decoded_per_second

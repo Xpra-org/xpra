@@ -16,6 +16,7 @@ from xpra.server.background_worker import add_work_item
 from xpra.log import Logger
 
 log = Logger("video", "encoding")
+scorelog = Logger("stats")
 
 
 def envint(name, d):
@@ -352,24 +353,24 @@ class WindowVideoSource(WindowSource):
         encoder_specs = self.video_helper.get_encoder_specs(encoding)
         assert len(encoder_specs)>0, "no encoders found for '%s'" % encoding
         scores = []
-        log("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self.get_min_speed(), int(self.get_current_quality()), self.get_min_quality())
+        scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self.get_min_speed(), int(self.get_current_quality()), self.get_min_quality())
         def add_scores(info, csc_spec, enc_in_format):
             if bool(CSC_TYPE) and (csc_spec and csc_spec.codec_type!=CSC_TYPE):
-                log("add_scores: ignoring %s", csc_spec.codec_type)
+                scorelog("add_scores: ignoring %s", csc_spec.codec_type)
                 return
             colorspace_specs = encoder_specs.get(enc_in_format)
-            log("add_scores(%s, %s, %s) colorspace_specs=%s", info, csc_spec, enc_in_format, colorspace_specs)
+            scorelog("add_scores(%s, %s, %s) colorspace_specs=%s", info, csc_spec, enc_in_format, colorspace_specs)
             if not colorspace_specs:
                 return
             #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
             for encoder_spec in colorspace_specs:
                 if bool(ENCODER_TYPE) and encoder_spec.codec_type!=ENCODER_TYPE:
-                    log("add_scores: ignoring %s: %s", encoder_spec.codec_type, encoder_spec)
+                    scorelog("add_scores: ignoring %s: %s", encoder_spec.codec_type, encoder_spec)
                     continue
                 score = self.get_score(enc_in_format,
                                        csc_spec, encoder_spec,
                                        width, height)
-                log("add_scores: score(%s)=%s", (enc_in_format, csc_spec, encoder_spec, width, height), score)
+                scorelog("add_scores: score(%s)=%s", (enc_in_format, csc_spec, encoder_spec, width, height), score)
                 if score>=0:
                     item = score, csc_spec, enc_in_format, encoder_spec
                     scores.append(item)
@@ -385,7 +386,7 @@ class WindowVideoSource(WindowSource):
                 if actual_csc in self.csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
                     add_scores("via %s" % out_csc, csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
-        log("get_video_pipeline_options%s scores=%s", (encoding, width, height, src_format), s)
+        scorelog("get_video_pipeline_options%s scores=%s", (encoding, width, height, src_format), s)
         return s
 
     def csc_equiv(self, csc_mode):
@@ -508,7 +509,7 @@ class WindowVideoSource(WindowSource):
         if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
             #slash score if we want scaling but this encoder cannot do it:
             score /= 5
-        log("get_score%s quality:%.1f, speed:%.1f, setup:%.1f runtime:%.1f score=%s", (csc_format, csc_spec, encoder_spec,
+        scorelog("get_score%s quality:%.1f, speed:%.1f, setup:%.1f runtime:%.1f score=%s", (csc_format, csc_spec, encoder_spec,
                   width, height), qscore, sscore, er_score, runtime_score, score)
         return score
 
