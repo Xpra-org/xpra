@@ -637,7 +637,7 @@ class UIXpraClient(XpraClientBase):
         root_w, root_h = self.get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
         ss = self.get_screen_sizes()
-        log.info("root size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
+        log.info("desktop size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
         log_screen_sizes(ss)
         capabilities["screen_sizes"] = ss
         if self.keyboard_helper:
