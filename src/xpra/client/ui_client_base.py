@@ -1023,7 +1023,8 @@ class UIXpraClient(XpraClientBase):
                          % (avail_w, avail_h, root_w, root_h))
         if self.keyboard_helper:
             modifier_keycodes = c.dictget("modifier_keycodes")
-            self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
+            if modifier_keycodes:
+                self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
 
         #sound:
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")
