@@ -473,7 +473,13 @@ class XpraClient(GTKXpraClient):
         return group_leader_window
 
     def destroy_window(self, wid, window):
-        #override so we can cleanup the group-leader if needed:
+        #override so we can cleanup the group-leader if needed,
+        #and lose the grab
+        if self.window_with_grab==wid:
+            log("destroying window %s which has grab, ungrabbing!", wid)
+            gtk.gdk.pointer_ungrab()
+            gtk.gdk.keyboard_ungrab()
+            self.window_with_grab = None
         GTKXpraClient.destroy_window(self, wid, window)
         group_leader = window.group_leader
         if group_leader is None or len(self._group_leader_wids)==0:
