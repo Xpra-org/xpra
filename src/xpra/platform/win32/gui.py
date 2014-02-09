@@ -85,7 +85,7 @@ class ClientExtras(object):
         ungrab_key = ungrab_keys[0]
         log("lost focus whilst window has grab, simulating keypress: %s", ungrab_key)
         key_event = AdHocStruct()
-        key_event.keyname = "Escape"
+        key_event.keyname = ungrab_key[1]
         key_event.pressed = True
         key_event.modifiers = []
         key_event.keyval = ungrab_key[0]
