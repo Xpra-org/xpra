@@ -1021,8 +1021,8 @@ class UIXpraClient(XpraClientBase):
                          "Please see "
                          "https://www.xpra.org/trac/ticket/10"
                          % (avail_w, avail_h, root_w, root_h))
-        modifier_keycodes = c.dictget("modifier_keycodes")
-        if modifier_keycodes:
+        if self.keyboard_helper:
+            modifier_keycodes = c.dictget("modifier_keycodes")
             self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
 
         #sound:
