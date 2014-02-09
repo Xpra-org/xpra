@@ -776,7 +776,8 @@ class WindowSource(object):
                     #primary encoding is lossless, no need for auto-refresh
                     return
                 #auto-refresh:
-                if window.is_managed() and self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
+                if window.is_managed() and self.auto_refresh_delay>0 and not self.is_cancelled(sequence) \
+                   and len(self.auto_refresh_encodings)>0 and self._damage_delayed is None:
                     client_options = packet[10]     #info about this packet from the encoder
                     self.idle_add(self.schedule_auto_refresh, window, w, h, coding, options, client_options)
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
@@ -799,8 +800,6 @@ class WindowSource(object):
             #don't change anything: if we have a timer, keep it
             return
         if not window.is_managed():
-            return
-        if len(self.auto_refresh_encodings)==0:
             return
         ww, wh = window.get_dimensions()
         if client_options.get("scaled_size") is None and not lossy_csc:
