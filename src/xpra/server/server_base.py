@@ -85,7 +85,7 @@ class ServerBase(ServerCore):
                     "compression", "encoder", "refresh",
                     "sound-output",
                     "scaling",
-                    "suspend", "resume", "name",
+                    "suspend", "resume", "name", "ungrab",
                     "client"]
 
         self.init_encodings()
@@ -763,6 +763,10 @@ class ServerBase(ServerCore):
             for csource in sources:
                 csource.resume(True, self._id_to_window)
             return respond(0, "resumed %s clients" % len(sources))
+        elif command=="ungrab":
+            for csource in sources:
+                csource.pointer_ungrab(-1)
+            return respond(0, "ungrabbed %s clients" % len(sources))
         elif command=="refresh":
             if len(args)>0:
                 widwin = []
