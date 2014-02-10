@@ -34,7 +34,7 @@ from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.stats.maths import time_weighted_average
-from xpra.gtk_common.region import new_region, add_rectangle, get_rectangles
+from xpra.gtk_common.region import rectangle, add_rectangle
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except Exception, e:
@@ -124,6 +124,17 @@ class WindowSource(object):
         self.maximized = False          #set by the client!
         window.connect("notify::scaling", self._scaling_changed)
         window.connect("notify::fullscreen", self._fullscreen_changed)
+
+        #for deciding between small regions and full screen updates:
+        self.max_small_regions = 40
+        self.max_bytes_percent = 60
+        self.small_packet_cost = 1024
+        if mmap and mmap_size>0:
+            #with mmap, we can move lots of data around easily
+            #so favour large screen updates over small packets
+            self.max_small_regions = 10
+            self.max_bytes_percent = 25
+            self.small_packet_cost = 4096
 
         # mmap:
         self._mmap = mmap
@@ -298,7 +309,7 @@ class WindowSource(object):
         info[prefix+"property.speed"+suffix] = self._fixed_speed
         info[prefix+"property.min_quality"+suffix] = self._fixed_min_quality
         info[prefix+"property.quality"+suffix] = self._fixed_quality
-        
+
         def add_last_rec_info(prefix, recs):
             #must make a list to work on (again!)
             l = list(recs)
@@ -435,8 +446,8 @@ class WindowSource(object):
         if self._damage_delayed:
             #use existing delayed region:
             if not self.full_frames_only:
-                region = self._damage_delayed[2]
-                add_rectangle(region, x, y, w, h)
+                regions = self._damage_delayed[2]
+                add_rectangle(regions, x, y, w, h)
             #merge/override options
             if options is not None:
                 override = options.get("override_options", False)
@@ -444,7 +455,7 @@ class WindowSource(object):
                 for k,v in options.items():
                     if override or k not in existing_options:
                         existing_options[k] = v
-            log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s region created %.1fms ago",
+            log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
                 x, y, w, h, options, self.wid, self._damage_delayed[3], now-self._damage_delayed[0])
             return
         elif self.batch_config.delay < self.batch_config.min_delay:
@@ -483,11 +494,10 @@ class WindowSource(object):
             return
 
         #create a new delayed region:
-        region = new_region()
-        add_rectangle(region, x, y, w, h)
+        regions = [rectangle(x, y, w, h)]
         self._damage_delayed_expired = False
         actual_encoding = options.get("encoding", self.encoding)
-        self._damage_delayed = now, window, region, actual_encoding, options or {}
+        self._damage_delayed = now, window, regions, actual_encoding, options or {}
         log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
@@ -593,13 +603,12 @@ class WindowSource(object):
         self.send_delayed_regions(*delayed)
         return False
 
-    def send_delayed_regions(self, damage_time, window, damage, coding, options):
+    def send_delayed_regions(self, damage_time, window, regions, coding, options):
         """ Called by 'send_delayed' when we expire a delayed region,
             There may be many rectangles within this delayed region,
             so figure out if we want to send them all or if we
             just send one full window update instead.
         """
-        regions = []
         ww,wh = window.get_dimensions()
         def send_full_window_update():
             actual_encoding = self.get_best_encoding(True, window, ww*wh, ww, wh, coding)
@@ -610,28 +619,18 @@ class WindowSource(object):
             send_full_window_update()
             return
 
-        try:
-            count_threshold = 60
-            pixels_threshold = ww*wh*9/10
-            packet_cost = 1024
-            if self._mmap and self._mmap_size>0:
-                #with mmap, we can move lots of data around easily
-                #so favour large screen updates over small packets
-                count_threshold = 10
-                pixels_threshold = ww*wh/4
-                packet_cost = 4096
-            pixel_count = 0
-            for rect in get_rectangles(damage):
-                pixel_count += rect.width*rect.height
-                #favor full window  updates over many regions:
-                if len(regions)>count_threshold or pixel_count+packet_cost*len(regions)>=pixels_threshold:
-                    send_full_window_update()
-                    return
-                regions.append((rect.x, rect.y, rect.width, rect.height))
-            log("send_delayed_regions: to regions: %s items, %s pixels", len(regions), pixel_count)
-        except Exception, e:
-            log.error("send_delayed_regions: error processing region %s: %s", damage, e, exc_info=True)
+        if len(regions)>self.max_small_regions:
+            #too many regions!
+            send_full_window_update()
             return
+
+        bytes_threshold = ww*wh*self.max_bytes_percent/100
+        pixel_count = sum([rect.width*rect.height for rect in regions])
+        if pixel_count+self.small_packet_cost*len(regions)>=bytes_threshold:
+            #too many bytes
+            send_full_window_update()
+            return
+        log("send_delayed_regions: %s regions with %s pixels", len(regions), pixel_count)
 
         actual_encoding = self.get_best_encoding(True, window, pixel_count, ww, wh, coding)
         if self.must_encode_full_frame(window, actual_encoding):
@@ -641,8 +640,7 @@ class WindowSource(object):
 
         #we're processing a number of regions with a non video encoding:
         for region in regions:
-            x, y, w, h = region
-            self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
+            self.process_damage_region(damage_time, window, region.x, region.y, region.width, region.height, actual_encoding, options)
 
 
     def must_encode_full_frame(self, window, encoding):
