@@ -189,7 +189,7 @@ def parse_cmdline(cmdline):
         hidden_options["bind_tcp"] = []
     if (supports_server or supports_shadow):
         group.add_option("--no-mdns", action="store_false",
-                          dest="mdns", default=True,
+                          dest="mdns", default=defaults.mdns,
                           help="Don't publish session information via mDNS")
     else:
         hidden_options["mdns"] = False
