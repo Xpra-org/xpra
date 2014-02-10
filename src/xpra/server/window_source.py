@@ -776,7 +776,7 @@ class WindowSource(object):
             if not packet:
                 return
             self.queue_damage_packet(packet, damage_time, process_damage_time)
-            if self.encoding.startswith("png") or self.encoding.startswith("rgb"):
+            if coding.startswith("png") or coding.startswith("rgb"):
                 #primary encoding is lossless, no need for auto-refresh
                 return
             #see if we need an auto-refresh:
@@ -808,11 +808,11 @@ class WindowSource(object):
             #if we're here: the window is still valid and this was a lossy update
             #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
             #so we need an auto-refresh:
-            self.idle_add(self.schedule_auto_refresh, window, w, h, coding, options, client_options)
+            self.idle_add(self.schedule_auto_refresh, window, options)
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         self.queue_damage(make_data_packet_cb)
 
-    def schedule_auto_refresh(self, window, w, h, coding, damage_options, client_options):
+    def schedule_auto_refresh(self, window, damage_options):
         """ Must be called from the UI thread: this makes it easier
             to prevent races, and we can call window.get_dimensions() safely
         """
@@ -831,7 +831,7 @@ class WindowSource(object):
         #ok, so we will schedule a new refresh - cancel any pending one:
         self.cancel_refresh_timer()
         delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
-        refreshlog("schedule_auto_refresh: low quality update with %s pixels, (re)scheduling auto refresh timer with delay %s", w*h, delay)
+        refreshlog("schedule_auto_refresh: (re)scheduling auto refresh timer with delay %s", delay)
         def timer_full_refresh():
             refreshlog("timer_full_refresh()")
             self.refresh_timer = None
