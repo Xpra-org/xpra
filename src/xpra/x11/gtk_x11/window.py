@@ -657,7 +657,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         self.client_window.raise_()
 
     def __repr__(self):
-        return "OverrideRedirectWindowModel(%s)" % self.client_window
+        return "OverrideRedirectWindowModel(%#x)" % self.client_window.xid
 
 
 gobject.type_register(OverrideRedirectWindowModel)
@@ -684,7 +684,7 @@ class SystemTrayWindowModel(OverrideRedirectWindowModel):
         self._geometry = (x, y, width, height, border)
 
     def __repr__(self):
-        return "SystemTrayWindowModel(%s)" % self.client_window
+        return "SystemTrayWindowModel(%#x)" % self.client_window.xid
 
 
 class WindowModel(BaseWindowModel):
@@ -1404,7 +1404,7 @@ class WindowModel(BaseWindowModel):
         trap.swallow_synced(X11Window.XKillClient, get_xwindow(self.client_window))
 
     def __repr__(self):
-        return "WindowModel(%s)" % self.client_window
+        return "WindowModel(%#x)" % self.client_window.xid
 
 
 gobject.type_register(WindowModel)
