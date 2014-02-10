@@ -33,7 +33,7 @@ from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.stats.maths import time_weighted_average
-from xpra.server.region import new_region, add_rectangle, get_rectangles
+from xpra.gtk_common.region import new_region, add_rectangle, get_rectangles
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except Exception, e:
