@@ -11,6 +11,7 @@ import os
 
 from xpra.log import Logger
 log = Logger("window", "encoding")
+refreshlog = Logger("window", "refresh")
 
 
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
@@ -757,6 +758,7 @@ class WindowSource(object):
         self._sequence += 1
         log("process_damage_regions: wid=%s, adding pixel data %s to queue, elapsed time: %.1f ms, request rgb time: %.1f ms",
                 self.wid, data[:6], 1000.0*(time.time()-damage_time), 1000.0*(time.time()-rgb_request_time))
+        ww, wh = window.get_dimensions()
         def make_data_packet_cb(*args):
             #NOTE: this function is called from the damage data thread!
             try:
@@ -768,18 +770,44 @@ class WindowSource(object):
                 except KeyError:
                     #may have been cancelled whilst we processed it
                     pass
-            #NOTE: we have to send it (even if the window is cancelled by now..)
+            #NOTE: we MUST send it (even if the window is cancelled by now..)
             #because the code may rely on the client having received this frame
-            if packet:
-                self.queue_damage_packet(packet, damage_time, process_damage_time)
-                if self.encoding.startswith("png") or self.encoding.startswith("rgb"):
-                    #primary encoding is lossless, no need for auto-refresh
-                    return
-                #auto-refresh:
-                if window.is_managed() and self.auto_refresh_delay>0 and not self.is_cancelled(sequence) \
-                   and len(self.auto_refresh_encodings)>0 and self._damage_delayed is None:
-                    client_options = packet[10]     #info about this packet from the encoder
-                    self.idle_add(self.schedule_auto_refresh, window, w, h, coding, options, client_options)
+            if not packet:
+                return
+            self.queue_damage_packet(packet, damage_time, process_damage_time)
+            if self.encoding.startswith("png") or self.encoding.startswith("rgb"):
+                #primary encoding is lossless, no need for auto-refresh
+                return
+            #see if we need an auto-refresh:
+            if self._damage_delayed is not None:
+                #no: more updates coming
+                return
+            if self.auto_refresh_delay<=0 or self.is_cancelled(sequence) or len(self.auto_refresh_encodings)==0:
+                #no: auto-refresh is disabled
+                return
+            if not window.is_managed():
+                #no: window is gone
+                return
+            client_options = packet[10]     #info about this packet from the encoder
+            if client_options.get("auto_refresh", False):
+                #no: this is from an auto-refresh already!
+                return
+            #check quality:
+            actual_quality = client_options.get("quality", 0)
+            lossy_csc = client_options.get("csc") in LOSSY_PIXEL_FORMATS
+            scaled = client_options.get("scaled_size") is not None
+            if actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
+                refreshlog("auto refresh: was a lossless %s packet, ignoring", coding)
+                #lossless already: small region sent lossless or encoding is already lossless
+                if self.refresh_timer and ww*wh>=w*h*9/10:
+                    #discard pending auto-refresh since this is a fullscreen lossless update
+                    self.cancel_refresh_timer()
+                #don't change anything: if we have a timer, keep it
+                return
+            #if we're here: the window is still valid and this was a lossy update
+            #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
+            #so we need an auto-refresh:
+            self.idle_add(self.schedule_auto_refresh, window, w, h, coding, options, client_options)
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         self.queue_damage(make_data_packet_cb)
 
@@ -792,33 +820,19 @@ class WindowSource(object):
         #in between the time we schedule the new refresh timer and the time it fires,
         #and if not batching,
         #we would then do a full_quality_refresh when we should not...
-        actual_quality = client_options.get("quality")
-        lossy_csc = client_options.get("csc") in LOSSY_PIXEL_FORMATS
-        if actual_quality is None and not lossy_csc:
-            log("schedule_auto_refresh: was a lossless %s packet, ignoring", coding)
-            #lossless already: small region sent lossless or encoding is lossless
-            #don't change anything: if we have a timer, keep it
-            return
+        #re-do some checks that may have changed:
         if not window.is_managed():
+            #window is gone
             return
-        ww, wh = window.get_dimensions()
-        if client_options.get("scaled_size") is None and not lossy_csc:
-            if actual_quality>=AUTO_REFRESH_THRESHOLD:
-                if w*h>=ww*wh:
-                    log("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
-                    #got enough pixels at high quality, cancel timer:
-                    self.cancel_refresh_timer()
-                else:
-                    log("schedule_auto_refresh: high quality (%s%%) small area, ignoring", actual_quality)
-                return
-        self.cancel_refresh_timer()
         if self._damage_delayed:
-            log("auto refresh: delayed region already exists")
-            #there is already a new damage region pending, let it re-schedule when it gets sent
+            #new incoming damage
             return
+        #ok, so we will schedule a new refresh - cancel any pending one:
+        self.cancel_refresh_timer()
         delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
-        log("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
+        refreshlog("schedule_auto_refresh: low quality update with %s pixels, (re)scheduling auto refresh timer with delay %s", w*h, delay)
         def timer_full_refresh():
+            refreshlog("timer_full_refresh()")
             self.refresh_timer = None
             self.full_quality_refresh(window, damage_options)
             return False
@@ -837,6 +851,7 @@ class WindowSource(object):
         encoding = self.auto_refresh_encodings[0]
         new_options["encoding"] = encoding
         new_options["optimize"] = False
+        new_options["auto_refresh"] = True
         new_options["quality"] = AUTO_REFRESH_QUALITY
         new_options["speed"] = AUTO_REFRESH_SPEED
         log("full_quality_refresh() with options=%s", new_options)
@@ -878,6 +893,9 @@ class WindowSource(object):
             The client is acknowledging a damage packet,
             we record the 'client decode time' (provided by the client itself)
             and the "client latency".
+            If we were waiting for pending ACKs to send an expired damage packet,
+            check for it.
+            (warning: this runs from the non-UI network parse thread)
         """
         log("packet decoding sequence %s for window %s %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
