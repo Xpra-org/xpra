@@ -46,6 +46,10 @@ class AtomicInteger(object):
     def __str__(self):
         return str(self.counter)
 
+    def __repr__(self):
+        return "AtomicInteger(%s)" % self.counter
+
+
     def __int__(self):
         return self.counter
 
