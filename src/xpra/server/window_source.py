@@ -616,8 +616,9 @@ class WindowSource(object):
             packet_cost = 1024
             if self._mmap and self._mmap_size>0:
                 #with mmap, we can move lots of data around easily
-                #so favour large screen updates over many small packets
-                pixels_threshold = ww*wh/2
+                #so favour large screen updates over small packets
+                count_threshold = 10
+                pixels_threshold = ww*wh/4
                 packet_cost = 4096
             pixel_count = 0
             for rect in get_rectangles(damage):
