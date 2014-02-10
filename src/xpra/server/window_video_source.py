@@ -121,24 +121,28 @@ class WindowVideoSource(WindowSource):
         info[prefix+"client.supports_video_scaling"] = self.supports_video_scaling
         info[prefix+"client.supports_video_reinit"] = self.supports_video_reinit
         info[prefix+"scaling"] = self.actual_scaling
-        if self._csc_encoder:
-            info[prefix+"csc"+suffix] = self._csc_encoder.get_type()
-            ci = self._csc_encoder.get_info()
+        csce = self._csc_encoder
+        if csce:
+            info[prefix+"csc"+suffix] = csce.get_type()
+            ci = csce.get_info()
             for k,v in ci.items():
                 info[prefix+"csc."+k+suffix] = v
-        if self._video_encoder:
-            info[prefix+"encoder"+suffix] = self._video_encoder.get_type()
-            vi = self._video_encoder.get_info()
+        ve = self._video_encoder
+        if ve:
+            info[prefix+"encoder"+suffix] = ve.get_type()
+            vi = ve.get_info()
             for k,v in vi.items():
                 info[prefix+"encoder."+k+suffix] = v
-        if self.last_pipeline_params:
-            encoding, width, height, src_format = self.last_pipeline_params
+        lp = self.last_pipeline_params
+        if lp:
+            encoding, width, height, src_format = lp
             info[prefix+"encoding.pipeline_param.encoding"+suffix] = encoding
             info[prefix+"encoding.pipeline_param.dimensions"+suffix] = width, height
             info[prefix+"encoding.pipeline_param.src_format"+suffix] = src_format
-        if self.last_pipeline_scores:
+        lps = self.last_pipeline_scores
+        if lps:
             i = 0
-            for score, csc_spec, enc_in_format, encoder_spec in self.last_pipeline_scores:
+            for score, csc_spec, enc_in_format, encoder_spec in lps:
                 info[prefix+("encoding.pipeline_option[%s].score" % i)+suffix] = score
                 info[prefix+("encoding.pipeline_option[%s].csc" % i)+suffix] = repr(csc_spec)
                 info[prefix+("encoding.pipeline_option[%s].format" % i)+suffix] = str(enc_in_format)
