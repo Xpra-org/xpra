@@ -27,8 +27,6 @@ def envint(name, d):
 
 MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
 
-ENCODER_TYPE = os.environ.get("XPRA_ENCODER_TYPE", "")  #ie: "x264" or "nvenc"
-CSC_TYPE = os.environ.get("XPRA_CSC_TYPE", "")          #ie: "swscale" or "opencl"
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
 FORCE_CSC = bool(FORCE_CSC_MODE) or  os.environ.get("XPRA_FORCE_CSC", "0")=="1"
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
@@ -357,18 +355,12 @@ class WindowVideoSource(WindowSource):
         scores = []
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self.get_min_speed(), int(self.get_current_quality()), self.get_min_quality())
         def add_scores(info, csc_spec, enc_in_format):
-            if bool(CSC_TYPE) and (csc_spec and csc_spec.codec_type!=CSC_TYPE):
-                scorelog("add_scores: ignoring %s", csc_spec.codec_type)
-                return
             colorspace_specs = encoder_specs.get(enc_in_format)
             scorelog("add_scores(%s, %s, %s) colorspace_specs=%s", info, csc_spec, enc_in_format, colorspace_specs)
             if not colorspace_specs:
                 return
             #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
             for encoder_spec in colorspace_specs:
-                if bool(ENCODER_TYPE) and encoder_spec.codec_type!=ENCODER_TYPE:
-                    scorelog("add_scores: ignoring %s: %s", encoder_spec.codec_type, encoder_spec)
-                    continue
                 score = self.get_score(enc_in_format,
                                        csc_spec, encoder_spec,
                                        width, height)
