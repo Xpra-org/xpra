@@ -56,8 +56,9 @@ class WindowVideoSource(WindowSource):
         #client uses uses_swscale (has extra limits on sizes)
         self.uses_swscale = self.encoding_options.get("uses_swscale", True)
         self.uses_csc_atoms = self.encoding_options.get("csc_atoms", False)
-        self.video_scaling = self.encoding_options.get("video_scaling", False)
-        self.video_reinit = self.encoding_options.get("video_reinit", False)
+        self.supports_video_scaling = self.encoding_options.get("video_scaling", False)
+        self.supports_video_reinit = self.encoding_options.get("video_reinit", False)
+
         if not self.encoding_client_options:
             #old clients can only use 420P:
             def_csc_modes = ("YUV420P")
@@ -119,7 +120,8 @@ class WindowVideoSource(WindowSource):
         info[prefix+"client.csc_modes"] = self.csc_modes
         info[prefix+"client.uses_swscale"] = self.uses_swscale
         info[prefix+"client.uses_csc_atoms"] = self.uses_csc_atoms
-        info[prefix+"client.supports_scaling"] = self.video_scaling
+        info[prefix+"client.supports_video_scaling"] = self.supports_video_scaling
+        info[prefix+"client.supports_video_reinit"] = self.supports_video_reinit
         info[prefix+"scaling"] = self.actual_scaling
         if self._csc_encoder:
             info[prefix+"csc"+suffix] = self._csc_encoder.get_type()
@@ -186,10 +188,10 @@ class WindowVideoSource(WindowSource):
     def set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
         self.csc_modes = properties.get("encoding.csc_modes", self.csc_modes)
-        self.video_scaling = properties.get("encoding.video_scaling", self.video_scaling)
+        self.supports_video_scaling = properties.get("encoding.video_scaling", self.supports_video_scaling)
         self.uses_swscale = properties.get("encoding.uses_swscale", self.uses_swscale)
         WindowSource.set_client_properties(self, properties)
-        log("set_client_properties(%s) csc_modes=%s, video_scaling=%s, uses_swscale=%s", properties, self.csc_modes, self.video_scaling, self.uses_swscale)
+        log("set_client_properties(%s) csc_modes=%s, video_scaling=%s, uses_swscale=%s", properties, self.csc_modes, self.supports_video_scaling, self.uses_swscale)
 
     def unmap(self):
         WindowSource.cancel_damage(self)
@@ -454,7 +456,7 @@ class WindowVideoSource(WindowSource):
             cost" will be lower for pipelines that share components with the
             current one.
         """
-        if self._video_encoder is not None and not self.video_reinit \
+        if self._video_encoder is not None and not self.supports_video_reinit \
             and self._video_encoder.get_encoding()==encoder_spec.encoding \
             and self._video_encoder.get_type()!=encoder_spec.codec_type:
             #client does not support video decoder reinit,
@@ -532,7 +534,7 @@ class WindowVideoSource(WindowSource):
 
     def calculate_scaling(self, width, height, max_w=4096, max_h=4096):
         actual_scaling = self.scaling
-        if not SCALING or not self.video_scaling:
+        if not SCALING or not self.supports_video_scaling:
             #not supported by client or disabled by env:
             actual_scaling = 1, 1
         elif SCALING_HARDCODED:
