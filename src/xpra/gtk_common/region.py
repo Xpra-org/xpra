@@ -19,6 +19,16 @@ class rectangle(AdHocStruct):
     def __eq__(self, other):
         return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height
 
+    def merge(self, x, y, w, h):
+        self.x = min(self.x, x)
+        self.y = min(self.y, y)
+        self.width = max(self.x+self.width, x+w)-self.x
+        self.height = max(self.y+self.height, y+h)-self.y
+
+    def clone(self):
+        return rectangle(self.x, self.y, self.width, self.height)
+
+
 def _contains(regions, x, y, w, h):
     x2 = x+w
     y2 = y+h

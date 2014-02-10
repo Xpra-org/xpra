@@ -626,12 +626,24 @@ class WindowSource(object):
 
         bytes_threshold = ww*wh*self.max_bytes_percent/100
         pixel_count = sum([rect.width*rect.height for rect in regions])
-        if pixel_count+self.small_packet_cost*len(regions)>=bytes_threshold:
+        bytes_cost = pixel_count+self.small_packet_cost*len(regions)
+        if bytes_cost>=bytes_threshold:
             #too many bytes
             send_full_window_update()
             return
-        log("send_delayed_regions: %s regions with %s pixels", len(regions), pixel_count)
 
+        if len(regions)>1:
+            #try to merge all regions to see if we save anything:
+            merged = regions[0].clone()
+            for r in regions[1:]:
+                merged.merge(r.x, r.y, r.width, r.height)
+            merged_pixel_count = merged.width*merged.height
+            merged_bytes_cost = pixel_count+self.small_packet_cost*1
+            if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
+                #replace with just one region:
+                regions = [merged]
+
+        log("send_delayed_regions: %s regions with %s pixels", len(regions), pixel_count)
         actual_encoding = self.get_best_encoding(True, window, pixel_count, ww, wh, coding)
         if self.must_encode_full_frame(window, actual_encoding):
             #use full screen dimensions:
