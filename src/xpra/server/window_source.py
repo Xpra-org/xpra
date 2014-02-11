@@ -26,6 +26,7 @@ DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "1")=="1"
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
+FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
 
 
 from xpra.deque import maxdeque
@@ -478,7 +479,7 @@ class WindowSource(object):
         # - no packets backlog from the client
         # - the amount of pixels waiting to be encoded is less than one full frame refresh
         # - no more than 10 regions waiting to be encoded
-        if (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10) and \
+        if not FORCE_BATCH and (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10) and \
             not self.batch_config.always and delay<self.batch_config.min_delay:
             #send without batching:
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
@@ -624,6 +625,7 @@ class WindowSource(object):
             send_full_window_update()
             return
 
+        regions = list(set(regions))
         bytes_threshold = ww*wh*self.max_bytes_percent/100
         pixel_count = sum([rect.width*rect.height for rect in regions])
         bytes_cost = pixel_count+self.small_packet_cost*len(regions)
