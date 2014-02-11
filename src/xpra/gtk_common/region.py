@@ -27,10 +27,12 @@ class rectangle(AdHocStruct):
         return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height
 
     def merge(self, x, y, w, h):
-        self.x = min(self.x, x)
-        self.y = min(self.y, y)
-        self.width = max(self.x+self.width, x+w)-self.x
-        self.height = max(self.y+self.height, y+h)-self.y
+        newx = min(self.x, x)
+        newy = min(self.y, y)
+        self.width = max(self.x+self.width, x+w)-newx
+        self.height = max(self.y+self.height, y+h)-newy
+        self.x = newx
+        self.y = newy
 
     def merge_rect(self, rect):
         self.merge(rect.x, rect.y, rect.width, rect.height)

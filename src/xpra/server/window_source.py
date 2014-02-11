@@ -625,6 +625,7 @@ class WindowSource(object):
             send_full_window_update()
             return
 
+        regions = list(set(regions))
         bytes_threshold = ww*wh*self.max_bytes_percent/100
         pixel_count = sum([rect.width*rect.height for rect in regions])
         bytes_cost = pixel_count+self.small_packet_cost*len(regions)
@@ -637,7 +638,7 @@ class WindowSource(object):
             #try to merge all regions to see if we save anything:
             merged = regions[0].clone()
             for r in regions[1:]:
-                merged.merge(r.x, r.y, r.width, r.height)
+                merged.merge_rect(r)
             merged_pixel_count = merged.width*merged.height
             merged_bytes_cost = pixel_count+self.small_packet_cost*1
             if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
