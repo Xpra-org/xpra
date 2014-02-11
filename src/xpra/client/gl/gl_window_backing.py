@@ -512,7 +512,6 @@ class GLPixmapBacking(GTK2WindowBacking):
             fire_paint_callbacks(callbacks, False)
 
     def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
-        assert x==0 and y==0
         assert self.textures is not None, "no OpenGL textures!"
         log("%s.update_planar_textures%s", self, (x, y, width, height, img, pixel_format))
 
@@ -539,12 +538,9 @@ class GLPixmapBacking(GTK2WindowBacking):
 
 
         self.gl_marker("updating planar textures: %sx%s %s" % (width, height, pixel_format))
-        U_width = 0
-        U_height = 0
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
-        assert len(rowstrides)==3
-        assert len(img_data)==3
+        assert len(rowstrides)==3 and len(img_data)==3
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             (div_w, div_h) = divs[index]
             glActiveTexture(texture)
@@ -552,22 +548,13 @@ class GLPixmapBacking(GTK2WindowBacking):
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
             pixel_data = img_data[index]
             log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes", index, divs[index], rowstrides[index], width/div_w, height/div_h, len(pixel_data))
-            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div_w, height/div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
-            if index == 1:
-                U_width = width/div_w
-                U_height = height/div_h
-            elif index == 2:
-                if width/div_w != U_width:
-                    log.error("Width of V plane is %d, differs from width of corresponding U plane (%d), pixel_format is %d", width/div_w, U_width, pixel_format)
-                if height/div_h != U_height:
-                    log.error("Height of V plane is %d, differs from height of corresponding U plane (%d), pixel_format is %d", height/div_h, U_height, pixel_format)
+            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, width/div_w, height/div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
 
     def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
         log("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP"):
             #not ready to render yet
             return
-        assert rx==0 and ry==0
         if self.pixel_format == "GBRP":
             self.set_rgbP_paint_state()
         self.gl_marker("painting planar update, format %s" % self.pixel_format)
@@ -580,13 +567,13 @@ class GLPixmapBacking(GTK2WindowBacking):
         tw, th = self.texture_size
         log("%s.render_planar_update(..) texture_size=%s, size=%s", self, self.texture_size, self.size)
         glBegin(GL_QUADS)
-        for x,y in ((rx, ry), (rx, ry+rh), (rx+rw, ry+rh), (rx+rw, ry)):
+        for x,y in ((0, 0), (0, rh), (rw, rh), (rw, 0)):
             ax = min(tw, x)
             ay = min(th, y)
             for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
                 (div_w, div_h) = divs[index]
                 glMultiTexCoord2i(texture, ax/div_w, ay/div_h)
-            glVertex2i(int(ax*x_scale), int(ay*y_scale))
+            glVertex2i(int(rx+ax*x_scale), int(ry+ay*y_scale))
         glEnd()
         if self.pixel_format == "GBRP":
             self.unset_rgbP_paint_state()

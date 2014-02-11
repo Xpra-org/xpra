@@ -292,7 +292,6 @@ class WindowBackingBase(object):
         raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s) in %s" % (src_format, src_width, src_height, " or ".join(dst_format_options), dst_width, dst_height, CSC_OPTIONS))
 
     def paint_with_video_decoder(self, decoder_name, coding, img_data, x, y, width, height, options, callbacks):
-        assert x==0 and y==0
         decoder_module = get_codec(decoder_name)
         assert decoder_module, "decoder module not found for %s" % decoder_name
         assert hasattr(decoder_module, "Decoder"), "decoder module %s does not have 'Decoder' factory function!" % decoder_module

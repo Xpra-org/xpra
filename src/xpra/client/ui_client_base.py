@@ -683,6 +683,7 @@ class UIXpraClient(XpraClientBase):
             "encoding_client_options"   : True,
             "encoding.csc_atoms"        : True,
             #TODO: check for csc support (swscale only?)
+            "encoding.video_subregion"  : True,
             "encoding.video_reinit"     : True,
             "encoding.video_scaling"    : True,
             "encoding.rgb_lz4"          : use_lz4 and self.compression_level==1,
