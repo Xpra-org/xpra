@@ -517,7 +517,6 @@ class ProxyInstanceProcess(Process):
             return True
 
         #we have a proxy video packet:
-        assert x==0 and y==0, "invalid position for video: %sx%s" % (x, y)
         rgb_format = client_options.get("rgb_format", "")
         log("proxy draw: client_options=%s", client_options)
         if PASSTHROUGH:
@@ -567,7 +566,7 @@ class ProxyInstanceProcess(Process):
                 ve.set_encoding_speed(speed)
         #actual video compression:
         log("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
-        image = ImageWrapper(0, 0, width, height, pixels, rgb_format, depth, rowstride, planes=ImageWrapper.PACKED)
+        image = ImageWrapper(x, y, width, height, pixels, rgb_format, depth, rowstride, planes=ImageWrapper.PACKED)
         data, client_options = ve.compress_image(image, encoder_options)
         #update packet:
         packet[7] = Compressed(encoding, data)
