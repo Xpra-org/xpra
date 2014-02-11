@@ -625,7 +625,6 @@ class WindowSource(object):
             send_full_window_update()
             return
 
-        regions = list(set(regions))
         bytes_threshold = ww*wh*self.max_bytes_percent/100
         pixel_count = sum([rect.width*rect.height for rect in regions])
         bytes_cost = pixel_count+self.small_packet_cost*len(regions)
