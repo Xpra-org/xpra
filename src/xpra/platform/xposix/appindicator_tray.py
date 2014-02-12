@@ -11,12 +11,9 @@ import os
 from xpra.log import Logger
 log = Logger("tray", "posix")
 
+from xpra.util import is_unity
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir
-
-
-def is_unity():
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "unity"
 
 
 _appindicator = False
