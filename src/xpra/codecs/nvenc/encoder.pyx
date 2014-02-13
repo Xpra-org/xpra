@@ -1241,7 +1241,8 @@ cdef class Encoder:
     cdef object inputBuffer
     cdef object cudaInputBuffer
     cdef object cudaOutputBuffer
-    cdef int inputPitch
+    cdef int inputPitch                     #note: this isn't the pitch (aka rowstride) we actually use!
+                                            #just the value returned from the allocation call
     cdef int outputPitch
     cdef void *bitstreamBuffer
     cdef NV_ENC_BUFFER_FORMAT bufferFmt
@@ -1353,8 +1354,10 @@ cdef class Encoder:
                 #1 full Y plane and 2 U+V planes subsampled by 4:
                 plane_size_div = 2
 
-            #allocate CUDA input buffer (on device) 32-bit RGB:
-            self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(self.input_width*4, self.input_height, 16)
+            #allocate CUDA input buffer (on device) 32-bit RGB
+            #(and make it bigger just in case - subregions from XShm can have a huge rowstride):
+            max_input_stride = max(2560, self.input_width)*4
+            self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(max_input_stride, self.input_height, 16)
             log("CUDA Input Buffer=%#x, pitch=%s", int(self.cudaInputBuffer), self.inputPitch)
             #allocate CUDA output buffer (on device):
             self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3/plane_size_div, 16)
@@ -1607,8 +1610,9 @@ cdef class Encoder:
         cdef int input_size
         cdef int offset = 0
         cdef input_buf_len = 0
-        cdef int x, y, stride
+        cdef int x, y, image_stride, stride
         cdef int w, h
+        cdef int i
 
         start = time.time()
         log("compress_image(%s, %s)", image, options)
@@ -1619,13 +1623,21 @@ cdef class Encoder:
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
         assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
         pixels = image.get_pixels()
-        stride = image.get_rowstride()
+        image_stride = image.get_rowstride()
+        input_size = self.inputPitch * self.input_height
 
         #FIXME: we should copy from pixels directly..
         #copy to input buffer:
-        input_size = self.inputPitch * self.input_height
-        assert len(pixels)<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, len(pixels), w, h, stride, self.inputPitch, self.input_height)
-        self.inputBuffer.data[:len(pixels)] = pixels
+        if image_stride<self.inputPitch:
+            stride = image_stride
+            assert len(pixels)<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, len(pixels), w, h, stride, self.inputPitch, self.input_height)
+            self.inputBuffer.data[:len(pixels)] = pixels
+        else:
+            #ouch, we need to copy the source pixels into the smaller buffer
+            #before uploading to the device... this is probably costly!
+            stride = self.inputPitch
+            for i in range(h):
+                self.inputBuffer.data[i*stride:(i+1)*stride] = pixels[i*image_stride:(i+1)*image_stride+stride]
         log("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), input_size)
 
         #copy input buffer to CUDA buffer:
