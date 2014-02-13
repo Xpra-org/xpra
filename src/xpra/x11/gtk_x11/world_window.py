@@ -12,6 +12,7 @@ from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.log import Logger
 log = Logger("x11", "window")
+focuslog = Logger("x11", "window", "focus")
 
 # This file defines Xpra's top-level widget.  It is a magic window that
 # always and exactly covers the entire screen (possibly crossing multiple
@@ -137,19 +138,20 @@ class WorldWindow(gtk.Window):
             send_wm_take_focus(self.window, current_time)
 
     def do_focus_in_event(self, *args):
-        log("world window got focus")
+        focuslog("world window got focus")
         if not self.get_property("has-toplevel-focus"):
             #super(WorldWindow, self).do_focus_in_event(*args)
             gtk.Window.do_focus_in_event(self, *args)
             self.reset_x_focus()
 
     def do_focus_out_event(self, *args):
+        focuslog("world window lost focus")
         # Do nothing -- harder:
         self.stop_emission("focus-out-event")
         return False
 
     def _take_focus(self):
-        log("Focus -> world window")
+        focuslog("Take Focus -> world window")
         assert self.flags() & gtk.REALIZED
         # Weird hack: we are a GDK window, and the only way to properly get
         # input focus to a GDK window is to send it WM_TAKE_FOCUS.  So this is
@@ -160,13 +162,14 @@ class WorldWindow(gtk.Window):
         send_wm_take_focus(self.window, now)
 
     def reset_x_focus(self):
-        log("widget with focus: %s", self.get_focus())
+        focuslog("reset_x_focus: widget with focus: %s", self.get_focus())
         def do_reset_x_focus():
             self._take_focus()
             root_set("_NET_ACTIVE_WINDOW", "u32", constants["XNone"])
         trap.swallow_synced(do_reset_x_focus)
 
     def _after_set_focus(self, *args):
+        focuslog("after_set_focus")
         # GTK focus has changed.  See comment in __init__ for why this isn't a
         # default handler.
         if self.get_focus() is not None:

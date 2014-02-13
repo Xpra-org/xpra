@@ -32,6 +32,7 @@ from xpra.x11.gtk_x11.error import trap
 
 from xpra.log import Logger
 log = Logger("server")
+focuslog = Logger("server", "focus")
 
 import xpra
 from xpra.os_util import StringIOClass
@@ -458,13 +459,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _focus(self, server_source, wid, modifiers):
-        log("_focus(%s, %s, %s) has_focus=%s", server_source, wid, modifiers, self._has_focus)
+        focuslog("focus wid=%s has_focus=%s", wid, self._has_focus)
         if self._has_focus==wid:
             #nothing to do!
             return
         had_focus = self._id_to_window.get(self._has_focus)
         def reset_focus():
-            log("reset_focus() %s / %s had focus", self._has_focus, had_focus)
+            focuslog("reset_focus() %s / %s had focus", self._has_focus, had_focus)
             self._clear_keys_pressed()
             # FIXME: kind of a hack:
             self._has_focus = 0
@@ -478,12 +479,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #not found! (go back to root)
             return reset_focus()
         if window.is_OR():
-            log.warn("focus(..) cannot focus OR window: %s", window)
+            focuslog.warn("focus(..) cannot focus OR window: %s", window)
             return
-        log("focus(%s, %s, %s) giving focus to %s", server_source, wid, modifiers, window)
+        focuslog("focus: giving focus to %s", window)
         #using idle_add seems to prevent some focus races:
         gobject.idle_add(window.give_client_focus)
         if server_source and modifiers is not None:
+            focuslog("focus: will set modified mask to %s", modifiers)
             server_source.make_keymask_match(modifiers)
         self._has_focus = wid
 

@@ -13,6 +13,7 @@ from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.log import Logger
 log = Logger("window")
 plog = Logger("paint")
+focuslog = Logger("focus")
 
 #pretend to draw the windows, but don't actually do anything
 USE_FAKE_BACKING = os.environ.get("XPRA_USE_FAKE_BACKING", "0")=="1"
@@ -290,7 +291,7 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def _unfocus(self):
-        self.debug("_unfocus() wid=%s", self._id)
+        focuslog("_unfocus() wid=%s", self._id)
         if self._client._focused==self._id:
             self._client.update_focus(self._id, False)
 

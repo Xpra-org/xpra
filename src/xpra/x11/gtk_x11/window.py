@@ -46,6 +46,7 @@ from xpra.x11.gtk_x11.pointer_grab import PointerGrabHelper
 
 from xpra.log import Logger
 log = Logger("x11", "window")
+focuslog = Logger("x11", "window", "focus")
 
 if gtk.pygtk_version<(2,17):
     log.error("your version of PyGTK is too old - expect some bugs")
@@ -1348,7 +1349,7 @@ class WindowModel(BaseWindowModel):
             trap.swallow_synced(self.do_give_client_focus)
 
     def do_give_client_focus(self):
-        log("Giving focus to client")
+        focuslog("Giving focus to %s", self.client_window)
         # Have to fetch the time, not just use CurrentTime, both because ICCCM
         # says that WM_TAKE_FOCUS must use a real time and because there are
         # genuine race conditions here (e.g. suppose the client does not
@@ -1369,10 +1370,10 @@ class WindowModel(BaseWindowModel):
         # (unless they have a modal window), and just expect to get focus from
         # the WM's XSetInputFocus.
         if bool(self._input_field):
-            log("... using XSetInputFocus")
+            focuslog("... using XSetInputFocus")
             X11Window.XSetInputFocus(get_xwindow(self.client_window), now)
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
-            log("... using WM_TAKE_FOCUS")
+            focuslog("... using WM_TAKE_FOCUS")
             send_wm_take_focus(self.client_window, now)
 
     ################################

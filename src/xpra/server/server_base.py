@@ -13,6 +13,7 @@ import time
 from xpra.log import Logger
 log = Logger("server")
 keylog = Logger("keyboard")
+focuslog = Logger("focus")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
@@ -987,7 +988,7 @@ class ServerBase(ServerCore):
 
 
     def _focus(self, server_source, wid, modifiers):
-        log("_focus(%s,%s)", wid, modifiers)
+        focuslog("_focus(%s,%s)", wid, modifiers)
 
     def get_focus(self):
         #can be overriden by subclasses that do manage focus
@@ -1235,6 +1236,7 @@ class ServerBase(ServerCore):
 
     def _process_focus(self, proto, packet):
         wid = packet[1]
+        focuslog("process_focus: wid=%s", wid)
         if len(packet)>=3:
             modifiers = packet[2]
         else:
