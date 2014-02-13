@@ -294,8 +294,7 @@ class WindowVideoSource(WindowSource):
         damage_count = {}
         ignored_count = {}
         c = 0
-        lde = list(self.statistics.last_damage_events)
-        for x,y,w,h in lde:
+        for _,x,y,w,h in lde:
             #ignore small regions:
             if w>=min_w and h>=min_h:
                 damage_count.setdefault((x,y,w,h), AtomicInteger()).increase()
@@ -330,8 +329,8 @@ class WindowVideoSource(WindowSource):
         if self.video_subregion:
             #percentage of window area it occupies:
             vs_pct = 100*(self.video_subregion.width*self.video_subregion.height)/(ww*wh)
-            pixels_contained = sum(((w*h) for x,y,w,h in lde if self.video_subregion.contains(x,y,w,h)))
-            pixels_not = sum(((w*h) for x,y,w,h in lde if not self.video_subregion.contains(x,y,w,h)))
+            pixels_contained = sum(((w*h) for _,x,y,w,h in lde if self.video_subregion.contains(x,y,w,h)))
+            pixels_not = sum(((w*h) for _,x,y,w,h in lde if not self.video_subregion.contains(x,y,w,h)))
             pixels_total = pixels_not + pixels_contained
             if pixels_total>0:
                 #proportion of damage pixels contained within the region:
@@ -363,7 +362,7 @@ class WindowVideoSource(WindowSource):
             mcw, mch = [k for k,v in size_count.items() if v==most_common_size][0]
             #now this will match more than one area..
             #so find a recent one:
-            for x,y,w,h in reversed(lde):
+            for _,x,y,w,h in reversed(lde):
                 if w==mcw and h==mch:
                     #recent and matching size, assume this is the one
                     self.video_subregion_set_at = self.statistics.damage_events_count
@@ -380,7 +379,7 @@ class WindowVideoSource(WindowSource):
             unmerged_pixels = sum((int(w*h) for _,_,w,h in damage_count.keys()))
             if merged_pixels<ww*wh*70/100 and unmerged_pixels*140/100<merged_pixels:
                 self.video_subregion_set_at = self.statistics.damage_events_count
-                self.video_subregion = region
+                self.video_subregion = merged
                 sublog("identified merged video region: %s", self.video_subregion)
                 return
 
@@ -840,22 +839,32 @@ class WindowVideoSource(WindowSource):
             log("using hardcoded scaling: %s", actual_scaling)
         elif actual_scaling is None:
             #no scaling window attribute defined, so use heuristics to enable:
-            quality = self.get_current_quality()
-            speed = self.get_current_speed()
+            q = self.get_current_quality()
+            s = self.get_current_speed()
+            qs = s>q and q<80
+            #full frames per second:
+            ffps = 0
+            lde = list(self.statistics.last_damage_events)
+            if len(lde)>10:
+                #the first event's first element is the oldest event time:
+                otime = lde[0][0]
+                pixels = sum(w*h for _,_,_,w,h in lde)
+                ffps = int(pixels/(width*height)/(time.time() - otime))
+
             if width>max_w or height>max_h:
                 #most encoders can't deal with that!
-                d = 1
+                d = 2
                 while width/d>max_w or height/d>max_h:
                     d += 1
                 actual_scaling = 1,d
-            elif width*height>=2560*1440 and quality<60 and speed>70:
+            elif self.fullscreen and (qs or ffps>=10):
                 actual_scaling = 1,3
-            elif width*height>=1024*1024 and quality<40 and speed>80:
+            elif self.maximized and (qs or ffps>=10):
                 actual_scaling = 1,2
-            elif self.maximized and quality<50 and speed>80:
+            elif width*height>=2048*1200 and (q==100 or ffps>=25):
+                actual_scaling = 1,3
+            elif width*height>=1024*1024 and (q==100 or ffps>=30):
                 actual_scaling = 2,3
-            elif self.fullscreen and quality<60 and speed>70:
-                actual_scaling = 1,2
         if actual_scaling is None:
             actual_scaling = 1, 1
         v, u = actual_scaling

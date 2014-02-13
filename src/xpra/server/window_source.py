@@ -438,7 +438,7 @@ class WindowSource(object):
         now = time.time()
         if "auto_refresh" not in options:
             log("damage%s", (window, x, y, w, h, options))
-            self.statistics.last_damage_events.append((x,y,w,h))
+            self.statistics.last_damage_events.append((now, x,y,w,h))
         self.global_statistics.damage_events_count += 1
         self.statistics.damage_events_count += 1
         self.statistics.last_damage_event_time = now
