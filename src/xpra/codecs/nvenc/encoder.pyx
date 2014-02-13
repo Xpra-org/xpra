@@ -884,12 +884,11 @@ CODEC_PROFILES = {
                   "stereo"      : 128,
                   }
 
-def guidstr(guid):
+cdef guidstr(GUID guid):
     #really ugly! (surely there's a way using struct.unpack ?)
     #is this even endian safe? do we care? (always on the same system)
     parts = []
-    for fname, s in (("Data1", 4), ("Data2", 2), ("Data3", 2)):
-        v = guid.get(fname)
+    for v, s in ((guid.Data1, 4), (guid.Data2, 2), (guid.Data3, 2)):
         b = bytearray(s)
         for j in range(s):
             b[s-j-1] = v % 256
@@ -1625,7 +1624,7 @@ cdef class Encoder:
         #FIXME: we should copy from pixels directly..
         #copy to input buffer:
         input_size = self.inputPitch * self.input_height
-        assert len(pixels)<=input_size, "too many pixels (expected %s max, got %s)" % (input_size, len(pixels))
+        assert len(pixels)<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, len(pixels), w, h, stride, self.inputPitch, self.input_height)
         self.inputBuffer.data[:len(pixels)] = pixels
         log("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), input_size)
 
