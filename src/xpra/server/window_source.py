@@ -436,6 +436,9 @@ class WindowSource(object):
             #in which case the dimensions may be zero (if so configured by the client)
             return
         now = time.time()
+        if "auto_refresh" not in options:
+            log("damage%s", (window, x, y, w, h, options))
+            self.statistics.last_damage_events.append((x,y,w,h))
         self.global_statistics.damage_events_count += 1
         self.statistics.damage_events_count += 1
         self.statistics.last_damage_event_time = now
@@ -479,8 +482,7 @@ class WindowSource(object):
         # - no packets backlog from the client
         # - the amount of pixels waiting to be encoded is less than one full frame refresh
         # - no more than 10 regions waiting to be encoded
-        if not FORCE_BATCH and (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10) and \
-            not self.batch_config.always and delay<self.batch_config.min_delay:
+        if not self.must_batch(delay) and (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10):
             #send without batching:
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
             actual_encoding = options.get("encoding")
@@ -502,6 +504,10 @@ class WindowSource(object):
         log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
+
+    def must_batch(self, delay):
+        return FORCE_BATCH or self.batch_config.always or delay<self.batch_config.min_delay
+
 
     def expire_delayed_region(self, delay):
         """ mark the region as expired so damage_packet_acked can send it later,
@@ -604,56 +610,74 @@ class WindowSource(object):
         self.send_delayed_regions(*delayed)
         return False
 
-    def send_delayed_regions(self, damage_time, window, regions, coding, options):
+    def send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, get_region_encoding=None):
         """ Called by 'send_delayed' when we expire a delayed region,
             There may be many rectangles within this delayed region,
             so figure out if we want to send them all or if we
             just send one full window update instead.
         """
         ww,wh = window.get_dimensions()
+        if get_region_encoding is None:
+            get_region_encoding = self.get_best_encoding
+
         def send_full_window_update():
-            actual_encoding = self.get_best_encoding(True, window, ww*wh, ww, wh, coding)
+            actual_encoding = get_region_encoding(True, window, ww*wh, ww, wh, coding)
             log("send_delayed_regions: using full window update %sx%s with %s", ww, wh, actual_encoding)
+            assert actual_encoding is not None
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
-        if window.is_tray() or self.full_frames_only:
-            send_full_window_update()
-            return
-
-        if len(regions)>self.max_small_regions:
-            #too many regions!
-            send_full_window_update()
-            return
+        if exclude_region is None:
+            if window.is_tray() or self.full_frames_only:
+                send_full_window_update()
+                return
+    
+            if len(regions)>self.max_small_regions:
+                #too many regions!
+                send_full_window_update()
+                return
 
         regions = list(set(regions))
         bytes_threshold = ww*wh*self.max_bytes_percent/100
         pixel_count = sum([rect.width*rect.height for rect in regions])
         bytes_cost = pixel_count+self.small_packet_cost*len(regions)
+        log("send_delayed_regions: bytes_cost=%s, bytes_threshold=%s, pixel_count=%s", bytes_cost, bytes_threshold, pixel_count)
         if bytes_cost>=bytes_threshold:
-            #too many bytes
-            send_full_window_update()
-            return
+            #too many bytes to send lots of small regions..
+            if exclude_region is None:
+                send_full_window_update()
+                return
+            #make regions out of the rest of the window area:
+            non_exclude = rectangle(0, 0, ww, wh).substract_rect(exclude_region)
+            #and keep those that have damage areas in them:
+            regions = [x for x in non_exclude if len([y for y in regions if x.intersects_rect(y)])>0]
+            #TODO: should verify that is still better than what we had before..
 
-        if len(regions)>1:
-            #try to merge all regions to see if we save anything:
+        elif len(regions)>1:
+            #try to merge all the regions to see if we save anything:
             merged = regions[0].clone()
             for r in regions[1:]:
                 merged.merge_rect(r)
-            merged_pixel_count = merged.width*merged.height
-            merged_bytes_cost = pixel_count+self.small_packet_cost*1
+            #remove the exclude region if needed:
+            if exclude_region:
+                merged_rects = merged.substract_rect(exclude_region)
+            else:
+                merged_rects = [merged]
+            merged_pixel_count = sum([r.width*r.height for r in merged_rects])
+            merged_bytes_cost = pixel_count+self.small_packet_cost*len(merged_rects)
             if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
-                #replace with just one region:
-                regions = [merged]
+                #better, so replace with merged regions:
+                regions = merged_rects
 
-        log("send_delayed_regions: %s regions with %s pixels", len(regions), pixel_count)
-        actual_encoding = self.get_best_encoding(True, window, pixel_count, ww, wh, coding)
-        if self.must_encode_full_frame(window, actual_encoding):
+        log("send_delayed_regions: %s regions with %s pixels (coding=%s)", len(regions), pixel_count, coding)
+        if coding and self.must_encode_full_frame(window, coding):
             #use full screen dimensions:
-            self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
+            self.process_damage_region(damage_time, window, 0, 0, ww, wh, coding, options)
             return
 
         #we're processing a number of regions with a non video encoding:
         for region in regions:
+            actual_encoding = get_region_encoding(True, window, pixel_count, ww, wh, coding)
+            assert actual_encoding is not None, "failed to get an encoding for: %s" % ((True, window, pixel_count, ww, wh, coding))
             self.process_damage_region(damage_time, window, region.x, region.y, region.width, region.height, actual_encoding, options)
 
 
@@ -684,7 +708,7 @@ class WindowSource(object):
             coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
             log("do_get_best_encoding(..) using %s encoder for %s tray pixels", coding, pixel_count)
             return coding
-        if AUTO_SWITCH_TO_RGB and not batching and pixel_count<MAX_PIXELS_PREFER_RGB and current_encoding in ("png", "webp"):
+        if AUTO_SWITCH_TO_RGB and pixel_count<MAX_PIXELS_PREFER_RGB and current_encoding in ("png", "webp"):
             if has_alpha and self.supports_transparency:
                 return self.pick_encoding(["rgb32"])
             else:
@@ -745,6 +769,7 @@ class WindowSource(object):
             we extract the rgb data from the pixmap and place it on the damage queue.
             This runs in the UI thread.
         """
+        assert coding is not None
         if w==0 or h==0:
             return
         if not window.is_managed():
@@ -1001,8 +1026,10 @@ class WindowSource(object):
         #actual network packet:
         packet = ["draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()
+        #calculate rations based on actual pixel data size, not input size which may include a large rowstride:
+        psize = w*h*4
         log("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%% (%sKB to %sKB), delta=%s",
-                 (end-start)*1000.0, w, h, coding, 100.0*len(data)/isize, isize/1024, len(data)/1024, delta)
+                 (end-start)*1000.0, w, h, coding, 100.0*len(data)/psize, psize/1024, len(data)/1024, delta)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1

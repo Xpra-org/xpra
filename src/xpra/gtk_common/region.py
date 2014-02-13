@@ -18,10 +18,10 @@ class rectangle(AdHocStruct):
         self.height = h
 
     def __str__(self):
-        return "[%i, %i, %i, %i]" % (self.x, self.y, self.width, self.height)
+        return "rectangle[%i, %i, %i, %i]" % (self.x, self.y, self.width, self.height)
 
     def __repr__(self):
-        return "rectangle(%i, %i, %i, %i)" % (self.x, self.y, self.width, self.height)
+        return "R[%i, %i, %i, %i]" % (self.x, self.y, self.width, self.height)
 
     def __eq__(self, other):
         return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height
@@ -37,6 +37,17 @@ class rectangle(AdHocStruct):
     def merge_rect(self, rect):
         self.merge(rect.x, rect.y, rect.width, rect.height)
 
+    def intersects(self, x, y, w, h):
+        ix = max(self.x, x)
+        iw = min(self.x+self.width, x+w) - ix
+        if iw<=0:
+            return False
+        iy = max(self.y, y)
+        ih = min(self.y+self.height, y+h) - iy
+        return ih>0
+
+    def intersects_rect(self, rect):
+        return self.intersects(rect.x, rect.y, rect.width, rect.height)
 
     def intersection(self, x, y, w, h):
         """ returns the rectangle containing the intersection with the given area,
@@ -118,3 +129,10 @@ def _contains(regions, x, y, w, h):
 def add_rectangle(regions, x, y, w, h):
     if not _contains(regions, x, y, w, h):
         regions.append(rectangle(x, y, w, h))
+
+def merge_all(rectangles):
+    rx = min((x for x,_,_,_ in rectangles))
+    ry = min((y for _,y,_,_ in rectangles))
+    rw = min((x+w for x,_,w,_ in rectangles))
+    rh = min((y+h for _,y,_,h in rectangles))
+    return rectangle(rx, ry, rw, rh)

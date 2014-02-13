@@ -6,17 +6,22 @@
 
 import os
 import time
+import math
 from threading import Lock
 
+from xpra.util import AtomicInteger
 from xpra.net.protocol import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException, codec_spec
 from xpra.codecs.video_helper import getVideoHelper
-from xpra.server.window_source import WindowSource
+from xpra.server.window_source import WindowSource, AUTO_SWITCH_TO_RGB, MAX_PIXELS_PREFER_RGB
 from xpra.server.background_worker import add_work_item
+from xpra.gtk_common.region import rectangle, merge_all
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.log import Logger
 
 log = Logger("video", "encoding")
 scorelog = Logger("stats")
+sublog = Logger("subregion")
 
 
 def envint(name, d):
@@ -56,6 +61,14 @@ class WindowVideoSource(WindowSource):
         self.uses_csc_atoms = self.encoding_options.get("csc_atoms", False)
         self.supports_video_scaling = self.encoding_options.get("video_scaling", False)
         self.supports_video_reinit = self.encoding_options.get("video_reinit", False)
+        self.supports_video_subregion = self.encoding_options.get("video_subregion", False)
+        self.video_subregion = None
+        self.video_subregion_counter = 0
+        self.video_subregion_set_at = 0
+        self.video_subregion_time = 0
+        #keep track of how much extra we batch non-video regions (milliseconds):
+        self.video_subregion_non_waited = 0
+        self.video_subregion_non_max_wait = 150
 
         if not self.encoding_client_options:
             #old clients can only use 420P:
@@ -70,6 +83,10 @@ class WindowVideoSource(WindowSource):
         for x in self.video_encodings:
             if x in self.server_core_encodings:
                 self._encoders[x] = self.video_encode
+        #these are used for non-video areas, ensure "jpeg" is used if available
+        #as we may be dealing with large areas still, and we want speed:
+        common = [x for x in self.server_core_encodings if x in self.core_encodings]
+        self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in common and x not in self.video_encodings)]
 
         #these constraints get updated with real values
         #when we construct the video pipeline:
@@ -120,6 +137,10 @@ class WindowVideoSource(WindowSource):
         info[prefix+"client.uses_csc_atoms"] = self.uses_csc_atoms
         info[prefix+"client.supports_video_scaling"] = self.supports_video_scaling
         info[prefix+"client.supports_video_reinit"] = self.supports_video_reinit
+        info[prefix+"client.supports_video_subregion"] = self.supports_video_subregion
+        sr = self.video_subregion
+        if sr:
+            info[prefix+"video_subregion"] = sr.x, sr.y, sr.width, sr.height
         info[prefix+"scaling"] = self.actual_scaling
         csce = self._csc_encoder
         if csce:
@@ -191,9 +212,13 @@ class WindowVideoSource(WindowSource):
         #client may restrict csc modes for specific windows
         self.csc_modes = properties.get("encoding.csc_modes", self.csc_modes)
         self.supports_video_scaling = properties.get("encoding.video_scaling", self.supports_video_scaling)
+        self.supports_video_subregion = properties.get("encoding.video_subregion", self.supports_video_subregion)
         self.uses_swscale = properties.get("encoding.uses_swscale", self.uses_swscale)
         WindowSource.set_client_properties(self, properties)
-        log("set_client_properties(%s) csc_modes=%s, video_scaling=%s, uses_swscale=%s", properties, self.csc_modes, self.supports_video_scaling, self.uses_swscale)
+        #encodings may have changed, so redo this:
+        common = [x for x in self.server_core_encodings if x in self.core_encodings]
+        self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in common and x not in self.video_encodings)]
+        log("set_client_properties(%s) csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
 
     def unmap(self):
         WindowSource.cancel_damage(self)
@@ -206,6 +231,278 @@ class WindowVideoSource(WindowSource):
             #we will resend a key frame because it looks like we will
             #drop a frame which is being processed
             self.cleanup_codecs()
+
+    def must_batch(self, delay):
+        #force batching when using video region
+        #because the video region code is in the send_delayed path
+        return (self.video_subregion is not None) or WindowSource.must_batch(self, delay)
+
+
+    def identify_video_subregion(self):
+        if self.encoding not in self.video_encodings:
+            sublog("identify video: not using a video mode! (%s)", self.encoding)
+            self.video_subregion = None
+            return
+        if self.full_frames_only:
+            sublog("identify video: full frames only!")
+            self.video_subregion = None
+            return
+        ww, wh = self.window_dimensions
+        #arbitrary minimum size for regions we will look at:
+        #(we don't want video regions smaller than this - too much effort for little gain)
+        min_w = max(256, ww/4)
+        min_h = max(192, wh/4)
+        if ww<min_w or wh<min_h:
+            sublog("identify video: window is too small")
+            self.video_subregion = None
+            return
+
+        def update_markers():
+            self.video_subregion_counter = self.statistics.damage_events_count
+            self.video_subregion_time = time.time()
+
+        def few_damage_events(event_types, event_count):
+            elapsed = time.time()-self.video_subregion_time
+            #how many damage events occurred since we chose this region:
+            event_count = self.statistics.damage_events_count - self.video_subregion_set_at
+            #make the timeout longer when the region has worked longer:
+            slow_region_timeout = 10 + math.log(1+event_count, 1.5)
+            if self.video_subregion is not None and elapsed>=slow_region_timeout:
+                sublog("identify video: too much time has passed (%is for %s %s events), clearing region", elapsed, event_types, event_count)
+                update_markers()
+                self.video_subregion_set_at = 0
+                self.video_subregion = None
+                return
+            sublog("identify video: waiting for more damage events (%s)", self.statistics.damage_events_count)
+
+        if self.video_subregion_counter+10>self.statistics.damage_events_count:
+            #less than 20 events since last time we called update_markers:
+            event_count = self.statistics.damage_events_count-self.video_subregion_counter
+            few_damage_events("total", event_count)
+            return
+        update_markers()
+
+        #create a list (copy) to work on:
+        lde = list(self.statistics.last_damage_events)
+        dc = len(lde)
+        if dc<20:
+            sublog("identify video: not enough damage events yet (%s)", dc)
+            self.video_subregion_set_at = 0
+            self.video_subregion = None
+            return
+        #count how many times we see each area, and keep track of those we ignore:
+        damage_count = {}
+        ignored_count = {}
+        c = 0
+        lde = list(self.statistics.last_damage_events)
+        for x,y,w,h in lde:
+            #ignore small regions:
+            if w>=min_w and h>=min_h:
+                damage_count.setdefault((x,y,w,h), AtomicInteger()).increase()
+                c += 1
+            else:
+                ignored_count.setdefault((x,y,w,h), AtomicInteger()).increase()
+        #ignore low counts, add them to ignored dict:
+        min_count = max(2, len(lde)/40)
+        low_count = dict((region, count) for (region, count) in damage_count.items() if int(count)<=min_count)
+        ignored_count.update(low_count)
+        damage_count = dict((region, count) for (region, count) in damage_count.items() if region not in low_count)
+        if len(damage_count)==0:
+            few_damage_events("large", 0)
+            return
+        most_damaged = int(sorted(damage_count.values())[-1])
+        most_pct = 100*most_damaged/c
+        sublog("identify video: most=%s%% damage count=%s", most_pct, damage_count)
+
+        def select_most_damaged():
+            #use the region responsible for most of the large damage requests:
+            most_damaged_regions = [k for k,v in damage_count.items() if v==most_damaged]
+            self.video_subregion = rectangle(*most_damaged_regions[0])
+            self.video_subregion_set_at = self.statistics.damage_events_count
+            sublog("identified video region (%s%% of large damage requests): %s", most_pct, self.video_subregion)
+
+        #ignore current subregion, 80% is high enough:
+        if most_damaged>c*80/100:
+            select_most_damaged()
+            return
+
+        #see if we can keep the region we have (if any):
+        if self.video_subregion:
+            #percentage of window area it occupies:
+            vs_pct = 100*(self.video_subregion.width*self.video_subregion.height)/(ww*wh)
+            pixels_contained = sum(((w*h) for x,y,w,h in lde if self.video_subregion.contains(x,y,w,h)))
+            pixels_not = sum(((w*h) for x,y,w,h in lde if not self.video_subregion.contains(x,y,w,h)))
+            pixels_total = pixels_not + pixels_contained
+            if pixels_total>0:
+                #proportion of damage pixels contained within the region:
+                pix_pct = 100*pixels_contained/pixels_total
+                #how many damage events occurred since we chose this region:
+                event_count = self.statistics.damage_events_count - self.video_subregion_set_at
+                #high ratio of damage events to window area at first,
+                #but lower it as we get more events that match
+                #(edge resistance of sorts: prevents outliers from making us drop the region
+                # if we know it has worked well in the past)
+                ratio = 3.0 - 2.0/max(1, event_count)
+                if pix_pct>=min(75, vs_pct*ratio):
+                    sublog("keeping existing video region (%s%% of window area %sx%s, %s%% of damage pixels): %s", vs_pct, ww, wh, pix_pct, self.video_subregion)
+                    return
+
+        #try again with 50% threshold:
+        if most_damaged>c*50/100:
+            select_most_damaged()
+            return
+
+        #group by size:
+        size_count = {}
+        for region, count in damage_count.items():
+            _, _, w, h = region
+            size_count.setdefault((w,h), AtomicInteger(0)).increase(int(count))
+        #try by size alone:
+        most_common_size = int(sorted(size_count.values())[-1])
+        if most_common_size>=c*60/100:
+            mcw, mch = [k for k,v in size_count.items() if v==most_common_size][0]
+            #now this will match more than one area..
+            #so find a recent one:
+            for x,y,w,h in reversed(lde):
+                if w==mcw and h==mch:
+                    #recent and matching size, assume this is the one
+                    self.video_subregion_set_at = self.statistics.damage_events_count
+                    self.video_subregion = rectangle(x, y, w, h)
+                    sublog("identified video region by size (%sx%s), using recent match: %s", mcw, mch, self.video_subregion)
+                    return
+
+        #try harder: try combining all the regions we haven't discarded
+        #(flash player with firefox and youtube does stupid unnecessary repaints)
+        if len(damage_count)>=2:
+            merged = merge_all(damage_count.keys())
+            #and make sure this does not end up much bigger than needed:
+            merged_pixels = merged.width*merged.height
+            unmerged_pixels = sum((int(w*h) for _,_,w,h in damage_count.keys()))
+            if merged_pixels<ww*wh*70/100 and unmerged_pixels*140/100<merged_pixels:
+                self.video_subregion_set_at = self.statistics.damage_events_count
+                self.video_subregion = region
+                sublog("identified merged video region: %s", self.video_subregion)
+                return
+
+        sublog("failed to identify a video region")
+        self.video_subregion = None
+
+
+    def send_delayed_regions(self, damage_time, window, regions, coding, options):
+        """
+            Overriden here so we can try to intercept the video_subregion if one exists.
+        """
+        #overrides the default method for finding the encoding of a region
+        #so we can ensure we don't use the video encoder when we don't want to:
+        def get_non_video_encoding(batching, window, pixel_count, ww, wh, current_encoding):
+            def get_fallback():
+                return self.non_video_encodings[0]
+            if window.has_alpha() and self.supports_transparency:
+                return self.get_transparent_encoding(current_encoding) or get_fallback()
+            if window.is_tray():
+                return self.find_common_lossless_encoder(window.has_alpha(), coding, ww*wh) or get_fallback()
+            if AUTO_SWITCH_TO_RGB and pixel_count<MAX_PIXELS_PREFER_RGB:
+                return self.pick_encoding(["rgb24"]) or get_fallback()
+            if pixel_count>=256*256:
+                #jpeg for large areas, we're lossy already since we use video
+                return self.pick_encoding(["jpeg"]) or get_fallback()
+            return get_fallback()
+
+
+        if window.is_tray():
+            sublog("tray - don't use video region!")
+            WindowSource.send_delayed_regions(self, damage_time, window, regions, None, options, get_region_encoding=get_non_video_encoding)
+            return
+
+        if self.encoding not in self.video_encodings:
+            sublog("not a video encoding")
+            WindowSource.send_delayed_regions(self, damage_time, window, regions, coding, options)
+            return
+
+        vr = self.video_subregion
+        if vr is None:
+            sublog("no video region, we may use the video encoder for something else")
+            WindowSource.send_delayed_regions(self, damage_time, window, regions, coding, options)
+            return
+        assert not self.full_frames_only
+
+        actual_vr = None
+        if vr in regions:
+            #found the video region the easy way: exact match in list
+            actual_vr = vr
+        else:
+            #find how many pixels are within the region (roughly):
+            #find all unique regions that intersect with it:
+            inter = (vr.intersection_rect(r) for r in regions)
+            inter = [x for x in inter if x is not None]
+            if len(inter)>0:
+                #merge all regions into one:
+                in_region = None
+                for i in inter:
+                    if i is None:
+                        continue
+                    if in_region is None:
+                        in_region = i
+                    else:
+                        in_region.merge_rect(i)
+                if in_region:
+                    pixels_in_region = vr.width*vr.height
+                    pixels_intersect = in_region.width*in_region.height
+                    if pixels_intersect>=pixels_in_region*40/100:
+                        #we have at least 40% of the video region
+                        #that needs refreshing, do it:
+                        actual_vr = vr
+
+            #still no luck?
+            if actual_vr is None:
+                #try to find one that has the same dimensions:
+                same_d = [r for r in regions if r.width==vr.width and r.height==vr.height]
+                if len(same_d)==1:
+                    #probably right..
+                    actual_vr = same_d[0]
+                elif len(same_d)>1:
+                    #find one that shares at least one coordinate:
+                    same_c = [r for r in same_d if r.x==vr.x or r.y==vr.y]
+                    if len(same_c)==1:
+                        actual_vr = same_c[0]
+
+        if actual_vr is None:
+            sublog("send_delayed_regions: video region %s not found in: %s (using non video encoding)", vr, regions)
+            WindowSource.send_delayed_regions(self, damage_time, window, regions, None, options, get_region_encoding=get_non_video_encoding)
+            return
+
+        #found the video region:
+        #send this straight away using the video encoder:
+        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, options)
+
+        #now substract this region from the rest:
+        trimmed = []
+        for r in regions:
+            trimmed += r.substract_rect(actual_vr)
+        if len(trimmed)==0:
+            sublog("send_delayed_regions: nothing left after removing video region %s", actual_vr)
+            return
+        sublog("send_delayed_regions: substracted %s from %s gives us %s", actual_vr, regions, trimmed)
+
+        #decide if we want to send the rest now or delay some more:
+        event_count = self.statistics.damage_events_count - self.video_subregion_set_at
+        #only delay once the video encoder has deal with a few frames:
+        if event_count>100:
+            elapsed = int(1000.0*(time.time()-damage_time)) + self.video_subregion_non_waited
+            if elapsed>=self.video_subregion_non_max_wait:
+                #send now, reset delay:
+                sublog("send_delayed_regions: non video regions have waited %sms already, sending", elapsed)
+                self.video_subregion_non_waited = 0
+            else:
+                #delay further: just create new delayed region:
+                sublog("send_delayed_regions: delaying non video regions some more")
+                self._damage_delayed = time.time(), window, trimmed, coding, options
+                delay = self.video_subregion_non_max_wait-elapsed
+                self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
+                return
+
+        WindowSource.send_delayed_regions(self, damage_time, window, trimmed, None, options, exclude_region=actual_vr, get_region_encoding=get_non_video_encoding)
+
 
     def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
         WindowSource.process_damage_region(self, damage_time, window, x, y, w, h, coding, options)
@@ -238,6 +535,9 @@ class WindowVideoSource(WindowSource):
         if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
             #video encoder cannot handle this size!
             #(maybe this should be an 'assert' statement here?)
+            return None
+        if self.video_subregion and (self.video_subregion.width!=ww or self.video_subregion.height!=wh):
+            #we have a video region, and this is not it, so don't use video:
             return None
 
         def switch_to_lossless(reason):
@@ -294,6 +594,8 @@ class WindowVideoSource(WindowSource):
         """
         log("reconfigure(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
         WindowSource.reconfigure(self, force_reload)
+        if self.supports_video_subregion:
+            self.identify_video_subregion()
         if not self._video_encoder:
             return
         try:
@@ -730,7 +1032,7 @@ class WindowVideoSource(WindowSource):
         """
         log("video_encode%s", (encoding, image, options))
         x, y, w, h = image.get_geometry()[:4]
-        assert x==0 and y==0, "invalid position: %s,%s" % (x,y)
+        assert self.supports_video_subregion or (x==0 and y==0), "invalid position: %s,%s" % (x,y)
         src_format = image.get_pixel_format()
         try:
             self._lock.acquire()
