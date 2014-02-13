@@ -55,10 +55,14 @@ class VideoRegionsWindow(gtk.Window):
 	def redraw(self):
 		self.step += 1
 		self.darea.queue_draw()
-		self.label.set_text("Step = %s" % self.step)
-		if self.step%4==0:
-			self.button.set_label("Hello %s" % (self.step/4))
-		if self.step%20==0:
+		sm = 4
+		if self.step%sm==0:
+			self.label.set_text("Step = %s" % (self.step/sm))
+		hm = 8
+		if self.step%hm==0:
+			self.button.set_label("Hello %s" % (self.step/hm))
+		fr = 20
+		if self.step%fr==0:
 			self.redraw()
 		return True
 
