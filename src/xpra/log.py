@@ -109,11 +109,9 @@ class Logger(object):
     def __init__(self, *categories):
         self.categories = list(categories)
         caller = sys._getframe(1).f_globals["__name__"]
-        if caller=="__main__":
-            caller = ".".join(categories)
-        else:
-            self.categories.append(caller)
-        self.logger = logging.getLogger(caller)
+        if caller!="__main__":
+            self.categories.insert(0, caller)
+        self.logger = logging.getLogger(".".join(self.categories))
         self.logger.setLevel(logging.INFO)
         disabled = False
         enabled = False
@@ -129,7 +127,7 @@ class Logger(object):
         #ready, keep track of it:
         add_logger(self.categories, self)
 
-    def __str__(self):
+    def __repr__(self):
         return "Logger(%s)" % ", ".join(self.categories)
 
     def is_debug_enabled(self):
