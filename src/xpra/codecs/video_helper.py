@@ -198,6 +198,8 @@ def getVideoHelper():
 
 
 def main():
+    from xpra.codecs.loader import log as loader_log
+    loader_log.enable_debug()
     log.enable_debug()
     vh = getVideoHelper()
     vh.init()
