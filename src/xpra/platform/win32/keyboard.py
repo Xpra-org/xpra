@@ -33,14 +33,15 @@ class Keyboard(KeyboardBase):
                 import win32api         #@UnresolvedImport
                 import win32con         #@UnresolvedImport
                 numlock = win32api.GetKeyState(win32con.VK_NUMLOCK)
-                log("mask_to_names(%s) GetKeyState(VK_NUMLOCK)=%s", mask, numlock)
                 if numlock and self.num_lock_modifier not in names:
                     names.append(self.num_lock_modifier)
                 elif not numlock and self.num_lock_modifier in names:
                     names.remove(self.num_lock_modifier)
+                log("mask_to_names(%s) GetKeyState(VK_NUMLOCK)=%s, names=%s", mask, numlock, names)
             except:
                 pass
-        log("mask_to_names(%s)=%s", mask, names)
+        else:
+            log("mask_to_names(%s)=%s", mask, names)
         return names
 
     def AltGr_modifiers(self, modifiers, pressed=True):
@@ -74,9 +75,9 @@ class Keyboard(KeyboardBase):
             kbid = win32api.GetKeyboardLayout(0) & 0xffff
             if kbid in WIN32_LAYOUTS:
                 code, _, _, _, layout, variants = WIN32_LAYOUTS.get(kbid)
-                log.debug("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%s", layout, variants, code, kbid)
+                log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%s", layout, variants, code, kbid)
             if not layout:
-                log.debug("unknown keyboard layout for kbid: %s", kbid)
+                log("unknown keyboard layout for kbid: %s", kbid)
         except Exception, e:
             log.error("failed to detect keyboard layout: %s", e)
         return layout,variant,variants
