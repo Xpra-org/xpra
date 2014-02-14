@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+import random
 import threading
 from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test_encoder, test_encoder_dimensions
 
@@ -28,19 +29,28 @@ def test_memleak():
     assert len(cuda_devices)>0
     from pycuda import driver
     #use the first device for this test
-    d = driver.Device(0)
-    context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
-    start_free_memory, _ = driver.mem_get_info()
+    start_free_memory = None
     for i in range(100):
+        d = driver.Device(0)
+        context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
+        if start_free_memory is None:
+            start_free_memory, _ = driver.mem_get_info()
         free_memory, total_memory = driver.mem_get_info()
         log.info("%s%% free_memory: %s MB" % (str(i).rjust(3), free_memory/1024/1024))
         context.pop()
-        test_encoder(encoder_module, options={}, dimensions=[(1024, 1024)], n_images=10)
+        context.detach()
+        w = random.randint(16, 128)*8
+        h = random.randint(16, 128)*8
+        n = random.randint(2, 10)
+        test_encoder(encoder_module, options={}, dimensions=[(w, h)], n_images=n)
         test_encoder(encoder_module, options={}, dimensions=[(128, 1536)], n_images=20)
-        context.push()
+
+    d = driver.Device(0)
+    context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
     end_free_memory, _ = driver.mem_get_info()
-    log.info("memory lost: %s MB", (start_free_memory-end_free_memory)/1024/1024)
+    context.pop()
     context.detach()
+    log.info("memory lost: %s MB", (start_free_memory-end_free_memory)/1024/1024)
 
 
 def test_dimensions():
