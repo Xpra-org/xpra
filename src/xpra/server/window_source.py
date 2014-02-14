@@ -973,11 +973,15 @@ class WindowSource(object):
             return  None
         x, y, w, h, _ = image.get_geometry()
 
+        #isize may include the large rowstride...
         isize = image.get_size()
+        #more useful is the actual number of bytes (assuming 32bpp)
+        #since we generally don't send the padding with it:
+        psize = w*h*4
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
         log("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
         start = time.time()
-        if self._mmap and self._mmap_size>0 and isize>256:
+        if self._mmap and self._mmap_size>0 and psize>256:
             data = self.mmap_send(image)
             if data:
                 #hackish: pass data to mmap_encode using "options":
@@ -1026,8 +1030,6 @@ class WindowSource(object):
         #actual network packet:
         packet = ["draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()
-        #calculate rations based on actual pixel data size, not input size which may include a large rowstride:
-        psize = w*h*4
         log("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%% (%sKB to %sKB), delta=%s",
                  (end-start)*1000.0, w, h, coding, 100.0*len(data)/psize, psize/1024, len(data)/1024, delta)
         self.global_statistics.packet_count += 1
