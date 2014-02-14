@@ -423,7 +423,7 @@ def sanitize_env():
                "GTK_IM_MODULE"      : "xim",                #or "gtk-im-context-simple"?
                "QT_IM_MODULE"       : "xim",                #or "simple"?
                "IMSETTINGS_MODULE"  : "none",               #or "xim"?
-               "XMODIFIERS"         : ""})
+               "XMODIFIERS"         : ""})                  #oe "@im=none"
 
 def start_pulseaudio(child_reaper, pulseaudio_command):
     from xpra.log import Logger
