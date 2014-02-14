@@ -24,6 +24,12 @@ try:
 except:
     pass
 
+try:
+    import xpra.sound
+    has_sound_support = bool(xpra.sound)
+except:
+    has_sound_support = False
+
 
 def OpenGL_safety_check():
     #Ubuntu 12.04 will just crash on you if you try:
@@ -327,8 +333,8 @@ def get_defaults():
                     "dbus-proxy"        : os.name=="posix" and not sys.platform.startswith("darwin"),
                     "mmap"              : True,
                     "mmap-group"        : False,
-                    "speaker"           : True,
-                    "microphone"        : True,
+                    "speaker"           : has_sound_support,
+                    "microphone"        : has_sound_support,
                     "readonly"          : False,
                     "keyboard-sync"     : True,
                     "pings"             : False,
