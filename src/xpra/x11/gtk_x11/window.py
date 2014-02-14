@@ -1349,7 +1349,7 @@ class WindowModel(BaseWindowModel):
             trap.swallow_synced(self.do_give_client_focus)
 
     def do_give_client_focus(self):
-        focuslog("Giving focus to %s", self.client_window)
+        focuslog("Giving focus to %#x", self.client_window.xid)
         # Have to fetch the time, not just use CurrentTime, both because ICCCM
         # says that WM_TAKE_FOCUS must use a real time and because there are
         # genuine race conditions here (e.g. suppose the client does not

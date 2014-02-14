@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("x11", "focus")
 
 def send_wm_take_focus(target, time):
-    log("sending WM_TAKE_FOCUS: %r, %r", target, time)
+    log("sending WM_TAKE_FOCUS: %#x, %r", target.xid, time)
     if time<0:
         time = 0    #should mean CurrentTime which is better than nothing
     elif time>0xFFFFFFFF:
@@ -22,7 +22,7 @@ def send_wm_take_focus(target, time):
                       "WM_TAKE_FOCUS", time, 0, 0, 0)
 
 def send_wm_delete_window(target):
-    log("sending WM_DELETE_WINDOW")
+    log("sending WM_DELETE_WINDOW to %#x", target.xid)
     X11Window.sendClientMessage(get_xwindow(target), get_xwindow(target), False, 0,                     #@UndefinedVariable"
                       "WM_PROTOCOLS",
                       "WM_DELETE_WINDOW",
