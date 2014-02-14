@@ -21,19 +21,29 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-xvfb\fP=\fICMD\fP]
 [\fB\-\-video\-encoders\fP=\fIENCODERS\fP]
 [\fB\-\-csc\-modules\fP=\fIMODULES\fP]
+[\fB\-\-pulseaudio\fP]
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP]
+[\fB\-\-clipboard\fP]
 [\fB\-\-no\-clipboard\fP]
+[\fB\-\-cursors\fP]
 [\fB\-\-no\-cursors\fP]
+[\fB\-\-notifications\fP]
 [\fB\-\-no\-notifications\fP]
+[\fB\-\-xsettings\fP]
 [\fB\-\-no\-xsettings\fP]
+[\fB\-\-system\-tray\fP]
 [\fB\-\-no\-system\-tray\fP]
+[\fB\-\-bell\fP]
 [\fB\-\-no\-bell\fP]
+[\fB\-\-speaker\fP]
 [\fB\-\-no\-speaker\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
+[\fB\-\-microphone\fP]
 [\fB\-\-no\-microphone\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
-[\fB\-\-enable\-sharing\fP]
+[\fB\-\-sharing\fP]
+[\fB\-\-no\-sharing\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
@@ -47,18 +57,30 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP | \fItcp:[USER@]HOST:PORT[:DISPLAY]\fP]
 [\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
+[\fB\-\-mmap\fP]
 [\fB\-\-no\-mmap\fP]
+[\fB\-\-windows\fP]
 [\fB\-\-no\-windows\fP]
+[\fB\-\-clipboard\fP]
 [\fB\-\-no\-clipboard\fP]
+[\fB\-\-cursors\fP]
 [\fB\-\-no\-cursors\fP]
+[\fB\-\-notifications\fP]
 [\fB\-\-no\-notifications\fP]
+[\fB\-\-xsettings\fP]
 [\fB\-\-no\-xsettings\fP]
+[\fB\-\-system\-tray\fP]
 [\fB\-\-no\-system\-tray\fP]
+[\fB\-\-bell\fP]
 [\fB\-\-no\-bell\fP]
+[\fB\-\-keyboard\-sync\fP]
 [\fB\-\-no\-keyboard\-sync\fP]
+[\fB\-\-tray\fP]
 [\fB\-\-no\-tray\fP]
+[\fB\-\-speaker\fP]
 [\fB\-\-no\-speaker\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
+[\fB\-\-microphone\fP]
 [\fB\-\-no\-microphone\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-delay\-tray\fP]
@@ -70,8 +92,10 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-min-speed\fP=\fIMIN-SPEED\fP]
 [\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
 [\fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP]
+[\fB\-\-readwrite\fP]
 [\fB\-\-readonly\fP]
-[\fB\-\-enable-sharing\fP]
+[\fB\-\-sharing\fP]
+[\fB\-\-no-sharing\fP]
 [\fB\-\-title\fP=\fIVALUE\fP]
 [\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP]
 [\fB\-\-window\-layout\fP=\fILAYOUT\fP]
@@ -89,11 +113,16 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
+[\fB\-\-clipboard\fP]
 [\fB\-\-no\-clipboard\fP]
+[\fB\-\-notifications\fP]
 [\fB\-\-no\-notifications\fP]
+[\fB\-\-bell\fP]
 [\fB\-\-no\-bell\fP]
+[\fB\-\-speaker\fP]
 [\fB\-\-no\-speaker\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
+[\fB\-\-microphone\fP]
 [\fB\-\-no\-microphone\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
@@ -317,26 +346,25 @@ Displays a summary of command line usage.
 Enable debug logging.  The special value \fBall\fP enables all
 debugging.
 .TP
-\fB\-\-no\-mmap\fP
-Disables memory mapped pixel data transfer.
+\fB\-\-mmap\fP or \fB\-\-no\-mmap\fP
+Enable or disable memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
 This method of data transfer offers much lower overheads
 and reduces both CPU consumption and local network traffic.
 .TP
-\fB\-\-no\-windows\fP
-Tells the server not to send any window data,
-only notifications and bell events will be forwarded - if they
-are enabled.
+\fB\-\-windows\fP or \fB\-\-no\-windows\fP
+Enable or disable the forwarding of windows. This is usually
+the primary use for xpra and should be enabled.
 .TP
-\fB\-\-no\-clipboard\fP
-Disables clipboard synchronization.
+\fB\-\-clipboard\fP or \fB\-\-no\-clipboard\fP
+Enable or disable clipboard synchronization.
 If used on the server, no clients will be able to use clipboard
 synchronization at all. If used on the client, only this particular
 connection will ignore clipboard data from the server.
 .TP
-\fB\-\-no\-pulseaudio\fP
-Disables the starting of a pulseaudio server with the session.
+\fB\-\-pulseaudio\fP or \fB\-\-no\-pulseaudio\fP
+Enable or disable the starting of a pulseaudio server with the session.
 .TP
 \fB\-\-pulseaudio\-command\fP=\fISERVER\-START\-COMMAND\fP
 Specifies the pulseaudio command to use to start the pulseaudio
@@ -395,8 +423,8 @@ By default, the xpra server puts itself into the background,
 i.e. 'daemonizes', and redirects its output to a log file.  This
 prevents that behavior (useful mostly for debugging).
 .TP
-\fB\-\-no\-mdns\fP
-Turn off publication of new sessions via mDNS.
+\fB\-\-mdns\fP or \fB\-\-no\-mdns\fP
+Enable or disable the publication of new sessions via mDNS.
 .TP
 \fB\-\-auth\fP=\fIMODULE\fP
 Specifies the authentication module to use.
@@ -538,30 +566,30 @@ Many applications will only read this value when starting up,
 so connecting to an existing session started with a different DPI
 value may not have the desired effect.
 .TP
-\fB\-\-no\-cursors\fP
-Disable forwarding of custom application mouse cursors.
+\fB\-\-cursors\fP or \fB\-\-no\-cursors\fP
+Enable or disable forwarding of custom application mouse cursors.
 Client applications may change the mouse cursor at any time, which
 will cause the new cursor's pixels to be sent to the client each time.
 This disables the feature.
 .TP
-\fB\-\-no\-notifications\fP
-Disable forwarding of system notifications.
+\fB\-\-notifications\fP or \fB\-\-no\-notifications\fP
+Enable or disable forwarding of system notifications.
 System notifications require the xpra server to have its own instance
 of a dbus daemon, if it is missing a warning will be printed on
 startup.  This switch disables the feature entirely, and avoids
 the warning.
 .TP
-\fB\-\-no\-xsettings\fP
-Disable xsettings synchronization.  Xsettings are only forwarded
+\fB\-\-xsettings\fP or \fB\-\-no\-xsettings\fP
+Enable or disable xsettings synchronization.  Xsettings are only forwarded
 from posix clients connecting to real posix servers (not shadows).
 .TP
-\fB\-\-no\-system\-tray\fP
-Disable forwarding of system tray icons.
+\fB\-\-system\-tray\fP or \fB\-\-no\-system\-tray\fP
+Enable or disable forwarding of system tray icons.
 This feature requires client support and may not be available on all
 platforms.
 .TP
-\fB\-\-no\-bell\fP
-Disable forwarding of the system bell.
+\fB\-\-bell\fP or \fB\-\-no\-bell\fP
+Enable or disable forwarding of the system bell.
 
 .SS Options for attach
 .TP
@@ -579,9 +607,6 @@ much faster.
 
 This compression is not used on pixel data (except
 when using the \fBrgb\fP encoding).
-.TP
-\fB\-\-jpeg\-quality\fP=\fIVALUE\fP
-Deprecated, use \fB\-\-quality\fP.
 .TP
 \fB\-\-quality\fP=\fIVALUE\fP
 This option sets a fixed image compression quality lossy encodings
@@ -660,30 +685,29 @@ Force all windows to be refreshed.
 .PP
 
 .TP
-\fB\-\-readonly\fP
+\fB\-\-readonly\fP or \fB\-\-readwrite\fP
 Read only mode prevents all keyboard and mouse activity from being sent
 to the server.
 .TP
-\fB\-\-enable\-sharing\fP
-Allow more than one client to connect to the same session.
+\fB\-\-sharing\fP or \fB\-\-no\-sharing\fP
+Sharing allows more than one client to connect to the same session.
 This must be enabled on both the server and all co-operating clients
 to function.
 .TP
-\fB\-\-no\-keyboard\-sync\fP
-Disables keyboard state synchronization. Normally the key presses
-and key release events are sent to the server as they occur so that
-the server can maintain a consistent keyboard state.
-Using this option can prevent keys from repeating unexpectedly on
+\fB\-\-keyboard\-sync\fP or \fB\-\-no\-keyboard\-sync\fP
+Normally the key presses and key release events are sent to the server
+as they occur so that the server can maintain a consistent keyboard state.
+Disabling synchronization can prevent keys from repeating unexpectedly on
 high latency links but it may also disrupt applications which access
 the keyboard directly (games, etc.).
 .TP
-\fB\-\-no\-speaker\fP
-Disable sound output forwarding support.  Application sound output will
-not be sent to the client(s).
+\fB\-\-speaker\fP or \fB\-\-no\-speaker\fP
+Enable or disable sound output forwarding support.  When disabled,
+application sound output will not be sent to the client(s).
 .TP
-\fB\-\-no\-microphone\fP
-Disable sound input forwarding support.  Application sound input will
-not be sent from the client(s) to the server.
+\fB\-\-microphone\fP or \fB\-\-no\-microphone\fP
+Enable or disable sound input forwarding support.
+Application sound input will not be sent from the client(s) to the server.
 .TP
 \fB\-\-speaker\-codec\fP=\fICODEC\fP and \fB\-\-microphone\-codec\fP=\fICODEC\fP
 Specify the codec(s) to use for sound output (speaker) or input (microphone).
@@ -727,8 +751,8 @@ This icon may be shown in the window's bar, its iconified
 state or task switchers.  This depends on the operating system,
 the window manage and the application may override this too.
 .TP
-\fB\-\-no\-tray\fP
-Disables the system tray.  Not available on OSX since the dock
+\fB\-\-tray\fP or \fB\-\-no\-tray\fP
+Enable or disable the system tray.  Not available on OSX since the dock
 icon is always shown.
 .TP
 \fB\-\-delay\-tray\fP
