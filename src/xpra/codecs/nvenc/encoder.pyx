@@ -1200,11 +1200,11 @@ cdef get_CUDA_kernel(device_id, kernel_name, kernel_source):
     log("compilation of %s took %.1fms", kernel_name, 1000.0*(end-start))
     return kernel_name, kernel_function
 
-cdef get_BGRA2YUV444P(device_id):
+cpdef get_BGRA2YUV444P(device_id):
     from xpra.codecs.nvenc.CUDA_rgb2yuv444p import BGRA2YUV444P_kernel
     return get_CUDA_kernel(device_id, "BGRA2YUV444P", BGRA2YUV444P_kernel)
 
-cdef get_BGRA2NV12(device_id):
+cpdef get_BGRA2NV12(device_id):
     from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
     return get_CUDA_kernel(device_id, "BGRA2NV12", BGRA2NV12_kernel)
 
@@ -1296,7 +1296,7 @@ cdef class Encoder:
         self.speed = speed
         self.quality = quality
         self.scaling = scaling
-        v, u = scaling
+        v, u = scaling or (1,1)
         self.input_width = roundup(width, 32)
         self.input_height = roundup(height, 32)
         self.encoder_width = roundup(width*v/u, 32)
