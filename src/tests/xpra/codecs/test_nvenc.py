@@ -7,15 +7,41 @@
 import sys
 import threading
 from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test_encoder, test_encoder_dimensions
+
+from xpra.log import Logger
+log = Logger("encoder", "test")
+
 #TEST_DIMENSIONS = ((32, 32), (1920, 1080), (512, 512))
 TEST_DIMENSIONS = ((1920, 1080), (512, 512), (32, 32))
 
+
 def test_encode_one():
     from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
-    print("")
-    print("test_nvenc()")
+    log("")
+    log("test_nvenc()")
     test_encoder(encoder_module)
-    print("")
+    log("")
+
+def test_memleak():
+    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
+    cuda_devices = encoder_module.get_cuda_devices()
+    assert len(cuda_devices)>0
+    from pycuda import driver
+    #use the first device for this test
+    d = driver.Device(0)
+    context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
+    start_free_memory, _ = driver.mem_get_info()
+    for i in range(100):
+        free_memory, total_memory = driver.mem_get_info()
+        log.info("%s%% free_memory: %s MB" % (str(i).rjust(3), free_memory/1024/1024))
+        context.pop()
+        test_encoder(encoder_module, options={}, dimensions=[(1024, 1024)], n_images=10)
+        test_encoder(encoder_module, options={}, dimensions=[(128, 1536)], n_images=20)
+        context.push()
+    end_free_memory, _ = driver.mem_get_info()
+    log.info("memory lost: %s MB", (start_free_memory-end_free_memory)/1024/1024)
+    context.detach()
+
 
 def test_dimensions():
     from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
@@ -24,17 +50,17 @@ def test_dimensions():
 def test_encode_all_GPUs():
     from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     cuda_devices = encoder_module.get_cuda_devices()
-    print("")
-    print("test_parallel_encode() will test one encoder on each of %s sequentially" % cuda_devices)
+    log("")
+    log.info("test_parallel_encode() will test one encoder on each of %s sequentially" % cuda_devices)
     TEST_DIMENSIONS = [(32, 32)]
     for device_id, info in cuda_devices.items():
         options = {"cuda_device" : device_id}
-        print("")
-        print("**********************************")
-        print("**********************************")
-        print("testing on  %s : %s" % (device_id, info))
+        log("")
+        log("**********************************")
+        log("**********************************")
+        log.info("testing on  %s : %s" % (device_id, info))
         test_encoder(encoder_module, options, TEST_DIMENSIONS)
-    print("")
+    log("")
 
 def test_context_limits():
     #figure out how many contexts we can have on each card:
@@ -42,10 +68,10 @@ def test_context_limits():
     cuda_devices = encoder_module.get_cuda_devices()
     ec = getattr(encoder_module, "Encoder")
     MAX_ENCODER_CONTEXTS_PER_DEVICE = 64
-    print("")
+    log("")
     for encoding in encoder_module.get_encodings():
         for w,h in TEST_DIMENSIONS:
-            print("test_context_limits() %s @ %sx%s" % (encoding, w, h))
+            log("test_context_limits() %s @ %sx%s" % (encoding, w, h))
             src_format = encoder_module.get_colorspaces()[0]
             for device_id, device_info in cuda_devices.items():
                 options = {"cuda_device" : device_id}
@@ -56,44 +82,44 @@ def test_context_limits():
                     try:
                         e.init_context(w, h, src_format, encoding, 20, 0, options)
                     except Exception, e:
-                        print("failed to created context %s on %s: %s" % (i, device_info, e))
+                        log("failed to created context %s on %s: %s" % (i, device_info, e))
                         break
-                print("device %s managed %s contexts at %sx%s" % (device_info, len(encoders)-1, w, h))
+                log("device %s managed %s contexts at %sx%s" % (device_info, len(encoders)-1, w, h))
                 for encoder in encoders:
                     try:
                         encoder.clean()
                     except Exception, e:
-                        print("encoder cleanup error: %s" % e)
-    print("")
+                        log("encoder cleanup error: %s" % e)
+    log("")
 
 def test_parallel_encode():
     from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     cuda_devices = encoder_module.get_cuda_devices()
     ec = getattr(encoder_module, "Encoder")
     encoding = encoder_module.get_encodings()[0]
-    print("")
-    print("test_parallel_encode() will test one %s encoder using %s encoding on each of %s in parallel" % (ec, encoding, cuda_devices))
+    log("")
+    log("test_parallel_encode() will test one %s encoder using %s encoding on each of %s in parallel" % (ec, encoding, cuda_devices))
     w, h = 1920, 1080
     IMAGE_COUNT = 20
     ENCODER_CONTEXTS_PER_DEVICE = 4
     src_format = encoder_module.get_colorspaces()[0]
-    print("generating %s images..." % IMAGE_COUNT)
+    log("generating %s images..." % IMAGE_COUNT)
     images = []
     for _ in range(IMAGE_COUNT):
         images += gen_src_images(src_format, w, h, 1)
         sys.stdout.write(".")
         sys.stdout.flush()
-    print("%s images generated" % IMAGE_COUNT)
+    log("%s images generated" % IMAGE_COUNT)
     encoders = []
     for device_id, device_info in cuda_devices.items():
         options = {"cuda_device" : device_id}
         for i in range(ENCODER_CONTEXTS_PER_DEVICE):
             e = ec()
             e.init_context(w, h, src_format, encoding, 20, 0, options)
-            print("encoder %s for device %s initialized" % (i, device_id))
+            log("encoder %s for device %s initialized" % (i, device_id))
             info = "%s / encoder %s" % (device_info, i)
             encoders.append((info, e, images))
-    print("%s encoders initialized: %s" % (len(encoders), [e[1] for e in encoders]))
+    log("%s encoders initialized: %s" % (len(encoders), [e[1] for e in encoders]))
     threads = []
     i = 0
     for info, encoder, images in encoders:
@@ -101,32 +127,33 @@ def test_parallel_encode():
         thread = threading.Thread(target=encoding_thread, name=name, args=(encoder, src_format, w, h, images, name))
         threads.append(thread)
         i += 1
-    print("%s threads created: %s" % (len(threads), threads))
-    print("starting all threads")
-    print("")
+    log("%s threads created: %s" % (len(threads), threads))
+    log("starting all threads")
+    log("")
     for thread in threads:
         thread.start()
-    print("%s threads started - waiting for completion" % len(threads))
+    log("%s threads started - waiting for completion" % len(threads))
     for thread in threads:
         thread.join()
-    print("all threads ended")
+    log("all threads ended")
     for _, encoder, _ in encoders:
         encoder.clean()
-    print("")
+    log("")
 
 
 def encoding_thread(encoder, src_format, w, h, images, info):
-    #print("encoding_thread(%s, %s, %s, %s, %s, %s)" % (encoder, src_format, w, h, images, info))
-    print("%s started" % info)
+    #log("encoding_thread(%s, %s, %s, %s, %s, %s)" % (encoder, src_format, w, h, images, info))
+    log("%s started" % info)
     do_test_encoder(encoder, src_format, w, h, images, name=info, log_data=False, pause=0.25)
 
 def main():
     import logging
     logging.root.setLevel(logging.INFO)
-    logging.root.addHandler(logging.StreamHandler(sys.stdout))
-    print("main()")
+    #logging.root.addHandler(logging.StreamHandler(sys.stdout))
+    log("main()")
     test_encode_one()
-    test_dimensions()
+    test_memleak()
+    #test_dimensions()
     #test_encode_all_GPUs()
     #test_context_limits()
     #test_parallel_encode()
