@@ -668,15 +668,17 @@ class WindowSource(object):
                 #better, so replace with merged regions:
                 regions = merged_rects
 
+        pixel_count = sum([rect.width*rect.height for rect in regions])
         log("send_delayed_regions: %s regions with %s pixels (coding=%s)", len(regions), pixel_count, coding)
-        if coding and self.must_encode_full_frame(window, coding):
+        actual_encoding = get_region_encoding(True, window, pixel_count, ww, wh, coding)
+        if actual_encoding and self.must_encode_full_frame(window, actual_encoding):
             #use full screen dimensions:
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, coding, options)
             return
 
         #we're processing a number of regions with a non video encoding:
         for region in regions:
-            actual_encoding = get_region_encoding(True, window, pixel_count, ww, wh, coding)
+            actual_encoding = get_region_encoding(True, window, region.width*region.height, ww, wh, coding)
             assert actual_encoding is not None, "failed to get an encoding for: %s" % ((True, window, pixel_count, ww, wh, coding))
             self.process_damage_region(damage_time, window, region.x, region.y, region.width, region.height, actual_encoding, options)
 
@@ -705,7 +707,7 @@ class WindowSource(object):
             return self.get_transparent_encoding(current_encoding)
         if is_tray:
             #tray needs a lossless encoder
-            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
+            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, pixel_count)
             log("do_get_best_encoding(..) using %s encoder for %s tray pixels", coding, pixel_count)
             return coding
         if AUTO_SWITCH_TO_RGB and pixel_count<MAX_PIXELS_PREFER_RGB and current_encoding in ("png", "webp"):
@@ -973,8 +975,6 @@ class WindowSource(object):
             return  None
         x, y, w, h, _ = image.get_geometry()
 
-        #isize may include the large rowstride...
-        isize = image.get_size()
         #more useful is the actual number of bytes (assuming 32bpp)
         #since we generally don't send the padding with it:
         psize = w*h*4

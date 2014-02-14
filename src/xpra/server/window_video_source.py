@@ -540,7 +540,7 @@ class WindowVideoSource(WindowSource):
             return None
 
         def switch_to_lossless(reason):
-            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
+            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, pixel_count)
             log("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
             return  coding
 
