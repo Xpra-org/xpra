@@ -10,10 +10,21 @@ import os
 from xpra.log import Logger
 log = Logger("win32")
 
-from xpra.platform.win32.win32_events import KNOWN_WM_EVENTS, get_win32_event_listener
+from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.util import AdHocStruct
 
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
+
+
+KNOWN_EVENTS = {}
+try:
+    import win32con             #@UnresolvedImport
+    for x in dir(win32con):
+        if x.endswith("_EVENT"):
+            v = getattr(win32con, x)
+            KNOWN_EVENTS[v] = x
+except:
+    pass
 
 
 def get_native_notifier_classes():
@@ -44,7 +55,7 @@ class ClientExtras(object):
         self._kh_warning = False
         self.setup_console_event_listener()
         try:
-            import win32con                 #@UnresolvedImport
+            import win32con                 #@Reimport @UnresolvedImport
             el = get_win32_event_listener(True)
             if el:
                 el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
@@ -113,8 +124,7 @@ class ClientExtras(object):
 
     def handle_console_event(self, event):
         log("handle_console_event(%s)", event)
-        import win32con         #@UnresolvedImport
-        event_name = KNOWN_WM_EVENTS.get(event, event)
+        event_name = KNOWN_EVENTS.get(event, event)
         info_events = [win32con.CTRL_C_EVENT,
                        win32con.CTRL_LOGOFF_EVENT,
                        win32con.CTRL_BREAK_EVENT,
