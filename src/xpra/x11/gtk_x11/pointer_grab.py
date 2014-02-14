@@ -19,6 +19,8 @@ from xpra.log import Logger
 log = Logger("x11", "window", "pointer")
 
 
+StructureNotifyMask = constants["StructureNotifyMask"]
+
 NotifyNormal    = constants["NotifyNormal"]
 NotifyGrab      = constants["NotifyGrab"]
 NotifyUngrab    = constants["NotifyUngrab"]
@@ -91,11 +93,11 @@ class PointerGrabHelper(gobject.GObject):
             # corral window selection masks, and those don't deserve
             # clobbering.  They are our friends!  X is driving me
             # slowly mad.
-            X11Window.addXSelectInput(get_xwindow(win), constants["StructureNotifyMask"])
+            X11Window.addXSelectInput(get_xwindow(win), StructureNotifyMask)
             add_event_receiver(win, self, max_receivers=-1)
             self._listening.append(win)
             win = get_parent(win)
-        log("grab: listening for: %s", self._listening)
+        log("grab: listening for: %s", [hex(x.xid) for x in self._listening])
 
     def do_xpra_unmap_event(self, event):
         log("grab: unmap")
