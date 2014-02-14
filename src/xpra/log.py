@@ -112,7 +112,7 @@ class Logger(object):
         if caller!="__main__":
             self.categories.insert(0, caller)
         self.logger = logging.getLogger(".".join(self.categories))
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
         disabled = False
         enabled = False
         for cat in self.categories:
@@ -120,10 +120,7 @@ class Logger(object):
                 disabled = True
             if "all" in debug_enabled_categories or cat in debug_enabled_categories or os.environ.get("XPRA_%s_DEBUG" % cat.upper(), "0")=="1":
                 enabled = True
-        if enabled and not disabled:
-            self.enable_debug()
-        else:
-            self.disable_debug()
+        self.debug_enabled = enabled and not disabled
         #ready, keep track of it:
         add_logger(self.categories, self)
 
@@ -131,13 +128,13 @@ class Logger(object):
         return "Logger(%s)" % ", ".join(self.categories)
 
     def is_debug_enabled(self):
-        return self.logger.isEnabledFor(logging.DEBUG)
+        return self.debug_enabled
 
     def enable_debug(self):
-        self.logger.setLevel(logging.DEBUG)
+        self.debug_enabled = True
 
     def disable_debug(self):
-        self.logger.setLevel(logging.INFO)
+        self.debug_enabled = False
 
 
     def log(self, level, msg, *args, **kwargs):
@@ -146,9 +143,11 @@ class Logger(object):
         self.logger.log(level, msg, *args, **kwargs)
 
     def __call__(self, msg, *args, **kwargs):
-        self.log(logging.DEBUG, msg, *args, **kwargs)
+        if self.debug_enabled:
+            self.log(logging.DEBUG, msg, *args, **kwargs)
     def debug(self, msg, *args, **kwargs):
-        self.log(logging.DEBUG, msg, *args, **kwargs)
+        if self.debug_enabled:
+            self.log(logging.DEBUG, msg, *args, **kwargs)
     def info(self, msg, *args, **kwargs):
         self.log(logging.INFO, msg, *args, **kwargs)
     def warn(self, msg, *args, **kwargs):
