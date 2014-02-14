@@ -71,10 +71,11 @@ class ClientExtras(object):
         self.client = None
 
     def activateapp(self, wParam, lParam):
-        log("WM_ACTIVATEAPP: %s/%s UNGRAB_KEY=%s, client=%s", wParam, lParam, UNGRAB_KEY, self.client)
+        log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, UNGRAB_KEY, self.client)
         if wParam==0 and self.client:
             #our app has lost focus
             wid = self.client.window_with_grab
+            log("window with grab=%s, UNGRAB_KEY=%s", wid, UNGRAB_KEY)
             if wid is not None and UNGRAB_KEY:
                 self.force_ungrab(wid)
 
@@ -94,7 +95,7 @@ class ClientExtras(object):
             return
         #ungrab_keys.append((65307, "Escape", 27, 0, 0))     #ugly hardcoded default value
         ungrab_key = ungrab_keys[0]
-        log("lost focus whilst window has grab, simulating keypress: %s", ungrab_key)
+        log("lost focus whilst window %s has grab, simulating keypress: %s", wid, ungrab_key)
         key_event = AdHocStruct()
         key_event.keyname = ungrab_key[1]
         key_event.pressed = True
