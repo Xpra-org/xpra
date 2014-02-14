@@ -266,7 +266,7 @@ class WindowVideoSource(WindowSource):
             #how many damage events occurred since we chose this region:
             event_count = self.statistics.damage_events_count - self.video_subregion_set_at
             #make the timeout longer when the region has worked longer:
-            slow_region_timeout = 10 + math.log(1+event_count, 1.5)
+            slow_region_timeout = 10 + math.log(2+event_count, 1.5)
             if self.video_subregion is not None and elapsed>=slow_region_timeout:
                 sublog("identify video: too much time has passed (%is for %s %s events), clearing region", elapsed, event_types, event_count)
                 update_markers()
