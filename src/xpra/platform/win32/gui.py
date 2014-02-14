@@ -71,7 +71,7 @@ class ClientExtras(object):
         self.client = None
 
     def activateapp(self, wParam, lParam):
-        log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, UNGRAB_KEY, self.client)
+        log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, self.client)
         if wParam==0 and self.client:
             #our app has lost focus
             wid = self.client.window_with_grab
