@@ -26,6 +26,7 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 
 from xpra.log import Logger
 log = Logger("x11", "server")
+keylog = Logger("x11", "server", "keyboard")
 
 from xpra.util import prettify_plug_name
 from xpra.server.gtk_server_base import GTKServerBase
@@ -137,7 +138,7 @@ class X11ServerBase(GTKServerBase):
             self.key_repeat_interval = -1
             #but do set a default repeat rate:
             X11Keyboard.set_key_repeat_rate(500, 30)
-
+            keylog("keyboard repeat disabled")
 
     def make_hello(self):
         capabilities = GTKServerBase.make_hello(self)
@@ -172,12 +173,14 @@ class X11ServerBase(GTKServerBase):
             # re-enable via idle_add to give all the pending
             # events a chance to run first (and get ignored)
             def reenable_keymap_changes(*args):
+                keylog("reenable_keymap_changes(%s)", args)
                 self.keymap_changing = False
                 self._keys_changed()
             gobject.idle_add(reenable_keymap_changes)
 
 
     def _clear_keys_pressed(self):
+        keylog("_clear_keys_pressed()")
         #make sure the timers don't fire and interfere:
         if len(self.keys_repeat_timers)>0:
             for timer in self.keys_repeat_timers.values():
@@ -421,6 +424,7 @@ class X11ServerBase(GTKServerBase):
 
 
     def fake_key(self, keycode, press):
+        keylog("fake_key(%s, %s)", keycode, press)
         trap.call_synced(X11Keyboard.xtest_fake_key, keycode, press)
 
 
