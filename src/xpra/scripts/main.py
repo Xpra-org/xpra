@@ -171,10 +171,14 @@ def parse_cmdline(cmdline):
                 return "enabled"
             else:
                 return "disabled"
+        group.add_option("--fake-xinerama", action="store_true",
+                          dest="fake_xinerama",
+                          default=defaults.fake_xinerama,
+                          help="Enable fake xinerama support (default: %s)" % enabled_str(defaults.fake_xinerama))
         group.add_option("--no-fake-xinerama", action="store_false",
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
-                          help="Turn off fake xinerama support (default: %s)" % enabled_str(defaults.fake_xinerama))
+                          help="Disable fake xinerama support (default: %s)" % enabled_str(defaults.fake_xinerama))
     else:
         hidden_options["use_display"] = False
         hidden_options["xvfb"] = ''
@@ -188,21 +192,30 @@ def parse_cmdline(cmdline):
     else:
         hidden_options["bind_tcp"] = []
     if (supports_server or supports_shadow):
+        group.add_option("--mdns", action="store_true",
+                          dest="mdns", default=defaults.mdns,
+                          help="Enable publishing of session information via mDNS (default: %s)" % enabled_str(defaults.mdns))
         group.add_option("--no-mdns", action="store_false",
                           dest="mdns", default=defaults.mdns,
-                          help="Don't publish session information via mDNS")
+                          help="Disable publishing of session information via mDNS (default: %s)" % enabled_str(defaults.mdns))
     else:
         hidden_options["mdns"] = False
     if supports_server:
+        group.add_option("--pulseaudio", action="store_true",
+                      dest="pulseaudio", default=defaults.pulseaudio,
+                      help="Enable starting of a pulseaudio server for the session")
         group.add_option("--no-pulseaudio", action="store_false",
                       dest="pulseaudio", default=defaults.pulseaudio,
                       help="Disable starting of a pulseaudio server for the session")
         group.add_option("--pulseaudio-command", action="store",
                       dest="pulseaudio_command", default=defaults.pulseaudio_command,
                       help="The command used to start the pulseaudio server (default: '%default')")
-        group.add_option("--no-dbus-proxy", action="store",
+        group.add_option("--dbus-proxy", action="store_true",
                       dest="dbus_proxy", default=defaults.dbus_proxy,
-                      help="Disallow the forwarding of dbus calls from the client (default: '%default')")
+                      help="Enable forwarding of dbus calls from the client (default: %s)" % enabled_str(defaults.dbus_proxy))
+        group.add_option("--no-dbus-proxy", action="store_false",
+                      dest="dbus_proxy", default=defaults.dbus_proxy,
+                      help="Disable forwarding of dbus calls from the client (default: %s)" % enabled_str(defaults.dbus_proxy))
     else:
         hidden_options["pulseaudio"] = False
         hidden_options["pulseaudio_command"] = ""
@@ -213,40 +226,70 @@ def parse_cmdline(cmdline):
                 "they can be specified on the client or on the server, "
                 "but the client cannot enable them if they are disabled on the server.")
     parser.add_option_group(group)
+    group.add_option("--clipboard", action="store_true",
+                      dest="clipboard", default=defaults.clipboard,
+                      help="Enable clipboard support (default: %s)" % enabled_str(defaults.clipboard))
     group.add_option("--no-clipboard", action="store_false",
                       dest="clipboard", default=defaults.clipboard,
-                      help="Disable clipboard support")
+                      help="Disable clipboard support (default: %s)" % enabled_str(defaults.clipboard))
+    group.add_option("--notifications", action="store_true",
+                      dest="notifications", default=defaults.notifications,
+                      help="Enable forwarding of system notifications (default: %s)" % enabled_str(defaults.notifications))
     group.add_option("--no-notifications", action="store_false",
                       dest="notifications", default=defaults.notifications,
-                      help="Disable forwarding of system notifications")
+                      help="Disable forwarding of system notifications (default: %s)" % enabled_str(defaults.notifications))
+    group.add_option("--system-tray", action="store_true",
+                      dest="system_tray", default=defaults.system_tray,
+                      help="Disable forwarding of system tray icons (default: %s)" % enabled_str(defaults.system_tray))
     group.add_option("--no-system-tray", action="store_false",
                       dest="system_tray", default=defaults.system_tray,
-                      help="Disable forwarding of system tray icons")
+                      help="Disable forwarding of system tray icons (default: %s)" % enabled_str(defaults.system_tray))
+    group.add_option("--cursors", action="store_true",
+                      dest="cursors", default=defaults.cursors,
+                      help="Enable forwarding of custom application mouse cursors (default: %s)" % enabled_str(defaults.cursors))
     group.add_option("--no-cursors", action="store_false",
                       dest="cursors", default=defaults.cursors,
-                      help="Disable forwarding of custom application mouse cursors")
+                      help="Disable forwarding of custom application mouse cursors (default: %s)" % enabled_str(defaults.cursors))
+    group.add_option("--bell", action="store_true",
+                      dest="bell", default=defaults.bell,
+                      help="Enable forwarding of the system bell (default: %s)" % enabled_str(defaults.bell))
     group.add_option("--no-bell", action="store_false",
                       dest="bell", default=defaults.bell,
-                      help="Disable forwarding of the system bell")
+                      help="Disable forwarding of the system bell (default: %s)" % enabled_str(defaults.bell))
     if os.name=="posix":
+        group.add_option("--xsettings", action="store_true",
+                          dest="xsettings", default=defaults.xsettings,
+                          help="Enable xsettings synchronization (default: %s)" % enabled_str(defaults.xsettings))
         group.add_option("--no-xsettings", action="store_false",
                           dest="xsettings", default=defaults.xsettings,
-                          help="Disable xsettings synchronization")
+                          help="Disable xsettings synchronization (default: %s)" % enabled_str(defaults.xsettings))
     else:
         hidden_options["xsettings"] =  False
+    group.add_option("--mmap", action="store_true",
+                      dest="mmap", default=defaults.mmap,
+                      help="Enable memory mapped transfers for local connections (default: %s)" % enabled_str(defaults.mmap))
     group.add_option("--no-mmap", action="store_false",
                       dest="mmap", default=defaults.mmap,
-                      help="Disable memory mapped transfers for local connections")
+                      help="Disable memory mapped transfers for local connections (default: %s)" % enabled_str(defaults.mmap))
+    group.add_option("--readwrite", action="store_false",
+                      dest="readonly", default=defaults.readonly,
+                      help="Enable keyboard input and mouse events from the clients")
     group.add_option("--readonly", action="store_true",
                       dest="readonly", default=defaults.readonly,
-                      help="Ignore all keyboard input and mouse events from the clients")
-    group.add_option("--enable-sharing", action="store_true",
+                      help="Disable keyboard input and mouse events from the clients")
+    group.add_option("--sharing", action="store_true",
                       dest="sharing", default=defaults.sharing,
-                      help="Allow more than one client to connect to the same session")
+                      help="Allow more than one client to connect to the same session (default: %s)" % enabled_str(defaults.sharing))
+    group.add_option("--no-sharing", action="store_false",
+                      dest="sharing", default=defaults.sharing,
+                      help="Do not allow more than one client to connect to the same session (default: %s)" % enabled_str(defaults.sharing))
     if has_sound_support:
+        group.add_option("--speaker", action="store_true",
+                          dest="speaker", default=defaults.speaker,
+                          help="Enable forwarding of sound output to the client(s) (default: %s)" % enabled_str(defaults.speaker))
         group.add_option("--no-speaker", action="store_false",
                           dest="speaker", default=defaults.speaker,
-                          help="Disable forwarding of sound output to the client(s)")
+                          help="Disable forwarding of sound output to the client(s) (default: %s)" % enabled_str(defaults.speaker))
         CODEC_HELP = """Specify the codec(s) to use for forwarding the %s sound output.
     This parameter can be specified multiple times and the order in which the codecs
     are specified defines the preferred codec order.
@@ -255,9 +298,12 @@ def parse_cmdline(cmdline):
         group.add_option("--speaker-codec", action="append",
                           dest="speaker_codec", default=defaults.speaker_codec,
                           help=CODEC_HELP % "speaker")
+        group.add_option("--microphone", action="store_true",
+                          dest="microphone", default=defaults.microphone,
+                          help="Enable forwarding of sound input to the server (default: %s)" % enabled_str(defaults.microphone))
         group.add_option("--no-microphone", action="store_false",
                           dest="microphone", default=defaults.microphone,
-                          help="Disable forwarding of sound input to the server")
+                          help="Disable forwarding of sound input to the server (default: %s)" % enabled_str(defaults.microphone))
         group.add_option("--microphone-codec", action="append",
                           dest="microphone_codec", default=defaults.microphone_codec,
                           help=CODEC_HELP % "microphone")
@@ -315,9 +361,12 @@ def parse_cmdline(cmdline):
     group.add_option("--opengl", action="store",
                       dest="opengl", default=defaults.opengl,
                       help="Use OpenGL accelerated rendering, options: yes,no,auto. Default: %s." % print_bool("opengl", defaults.opengl))
+    group.add_option("--windows", action="store_true",
+                      dest="windows", default=defaults.windows,
+                      help="Forward windows (default: %s)" % enabled_str(defaults.windows))
     group.add_option("--no-windows", action="store_false",
                       dest="windows", default=defaults.windows,
-                      help="Tells the server not to send any window data, only notifications and bell events will be forwarded (if enabled).")
+                      help="Do not forward windows (default: %s)" % enabled_str(defaults.windows))
     group.add_option("--session-name", action="store",
                       dest="session_name", default=defaults.session_name,
                       help="The name of this session, which may be used in notifications, menus, etc. Default: Xpra")
@@ -346,9 +395,12 @@ def parse_cmdline(cmdline):
                       dest="key_shortcut", type="str", default=defaults.key_shortcut,
                       help="Define key shortcuts that will trigger specific actions."
                       + "If no shortcuts are defined, it defaults to '%s'" % (",".join(defaults.key_shortcut or [])))
+    group.add_option("--keyboard-sync", action="store_true",
+                      dest="keyboard_sync", default=defaults.keyboard_sync,
+                      help="Enable keyboard state synchronization (default: %)")
     group.add_option("--no-keyboard-sync", action="store_false",
                       dest="keyboard_sync", default=defaults.keyboard_sync,
-                      help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly")
+                      help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly (default: %default)")
 
     group = OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")

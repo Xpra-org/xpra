@@ -4,6 +4,9 @@
 # later version. See the file COPYING for details.
 
 def add_notray_option(parser, extra_text=""):
+    parser.add_option("--tray", action="store_true",
+                          dest="tray", default=True,
+                          help="Enables Xpra's own system tray applet%s" % extra_text)
     parser.add_option("--no-tray", action="store_false",
                           dest="tray", default=True,
                           help="Disables Xpra's own system tray applet%s" % extra_text)
