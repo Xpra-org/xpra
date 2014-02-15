@@ -234,6 +234,9 @@ class ServerCore(object):
             self.quit(upgrading)
         #if from a signal, just force quit:
         stop_worker(from_signal)
+        if not from_signal:
+            #not from signal: use force stop worker after delay
+            self.timeout_add(250, stop_worker, True)
         self.timeout_add(500, quit_timer)
         def force_quit(*args):
             log.debug("force_quit()")
