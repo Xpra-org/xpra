@@ -27,6 +27,7 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.log import Logger
 log = Logger("x11", "server")
 keylog = Logger("x11", "server", "keyboard")
+mouselog = Logger("x11", "server", "mouse")
 
 from xpra.util import prettify_plug_name
 from xpra.server.gtk_server_base import GTKServerBase
@@ -429,6 +430,7 @@ class X11ServerBase(GTKServerBase):
 
 
     def _move_pointer(self, wid, pos):
+        mouselog("move_pointer(%s, %s)", wid, pos)
         x, y = pos
         display = gtk.gdk.display_get_default()
         display.warp_pointer(display.get_default_screen(), x, y)

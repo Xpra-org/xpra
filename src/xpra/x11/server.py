@@ -36,7 +36,7 @@ focuslog = Logger("server", "focus")
 
 import xpra
 from xpra.os_util import StringIOClass
-from xpra.x11.x11_server_base import X11ServerBase
+from xpra.x11.x11_server_base import X11ServerBase, mouselog
 from xpra.net.protocol import compressed_wrapper, Compressed
 
 
@@ -624,8 +624,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _move_pointer(self, wid, pos):
         window = self._id_to_window.get(wid)
         if not window:
-            log("_process_mouse_common() invalid window id: %s", wid)
+            mouselog("_process_mouse_common() invalid window id: %s", wid)
         else:
+            mouselog("raising %s", window)
             window.raise_window()
         X11ServerBase._move_pointer(self, wid, pos)
 
