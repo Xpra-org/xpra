@@ -14,6 +14,11 @@ debug = log.debug
 
 
 class Worker_Thread(Thread):
+    """
+        A background thread which calls the functions we post to it.
+        The functions are placed in a queue and only called once,
+        when this thread gets around to it.
+    """
 
     def __init__(self):
         Thread.__init__(self, name="Worker_Thread")
@@ -22,6 +27,8 @@ class Worker_Thread(Thread):
         self.setDaemon(True)
 
     def stop(self, force=False):
+        if self.exit:
+            return
         if force:
             if self.items.qsize()>0:
                 log.warn("Worker_Thread.stop(%s) %s items in work queue will not run!", force, self.items.qsize())
@@ -49,6 +56,7 @@ class Worker_Thread(Thread):
             except:
                 log.error("Worker_Thread.run() error on %s", item, exc_info=True)
         debug("Worker_Thread.run() ended")
+        self.exit = True
 
 #only one worker thread for now:
 singleton = None
