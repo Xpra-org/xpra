@@ -319,8 +319,11 @@ class ProxyInstanceProcess(Process):
             missing = [x for x in self.video_encoder_types if x not in e_found]
             if len(missing)>0:
                 log.warn("the following proxy encoders were not found or did not match: %s", ", ".join(missing))
-            fc["encoding.proxy.video.encodings"] = encoding_defs
-            fc["encoding.proxy.video"] = True
+            else:
+                log("found the following proxy encoders: %s", e_found)
+            if len(encoding_defs)>0:
+                fc["encoding.proxy.video.encodings"] = encoding_defs
+            fc["encoding.proxy.video"] = len(e_found)>0
         return fc
 
     def filter_server_caps(self, caps):
