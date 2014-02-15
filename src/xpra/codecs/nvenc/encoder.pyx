@@ -1755,17 +1755,7 @@ cdef class Encoder:
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
         ret = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
         if ret!=0:
-            global API_V2_WARNING
-            #API version 2.0 fails every time
-            #we call nvEncGetEncodePresetConfig and I don't know why
-            #so warn just once:
-            if NVENCAPI_VERSION==0x20:
-                log("failed to get preset config for %s", name)
-                if not API_V2_WARNING:
-                    log.warn("API version %#x fails on nvEncGetEncodePresetConfig (no further warnings will be shown)", NVENCAPI_VERSION)
-                API_V2_WARNING = True
-            else:
-                log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(ret, ret))
+            log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(ret, ret))
             return NULL
         return presetConfig
 
@@ -1952,6 +1942,9 @@ cdef class Encoder:
 
 
 def init_module():
+    if NVENCAPI_VERSION<=0x20:
+        raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
+
     #check that we have CUDA device(s):
     cuda_check()
 
