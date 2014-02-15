@@ -42,6 +42,9 @@ class ClientWindowBase(ClientWidgetBase):
         self.init_window(metadata)
         self.setup_window()
 
+    def __repr__(self):
+        return "ClientWindow(%s)" % self._id
+
     def init_window(self, metadata):
         self._can_set_workspace = False
         self._backing = None

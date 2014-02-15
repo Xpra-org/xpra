@@ -29,6 +29,11 @@ if os.name=="posix":
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
         from xpra.x11.gtk_x11.error import trap
         HAS_X11_BINDINGS = True
+
+        SubstructureNotifyMask = constants["SubstructureNotifyMask"]
+        SubstructureRedirectMask = constants["SubstructureRedirectMask"]
+        CurrentTime = constants["CurrentTime"]
+
         try:
             #TODO: in theory this is not a proper check, meh - that will do
             root = gtk.gdk.get_default_root_window()
@@ -94,7 +99,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
         iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
         self._client_properties["maximized"] = maximized
-        self.debug("window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s, maximized=%s, iconified=%s", widget, repr(event), event.new_window_state, self._fullscreen, maximized, iconified)
+        self.debug("%s.window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s, maximized=%s, iconified=%s", self, widget, repr(event), event.new_window_state, self._fullscreen, maximized, iconified)
         if iconified!=self._iconified:
             #handle iconification as map events:
             assert not self._override_redirect
@@ -113,7 +118,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def set_fullscreen(self, fullscreen):
         if self._fullscreen is None or self._fullscreen!=fullscreen:
             #note: the "_fullscreen" flag is updated by the window-state-event, not here
-            self.debug("set_fullscreen(%s)", fullscreen)
+            self.debug("%s.set_fullscreen(%s)", self, fullscreen)
             if fullscreen:
                 self.fullscreen()
             else:
@@ -127,12 +132,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 iid = int(xid, 16)
                 self.xset_u32_property(self.gdk_window(), "XID", iid)
             except Exception, e:
-                self.debug("set_xid(%s) error parsing/setting xid: %s", xid, e)
+                self.debug("%s.set_xid(%s) error parsing/setting xid: %s", self, xid, e)
                 return
 
     def xget_u32_property(self, target, name):
         v = prop_get(target, name, "u32", ignore_errors=True)
-        self.debug("xget_u32_property(%s, %s)=%s", target, name, v)
+        self.debug("%s.xget_u32_property(%s, %s)=%s", self, target, name, v)
         if type(v)==int:
             return  v
         return None
@@ -149,7 +154,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def property_changed(self, widget, event):
-        self.debug("property_changed: %s", event.atom)
+        self.debug("%s.property_changed(%s, %s) : %s", self, widget, event.atom)
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
             #fake a configure event to send the new client_properties with
             #the updated workspace number:
@@ -159,17 +164,17 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         assert HAS_X11_BINDINGS
         root = self.gdk_window().get_screen().get_root_window()
         ndesktops = self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
-        self.debug("set_workspace() ndesktops=%s", ndesktops)
+        self.debug("%s.do_set_workspace(%s) ndesktops=%s", self, workspace, ndesktops)
         if ndesktops is None or ndesktops<=1:
             return  -1
         workspace = max(0, min(ndesktops-1, workspace))
-        event_mask = constants["SubstructureNotifyMask"] | constants["SubstructureRedirectMask"]
+        event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+
         def send():
             root_window = get_xwindow(root)
             window = get_xwindow(self.gdk_window())
             X11WindowBindings.sendClientMessage(root_window, window, False, event_mask, "_NET_WM_DESKTOP",
-                  workspace, constants["CurrentTime"],
-                  0, 0, 0)
+                  workspace, CurrentTime, 0, 0, 0)
         trap.call_synced(send)
         return workspace
 
@@ -184,19 +189,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if wid==-1:
             #root is a gdk window, so we need to ensure we have one
             #backing our gtk window to be able to call set_transient_for on it
-            self.debug("apply_transient_for(%s) gdkwindow=%s, mapped=%s", wid, self.gdk_window(), self.is_mapped())
+            self.debug("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s", self, wid, self.gdk_window(), self.is_mapped())
             if self.gdk_window() is None:
                 self.realize()
             self.gdk_window().set_transient_for(gtk.gdk.get_default_root_window())
         else:
             #gtk window is easier:
             window = self._client._id_to_window.get(wid)
-            self.debug("apply_transient_for(%s) window=%s", wid, window)
+            self.debug("%s.apply_transient_for(%s) window=%s", self, wid, window)
             if window:
                 self.set_transient_for(window)
 
     def update_icon(self, width, height, coding, data):
-        self.debug("update_icon(%s, %s, %s, %s bytes)", width, height, coding, len(data))
+        self.debug("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
         if coding == "premult_argb32":
             if unpremultiply_argb is not None:
                 #we usually cannot do in-place and this is not performance critical
@@ -221,7 +226,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def paint_spinner(self, context, area):
-        self.debug("paint_spinner(%s, %s)", context, area)
+        self.debug("%s.paint_spinner(%s, %s)", self, context, area)
         #add grey semi-opaque layer on top:
         context.set_operator(cairo.OPERATOR_OVER)
         context.set_source_rgba(0.2, 0.2, 0.2, 0.8)
@@ -254,7 +259,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_map_event(self, event):
-        self.debug("Got map event: %s - OR=%s", event, self._override_redirect)
+        self.debug("%s.do_map_event(%s) OR=%s", self, event, self._override_redirect)
         gtk.Window.do_map_event(self, event)
         self._been_mapped = True
         xid = self._metadata.get("xid")
@@ -282,7 +287,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.idle_add(self._focus_change, "initial")
 
     def do_configure_event(self, event):
-        self.debug("Got configure event: %s", event)
+        self.debug("%s.do_configure_event(%s)", self, event)
         gtk.Window.do_configure_event(self, event)
         if not self._override_redirect:
             self.process_configure_event()
@@ -304,7 +309,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     workspace = self.get_current_workspace()
                 if workspace>=0:
                     self._client_properties["workspace"] = workspace
-            self.debug("configure-window for wid=%s with client props=%s", self._id, self._client_properties)
+            self.debug("%s sending configure-window with client props=%s", self, self._client_properties)
             self.send("configure-window", self._id, x, y, w, h, self._client_properties)
         if dx!=0 or dy!=0:
             #window has moved
@@ -386,6 +391,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def _focus_change(self, *args):
         assert not self._override_redirect
         htf = self.get_property("has-toplevel-focus")
-        focuslog("_focus_change(%s) wid=%s, has-toplevel-focus=%s, _been_mapped=%s", args, self._id, htf, self._been_mapped)
+        focuslog("%s focus_change(%s) has-toplevel-focus=%s, _been_mapped=%s", self, args, htf, self._been_mapped)
         if self._been_mapped:
             self._client.update_focus(self._id, htf)

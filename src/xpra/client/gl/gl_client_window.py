@@ -23,7 +23,7 @@ class GLClientWindow(ClientWindow):
         self.add(self._backing._backing)
 
     def __str__(self):
-        return "GLClientWindow(%s)" % self._backing
+        return "GLClientWindow(%s : %s)" % (self._id, self._backing)
 
     def is_GL(self):
         return True
