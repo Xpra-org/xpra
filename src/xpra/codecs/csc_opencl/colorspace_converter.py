@@ -142,9 +142,9 @@ def select_device():
             log("device is a %s, using CPU cost=%s, GPU cost=%s", device_type(d), selected_device_cpu_cost, selected_device_gpu_cost)
             return
         except Exception, e:
-            log.warn("failed to use %s", platform_info(p))
-            log.warn("with %s device %s", device_type(d), device_info(d))
-            log.warn("Error: %s", e, exc_info=True)
+            log.warn(" failed to use %s", platform_info(p))
+            log.warn(" with %s device %s", device_type(d), device_info(d))
+            log.warn(" Error: %s", e)
     #fallback to pyopencl auto mode:
     log.warn("OpenCL Error: failed to find a working platform and device combination... trying with pyopencl's 'create_some_context'")
     context = pyopencl.create_some_context(interactive=False)
