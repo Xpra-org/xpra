@@ -1252,7 +1252,6 @@ cdef class Encoder:
     cdef object last_frame_times
     cdef long long bytes_in
     cdef long long bytes_out
-    cdef int api_warning
 
     cdef GUID get_codec(self):
         codecs = self.query_codecs()
