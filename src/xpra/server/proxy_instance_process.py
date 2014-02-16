@@ -575,7 +575,7 @@ class ProxyInstanceProcess(Process):
         packet[7] = Compressed(encoding, data)
         packet[10] = client_options
         log("returning %s bytes from %s", len(data), len(pixels))
-        return (ve not in self.lost_windows)
+        return (wid not in self.lost_windows)
 
     def _find_video_encoder(self, encoding, rgb_format):
         colorspace_specs = self.video_helper.get_encoder_specs(encoding)
