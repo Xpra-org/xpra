@@ -121,6 +121,8 @@ cdef class ColorspaceConverter:
     cdef double time
     cdef int buffer_size
 
+    cdef object __weakref__
+
     def init_context(self, int src_width, int src_height, src_format,
                            int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
         assert src_format in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (src_format, get_input_colorspaces())

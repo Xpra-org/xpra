@@ -19,6 +19,7 @@ from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol import Protocol, Compressed, compressed_wrapper, new_cipher_caps, get_network_caps
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES
 from xpra.util import typedict
 from xpra.daemon_thread import make_daemon_thread
@@ -38,13 +39,17 @@ MAX_CONCURRENT_CONNECTIONS = 20
 
 class ProxyInstanceProcess(Process):
 
-    def __init__(self, uid, gid, env_options, session_options, socket_dir, client_conn, client_state, cipher, encryption_key, server_conn, caps, message_queue):
+    def __init__(self, uid, gid, env_options, session_options, socket_dir,
+                 video_encoder_modules, csc_modules,
+                 client_conn, client_state, cipher, encryption_key, server_conn, caps, message_queue):
         Process.__init__(self, name=str(client_conn))
         self.uid = uid
         self.gid = gid
         self.env_options = env_options
         self.session_options = self.sanitize_session_options(session_options)
         self.socket_dir = socket_dir
+        self.video_encoder_modules = video_encoder_modules
+        self.csc_modules = csc_modules
         self.client_conn = client_conn
         self.client_state = client_state
         self.cipher = cipher
@@ -59,8 +64,9 @@ class ProxyInstanceProcess(Process):
         self.message_queue = message_queue
         self.encode_queue = None            #holds draw packets to encode
         self.encode_thread = None
-        self.video_encoder_types = ["nvenc", "x264"]
+        self.video_encoding_defs = {}
         self.video_encoders = {}
+        self.video_encoder_types = []
         self.video_helper = None
         self.lost_windows = None
         #for handling the local unix domain socket:
@@ -118,6 +124,7 @@ class ProxyInstanceProcess(Process):
         if self.env_options:
             #TODO: whitelist env update?
             os.environ.update(self.env_options)
+        self.video_init()
 
         log.info("new proxy started for client %s and server %s", self.client_conn, self.server_conn)
 
@@ -131,7 +138,6 @@ class ProxyInstanceProcess(Process):
             self.control_socket_thread = make_daemon_thread(self.control_socket_loop, "control")
             self.control_socket_thread.start()
         
-
         self.main_queue = Queue()
         #setup protocol wrappers:
         self.server_packets = Queue(PROXY_QUEUE_SIZE)
@@ -166,6 +172,44 @@ class ProxyInstanceProcess(Process):
                 self.stop(str(e))
         finally:
             log("ProxyProcess.run() ending %s", os.getpid())
+
+    def video_init(self):
+        log("video_init() will try video encoders: %s", self.video_encoder_modules)
+        self.video_helper = getVideoHelper()
+        self.video_helper.set_modules(self.video_encoder_modules, self.csc_modules)
+        self.video_helper.init()
+
+        self.video_encoding_defs = {}
+        self.video_encoders = {}
+        self.video_encoder_types = []
+
+        #figure out which encoders we want to proxy for (if any):
+        encoder_types = set()
+        for encoding in self.video_helper.get_encodings():
+            colorspace_specs = self.video_helper.get_encoder_specs(encoding)
+            for colorspace, especs in colorspace_specs.items():
+                if colorspace not in ("BGRX", "BGRA", "RGBX", "RGBA"):
+                    #only deal with encoders that can handle plain RGB directly
+                    continue
+
+                for spec in especs:                             #ie: codec_spec("x264")
+                    spec_props = spec.to_dict()
+                    del spec_props["codec_class"]               #not serializable!
+                    spec_props["score_boost"] = 50              #we want to win scoring so we get used ahead of other encoders
+                    spec_props["max_instances"] = 2             #limit to 2 video streams we proxy for
+                    #store it in encoding defs:
+                    self.video_encoding_defs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec_props)
+                    encoder_types.add(spec.codec_type)
+
+        log("encoder types found: %s", encoder_types)
+        #remove duplicates and use preferred order:
+        order = PREFERRED_ENCODER_ORDER[:]
+        for x in list(encoder_types):
+            if x not in order:
+                order.append(x)
+        self.video_encoder_types = [x for x in order if x in encoder_types]
+        log.info("proxy video encoders: %s", self.video_encoder_types)
+
 
     def create_control_socket(self):
         dotxpra = DotXpra(self.socket_dir)
@@ -289,41 +333,10 @@ class ProxyInstanceProcess(Process):
         fc = self.filter_caps(caps, ("cipher", "digest", "aliases", "compression", "lz4"))
         #update with options provided via config if any:
         fc.update(self.session_options)
-        if self.video_encoder_types:
-            #pass list of encoding specs to client:
-            from xpra.codecs.video_helper import getVideoHelper
-            self.video_helper = getVideoHelper()
-            self.video_helper.init()
-            #serialize encodings defs into a dict:
-            encoding_defs = {}
-            e_found = []
-            #encoding: "h264" or "vp8", etc
-            for encoding in self.video_helper.get_encodings():
-                #ie: colorspace_specs = {"BGRX" : [codec_spec("x264"), codec_spec("nvenc")], "YUV422P" : ...
-                colorspace_specs = self.video_helper.get_encoder_specs(encoding)
-                #ie: colorspace="BGRX", especs=[codec_spec("x264"), codec_spec("nvenc")]
-                for colorspace, especs in colorspace_specs.items():
-                    if colorspace not in ("BGRX", "BGRA", "RGBX", "RGBA"):
-                        #don't bother with formats that require a CSC step for now
-                        continue
-                    for spec in especs:                             #ie: codec_spec("x264")
-                        if spec.codec_type not in self.video_encoder_types:
-                            log("skipping encoder %s", spec.codec_type)
-                            continue
-                        spec_props = spec.to_dict()
-                        del spec_props["codec_class"]               #not serializable!
-                        spec_props["score_boost"] = 50              #we want to win scoring so we get used ahead of other encoders
-                        #store it in encoding defs:
-                        encoding_defs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec_props)
-                        e_found.append(spec.codec_type)
-            missing = [x for x in self.video_encoder_types if x not in e_found]
-            if len(missing)>0:
-                log.warn("the following proxy encoders were not found or did not match: %s", ", ".join(missing))
-            else:
-                log("found the following proxy encoders: %s", e_found)
-            if len(encoding_defs)>0:
-                fc["encoding.proxy.video.encodings"] = encoding_defs
-            fc["encoding.proxy.video"] = len(e_found)>0
+        #add video proxies if any:
+        fc["encoding.proxy.video"] = len(self.video_encoding_defs)>0
+        if self.video_encoding_defs:
+            fc["encoding.proxy.video.encodings"] = self.video_encoding_defs
         return fc
 
     def filter_server_caps(self, caps):
@@ -534,7 +547,7 @@ class ProxyInstanceProcess(Process):
             packet[10] = {"rgb_format" : rgb_format}
             return  True
 
-        #video encoding:
+        #video encoding: find existing encoder
         ve = self.video_encoders.get(wid)
         if ve:
             if ve in self.lost_windows:
@@ -545,6 +558,10 @@ class ProxyInstanceProcess(Process):
             #and scrap it if not (ie: when window is resized)
             if ve.get_width()!=width or ve.get_height()!=height:
                 log("closing existing video encoder %s because dimensions have changed from %sx%s to %sx%s", ve, ve.get_width(), ve.get_height(), width, height)
+                ve.clean()
+                ve = None
+            elif ve.get_encoding()!=encoding:
+                log("closing existing video encoder %s because encoding has changed from %s to %s", ve.get_encoding(), encoding)
                 ve.clean()
                 ve = None
         #scaling and depth are proxy-encoder attributes:
@@ -559,7 +576,7 @@ class ProxyInstanceProcess(Process):
             #make a new one:
             spec = self._find_video_encoder(encoding, rgb_format)
             log("creating new video encoder %s for window %s", spec, wid)
-            ve = spec.codec_class()
+            ve = spec.make_instance()
             ve.init_context(width, height, rgb_format, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
         else:
@@ -590,7 +607,7 @@ class ProxyInstanceProcess(Process):
     def get_encoder_info(self):
         info = {}
         for wid, encoder in list(self.video_encoders.items()):
-            ipath = "window[%s].proxy.encoder" % wid
+            ipath = "window[%s].proxy.encoder." % wid
             info[ipath] = encoder.get_type()
             vi = encoder.get_info()
             for k,v in vi.items():

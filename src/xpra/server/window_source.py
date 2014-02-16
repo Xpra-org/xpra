@@ -65,6 +65,7 @@ class WindowSource(object):
     def __init__(self, idle_add, timeout_add, source_remove,
                     queue_damage, queue_packet, statistics,
                     wid, window, batch_config, auto_refresh_delay,
+                    video_helper,
                     server_core_encodings, server_encodings,
                     encoding, encodings, core_encodings, encoding_options, rgb_formats,
                     default_encoding_options,
@@ -108,6 +109,7 @@ class WindowSource(object):
         self.suspended = False
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
+        self.video_helper = video_helper
         self.refresh_timer = None
         self.timeout_timer = None
         self.expire_timer = None

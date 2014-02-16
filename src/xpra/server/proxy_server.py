@@ -62,6 +62,8 @@ class ProxyServer(ServerCore):
         if not opts.auth:
             raise Exception("The proxy server requires an authentication mode (use 'none' to disable authentication)")
         self._socket_dir = opts.socket_dir
+        self.video_encoders = opts.video_encoders
+        self.csc_modules = opts.csc_modules
         ServerCore.init(self, opts)
 
     def get_server_mode(self):
@@ -213,7 +215,9 @@ class ProxyServer(ServerCore):
 
                 assert uid!=0 and gid!=0
                 message_queue = MQueue()
-                process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir, client_conn, client_state, cipher, encryption_key, server_conn, c, message_queue)
+                process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
+                                               self.video_encoders, self.csc_modules,
+                                               client_conn, client_state, cipher, encryption_key, server_conn, c, message_queue)
                 log("starting %s from pid=%s", process, os.getpid())
                 process.start()
                 log("process started")

@@ -4,6 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import weakref
+from xpra.log import Logger
+log = Logger("util")
+
+
 LOSSY_PIXEL_FORMATS = ("YUV420P", "YUV422P")
 
 PIXEL_SUBSAMPLING = {
@@ -50,6 +55,10 @@ class TransientCodecException(Exception):
 
 class codec_spec(object):
 
+    #I can't imagine why someone would have more than this many
+    #encoders or csc modules active at the same time!
+    WARN_LIMIT = 25
+
     def __init__(self, codec_class, codec_type="", encoding=None,
                     quality=100, speed=100,
                     setup_cost=50, cpu_cost=100, gpu_cost=0,
@@ -73,20 +82,49 @@ class codec_spec(object):
         self.height_mask = height_mask
         self.can_scale = can_scale
         self.encoding = encoding                #ie: "h264"
+        self.max_instances = 0
+        self._exported_fields = ("codec_class", "codec_type", "quality", "speed",
+                        "setup_cost", "cpu_cost", "gpu_cost", "score_boost",
+                        "min_w", "min_h", "max_w", "max_h",
+                        "width_mask", "height_mask",
+                        "can_scale", "encoding",
+                        "max_instances")
+        #not exported:
+        self.instances = weakref.WeakKeyDictionary()
+        self._all_fields = list(self._exported_fields)+["instances"]
+
+
+    def make_instance(self):
+        v = self.codec_class()
+        self.instances[v] = True
+        cur = self.get_instance_count()
+        if (self.max_instances>0 and cur>=self.max_instances) or cur>=codec_spec.WARN_LIMIT:
+            log.warn("Warning: already %s active instances of %s: %s", cur, self.codec_class, list(self.instances.keys()))
+        else:
+            log("make_instance() %s - instance count=%s", self.codec_type, self.instance_count.get())
+        return v
+
+    def get_instance_count(self):
+        return len(self.instances.keys())
 
     def to_dict(self):
         d = {}
-        for k in ("codec_class", "codec_type", "quality", "speed",
-                  "setup_cost", "cpu_cost", "gpu_cost", "score_boost",
-                  "min_w", "min_h", "max_w", "max_h",
-                  "width_mask", "height_mask",
-                  "can_scale", "encoding"):
+        for k in self._exported_fields:
             d[k] = getattr(self, k)
         return d
 
     def get_runtime_factor(self):
         #a cost multiplier that some encoder may want to override
         #1.0 means no change:
+        mi = self.max_instances
+        ic = len(self.instances.keys())
+        if ic==0:
+            return 1.0                      #no problem
+        if ic>=mi:
+            return 0                        #not possible
+        if mi>0 and ic>0:
+            #squared slope: 50% utilisation -> value=0.75
+            return max(0, 1.0 - (1.0*ic/mi)**2)
         return 1.0
 
     def __str__(self):
@@ -110,6 +148,8 @@ class codec_spec(object):
             if s=="csc_%s" % self.codec_type:
                 return self.codec_type
             if s=="enc_%s" % self.codec_type:
+                return self.codec_type
+            if self.codec_type==s:
                 return self.codec_type
             return "%s:%s" % (self.codec_type, s)
         except:

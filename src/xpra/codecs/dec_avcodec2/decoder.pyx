@@ -256,6 +256,8 @@ cdef class Decoder:
     cdef int height
     cdef object encoding
 
+    cdef object __weakref__
+
     def init_context(self, encoding, int width, int height, colorspace):
         cdef int r
         init_colorspaces()

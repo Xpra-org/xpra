@@ -184,6 +184,8 @@ cdef class Decoder:
     cdef char* dst_format
     cdef object encoding
 
+    cdef object __weakref__
+
     def init_context(self, encoding, width, height, colorspace):
         assert encoding in CODECS
         assert colorspace=="YUV420P"

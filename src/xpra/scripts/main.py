@@ -141,12 +141,12 @@ def parse_cmdline(cmdline):
         group.add_option("--exit-with-client", action="store_true",
                           dest="exit_with_client", default=False,
                           help="Terminate the server when the last client disconnects")
-        from xpra.codecs.video_helper import DEFAULT_VIDEO_ENCODERS, DEFAULT_CSC_MODULES
+        from xpra.codecs.video_helper import get_DEFAULT_VIDEO_ENCODERS, get_DEFAULT_CSC_MODULES
         #if we don't have any values yet from the config file(s), use the defaults we detect:
         if len(defaults.video_encoders)==0:
-            defaults.video_encoders = ",".join(DEFAULT_VIDEO_ENCODERS)
+            defaults.video_encoders = ",".join(get_DEFAULT_VIDEO_ENCODERS())
         if len(defaults.csc_modules)==0:
-            defaults.csc_modules = ",".join(DEFAULT_CSC_MODULES)
+            defaults.csc_modules = ",".join(get_DEFAULT_CSC_MODULES())
         group.add_option("--video-encoders", action="store",
                           dest="video_encoders", default=defaults.video_encoders,
                           help="Specify which video encoders to enable, to get a list of all the options specify 'help' (default: %default)")
@@ -485,12 +485,12 @@ def parse_cmdline(cmdline):
     if (supports_server or supports_shadow):
         if type(options.video_encoders)==str:
             if options.video_encoders=="help":
-                print("the following video encoders are available: %s" % ", ".join(DEFAULT_VIDEO_ENCODERS))
+                print("the following video encoders are available: %s" % ", ".join(get_DEFAULT_VIDEO_ENCODERS()))
                 sys.exit(0)
             options.video_encoders = [x.strip() for x in options.video_encoders.split(",")]
         if type(options.csc_modules)==str:
             if options.csc_modules=="help":
-                print("the following csc modules are available: %s" % ", ".join(DEFAULT_CSC_MODULES))
+                print("the following csc modules are available: %s" % ", ".join(get_DEFAULT_CSC_MODULES()))
                 sys.exit(0)
             options.csc_modules = [x.strip() for x in options.csc_modules.split(",")]
 

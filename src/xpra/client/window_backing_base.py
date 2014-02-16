@@ -283,7 +283,7 @@ class WindowBackingBase(object):
                     log("csc module %s cannot scale")
                     continue
                 try:
-                    csc = spec.codec_class()
+                    csc = spec.make_instance()
                     csc.init_context(src_width, src_height, src_format,
                                dst_width, dst_height, dst_format, speed)
                     return csc

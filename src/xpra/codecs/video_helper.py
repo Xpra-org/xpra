@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import copy
 from threading import Lock
 from xpra.log import Logger
 log = Logger("codec", "video")
@@ -16,48 +15,46 @@ instance = None
 #all the modules we know about:
 ALL_VIDEO_ENCODER_OPTIONS = ["vpx", "x264", "nvenc"]
 ALL_CSC_MODULE_OPTIONS = ["swscale", "cython", "opencl", "nvcuda"]
+PREFERRED_ENCODER_ORDER = ["nvenc", "x264", "vpx"]
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 
+
 def get_video_module_name(x):
         if x.find("enc")>=0:
-            return x            #ie: "nvenc"
+            return x            #ie: "nvenc" or "enc_vpx"
         return "enc_"+x         #ie: "enc_x264"
 
-def get_csc_module_name(x):    
+def get_csc_module_name(x):
     return "csc_"+x             #ie: "csc_swscale"
 
-#now figure out which modules are actually installed:
-DEFAULT_VIDEO_ENCODERS = []
-DEFAULT_CSC_MODULES = []
-for x in list(ALL_VIDEO_ENCODER_OPTIONS):
-    try:
-        vmod = get_video_module_name(x)
-        v = __import__(vmod, globals(), locals())
-        assert v is not None
-        DEFAULT_VIDEO_ENCODERS.append(x)
-    except Exception, e:
-        log("video encoder %s cannot be imported: %s", e)
-log("video_helper: DEFAULT_VIDEO_ENCODERS=%s", DEFAULT_VIDEO_ENCODERS)
-for x in list(ALL_CSC_MODULE_OPTIONS):
-    try:
-        cscmod = get_csc_module_name(x)
-        v = __import__(cscmod, globals(), locals())
-        assert v is not None
-        DEFAULT_CSC_MODULES.append(x)
-    except Exception, e:
-        log("csc module %s cannot be imported: %s", e)
-log("video_helper: DEFAULT_CSC_MODULES=%s", DEFAULT_CSC_MODULES)
-    
+
+def get_DEFAULT_VIDEO_ENCODERS():
+    encoders = []
+    for x in list(ALL_VIDEO_ENCODER_OPTIONS):
+        mod = get_video_module_name(x)
+        c = get_codec(mod)
+        if c:
+            encoders.append(x)
+    return encoders
+
+def get_DEFAULT_CSC_MODULES():
+    csc = []
+    for x in list(ALL_CSC_MODULE_OPTIONS):
+        mod = get_csc_module_name(x)
+        c = get_codec(mod)
+        if c:
+            csc.append(x)
+    return csc
+
 
 class VideoHelper(object):
 
     def __init__(self, vspecs={}, cscspecs={}, init=False):
-        global DEFAULT_VIDEO_ENCODERS, DEFAULT_CSC_MODULES
         self._video_encoder_specs = vspecs
         self._csc_encoder_specs = cscspecs
-        self._video_encoders = DEFAULT_VIDEO_ENCODERS
-        self._csc_modules = DEFAULT_CSC_MODULES
+        self._video_encoders = get_DEFAULT_VIDEO_ENCODERS()
+        self._csc_modules = get_DEFAULT_CSC_MODULES()
 
         #bits needed to ensure we can initialize just once
         #even when called from multiple threads:
@@ -69,16 +66,20 @@ class VideoHelper(object):
         self._video_encoders = video_encoders
         self._csc_modules = csc_modules
 
-    def clone(self, deep=False):
+    def clone(self):
         if not self._initialized:
             self.init()
-        if deep:
-            ves = copy.deepcopy(self._video_encoder_specs)
-            ces = copy.deepcopy(self._csc_encoder_specs)
-        else:
-            ves = self._video_encoder_specs.copy()
-            ces = self._csc_encoder_specs.copy()
-        #make a deep copy:
+        #manual deep-ish copy: make new dictionaries and lists,
+        #but keep the same codec specs:
+        ves = {}
+        for enc, d in self._video_encoder_specs.items():
+            for ifmt, l in d.items():
+                for cspec in l:
+                    ves.setdefault(enc, {}).setdefault(ifmt, []).append(cspec)
+        ces = {}
+        for ifmt, l in self._csc_encoder_specs.items():
+            for ofmt, cspec in l:
+                ces.setdefault(ifmt, []).append((ofmt, cspec))
         return VideoHelper(ves, ces, True)
 
     def get_info(self):
@@ -108,7 +109,7 @@ class VideoHelper(object):
         return self._video_encoder_specs.keys()
 
     def get_encoder_specs(self, encoding):
-        return self._video_encoder_specs.get(encoding, [])
+        return self._video_encoder_specs.get(encoding, {})
 
     def get_csc_specs(self, src_format):
         return self._csc_encoder_specs.get(src_format, [])
@@ -119,9 +120,9 @@ class VideoHelper(object):
 
     def init_video_encoders_options(self):
         for x in self._video_encoders:
-            module_name = get_video_module_name(x)  #ie: "enc_x264"
             try:
-                self.init_video_encoder_option(module_name)
+                mod = get_video_module_name(x)
+                self.init_video_encoder_option(mod)
             except:
                 log.warn("init_video_encoders_options() cannot add %s encoder", x, exc_info=True)
         log("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)
@@ -152,9 +153,9 @@ class VideoHelper(object):
 
     def init_csc_options(self):
         for x in self._csc_modules:
-            module_name = get_csc_module_name(x)    #ie: "csc_swscale"
             try:
-                self.init_csc_option(module_name)
+                mod = get_csc_module_name(x)
+                self.init_csc_option(mod)
             except:
                 log.warn("init_csc_options() cannot add %s csc", x, exc_info=True)
         log("init_csc_options() csc specs: %s", self._csc_encoder_specs)
@@ -175,7 +176,7 @@ class VideoHelper(object):
         try:
             csc_module.init_module()
         except Exception, e:
-            log.warn("cannot use %s module %s: %s", csc_type, csc_module, e, exc_info=True)
+            log.warn("cannot use %s module %s: %s", csc_type, csc_module, e)
             return
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:

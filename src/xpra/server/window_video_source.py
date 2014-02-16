@@ -11,8 +11,7 @@ from threading import Lock
 
 from xpra.util import AtomicInteger
 from xpra.net.protocol import Compressed
-from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException, codec_spec
-from xpra.codecs.video_helper import getVideoHelper
+from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException
 from xpra.server.window_source import WindowSource, AUTO_SWITCH_TO_RGB, MAX_PIXELS_PREFER_RGB
 from xpra.gtk_common.region import rectangle, merge_all
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
@@ -78,7 +77,7 @@ class WindowVideoSource(WindowSource):
         #0.10 onwards should have specified csc_modes:
         self.csc_modes = self.encoding_options.get("csc_modes", def_csc_modes)
 
-        self.video_encodings = ("vp8", "vp9", "h264")
+        self.video_encodings = self.video_helper.get_encodings()
         for x in self.video_encodings:
             if x in self.server_core_encodings:
                 self._encoders[x] = self.video_encode
@@ -103,30 +102,7 @@ class WindowVideoSource(WindowSource):
 
         self.last_pipeline_params = None
         self.last_pipeline_scores = []
-        self.video_helper = getVideoHelper()
-        if self.encoding_options.get("proxy.video", False):
-            #if we "proxy video", we will modify the video helper to add
-            #new encoders, so we must make a deep copy to preserve the original:
-            self.video_helper = getVideoHelper().clone(deep=True)
-            #enabling video proxy:
-            try:
-                self.parse_proxy_video()
-            except:
-                log.error("failed to parse proxy video", exc_info=True)
 
-    def parse_proxy_video(self):
-        from xpra.codecs.enc_proxy.encoder import Encoder
-        for encoding, colorspace_specs in self.encoding_options.get("proxy.video.encodings").items():
-            #ensure we do register it as a video format:
-            self._encoders[encoding] = self.video_encode
-            for colorspace, spec_props in colorspace_specs.items():
-                for spec_prop in spec_props:
-                    #make a new spec based on spec_props:
-                    spec = codec_spec(Encoder)
-                    for k,v in spec_prop.items():
-                        setattr(spec, k, v)
-                    log("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
-                    self.video_helper.add_encoder_spec(encoding, colorspace, spec)
 
     def add_stats(self, info, suffix=""):
         WindowSource.add_stats(self, info, suffix)
@@ -184,6 +160,13 @@ class WindowVideoSource(WindowSource):
             self._lock.acquire()
             self.do_csc_encoder_cleanup()
             self.do_video_encoder_cleanup()
+
+            #reset subregion state:
+            self.video_subregion = None
+            self.video_subregion_counter = 0
+            self.video_subregion_set_at = 0
+            self.video_subregion_time = 0
+            self.video_subregion_non_waited = 0
         finally:
             self._lock.release()
 
@@ -982,7 +965,7 @@ class WindowVideoSource(WindowSource):
                     #so make sure it never degrades quality
                     csc_speed = min(speed, 100-quality/2.0)
                     csc_start = time.time()
-                    self._csc_encoder = csc_spec.codec_class()
+                    self._csc_encoder = csc_spec.make_instance()
                     self._csc_encoder.init_context(csc_width, csc_height, src_format,
                                                           enc_width, enc_height, enc_in_format, csc_speed)
                     csc_end = time.time()
@@ -1006,7 +989,7 @@ class WindowVideoSource(WindowSource):
                     #log.warn("skipping invalid dimensions..")
                     continue
                 enc_start = time.time()
-                self._video_encoder = encoder_spec.codec_class()
+                self._video_encoder = encoder_spec.make_instance()
                 self._video_encoder.init_context(enc_width, enc_height, enc_in_format, encoder_spec.encoding, quality, speed, encoder_scaling, self.encoding_options)
                 #record new actual limits:
                 self.actual_scaling = scaling

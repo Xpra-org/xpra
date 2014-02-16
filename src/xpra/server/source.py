@@ -23,6 +23,8 @@ from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.scripts.config import python_platform
 from xpra.codecs.loader import get_codec, has_codec, OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
+from xpra.codecs.video_helper import getVideoHelper
+from xpra.codecs.codec_constants import codec_spec
 from xpra.net.protocol import compressed_wrapper, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machine_id, get_user_uuid
@@ -292,6 +294,7 @@ class ServerSource(object):
         self.damage_packet_queue = deque()         #holds actual packets ready for sending (already encoded)
                                                     #these packets are picked off by the "protocol" via 'next_packet()'
                                                     #format: packet, wid, pixels, start_send_cb, end_send_cb
+        self.video_helper = getVideoHelper()
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
         self.last_user_event = time.time()
@@ -577,6 +580,18 @@ class ServerSource(object):
                 self.encoding_options[k] = v
         elog("encoding options: %s", self.encoding_options)
 
+        #handle proxy video: add proxy codec to video helper:
+        if self.encoding_options.get("proxy.video", False):
+            #if we "proxy video", we will modify the video helper to add
+            #new encoders, so we must make a deep copy to preserve the original
+            #which may be used by other clients (other ServerSource instances):
+            self.video_helper = getVideoHelper().clone()
+            #enabling video proxy:
+            try:
+                self.parse_proxy_video()
+            except:
+                log.error("failed to parse proxy video", exc_info=True)
+
         q = c.intget("jpeg", self.default_quality)  #pre 0.7 versions
         q = self.encoding_options.intget("quality", q)         #0.7 onwards:
         if q>0:
@@ -614,6 +629,19 @@ class ServerSource(object):
         else:
             others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
             log.info("using %s as primary encoding, also available: %s", self.encoding, ", ".join(others))
+
+    def parse_proxy_video(self):
+        from xpra.codecs.enc_proxy.encoder import Encoder
+        for encoding, colorspace_specs in self.encoding_options.get("proxy.video.encodings").items():
+            for colorspace, spec_props in colorspace_specs.items():
+                for spec_prop in spec_props:
+                    #make a new spec based on spec_props:
+                    spec = codec_spec(Encoder)
+                    for k,v in spec_prop.items():
+                        setattr(spec, k, v)
+                    log("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
+                    self.video_helper.add_encoder_spec(encoding, colorspace, spec)
+
 
     def startup_complete(self):
         log("startup_complete()")
@@ -1393,6 +1421,7 @@ class ServerSource(object):
                               self.queue_damage, self.queue_packet,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
+                              self.video_helper,
                               self.server_core_encodings, self.server_encodings,
                               self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
                               self.default_encoding_options,

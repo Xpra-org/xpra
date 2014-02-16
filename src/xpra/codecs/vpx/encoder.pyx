@@ -221,6 +221,8 @@ cdef class Encoder:
     cdef object encoding
     cdef char* src_format
 
+    cdef object __weakref__
+
     def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
         assert encoding in CODECS, "invalid encoding: %s" % encoding
         assert scaling==(1,1), "vpx does not handle scaling"

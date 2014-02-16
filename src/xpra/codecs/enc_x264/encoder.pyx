@@ -215,6 +215,8 @@ cdef class Encoder:
     cdef long long bytes_out
     cdef object last_frame_times
 
+    cdef object __weakref__
+
     def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
         global COLORSPACES
         cs_info = COLORSPACES.get(src_format)

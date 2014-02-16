@@ -1253,6 +1253,8 @@ cdef class Encoder:
     cdef long long bytes_in
     cdef long long bytes_out
 
+    cdef object __weakref__
+
     cdef GUID get_codec(self):
         codecs = self.query_codecs()
         #codecs={'H264': '6BC82762-4E63-4CA4-AA85-1E50F321F6BF'}

@@ -261,6 +261,8 @@ cdef class ColorspaceConverter:
     cdef int out_size[4]
     cdef int buffer_size
 
+    cdef object __weakref__
+
     def init_context(self, int src_width, int src_height, src_format,
                            int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
         log("swscale.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
