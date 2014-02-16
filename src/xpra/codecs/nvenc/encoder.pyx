@@ -1209,9 +1209,6 @@ cpdef get_BGRA2NV12(device_id):
     return get_CUDA_kernel(device_id, "BGRA2NV12", BGRA2NV12_kernel)
 
 
-API_V2_WARNING = False
-
-
 cdef class Encoder:
     cdef int width
     cdef int height
