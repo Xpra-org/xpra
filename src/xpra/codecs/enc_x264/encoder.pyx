@@ -298,7 +298,7 @@ cdef class Encoder:
                 last_time = min(last_time, end)
                 ms_per_frame += (end-start)
         if f>0 and last_time<now:
-            info["fps"] = int(f/(now-last_time))
+            info["fps"] = int(0.5+f/(now-last_time))
             info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
         return info
 

@@ -71,7 +71,7 @@ class Encoder(object):
                 f += 1
                 last_time = min(last_time, v)
         if f>0 and last_time<now:
-            info["fps"] = int(f/(now-last_time))
+            info["fps"] = int(0.5+f/(now-last_time))
         return info
 
     def __str__(self):
