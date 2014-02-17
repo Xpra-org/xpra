@@ -196,7 +196,8 @@ class ProxyInstanceProcess(Process):
                     spec_props = spec.to_dict()
                     del spec_props["codec_class"]               #not serializable!
                     spec_props["score_boost"] = 50              #we want to win scoring so we get used ahead of other encoders
-                    spec_props["max_instances"] = 2             #limit to 2 video streams we proxy for
+                    spec_props["max_instances"] = 3             #limit to 3 video streams we proxy for (we really want 2,
+                                                                # but because of races with garbage collection, we need to allow more)
                     #store it in encoding defs:
                     self.video_encoding_defs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec_props)
                     encoder_types.add(spec.codec_type)
@@ -607,9 +608,9 @@ class ProxyInstanceProcess(Process):
     def get_encoder_info(self):
         info = {}
         for wid, encoder in list(self.video_encoders.items()):
-            ipath = "window[%s].proxy.encoder." % wid
+            ipath = "window[%s].proxy.encoder" % wid
             info[ipath] = encoder.get_type()
             vi = encoder.get_info()
             for k,v in vi.items():
-                info[ipath+k] = v
+                info[ipath+"."+k] = v
         return info
