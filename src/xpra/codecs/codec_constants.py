@@ -101,7 +101,7 @@ class codec_spec(object):
         if (self.max_instances>0 and cur>=self.max_instances) or cur>=codec_spec.WARN_LIMIT:
             log.warn("Warning: already %s active instances of %s: %s", cur, self.codec_class, list(self.instances.keys()))
         else:
-            log("make_instance() %s - instance count=%s", self.codec_type, self.instance_count.get())
+            log("make_instance() %s - instance count=%s", self.codec_type, cur)
         return v
 
     def get_instance_count(self):
