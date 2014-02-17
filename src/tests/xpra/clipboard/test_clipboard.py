@@ -5,7 +5,7 @@ pygtk.require('2.0')
 import gtk
 import gobject
 import sys
-import logging
+
 from xpra.platform import init
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
 
@@ -40,9 +40,6 @@ class FakeRemoteClipboard(object):
 
 
 def main():
-	logging.basicConfig(format="%(asctime)s %(message)s")
-	logging.root.setLevel(logging.DEBUG)
-
 	from xpra.os_util import set_application_name, set_prgname
 	set_prgname("Primary Clipboard Test Tool")
 	set_application_name("Primary Clipboard Test Tool")

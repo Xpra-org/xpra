@@ -4,16 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import logging
-logging.basicConfig(format="%(asctime)s %(message)s")
-logging.root.setLevel(logging.DEBUG)
-
 import gtk
-from xpra.scripts.config import make_defaults_struct
-from xpra.platform.shadow_server import ShadowServer
 import gobject
 import socket
 import os.path
+
+from xpra.scripts.config import make_defaults_struct
+from xpra.platform.shadow_server import ShadowServer
 
 def main():
     from xpra.os_util import set_application_name, set_prgname
@@ -47,6 +44,7 @@ def main():
 
     gobject.timeout_add(1000*120, loop_exit)
     loop_run()
+
 
 if __name__ == "__main__":
     main()

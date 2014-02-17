@@ -20,7 +20,6 @@ Note: the window isn't actually drawn at all when using GLSimpleClientWindow
 """
 def main():
     import logging
-    logging.basicConfig(format="%(message)s")
     logging.root.setLevel(logging.DEBUG)
 
     gl_backing_test(gl_client_window_class=GLSimpleClientWindow, w=640, h=480)

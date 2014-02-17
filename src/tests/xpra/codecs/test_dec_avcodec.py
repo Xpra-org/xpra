@@ -28,10 +28,6 @@ def test_dec_avcodec():
 
 
 def main():
-    import logging
-    import sys
-    logging.root.setLevel(logging.INFO)
-    logging.root.addHandler(logging.StreamHandler(sys.stdout))
     test_dec_avcodec()
 
 

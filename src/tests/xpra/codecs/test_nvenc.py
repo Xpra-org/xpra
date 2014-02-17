@@ -157,9 +157,6 @@ def encoding_thread(encoder, src_format, w, h, images, info):
     do_test_encoder(encoder, src_format, w, h, images, name=info, log_data=False, pause=0.25)
 
 def main():
-    import logging
-    logging.root.setLevel(logging.INFO)
-    #logging.root.addHandler(logging.StreamHandler(sys.stdout))
     log("main()")
     test_encode_one()
     test_memleak()

@@ -6,14 +6,12 @@
 
 import socket
 import os
-import logging
-logging.basicConfig(format="%(asctime)s %(message)s")
-logging.root.setLevel(logging.DEBUG)
 
 from xpra.net.protocol import Protocol
 from xpra.net.bytestreams import SocketConnection
 from xpra.log import Logger
 log = Logger()
+log.enable_debug()
 
 import gobject
 gobject.threads_init()
@@ -94,8 +92,6 @@ class SimpleClient(object):
 
 
 def init_main(prgname):
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.DEBUG)
     from xpra.os_util import set_application_name, set_prgname
     set_prgname(prgname)
     set_application_name(prgname)

@@ -18,9 +18,7 @@ def test_load():
 
 def main():
     import logging
-    import sys
     logging.root.setLevel(logging.DEBUG)
-    logging.root.addHandler(logging.StreamHandler(sys.stderr))
     test_load()
 
 

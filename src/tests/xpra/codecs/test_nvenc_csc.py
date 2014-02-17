@@ -7,13 +7,9 @@
 print("starting imports")
 import binascii
 import numpy
-import logging
-logging.basicConfig(format="%(message)s")
-logging.root.setLevel(logging.DEBUG)
 
 from xpra.log import Logger
 log = Logger()
-debug = log.debug
 
 def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
@@ -39,20 +35,20 @@ try:
     w = roundup(512, 32)
     h = roundup(512, 32)
 
-    debug("w=%s, h=%s", w, h)
+    log("w=%s, h=%s", w, h)
 
     cudaInputBuffer, inputPitch = driver.mem_alloc_pitch(w, h*3/2, 16)
-    debug("CUDA Input Buffer=%s, pitch=%s", hex(int(cudaInputBuffer)), inputPitch)
+    log("CUDA Input Buffer=%s, pitch=%s", hex(int(cudaInputBuffer)), inputPitch)
     #allocate CUDA NV12 buffer (on device):
     cudaNV12Buffer, NV12Pitch = driver.mem_alloc_pitch(w, h*3/2, 16)
-    debug("CUDA NV12 Buffer=%s, pitch=%s", hex(int(cudaNV12Buffer)), NV12Pitch)
+    log("CUDA NV12 Buffer=%s, pitch=%s", hex(int(cudaNV12Buffer)), NV12Pitch)
 
     #host buffers:
     inputBuffer = driver.pagelocked_zeros(inputPitch*h*3/2, dtype=numpy.byte)
-    debug("inputBuffer=%s", inputBuffer)
+    log("inputBuffer=%s", inputBuffer)
 
     outputBuffer = driver.pagelocked_zeros(inputPitch*h*3/2, dtype=numpy.byte)
-    debug("outputBuffer=%s", outputBuffer)
+    log("outputBuffer=%s", outputBuffer)
 
     #populate host buffer with random data:
     buf = inputBuffer.data
@@ -64,7 +60,7 @@ try:
 
     #copy input buffer to CUDA buffer:
     driver.memcpy_htod(cudaInputBuffer, inputBuffer)
-    debug("input buffer copied to device")
+    log("input buffer copied to device")
 
     #FIXME: just clear the NV12 buffer:
     driver.memcpy_htod(cudaNV12Buffer, outputBuffer)
@@ -72,20 +68,20 @@ try:
     #driver.memcpy_htod(cudaNV12Buffer, inputBuffer)
 
     if True:
-        debug("calling %s", BGRA2NV12)
+        log("calling %s", BGRA2NV12)
         BGRA2NV12(cudaInputBuffer, numpy.int32(inputPitch),
                cudaNV12Buffer, numpy.int32(NV12Pitch),
                numpy.int32(w), numpy.int32(h),
                block=(16,16,1), grid=(w/16, h/16))
 
     #download NV12 buffer:
-    debug("downloading output")
+    log("downloading output")
     driver.memcpy_dtoh(outputBuffer, cudaNV12Buffer)
 
     for i in range(h):
         p = i*w
         l = outputBuffer.data[p:p+w]
-        debug("%s: %s", hex(i).ljust(5), binascii.hexlify(str(l)))
+        log("%s: %s", hex(i).ljust(5), binascii.hexlify(str(l)))
             #debug("[%s] = %s / %s", i, ord(inputBuffer.data[i]), ord(outputBuffer.data[i]))
 
     #outputBuffer.data[1024] = numpy.byte(20)
@@ -97,15 +93,15 @@ try:
             zeroes += 1
         if inputBuffer.data[i]!=outputBuffer.data[i]:
             if diff<10:
-                debug("buffer differs at %s: %s vs %s", i, ord(inputBuffer.data[i]), ord(outputBuffer.data[i]))
+                log("buffer differs at %s: %s vs %s", i, ord(inputBuffer.data[i]), ord(outputBuffer.data[i]))
             diff +=1
         else:
             same +=1
 
-    debug("end: same=%s, diff=%s, zeroes=%s", same, diff, zeroes)
+    log("end: same=%s, diff=%s, zeroes=%s", same, diff, zeroes)
 
 except Exception, e:
-    debug("exception: %s" % e)
+    log("exception: %s" % e)
     import traceback
     traceback.print_stack()
 finally:

@@ -6,7 +6,6 @@
 
 import sys
 import socket
-import logging
 
 from xpra.log import Logger
 log = Logger()
@@ -22,8 +21,7 @@ def test_DoS(client_class_constructor, args):
     """
 
     assert len(args)==2, "usage: test_DoS_client :DISPLAY"
-    logging.root.setLevel(logging.DEBUG)
-    logging.root.addHandler(logging.StreamHandler(sys.stderr))
+    log.enable_debug()
     opts = make_defaults_struct()
     opts.password_file = ""
     opts.encoding = "rgb24"

@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import logging
 import gobject
 gobject.threads_init()
 import gtk
@@ -15,9 +14,6 @@ from xpra.x11.xroot_props import XRootPropWatcher
 
 
 def main():
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.INFO)
-
     ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA"]
     xrpw = XRootPropWatcher(ROOT_PROPS)
     gobject.timeout_add(1000, xrpw.notify_all)

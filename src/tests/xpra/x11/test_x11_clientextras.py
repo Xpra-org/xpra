@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import logging
 import gobject
 gobject.threads_init()
 import gtk
@@ -27,8 +26,6 @@ class FakeClient(object):
         print("screen_size_changed(%s)" % str(args))
 
 def main():
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.INFO)
     fc = FakeClient()
     ce = ClientExtras(fc)
     gobject.timeout_add(1000, ce.do_setup_xprops)

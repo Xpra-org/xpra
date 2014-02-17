@@ -45,10 +45,6 @@ __kernel void EXAMPLE(uint w, uint h) {
 
 
 def main():
-    import logging
-    import sys
-    logging.root.setLevel(logging.INFO)
-    logging.root.addHandler(logging.StreamHandler(sys.stdout))
     test_queue_leak()
 
 

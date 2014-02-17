@@ -61,10 +61,6 @@ __kernel void EXAMPLE(read_only image2d_t srcY, uint strideY,
 
 
 def main():
-    import logging
-    import sys
-    logging.root.setLevel(logging.INFO)
-    logging.root.addHandler(logging.StreamHandler(sys.stdout))
     #test_load_both()
     #test_load_codec()
     test_build_kernel()
