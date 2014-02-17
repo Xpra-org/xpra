@@ -25,8 +25,6 @@ def test_encode_one():
 
 def test_memleak():
     from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
-    cuda_devices = encoder_module.get_cuda_devices()
-    assert len(cuda_devices)>0
     from pycuda import driver
     #use the first device for this test
     start_free_memory = None
@@ -43,7 +41,6 @@ def test_memleak():
         h = random.randint(16, 128)*8
         n = random.randint(2, 10)
         test_encoder(encoder_module, options={}, dimensions=[(w, h)], n_images=n)
-        test_encoder(encoder_module, options={}, dimensions=[(128, 1536)], n_images=20)
 
     d = driver.Device(0)
     context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
@@ -160,7 +157,7 @@ def main():
     log("main()")
     test_encode_one()
     test_memleak()
-    #test_dimensions()
+    test_dimensions()
     #test_encode_all_GPUs()
     #test_context_limits()
     #test_parallel_encode()

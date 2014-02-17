@@ -14,6 +14,7 @@ from pycuda.compiler import compile
 
 from xpra.util import AtomicInteger
 from xpra.deque import maxdeque
+from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, device_info, get_CUDA_function
 from xpra.codecs.codec_constants import codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
@@ -24,7 +25,12 @@ from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEY = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
-DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "0"))
+
+#NVENC requires compute capability value 0x30 or above:
+MIN_COMPUTE = 0x30
+if FORCE:
+    MIN_COMPUTE = 0
+
 
 #API is undocumented and broken:
 USE_YUV444P = False
@@ -942,6 +948,7 @@ def test_parse():
     assert v==sample_key, "expected %s but got %s" % (sample_key, v)
 test_parse()
 
+
 cdef GUID CLIENT_KEY_GUID
 memset(&CLIENT_KEY_GUID, 0, sizeof(GUID))
 if CLIENT_KEY:
@@ -1051,36 +1058,21 @@ HEIGHT_MASK = 0xFFFE
 #1) although the support code is there, we currently only use one device
 #2) when we call get_runtime_factor(), we don't know which device is going to get used!
 context_counter = AtomicInteger()
-context_failures_history = maxdeque(100)
-
-free_memory = 0
-total_memory = 0
+last_context_failure = 0
 
 def get_runtime_factor():
-    global context_failures_history, context_counter, free_memory, total_memory
+    global last_context_failure, context_counter
+    device_count = len(init_all_devices())
+    max_contexts = 32 * device_count
     cc = context_counter.get()
-    fm_pct = 100
-    if total_memory>0:
-        fm_pct = int(100.0*free_memory/total_memory)
-    if len(context_failures_history)==0 and cc<8 and fm_pct>=25:
-        #no problems!
-        log("nvenc.get_runtime_factor()=%s", 1.0)
-        return 1.0
     #try to avoid using too many contexts
     #(usually, we can have up to 32 contexts per card)
-    f = max(0, 1.0 - (max(0, cc-8)/64.0))
+    low_limit = 8
+    f = max(0, 1.0 - (max(0, cc-low_limit)/max(1, max_contexts-low_limit)))
     #if we have had errors recently, lower our chances further:
-    now = time.time()
-    recent_errors = [c for t,c in context_failures_history if (now-t)<60]
-    if len(recent_errors)>0:
-        last_count = recent_errors[-1]
-        if last_count<=cc:
-            #the last recent error had as many contexts available
-            #so this is unlikely to work, lower more:
-            f /= 2.0
-    #if we are low on free memory, reduce further:
-    if fm_pct<30:
-        f *= fm_pct/30.0
+    failure_elapsed = time.time()-last_context_failure
+    #discount factor gradually for 1 minute:
+    f /= 61-min(60, failure_elapsed)
     log("nvenc.get_runtime_factor()=%s", f)
     return f
 
@@ -1115,64 +1107,6 @@ cdef int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 
-def device_info(d):
-    return "%s @ %s" % (d.name(), d.pci_bus_id())
-
-cdef cuda_init_devices():
-    start = time.time()
-    log.info("PyCUDA initialization (this may take a few seconds)")
-    driver.init()
-    ngpus = driver.Device.count()
-    log("PyCUDA found %s devices:", ngpus)
-    devices = {}
-    da = driver.device_attribute
-    for i in range(ngpus):
-        d = driver.Device(i)
-        mem = d.total_memory()
-        host_mem = d.get_attribute(da.CAN_MAP_HOST_MEMORY)
-        log(" max block sizes: (%s, %s, %s)", d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z))
-        log(" max grid sizes: (%s, %s, %s)", d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z))
-        SMmajor, SMminor = d.compute_capability()
-        has_nvenc = ((SMmajor<<4) + SMminor) >= 0x30
-        pre = "-"
-        if host_mem and (has_nvenc or FORCE):
-            pre = "+"
-            devices[i] = device_info(d)
-        log(" %s %s (%sMB)", pre, device_info(d), mem/1024/1024)
-        max_width = d.get_attribute(da.MAXIMUM_TEXTURE2D_WIDTH)
-        max_height = d.get_attribute(da.MAXIMUM_TEXTURE2D_HEIGHT)
-        log(" Can Map Host Memory: %s, Compute Mode: %s, max dimensions: %sx%s", host_mem, (SMmajor, SMminor), max_width, max_height)
-    end = time.time()
-    log("cuda_init_devices() took %.1fms", 1000.0*(end-start))
-    return devices
-cuda_devices = None
-def get_cuda_devices():
-    global cuda_devices
-    if cuda_devices is None:
-        cuda_devices = cuda_init_devices()
-        if len(cuda_devices)>1:
-            log.info(" found %s CUDA devices:", len(cuda_devices))
-            for device_id in sorted(cuda_devices.keys()):
-                log.info(" + %s", cuda_devices.get(device_id))
-        else:
-            log.info(" using GPU device: %s", cuda_devices.values()[0])
-    return cuda_devices
-
-
-def cuda_check():
-    global DEFAULT_CUDA_DEVICE_ID
-    devices = get_cuda_devices()
-    if len(devices)==0:
-        raise ImportError("no CUDA devices found!")
-    assert DEFAULT_CUDA_DEVICE_ID in cuda_devices.keys(), "specified CUDA device ID %s not found in %s" % (DEFAULT_CUDA_DEVICE_ID, devices)
-    #create context for testing:
-    d = driver.Device(DEFAULT_CUDA_DEVICE_ID)
-    context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
-    log("cuda_check created test context, api_version=%s", context.get_api_version())
-    context.pop()
-    context.detach()
-
-
 cdef nvencStatusInfo(NVENCSTATUS ret):
     if ret in NV_ENC_STATUS_TXT:
         return "%s: %s" % (ret, NV_ENC_STATUS_TXT[ret])
@@ -1182,31 +1116,16 @@ cdef raiseNVENC(NVENCSTATUS ret, msg=""):
     if ret!=0:
         raise Exception("%s - returned %s" % (msg, nvencStatusInfo(ret)))
 
-
-#cache the cubin files for each device_id:
-KERNEL_cubins = {}
-cdef get_CUDA_kernel(device_id, kernel_name, kernel_source):
-    start = time.time()
-    global KERNEL_cubins
-    cubin = KERNEL_cubins.get((device_id, kernel_name))
-    if cubin is None:
-        log("compiling for device %s: %s=%s", device_id, kernel_name, kernel_source)
-        cubin = compile(kernel_source)
-        KERNEL_cubins[(device_id, kernel_name)] = cubin
-    #now load from cubin:
-    mod = driver.module_from_buffer(cubin)
-    kernel_function = mod.get_function(kernel_name)
-    end = time.time()
-    log("compilation of %s took %.1fms", kernel_name, 1000.0*(end-start))
-    return kernel_name, kernel_function
+cpdef get_CUDA_CSC_function(device_id, function_name, kernel_source):
+    return function_name, get_CUDA_function(device_id, function_name, kernel_source)
 
 cpdef get_BGRA2YUV444P(device_id):
     from xpra.codecs.nvenc.CUDA_rgb2yuv444p import BGRA2YUV444P_kernel
-    return get_CUDA_kernel(device_id, "BGRA2YUV444P", BGRA2YUV444P_kernel)
+    return get_CUDA_CSC_function(device_id, "BGRA2YUV444P", BGRA2YUV444P_kernel)
 
 cpdef get_BGRA2NV12(device_id):
     from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
-    return get_CUDA_kernel(device_id, "BGRA2NV12", BGRA2NV12_kernel)
+    return get_CUDA_CSC_function(device_id, "BGRA2NV12", BGRA2NV12_kernel)
 
 
 cdef class Encoder:
@@ -1221,8 +1140,8 @@ cdef class Encoder:
     cdef int speed
     cdef int quality
     #PyCUDA:
-    cdef int device_id
     cdef object driver
+    cdef int cuda_device_id
     cdef object cuda_device_info
     cdef object cuda_device
     cdef object cuda_context
@@ -1231,6 +1150,8 @@ cdef class Encoder:
     cdef object max_block_sizes
     cdef object max_grid_sizes
     cdef int max_threads_per_block
+    cdef int free_memory
+    cdef int total_memory
     #NVENC:
     cdef NV_ENCODE_API_FUNCTION_LIST functionList               #@DuplicatedSignature
     cdef void *context
@@ -1309,44 +1230,44 @@ cdef class Encoder:
         self.last_frame_times = maxdeque(200)
         start = time.time()
 
-        self.device_id = options.get("cuda_device", DEFAULT_CUDA_DEVICE_ID)
-        self.init_cuda()
+        self.init_cuda(options.get("cuda_device", -1))
 
         end = time.time()
         log("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
 
-    cdef init_cuda(self):
-        assert self.device_id in get_cuda_devices().keys(), "invalid device_id '%s' (available: %s)" % (self.device_id, cuda_devices)
-        global context_counter, context_failures_history
-        log("init_cuda() device_id=%s", self.device_id)
+    cdef init_cuda(self, preferred_device_id=-1):
+        self.cuda_device_id, self.cuda_device = select_device(preferred_device_id, min_compute=MIN_COMPUTE)
+        assert self.cuda_device, "no NVENC device found!"
+        global context_counter, last_context_failure
+        d = self.cuda_device
+        cf = driver.ctx_flags
+        log("init_cuda(%s) device_id=%s", preferred_device_id, self.cuda_device_id)
         try:
-            self.cuda_device = driver.Device(DEFAULT_CUDA_DEVICE_ID)
-            log("init_cuda() cuda_device=%s (%s)", self.cuda_device, device_info(self.cuda_device))
-            self.cuda_context = self.cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
+            log("init_cuda() cuda_device=%s (%s)", d, device_info(d))
+            self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
             log("init_cuda() cuda_context=%s", self.cuda_context)
             self.cuda_device_info = {
-                "device.name"       : self.cuda_device.name(),
-                "device.pci_bus_id" : self.cuda_device.pci_bus_id(),
-                "device.memory"     : self.cuda_device.total_memory()/1024/1024,
+                "device.name"       : d.name(),
+                "device.pci_bus_id" : d.pci_bus_id(),
+                "device.memory"     : d.total_memory()/1024/1024,
                 "api_version"       : self.cuda_context.get_api_version()}
         except driver.MemoryError, e:
-            context_failures_history.append((time.time(), context_counter.get()))
+            last_context_failure = time.time()
             log("init_cuda() %s", e)
             raise TransientCodecException("could not initialize cuda: %s" % e)
         #use alias to make code easier to read:
-        d = self.cuda_device
         da = driver.device_attribute
         try:
             if USE_YUV444P:
                 #FIXME: YUV444P doesn't work and I don't know why
                 #No idea what "separateColourPlaneFlag" is meant to do either
-                self.kernel_name, self.kernel = get_BGRA2YUV444P(self.device_id)
+                self.kernel_name, self.kernel = get_BGRA2YUV444P(self.cuda_device_id)
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_PL
                 self.pixel_format = "YUV444P"
                 #3 full planes:
                 plane_size_div = 1
             else:
-                self.kernel_name, self.kernel = get_BGRA2NV12(self.device_id)
+                self.kernel_name, self.kernel = get_BGRA2NV12(self.cuda_device_id)
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
                 self.pixel_format = "NV12"
                 #1 full Y plane and 2 U+V planes subsampled by 4:
@@ -1478,10 +1399,10 @@ cdef class Encoder:
             pps = float(self.width) * float(self.height) * float(self.frames) / self.time
             info["total_time_ms"] = int(self.time*1000.0)
             info["pixels_per_second"] = int(pps)
-        if total_memory>0:
-            info["free_memory"] = int(free_memory)
-            info["total_memory"] = int(total_memory)
-            info["free_memory_pct"] = int(100.0*free_memory/total_memory)
+        if self.total_memory>0:
+            info["free_memory"] = int(self.free_memory)
+            info["total_memory"] = int(self.total_memory)
+            info["free_memory_pct"] = int(100.0*self.free_memory/self.total_memory)
         #calculate fps:
         cdef int f = 0
         cdef double now = time.time()
@@ -1494,7 +1415,7 @@ cdef class Encoder:
                 last_time = min(last_time, end)
                 ms_per_frame += (end-start)
         if f>0 and last_time<now:
-            info["fps"] = int(f/(now-last_time))
+            info["fps"] = int(0.5+f/(now-last_time))
             info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
         return info
 
@@ -1729,8 +1650,8 @@ cdef class Encoder:
 
         end = time.time()
         log("compress_image(..) download took %.1f ms", (end-encode_end)*1000.0)
-        global free_memory, total_memory
-        free_memory, total_memory = driver.mem_get_info()
+        #update info:
+        self.free_memory, self.total_memory = driver.mem_get_info()
 
         self.last_frame_times.append((start, end))
         self.time += end-start
@@ -1903,7 +1824,7 @@ cdef class Encoder:
 
 
     cdef open_encode_session(self):
-        global context_counter, context_failures_history
+        global context_counter, last_context_failure
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
         log("open_encode_session() cuda_context=%s", self.cuda_context)
 
@@ -1930,7 +1851,7 @@ cdef class Encoder:
         cdef int ret            #@DuplicatedSignature
         ret = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if ret==NV_ENC_ERR_UNSUPPORTED_DEVICE:
-            context_failures_history.append((time.time(), context_counter.get()))
+            last_context_failure = time.time()
             msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
             log(msg)
             raise TransientCodecException(msg)
@@ -1943,13 +1864,9 @@ def init_module():
     if NVENCAPI_VERSION<=0x20:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
 
-    #check that we have CUDA device(s):
-    cuda_check()
-
-    #check NVENC availibility:
+    #check NVENC availibility by creating a context:
     colorspaces = get_colorspaces()
-    if len(colorspaces)==0:
-        raise ImportError("cannot use NVENC: no colorspaces available")
+    assert colorspaces, "cannot use NVENC: no colorspaces available"
     test_encoder = Encoder()
     for encoding in get_encodings():
         src_format = colorspaces[0]
