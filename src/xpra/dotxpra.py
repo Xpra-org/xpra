@@ -114,7 +114,7 @@ class DotXpra(object):
         results = []
         base = os.path.join(self._sockdir, self._prefix)
         potential_sockets = glob.glob(base + "*")
-        for path in potential_sockets:
+        for path in sorted(potential_sockets):
             s = os.stat(path)
             if stat.S_ISSOCK(s.st_mode):
                 if check_uid>0:
