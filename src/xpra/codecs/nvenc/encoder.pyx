@@ -14,7 +14,8 @@ from pycuda.compiler import compile
 
 from xpra.util import AtomicInteger
 from xpra.deque import maxdeque
-from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, device_info, get_CUDA_function
+from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, device_info, get_CUDA_function, \
+                record_device_failure, record_device_success
 from xpra.codecs.codec_constants import codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
@@ -1230,7 +1231,13 @@ cdef class Encoder:
         self.last_frame_times = maxdeque(200)
         start = time.time()
 
-        self.init_cuda(options.get("cuda_device", -1))
+        self.cuda_device_id = -1
+        try:
+            self.init_cuda(options.get("cuda_device", -1))
+            record_device_success(self.cuda_device_id)
+        except Exception, e:
+            record_device_failure(self.cuda_device_id)
+            raise e
 
         end = time.time()
         log("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)

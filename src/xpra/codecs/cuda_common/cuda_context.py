@@ -19,6 +19,18 @@ from pycuda.compiler import compile
 DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "-1"))
 
 
+#record when we get failures/success:
+DEVICE_STATE = {}
+
+def record_device_failure(device_id):
+    global DEVICE_STATE
+    DEVICE_STATE[device_id] = False
+
+def record_device_success(device_id):
+    global DEVICE_STATE
+    DEVICE_STATE[device_id] = True
+
+
 def device_info(d):
     return "%s @ %s" % (d.name(), d.pci_bus_id())
 
@@ -89,38 +101,44 @@ def check_devices():
 
 
 def select_device(preferred_device_id=DEFAULT_CUDA_DEVICE_ID, min_compute=0):
+    global DEVICE_STATE
     devices = init_all_devices()
-    selected_device_id = None
-    selected_device = None
     free_pct = 0
     cf = driver.ctx_flags
-    for device_id in devices:
-        context = None
-        try:
-            device = driver.Device(device_id)
-            log("select_device: testing device %s: %s", device_id, device_info(device))
-            context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
-            log("created context=%s", context)
-            free, total = driver.mem_get_info()
-            log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
-            tpct = 100*free/total
-            SMmajor, SMminor = device.compute_capability()
-            compute = (SMmajor<<4) + SMminor
-            if compute<min_compute:
-                log("ignoring device %s: compute capability %#x (minimum %#x required)", device_info(device), compute, min_compute)
-            elif device_id==preferred_device_id:
-                selected_device = device
-                selected_device_id = device_id
-                break
-            elif tpct>free_pct:
-                selected_device = device
-                selected_device_id = device_id
-        finally:
-            if context:
-                context.pop()
-                context.detach()
-    log("select device: %s / %s", device_id, device)
-    return selected_device_id, selected_device
+    #split device list according to device state:
+    ok_devices = [device_id for device_id in devices if DEVICE_STATE.get(device_id, True) is True]
+    nok_devices = [device_id for device_id in devices if DEVICE_STATE.get(device_id, True) is not True]
+    for list_name, device_list in {"OK" : ok_devices, "failing" : nok_devices}.items():
+        selected_device_id = None
+        selected_device = None
+        log("will test %s devices from %s list: %s", len(device_list), list_name, device_list)
+        for device_id in device_list:
+            context = None
+            try:
+                device = driver.Device(device_id)
+                log("select_device: testing device %s: %s", device_id, device_info(device))
+                context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
+                log("created context=%s", context)
+                free, total = driver.mem_get_info()
+                log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
+                tpct = 100*free/total
+                SMmajor, SMminor = device.compute_capability()
+                compute = (SMmajor<<4) + SMminor
+                if compute<min_compute:
+                    log("ignoring device %s: compute capability %#x (minimum %#x required)", device_info(device), compute, min_compute)
+                elif device_id==preferred_device_id:
+                    return device_id, device
+                elif tpct>free_pct:
+                    selected_device = device
+                    selected_device_id = device_id
+            finally:
+                if context:
+                    context.pop()
+                    context.detach()
+        if selected_device_id>=0 and selected_device:
+            log("select device: %s / %s", device_id, device)
+            return selected_device_id, selected_device
+    return None, None
 
 
 #cache pre-compiled kernel cubins per device:
