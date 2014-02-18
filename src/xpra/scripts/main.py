@@ -487,12 +487,18 @@ def parse_cmdline(cmdline):
             if options.video_encoders=="help":
                 print("the following video encoders are available: %s" % ", ".join(get_DEFAULT_VIDEO_ENCODERS()))
                 sys.exit(0)
-            options.video_encoders = [x.strip() for x in options.video_encoders.split(",")]
+            elif options.video_encoders=="none":
+                options.video_encoders = []
+            else:
+                options.video_encoders = [x.strip() for x in options.video_encoders.split(",")]
         if type(options.csc_modules)==str:
             if options.csc_modules=="help":
                 print("the following csc modules are available: %s" % ", ".join(get_DEFAULT_CSC_MODULES()))
                 sys.exit(0)
-            options.csc_modules = [x.strip() for x in options.csc_modules.split(",")]
+            elif options.csc_modules=="none":
+                options.csc_modules = []
+            else:
+                options.csc_modules = [x.strip() for x in options.csc_modules.split(",")]
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
