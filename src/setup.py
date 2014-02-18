@@ -1053,6 +1053,9 @@ if cymaths_ENABLED:
 
 
 
+#needed for both nvenc and csc_cuda:
+toggle_packages(csc_nvcuda_ENABLED or nvenc_ENABLED, "xpra.codecs.cuda_common")
+
 toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
 toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
