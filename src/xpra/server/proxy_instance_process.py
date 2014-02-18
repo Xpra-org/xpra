@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import socket
 import os
 import signal
@@ -35,6 +36,7 @@ PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
 #for testing only: passthrough as RGB:
 PASSTHROUGH = False
 MAX_CONCURRENT_CONNECTIONS = 20
+VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
 
 
 class ProxyInstanceProcess(Process):
@@ -64,9 +66,10 @@ class ProxyInstanceProcess(Process):
         self.message_queue = message_queue
         self.encode_queue = None            #holds draw packets to encode
         self.encode_thread = None
-        self.video_encoding_defs = {}
-        self.video_encoders = {}
-        self.video_encoder_types = []
+        self.video_encoding_defs = None
+        self.video_encoders = None
+        self.video_encoders_last_used_time = None
+        self.video_encoder_types = None
         self.video_helper = None
         self.lost_windows = None
         #for handling the local unix domain socket:
@@ -100,17 +103,15 @@ class ProxyInstanceProcess(Process):
     def timeout_add(self, timeout, fn, *args, **kwargs):
         #emulate gobject's timeout_add using idle add and a Timer
         #using custom functions to cancel() the timer when needed
-        timer = None
         def idle_exec():
             v = fn(*args, **kwargs)
-            if not bool(v):
-                timer.cancel()
+            if bool(v):
+                self.timeout_add(timeout, fn, *args, **kwargs)
             return False
         def timer_exec():
             #just run via idle_add:
             self.idle_add(idle_exec)
-        timer = Timer(timeout*1000.0, timer_exec)
-        timer.start()
+        Timer(timeout/1000.0, timer_exec).start()
 
     def run(self):
         log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), os.getuid(), os.getgid())
@@ -164,6 +165,7 @@ class ProxyInstanceProcess(Process):
         #forward the hello packet:
         hello_packet = ("hello", self.filter_client_caps(self.caps))
         self.queue_server_packet(hello_packet)
+        self.timeout_add(VIDEO_TIMEOUT*1000, self.timeout_video_encoders)
 
         try:
             try:
@@ -181,6 +183,7 @@ class ProxyInstanceProcess(Process):
 
         self.video_encoding_defs = {}
         self.video_encoders = {}
+        self.video_encoders_last_used_time = {}
         self.video_encoder_types = []
 
         #figure out which encoders we want to proxy for (if any):
@@ -509,12 +512,26 @@ class ProxyInstanceProcess(Process):
                     ve = self.video_encoders.get(wid)
                     if ve:
                         del self.video_encoders[wid]
+                        del self.video_encoders_last_used_time[wid]
                         ve.clean()
                 elif packet_type=="draw":
                     #modify the packet with the video encoder:
                     if self.process_draw(packet):
                         #then send it as normal:
                         self.queue_client_packet(packet)
+                elif packet_type=="check-video-timeout":
+                    #not a real packet, this is added by the timeout check:
+                    wid = packet[1]
+                    ve = self.video_encoders.get(wid)
+                    now = time.time()
+                    idle_time = now-self.video_encoders_last_used_time.get(wid)
+                    if ve and idle_time>VIDEO_TIMEOUT:
+                        log("timing out the video encoder context for window %s", wid)
+                        #timeout is confirmed, we are in the encoding thread,
+                        #so it is now safe to clean it up:
+                        ve.clean()
+                        del self.video_encoders[wid]
+                        del self.video_encoders_last_used_time[wid]
                 else:
                     log.warn("unexpected encode packet: %s", packet_type)
             except:
@@ -604,6 +621,7 @@ class ProxyInstanceProcess(Process):
             ve = spec.make_instance()
             ve.init_context(width, height, rgb_format, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
+            self.video_encoders_last_used_time[wid] = time.time()       #just to make sure this is always set
         else:
             if quality>=0:
                 ve.set_encoding_quality(quality)
@@ -612,7 +630,22 @@ class ProxyInstanceProcess(Process):
         #actual video compression:
         log("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
         data, client_options = ve.compress_image(image, encoder_options)
+        self.video_encoders_last_used_time[wid] = time.time()
         return send_updated(ve.get_encoding(), Compressed(encoding, data), client_options)
+
+    def timeout_video_encoders(self):
+        #have to be careful as another thread may come in...
+        #so we just ask the encode thread (which deals with encoders already)
+        #to do what may need to be done if we find a timeout:
+        now = time.time()
+        for wid in list(self.video_encoders_last_used_time.keys()):
+            idle_time = int(now-self.video_encoders_last_used_time.get(wid))
+            if idle_time is None:
+                continue
+            log("timeout_video_encoders() wid=%s, idle_time=%s", wid, idle_time)
+            if idle_time and idle_time>VIDEO_TIMEOUT:
+                self.encode_queue.put(["check-video-timeout", wid])
+        return True     #run again
 
     def _find_video_encoder(self, encoding, rgb_format):
         #try the one specified first, then all the others:
@@ -630,9 +663,12 @@ class ProxyInstanceProcess(Process):
 
     def get_encoder_info(self):
         info = {}
+        now = time.time()
         for wid, encoder in list(self.video_encoders.items()):
             ipath = "window[%s].proxy.encoder" % wid
             info[ipath] = encoder.get_type()
+            idle_time = now-self.video_encoders_last_used_time.get(wid, 0)
+            info[ipath+".idle_time"] = int(idle_time)
             vi = encoder.get_info()
             for k,v in vi.items():
                 info[ipath+"."+k] = v
