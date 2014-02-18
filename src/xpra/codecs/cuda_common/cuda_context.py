@@ -63,7 +63,7 @@ def init_all_devices():
             log("   api version=%s", context.get_api_version())
             free, total = driver.mem_get_info()
             log("   memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
-            log("   clock rate: %s", device.clock_rate)
+            log("   multi-processors: %s, clock rate: %s", device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
             log("   max block sizes: (%s, %s, %s)", device.get_attribute(da.MAX_BLOCK_DIM_X), device.get_attribute(da.MAX_BLOCK_DIM_Y), device.get_attribute(da.MAX_BLOCK_DIM_Z))
             log("   max grid sizes: (%s, %s, %s)", device.get_attribute(da.MAX_GRID_DIM_X), device.get_attribute(da.MAX_GRID_DIM_Y), device.get_attribute(da.MAX_GRID_DIM_Z))
             max_width = device.get_attribute(da.MAXIMUM_TEXTURE2D_WIDTH)
