@@ -204,6 +204,10 @@ RGB_FORMATS[7] = NULL
 
 
 cdef class XImageWrapper:
+    """
+        Presents X11 image pixels as in ImageWrapper
+    """
+
     cdef XImage *image                              #@DuplicatedSignature
     cdef int x
     cdef int y
@@ -212,6 +216,7 @@ cdef class XImageWrapper:
     cdef int depth                                  #@DuplicatedSignature
     cdef int rowstride
     cdef int planes
+    cdef int thread_safe
     cdef char *pixel_format
     cdef char *pixels
     cdef object del_callback
@@ -226,8 +231,10 @@ cdef class XImageWrapper:
         self.pixel_format = ""
         self.rowstride = 0
         self.planes = 0
+        self.thread_safe = 0
 
     cdef set_image(self, XImage* image):
+        self.thread_safe = 0
         self.image = image
         self.rowstride = self.image.bytes_per_line
         self.depth = self.image.depth
@@ -302,6 +309,7 @@ cdef class XImageWrapper:
         self.pixel_format = RGB_FORMATS[i]
 
     def set_pixels(self, pixels):
+        """ overrides the context of the image with the given pixels buffer """
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         if self.pixels!=NULL:
@@ -313,6 +321,14 @@ cdef class XImageWrapper:
         self.pixels = <char *> malloc(buf_len)
         assert self.pixels!=NULL
         memcpy(self.pixels, buf, buf_len)
+        if self.image==NULL:
+            self.thread_safe = 1
+            #we can only mark this object as thread safe
+            #if we have already freed the XImage
+            #(since it needs to be freed from the UI thread)
+
+    def is_thread_safe(self):
+        return self.thread_safe
 
     def free(self):                                     #@DuplicatedSignature
         if XIMAGE_DEBUG:

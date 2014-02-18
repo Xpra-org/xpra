@@ -15,7 +15,7 @@ class ImageWrapper(object):
                    _3_PLANES    : "3_PLANES",
                    _4_PLANES    : "4_PLANES"}
 
-    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, planes=PACKED):
+    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, planes=PACKED, thread_safe=True):
         self.x = x
         self.y = y
         self.width = width
@@ -25,6 +25,7 @@ class ImageWrapper(object):
         self.depth = depth
         self.rowstride = rowstride
         self.planes = planes
+        self.thread_safe = thread_safe
         self.freed = False
 
     def __str__(self):
@@ -63,6 +64,13 @@ class ImageWrapper(object):
     def get_planes(self):
         return self.planes
 
+    def is_thread_safe(self):
+        """ if True, free() can be called from any thread,
+            if False, free() must be called from the same thread.
+            Used by XImageWrapper to ensure X11 images are freed from the UI thread.
+        """
+        return self.thread_safe
+
 
     def set_planes(self, planes):
         self.planes = planes
@@ -86,6 +94,7 @@ class ImageWrapper(object):
                 assert self.planes>0
                 for i in range(self.planes):
                     self.pixels[i] = self.pixels[i][:]
+            self.thread_safe = True
 
     def __del__(self):
         #print("ImageWrapper.__del__() calling %s" % self.free)

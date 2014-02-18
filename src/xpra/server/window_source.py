@@ -763,6 +763,17 @@ class WindowSource(object):
                 return e
         return fallback
 
+
+    def free_image_wrapper(self, image):
+        """ when not running in the UI thread,
+            call this method to free an image wrapper safely
+        """
+        if image.is_thread_safe():
+            image.free()
+        else:
+            self.idle_add(image.free)
+
+
     def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
@@ -804,7 +815,7 @@ class WindowSource(object):
             try:
                 packet = self.make_data_packet(*data)
             finally:
-                self.idle_add(image.free)
+                self.free_image_wrapper(image)
                 try:
                     del self.statistics.encoding_pending[sequence]
                 except KeyError:
