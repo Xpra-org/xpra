@@ -137,7 +137,7 @@ class ProxyInstanceProcess(Process):
         if self.create_control_socket():
             self.control_socket_thread = make_daemon_thread(self.control_socket_loop, "control")
             self.control_socket_thread.start()
-        
+
         self.main_queue = Queue()
         #setup protocol wrappers:
         self.server_packets = Queue(PROXY_QUEUE_SIZE)
@@ -488,7 +488,7 @@ class ProxyInstanceProcess(Process):
             #packet = ["cursor", ""]
             if len(packet)>=9:
                 pixels = packet[8]
-                if len(pixels)<64:
+                if len(pixels)<512:
                     packet[8] = str(pixels)
                 else:
                     packet[8] = compressed_wrapper("cursor", pixels)
@@ -536,24 +536,34 @@ class ProxyInstanceProcess(Process):
         #we have a proxy video packet:
         rgb_format = client_options.get("rgb_format", "")
         log("proxy draw: client_options=%s", client_options)
-        if PASSTHROUGH:
-            #for testing only: passthrough as plain RGB:
+
+        def send_updated(encoding, compressed_data, client_options):
+            #update the packet with actual encoding data used:
+            packet[6] = encoding
+            packet[7] = compressed_data
+            packet[10] = client_options
+            log("returning %s bytes from %s", len(compressed_data), len(pixels))
+            return (wid not in self.lost_windows)
+
+        def passthrough():
+            #passthrough as plain RGB:
             newdata = bytearray(pixels)
             #force alpha (and assume BGRX..) for now:
             for i in range(len(pixels)/4):
                 newdata[i*4+3] = chr(255)
-            packet[7] = str(newdata)
-            packet[6] = "rgb32"
             packet[9] = client_options.get("rowstride", 0)
-            packet[10] = {"rgb_format" : rgb_format}
-            return  True
+            return send_updated("rgb32", str(newdata), {"rgb_format" : rgb_format})
+
+        if PASSTHROUGH:
+            passthrough()
+            return
 
         #video encoding: find existing encoder
         ve = self.video_encoders.get(wid)
         if ve:
             if ve in self.lost_windows:
-                #we cannot clean it here, there may be more frames queue up
-                #"lost-window" in encode_loop will take care of it
+                #we cannot clean the video encoder here, there may be more frames queue up
+                #"lost-window" in encode_loop will take care of it safely
                 return  False
             #we must verify that the encoder is still valid
             #and scrap it if not (ie: when window is resized)
@@ -571,11 +581,25 @@ class ProxyInstanceProcess(Process):
         rowstride = client_options.get("rowstride", rowstride)
         quality = client_options.get("quality", -1)
         speed   = client_options.get("speed", -1)
+
+        image = ImageWrapper(x, y, width, height, pixels, rgb_format, depth, rowstride, planes=ImageWrapper.PACKED)
+
         #the encoder options are passed through:
         encoder_options = client_options.get("options", {})
         if not ve:
-            #make a new one:
+            #make a new video encoder:
             spec = self._find_video_encoder(encoding, rgb_format)
+            if spec is None:
+                #no video encoder!
+                from xpra.server.picture_encode import PIL_encode, PIL, warn_encoding_once
+                if PIL is None:
+                    warn_encoding_once("no-video-no-PIL", "no video encoder found for rgb format %s, sending as plain RGB!" % rgb_format)
+                    passthrough()
+                    return
+                log("no video encoder available: sending as jpeg")
+                coding, compressed_data, client_options, _, _, _, _ = PIL_encode("jpeg", image, quality, False)
+                return send_updated(coding, compressed_data, client_options)
+
             log("creating new video encoder %s for window %s", spec, wid)
             ve = spec.make_instance()
             ve.init_context(width, height, rgb_format, encoding, quality, speed, scaling, {})
@@ -587,23 +611,22 @@ class ProxyInstanceProcess(Process):
                 ve.set_encoding_speed(speed)
         #actual video compression:
         log("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
-        image = ImageWrapper(x, y, width, height, pixels, rgb_format, depth, rowstride, planes=ImageWrapper.PACKED)
         data, client_options = ve.compress_image(image, encoder_options)
-        #update packet:
-        packet[7] = Compressed(encoding, data)
-        packet[10] = client_options
-        log("returning %s bytes from %s", len(data), len(pixels))
-        return (wid not in self.lost_windows)
+        return send_updated(ve.get_encoding(), Compressed(encoding, data), client_options)
 
     def _find_video_encoder(self, encoding, rgb_format):
-        colorspace_specs = self.video_helper.get_encoder_specs(encoding)
-        especs = colorspace_specs.get(rgb_format)
-        assert len(especs)>0, "no encoders found for rgb format %s" % rgb_format
-        for etype in self.video_encoder_types:
-            for spec in especs:
-                if etype==spec.codec_type:
-                    return spec
-        raise Exception("no encoder found for encoding %s and rgb format %s" % (encoding, rgb_format))
+        #try the one specified first, then all the others:
+        try_encodings = [encoding] + [x for x in self.video_helper.get_encodings() if x!=encoding]
+        for encoding in try_encodings:
+            colorspace_specs = self.video_helper.get_encoder_specs(encoding)
+            especs = colorspace_specs.get(rgb_format)
+            if len(especs)==0:
+                continue
+            for etype in self.video_encoder_types:
+                for spec in especs:
+                    if etype==spec.codec_type:
+                        return spec
+        return None
 
     def get_encoder_info(self):
         info = {}
