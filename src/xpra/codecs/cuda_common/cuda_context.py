@@ -27,6 +27,7 @@ def get_pycuda_version():
 
 
 def get_pycuda_info():
+    init_all_devices()
     return {"version"               : pycuda.VERSION,
             "version.text"          : pycuda.VERSION_TEXT,
             "version.status"        : pycuda.VERSION_STATUS,
@@ -187,6 +188,8 @@ def main():
     import sys
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
+
+    log.info("pycuda_info: %s" % get_pycuda_info())
 
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
