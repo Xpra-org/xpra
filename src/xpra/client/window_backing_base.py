@@ -294,10 +294,6 @@ class WindowBackingBase(object):
     def paint_with_video_decoder(self, decoder_name, coding, img_data, x, y, width, height, options, callbacks):
         decoder_module = get_codec(decoder_name)
         assert decoder_module, "decoder module not found for %s" % decoder_name
-        assert hasattr(decoder_module, "Decoder"), "decoder module %s does not have 'Decoder' factory function!" % decoder_module
-        assert hasattr(decoder_module, "get_colorspaces"), "decoder module %s does not have 'get_colorspaces' function!" % decoder_module
-        factory = getattr(decoder_module, "Decoder")
-        get_colorspaces = getattr(decoder_module, "get_colorspaces")
         try:
             self._decoder_lock.acquire()
             if self._backing is None:
@@ -317,7 +313,7 @@ class WindowBackingBase(object):
                     input_colorspace = "YUV420P"
 
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
-            decoder_colorspaces = get_colorspaces()
+            decoder_colorspaces = decoder_module.get_colorspaces()
             decoder_colorspace = input_colorspace
             if input_colorspace not in decoder_colorspaces:
                 log("colorspace not supported by %s directly", decoder_module)
@@ -358,8 +354,8 @@ class WindowBackingBase(object):
                     log("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
-                log("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, decoder_colorspace)
-                self._video_decoder = factory()
+                log("paint_with_video_decoder: new %s(%s,%s,%s)", decoder_module.Decoder, width, height, decoder_colorspace)
+                self._video_decoder = decoder_module.Decoder()
                 self._video_decoder.init_context(coding, enc_width, enc_height, decoder_colorspace)
                 log("paint_with_video_decoder: info=%s", self._video_decoder.get_info())
 
