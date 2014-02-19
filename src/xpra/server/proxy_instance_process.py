@@ -286,7 +286,7 @@ class ProxyInstanceProcess(Process):
             caps = packet[1]
             if caps.get("info_request", False):
                 proto.send_now(("hello", self.get_proxy_info(proto)))
-                self.timeout_add(5*1000, self.send_disconnect, "info sent")
+                self.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
                 return
             elif caps.get("stop_request", False):
                 self.stop("socket request", None)
