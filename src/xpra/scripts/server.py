@@ -418,6 +418,8 @@ def sanitize_env():
     #force 'simple' / 'xim', as 'ibus' 'immodule' breaks keyboard handling
     #unless its daemon is also running - and we don't know if it is..
     #this should override any XSETTINGS too.
+    #for more information, see imsettings:
+    #https://code.google.com/p/imsettings/source/browse/trunk/README
     os.environ.update({
                "DISABLE_IMSETTINGS" : "true",
                "GTK_IM_MODULE"      : "xim",                #or "gtk-im-context-simple"?
