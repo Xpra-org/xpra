@@ -31,6 +31,13 @@ from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
 SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
 
 
+def enabled_str(v):
+    if v:
+        return "enabled"
+    else:
+        return "disabled"
+
+
 def warn(msg):
     sys.stderr.write(msg+"\n")
 
@@ -166,11 +173,6 @@ def parse_cmdline(cmdline):
                           default=defaults.xvfb,
                           metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
-        def enabled_str(v):
-            if v:
-                return "enabled"
-            else:
-                return "disabled"
         group.add_option("--fake-xinerama", action="store_true",
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
