@@ -665,7 +665,7 @@ class WindowVideoSource(WindowSource):
             for out_csc, csc_spec in csc_specs:
                 actual_csc = self.csc_equiv(out_csc)
                 if actual_csc in self.csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
-                    add_scores("via %s" % out_csc, csc_spec, out_csc)
+                    add_scores("via %s (%s)" % (out_csc, actual_csc), csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
         scorelog("get_video_pipeline_options%s scores=%s", (encoding, width, height, src_format), s)
         return s
@@ -674,7 +674,8 @@ class WindowVideoSource(WindowSource):
         #in some places, we want to check against the subsampling used
         #and not the colorspace itself.
         #and NV12 uses the same subsampling as YUV420P...
-        return {"NV12" : "YUV420P"}.get(csc_mode, csc_mode)
+        return {"NV12" : "YUV420P",
+                "BGRX" : "YUV444P"}.get(csc_mode, csc_mode)
 
 
     def get_quality_score(self, csc_format, csc_spec, encoder_spec):
@@ -1052,6 +1053,7 @@ class WindowVideoSource(WindowSource):
                 #(note: see csc_equiv!)
                 if self.uses_csc_atoms:
                     client_options["csc"] = self.csc_equiv(csc)
+                    log.info("csc=%s", self.csc_equiv(csc))
                 else:
                     #ugly hack: expose internal ffmpeg/libav constant
                     #for old versions without the "csc_atoms" feature:
@@ -1060,7 +1062,7 @@ class WindowVideoSource(WindowSource):
                 #(unless the video encoder has already done so):
                 if self._csc_encoder and ("scaled_size" not in client_options) and (enc_width!=width or enc_height!=height):
                     client_options["scaled_size"] = enc_width, enc_height
-            log("video_encode encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
+            log.info("video_encode encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                                 encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
             return self._video_encoder.get_type(), Compressed(encoding, data), client_options, width, height, 0, 24
         finally:
