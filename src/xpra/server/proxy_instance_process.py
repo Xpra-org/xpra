@@ -472,7 +472,7 @@ class ProxyInstanceProcess(Process):
             #note: this is only seen by the client application
             #"xpra info" is a new connection, which talks to the proxy server...
             info = packet[1]
-            info.update(self.get_proxy_info())
+            info.update(self.get_proxy_info(proto))
         elif packet_type=="lost-window":
             wid = packet[1]
             #mark it as lost so we can drop any current/pending frames
