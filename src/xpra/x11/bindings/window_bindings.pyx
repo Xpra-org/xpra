@@ -424,14 +424,12 @@ cdef class X11WindowBindings(X11CoreBindings):
         if time is None:
             time = CurrentTime
         XSetInputFocus(self.display, xwindow, RevertToParent, time)
-        self.printFocus()
 
-    cpdef printFocus(self):
-        # Debugging
+    cpdef XGetInputFocus(self):
         cdef Window w = 0
         cdef int revert_to = 0
         XGetInputFocus(self.display, &w, &revert_to)
-        log("Current focus: %#x, %s", w, revert_to)
+        return int(w), int(revert_to)
 
 
     ###################################

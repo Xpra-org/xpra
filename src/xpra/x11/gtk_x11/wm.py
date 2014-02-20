@@ -34,8 +34,13 @@ X11Keyboard = X11KeyboardBindings()
 
 from xpra.log import Logger
 log = Logger("x11", "window")
+focuslog = Logger("x11", "window", "focus")
+
 
 WM_WINDOW_NAME = "Xpra-EWMH"
+
+NotifyPointerRoot   = constants["NotifyPointerRoot"]
+NotifyDetailNone    = constants["NotifyDetailNone"]
 
 
 def wm_check(display, upgrading=False):
@@ -275,6 +280,7 @@ class Wm(gobject.GObject):
         self.do_bell_event(event)
 
     def do_bell_event(self, event):
+        log("wm.do_bell_event(%s)", event)
         self.emit("bell", event)
 
     def do_get_property(self, pspec):
@@ -378,11 +384,12 @@ class Wm(gobject.GObject):
         # gone to PointerRoot or None, so that it can be given back to
         # something real.  This is easy to detect -- a FocusIn event with
         # detail PointerRoot or None is generated on the root window.
-        if event.detail in (constants["NotifyPointerRoot"], constants["NotifyDetailNone"]):
+        focuslog("wm.do_xpra_focus_in_event(%s)", event)
+        if event.detail in (NotifyPointerRoot, NotifyDetailNone):
             self._world_window.reset_x_focus()
 
     def do_xpra_focus_out_event(self, event):
-        X11Window.printFocus()
+        focuslog("wm.do_xpra_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
 
     def do_desktop_list_changed(self, desktops):
         self.root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
