@@ -1053,7 +1053,6 @@ class WindowVideoSource(WindowSource):
                 #(note: see csc_equiv!)
                 if self.uses_csc_atoms:
                     client_options["csc"] = self.csc_equiv(csc)
-                    log.info("csc=%s", self.csc_equiv(csc))
                 else:
                     #ugly hack: expose internal ffmpeg/libav constant
                     #for old versions without the "csc_atoms" feature:
