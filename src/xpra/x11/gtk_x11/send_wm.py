@@ -11,19 +11,22 @@ X11Window = X11WindowBindings()
 from xpra.log import Logger
 log = Logger("x11", "focus")
 
-def send_wm_take_focus(target, time):
-    log("sending WM_TAKE_FOCUS: %#x, %r", target.xid, time)
-    if time<0:
-        time = 0    #should mean CurrentTime which is better than nothing
-    elif time>0xFFFFFFFF:
-        raise OverflowError("invalid time: %#x" % time)
-    X11Window.sendClientMessage(get_xwindow(target), get_xwindow(target), False, 0,                     #@UndefinedVariable"
+CurrentTime = constants["CurrentTime"]
+
+
+def send_wm_take_focus(target, timestamp):
+    log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", target.xid, timestamp)
+    if timestamp<0:
+        timestamp = 0    #should mean CurrentTime which is better than nothing
+    elif timestamp>0xFFFFFFFF:
+        raise OverflowError("invalid time: %#x" % timestamp)
+    X11Window.sendClientMessage(get_xwindow(target), get_xwindow(target), False, 0,
                       "WM_PROTOCOLS",
-                      "WM_TAKE_FOCUS", time, 0, 0, 0)
+                      "WM_TAKE_FOCUS", timestamp, 0, 0, 0)
 
 def send_wm_delete_window(target):
     log("sending WM_DELETE_WINDOW to %#x", target.xid)
-    X11Window.sendClientMessage(get_xwindow(target), get_xwindow(target), False, 0,                     #@UndefinedVariable"
+    X11Window.sendClientMessage(get_xwindow(target), get_xwindow(target), False, 0,
                       "WM_PROTOCOLS",
                       "WM_DELETE_WINDOW",
-                      constants["CurrentTime"], 0, 0, 0)        #@UndefinedVariable"
+                      CurrentTime, 0, 0, 0)
