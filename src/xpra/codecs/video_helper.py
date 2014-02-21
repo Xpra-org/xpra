@@ -53,8 +53,8 @@ class VideoHelper(object):
     def __init__(self, vspecs={}, cscspecs={}, init=False):
         self._video_encoder_specs = vspecs
         self._csc_encoder_specs = cscspecs
-        self._video_encoders = get_DEFAULT_VIDEO_ENCODERS()
-        self._csc_modules = get_DEFAULT_CSC_MODULES()
+        self.video_encoders = get_DEFAULT_VIDEO_ENCODERS()
+        self.csc_modules = get_DEFAULT_CSC_MODULES()
 
         #bits needed to ensure we can initialize just once
         #even when called from multiple threads:
@@ -63,8 +63,8 @@ class VideoHelper(object):
 
     def set_modules(self, video_encoders, csc_modules):
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
-        self._video_encoders = video_encoders
-        self._csc_modules = csc_modules
+        self.video_encoders = video_encoders
+        self.csc_modules = csc_modules
 
     def clone(self):
         if not self._initialized:
@@ -119,7 +119,7 @@ class VideoHelper(object):
         self.init_csc_options()
 
     def init_video_encoders_options(self):
-        for x in self._video_encoders:
+        for x in self.video_encoders:
             try:
                 mod = get_video_module_name(x)
                 self.init_video_encoder_option(mod)
@@ -152,7 +152,7 @@ class VideoHelper(object):
 
 
     def init_csc_options(self):
-        for x in self._csc_modules:
+        for x in self.csc_modules:
             try:
                 mod = get_csc_module_name(x)
                 self.init_csc_option(mod)

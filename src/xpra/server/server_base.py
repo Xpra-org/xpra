@@ -21,9 +21,8 @@ from xpra.util import log_screen_sizes
 from xpra.os_util import thread, get_hex_uuid
 from xpra.version_util import add_version_info
 from xpra.util import alnum
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec, get_codec
-from xpra.codecs.video_helper import getVideoHelper
-
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec
+from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, get_DEFAULT_VIDEO_ENCODERS, ALL_CSC_MODULE_OPTIONS, get_DEFAULT_CSC_MODULES
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
@@ -156,13 +155,8 @@ class ServerBase(ServerCore):
                 if e not in self.core_encodings:
                     self.core_encodings.append(e)
 
-        #video encoders (actual encodings supported are queried):
-        for codec_name in ("enc_vpx", "enc_x264", "enc_nvenc"):
-            codec = get_codec(codec_name)
-            if codec:
-                #codec.get_type()    #ie: "vpx", "x264" or "nvenc"
-                log("init_encodings() codec %s found, adding: %s", codec.get_type(), codec.get_encodings())
-                add_encodings(codec.get_encodings())  #ie: ["vp8"] or ["h264"]
+        #video encoders:
+        add_encodings(getVideoHelper().get_encodings())  #ie: ["vp8", "h264"]
 
         for module, encodings in {
                               "enc_webp"  : ["webp"],
@@ -893,6 +887,23 @@ class ServerBase(ServerCore):
         info.update(self.get_encoding_info())
         for k,v in codec_versions.items():
             info["encoding.%s.version" % k] = v
+
+        vh = getVideoHelper()
+        def modstatus(x, def_list, active_list):
+            if x in def_list:
+                #the module is present
+                if x in active_list:
+                    return "active"
+                else:
+                    return "disabled"
+            else:
+                assert x not in active_list
+                return "not-found"
+        for x in ALL_VIDEO_ENCODER_OPTIONS:
+            info["encoding.video-encoder.%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), vh.video_encoders)
+        for x in ALL_CSC_MODULE_OPTIONS:
+            info["encoding.csc-module.%s" % x] = modstatus(x, get_DEFAULT_CSC_MODULES(), vh.csc_modules)
+            
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
         info.update({
              "keyboard.sync"            : self.keyboard_sync,
