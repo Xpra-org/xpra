@@ -390,7 +390,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def _focus_change(self, *args):
         assert not self._override_redirect
-        htf = self.get_property("has-toplevel-focus")
+        htf = self.has_toplevel_focus()
         focuslog("%s focus_change(%s) has-toplevel-focus=%s, _been_mapped=%s", self, args, htf, self._been_mapped)
         if self._been_mapped:
             self._client.update_focus(self._id, htf)
