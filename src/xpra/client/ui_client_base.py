@@ -984,7 +984,10 @@ class UIXpraClient(XpraClientBase):
         self.server_info_request = c.boolget("info-request")
         e = c.strget("encoding")
         if e and e!=self.encoding:
-            log("server is using %s encoding" % e)
+            if self.encoding not in self.server_core_encodings:
+                log.warn("server does not support %s encoding and has switched to %s", self.encoding, e)
+            else:
+                log.info("server is using %s encoding instead of %s", e, self.encoding)
             self.encoding = e
         i = " ".join(os_info(self._remote_platform, self._remote_platform_release, self._remote_platform_platform, self._remote_platform_linux_distribution))
         r = self._remote_version
