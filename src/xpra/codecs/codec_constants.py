@@ -118,7 +118,7 @@ class codec_spec(object):
         #1.0 means no change:
         mi = self.max_instances
         ic = len(self.instances.keys())
-        if ic==0:
+        if ic==0 or mi==0:
             return 1.0                      #no problem
         if ic>=mi:
             return 0                        #not possible
