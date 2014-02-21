@@ -371,6 +371,17 @@ class XpraClient(GTKXpraClient):
                 gdkwin.set_cursor(cursor)
 
 
+    def _process_raise_window(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        log("going to raise window %s - %s", wid, window)
+        if window:
+            if window.has_toplevel_focus():
+                log("window already has top level focus")
+                return
+            window.present()
+
+
     def _process_pointer_grab(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)

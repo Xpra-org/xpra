@@ -1600,12 +1600,8 @@ class UIXpraClient(XpraClientBase):
 
 
     def _process_raise_window(self, packet):
-        wid = packet[1]
-        window = self._id_to_window.get(wid)
-        if window:
-            #Note: this is gtk2 only... other backends should implement present..
-            window.present()
-
+        #only implemented in gtk2 for now
+        pass
 
     def _process_window_metadata(self, packet):
         wid, metadata = packet[1:3]
