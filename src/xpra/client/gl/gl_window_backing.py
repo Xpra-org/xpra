@@ -26,16 +26,15 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_COLOR_BUFFER_BIT, \
-    GL_DONT_CARE, GL_TRUE, \
+    GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
-    GL_BLEND, GL_ZERO, GL_ONE, \
-    GL_FUNC_ADD, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
+    GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_2D, \
-    glBlendEquationSeparate, glBlendFuncSeparate, \
+    glBlendFunc, \
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
     glGenTextures, glDisable, \
-    glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
+    glBindTexture, glPixelStorei, glEnable, glEnablei, glBegin, glFlush, \
     glTexParameteri, \
     glTexImage2D, \
     glMultiTexCoord2i, \
@@ -265,6 +264,11 @@ class GLPixmapBacking(GTK2WindowBacking):
             # Clear background to transparent black
             glClearColor(0.0, 0.0, 0.0, 0.0)
 
+            # we don't use the depth (2D only):
+            glDisable(GL_DEPTH_TEST)
+            # only do alpha blending in present_fbo:
+            glDisable(GL_BLEND)
+
             # Default state is good for YUV painting:
             #  - fragment program enabled
             #  - YUV fragment program bound
@@ -364,10 +368,8 @@ class GLPixmapBacking(GTK2WindowBacking):
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
         if self._has_alpha:
             # support alpha channel if present:
-            glEnable(GL_BLEND)
-            glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD)
-            glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO)
-
+            glEnablei(GL_BLEND, self.textures[TEX_FBO])
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         w, h = self.size
         glBegin(GL_QUADS)
         glTexCoord2i(0, h)
@@ -388,8 +390,6 @@ class GLPixmapBacking(GTK2WindowBacking):
             glClear(GL_COLOR_BUFFER_BIT)
         else:
             glFlush()
-        if self._has_alpha:
-            glDisable(GL_BLEND)
         self.gl_frame_terminator()
 
         self.unset_rgb_paint_state()
@@ -407,10 +407,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             drawable.gl_end()
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        #FIXME: we ought to be able to use
-        #OpenGL blending and use premultiplied pixels directly... beats me!
-        rgba = self.unpremultiply(img_data)
-        return self._do_paint_rgb(32, rgba, x, y, width, height, rowstride, options, callbacks)
+        return self._do_paint_rgb(32, img_data, x, y, width, height, rowstride, options, callbacks)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         return self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options, callbacks)
