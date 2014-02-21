@@ -14,7 +14,7 @@ from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 from xpra.platform.darwin.gui import set_exit_cb
 from xpra.platform.gui import ready as gui_ready
 
-#for attention_request:
+#constants for attention_request:
 CRITICAL_REQUEST = 0
 INFO_REQUEST = 10
 

@@ -14,9 +14,10 @@ from xpra.log import Logger
 log = Logger("tray", "osx")
 
 
-#for attention_request:
-CRITICAL_REQUEST = 0
-INFO_REQUEST = 10
+#control which menus are shown in the OSX global menu:
+SHOW_SOUND_MENU = False
+SHOW_ENCODINGS_MENU = True
+SHOW_ACTIONS_MENU = True
 
 
 _OSXMenuHelper = None
@@ -99,20 +100,23 @@ class OSXMenuHelper(GTKTrayMenuBase):
         features_menu.add(self.make_notificationsmenuitem())
         features_menu.add(self.make_swapkeysmenuitem())
         features_menu.add(self.make_numlockmenuitem())
-        #sound_menu = self.make_osxmenu("Sound")
-        #if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
-        #    sound_menu.add(self.make_speakermenuitem())
-        #if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
-        #    sound_menu.add(self.make_microphonemenuitem())
-        encodings_menu = self.make_osxmenu("Encoding")
-        def set_encodings_menu(*args):
-            from xpra.codecs.loader import PREFERED_ENCODING_ORDER
-            encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
-            populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding, encodings, self.client.server_encodings)
-        self.client.connect("handshake-complete", set_encodings_menu)
-        actions_menu = self.make_osxmenu("Actions")
-        actions_menu.add(self.make_refreshmenuitem())
-        actions_menu.add(self.make_raisewindowsmenuitem())
+        if SHOW_SOUND_MENU:
+            sound_menu = self.make_osxmenu("Sound")
+            if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
+                sound_menu.add(self.make_speakermenuitem())
+            if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
+                sound_menu.add(self.make_microphonemenuitem())
+        if SHOW_ENCODINGS_MENU:
+            encodings_menu = self.make_osxmenu("Encoding")
+            def set_encodings_menu(*args):
+                from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+                encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+                populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding, encodings, self.client.server_encodings)
+            self.client.connect("handshake-complete", set_encodings_menu)
+        if SHOW_ACTIONS_MENU:
+            actions_menu = self.make_osxmenu("Actions")
+            actions_menu.add(self.make_refreshmenuitem())
+            actions_menu.add(self.make_raisewindowsmenuitem())
         self.menu_bar.show_all()
 
     #these methods are called by the superclass

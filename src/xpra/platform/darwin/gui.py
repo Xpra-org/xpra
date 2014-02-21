@@ -9,9 +9,6 @@ from xpra.platform.paths import get_icon
 from xpra.log import Logger
 log = Logger("osx")
 
-#for attention_request:
-CRITICAL_REQUEST = 0
-INFO_REQUEST = 10
 
 exit_cb = None
 def quit_handler(*args):
