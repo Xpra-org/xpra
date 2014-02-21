@@ -774,8 +774,13 @@ class WindowVideoSource(WindowSource):
                 ecsc_score = 80
             ecsc_score += csc_spec.score_boost
             runtime_score *= csc_spec.get_runtime_factor()
-            enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, scaling)
+
             encoder_scaling = (1, 1)
+            if scaling!=(1,1) and not csc_spec.can_scale:
+                #csc cannot take care of scaling, so encoder will have to:
+                encoder_scaling = scaling
+                scaling = (1, 1)
+            enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, scaling)
         else:
             #not using csc at all!
             ecsc_score = 100
@@ -784,6 +789,11 @@ class WindowVideoSource(WindowSource):
             enc_width = width & width_mask
             enc_height = height & height_mask
             encoder_scaling = scaling
+
+        if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
+            #we need the encoder to scale but it cannot do it, fail it:
+            return -1
+
         ee_score = 100
         if self._video_encoder is None or self._video_encoder.get_type()!=encoder_spec.codec_type or \
            self._video_encoder.get_src_format()!=csc_format or \
@@ -794,9 +804,6 @@ class WindowVideoSource(WindowSource):
         #edge resistance score: average of csc and encoder score:
         er_score = (ecsc_score + ee_score) / 2.0
         score = int((qscore+sscore+er_score)*runtime_score/100.0/3.0)
-        if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
-            #slash score if we want scaling but this encoder cannot do it:
-            score /= 5
         scorelog("get_score%s quality:%.1f, speed:%.1f, setup:%.1f runtime:%.1f score=%s", (csc_format, csc_spec, encoder_spec,
                   width, height), qscore, sscore, er_score, runtime_score, score)
         return score
@@ -948,7 +955,11 @@ class WindowVideoSource(WindowSource):
             try:
                 _, csc_spec, enc_in_format, encoder_spec = option
                 log("setup_pipeline: trying %s", option)
-                scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
+                if csc_spec and not csc_spec.can_scale:
+                    #the csc module cannot scale, disable it:
+                    scaling = (1, 1)
+                else:
+                    scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
                 encoder_scaling = scaling
                 speed = self.get_current_speed()
                 quality = self.get_current_quality()
