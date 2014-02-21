@@ -804,12 +804,14 @@ class WindowSource(object):
         if self.is_cancelled(sequence):
             image.free()
             return
-        process_damage_time = time.time()
-        data = (damage_time, process_damage_time, self.wid, image, coding, sequence, options)
+
+        now = time.time()
+        process_damage_time = now
         self._sequence += 1
-        log("process_damage_regions: wid=%s, adding pixel data %s to queue, elapsed time: %.1f ms, request rgb time: %.1f ms",
-                self.wid, data[:6], 1000.0*(time.time()-damage_time), 1000.0*(time.time()-rgb_request_time))
+        log("process_damage_regions: wid=%s, adding %s pixel data to queue, elapsed time: %.1f ms, request rgb time: %.1f ms",
+                self.wid, coding, 1000.0*(now-damage_time), 1000.0*(now-rgb_request_time))
         ww, wh = window.get_dimensions()
+        data = (damage_time, process_damage_time, self.wid, image, coding, sequence, options)
         def make_data_packet_cb(*args):
             #NOTE: this function is called from the damage data thread!
             try:

@@ -9,7 +9,6 @@ import struct
 import os
 import time
 
-from xpra.util import dump_exc, AdHocStruct
 from xpra.x11.gtk_x11.error import trap, XError
 
 from xpra.log import Logger

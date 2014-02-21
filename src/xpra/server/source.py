@@ -381,6 +381,7 @@ class ServerSource(object):
             self.timeout_add(int(1000*(RECALCULATE_DELAY-delta)), add_work_item, recalculate_work)
 
     def close(self):
+        log("%s.close()", self)
         self.close_event.set()
         self.damage_data_queue.put(None, block=False)
         for window_source in self.window_sources.values():

@@ -868,6 +868,13 @@ cdef object _gw(display, Window xwin):
     return win
 
 
+# Just to make it easier to pass around and have a helpful debug logging.
+# Really, just a python objects where we can stick random bags of attributes.
+class X11Event(object):
+    def __repr__(self):
+        return "<X11Event %r>" % self.__dict__
+
+
 cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                                     GdkEvent * gdk_event,
                                     void * userdata) with gil:
@@ -893,7 +900,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         log("x_event_filter event=%s/%s window=%#x", event_args, event_type, e.xany.window)
         if event_args is not None:
             d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
-            pyev = AdHocStruct()
+            pyev = X11Event()
             pyev.type = e.type
             pyev.send_event = e.xany.send_event
             pyev.display = d

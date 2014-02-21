@@ -59,6 +59,10 @@ MAX_WINDOW_SIZE = 2**15-1
 MAX_ASPECT = 2**15-1
 USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
 
+#these properties are not handled, and we don't want to spam the log file
+#whenever an app decides to change them:
+PROPERTIES_IGNORED = ("_NET_WM_OPAQUE_REGION", )
+
 
 # Todo:
 #   client focus hints
@@ -308,17 +312,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self.disconnect(handler_id)
 
     def call_setup(self):
-        log("call_setup()")
         try:
             self._geometry = trap.call_synced(X11Window.geometry_with_border, get_xwindow(self.client_window))
         except XError, e:
             raise Unmanageable(e)
-        log("call_setup() adding event receiver")
         add_event_receiver(self.client_window, self)
         # Keith Packard says that composite state is undefined following a
         # reparent, so I'm not sure doing this here in the superclass,
         # before we reparent, actually works... let's wait and see.
-        log("call_setup() composite setup")
         try:
             trap.call_synced(self._composite.setup)
         except XError, e:
@@ -341,7 +342,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._pointer_grab.connect("grab", self.pointer_grab_event)
         self._pointer_grab.connect("ungrab", self.pointer_ungrab_event)
         self._setup_done = True
-        log("call_setup() ended, property_handlers=%s", self._property_handlers)
 
     def setup_failed(self, e):
         log("cannot manage %#x: %s", get_xwindow(self.client_window), e)
@@ -384,6 +384,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def _handle_property_change(self, name):
         log("Property changed on %s: %s", self.client_window.xid, name)
+        if name in PROPERTIES_IGNORED:
+            return
+        self._call_property_handler(name)
+
+    def _call_property_handler(self, name):
+        if name in self._property_handlers:
+            self._property_handlers[name](self)
+
         if name in self._property_handlers:
             self._property_handlers[name](self)
 
@@ -452,8 +460,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("pid", pget("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", pget("WM_WINDOW_ROLE", "latin1"))
         for mutable in ["WM_NAME", "_NET_WM_NAME"]:
-            log("reading initial value for %s", mutable)
-            self._handle_property_change(mutable)
+            self._call_property_handler(mutable)
 
 
     def _handle_scaling(self):
@@ -1231,11 +1238,10 @@ class WindowModel(BaseWindowModel):
         for mutable in ["WM_HINTS", "WM_NORMAL_HINTS",
                         "WM_ICON_NAME", "_NET_WM_ICON_NAME",
                         "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]:
-            log("reading initial value for %s", mutable)
-            self._handle_property_change(mutable)
+            self._call_property_handler(mutable)
         for mutable in ["_NET_WM_ICON"]:
             try:
-                self._handle_property_change(mutable)
+                self._call_property_handler(mutable)
             except:
                 log.error("error reading initial property %s", mutable, exc_info=True)
 

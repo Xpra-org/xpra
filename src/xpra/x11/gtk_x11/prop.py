@@ -362,7 +362,8 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     try:
         data = trap.call_synced(X11Window.XGetWindowProperty, get_xwindow(target), key, atom)
     except NoSuchProperty:
-        log.debug("Missing property %s (%s)", key, etype)
+        if not ignore_errors:
+            log("Missing property %s (%s)", key, etype)
         return None
     except XError:
         if raise_xerrors:

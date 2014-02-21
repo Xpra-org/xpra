@@ -33,6 +33,7 @@ from xpra.x11.gtk_x11.error import trap
 from xpra.log import Logger
 log = Logger("server")
 focuslog = Logger("server", "focus")
+windowlog = Logger("server", "window")
 
 import xpra
 from xpra.os_util import StringIOClass
@@ -273,7 +274,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         # that the earliest override-redirect windows will be on the bottom,
         # which is usually how things work.  (I don't know that anyone cares
         # about this kind of correctness at all, but hey, doesn't hurt.)
-        log("send_windows_and_cursors(%s) will send: %s", ss, self._id_to_window)
+        windowlog("send_windows_and_cursors(%s) will send: %s", ss, self._id_to_window)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
             if not window.is_managed():
@@ -313,11 +314,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._add_new_window(window)
 
     def do_xpra_child_map_event(self, event):
-        log("do_xpra_child_map_event(%s)", event)
+        windowlog("do_xpra_child_map_event(%s)", event)
         if event.override_redirect:
             self._add_new_or_window(event.window)
 
     def _add_new_window_common(self, window):
+        windowlog("adding window %s", window)
         wid = X11ServerBase._add_new_window_common(self, window)
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
@@ -333,7 +335,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             window.connect("notify::%s" % prop, self._update_metadata)
         _, _, w, h, _ = window.get_property("client-window").get_geometry()
         x, y, _, _, _ = window.corral_window.get_geometry()
-        log("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
+        windowlog("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
         self._desktop_manager.add_window(window, x, y, w, h)
         window.connect("notify::geometry", self._window_resized_signaled)
         self._send_new_window_packet(window)
@@ -341,7 +343,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _window_resized_signaled(self, window, *args):
         nw,nh = window.get_property("actual-size")
         geom = self._desktop_manager.window_geometry(window)
-        log("XpraServer._window_resized_signaled(%s,%s) actual-size=%sx%s, current geometry=%s", window, args, nw, nh, geom)
+        windowlog("XpraServer._window_resized_signaled(%s,%s) actual-size=%sx%s, current geometry=%s", window, args, nw, nh, geom)
         geom[2:4] = nw,nh
         for ss in self._server_sources.values():
             ss.resize_window(self._window_to_id[window], window, nw, nh)
@@ -351,24 +353,24 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if raw_window.get_window_type()==gtk.gdk.WINDOW_TEMP:
             #ignoring one of gtk's temporary windows
             #all the windows we manage should be gtk.gdk.WINDOW_FOREIGN
-            log("ignoring TEMP window %#x", xid)
+            windowlog("ignoring TEMP window %#x", xid)
             return
         WINDOW_MODEL_KEY = "_xpra_window_model_"
         wid = raw_window.get_data(WINDOW_MODEL_KEY)
         window = self._id_to_window.get(wid)
         if window:
             if window.is_managed():
-                log("found existing window model %s for %#x, will refresh it", type(window), xid)
+                windowlog("found existing window model %s for %#x, will refresh it", type(window), xid)
                 geometry = window.get_property("geometry")
                 _, _, w, h = geometry
                 self._damage(window, 0, 0, w, h, options={"min_delay" : 50})
                 return
-            log("found existing model %s (but no longer managed!) for %#x", type(window), xid)
+            windowlog("found existing model %s (but no longer managed!) for %#x", type(window), xid)
             #we could try to re-use the existing model and window ID,
             #but for now it is just easier to create a new one:
             self._lost_window(window)
         tray_window = get_tray_window(raw_window)
-        log("Discovered new override-redirect window: %#x (tray=%s)", xid, tray_window)
+        windowlog("Discovered new override-redirect window: %#x (tray=%s)", xid, tray_window)
         try:
             if tray_window is not None:
                 assert self._tray
@@ -392,7 +394,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 if window in self._window_to_id:
                     self._lost_window(window, False)
             else:
-                log.warn("cannot add window %#x: %s", xid, e)
+                windowlog.warn("cannot add window %#x: %s", xid, e)
             #from now on, we return to the gtk main loop,
             #so we *should* get a signal when the window goes away
 
@@ -401,7 +403,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if w>=32768 or h>=32768:
             self.error("not sending new invalid window dimensions: %ix%i !", w, h)
             return
-        log("or_window_geometry_changed: %s (window=%s)", window.get_property("geometry"), window)
+        windowlog("or_window_geometry_changed: %s (window=%s)", window.get_property("geometry"), window)
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
             ss.or_window_geometry(wid, window, x, y, w, h)
@@ -511,12 +513,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _update_metadata(self, window, pspec):
+        windowlog("updating metadata on %s: %s", window, pspec)
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
             ss.window_metadata(wid, window, pspec.name)
 
     def _lost_window(self, window, wm_exiting=False):
         wid = self._window_to_id[window]
+        windowlog("lost_window: %s - %s", wid, window)
         for ss in self._server_sources.values():
             ss.lost_window(wid, window)
         del self._window_to_id[window]
@@ -543,6 +547,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _raised_window(self, window, event):
+        windowlog("raised window: %s (%s)", window, event)
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
             ss.raise_window(wid, window)
@@ -551,9 +556,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         wid, x, y, width, height = packet[1:6]
         window = self._id_to_window.get(wid)
         if not window:
-            log("cannot map window %s: already removed!", wid)
+            windowlog("cannot map window %s: already removed!", wid)
             return
         assert not window.is_OR()
+        windowlog("client mapped window %s - %s, at: %s", wid, window, (x, y, width, height))
         self._desktop_manager.configure_window(window, x, y, width, height)
         self._desktop_manager.show_window(window)
         if len(packet)>=7:
@@ -568,6 +574,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log("cannot map window %s: already removed!", wid)
             return
         assert not window.is_OR()
+        windowlog("client unmapped window %s - %s", wid, window)
         for ss in self._server_sources.values():
             ss.unmap_window(wid, window)
         self._desktop_manager.hide_window(window)
@@ -575,8 +582,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
         window = self._id_to_window.get(wid)
+        windowlog("client configured window %s - %s, at: %s", wid, window, (x, y, w, h))
         if not window:
-            log("cannot map window %s: already removed!", wid)
+            windowlog("cannot map window %s: already removed!", wid)
             return
         if window.is_tray():
             assert self._tray
@@ -584,7 +592,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         else:
             assert not window.is_OR()
             owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
-            log("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
+            windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
             self._desktop_manager.configure_window(window, x, y, w, h)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
@@ -594,28 +602,28 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _process_move_window(self, proto, packet):
         wid, x, y = packet[1:4]
         window = self._id_to_window.get(wid)
-        log("_process_move_window(%s)", packet[1:])
         if not window:
             log("cannot move window %s: already removed!", wid)
             return
         assert not window.is_OR()
+        windowlog("client configured window %s - %s, at: %s", wid, window, packet[1:])
         _, _, w, h = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
 
     def _process_resize_window(self, proto, packet):
         wid, w, h = packet[1:4]
         window = self._id_to_window.get(wid)
-        log("_process_resize_window(%s)", packet[1:])
         if not window:
             log("cannot resize window %s: already removed!", wid)
             return
         assert not window.is_OR()
+        windowlog("client resized window %s - %s, to: %s", wid, window, packet[1:])
         self._cancel_damage(wid, window)
         x, y, _, _ = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
         _, _, ww, wh = self._desktop_manager.window_geometry(window)
         visible = self._desktop_manager.visible(window)
-        log("resize_window to %sx%s, desktop manager set it to %sx%s, visible=%s", w, h, ww, wh, visible)
+        windowlog("resize_window to %sx%s, desktop manager set it to %sx%s, visible=%s", w, h, ww, wh, visible)
         if visible:
             self._damage(window, 0, 0, w, h)
 
@@ -634,10 +642,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _process_close_window(self, proto, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid, None)
+        windowlog("client closed window %s - %s", wid, window)
         if window:
             window.request_close()
         else:
-            log("cannot close window %s: it is already gone!", wid)
+            windowlog("cannot close window %s: it is already gone!", wid)
 
 
     def make_screenshot_packet(self):

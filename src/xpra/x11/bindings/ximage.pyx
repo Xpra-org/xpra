@@ -251,7 +251,7 @@ cdef class XImageWrapper:
         else:
             raise Exception("invalid image depth: %s bpp" % self.depth)
 
-    def __str__(self):
+    def __repr__(self):
         return "XImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
 
     def get_geometry(self):
@@ -506,7 +506,7 @@ cdef class XShmImageWrapper(XImageWrapper):
     def __init__(self, *args):                      #@DuplicatedSignature
         self.free_callback = None
 
-    def __str__(self):                              #@DuplicatedSignature
+    def __repr__(self):                              #@DuplicatedSignature
         return "XShmImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
 
     cpdef get_image_pixels(self):                     #@DuplicatedSignature
