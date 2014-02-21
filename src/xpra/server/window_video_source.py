@@ -11,7 +11,7 @@ from threading import Lock
 
 from xpra.util import AtomicInteger
 from xpra.net.protocol import Compressed
-from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException
+from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.server.window_source import WindowSource, AUTO_SWITCH_TO_RGB, MAX_PIXELS_PREFER_RGB
 from xpra.gtk_common.region import rectangle, merge_all
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
@@ -31,6 +31,9 @@ def envint(name, d):
 MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
 
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
+if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not in PIXEL_SUBSAMPLING:
+    log.warn("ignoring invalid CSC mode specified: %s", FORCE_CSC_MODE)
+    FORCE_CSC_MODE = ""
 FORCE_CSC = bool(FORCE_CSC_MODE) or  os.environ.get("XPRA_FORCE_CSC", "0")=="1"
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
 def parse_scaling_value(v):
@@ -536,7 +539,7 @@ class WindowVideoSource(WindowSource):
         if s>75:
             #if speed is high, assume we have bandwidth to spare
             #and prefer non-video:
-            max_nvp *= (1.0+(s-75.0)/5.0)
+            max_nvp = int(max_nvp * (1.0+(s-75.0)/5.0))
         if is_OR:
             #OR windows tend to be static:
             max_nvp *= 4
@@ -602,19 +605,22 @@ class WindowVideoSource(WindowSource):
             speed = self.get_current_speed()
 
             scores = self.get_video_pipeline_options(ve.get_encoding(), width, height, pixel_format)
-            if len(scores)>0:
-                log("reconfigure(%s) best=%s", force_reload, scores[0])
-                _, csc_spec, enc_in_format, encoder_spec = scores[0]
-                if self._csc_encoder:
-                    if csc_spec is None or \
-                       type(self._csc_encoder)!=csc_spec.codec_class or \
-                       self._csc_encoder.get_dst_format()!=enc_in_format:
-                        log("reconfigure(%s) found better csc encoder: %s", force_reload, scores[0])
-                        self.do_csc_encoder_cleanup()
-                if type(self._video_encoder)!=encoder_spec.codec_class or \
-                   self._video_encoder.get_src_format()!=enc_in_format:
-                    log("reconfigure(%s) found better video encoder: %s", force_reload, scores[0])
-                    self.do_video_encoder_cleanup()
+            if len(scores)==0:
+                log("reconfigure(%s) no pipeline options found!")
+                return
+
+            log("reconfigure(%s) best=%s", force_reload, scores[0])
+            _, csc_spec, enc_in_format, encoder_spec = scores[0]
+            if self._csc_encoder:
+                if csc_spec is None or \
+                   type(self._csc_encoder)!=csc_spec.codec_class or \
+                   self._csc_encoder.get_dst_format()!=enc_in_format:
+                    log("reconfigure(%s) found better csc encoder: %s", force_reload, scores[0])
+                    self.do_csc_encoder_cleanup()
+            if type(self._video_encoder)!=encoder_spec.codec_class or \
+               self._video_encoder.get_src_format()!=enc_in_format:
+                log("reconfigure(%s) found better video encoder: %s", force_reload, scores[0])
+                self.do_video_encoder_cleanup()
 
             if self._video_encoder is None:
                 self.setup_pipeline(scores, width, height, pixel_format)
