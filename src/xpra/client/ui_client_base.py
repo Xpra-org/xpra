@@ -983,7 +983,7 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_sequence = c.boolget("sound_sequence")
         self.server_info_request = c.boolget("info-request")
         e = c.strget("encoding")
-        if e and e!=self.encoding:
+        if e and self.encoding and e!=self.encoding:
             if self.encoding not in self.server_core_encodings:
                 log.warn("server does not support %s encoding and has switched to %s", self.encoding, e)
             else:
