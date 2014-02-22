@@ -142,8 +142,8 @@ class ClientWindow(GTKClientWindowBase):
         return self.do_get_workspace(self.gdk_window(), "_NET_WM_DESKTOP")
 
     def do_get_workspace(self, target, prop):
-        if sys.platform.startswith("win"):
-            return  -1              #windows does not have workspaces
+        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+            return  -1              #windows and OSX do not have workspaces
         value = self.xget_u32_property(target, prop)
         if value is not None:
             self.debug("do_get_workspace() found value=%s from %s / %s", value, target, prop)
