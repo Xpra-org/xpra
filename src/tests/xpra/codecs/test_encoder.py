@@ -25,10 +25,21 @@ def test_encoder_dimensions(encoder_module):
     test_encoder(encoder_module, dimensions=dims)
     log("")
 
+def test_performance(encoder_module, options={}):
+    log("")
+    log("test_encoder_dimensions()")
+    dims = [(1920, 1080), (1024, 768)]
+    for speed in (0, 100):
+        for quality in (0, 100):
+            log.info("testing speed=%s, quality=%s", speed, quality)
+            test_encoder(encoder_module, options, dims, 100, quality, speed)
+    log("")
+
+
 def log_output(args):
     log(args)
 
-def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=2):
+def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=2, quality=20, speed=0):
     log("test_encoder(%s, %s)" % (encoder_module, dimensions))
     log("colorspaces=%s" % str(encoder_module.get_colorspaces()))
     for encoding in encoder_module.get_encodings():
@@ -63,7 +74,7 @@ def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS,
                     log(" actual dimensions used: %sx%s" % (actual_w, actual_h))
                 e = ec()
                 log("instance=%s" % e)
-                e.init_context(actual_w, actual_h, src_format, encoding, 20, 0, options)
+                e.init_context(actual_w, actual_h, src_format, encoding, quality, speed, (1, 1), options)
                 log("initialiazed instance=%s" % e)
                 images = gen_src_images(src_format, actual_w, actual_h, n_images)
                 log("test images generated - starting compression")
@@ -89,14 +100,22 @@ def gen_src_images(src_format, w, h, nframes):
 
 def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None, pause=0):
     start = time.time()
+    tsize = 0
     for image in images:
         log("calling %s(%s)" % (encoder.compress_image, image))
         c = encoder.compress_image(image)
         assert c is not None, "no image!"
         data, _ = c
+        tsize += len(data)
         log("data size: %s" % len(data))
         log("data head: %s" % binascii.hexlify(data[:2048]))
         if pause>0:
             time.sleep(pause)
     end = time.time()
-    log("%s finished encoding %s frames at %sx%s, total encoding time: %.1fms" % (name, len(images), w, h, 1000.0*(end-start)))
+    #log.info("%s finished encoding %s frames at %sx%s, total encoding time: %.1fms" % (name, len(images), w, h, 1000.0*(end-start)))
+    perf = int(len(images)*w*h/(end-start)/1024/1024)
+    tpf = int(1000*(end-start)/len(images))
+    sized = "%sx%s" % (w, h)
+    fsize = tsize/len(images)
+    log.info("%s finished encoding %s frames at %s: %s MPixels/s, %sms/frame, %sKB/frame (%s)", name, len(images), sized.rjust(10), str(perf).rjust(4), str(tpf).rjust(4), str(fsize/1024).rjust(8), encoder.get_info().get("pixel_format"))
+    #log.info("info=%s", encoder.get_info())

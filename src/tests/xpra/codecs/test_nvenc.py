@@ -7,7 +7,8 @@
 import sys
 import random
 import threading
-from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test_encoder, test_encoder_dimensions
+from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test_encoder, test_encoder_dimensions, test_performance
+from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("encoder", "test")
@@ -17,14 +18,12 @@ TEST_DIMENSIONS = ((1920, 1080), (512, 512), (32, 32))
 
 
 def test_encode_one():
-    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     log("")
     log("test_nvenc()")
     test_encoder(encoder_module)
     log("")
 
 def test_memleak():
-    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     from pycuda import driver
     #use the first device for this test
     start_free_memory = None
@@ -50,12 +49,13 @@ def test_memleak():
     log.info("memory lost: %s MB", (start_free_memory-end_free_memory)/1024/1024)
 
 
+def test_perf():
+    test_performance(encoder_module, options={"video_separateplane" : True})
+
 def test_dimensions():
-    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     test_encoder_dimensions(encoder_module)
 
 def test_encode_all_GPUs():
-    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     cuda_devices = encoder_module.get_cuda_devices()
     log("")
     log.info("test_parallel_encode() will test one encoder on each of %s sequentially" % cuda_devices)
@@ -71,7 +71,6 @@ def test_encode_all_GPUs():
 
 def test_context_limits():
     #figure out how many contexts we can have on each card:
-    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     cuda_devices = encoder_module.get_cuda_devices()
     ec = getattr(encoder_module, "Encoder")
     MAX_ENCODER_CONTEXTS_PER_DEVICE = 64
@@ -100,7 +99,6 @@ def test_context_limits():
     log("")
 
 def test_parallel_encode():
-    from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
     cuda_devices = encoder_module.get_cuda_devices()
     ec = getattr(encoder_module, "Encoder")
     encoding = encoder_module.get_encodings()[0]
@@ -156,8 +154,9 @@ def encoding_thread(encoder, src_format, w, h, images, info):
 def main():
     log("main()")
     test_encode_one()
-    test_memleak()
-    test_dimensions()
+    #test_memleak()
+    #test_dimensions()
+    test_perf()
     #test_encode_all_GPUs()
     #test_context_limits()
     #test_parallel_encode()
