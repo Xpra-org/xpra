@@ -28,7 +28,7 @@ class ImageWrapper(object):
         self.thread_safe = thread_safe
         self.freed = False
 
-    def __str__(self):
+    def __repr__(self):
         return "%s(%s:%s:%s)" % (type(self), self.pixel_format, self.get_geometry(), ImageWrapper.PLANE_NAMES.get(self.planes))
 
     def get_geometry(self):
@@ -65,8 +65,8 @@ class ImageWrapper(object):
         return self.planes
 
     def is_thread_safe(self):
-        """ if True, free() can be called from any thread,
-            if False, free() must be called from the same thread.
+        """ if True, free() and clone_pixel_data() can be called from any thread,
+            if False, free() and clone_pixel_data() must be called from the same thread.
             Used by XImageWrapper to ensure X11 images are freed from the UI thread.
         """
         return self.thread_safe
