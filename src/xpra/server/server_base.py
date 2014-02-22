@@ -140,6 +140,8 @@ class ServerBase(ServerCore):
         log("threaded_init() start")
         #try to load video encoders in advance as this can take some time:
         getVideoHelper().init()
+        #re-init list of encodings now that we have video initialized
+        self.init_encodings()
         log("threaded_init() end")
 
     def init_encodings(self):
@@ -155,7 +157,7 @@ class ServerBase(ServerCore):
                 if e not in self.core_encodings:
                     self.core_encodings.append(e)
 
-        #video encoders:
+        #video encoders (empty when first called - see threaded_init)
         add_encodings(getVideoHelper().get_encodings())  #ie: ["vp8", "h264"]
 
         for module, encodings in {
@@ -174,6 +176,7 @@ class ServerBase(ServerCore):
             self.lossless_encodings.append("webp")
 
         self.default_encoding = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings][0]
+
 
     def init_encoding(self, cmdline_encoding):
         if cmdline_encoding and cmdline_encoding not in self.encodings:
