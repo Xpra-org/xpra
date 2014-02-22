@@ -521,10 +521,8 @@ class XpraClient(GTKXpraClient):
         #only enable GL for normal windows:
         window_types = metadata.get("window-type", ())
         log("get_client_window_class(%s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, window_types=%s, encoding=%s", metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, window_types, self.encoding)
-        if self.GLClientWindowClass is None or not self.opengl_enabled or override_redirect:
+        if self.GLClientWindowClass is None or not self.opengl_enabled:
             return [self.ClientWindowClass]
-        if ("NORMAL" not in window_types) and ("_NET_WM_WINDOW_TYPE_NORMAL" not in window_types):
-            return [self.ClientWindowClass, self.GLClientWindowClass]
         return [self.GLClientWindowClass, self.ClientWindowClass]
 
     def toggle_opengl(self, *args):
