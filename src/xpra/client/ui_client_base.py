@@ -616,6 +616,7 @@ class UIXpraClient(XpraClientBase):
                 #if this window lost focus, it must have had it!
                 #(catch up - makes things like OR windows work:
                 # their parent receives the focus-out event)
+                focuslog("window %s lost a focus it did not have!? (simulating focus before losing it)", wid)
                 self.send_focus(wid)
             if self.keyboard_helper:
                 self.keyboard_helper.clear_repeat()
