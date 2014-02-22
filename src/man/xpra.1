@@ -320,7 +320,7 @@ This command shadows an existing X11 display. If there is only one
 X11 display active and its number is below 10, it can be auto-detected.
 
 Note that this mode of operation uses screenscraping which is far less
-efficient. Using a video encoder (x264 or vpx) is highly recommended for
+efficient. Using a video encoder (h264 or vp8) is highly recommended for
 this mode of operation.
 .SS xpra proxy
 This command allows a single server to proxy connections for multiple
@@ -379,23 +379,24 @@ may be overridden on the client.
 \fB\-\-encoding\fP=\fIENCODING\fP
 This specifies the image encoding to use,
 there are a number of encodings supported:
-\fBjpeg\fP, \fBpng\fP, \fBwebp\fP, \fBrgb\fP, \fBvpx\fP and \fBx264\fP
+\fBjpeg\fP, \fBpng\fP, \fBwebp\fP, \fBrgb\fP, \fBvp8\fP and \fBh264\fP
 (some may not be available in your environment).
 \fBpng\fP is compressed and lossless.
 \fBrgb\fP is a raw pixel format compressed with zlib,
 the compression ratio is poor, but it is fast.
 \fBwebp\fP can be useful for graphical applications, and is
-generally better than jpeg.
+generally better than jpeg. Support for this encoding is currently
+broken due to memory leaks - do not use!
 \fBjpeg\fP can be useful for graphical applications.
-\fBvpx\fP and \fBx264\fP are both lossy and are
+\fBvp8\fP and \fBh264\fP are both lossy and are
 very efficient with graphics or high framerate applications,
-\fBx264\fP is also very usable with text.
+\fBh264\fP is also very usable with text.
 The default encoding will depend on what options are available on both
 the server and the client.
 
 \fBrgb\fP is always available (builtin).
 \fBjpeg\fP and \fBpng\fP require the Python Imaging Library.
-\fBvpx\fP, \fBwebp\fP and \fBx264\fP require their respective shared libraries.
+\fBvp8\fP, \fBwebp\fP and \fBh264\fP require their respective shared libraries.
 .TP
 \fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Use OpenGL accelerated rendering on the client.
@@ -612,7 +613,7 @@ when using the \fBrgb\fP encoding).
 .TP
 \fB\-\-quality\fP=\fIVALUE\fP
 This option sets a fixed image compression quality lossy encodings
-(\fBjpeg\fP, \fBwebp\fP or \fBx264\fP).
+(\fBjpeg\fP, \fBwebp\fP or \fBh264\fP).
 First, one of those lossy encodings must be enabled with \fB\-\-encoding\fP.
 Values range from 1 (lowest quality, high compression - generally unusable)
 to 100 (highest quality, low compression - not particularly useful).
@@ -639,7 +640,7 @@ refreshed using a lossless frame.
 The delay is a floating-point number and is in seconds.
 This option is enabled by default with a delay of 1 second.
 This option is only relevant when using a lossy encoding
-(\fBjpeg\fP, \fBwebp\fP, \fBx264\fP or \fBvpx\fP) with a quality
+(\fBjpeg\fP, \fBwebp\fP, \fBh264\fP or \fBvp8\fP) with a quality
 lower than 95%.
 .TP
 \fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP
