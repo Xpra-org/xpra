@@ -16,31 +16,27 @@ Adds a red border around the window contents
 class BorderClientWindow(ClientWindow):
 
     def setup_window(self):
-        self.border_shown = not self._override_redirect
+        self.border = None
         ClientWindow.setup_window(self)
 
     def magic_key(self, *args):
-        if self._override_redirect:
-            return
-        self.border_shown = not self.border_shown
+        self.border_shown = (not self.border_shown)
         self.queue_draw(0, 0, *self._size)
 
     def do_expose_event(self, event):
         ClientWindow.do_expose_event(self, event)
-        if not self.border_shown:
+        if self.border is None or not self.border.shown:
             return
         #now paint our border import gtk.gdk
-        s = 5
+        s = self.border.size
         ww, wh = self.window.get_size()
         borders = []
-        if ww>s*2:
-            #window is wide enough, add borders on the side:
-            borders.append((0, 0, s, wh))           #left
-            borders.append((ww-s, 0, s, wh))        #right
-        if wh>s*2:
-            #window is tall enough, add borders on top and bottom:
-            borders.append((0, 0, ww, s))           #top
-            borders.append((0, wh-s, ww, s))        #bottom
+        #window is wide enough, add borders on the side:
+        borders.append((0, 0, s, wh))           #left
+        borders.append((ww-s, 0, s, wh))        #right
+        #window is tall enough, add borders on top and bottom:
+        borders.append((0, 0, ww, s))           #top
+        borders.append((0, wh-s, ww, s))        #bottom
         for x, y, w, h in borders:
             if w<=0 or h<=0:
                 continue
@@ -51,7 +47,7 @@ class BorderClientWindow(ClientWindow):
             context = self.window.cairo_create()
             context.rectangle(rect)
             context.clip()
-            context.set_source_rgba(1.0, 0.0, 0.0, 0.5)
+            context.set_source_rgba(self.border.red, self.border.green, self.border.blue, self.border.alpha)
             context.fill()
             context.paint()
 

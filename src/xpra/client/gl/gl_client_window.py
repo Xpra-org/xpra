@@ -7,6 +7,7 @@
 from xpra.log import Logger
 log = Logger("opengl", "window")
 
+from gtk import gdk
 from xpra.client.gtk2.client_window import ClientWindow
 from xpra.client.gl.gl_window_backing import GLPixmapBacking, log
 
@@ -15,9 +16,9 @@ class GLClientWindow(ClientWindow):
 
     gl_pixmap_backing_class = GLPixmapBacking
 
-    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
+    def __init__(self, *args):
         log("GLClientWindow(..)")
-        ClientWindow.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+        ClientWindow.__init__(self, *args)
         self._client_properties["encoding.uses_swscale"] = False
         self.set_reallocate_redraws(True)
         self.add(self._backing._backing)
@@ -47,10 +48,9 @@ class GLClientWindow(ClientWindow):
             self._backing.gl_expose_event(self._backing._backing, "spinner: fake event")
             self.queue_draw(0, 0, w, h)
         else:
-            import gtk.gdk
             window = self._backing._backing.get_window()
             context = window.cairo_create()
-            self.paint_spinner(context, gtk.gdk.Rectangle(0, 0, w, h))
+            self.paint_spinner(context, gdk.Rectangle(0, 0, w, h))
 
     def do_expose_event(self, event):
         log("GL do_expose_event(%s)", event)
@@ -66,3 +66,9 @@ class GLClientWindow(ClientWindow):
 
     def new_backing(self, w, h):
         self._backing = self.make_new_backing(self.gl_pixmap_backing_class, w, h)
+        self._backing.border = self.border
+
+    def magic_key(self, *args):
+        if self.border:
+            self.border.shown = (not self.border.shown)
+            self.queue_draw(0, 0, *self._size)

@@ -28,8 +28,8 @@ else:
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
-        log.debug("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay))
+    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay, border):
+        log("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay))
         ClientWidgetBase.__init__(self, client, wid)
         self._override_redirect = override_redirect
         self.group_leader = group_leader
@@ -37,6 +37,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._size = (w, h)
         self._client_properties = client_properties
         self._auto_refresh_delay = auto_refresh_delay
+        self.border = border
         self.button_state = {}
 
         self.init_window(metadata)

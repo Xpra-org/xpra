@@ -25,6 +25,7 @@ from xpra.gtk_common.gtk2common import gtk2main
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.gtk_common.cursor_names import cursor_names
+from xpra.client.window_border import WindowBorder
 from xpra.log import Logger
 log = Logger("gtk", "client")
 
@@ -49,6 +50,7 @@ class XpraClient(GTKXpraClient):
 
     def __init__(self):
         GTKXpraClient.__init__(self)
+        self.border = None
         self.GLClientWindowClass = None
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
@@ -66,8 +68,44 @@ class XpraClient(GTKXpraClient):
             assert opts.window_layout in WINDOW_LAYOUTS
             self.ClientWindowClass = WINDOW_LAYOUTS.get(opts.window_layout)
         else:
-            self.ClientWindowClass = ClientWindow
+            self.ClientWindowClass = BorderClientWindow
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
+
+    
+    def parse_border(self, border_str):
+        parts = [x.strip() for x in border_str.split(",")]
+        color_str = parts[0]
+        if color_str.lower()=="none":
+            return
+        if color_str=="auto":
+            try:
+                import hashlib
+                m = hashlib.sha1()
+                m.update(self._protocol._conn.target)
+                color_str = "#%s" % m.hexdigest()[:6]
+                log("border color derived from %s: %s", self._protocol._conn.target, color_str)
+            except:
+                #fail: default to red
+                color_str = "red"
+        try:
+            color = gtk.gdk.color_parse(color_str)
+        except Exception, e:
+            log.warn("invalid color specified: %s (%s)", color_str, e)
+            return
+        alpha = 0.6
+        size = 4
+        if len(parts)==2:
+            size_str = parts[1]
+            try:
+                size = int(size_str)
+            except Exception, e:
+                log.warn("invalid size specified: %s (%s)", size_str, e)
+            if size<=0:
+                log("border size is %s, disabling it", size)
+                return
+        self.border = WindowBorder(True, color.red_float, color.green_float, color.blue_float, alpha, size)
+        log("parse_border(%s)=%s", border_str, self.border)
+            
 
     def gtk_main(self):
         gtk2main()
@@ -92,6 +130,11 @@ class XpraClient(GTKXpraClient):
             log.warn("cannot load GTK2 notifier: %s", e)
         return ncs
 
+    def make_new_window(self, *args):
+        w = GTKXpraClient.make_new_window(self, *args)
+        if w:
+            w.border = self.border
+        return w
 
     def get_supported_window_layouts(self):
         return  WINDOW_LAYOUTS

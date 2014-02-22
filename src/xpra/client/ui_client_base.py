@@ -178,6 +178,7 @@ class UIXpraClient(XpraClientBase):
         self.clipboard_enabled = False
         self.cursors_enabled = False
         self.bell_enabled = False
+        self.border = None
 
         self.supports_mmap = MMAP_SUPPORTED and ("rgb24" in self.get_core_encodings())
 
@@ -266,9 +267,17 @@ class UIXpraClient(XpraClientBase):
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self)
 
+        if opts.border:
+            self.parse_border(opts.border)
+
         #draw thread:
         self._draw_queue = Queue()
         self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw")
+
+    
+    def parse_border(self, border_str):
+        #not implemented here (see gtk2 client)
+        pass
 
 
     def run(self):
@@ -1447,13 +1456,13 @@ class UIXpraClient(XpraClientBase):
         window = None
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+                window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay, self.border)
                 break
             except Exception, e:
                 log.warn("failed to instantiate %s: %s", cwc, e)
         if window is None:
             log.warn("no more options.. this window will not be shown, sorry")
-            return
+            return None
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show()

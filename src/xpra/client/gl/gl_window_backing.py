@@ -25,7 +25,8 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
-    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_COLOR_BUFFER_BIT, \
+    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINE_LOOP, GL_COLOR_BUFFER_BIT, \
+    GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
@@ -39,7 +40,7 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     glTexImage2D, \
     glMultiTexCoord2i, \
     glTexCoord2i, glVertex2i, glEnd, \
-    glClear, glClearColor
+    glClear, glClearColor, glLineWidth, glColor4f
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
@@ -162,6 +163,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.texture_size = 0, 0
         self.gl_setup = False
         self.debug_setup = False
+        self.border = None
         self.paint_screen = False
         self._video_use_swscale = False
         self.draw_needs_refresh = False
@@ -350,6 +352,8 @@ class GLPixmapBacking(GTK2WindowBacking):
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
     def present_fbo(self, drawable):
+        if not self.paint_screen:
+            return
         self.gl_marker("Presenting FBO on screen for drawable %s" % drawable)
         assert drawable
         # Change state to target screen instead of our FBO
@@ -364,13 +368,13 @@ class GLPixmapBacking(GTK2WindowBacking):
 
         # Draw FBO texture on screen
         self.set_rgb_paint_state()
+        w, h = self.size
 
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
         if self._has_alpha:
             # support alpha channel if present:
             glEnablei(GL_BLEND, self.textures[TEX_FBO])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        w, h = self.size
         glBegin(GL_QUADS)
         glTexCoord2i(0, h)
         glVertex2i(0, 0)
@@ -381,6 +385,19 @@ class GLPixmapBacking(GTK2WindowBacking):
         glTexCoord2i(w, h)
         glVertex2i(w, 0)
         glEnd()
+
+        #if desired, paint window border
+        if self.border and self.border.shown:
+            glDisable(GL_TEXTURE_RECTANGLE_ARB)
+            #double size since half the line will be off-screen
+            glLineWidth(self.border.size*2)
+            glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)
+            glBegin(GL_LINE_LOOP)
+            for x,y in ((0, 0), (w, 0), (w, h), (0, h)):
+                glVertex2i(x, y)
+            glEnd()
+            #reset color to default
+            glColor4f(1.0, 1.0, 1.0, 1.0)
 
         # Show the backbuffer on screen
         if drawable.is_double_buffered():
@@ -455,6 +472,8 @@ class GLPixmapBacking(GTK2WindowBacking):
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
             glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
 
             # Draw textured RGB quad at the right coordinates
@@ -492,15 +511,14 @@ class GLPixmapBacking(GTK2WindowBacking):
                 return
             try:
                 self.update_planar_textures(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
-                if self.paint_screen:
-                    # Update FBO texture
-                    x_scale, y_scale = 1, 1
-                    if width!=enc_width or height!=enc_height:
-                        x_scale = float(width)/enc_width
-                        y_scale = float(height)/enc_height
-                    self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
-                    # Present it on screen
-                    self.present_fbo(drawable)
+                # Update FBO texture
+                x_scale, y_scale = 1, 1
+                if width!=enc_width or height!=enc_height:
+                    x_scale = float(width)/enc_width
+                    y_scale = float(height)/enc_height
+                self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
+                # Present it on screen
+                self.present_fbo(drawable)
             finally:
                 drawable.gl_end()
             fire_paint_callbacks(callbacks, True)

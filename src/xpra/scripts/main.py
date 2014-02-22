@@ -379,6 +379,10 @@ def parse_cmdline(cmdline):
                       dest="window_layout", default=defaults.window_layout,
                       help="The type of window layout to use, each client toolkit may provide different layouts."
                         "use the value 'help' to get a list of possible layouts. Default: %default")
+    group.add_option("--border", action="store",
+                      dest="border", default=defaults.border,
+                      help="The border to draw inside xpra windows to distinguish them from local windows."
+                        "Format: color[,size]. Default: %default")
     group.add_option("--title", action="store",
                       dest="title", default=defaults.title,
                       help="Text which is shown as window title, may use remote metadata variables (default: '%default')")
@@ -918,7 +922,7 @@ def run_client(parser, opts, extra_args, mode):
         if opts.window_layout and opts.window_layout.lower()=="help":
             print("%s supports the following layouts: %s" % (app.client_toolkit(), layouts_str))
             return 0
-        if opts.window_layout not in layouts:
+        if opts.window_layout and opts.window_layout not in layouts:
             parser.error("window layout '%s' is not supported by the %s toolkit, valid options are: %s" % (opts.window_layout, app.client_toolkit(), layouts_str))
         conn = connect()
         def handshake_complete(*args):
@@ -977,8 +981,6 @@ def make_client(error_cb, opts):
     toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
     if toolkit_module is None:
         error_cb("could not load %s" % client_module)
-    if not opts.window_layout:
-        opts.window_layout = "default"
     return toolkit_module.XpraClient()
 
 def do_run_client(app):
