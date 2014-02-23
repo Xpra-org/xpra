@@ -1096,7 +1096,7 @@ if enc_x264_ENABLED:
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec", "constants")
-    avcodec_pkgconfig = pkgconfig("avcodec", static=avcodec_static_ENABLED)
+    avcodec_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **avcodec_pkgconfig), min_version=(0, 19))
@@ -1104,7 +1104,7 @@ if dec_avcodec_ENABLED:
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec2", "constants")
-    avcodec2_pkgconfig = pkgconfig("avcodec", static=avcodec2_static_ENABLED)
+    avcodec2_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec2_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **avcodec2_pkgconfig), min_version=(0, 19))
