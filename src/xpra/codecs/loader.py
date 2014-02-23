@@ -143,11 +143,14 @@ NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx"}
 ALL_OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8", "rgb24" : "rgb"}
 ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"}
 
-ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "nvenc", "csc_swscale", "csc_cython", "csc_opencl", "csc_nvcuda", "dec_avcodec", "dec_avcodec2", "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"
+ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "nvenc", \
+            "csc_swscale", "csc_cython", "csc_opencl", "csc_nvcuda", \
+            "dec_avcodec", "dec_avcodec2", \
+            "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp8", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg", "vp9", "webp"]
+PREFERED_ENCODING_ORDER = ["h264", "vp8", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg", "h265", "vp9", "webp"]
 
 compressors = ["zlib"]
 try:
@@ -159,6 +162,7 @@ except:
 
 ENCODINGS_TO_NAME = {
       "h264"    : "H.264",
+      "h265"    : "H.265",
       "vp8"     : "VP8",
       "vp9"     : "VP9",
       "png"     : "PNG (24/32bpp)",
@@ -171,6 +175,7 @@ ENCODINGS_TO_NAME = {
 
 ENCODINGS_HELP = {
       "h264"    : "H.264 video codec",
+      "h265"    : "H.265 (HEVC) video codec",
       "vp8"     : "VP8 video codec",
       "vp9"     : "VP9 video codec (very slow - do not use!)",
       "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",

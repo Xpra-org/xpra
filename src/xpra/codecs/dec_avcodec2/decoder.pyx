@@ -83,9 +83,10 @@ cdef extern from "libavcodec/avcodec.h":
         int refcounted_frames
 
     AVPixelFormat PIX_FMT_NONE
-    AVCodecID CODEC_ID_H264
-    AVCodecID CODEC_ID_VP8
-    #AVCodecID CODEC_ID_VP9
+    AVCodecID AV_CODEC_ID_H264
+    AVCodecID AV_CODEC_ID_H265
+    AVCodecID AV_CODEC_ID_VP8
+    AVCodecID AV_CODEC_ID_VP9
 
     #init and free:
     void avcodec_register_all()
@@ -147,12 +148,15 @@ def get_encodings():
     if CODECS is None:
         avcodec_register_all()
         CODECS = []
-        if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
+        if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
             CODECS.append("h264")
-        if avcodec_find_decoder(CODEC_ID_VP8)!=NULL:
+        if avcodec_find_decoder(AV_CODEC_ID_VP8)!=NULL:
             CODECS.append("vp8")
-        #if avcodec_find_decoder(CODEC_ID_VP9)!=NULL:
-        #    CODECS.append("vp9")
+        if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
+            CODECS.append("vp9")
+        if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
+            CODECS.append("h265")
+            log("avcodec2.get_encodings()=%s", CODECS)
     return CODECS
 
 
@@ -288,13 +292,18 @@ cdef class Decoder:
         avcodec_register_all()
 
         if self.encoding=="h264":
-            self.codec = avcodec_find_decoder(CODEC_ID_H264)
+            self.codec = avcodec_find_decoder(AV_CODEC_ID_H264)
             if self.codec==NULL:
                 log.error("codec H264 not found!")
                 return  False
+        elif self.encoding=="h265":
+            self.codec = avcodec_find_decoder(AV_CODEC_ID_H265)
+            if self.codec==NULL:
+                log.error("codec H265 (HEVC) not found!")
+                return  False
         else:
             assert self.encoding=="vp8"
-            self.codec = avcodec_find_decoder(CODEC_ID_VP8)
+            self.codec = avcodec_find_decoder(AV_CODEC_ID_VP8)
             if self.codec==NULL:
                 log.error("codec VP8 not found!")
                 return  False
