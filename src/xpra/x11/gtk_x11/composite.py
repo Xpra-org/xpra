@@ -47,7 +47,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     # This may raise XError.
     def __init__(self, window, already_composited, use_shm=False):
         super(CompositeHelper, self).__init__()
-        log("CompositeHelper.__init__(%s,%s)", get_xwindow(window), already_composited)
+        log("CompositeHelper.__init__(%#x, %s)", get_xwindow(window), already_composited)
         self._window = window
         self._already_composited = already_composited
         self._listening_to = None

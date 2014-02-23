@@ -51,10 +51,16 @@ class PointerGrabHelper(gobject.GObject):
     # This may raise XError.
     def __init__(self, window):
         super(PointerGrabHelper, self).__init__()
-        log("PointerGrabHelper.__init__(%s)", get_xwindow(window))
+        log("PointerGrabHelper.__init__(%#x)", get_xwindow(window))
         self._has_grab = False
         self._window = window
         self._listening = None
+
+    def __repr__(self):
+        xid = None
+        if self._window:
+            xid = self._window.xid
+        return "PointerGrabHelper(%#x)" % xid
 
     def setup(self):
         self._setup_listening()
