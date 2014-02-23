@@ -523,7 +523,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/dec_avcodec/decoder.c",
                    "xpra/codecs/dec_avcodec/constants.pxi",
                    "xpra/codecs/dec_avcodec2/decoder.c",
-                   "xpra/codecs/dec_avcodec2/constants.pxi",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
                    "xpra/codecs/csc_swscale/constants.pxi",
                    "xpra/codecs/csc_cython/colorspace_converter.c",
@@ -1101,7 +1100,6 @@ if dec_avcodec_ENABLED:
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
-    make_constants("xpra", "codecs", "dec_avcodec2", "constants")
     avcodec2_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec2_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],

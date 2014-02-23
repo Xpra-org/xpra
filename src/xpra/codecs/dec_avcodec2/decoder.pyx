@@ -14,8 +14,6 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 
 
-include "constants.pxi"
-
 cdef extern from *:
     ctypedef unsigned long size_t
     ctypedef unsigned char uint8_t
@@ -56,6 +54,20 @@ cdef extern from "libavcodec/version.h":
     int LIBAVCODEC_VERSION_MICRO
 
 cdef extern from "libavcodec/avcodec.h":
+
+    int AV_PIX_FMT_YUV420P
+    int AV_PIX_FMT_YUV422P
+    int AV_PIX_FMT_YUV444P
+    int AV_PIX_FMT_RGB24
+    int AV_PIX_FMT_0RGB
+    int AV_PIX_FMT_BGR0
+    int AV_PIX_FMT_ARGB
+    int AV_PIX_FMT_BGRA
+    int AV_PIX_FMT_GBRP
+    
+    int CODEC_FLAG2_FAST
+
+
     ctypedef struct AVFrame:
         uint8_t **data
         int *linesize
@@ -106,40 +118,24 @@ cdef extern from "libavcodec/avcodec.h":
     void av_frame_unref(AVFrame *frame) nogil
 
 
-COLORSPACES = None
-FORMAT_TO_ENUM = {}
+FORMAT_TO_ENUM = {
+            "YUV420P"   : AV_PIX_FMT_YUV420P,
+            "YUV422P"   : AV_PIX_FMT_YUV422P,
+            "YUV444P"   : AV_PIX_FMT_YUV444P,
+            "RGB"       : AV_PIX_FMT_RGB24,
+            "XRGB"      : AV_PIX_FMT_0RGB,
+            "BGRX"      : AV_PIX_FMT_BGR0,
+            "ARGB"      : AV_PIX_FMT_ARGB,
+            "BGRA"      : AV_PIX_FMT_BGRA,
+            "GBRP"      : AV_PIX_FMT_GBRP,
+            }
+COLORSPACES = FORMAT_TO_ENUM.keys()
 ENUM_TO_FORMAT = {}
-def init_colorspaces():
-    global COLORSPACES
-    if COLORSPACES is not None:
-        #done already!
-        return
-    #populate mappings:
-    COLORSPACES = []
-    for pix_fmt, av_enum_str in {
-            "YUV420P"   : "AV_PIX_FMT_YUV420P",
-            "YUV422P"   : "AV_PIX_FMT_YUV422P",
-            "YUV444P"   : "AV_PIX_FMT_YUV444P",
-            "RGB"       : "AV_PIX_FMT_RGB24",
-            "XRGB"      : "AV_PIX_FMT_0RGB",
-            "BGRX"      : "AV_PIX_FMT_BGR0",
-            "ARGB"      : "AV_PIX_FMT_ARGB",
-            "BGRA"      : "AV_PIX_FMT_BGRA",
-            "GBRP"      : "AV_PIX_FMT_GBRP",
-         }.items():
-        av_enum = constants.get(av_enum_str)
-        if av_enum is None:
-            log("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
-            continue
-        FORMAT_TO_ENUM[pix_fmt] = av_enum
-        ENUM_TO_FORMAT[av_enum] = pix_fmt
-        COLORSPACES.append(pix_fmt)
-    log("colorspaces supported by avcodec %s: %s", get_version(), COLORSPACES)
-    if len(COLORSPACES)==0:
-        log.error("avcodec installation problem: no colorspaces found!")
+for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
+    ENUM_TO_FORMAT[av_enum] = pix_fmt
+
 
 def get_colorspaces():
-    init_colorspaces()
     return COLORSPACES
 
 CODECS = None
@@ -269,8 +265,7 @@ cdef class Decoder:
     def init_context(self, encoding, int width, int height, colorspace):
         cdef int r
         cdef int i
-        init_colorspaces()
-        assert encoding in ("vp8", "h264")
+        assert encoding in CODECS
         self.encoding = encoding
         self.width = width
         self.height = height
