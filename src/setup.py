@@ -55,7 +55,9 @@ sound_ENABLED = True
 
 enc_proxy_ENABLED = True
 enc_x264_ENABLED = True
+enc_x265_ENABLED = False
 x264_static_ENABLED = False
+x265_static_ENABLED = False
 vpx_ENABLED = True
 vpx_static_ENABLED = False
 dec_avcodec_ENABLED = True
@@ -79,6 +81,7 @@ bundle_tests_ENABLED = False
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ("enc_x264", "x264_static",
+            "enc_x265", "x265_static",
             "nvenc",
             "dec_avcodec", "avcodec_static",
             "dec_avcodec2", "avcodec2_static",
@@ -520,6 +523,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/nvenc/encoder.c",
                    "xpra/codecs/nvenc/constants.pxi",
                    "xpra/codecs/enc_x264/encoder.c",
+                   "xpra/codecs/enc_x265/encoder.c",
                    "xpra/codecs/dec_avcodec/decoder.c",
                    "xpra/codecs/dec_avcodec/constants.pxi",
                    "xpra/codecs/dec_avcodec2/decoder.c",
@@ -637,6 +641,11 @@ if WIN32:
     libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
     libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
     libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")
+    #x265
+    x265_path ="C:\\x265"
+    x265_include_dir    = x265_path
+    x265_lib_dir        = x265_path
+    x265_bin_dir        = x265_path
     #x264 (direct from build dir.. yuk - sorry!):
     x264_path ="C:\\x264"
     x264_include_dir    = x264_path
@@ -717,6 +726,14 @@ if WIN32:
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x264_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(x264_include_dir, x264_lib_dir)
+        elif "x265" in packages[0]:
+            add_to_PATH(libffmpeg_bin_dir)
+            add_to_PATH(x265_bin_dir)
+            add_to_keywords(kw, 'include_dirs', win32_include_dir, x265_include_dir)
+            add_to_keywords(kw, 'libraries', "libx265")
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x265_lib_dir)
+            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
+            checkdirs(x265_include_dir, x265_lib_dir)
         elif "vpx" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', win32_include_dir, vpx_include_dir)
@@ -1089,6 +1106,13 @@ if enc_x264_ENABLED:
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx"],
                 **x264_pkgconfig), min_version=(0, 16))
+
+toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
+if enc_x265_ENABLED:
+    x265_pkgconfig = pkgconfig("x265", static=x265_static_ENABLED)
+    cython_add(Extension("xpra.codecs.enc_x265.encoder",
+                ["xpra/codecs/enc_x265/encoder.pyx"],
+                **x265_pkgconfig), min_version=(0, 16))
 
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:

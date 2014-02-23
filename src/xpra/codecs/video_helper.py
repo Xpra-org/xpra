@@ -14,9 +14,9 @@ from xpra.codecs.loader import get_codec
 instance = None
 
 #all the modules we know about:
-ALL_VIDEO_ENCODER_OPTIONS = ["vpx", "x264", "nvenc"]
+ALL_VIDEO_ENCODER_OPTIONS = ["vpx", "x264", "x265", "nvenc"]
 ALL_CSC_MODULE_OPTIONS = ["swscale", "cython", "opencl", "nvcuda"]
-PREFERRED_ENCODER_ORDER = ["nvenc", "x264", "vpx"]
+PREFERRED_ENCODER_ORDER = ["nvenc", "x264", "vpx", "x265"]
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 

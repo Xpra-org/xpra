@@ -71,6 +71,9 @@ def load_codecs():
     codec_import_check("enc_x264", "x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
     add_codec_version("x264", "xpra.codecs.enc_x264.encoder")
 
+    codec_import_check("enc_x265", "x265 encoder", "xpra.codecs.enc_x265", "xpra.codecs.enc_x265.encoder", "Encoder")
+    add_codec_version("x265", "xpra.codecs.enc_x265.encoder")
+
     codec_import_check("nvenc", "nvenc encoder", "xpra.codecs.nvenc", "xpra.codecs.nvenc.encoder", "Encoder")
     add_codec_version("nvenc", "xpra.codecs.nvenc.encoder")
 
@@ -143,7 +146,7 @@ NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx"}
 ALL_OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8", "rgb24" : "rgb"}
 ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"}
 
-ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "nvenc", \
+ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
             "csc_swscale", "csc_cython", "csc_opencl", "csc_nvcuda", \
             "dec_avcodec", "dec_avcodec2", \
             "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"

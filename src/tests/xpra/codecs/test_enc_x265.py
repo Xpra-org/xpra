@@ -6,15 +6,15 @@
 
 from tests.xpra.codecs.test_encoder import test_encoder, test_performance
 
-def test_enc_x264():
-    print("test_enc_x264()")
-    from xpra.codecs.enc_x264 import encoder #@UnresolvedImport
+def test_enc_x265():
+    print("test_enc_x265()")
+    from xpra.codecs.enc_x265 import encoder #@UnresolvedImport
     test_encoder(encoder)
     test_performance(encoder)
 
 
 def main():
-    test_enc_x264()
+    test_enc_x265()
 
 
 if __name__ == "__main__":
