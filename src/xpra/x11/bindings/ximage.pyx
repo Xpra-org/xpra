@@ -7,7 +7,6 @@
 import os
 import time
 
-from xpra.util import dump_exc, AdHocStruct
 import errno as pyerrno
 
 from xpra.log import Logger

@@ -7,7 +7,6 @@
 import os
 import time
 
-from xpra.util import dump_exc, AdHocStruct
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
 

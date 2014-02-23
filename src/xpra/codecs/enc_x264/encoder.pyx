@@ -12,7 +12,7 @@ X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 
 include "constants.pxi"
 
-from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, codec_spec
+from xpra.codecs.codec_constants import get_subsampling_divs, codec_spec
 from xpra.deque import maxdeque
 
 cdef extern from "string.h":

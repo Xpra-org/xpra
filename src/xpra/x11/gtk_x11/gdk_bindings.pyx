@@ -11,7 +11,6 @@ import gobject
 import gtk
 import gtk.gdk
 
-from xpra.util import dump_exc, AdHocStruct
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.x11.gtk_x11.error import trap, XError
 

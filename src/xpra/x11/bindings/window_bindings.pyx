@@ -6,7 +6,6 @@
 
 
 import struct
-import os
 import time
 
 from xpra.x11.gtk_x11.error import trap, XError

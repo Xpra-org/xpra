@@ -11,7 +11,7 @@ log = Logger("decoder", "avcodec")
 #some consumers need a writeable buffer (ie: OpenCL...)
 READ_ONLY = False
 
-from xpra.codecs.codec_constants import get_subsampling_divs, get_colorspace_from_avutil_enum, RGB_FORMATS
+from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.util import AtomicInteger
 
