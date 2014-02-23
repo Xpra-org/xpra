@@ -520,7 +520,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/nvenc/encoder.c",
                    "xpra/codecs/nvenc/constants.pxi",
                    "xpra/codecs/enc_x264/encoder.c",
-                   "xpra/codecs/enc_x264/constants.pxi",
                    "xpra/codecs/dec_avcodec/decoder.c",
                    "xpra/codecs/dec_avcodec/constants.pxi",
                    "xpra/codecs/dec_avcodec2/decoder.c",
@@ -1087,7 +1086,6 @@ if nvenc_ENABLED:
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
-    make_constants("xpra", "codecs", "enc_x264", "constants")
     x264_pkgconfig = pkgconfig("x264", static=x264_static_ENABLED)
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx"],

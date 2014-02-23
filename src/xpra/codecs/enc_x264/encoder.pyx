@@ -10,8 +10,6 @@ from xpra.log import Logger
 log = Logger("encoder", "x264")
 X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 
-include "constants.pxi"
-
 from xpra.codecs.codec_constants import get_subsampling_divs, codec_spec
 from xpra.deque import maxdeque
 
@@ -36,6 +34,17 @@ cdef extern from "Python.h":
 
 
 cdef extern from "x264.h":
+
+    int X264_BUILD
+
+    int X264_LOG_ERROR
+
+    int X264_CSP_I420
+    int X264_CSP_I422
+    int X264_CSP_I444
+    int X264_CSP_BGR
+    int X264_CSP_BGRA
+    int X264_CSP_RGB
 
     const char * const *x264_preset_names
 
@@ -193,24 +202,19 @@ I422_PROFILES = [PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE]
 I444_PROFILES = [PROFILE_HIGH444_PREDICTIVE]
 RGB_PROFILES = [PROFILE_HIGH444_PREDICTIVE]
 
-COLORSPACES = {}
-for x264_enum, colorspace, default_profile, profiles in \
-    ("X264_CSP_I420",  "YUV420P",    PROFILE_HIGH,      I420_PROFILES), \
-    ("X264_CSP_I422",  "YUV422P",    PROFILE_HIGH422,   I422_PROFILES), \
-    ("X264_CSP_I444",  "YUV444P",    PROFILE_HIGH444_PREDICTIVE,    I444_PROFILES), \
-    ("X264_CSP_BGR",   "BGR",        PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES), \
-    ("X264_CSP_BGRA",  "BGRA",       PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES), \
-    ("X264_CSP_BGRA",  "BGRX",       PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES), \
-    ("X264_CSP_RGB",   "RGB",        PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES):
-    enum_val = constants.get(x264_enum)
-    if enum_val is None:
-        log("enc_x264: this build does not support %s / %s", x264_enum, colorspace)
-        continue
-    COLORSPACES[colorspace] = (enum_val, default_profile, profiles)
+COLORSPACES = {
+    "YUV420P"   : (X264_CSP_I420,    PROFILE_HIGH,                  I420_PROFILES),
+    "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,               I422_PROFILES),
+    "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444_PREDICTIVE,    I444_PROFILES),
+    "BGR"       : (X264_CSP_BGR,     PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
+    "BGRA"      : (X264_CSP_BGRA,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
+    "BGRX"      : (X264_CSP_BGRA,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
+    "RGB"       : (X264_CSP_RGB,     PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
+    }
 
 
 def get_version():
-    return constants["X264_BUILD"]
+    return X264_BUILD
 
 def get_type():
     return "x264"
@@ -295,7 +299,7 @@ cdef class Encoder:
         param.i_height = self.height
         param.i_csp = self.colorspace
         set_f_rf(&param, get_x264_quality(self.quality))
-        param.i_log_level = constants["X264_LOG_ERROR"]
+        param.i_log_level = X264_LOG_ERROR
         #we never lose frames or use seeking, so no need for regular I-frames:
         param.i_keyint_max = 999999
         #we don't want IDR frames either:
