@@ -17,7 +17,3 @@
 const char * const *get_preset_names(void) {
 	return x264_preset_names;
 }
-
-void set_f_rf(x264_param_t *param, float v) {
-	param->rc.f_rf_constant = v;
-}

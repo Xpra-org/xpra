@@ -36,6 +36,43 @@ cdef extern from "Python.h":
 
 
 cdef extern from "x264.h":
+
+    ctypedef struct rc:
+        int         i_rc_method
+        int         i_qp_constant       #0 to (51 + 6*(x264_bit_depth-8)). 0=lossless
+        int         i_qp_min            #min allowed QP value
+        int         i_qp_max            #max allowed QP value
+        int         i_qp_step           #max QP step between frames
+
+        int         i_bitrate
+        float       f_rf_constant       #1pass VBR, nominal QP
+        float       f_rf_constant_max   #In CRF mode, maximum CRF as caused by VBV
+        float       f_rate_tolerance
+        int         i_vbv_max_bitrate
+        int         i_vbv_buffer_size
+        float       f_vbv_buffer_init   #<=1: fraction of buffer_size. >1: kbit
+        float       f_ip_factor
+        float       f_pb_factor
+
+        int         i_aq_mode           #psy adaptive QP. (X264_AQ_*)
+        float       f_aq_strength
+        int         b_mb_tree           #Macroblock-tree ratecontrol
+        int         i_lookahead
+
+        # 2pass
+        int         b_stat_write        #Enable stat writing in psz_stat_out
+        char        *psz_stat_out       #output filename (in UTF-8) of the 2pass stats file
+        int         b_stat_read         #Read stat from psz_stat_in and use it
+        char        *psz_stat_in        #input filename (in UTF-8) of the 2pass stats file
+
+        # 2pass params (same as ffmpeg ones)
+        float       f_qcompress         #0.0 => cbr, 1.0 => constant qp
+        float       f_qblur             #temporally blur quants
+        float       f_complexity_blur   #temporally blur complexity
+        #x264_zone_t *zones              #ratecontrol overrides
+        int         i_zones             #number of zone_t's
+        char        *psz_zones          #alternate method of specifying zones
+
     ctypedef struct x264_param_t:
         unsigned int cpu
         int i_threads           #encode multiple frames in parallel
@@ -68,6 +105,8 @@ cdef extern from "x264.h":
         int i_bframe_pyramid    #Keep some B-frames as references: 0=off, 1=strict hierarchical, 2=normal
         int b_open_gop
         int b_bluray_compat
+        
+        rc  rc                  #rate control
 
     ctypedef struct x264_t:
         pass
@@ -124,7 +163,9 @@ cdef extern from "enc_x264.h":
 
     const char * const *const get_preset_names()
 
-    void set_f_rf(x264_param_t *param, float v)
+
+cdef set_f_rf(x264_param_t *param, float q):
+    param.rc.f_rf_constant = q
 
 
 #we choose presets from 1 to 7
