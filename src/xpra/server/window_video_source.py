@@ -1056,15 +1056,16 @@ class WindowVideoSource(WindowSource):
             csc_image, csc, enc_width, enc_height = self.csc_image(image, width, height)
 
             start = time.time()
-            data, client_options = self._video_encoder.compress_image(csc_image, options)
+            ret = self._video_encoder.compress_image(csc_image, options)
+            if ret is None:
+                log.error("video_encode: ouch, %s compression failed", encoding)
+                return None
+            data, client_options = ret
             end = time.time()
 
             self.free_image_wrapper(csc_image)
             del csc_image
 
-            if data is None:
-                log.error("video_encode: ouch, %s compression failed", encoding)
-                return None, None, 0
             if self.encoding_client_options:
                 #tell the client which colour subsampling we used:
                 #(note: see csc_equiv!)

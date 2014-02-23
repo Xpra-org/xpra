@@ -1025,14 +1025,16 @@ class WindowSource(object):
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
         assert encoder is not None, "encoder not found for %s" % coding
-        encoder_type, data, client_options, outw, outh, outstride, bpp = encoder(coding, image, options)
+        ret = encoder(coding, image, options)
+        if ret is None:
+            #something went wrong.. nothing we can do about it here!
+            return  None
+
+        encoder_type, data, client_options, outw, outh, outstride, bpp = ret
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and (self.is_cancelled(sequence)  or self.suspended):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
-            return  None
-        if data is None:
-            #something went wrong.. nothing we can do about it here!
             return  None
         #tell client about delta/store for this pixmap:
         if delta>=0:
