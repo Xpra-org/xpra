@@ -25,7 +25,6 @@ HAS_X11_BINDINGS = False
 if os.name=="posix":
     try:
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
-        from xpra.x11.gtk_x11.gdk_bindings import get_xwindow
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
         from xpra.x11.gtk_x11.error import trap
         HAS_X11_BINDINGS = True
@@ -171,9 +170,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
 
         def send():
-            root_window = get_xwindow(root)
-            window = get_xwindow(self.gdk_window())
-            X11WindowBindings.sendClientMessage(root_window, window, False, event_mask, "_NET_WM_DESKTOP",
+            root_xid = root.xid
+            xwin = self.gdk_window().xid
+            X11WindowBindings.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_DESKTOP",
                   workspace, CurrentTime, 0, 0, 0)
         trap.call_synced(send)
         return workspace
