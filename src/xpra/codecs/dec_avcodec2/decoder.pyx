@@ -152,7 +152,7 @@ def get_encodings():
             CODECS.append("vp9")
         if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
             CODECS.append("h265")
-            log("avcodec2.get_encodings()=%s", CODECS)
+        log("avcodec2.get_encodings()=%s", CODECS)
     return CODECS
 
 
