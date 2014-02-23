@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
@@ -30,6 +31,7 @@ def get_csc_module_name(x):
 
 
 def get_DEFAULT_VIDEO_ENCODERS():
+    """ returns all the video encoders installed """
     encoders = []
     for x in list(ALL_VIDEO_ENCODER_OPTIONS):
         mod = get_video_module_name(x)
@@ -39,6 +41,7 @@ def get_DEFAULT_VIDEO_ENCODERS():
     return encoders
 
 def get_DEFAULT_CSC_MODULES():
+    """ returns all the csc modules installed """
     csc = []
     for x in list(ALL_CSC_MODULE_OPTIONS):
         mod = get_csc_module_name(x)
@@ -63,8 +66,8 @@ class VideoHelper(object):
 
     def set_modules(self, video_encoders, csc_modules):
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
-        self.video_encoders = video_encoders
-        self.csc_modules = csc_modules
+        self.video_encoders = [x for x in video_encoders if x in get_DEFAULT_VIDEO_ENCODERS()]
+        self.csc_modules = [x for x in csc_modules if x in get_DEFAULT_CSC_MODULES()]
 
     def clone(self):
         if not self._initialized:
