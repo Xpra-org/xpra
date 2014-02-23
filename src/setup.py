@@ -1090,7 +1090,7 @@ if enc_x264_ENABLED:
     make_constants("xpra", "codecs", "enc_x264", "constants")
     x264_pkgconfig = pkgconfig("x264", static=x264_static_ENABLED)
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
-                ["xpra/codecs/enc_x264/encoder.pyx", "xpra/codecs/enc_x264/enc_x264.c"],
+                ["xpra/codecs/enc_x264/encoder.pyx"],
                 **x264_pkgconfig), min_version=(0, 16))
 
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")

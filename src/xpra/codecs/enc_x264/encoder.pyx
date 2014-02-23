@@ -37,6 +37,8 @@ cdef extern from "Python.h":
 
 cdef extern from "x264.h":
 
+    const char * const *x264_preset_names
+
     ctypedef struct rc:
         int         i_rc_method
         int         i_qp_constant       #0 to (51 + 6*(x264_bit_depth-8)). 0=lossless
@@ -159,13 +161,12 @@ cdef extern from "x264.h":
 
     int x264_encoder_encode(x264_t *context, x264_nal_t **pp_nal, int *pi_nal, x264_picture_t *pic_in, x264_picture_t *pic_out ) nogil
 
-cdef extern from "enc_x264.h":
-
-    const char * const *const get_preset_names()
-
 
 cdef set_f_rf(x264_param_t *param, float q):
     param.rc.f_rf_constant = q
+
+cdef const char * const *get_preset_names():
+    return x264_preset_names;
 
 
 #we choose presets from 1 to 7
