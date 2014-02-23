@@ -345,6 +345,8 @@ def pkgconfig(*packages_options, **ekw):
             valid_option = None
             if type(package_options)==str:
                 options = [package_options]     #got given just one string
+                if not package_options.startswith("lib"):
+                    options.append("lib%s" % package_options)
             else:
                 assert type(package_options)==list
                 options = package_options       #got given a list of options
@@ -693,7 +695,7 @@ if WIN32:
                 os.environ['PATH'] = bindir + ';' + os.environ['PATH']
             if bindir not in sys.path:
                 sys.path.append(bindir)
-        if "libavcodec" in packages[0]:
+        if "avcodec" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', win32_include_dir, libffmpeg_include_dir)
             add_to_keywords(kw, 'libraries', "avcodec", "avutil")
@@ -701,7 +703,7 @@ if WIN32:
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_bin_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(libffmpeg_include_dir, libffmpeg_lib_dir, libffmpeg_bin_dir)
-        elif "libswscale" in packages[0]:
+        elif "swscale" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', win32_include_dir, libffmpeg_include_dir)
             add_to_keywords(kw, 'libraries', "swscale", "avutil")
@@ -1094,7 +1096,7 @@ if enc_x264_ENABLED:
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec", "constants")
-    avcodec_pkgconfig = pkgconfig("libavcodec", static=avcodec_static_ENABLED)
+    avcodec_pkgconfig = pkgconfig("avcodec", static=avcodec_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **avcodec_pkgconfig), min_version=(0, 19))
@@ -1102,7 +1104,7 @@ if dec_avcodec_ENABLED:
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec2", "constants")
-    avcodec2_pkgconfig = pkgconfig("libavcodec", static=avcodec2_static_ENABLED)
+    avcodec2_pkgconfig = pkgconfig("avcodec", static=avcodec2_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **avcodec2_pkgconfig), min_version=(0, 19))
@@ -1111,7 +1113,7 @@ if dec_avcodec2_ENABLED:
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     make_constants("xpra", "codecs", "csc_swscale", "constants")
-    swscale_pkgconfig = pkgconfig("libswscale", static=swscale_static_ENABLED)
+    swscale_pkgconfig = pkgconfig("swscale", static=swscale_static_ENABLED)
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **swscale_pkgconfig), min_version=(0, 19))
@@ -1124,7 +1126,7 @@ if csc_cython_ENABLED:
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
-    vpx_pkgconfig = pkgconfig(["libvpx", "vpx"], static=vpx_static_ENABLED)
+    vpx_pkgconfig = pkgconfig("vpx", static=vpx_static_ENABLED)
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c", "xpra/codecs/memalign/memalign.c"],
                 **vpx_pkgconfig), min_version=(0, 16))
