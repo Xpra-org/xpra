@@ -197,8 +197,25 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Wed Jan 22 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
-- TODO!
+* Sun Jan 23 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
+- NVENC support for YUV444 mode
+- NVENC and CUDA load balancing for multiple cards
+- proxy encoding: ability to encode on proxy server
+- fix fullscreen on multiple monitors via fakeXinerama (except on OSX)
+- OpenGL rendering improvements (for transparent windows, etc)
+- support window grabs (drop down menus, etc)
+- add ability to easily select video encoders and csc modules
+- add local unix domain socket support to proxy server instances
+- add "xpra control" commands to control encoding speed and quality
+- ensure iconified windows don't waste bandwidth
+- better bandwidth utilization of jittery connections
+- faster network code (larger receive buffers)
+- better automatic encoding selection for smaller regions
+- improved command line options (add ability to enable options which are disabled in the config file)
+- much improved logging and debugging tools
+- make it easier to distinguish xpra windows from local windows
+- improved MS Windows (un)installer checks
+- automatically stop remote shadow servers when client disconnects
 
 * Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
 - NVENC hardware h264 encoding acceleration
