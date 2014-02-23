@@ -57,7 +57,7 @@ def load_video_decoders():
     global VIDEO_DECODERS
     if VIDEO_DECODERS is None:
         VIDEO_DECODERS = {}
-        for codec in ("vp8", "vp9", "h264"):
+        for codec in ("vp8", "vp9", "h264", "h265"):
             #prefer native vpx ahead of avcodec:
             for module in ("dec_vpx", "dec_avcodec", "dec_avcodec2"):
                 decoder = get_codec(module)
@@ -450,7 +450,7 @@ class WindowBackingBase(object):
             if rowstride==0:
                 rowstride = width * 4
             self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
-        elif coding in ("vp8", "vp9", "h264"):
+        elif coding in ("vp8", "vp9", "h264", "h265"):
             assert coding in VIDEO_DECODERS, "no %s decoder available" % coding
             self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
