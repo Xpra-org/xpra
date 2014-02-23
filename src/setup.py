@@ -311,8 +311,30 @@ def make_constants(*paths):
             print("(re)generating %s (%s):" % (pxi_file, reason))
         make_constants_pxi(constants_file, pxi_file)
 
+
+def static_link_args(*libnames):
+    return ["-Wl,-Bstatic"] + ["-l%s" % x for x in libnames] + ["-Wl,-Bsymbolic", "-Wl,-Bdynamic"]
+
+def get_static_pkgconfig(*libnames):
+    defs = pkgconfig()
+    remove_from_keywords(defs, 'extra_compile_args', '-fsanitize=address')
+    if os.name=="posix":
+        if debug_ENABLED:
+            add_to_keywords(defs, 'extra_link_args', "-Wl,--verbose")
+        defs.update({'include_dirs': ["/usr/local/include"],
+                     'library_dirs': ["/usr/local/lib", "/usr/local/lib64"]})
+    if len(libnames)>0:
+        add_to_keywords(defs,  'extra_link_args', *static_link_args(*libnames))
+    return defs
+
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*packages_options, **ekw):
+    static = ekw.get("static", None)
+    if static is not None:
+        del ekw["static"]
+        if static:
+            return get_static_pkgconfig(*packages_options)
+
     kw = dict(ekw)
     if len(packages_options)>0:
         package_names = []
@@ -935,13 +957,6 @@ else:
     setup_options["scripts"] = scripts
 
 
-STATIC_COMMON_DEFS = pkgconfig()
-remove_from_keywords(STATIC_COMMON_DEFS, 'extra_compile_args', '-fsanitize=address')
-if os.name=="posix":
-    STATIC_COMMON_DEFS.update({'include_dirs': ["/usr/local/include"],
-                               'library_dirs': ["/usr/local/lib"]})
-
-
 if html5_ENABLED:
     for k,v in glob_recurse("html5").items():
         if (k!=""):
@@ -1071,12 +1086,7 @@ if nvenc_ENABLED:
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
     make_constants("xpra", "codecs", "enc_x264", "constants")
-    if x264_static_ENABLED:
-        x264_pkgconfig = STATIC_COMMON_DEFS.copy()
-        x264_pkgconfig['extra_link_args'] = ["-Wl,-soname,enc_x264.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
-                                 "-lx264", "-Wl,-Bdynamic"]
-    else:
-        x264_pkgconfig = pkgconfig("x264")
+    x264_pkgconfig = pkgconfig("x264", static=x264_static_ENABLED)
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx", "xpra/codecs/enc_x264/enc_x264.c"],
                 **x264_pkgconfig), min_version=(0, 16))
@@ -1084,12 +1094,7 @@ if enc_x264_ENABLED:
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec", "constants")
-    if avcodec_static_ENABLED:
-        avcodec_pkgconfig = STATIC_COMMON_DEFS.copy()
-        avcodec_pkgconfig['extra_link_args'] = ["-Wl,-soname,dec_avcodec.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
-                                    "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
-    else:
-        avcodec_pkgconfig = pkgconfig("libavcodec")
+    avcodec_pkgconfig = pkgconfig("libavcodec", static=avcodec_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **avcodec_pkgconfig), min_version=(0, 19))
@@ -1097,25 +1102,16 @@ if dec_avcodec_ENABLED:
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec2", "constants")
-    if avcodec2_static_ENABLED:
-        avcodec2_pkgconfig = STATIC_COMMON_DEFS.copy()
-        avcodec2_pkgconfig['extra_link_args'] = ["-Wl,-soname,dec_avcodec2.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
-                                    "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
-    else:
-        avcodec2_pkgconfig = pkgconfig("libavcodec")
+    avcodec2_pkgconfig = pkgconfig("libavcodec", static=avcodec2_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **avcodec2_pkgconfig), min_version=(0, 19))
 
+
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     make_constants("xpra", "codecs", "csc_swscale", "constants")
-    if swscale_static_ENABLED:
-        swscale_pkgconfig = STATIC_COMMON_DEFS.copy()
-        swscale_pkgconfig['extra_link_args'] = ["-Wl,-soname,csc_swscale.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
-                                 "-lswscale", "-Wl,-Bdynamic"]
-    else:
-        swscale_pkgconfig = pkgconfig("libswscale")
+    swscale_pkgconfig = pkgconfig("libswscale", static=swscale_static_ENABLED)
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **swscale_pkgconfig), min_version=(0, 19))
@@ -1128,12 +1124,7 @@ if csc_cython_ENABLED:
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
-    if vpx_static_ENABLED:
-        vpx_pkgconfig = STATIC_COMMON_DEFS.copy()
-        vpx_pkgconfig['extra_link_args'] = ["-Wl,-soname,vpx.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
-                                "-lvpx", "-Wl,-Bdynamic"]
-    else:
-        vpx_pkgconfig = pkgconfig(["libvpx", "vpx"])
+    vpx_pkgconfig = pkgconfig(["libvpx", "vpx"], static=vpx_static_ENABLED)
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c", "xpra/codecs/memalign/memalign.c"],
                 **vpx_pkgconfig), min_version=(0, 16))
