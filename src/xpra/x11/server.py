@@ -18,7 +18,7 @@ from xpra.util import AdHocStruct
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.wm import Wm
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
-from xpra.x11.gtk_x11.gdk_bindings import (get_xwindow,                 #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import (
                                add_event_receiver,          #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
@@ -265,7 +265,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
         root = gtk.gdk.get_default_root_window()
         for window in get_children(root):
-            if X11Window.is_override_redirect(get_xwindow(window)) and X11Window.is_mapped(get_xwindow(window)):
+            if X11Window.is_override_redirect(window.xid) and X11Window.is_mapped(window.xid):
                 self._add_new_or_window(window)
 
     def send_windows_and_cursors(self, ss):
@@ -349,7 +349,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             ss.resize_window(self._window_to_id[window], window, nw, nh)
 
     def _add_new_or_window(self, raw_window):
-        xid = get_xwindow(raw_window)
+        xid = raw_window.xid
         if raw_window.get_window_type()==gtk.gdk.WINDOW_TEMP:
             #ignoring one of gtk's temporary windows
             #all the windows we manage should be gtk.gdk.WINDOW_FOREIGN
@@ -445,7 +445,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         return False
 
     def _bell_signaled(self, wm, event):
-        log("bell signaled on window %s", get_xwindow(event.window))
+        log("bell signaled on window %s", event.window.xid)
         if not self.bell:
             return
         wid = 0

@@ -20,13 +20,17 @@ X11Window = X11WindowBindings()
 from xpra.x11.gtk_x11.gdk_bindings import (
                 get_xatom,                  #@UnresolvedImport
                 get_pywindow,               #@UnresolvedImport
-                get_xwindow,                #@UnresolvedImport
                 add_event_receiver,         #@UnresolvedImport
                 remove_event_receiver       #@UnresolvedImport
                 )
 
 from xpra.log import Logger
 log = Logger("x11", "util")
+
+
+StructureNotifyMask = constants["StructureNotifyMask"]
+XNone = constants["XNone"]
+
 
 class AlreadyOwned(Exception):
     pass
@@ -52,7 +56,7 @@ class ManagerSelection(gobject.GObject):
 
     def owned(self):
         "Returns True if someone owns the given selection."
-        return self._owner() != constants["XNone"]
+        return self._owner() != XNone
 
     # If the selection is already owned, then raise AlreadyOwned rather
     # than stealing it.
@@ -65,7 +69,7 @@ class ManagerSelection(gobject.GObject):
     FORCE_AND_RETURN = "force_and_return"
     def acquire(self, when):
         old_owner = self._owner()
-        if when is self.IF_UNOWNED and old_owner != constants["XNone"]:
+        if when is self.IF_UNOWNED and old_owner != XNone:
             raise AlreadyOwned
 
         self.clipboard.set_with_data([("VERSION", 0, 0)],
@@ -103,12 +107,11 @@ class ManagerSelection(gobject.GObject):
         self._xwindow = X11Window.XGetSelectionOwner(self.atom)
 
         root = self.clipboard.get_display().get_default_screen().get_root_window()
-        xroot = get_xwindow(root)
-        X11Window.sendClientMessage(xroot, xroot, False, constants["StructureNotifyMask"],
+        X11Window.sendClientMessage(root.xid, root.xid, False, StructureNotifyMask,
                           "MANAGER",
                           ts_num, selection_xatom, self._xwindow, 0, 0)
 
-        if old_owner != constants["XNone"] and when is self.FORCE:
+        if old_owner != XNone and when is self.FORCE:
             # Block in a recursive mainloop until the previous owner has
             # cleared out.
             def getwin():

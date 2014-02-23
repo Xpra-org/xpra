@@ -31,7 +31,6 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                 remove_event_receiver,                      #@UnresolvedImport
                 get_display_for,                            #@UnresolvedImport
                 calc_constrained_size,                      #@UnresolvedImport
-                get_xwindow,                                #@UnresolvedImport
                )
 from xpra.x11.gtk_x11.send_wm import (
                 send_wm_take_focus,                         #@UnresolvedImport
@@ -50,6 +49,15 @@ focuslog = Logger("x11", "window", "focus")
 
 if gtk.pygtk_version<(2,17):
     log.error("your version of PyGTK is too old - expect some bugs")
+
+
+XNone = constants["XNone"]
+CWX = constants["CWX"]
+CWY = constants["CWY"]
+CWWidth = constants["CWWidth"]
+CWHeight = constants["CWHeight"]
+IconicState = constants["IconicState"]
+NormalState = constants["NormalState"]
 
 
 #if you want to use a virtual screen bigger than 32767x32767
@@ -281,7 +289,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         }
 
     def __init__(self, client_window):
-        log("new window %#x - %#x", client_window.xid, get_xwindow(client_window))
+        log("new window %#x", client_window.xid)
         super(BaseWindowModel, self).__init__()
         self.client_window = client_window
         self.client_window_saved_events = self.client_window.get_events()
@@ -313,7 +321,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def call_setup(self):
         try:
-            self._geometry = trap.call_synced(X11Window.geometry_with_border, get_xwindow(self.client_window))
+            self._geometry = trap.call_synced(X11Window.geometry_with_border, self.client_window.xid)
         except XError, e:
             raise Unmanageable(e)
         add_event_receiver(self.client_window, self)
@@ -324,7 +332,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             trap.call_synced(self._composite.setup)
         except XError, e:
             remove_event_receiver(self.client_window, self)
-            log("window %#x does not support compositing: %s", get_xwindow(self.client_window), e)
+            log("window %#x does not support compositing: %s", self.client_window.xid, e)
             trap.swallow_synced(self._composite.destroy)
             self._composite = None
             raise Unmanageable(e)
@@ -344,7 +352,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._setup_done = True
 
     def setup_failed(self, e):
-        log("cannot manage %#x: %s", get_xwindow(self.client_window), e)
+        log("cannot manage %#x: %s", self.client_window.xid, e)
         self.do_unmanaged(False)
 
     def setup(self):
@@ -408,7 +416,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def do_get_property_geometry(self, pspec):
         if self._geometry is None:
             def synced_update():
-                xwin = get_xwindow(self.client_window)
+                xwin = self.client_window.xid
                 self._geometry = X11Window.geometry_with_border(xwin)
                 log("BaseWindowModel.synced_update() geometry(%#x)=%s", xwin, self._geometry)
             try:
@@ -456,7 +464,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("window-type", window_types)
         self._handle_scaling()
         self._internal_set_property("has-alpha", self.client_window.get_depth()==32)
-        self._internal_set_property("xid", get_xwindow(self.client_window))
+        self._internal_set_property("xid", self.client_window.xid)
         self._internal_set_property("pid", pget("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", pget("WM_WINDOW_ROLE", "latin1"))
         for mutable in ["WM_NAME", "_NET_WM_NAME"]:
@@ -528,7 +536,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def get_image(self, x, y, width, height, logger=log.debug):
         handle = self._composite.get_property("contents-handle")
         if handle is None:
-            logger("get_image(..) pixmap is None for window %#x", get_xwindow(self.client_window))
+            logger("get_image(..) pixmap is None for window %#x", self.client_window.xid)
             return  None
 
         #try XShm:
@@ -638,7 +646,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         # notice... but it might be unmapped already, and any event
         # already generated, and our request for that event is too late!
         # So double check now, *after* putting in our request:
-        if not X11Window.is_mapped(get_xwindow(self.client_window)):
+        if not X11Window.is_mapped(self.client_window.xid):
             raise Unmanageable("window already unmapped")
         ch = self._composite.get_property("contents-handle")
         if ch is None:
@@ -808,7 +816,7 @@ class WindowModel(BaseWindowModel):
                                             event_mask=gtk.gdk.PROPERTY_CHANGE_MASK,
                                             title = "CorralWindow-0x%s" % self.client_window.xid)
         log("setup() corral_window=%s", self.corral_window)
-        X11Window.substructureRedirect(get_xwindow(self.corral_window))
+        X11Window.substructureRedirect(self.corral_window.xid)
         add_event_receiver(self.corral_window, self)
 
         # Start listening for important events.
@@ -821,9 +829,9 @@ class WindowModel(BaseWindowModel):
         # serial number of the request -- this way, when we get an
         # UnmapNotify later, we'll know that it's just from us unmapping
         # the window, not from the client withdrawing the window.
-        if X11Window.is_mapped(get_xwindow(self.client_window)):
+        if X11Window.is_mapped(self.client_window.xid):
             log("hiding inherited window")
-            self.startup_unmap_serial = X11Window.Unmap(get_xwindow(self.client_window))
+            self.startup_unmap_serial = X11Window.Unmap(self.client_window.xid)
 
         # Process properties
         self._read_initial_properties()
@@ -833,7 +841,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("iconic", False)
 
         log("setup() adding to save set")
-        X11Window.XAddToSaveSet(get_xwindow(self.client_window))
+        X11Window.XAddToSaveSet(self.client_window.xid)
         self.in_save_set = True
 
         log("setup() reparenting")
@@ -931,7 +939,7 @@ class WindowModel(BaseWindowModel):
         if self.corral_window:
             remove_event_receiver(self.corral_window, self)
             for prop in WindowModel.SCRUB_PROPERTIES:
-                trap.swallow_synced(X11Window.XDeleteProperty, get_xwindow(self.client_window), prop)
+                trap.swallow_synced(X11Window.XDeleteProperty, self.client_window.xid, prop)
             if self.client_reparented:
                 self.client_window.reparent(gtk.gdk.get_default_root_window(), 0, 0)
                 self.client_reparented = False
@@ -946,9 +954,9 @@ class WindowModel(BaseWindowModel):
             # section 10. Connection Close).  This causes "ghost windows", see
             # bug #27:
             if self.in_save_set:
-                trap.swallow_synced(X11Window.XRemoveFromSaveSet, get_xwindow(self.client_window))
+                trap.swallow_synced(X11Window.XRemoveFromSaveSet, self.client_window.xid)
                 self.in_save_set = False
-            trap.swallow_synced(X11Window.sendConfigureNotify, get_xwindow(self.client_window))
+            trap.swallow_synced(X11Window.sendConfigureNotify, self.client_window.xid)
             if wm_exiting:
                 self.client_window.show_unraised()
         BaseWindowModel.do_unmanaged(self, wm_exiting)
@@ -972,7 +980,7 @@ class WindowModel(BaseWindowModel):
             winner.take_window(self, self.corral_window)
             self._update_client_geometry()
             self.corral_window.show_unraised()
-        trap.swallow_synced(X11Window.sendConfigureNotify, get_xwindow(self.client_window))
+        trap.swallow_synced(X11Window.sendConfigureNotify, self.client_window.xid)
 
     def maybe_recalculate_geometry_for(self, maybe_owner):
         if maybe_owner and self.get_property("owner") is maybe_owner:
@@ -1045,7 +1053,7 @@ class WindowModel(BaseWindowModel):
         x, y = window_position_cb(w, h)
         log("_do_update_client_geometry: position=%s", (x,y))
         self.corral_window.move_resize(x, y, w, h)
-        trap.swallow_synced(X11Window.configureAndNotify, get_xwindow(self.client_window), 0, 0, w, h)
+        trap.swallow_synced(X11Window.configureAndNotify, self.client_window.xid, 0, 0, w, h)
         self._internal_set_property("actual-size", (w, h))
         self._internal_set_property("user-friendly-size", (wvis, hvis))
 
@@ -1091,20 +1099,20 @@ class WindowModel(BaseWindowModel):
         # Ignore the request, but as per ICCCM 4.1.5, send back a synthetic
         # ConfigureNotify telling the client that nothing has happened.
         log("do_child_configure_request_event(%s)", event)
-        trap.swallow_synced(X11Window.sendConfigureNotify, get_xwindow(event.window))
+        trap.swallow_synced(X11Window.sendConfigureNotify, event.window.xid)
 
         # Also potentially update our record of what the app has requested:
         (x, y) = self.get_property("requested-position")
-        if event.value_mask & constants["CWX"]:
+        if event.value_mask & CWX:
             x = event.x
-        if event.value_mask & constants["CWY"]:
+        if event.value_mask & CWY:
             y = event.y
         self._internal_set_property("requested-position", (x, y))
 
         (w, h) = self.get_property("requested-size")
-        if event.value_mask & constants["CWWidth"]:
+        if event.value_mask & CWWidth:
             w = event.width
-        if event.value_mask & constants["CWHeight"]:
+        if event.value_mask & CWHeight:
             h = event.height
         self._internal_set_property("requested-size", (w, h))
         self._update_client_geometry()
@@ -1323,13 +1331,13 @@ class WindowModel(BaseWindowModel):
         def set_state(state):
             trap.swallow_synced(prop_set, self.client_window, "WM_STATE",
                              ["u32"],
-                             [state, constants["XNone"]])
+                             [state, XNone])
 
         if self.get_property("iconic"):
-            set_state(constants["IconicState"])
+            set_state(IconicState)
             self._state_add("_NET_WM_STATE_HIDDEN")
         else:
-            set_state(constants["NormalState"])
+            set_state(NormalState)
             self._state_remove("_NET_WM_STATE_HIDDEN")
 
     def _write_initial_properties_and_setup(self):
@@ -1377,7 +1385,7 @@ class WindowModel(BaseWindowModel):
         # the WM's XSetInputFocus.
         if bool(self._input_field):
             focuslog("... using XSetInputFocus")
-            X11Window.XSetInputFocus(get_xwindow(self.client_window), now)
+            X11Window.XSetInputFocus(self.client_window.xid, now)
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             focuslog("... using WM_TAKE_FOCUS")
             send_wm_take_focus(self.client_window, now)
@@ -1408,7 +1416,7 @@ class WindowModel(BaseWindowModel):
                     os.kill(pid, 9)
                 except OSError:
                     log.warn("failed to kill() client with pid %s", pid)
-        trap.swallow_synced(X11Window.XKillClient, get_xwindow(self.client_window))
+        trap.swallow_synced(X11Window.XKillClient, self.client_window.xid)
 
     def __repr__(self):
         return "WindowModel(%#x)" % self.client_window.xid

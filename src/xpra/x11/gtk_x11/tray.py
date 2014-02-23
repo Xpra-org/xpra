@@ -16,11 +16,15 @@ X11Window = X11WindowBindings()
 from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
                remove_event_receiver,                       #@UnresolvedImport
-               get_xwindow,                                 #@UnresolvedImport
                )
 
 from xpra.log import Logger
 log = Logger("x11", "tray")
+
+
+CurrentTime = constants["CurrentTime"]
+XNone = constants["XNone"]
+StructureNotifyMask = constants["StructureNotifyMask"]
 
 
 XEMBED_VERSION = 0
@@ -63,7 +67,7 @@ def get_tray_window(tray_window):
     return tray_window.get_data(XPRA_TRAY_WINDOW_PROPERTY)
 
 def set_tray_window(tray_window, window):
-    tray_window.set_data(XPRA_TRAY_WINDOW_PROPERTY, get_xwindow(window))
+    tray_window.set_data(XPRA_TRAY_WINDOW_PROPERTY, window.xid)
 
 def set_tray_visual(tray_window, gdk_visual):
     prop_set(tray_window, TRAY_VISUAL, "visual", gdk_visual)
@@ -89,16 +93,16 @@ class SystemTray(gobject.GObject):
         log("Tray.cleanup()")
         root = gtk.gdk.get_default_root_window()
         owner = X11Window.XGetSelectionOwner(SELECTION)
-        if owner==get_xwindow(self.tray_window):
-            X11Window.XSetSelectionOwner(get_xwindow(root), SELECTION)
+        if owner==self.tray_window.xid:
+            X11Window.XSetSelectionOwner(root.xid, SELECTION)
         else:
             log.warn("Tray.cleanup() we were no longer the selection owner")
         remove_event_receiver(self.tray_window, self)
         def undock(window):
             log("undocking %s", window)
-            X11Window.Withdraw(get_xwindow(window))
-            X11Window.Reparent(get_xwindow(window), get_xwindow(root), 0, 0)
-            X11Window.MapRaised(get_xwindow(window))
+            X11Window.Withdraw(window.xid)
+            X11Window.Reparent(window.xid, root.xid, 0, 0)
+            X11Window.MapRaised(window.xid)
         for window, tray_window in self.tray_windows.items():
             trap.swallow_synced(undock, window)
             tray_window.destroy()
@@ -118,7 +122,7 @@ class SystemTray(gobject.GObject):
         assert colormap is not None and visual is not None, "failed to obtain visual or colormap"
         owner = X11Window.XGetSelectionOwner(SELECTION)
         log("setup tray: current selection owner=%s", owner)
-        if owner!=constants["XNone"]:
+        if owner!=XNone:
             raise Exception("%s already owned by %s" % (SELECTION, owner))
         self.tray_window = gtk.gdk.Window(root, width=1, height=1,
                                            window_type=gtk.gdk.WINDOW_TOPLEVEL,
@@ -127,17 +131,16 @@ class SystemTray(gobject.GObject):
                                            title="Xpra-SystemTray",
                                            visual=visual,
                                            colormap=colormap)
-        xtray = get_xwindow(self.tray_window)
+        xtray = self.tray_window.xid
         set_tray_visual(self.tray_window, visual)
         set_tray_orientation(self.tray_window, TRAY_ORIENTATION_HORZ)
         log("setup tray: tray window %#x", xtray)
         display.request_selection_notification(SELECTION)
         setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
         log("setup tray: set selection owner returned %s", setsel)
-        event_mask = constants["StructureNotifyMask"]
-        xroot = get_xwindow(root)
-        X11Window.sendClientMessage(xroot, xroot, False, event_mask, "MANAGER",
-                          constants["CurrentTime"], SELECTION,
+        event_mask = StructureNotifyMask
+        X11Window.sendClientMessage(root.xid, root.xid, False, event_mask, "MANAGER",
+                          CurrentTime, SELECTION,
                           xtray, 0, 0)
         owner = X11Window.XGetSelectionOwner(SELECTION)
         #FIXME: cleanup if we fail!
@@ -200,8 +203,8 @@ class SystemTray(gobject.GObject):
         self.window_trays[tray_window] = window
         log("dock_tray(%#x) resizing and reparenting", xid)
         window.resize(w, h)
-        xwin = get_xwindow(window)
-        xtray = get_xwindow(tray_window)
+        xwin = window.xid
+        xtray = tray_window.xid
         X11Window.Withdraw(xwin)
         X11Window.Reparent(xwin, xtray, 0, 0)
         X11Window.MapRaised(xwin)

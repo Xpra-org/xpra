@@ -14,6 +14,11 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
 
+
+XNone = constants["XNone"]
+CurrentTime = constants["CurrentTime"]
+
+
 # This file defines Xpra's top-level widget.  It is a magic window that
 # always and exactly covers the entire screen (possibly crossing multiple
 # screens, in the Xinerama case); it also mediates between the GTK+ and X
@@ -134,8 +139,7 @@ class WorldWindow(gtk.Window):
             # (ICCCM violating) to use CurrentTime in a WM_TAKE_FOCUS message,
             # but GTK doesn't happen to care, and this guarantees that we
             # *will* get the focus, and thus a real FocusIn event.
-            current_time = constants["CurrentTime"]
-            send_wm_take_focus(self.window, current_time)
+            send_wm_take_focus(self.window, CurrentTime)
 
     def do_focus_in_event(self, *args):
         focuslog("world window got focus")
@@ -165,7 +169,7 @@ class WorldWindow(gtk.Window):
         focuslog("reset_x_focus: widget with focus: %s", self.get_focus())
         def do_reset_x_focus():
             self._take_focus()
-            root_set("_NET_ACTIVE_WINDOW", "u32", constants["XNone"])
+            root_set("_NET_ACTIVE_WINDOW", "u32", XNone)
         trap.swallow_synced(do_reset_x_focus)
 
     def _after_set_focus(self, *args):

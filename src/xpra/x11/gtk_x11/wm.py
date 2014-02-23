@@ -25,7 +25,6 @@ from xpra.x11.gtk_x11.window import WindowModel, Unmanageable
 from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
                get_children,                                #@UnresolvedImport
-               get_xwindow,                                 #@UnresolvedImport
                )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
@@ -70,7 +69,7 @@ def wm_check(display, upgrading=False):
             if upgrading and name and name==WM_WINDOW_NAME:
                 log.info("found previous Xpra instance")
             else:
-                log.warn("Warning: found an existing window manager on screen %s using window %#x: %s", i, get_xwindow(ewmh_wm), name or "unknown")
+                log.warn("Warning: found an existing window manager on screen %s using window %#x: %s", i, ewmh_wm.xid, name or "unknown")
             if (wm_so is None or wm_so==0) and (cwm_so is None or cwm_so==0):
                 log.error("it does not own the selection '%s' or '%s' so we cannot take over and make it exit", wm_prop, cwm_prop)
                 log.error("please stop %s so you can run xpra on this display", name or "the existing window manager")
@@ -241,20 +240,20 @@ class Wm(gobject.GObject):
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
         add_event_receiver(self._root, self)
-        X11Window.substructureRedirect(get_xwindow(self._root))
+        X11Window.substructureRedirect(self._root.xid)
 
         for w in get_children(self._root):
             # Checking for FOREIGN here filters out anything that we've
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.
             if (w.get_window_type() == gtk.gdk.WINDOW_FOREIGN
-                and not X11Window.is_override_redirect(get_xwindow(w))
-                and X11Window.is_mapped(get_xwindow(w))):
+                and not X11Window.is_override_redirect(w.xid)
+                and X11Window.is_mapped(w.xid)):
                 log("Wm managing pre-existing child")
                 self._manage_client(w)
 
         # Also watch for focus change events on the root window
-        X11Window.selectFocusChange(get_xwindow(self._root))
+        X11Window.selectFocusChange(self._root.xid)
         X11Keyboard.selectBellNotification(True)
 
         # FIXME:
@@ -375,7 +374,7 @@ class Wm(gobject.GObject):
             return
         log("Reconfigure on withdrawn window")
         trap.swallow_synced(X11Window.configureAndNotify,
-                     get_xwindow(event.window), event.x, event.y,
+                     event.window.xid, event.x, event.y,
                      event.width, event.height,
                      event.value_mask)
 

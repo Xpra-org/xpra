@@ -9,7 +9,6 @@ from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.gdk_bindings import (
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
-            get_xwindow,                    #@UnresolvedImport
             get_parent)  #@UnresolvedImport
 from xpra.x11.gtk_x11.error import trap
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -51,7 +50,7 @@ class PointerGrabHelper(gobject.GObject):
     # This may raise XError.
     def __init__(self, window):
         super(PointerGrabHelper, self).__init__()
-        log("PointerGrabHelper.__init__(%#x)", get_xwindow(window))
+        log("PointerGrabHelper.__init__(%#x)", window.xid)
         self._has_grab = False
         self._window = window
         self._listening = None
@@ -99,7 +98,7 @@ class PointerGrabHelper(gobject.GObject):
             # corral window selection masks, and those don't deserve
             # clobbering.  They are our friends!  X is driving me
             # slowly mad.
-            X11Window.addXSelectInput(get_xwindow(win), StructureNotifyMask)
+            X11Window.addXSelectInput(win.xid, StructureNotifyMask)
             add_event_receiver(win, self, max_receivers=-1)
             self._listening.append(win)
             win = get_parent(win)

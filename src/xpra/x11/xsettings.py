@@ -28,6 +28,9 @@ XSETTINGS = "_XSETTINGS_SETTINGS"
 XSETTINGS_TYPE = "xsettings-settings"
 
 
+XNone = constants["XNone"]
+
+
 class XSettingsManager(object):
     def __init__(self, screen_number=0):
         selection = "_XSETTINGS_S%s" % screen_number
@@ -70,7 +73,7 @@ class XSettingsWatcher(gobject.GObject):
 
     def _owner(self):
         owner_x = X11Window.XGetSelectionOwner(self._selection)
-        if owner_x == constants["XNone"]:
+        if owner_x == XNone:
             return None
         try:
             return trap.call_synced(get_pywindow, self._clipboard, owner_x)

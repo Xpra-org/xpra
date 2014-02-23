@@ -9,8 +9,7 @@ from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
 from xpra.x11.gtk_x11.gdk_bindings import (
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
-            get_xwindow,                    #@UnresolvedImport
-            get_parent)  #@UnresolvedImport
+            get_parent)                     #@UnresolvedImport
 from xpra.x11.gtk_x11.error import trap
 
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
@@ -22,6 +21,9 @@ X11Window.ensure_XDamage_support()
 
 from xpra.log import Logger
 log = Logger("x11", "window")
+
+
+StructureNotifyMask = constants["StructureNotifyMask"]
 
 
 class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
@@ -47,7 +49,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     # This may raise XError.
     def __init__(self, window, already_composited, use_shm=False):
         super(CompositeHelper, self).__init__()
-        log("CompositeHelper.__init__(%#x, %s)", get_xwindow(window), already_composited)
+        log("CompositeHelper.__init__(%#x, %s)", window.xid, already_composited)
         self._window = window
         self._already_composited = already_composited
         self._listening_to = None
@@ -58,11 +60,11 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     def __repr__(self):
         xid = None
         if self._window:
-            xid = get_xwindow(self._window)
-        return "CompositeHelper(%s)" % xid
+            xid = self._window.xid
+        return "CompositeHelper(%#x)" % xid
 
     def setup(self):
-        xwin = get_xwindow(self._window)
+        xwin = self._window.xid
         if not self._already_composited:
             X11Window.XCompositeRedirectWindow(xwin)
         _, _, _, _, self._border_width = X11Window.geometry_with_border(xwin)
@@ -77,7 +79,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             return
         #clear the reference to the window early:
         win = self._window
-        xwin = get_xwindow(self._window)
+        xwin = self._window.xid
         #Note: invalidate_pixmap()/_cleanup_listening() use self._window, but won't care if it's None
         self._window = None
         remove_event_receiver(win, self)
@@ -125,7 +127,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             self._shm_handle = None
         if self._shm_handle is None:
             #make a new one:
-            self._shm_handle = XImage.get_XShmWrapper(get_xwindow(self._window))
+            self._shm_handle = XImage.get_XShmWrapper(self._window.xid)
             if self._shm_handle is None:
                 #failed (may retry)
                 return None
@@ -175,11 +177,11 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         # corral window selection masks, and those don't deserve
                         # clobbering.  They are our friends!  X is driving me
                         # slowly mad.
-                        X11Window.addXSelectInput(get_xwindow(win), constants["StructureNotifyMask"])
+                        X11Window.addXSelectInput(win.xid, StructureNotifyMask)
                         add_event_receiver(win, self, max_receivers=-1)
                         listening.append(win)
                         win = get_parent(win)
-                    handle = XImage.get_xcomposite_pixmap(get_xwindow(self._window))
+                    handle = XImage.get_xcomposite_pixmap(self._window.xid)
                 except Exception, e:
                     try:
                         self._cleanup_listening(listening)
@@ -187,7 +189,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         pass
                     raise
                 if handle is None:
-                    log("failed to name a window pixmap for %s: %s", get_xwindow(self._window), e)
+                    log("failed to name a window pixmap for %s: %s", self._window.xid, e)
                     self._cleanup_listening(listening)
                 else:
                     self._contents_handle = handle
