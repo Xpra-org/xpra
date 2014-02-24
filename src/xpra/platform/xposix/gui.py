@@ -19,8 +19,8 @@ except:
 def get_native_notifier_classes():
     ncs = []
     try:
-        from xpra.client.notifications.dbus_notifier import DBUS_Notifier
-        ncs.append(DBUS_Notifier)
+        from xpra.client.notifications.dbus_notifier import DBUS_Notifier_factory
+        ncs.append(DBUS_Notifier_factory)
     except Exception, e:
         log("cannot load dbus notifier: %s", e)
     try:
