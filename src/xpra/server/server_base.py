@@ -901,9 +901,9 @@ class ServerBase(ServerCore):
             if x in active_list:
                 return "active"
             elif x in def_list:
-                return "not found"
-            else:
                 return "disabled"
+            else:
+                return "not found"
         for x in ALL_VIDEO_ENCODER_OPTIONS:
             info["encoding.video-encoder.%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), vh.video_encoders)
         for x in ALL_CSC_MODULE_OPTIONS:
