@@ -24,6 +24,7 @@ from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW
+from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_DECODER_OPTIONS, NO_GFX_CSC_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
@@ -263,6 +264,11 @@ class UIXpraClient(XpraClientBase):
                 add_audio_tagging_env(tray_icon_filename)
             except ImportError, e:
                 log("failed to set pulseaudio audio tagging: %s", e)
+
+        #(we use the defaults, we could call set_modules with more restrictions though)
+        vh = getVideoHelper()
+        vh.set_modules(video_decoders=ALL_VIDEO_DECODER_OPTIONS, csc_modules=NO_GFX_CSC_OPTIONS)
+        vh.init()
 
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self)
@@ -1458,8 +1464,8 @@ class UIXpraClient(XpraClientBase):
             try:
                 window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay, self.border)
                 break
-            except Exception, e:
-                log.warn("failed to instantiate %s: %s", cwc, e)
+            except:
+                log.warn("failed to instantiate %s", cwc, exc_info=True)
         if window is None:
             log.warn("no more options.. this window will not be shown, sorry")
             return None

@@ -180,6 +180,10 @@ def get_type():
     return "avcodec"
 
 
+def init_module():
+    pass
+
+
 #maps AVCodecContext to the Decoder that manages it
 #the key must be obtained using get_context_key()
 #The Decoder manages everything.

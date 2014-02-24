@@ -126,6 +126,10 @@ def get_info():
             "build_config"  : vpx_codec_build_config()}
 
 
+def init_module():
+    pass
+
+
 def get_spec(colorspace):
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations

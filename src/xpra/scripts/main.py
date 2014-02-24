@@ -148,12 +148,12 @@ def parse_cmdline(cmdline):
         group.add_option("--exit-with-client", action="store_true",
                           dest="exit_with_client", default=False,
                           help="Terminate the server when the last client disconnects")
-        from xpra.codecs.video_helper import get_DEFAULT_VIDEO_ENCODERS, get_DEFAULT_CSC_MODULES
+        from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
         #if we don't have any values yet from the config file(s), use the defaults we detect:
         if len(defaults.video_encoders)==0:
-            defaults.video_encoders = ",".join(get_DEFAULT_VIDEO_ENCODERS())
+            defaults.video_encoders = ",".join(ALL_VIDEO_ENCODER_OPTIONS)
         if len(defaults.csc_modules)==0:
-            defaults.csc_modules = ",".join(get_DEFAULT_CSC_MODULES())
+            defaults.csc_modules = ",".join(ALL_CSC_MODULE_OPTIONS)
         group.add_option("--video-encoders", action="store",
                           dest="video_encoders", default=defaults.video_encoders,
                           help="Specify which video encoders to enable, to get a list of all the options specify 'help' (default: %default)")
@@ -491,7 +491,8 @@ def parse_cmdline(cmdline):
     if (supports_server or supports_shadow):
         if type(options.video_encoders)==str:
             if options.video_encoders=="help":
-                print("the following video encoders are available: %s" % ", ".join(get_DEFAULT_VIDEO_ENCODERS()))
+                from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
+                print("the following video encoders are available: %s" % ", ".join(aveco))
                 sys.exit(0)
             elif options.video_encoders=="none":
                 options.video_encoders = []
@@ -499,7 +500,8 @@ def parse_cmdline(cmdline):
                 options.video_encoders = [x.strip() for x in options.video_encoders.split(",")]
         if type(options.csc_modules)==str:
             if options.csc_modules=="help":
-                print("the following csc modules are available: %s" % ", ".join(get_DEFAULT_CSC_MODULES()))
+                from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
+                print("the following csc modules are available: %s" % ", ".join(acsco))
                 sys.exit(0)
             elif options.csc_modules=="none":
                 options.csc_modules = []

@@ -17,6 +17,7 @@ from xpra.net.protocol import has_lz4, LZ4_uncompress
 from xpra.os_util import BytesIOClass, bytestostr
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
 from xpra.codecs.loader import get_codec
+from xpra.codecs.video_helper import getVideoHelper
 
 
 #logging in the draw path is expensive:
@@ -52,19 +53,24 @@ def load_csc_options():
             except:
                 log.warn("failed to load csc module %s", csc_module, exc_info=True)
 
+#get the list of video encodings (and the module for each one):
 VIDEO_DECODERS = None
 def load_video_decoders():
     global VIDEO_DECODERS
     if VIDEO_DECODERS is None:
         VIDEO_DECODERS = {}
-        for codec in ("vp8", "vp9", "h264", "h265"):
-            #prefer native vpx ahead of avcodec:
-            for module in ("dec_vpx", "dec_avcodec", "dec_avcodec2"):
-                decoder = get_codec(module)
-                if decoder and (codec in decoder.get_encodings()):
-                    VIDEO_DECODERS[codec] = module
-                    break
-    log("video decoders: %s", VIDEO_DECODERS)
+        vh = getVideoHelper()
+        for encoding in vh.get_decodings():
+            specs = vh.get_decoder_specs(encoding)
+            for colorspace, decoders in specs.items():
+                log("%s decoders for %s: %s", encoding, colorspace, decoders)
+                assert len(decoders)>0
+                #use the first one:
+                _, decoder_module = decoders[0]
+                VIDEO_DECODERS[encoding] = decoder_module
+        log("video decoders: %s", VIDEO_DECODERS)
+    return VIDEO_DECODERS
+
 
 def fire_paint_callbacks(callbacks, success):
     for x in callbacks:
@@ -75,13 +81,13 @@ def fire_paint_callbacks(callbacks, success):
         except:
             log.error("error calling %s(%s)", x, success, exc_info=True)
 
+
 """
 Generic superclass for all Backing code,
 see CairoBacking and GTKWindowBacking for actual implementations
 """
 class WindowBackingBase(object):
     def __init__(self, wid, idle_add):
-        load_csc_options()
         load_video_decoders()
         self.wid = wid
         self.idle_add = idle_add
@@ -96,8 +102,8 @@ class WindowBackingBase(object):
         self.mmap = None
         self.mmap_enabled = False
 
-    def __str__(self):
-        return "WindowBackingBase"
+    def load_csc_options(self):
+        load_csc_options()
 
     def enable_mmap(self, mmap_area):
         self.mmap = mmap_area
@@ -291,9 +297,8 @@ class WindowBackingBase(object):
                     log.error("failed to create csc instance of %s", spec.codec_class, exc_info=True)
         raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s) in %s" % (src_format, src_width, src_height, " or ".join(dst_format_options), dst_width, dst_height, CSC_OPTIONS))
 
-    def paint_with_video_decoder(self, decoder_name, coding, img_data, x, y, width, height, options, callbacks):
-        decoder_module = get_codec(decoder_name)
-        assert decoder_module, "decoder module not found for %s" % decoder_name
+    def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
+        assert decoder_module, "decoder module not found for %s" % coding
         try:
             self._decoder_lock.acquire()
             if self._backing is None:
@@ -450,8 +455,7 @@ class WindowBackingBase(object):
             if rowstride==0:
                 rowstride = width * 4
             self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
-        elif coding in ("vp8", "vp9", "h264", "h265"):
-            assert coding in VIDEO_DECODERS, "no %s decoder available" % coding
+        elif coding in VIDEO_DECODERS:
             self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)

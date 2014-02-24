@@ -169,6 +169,10 @@ def get_info():
              }
 
 
+def init_module():
+    pass
+
+
 cdef void clear_frame(AVFrame *frame):
     assert frame!=NULL, "frame is not set!"
     for i in xrange(4):

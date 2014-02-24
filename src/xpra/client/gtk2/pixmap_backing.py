@@ -19,7 +19,12 @@ Backing using a gdk.Pixmap
 """
 class PixmapBacking(GTK2WindowBacking):
 
-    def __str__(self):
+    def __init__(self, *args):
+        GTK2WindowBacking.__init__(self, *args)
+        #we need csc to handle YUV video:
+        self.load_csc_options()
+
+    def __repr__(self):
         return "PixmapBacking(%s)" % self._backing
 
     def init(self, w, h):
