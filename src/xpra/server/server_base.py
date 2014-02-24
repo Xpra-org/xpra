@@ -897,15 +897,13 @@ class ServerBase(ServerCore):
 
         vh = getVideoHelper()
         def modstatus(x, def_list, active_list):
-            if x in def_list:
-                #the module is present
-                if x in active_list:
-                    return "active"
-                else:
-                    return "disabled"
+            #the module is present
+            if x in active_list:
+                return "active"
+            elif x in def_list:
+                return "not found"
             else:
-                assert x not in active_list
-                return "not-found"
+                return "disabled"
         for x in ALL_VIDEO_ENCODER_OPTIONS:
             info["encoding.video-encoder.%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), vh.video_encoders)
         for x in ALL_CSC_MODULE_OPTIONS:
