@@ -219,6 +219,7 @@ cdef class XImageWrapper:
     cdef char *pixel_format
     cdef char *pixels
     cdef object del_callback
+    cdef long timestamp
 
     def __cinit__(self, int x, int y, int width, int height):
         self.image = NULL
@@ -231,6 +232,7 @@ cdef class XImageWrapper:
         self.rowstride = 0
         self.planes = 0
         self.thread_safe = 0
+        self.timestamp = int(time.time()*1000)
 
     cdef set_image(self, XImage* image):
         self.thread_safe = 0
@@ -296,6 +298,17 @@ cdef class XImageWrapper:
         assert self.image!=NULL
         return PyBuffer_FromReadWriteMemory(self.image.data, self.get_size())
 
+    def is_thread_safe(self):
+        return self.thread_safe
+
+    def get_timestamp(self):
+        """ time in millis """
+        return self.timestamp
+
+
+    def set_timestamp(self, timestamp):
+        self.timestamp = timestamp
+
     def set_rowstride(self, rowstride):
         self.rowstride = rowstride
 
@@ -326,8 +339,6 @@ cdef class XImageWrapper:
             #if we have already freed the XImage
             #(since it needs to be freed from the UI thread)
 
-    def is_thread_safe(self):
-        return self.thread_safe
 
     def free(self):                                     #@DuplicatedSignature
         if XIMAGE_DEBUG:

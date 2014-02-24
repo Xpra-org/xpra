@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
+
 
 class ImageWrapper(object):
 
@@ -27,6 +29,7 @@ class ImageWrapper(object):
         self.planes = planes
         self.thread_safe = thread_safe
         self.freed = False
+        self.timestamp = int(time.time()*1000)
 
     def __repr__(self):
         return "%s(%s:%s:%s)" % (type(self), self.pixel_format, self.get_geometry(), ImageWrapper.PLANE_NAMES.get(self.planes))
@@ -71,6 +74,13 @@ class ImageWrapper(object):
         """
         return self.thread_safe
 
+    def get_timestamp(self):
+        """ time in millis """
+        return self.timestamp
+
+
+    def set_timestamp(self, timestamp):
+        self.timestamp = timestamp
 
     def set_planes(self, planes):
         self.planes = planes

@@ -13,7 +13,7 @@ from xpra.deque import maxdeque
 
 
 def get_version():
-    return (0, 1)
+    return (0, 2)
 
 def get_type():
     return "proxy"
@@ -46,6 +46,7 @@ class Encoder(object):
         self.last_frame_times = maxdeque(200)
         self.frames = 0
         self.time = 0
+        self.first_frame_timestamp = 0
 
     def get_info(self):             #@DuplicatedSignature
         info = get_info()
@@ -92,7 +93,7 @@ class Encoder(object):
         return self.height
 
     def get_type(self):                     #@DuplicatedSignature
-        return  "proxy"
+        return "proxy"
 
     def get_src_format(self):
         return self.src_format
@@ -104,10 +105,18 @@ class Encoder(object):
         self.speed = 0
         self.src_format = None
 
-    def get_client_options(self, image, options):
-        options = {
+    def compress_image(self, image, options={}):
+        log("compress_image(%s, %s)", image, options)
+        #pass the pixels as they are
+        assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
+        pixels = str(image.get_pixels())
+        if self.frames==0:
+            self.first_frame_timestamp = image.get_timestamp()
+        #info used by proxy encoder:
+        client_options = {
                 "proxy"     : True,
                 "frame"     : self.frames,
+                "pts"       : image.get_timestamp()-self.first_frame_timestamp,
                 #pass-through encoder options:
                 "options"   : options,
                 #redundant metadata:
@@ -115,23 +124,16 @@ class Encoder(object):
                 #"height"    : image.get_height(),
                 "quality"   : options.get("quality", self.quality),
                 "speed"     : options.get("speed", self.speed),
+                "timestamp" : image.get_timestamp(),
                 "rowstride" : image.get_rowstride(),
                 "depth"     : image.get_depth(),
                 "rgb_format": image.get_pixel_format(),
                 }
         if self.scaling!=(1,1):
-            options["scaling"] = self.scaling
-        return options
-
-    def compress_image(self, image, options={}):
-        log("compress_image(%s, %s)", image, options)
-        #pass the pixels as they are
-        assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
-        pixels = str(image.get_pixels())
-        self.frames += 1
-        self.last_frame_times.append(time.time())
-        client_options = self.get_client_options(image, options)
+            client_options["scaling"] = self.scaling
         log("compress_image(%s, %s) returning %s bytes and options=%s", image, options, len(pixels), client_options)
+        self.last_frame_times.append(time.time())
+        self.frames += 1
         return  pixels, client_options
 
     def set_encoding_speed(self, pct):

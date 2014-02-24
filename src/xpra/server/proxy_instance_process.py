@@ -598,8 +598,11 @@ class ProxyInstanceProcess(Process):
         rowstride = client_options.get("rowstride", rowstride)
         quality = client_options.get("quality", -1)
         speed   = client_options.get("speed", -1)
+        timestamp = client_options.get("timestamp")
 
         image = ImageWrapper(x, y, width, height, pixels, rgb_format, depth, rowstride, planes=ImageWrapper.PACKED)
+        if timestamp is not None:
+            image.set_timestamp(timestamp)
 
         #the encoder options are passed through:
         encoder_options = client_options.get("options", {})

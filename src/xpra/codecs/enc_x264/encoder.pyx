@@ -260,6 +260,7 @@ cdef class Encoder:
     cdef long long bytes_in
     cdef long long bytes_out
     cdef object last_frame_times
+    cdef long first_frame_timestamp
 
     cdef object __weakref__
 
@@ -279,6 +280,7 @@ cdef class Encoder:
         self.frames = 0
         self.last_frame_times = maxdeque(200)
         self.time = 0
+        self.first_frame_timestamp = 0
         self.profile = self._get_profile(options, self.src_format)
         if self.profile is not None and self.profile not in cs_info[2]:
             log.warn("invalid profile specified for %s: %s (must be one of: %s)" % (src_format, self.profile, cs_info[2]))
@@ -393,18 +395,6 @@ cdef class Encoder:
             x264_encoder_close(self.context)
             self.context = NULL
 
-    def get_client_options(self, options):
-        q = options.get("quality", -1)
-        if q<0:
-            q = self.quality
-        s = options.get("speed", -1)
-        if s<0:
-            s = self.speed
-        return {
-                "frame"     : self.frames,
-                "quality"   : q,
-                "speed"     : s,
-                }
 
     def compress_image(self, image, options={}):
         cdef x264_nal_t *nals = NULL
@@ -424,10 +414,19 @@ cdef class Encoder:
         cdef int i                        #@DuplicatedSignature
         start = time.time()
 
+        if self.frames==0:
+            self.first_frame_timestamp = image.get_timestamp()
+
+        #deal with overriden speed or quality settings:
+        #(temporarily change the settings for this encode only):
+        speed = self.speed
         if speed_override>=0 and saved_speed!=speed_override:
             self.set_encoding_speed(speed_override)
+            speed = speed_override
+        quality = self.quality
         if quality_override>=0 and saved_quality!=quality_override:
             self.set_encoding_quality(quality_override)
+            quality = quality_override
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
@@ -453,7 +452,7 @@ cdef class Encoder:
 
         pic_in.img.i_csp = self.colorspace
         pic_in.img.i_plane = 3
-        pic_in.i_pts = 1
+        pic_in.i_pts = image.get_timestamp()-self.first_frame_timestamp
 
         try:
             with nogil:
@@ -464,11 +463,18 @@ cdef class Encoder:
             out = <char *>nals[0].p_payload
             cdata = out[:frame_size]
             self.bytes_out += frame_size
+            #info for client:
+            client_options = {
+                    "frame"     : self.frames,
+                    "pts"       : pic_out.i_pts,
+                    "quality"   : quality,
+                    "speed"     : speed}
+            #accounting:
             end = time.time()
             self.time += end-start
             self.frames += 1
             self.last_frame_times.append((start, end))
-            return  cdata, self.get_client_options(options)
+            return  cdata, client_options
         finally:
             if speed_override>=0 and saved_speed!=speed_override:
                 self.set_encoding_speed(saved_speed)

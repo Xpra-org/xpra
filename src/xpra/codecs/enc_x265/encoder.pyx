@@ -81,7 +81,7 @@ cdef extern from "x265.h":
         int         lookaheadDepth                  #Number of frames to use for lookahead, determines encoder latency
         int         bFrameAdaptive                  #0 - none, 1 - fast, 2 - full (trellis) adaptive B frame scheduling
         int         bFrameBias                      #value which is added to the cost estimate of B frames
-        int         scenecutThreshold               #how aggressively to insert extra I frames 
+        int         scenecutThreshold               #how aggressively to insert extra I frames
         int         bEnableConstrainedIntra         #enable constrained intra prediction
         int         bEnableStrongIntraSmoothing     #enable strong intra smoothing for 32x32 blocks where the reference samples are flat
 
@@ -240,7 +240,6 @@ def get_spec(encoding, colorspace):
 
 
 cdef class Encoder:
-    cdef int frames
     cdef x265_param *param
     cdef x265_encoder *context
     cdef int width
@@ -248,9 +247,11 @@ cdef class Encoder:
     cdef object src_format
     cdef object preset
     cdef char *profile
-    cdef double time
     cdef int quality
     cdef int speed
+    cdef double time
+    cdef int frames
+    cdef long first_frame_timestamp
 
     cdef object __weakref__
 
@@ -392,18 +393,6 @@ cdef class Encoder:
             x265_encoder_close(self.context)
             self.context = NULL
 
-    def get_client_options(self, options):
-        q = options.get("quality", -1)
-        if q<0:
-            q = self.quality
-        s = options.get("speed", -1)
-        if s<0:
-            s = self.speed
-        return {
-                "frame"     : self.frames,
-                "quality"   : q,
-                "speed"     : s,
-                }
 
     def compress_image(self, image, options={}):
         cdef x265_nal *nal
@@ -427,8 +416,10 @@ cdef class Encoder:
         start = time.time()
         data = []
         log("x265.compress_image(%s, %s)", image, options)
-
         if self.frames==0:
+            #first frame, record pts:
+            self.first_frame_timestamp = image.get_timestamp()
+            #send headers (not needed?)
             if x265_encoder_headers(self.context, &nal, &nnal)<0:
                 log.error("x265 encoding headers error: %s", r)
                 return None
@@ -454,7 +445,7 @@ cdef class Encoder:
             PyObject_AsReadBuffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)
             pic_in.planes[i] = pic_buf
             pic_in.stride[i] = istrides[i]
-        pic_in.pts = int(time.time()*1000)
+        pic_in.pts = image.get_timestamp()-self.first_frame_timestamp
 
         with nogil:
             r = x265_encoder_encode(self.context, &nal, &nnal, pic_in, pic_out)
@@ -470,12 +461,19 @@ cdef class Encoder:
         frame_size = nal[0].sizeBytes
         out = <char *>nal[0].payload
         data.append(out[:frame_size])
-        log("x265 compressed data size: %s", frame_size)
+        x265_picture_free(pic_out)
+        #quality and speed are not used (yet):
+        client_options = {
+                "frame"     : self.frames,
+                "pts"     : image.get_timestamp()-self.first_frame_timestamp,
+                #"quality"   : q,
+                #"speed"     : s,
+                }
         end = time.time()
         self.time += end-start
         self.frames += 1
-        x265_picture_free(pic_out)
-        return  "".join(data), self.get_client_options(options)
+        log("x265 compressed data size: %s, client options=%s", frame_size, client_options)
+        return  "".join(data), client_options
 
 
     def set_encoding_speed(self, int pct):

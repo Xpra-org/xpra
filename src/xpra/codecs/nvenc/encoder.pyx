@@ -1177,6 +1177,7 @@ cdef class Encoder:
     #statistics, etc:
     cdef double time
     cdef int frames
+    cdef long first_frame_timestamp
     cdef int index
     cdef object last_frame_times
     cdef long long bytes_in
@@ -1512,17 +1513,11 @@ cdef class Encoder:
     def get_src_format(self):
         return self.src_format
 
-    def get_client_options(self, options):
-        client_options = {"frame" : self.frames}
-        if self.scaling!=(1,1):
-            client_options["scaled_size"] = self.encoder_width, self.encoder_height
-        return client_options
-
     def set_encoding_speed(self, speed):
-        pass
+        self.speed = speed
 
     def set_encoding_quality(self, quality):
-        pass
+        self.quality = quality
 
 
     cdef flushEncoder(self):
@@ -1572,6 +1567,10 @@ cdef class Encoder:
         pixels = image.get_pixels()
         image_stride = image.get_rowstride()
         input_size = self.inputPitch * self.input_height
+
+        if self.frames==0:
+            #first frame, record pts:
+            self.first_frame_timestamp = image.get_timestamp()
 
         #FIXME: we should copy from pixels directly..
         #copy to input buffer:
@@ -1645,7 +1644,7 @@ cdef class Encoder:
             mapInputResource.registeredResource  = self.inputHandle
             raiseNVENC(self.functionList.nvEncMapInputResource(self.context, &mapInputResource), "mapping input resource")
             log("compress_image(..) device buffer mapped to %#x", <unsigned long> mapInputResource.mappedResource)
-    
+
             size = 0
             try:
                 memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
@@ -1670,16 +1669,16 @@ cdef class Encoder:
                 #picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
                 picParams.frameIdx = self.index
                 self.index += 1
-                #picParams.inputTimeStamp = int(1000.0 * time.time())
+                picParams.inputTimeStamp = image.get_timestamp()-self.first_frame_timestamp
                 #inputDuration = 0      #FIXME: use frame delay?
                 picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
                 picParams.rcParams.averageBitRate = 5000000   #5Mbits/s
                 picParams.rcParams.maxBitRate = 10000000      #10Mbits/s
-    
+
                 raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
                 encode_end = time.time()
                 log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
-    
+
                 #lock output buffer:
                 memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
                 lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
@@ -1687,7 +1686,7 @@ cdef class Encoder:
                 lockOutputBuffer.outputBitstream = self.bitstreamBuffer
                 raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer), "locking output buffer")
                 log("compress_image(..) output buffer locked, bitstreamBufferPtr=%#x", <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
-    
+
                 #copy to python buffer:
                 size = lockOutputBuffer.bitstreamSizeInBytes
                 sizes.append(size)
@@ -1697,24 +1696,29 @@ cdef class Encoder:
                 raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer), "unlocking output buffer")
                 raiseNVENC(self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource), "unmapping input resource")
 
-        end = time.time()
-        log("compress_image(..) download took %.1f ms", (end-encode_end)*1000.0)
+        download_end = time.time()
+        log("compress_image(..) download took %.1f ms", (download_end-encode_end)*1000.0)
         #update info:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
-        self.last_frame_times.append((start, end))
-        self.time += end-start
         outdata = "".join(data)
         outsize = len(outdata)
-        log("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", outsize, 100.0*outsize/input_size, self.frames, 1000.0*(end-start))
-        #log("pixels head: %s", binascii.hexlify(data[:128]))
-        client_options = self.get_client_options(options)
+        client_options = {
+                    "frame" : self.frames,
+                    "pts"   : image.get_timestamp()-self.first_frame_timestamp,
+                    }
+        if self.scaling!=(1,1):
+            client_options["scaled_size"] = self.encoder_width, self.encoder_height
         if self.pixel_format=="YUV444P":
             assert len(offsets)==3
             #tell the client that the data contains 3 chunks
             #and how to find them in the joined buffer:
             client_options["plane_sizes"] = sizes
+        end = time.time()
         self.frames += 1
+        self.last_frame_times.append((start, end))
+        self.time += end-start
+        log("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", outsize, 100.0*outsize/input_size, self.frames, 1000.0*(end-start))
         return outdata, client_options
 
 
