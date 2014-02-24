@@ -178,7 +178,7 @@ ENCODINGS_TO_NAME = {
 
 ENCODINGS_HELP = {
       "h264"    : "H.264 video codec",
-      "h265"    : "H.265 (HEVC) video codec",
+      "h265"    : "H.265 (HEVC) video codec (slow)",
       "vp8"     : "VP8 video codec",
       "vp9"     : "VP9 video codec (very slow - do not use!)",
       "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
