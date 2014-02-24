@@ -7,6 +7,7 @@
 from xpra.log import Logger
 log = Logger("codec", "loader")
 
+codec_errors = {}
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, *classnames):
     log("codec_import_check%s", (name, description, top_module, class_module, classnames))
@@ -21,10 +22,12 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                 codecs[name] = ic
                 return ic
         except ImportError, e:
+            codec_errors[name] = e
             log(" cannot import %s (%s): %s", name, description, e)
             #the required module does not exist
             log(" xpra was probably built with the option: --without-%s", name)
     except Exception, e:
+        codec_errors[name] = e
         log.warn("cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
     return None
 codec_versions = {}
@@ -132,6 +135,8 @@ def load_codecs():
     for name, version in codec_versions.items():
         log("* %s : %s" % (name.ljust(20), version))
 
+def get_codec_error(name):
+    return codec_errors.get(name)
 
 def get_codec(name):
     load_codecs()

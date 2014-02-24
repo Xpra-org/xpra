@@ -265,9 +265,10 @@ class UIXpraClient(XpraClientBase):
             except ImportError, e:
                 log("failed to set pulseaudio audio tagging: %s", e)
 
-        #(we use the defaults, we could call set_modules with more restrictions though)
+        #until we add the ability to choose decoders, use all of them:
+        #(and default to non grahics card csc modules if not specified)
         vh = getVideoHelper()
-        vh.set_modules(video_decoders=ALL_VIDEO_DECODER_OPTIONS, csc_modules=NO_GFX_CSC_OPTIONS)
+        vh.set_modules(video_decoders=ALL_VIDEO_DECODER_OPTIONS, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
         vh.init()
 
         if ClientExtras is not None:

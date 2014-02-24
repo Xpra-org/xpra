@@ -24,11 +24,6 @@ This is a complete waste of CPU! Please complain to pycairo.
 """
 class CairoBacking(GTKWindowBacking):
 
-    def __init__(self, wid, w, h, has_alpha):
-        GTKWindowBacking.__init__(self, wid)
-        #we need csc to handle YUV video:
-        self.load_csc_options()
-
     def __repr__(self):
         return "CairoBacking(%s)" % self._backing
 

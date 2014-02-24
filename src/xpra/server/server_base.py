@@ -126,7 +126,11 @@ class ServerBase(ServerCore):
         self.init_sound(opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
         self.init_notification_forwarder(opts.notifications)
         self.init_dbus_helper()
-        getVideoHelper().set_modules(video_encoders=opts.video_encoders, csc_modules=opts.csc_modules)
+
+        #video init: default to ALL if not specified
+        video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
+        csc_modules = opts.csc_modules or ALL_CSC_MODULE_OPTIONS
+        getVideoHelper().set_modules(video_encoders=video_encoders, csc_modules=csc_modules)
 
         self.load_existing_windows(opts.system_tray)
 

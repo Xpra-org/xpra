@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import zlib
 
 from xpra.log import Logger
@@ -20,9 +19,6 @@ from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 
 
-#logging in the draw path is expensive:
-XPRA_CLIENT_CSC = os.environ.get("XPRA_CLIENT_CSC", "swscale")
-
 #ie:
 #CSC_OPTIONS = { "YUV420P" : {"RGBX" : [opencl.spec, swscale.spec], "BGRX" : ...} }
 CSC_OPTIONS = None
@@ -30,28 +26,10 @@ def load_csc_options():
     global CSC_OPTIONS
     if CSC_OPTIONS is None:
         CSC_OPTIONS = {}
-        opts = [x.strip() for x in XPRA_CLIENT_CSC.split(",")]
-        log("load_csc_options() module options=%s", opts)
-        for opt in opts:
-            csc_module = get_codec("csc_%s" % opt)
-            if not csc_module:
-                log.warn("csc module %s not found", opt)
-                continue
-            log("csc_module(%s)=%s", opt, csc_module)
-            try:
-                in_cscs = csc_module.get_input_colorspaces()
-                log("input colorspaces(%s)=%s", csc_module, in_cscs)
-                for in_csc in in_cscs:
-                    in_opts = CSC_OPTIONS.setdefault(in_csc, {})
-                    out_cscs = csc_module.get_output_colorspaces(in_csc)
-                    log("output colorspaces(%s, %s)=%s", csc_module, in_csc, out_cscs)
-                    for out_csc in out_cscs:
-                        spec = csc_module.get_spec(in_csc, out_csc)
-                        specs = in_opts.setdefault(out_csc, [])
-                        specs.append(spec)
-                        log("specs(%s, %s)=%s", in_csc, out_csc, specs)
-            except:
-                log.warn("failed to load csc module %s", csc_module, exc_info=True)
+        vh = getVideoHelper()
+        for csc_in in vh.get_csc_inputs():
+            CSC_OPTIONS[csc_in] = vh.get_csc_specs(csc_in)
+    return CSC_OPTIONS
 
 #get the list of video encodings (and the module for each one):
 VIDEO_DECODERS = None
@@ -88,6 +66,7 @@ see CairoBacking and GTKWindowBacking for actual implementations
 """
 class WindowBackingBase(object):
     def __init__(self, wid, idle_add):
+        load_csc_options()
         load_video_decoders()
         self.wid = wid
         self.idle_add = idle_add
@@ -101,9 +80,6 @@ class WindowBackingBase(object):
         self.draw_needs_refresh = True
         self.mmap = None
         self.mmap_enabled = False
-
-    def load_csc_options(self):
-        load_csc_options()
 
     def enable_mmap(self, mmap_area):
         self.mmap = mmap_area

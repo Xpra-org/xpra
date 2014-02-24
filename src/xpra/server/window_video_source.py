@@ -668,10 +668,11 @@ class WindowVideoSource(WindowSource):
         if csc_specs:
             #log("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
             #we have csc module(s) that can get us from pixel_format to out_csc:
-            for out_csc, csc_spec in csc_specs:
+            for out_csc, csc_specs in csc_specs.items():
                 actual_csc = self.csc_equiv(out_csc)
                 if actual_csc in self.csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
-                    add_scores("via %s (%s)" % (out_csc, actual_csc), csc_spec, out_csc)
+                    for csc_spec in csc_specs:
+                        add_scores("via %s (%s)" % (out_csc, actual_csc), csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
         scorelog("get_video_pipeline_options%s scores=%s", (encoding, width, height, src_format), s)
         return s

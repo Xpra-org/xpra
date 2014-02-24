@@ -10,15 +10,33 @@ from threading import Lock
 from xpra.log import Logger
 log = Logger("codec", "video")
 
-from xpra.codecs.loader import get_codec
+from xpra.codecs.loader import get_codec, get_codec_error, load_codecs
 
-instance = None
 
-#all the modules we know about:
-ALL_VIDEO_ENCODER_OPTIONS = ["vpx", "x264", "x265", "nvenc"]
-ALL_VIDEO_DECODER_OPTIONS = ["avcodec", "avcodec2", "vpx"]
-ALL_CSC_MODULE_OPTIONS = ["swscale", "cython", "opencl", "nvcuda"]
+def has_codec_module(module_name):
+    top_module = "xpra.codecs.%s" % module_name
+    try:
+        __import__(top_module, {}, {}, [])
+        log("codec module %s is installed", module_name)
+        return True
+    except Exception, e:
+        log("codec module %s cannot be loaded: %s", module_name, e)
+        return False
+
+def try_import_modules(codec_map):
+    names = []
+    for codec_name, module_name in codec_map.items():
+        if has_codec_module(module_name):
+            names.append(codec_name)
+    return names
+
+#all the codecs we know about:
+#try to import the module that contains them (cheap check):
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules({"vpx" : "vpx", "x264" : "enc_x264", "x265" : "enc_x265", "nvenc" : "nvenc"})
+ALL_CSC_MODULE_OPTIONS = try_import_modules({"swscale" : "csc_swscale", "cython" : "csc_cython", "opencl" : "csc_opencl", "nvcuda" : "csc_nvcuda"})
 NO_GFX_CSC_OPTIONS = [x for x in ALL_CSC_MODULE_OPTIONS if x not in ("opencl", "nvcuda")]
+ALL_VIDEO_DECODER_OPTIONS = try_import_modules({"avcodec" : "dec_avcodec", "avcodec2" : "dec_avcodec2", "vpx" : "vpx"})
+
 PREFERRED_ENCODER_ORDER = ["nvenc", "x264", "vpx", "x265"]
 PREFERRED_DECODER_ORDER = ["avcodec", "avcodec2", "vpx"]
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
@@ -40,6 +58,7 @@ def get_decoder_module_name(x):
 
 def get_csc_module_name(x):
     return "csc_"+x             #ie: "csc_swscale"
+
 
 
 def get_DEFAULT_VIDEO_ENCODERS():
@@ -74,6 +93,12 @@ def get_DEFAULT_VIDEO_DECODERS():
 
 
 class VideoHelper(object):
+    """
+        This class is a bit like a registry of known encoders, csc modules and decoders.
+        The main instance, obtained by calling getVideoHelper, can be initialized
+        by the main class, using the command line arguments.
+        We can also clone it to modify it (used by per client proxy encoders)
+    """
 
     def __init__(self, vencspecs={}, cscspecs={}, vdecspecs={}, init=False):
         self._video_encoder_specs = vencspecs
@@ -90,9 +115,9 @@ class VideoHelper(object):
 
     def set_modules(self, video_encoders=[], csc_modules=[], video_decoders=[]):
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
-        self.video_encoders = [x for x in video_encoders if x in get_DEFAULT_VIDEO_ENCODERS()]
-        self.csc_modules = [x for x in csc_modules if x in get_DEFAULT_CSC_MODULES()]
-        self.video_decoders = [x for x in video_decoders if x in get_DEFAULT_VIDEO_DECODERS()]
+        self.video_encoders = [x for x in video_encoders if x in ALL_VIDEO_ENCODER_OPTIONS]
+        self.csc_modules    = [x for x in csc_modules    if x in ALL_CSC_MODULE_OPTIONS]
+        self.video_decoders = [x for x in video_decoders if x in ALL_VIDEO_DECODER_OPTIONS]
 
     def clone(self):
         if not self._initialized:
@@ -118,12 +143,12 @@ class VideoHelper(object):
     def get_info(self):
         d = {}
         for encoding, encoder_specs in self._video_encoder_specs.items():
-            for in_csc, decoder_classes in encoder_specs.items():
-                for dclass in decoder_classes:
-                    d.setdefault("encoding."+in_csc+"_to_"+encoding, []).append(dclass)
+            for in_csc, specs in encoder_specs.items():
+                for spec in specs:
+                    d.setdefault("encoding."+in_csc+"_to_"+encoding, []).append(spec.codec_type)
         for in_csc, specs in self._csc_encoder_specs.items():
-            for out_csc, spec in specs:
-                d.setdefault("csc."+in_csc+"_to_"+out_csc, []).append(spec.codec_type)
+            for out_csc, specs in specs.items():
+                d["csc."+in_csc+"_to_"+out_csc] = [spec.codec_type for spec in specs]
         for encoding, decoder_specs in self._video_decoder_specs.items():
             for out_csc, decoders in decoder_specs.items():
                 for decoder in decoders:
@@ -132,6 +157,7 @@ class VideoHelper(object):
         return d
 
     def init(self):
+        load_codecs()
         try:
             self._lock.acquire()
             #check again with lock held (in case of race):
@@ -149,6 +175,9 @@ class VideoHelper(object):
 
     def get_decodings(self):
         return self._video_decoder_specs.keys()
+
+    def get_csc_inputs(self):
+        return self._csc_encoder_specs.keys()
 
 
     def get_encoder_specs(self, encoding):
@@ -175,6 +204,7 @@ class VideoHelper(object):
         encoder_module = get_codec(encoder_name)
         log("init_video_encoder_option(%s) module=%s", encoder_name, encoder_module)
         if not encoder_module:
+            log.warn("video encoder %s could not be loaded: %s", encoder_module, get_codec_error(encoder_name))
             return
         encoder_type = encoder_module.get_type()
         try:
@@ -206,16 +236,14 @@ class VideoHelper(object):
         log("init_csc_options() csc specs: %s", self._csc_encoder_specs)
         for src_format, specs in sorted(self._csc_encoder_specs.items()):
             log("%s - %s options:", src_format, len(specs))
-            d = {}
-            for dst_format, spec in sorted(specs):
-                d.setdefault(dst_format, set()).add(spec.info())
-            for dst_format, specs in sorted(d.items()):
+            for dst_format, specs in sorted(specs.items()):
                 log(" * %s via: %s", dst_format, sorted(list(specs)))
 
     def init_csc_option(self, csc_name):
         csc_module = get_codec(csc_name)
         log("init_csc_option(%s) module=%s", csc_name, csc_module)
         if csc_module is None:
+            log.warn("csc module %s could not be loaded: %s", csc_name, get_codec_error(csc_name))
             return
         csc_type = csc_module.get_type()
         try:
@@ -232,8 +260,7 @@ class VideoHelper(object):
                 self.add_csc_spec(in_csc, out_csc, spec)
 
     def add_csc_spec(self, in_csc, out_csc, spec):
-        item = out_csc, spec
-        self._csc_encoder_specs.setdefault(in_csc, []).append(item)
+        self._csc_encoder_specs.setdefault(in_csc, {}).setdefault(out_csc, []).append(spec)
 
 
     def init_video_decoders_options(self):
@@ -250,6 +277,7 @@ class VideoHelper(object):
         decoder_module = get_codec(decoder_name)
         log("init_video_decoder_option(%s) module=%s", decoder_name, decoder_module)
         if not decoder_module:
+            log.warn("video decoder %s could not be loaded: %s", decoder_name, get_codec_error(decoder_name))
             return
         encoder_type = decoder_module.get_type()
         try:
@@ -286,6 +314,7 @@ def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
     vh = getVideoHelper()
+    vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
     vh.init()
     log.info("VideoHelper.get_info():")
     info = vh.get_info()
