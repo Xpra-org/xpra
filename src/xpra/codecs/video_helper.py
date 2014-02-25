@@ -13,6 +13,19 @@ log = Logger("codec", "video")
 from xpra.codecs.loader import get_codec, get_codec_error, load_codecs
 
 
+#the codec loader uses the names...
+#but we need the module name to be able to probe without loading the codec:
+CODEC_TO_MODULE = {"vpx"        : "vpx",
+                   "x264"       : "enc_x264",
+                   "x265"       : "enc_x265",
+                   "nvenc"      : "nvenc",
+                   "swscale"    : "csc_swscale",
+                   "cython"     : "csc_cython",
+                   "opencl"     : "csc_opencl",
+                   "nvcuda"     : "csc_nvcuda",
+                   "avcodec"    : "dec_avcodec",
+                   "avcodec2"   : "dec_avcodec2"}
+
 def has_codec_module(module_name):
     top_module = "xpra.codecs.%s" % module_name
     try:
@@ -23,19 +36,20 @@ def has_codec_module(module_name):
         log("codec module %s cannot be loaded: %s", module_name, e)
         return False
 
-def try_import_modules(codec_map):
+def try_import_modules(codec_names):
     names = []
-    for codec_name, module_name in codec_map.items():
+    for codec_name in codec_names:
+        module_name = CODEC_TO_MODULE[codec_name]
         if has_codec_module(module_name):
             names.append(codec_name)
     return names
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules({"vpx" : "vpx", "x264" : "enc_x264", "x265" : "enc_x265", "nvenc" : "nvenc"})
-ALL_CSC_MODULE_OPTIONS = try_import_modules({"swscale" : "csc_swscale", "cython" : "csc_cython", "opencl" : "csc_opencl", "nvcuda" : "csc_nvcuda"})
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules(["x264", "vpx", "x265", "nvenc"])
+ALL_CSC_MODULE_OPTIONS = try_import_modules(["swscale", "cython", "opencl", "nvcuda"])
 NO_GFX_CSC_OPTIONS = [x for x in ALL_CSC_MODULE_OPTIONS if x not in ("opencl", "nvcuda")]
-ALL_VIDEO_DECODER_OPTIONS = try_import_modules({"avcodec" : "dec_avcodec", "avcodec2" : "dec_avcodec2", "vpx" : "vpx"})
+ALL_VIDEO_DECODER_OPTIONS = try_import_modules(["avcodec", "avcodec2", "vpx"])
 
 PREFERRED_ENCODER_ORDER = ["nvenc", "x264", "vpx", "x265"]
 PREFERRED_DECODER_ORDER = ["avcodec", "avcodec2", "vpx"]
