@@ -29,6 +29,7 @@ from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
 
 
 SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
+TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
 
 
 def enabled_str(v):
@@ -855,6 +856,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     elif dtype == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(SOCKET_TIMEOUT)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY) 
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
 

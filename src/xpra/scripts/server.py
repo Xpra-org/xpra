@@ -18,6 +18,7 @@ import signal
 import socket
 import getpass
 
+from xpra.scripts.main import TCP_NODELAY
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
 o0117 = 79
@@ -287,6 +288,7 @@ def create_tcp_socket(host, iport):
         listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         sockaddr = res[0][-1]
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listener.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
     listener.bind(sockaddr)
     return listener
 
