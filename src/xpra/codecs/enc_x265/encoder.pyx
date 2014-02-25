@@ -200,6 +200,18 @@ cdef extern from "x265.h":
     int x265_encoder_headers(x265_encoder *encoder, x265_nal **pp_nal, uint32_t *pi_nal) nogil
     int x265_encoder_encode(x265_encoder *encoder, x265_nal **pp_nal, uint32_t *pi_nal, x265_picture *pic_in, x265_picture *pic_out) nogil
 
+cdef char *PROFILE_MAIN     = "main"
+cdef char *PROFILE_MAIN10   = "main10"
+cdef char *PROFILE_MAINSTILLPICTURE = "mainstillpicture"
+PROFILES = [PROFILE_MAIN, PROFILE_MAIN10, PROFILE_MAINSTILLPICTURE]
+
+#as per the source code: only these two formats are supported:
+COLORSPACES = ["YUV420P", "YUV444P"]
+
+
+def init_module():
+    #nothing to do!
+    pass
 
 def get_version():
     return x265_version_str
@@ -210,23 +222,13 @@ def get_type():
 def get_encodings():
     return ["h265"]
 
-def init_module():
-    #nothing to do!
-    pass
-
-
-cdef char *PROFILE_MAIN     = "main"
-cdef char *PROFILE_MAIN10   = "main10"
-cdef char *PROFILE_MAINSTILLPICTURE = "mainstillpicture"
-PROFILES = [PROFILE_MAIN, PROFILE_MAIN10, PROFILE_MAINSTILLPICTURE]
-
-#as per the source code: only these two formats are supported:
-COLORSPACES = ["YUV420P", "YUV444P"]
-
-#copy C list of colorspaces to a python list:
 def get_colorspaces():
-    global COLORSPACES
-    return  COLORSPACES
+    return COLORSPACES
+
+def get_output_colorspaces():
+    #same as input
+    return COLORSPACES
+
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())

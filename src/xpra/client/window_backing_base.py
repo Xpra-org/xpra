@@ -274,6 +274,7 @@ class WindowBackingBase(object):
         raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s) in %s" % (src_format, src_width, src_height, " or ".join(dst_format_options), dst_width, dst_height, CSC_OPTIONS))
 
     def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
+        #log("paint_with_video_decoder%s", (decoder_module, coding, "%s bytes" % len(img_data), x, y, width, height, options, callbacks))
         assert decoder_module, "decoder module not found for %s" % coding
         try:
             self._decoder_lock.acquire()
@@ -290,11 +291,11 @@ class WindowBackingBase(object):
                 input_colorspace = get_colorspace_from_avutil_enum(old_csc_fmt)
                 if input_colorspace is None:
                     #completely broken and out of date clients (ie: v0.3.x):
-                    log.debug("csc was not specified and we cannot find a colorspace from csc_pixel_format=%s, assuming it is an old client and using YUV420P", old_csc_fmt)
+                    log("csc was not specified and we cannot find a colorspace from csc_pixel_format=%s, assuming it is an old client and using YUV420P", old_csc_fmt)
                     input_colorspace = "YUV420P"
 
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
-            decoder_colorspaces = decoder_module.get_colorspaces()
+            decoder_colorspaces = decoder_module.get_colorspaces(coding)
             decoder_colorspace = input_colorspace
             if input_colorspace not in decoder_colorspaces:
                 log("colorspace not supported by %s directly", decoder_module)

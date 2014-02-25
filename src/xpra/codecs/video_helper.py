@@ -231,6 +231,8 @@ class VideoHelper(object):
         encodings = encoder_module.get_encodings()
         log("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
         for encoding in encodings:
+            #we assume that all encodings support all colorspaces here...
+            #which may not be the case in the future!
             for colorspace in colorspaces:
                 spec = encoder_module.get_spec(encoding, colorspace)
                 self.add_encoder_spec(encoding, colorspace, spec)
@@ -299,12 +301,14 @@ class VideoHelper(object):
         except Exception, e:
             log.warn("cannot use %s module %s: %s", encoder_type, decoder_module, e, exc_info=True)
             return
-        colorspaces = decoder_module.get_colorspaces()
-        log("init_video_decoder_option(%s) %s input colorspaces=%s", decoder_module, encoder_type, colorspaces)
         encodings = decoder_module.get_encodings()
         log("init_video_decoder_option(%s) %s encodings=%s", decoder_module, encoder_type, encodings)
         for encoding in encodings:
+            colorspaces = decoder_module.get_colorspaces(encoding)
+            log("init_video_decoder_option(%s) %s input colorspaces for %s: %s", decoder_module, encoder_type, encoding, colorspaces)
             for colorspace in colorspaces:
+                output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
+                log("init_video_decoder_option(%s) get_output_colorspace(%s, %s)=%s", decoder_name, encoding, colorspace, output_colorspace)
                 try:
                     assert decoder_module.Decoder
                     self.add_decoder(encoding, colorspace, decoder_name, decoder_module)

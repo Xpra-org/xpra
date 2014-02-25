@@ -112,6 +112,7 @@ cdef extern from "libavcodec/avcodec.h":
 
 MIN_AVCODEC_VERSION = 54
 COLORSPACES = None
+OUTPUT_COLORSPACES = None
 FORMAT_TO_ENUM = {}
 ENUM_TO_FORMAT = {}
 if LIBAVCODEC_VERSION_MAJOR<MIN_AVCODEC_VERSION and os.environ.get("XPRA_FORCE_AVCODEC", "0")!="1":
@@ -120,52 +121,53 @@ if LIBAVCODEC_VERSION_MAJOR<MIN_AVCODEC_VERSION and os.environ.get("XPRA_FORCE_A
     log.warn("XPRA_FORCE_AVCODEC=1")
     log.warn("to use it anyway, at your own risk")
     raise ImportError("unsupported avcodec version: %s" % str(get_version()))
-def init_colorspaces():
-    global COLORSPACES
-    if COLORSPACES is not None:
-        #done already!
-        return
-    #populate mappings:
-    COLORSPACES = []
-    for pix_fmt, av_enum_str in {
-            "YUV420P"   : "AV_PIX_FMT_YUV420P",
-            "YUV422P"   : "AV_PIX_FMT_YUV422P",
-            "YUV444P"   : "AV_PIX_FMT_YUV444P",
-            "RGB"       : "AV_PIX_FMT_RGB24",
-            "XRGB"      : "AV_PIX_FMT_0RGB",
-            "BGRX"      : "AV_PIX_FMT_BGR0",
-            "ARGB"      : "AV_PIX_FMT_ARGB",
-            "BGRA"      : "AV_PIX_FMT_BGRA",
-            "GBRP"      : "AV_PIX_FMT_GBRP",
-         }.items():
-        av_enum = constants.get(av_enum_str)
-        if av_enum is None:
-            log("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
-            continue
-        FORMAT_TO_ENUM[pix_fmt] = av_enum
-        ENUM_TO_FORMAT[av_enum] = pix_fmt
-        COLORSPACES.append(pix_fmt)
-    log("colorspaces supported by avcodec %s: %s", get_version(), COLORSPACES)
-    if len(COLORSPACES)==0:
-        log.error("avcodec installation problem: no colorspaces found!")
 
-def get_colorspaces():
-    init_colorspaces()
-    return COLORSPACES
 
-CODECS = None
-def get_encodings():
-    global CODECS
-    if CODECS is None:
-        avcodec_register_all()
-        CODECS = []
-        if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
-            CODECS.append("h264")
-        if avcodec_find_decoder(CODEC_ID_VP8)!=NULL:
-            CODECS.append("vp8")
-        #if avcodec_find_decoder(CODEC_ID_VP9)!=NULL:
-        #    CODECS.append("vp9")
-    return CODECS
+avcodec_register_all()
+CODECS = []
+if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
+    CODECS.append("h264")
+if avcodec_find_decoder(CODEC_ID_VP8)!=NULL:
+    CODECS.append("vp8")
+
+#populate mappings:
+COLORSPACES = []
+OUTPUT_COLORSPACES = {}
+for pix_fmt, av_enum_str in {
+        "YUV420P"   : "AV_PIX_FMT_YUV420P",
+        "YUV422P"   : "AV_PIX_FMT_YUV422P",
+        "YUV444P"   : "AV_PIX_FMT_YUV444P",
+        "RGB"       : "AV_PIX_FMT_RGB24",
+        "XRGB"      : "AV_PIX_FMT_0RGB",
+        "BGRX"      : "AV_PIX_FMT_BGR0",
+        "ARGB"      : "AV_PIX_FMT_ARGB",
+        "BGRA"      : "AV_PIX_FMT_BGRA",
+        "GBRP"      : "AV_PIX_FMT_GBRP",
+     }.items():
+    av_enum = constants.get(av_enum_str)
+    if av_enum is None:
+        log("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
+        continue
+    FORMAT_TO_ENUM[pix_fmt] = av_enum
+    ENUM_TO_FORMAT[av_enum] = pix_fmt
+    COLORSPACES.append(pix_fmt)
+log("colorspaces supported by avcodec %s: %s", get_version(), COLORSPACES)
+if len(COLORSPACES)==0:
+    log.error("avcodec installation problem: no colorspaces found!")
+
+def get_colorspaces(encoding):
+    if encoding=="h264":
+        return COLORSPACES
+    assert encoding=="vp8"
+    return ["YUV420P", "YUV422P", "YUV444P"]
+
+def get_output_colorspace(encoding, csc):
+    assert encoding in CODECS
+    if encoding=="h264" and csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
+        #h264 from plain RGB data is returned as "GBRP"!
+        return "GBRP"
+    #everything else as normal:
+    return csc
 
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
@@ -365,7 +367,6 @@ cdef class Decoder:
 
     def init_context(self, encoding, int width, int height, colorspace):
         cdef int r
-        init_colorspaces()
         assert encoding in ("vp8", "h264")
         self.encoding = encoding
         self.width = width

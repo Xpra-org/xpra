@@ -27,40 +27,52 @@ cdef extern from "Python.h":
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 
+from libc.stdint cimport uint8_t
+
 cdef int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 #precalculate indexes in native endianness:
 tmp = str(struct.pack("=BBBB", 0, 1, 2, 3))
-cdef int BGRA_B = tmp.find('\0')
-cdef int BGRA_G = tmp.find('\1')
-cdef int BGRA_R = tmp.find('\2')
-cdef int BGRA_A = tmp.find('\3')
+cdef uint8_t BGRA_B = tmp.find('\0')
+cdef uint8_t BGRA_G = tmp.find('\1')
+cdef uint8_t BGRA_R = tmp.find('\2')
+cdef uint8_t BGRA_A = tmp.find('\3')
+cdef uint8_t BGRX_R = BGRA_R
+cdef uint8_t BGRX_G = BGRA_G
+cdef uint8_t BGRX_B = BGRA_B
 
+tmp = str(struct.pack("=BBBB", 0, 1, 2, 3))
+cdef uint8_t RGBX_R = tmp.find('\0')
+cdef uint8_t RGBX_G = tmp.find('\1')
+cdef uint8_t RGBX_B = tmp.find('\2')
+cdef uint8_t RGBX_X = tmp.find('\3')
+
+
+COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGBX", "BGRX"]}
 
 def init_module():
     #nothing to do!
     log("csc_cython.init_module()")
 
-
 def get_type():
     return "cython"
 
 def get_version():
-    return (0, 1)
+    return (0, 2)
 
 def get_info():
     return {"version"   : get_version()}
 
 def get_input_colorspaces():
-    return ["BGRX"]
+    return COLORSPACES.keys()
 
 def get_output_colorspaces(input_colorspace):
-    return ["YUV420P"]
+    return COLORSPACES[input_colorspace]
 
 def get_spec(in_colorspace, out_colorspace):
-    assert in_colorspace in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
-    assert out_colorspace in get_output_colorspaces(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
+    assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
+    assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
     #low score as this should be used as fallback only:
     return codec_spec(ColorspaceConverter, codec_type=get_type(), quality=50, speed=10, setup_cost=10, min_w=2, min_h=2, can_scale=False)
 
@@ -75,9 +87,16 @@ class CythonImageWrapper(ImageWrapper):
             self.cython_buffer = 0
 
 
+DEF STRIDE_ROUNDUP = 16
+
+#Pre-calculate some coefficients and defined them as constants
+#We use integer calculations so everything is multipled by 2**16
+#To get the result as a byte, we just bitshift:
+DEF shift = 16
+
+#RGB to YUV
 #Y[o] = clamp(0.257 * R + 0.504 * G + 0.098 * B + 16)
 # Y = 0.257 * R + 0.504 * G + 0.098 * B + 16
-DEF shift = 16
 DEF YR = 16843      # 0.257 * 2**16
 DEF YG = 33030      # 0.504 * 2**16
 DEF YB = 6423       # 0.098 * 2**16
@@ -96,6 +115,24 @@ DEF VB = -4653      #-0.071  * 2**16
 DEF VC = 8388608    # 128    * 2**16
 
 DEF max_clamp = 16777216    #2**(16+8)
+
+#YUV to RGB:
+#TODO!
+#R = Y + 1.5958  * Cb 
+#G = Y - 0.81290 * Cb - 0.39173 * Cr 
+#B = Y                + 2.017   * Cr
+DEF RY = 65536      #1        * 2**16
+DEF RU = 104582     #1.5958   * 2**16
+DEF RV = 0
+
+DEF GY = 65536      #1        * 2**16
+DEF GU = -53274     #-0.81290 * 2**16
+DEF GV = -25672     #-0.39173 * 2**16
+
+DEF BY = 65536      #1        * 2**16
+DEF BU = 0
+DEF BV = 132186     #2.017    * 2**16
+
 
 cdef unsigned char clamp(long v) nogil:
     if v<=0:
@@ -125,6 +162,7 @@ cdef class ColorspaceConverter:
 
     def init_context(self, int src_width, int src_height, src_format,
                            int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
+        cdef int i
         assert src_format in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (src_format, get_input_colorspaces())
         assert dst_format in get_output_colorspaces(src_format), "invalid output colorspace: %s (must be one of %s)" % (dst_format, get_output_colorspaces(src_format))
         assert src_width==dst_width
@@ -137,21 +175,44 @@ cdef class ColorspaceConverter:
         self.src_format = src_format[:]
         self.dst_format = dst_format[:]
 
-        self.dst_strides[0] = roundup(dst_width, 16)
-        self.dst_strides[1] = roundup(dst_width/2, 16)
-        self.dst_strides[2] = roundup(dst_width/2, 16)
-        self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
-        self.dst_sizes[1] = self.dst_strides[1] * self.dst_height/2
-        self.dst_sizes[2] = self.dst_strides[2] * self.dst_height/2
-        #U channel follows Y with 1 line padding, V follows U with another line of padding:
-        self.offsets[0] = 0
-        self.offsets[1] = self.dst_strides[0] * (self.dst_height+1)
-        self.offsets[2] = self.offsets[1] + (self.dst_strides[1] * (self.dst_height/2+1))
-        #output buffer ends after V + 1 line of padding:
-        self.buffer_size = self.offsets[2] + (self.dst_strides[2] * (self.dst_height/2+1))
-
         self.time = 0
         self.frames = 0
+
+        if src_format=="BGRX" and dst_format=="YUV420P":
+            self.dst_strides[0] = roundup(self.dst_width,   STRIDE_ROUNDUP)
+            self.dst_strides[1] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
+            self.dst_strides[2] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
+            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
+            self.dst_sizes[1] = self.dst_strides[1] * self.dst_height/2
+            self.dst_sizes[2] = self.dst_strides[2] * self.dst_height/2
+            #U channel follows Y with 1 line padding, V follows U with another line of padding:
+            self.offsets[0] = 0
+            self.offsets[1] = self.dst_strides[0] * (self.dst_height+1)
+            self.offsets[2] = self.offsets[1] + (self.dst_strides[1] * (self.dst_height/2+1))
+            #output buffer ends after V + 1 line of padding:
+            self.buffer_size = self.offsets[2] + (self.dst_strides[2] * (self.dst_height/2+1))
+
+            self.convert_image = self.BGRX_to_YUV420P
+        elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX"):
+            #4 bytes per pixel:
+            self.dst_strides[0] = roundup(self.dst_width*4, STRIDE_ROUNDUP)
+            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
+            self.offsets[0] = 0
+            #clear the rest:
+            for i in range(2):
+                self.dst_strides[i+1] = 0
+                self.dst_sizes[i+1] = 0
+                self.offsets[i+1] = 0
+            #output buffer ends after 1 line of padding:
+            self.buffer_size = self.dst_sizes[0] + roundup(dst_width*4, STRIDE_ROUNDUP)
+
+            if dst_format=="RGBX":
+                self.convert_image = self.YUV420P_to_RGBX
+            else:
+                assert dst_format=="BGRX"
+                self.convert_image = self.YUV420P_to_BGRX
+        else:
+            raise Exception("BUG: src_format=%s, dst_format=%s", src_format, dst_format)
 
 
     def get_info(self):                     #@DuplicatedSignature
@@ -203,7 +264,8 @@ cdef class ColorspaceConverter:
     def clean(self):                        #@DuplicatedSignature
         pass
 
-    def convert_image(self, image):
+
+    def BGRX_to_YUV420P(self, image):
         cdef Py_ssize_t pic_buf_len = 0
         cdef const unsigned char *input_image
         cdef unsigned char *output_image
@@ -287,5 +349,80 @@ cdef class ColorspaceConverter:
         self.time += elapsed
         self.frames += 1
         out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
+        out_image.cython_buffer = <unsigned long> output_image
+        return out_image
+
+    def YUV420P_to_RGBX(self, image):
+        return self.do_YUV420P_to_RGB(image, RGBX_R, RGBX_G, RGBX_B)
+
+    def YUV420P_to_BGRX(self, image):
+        return self.do_YUV420P_to_RGB(image, BGRX_R, BGRX_G, BGRX_B)
+
+    cdef do_YUV420P_to_RGB(self, image, uint8_t Rindex, uint8_t Gindex, uint8_t Bindex):
+        cdef Py_ssize_t buf_len = 0
+        cdef unsigned char *output_image        #
+        cdef int x,y,i,o,dx,dy,sum              #@DuplicatedSignature
+        cdef int workw, workh                   #
+        cdef int stride
+        cdef unsigned char *Ybuf
+        cdef unsigned char *Ubuf
+        cdef unsigned char *Vbuf
+        cdef unsigned char Y, U, V
+        cdef int Ystride, Ustride, Vstride      #
+        cdef object rgb
+
+        start = time.time()
+        iplanes = image.get_planes()
+        assert iplanes==ImageWrapper._3_PLANES, "invalid input format: %s planes" % iplanes
+        assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
+        assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
+        planes = image.get_pixels()
+        input_strides = image.get_rowstride()
+        log("convert_image(%s) input=%s, strides=%s" % (image, [len(x) for x in planes], input_strides))
+
+        #copy to local variables:
+        stride = self.dst_strides[0]
+        Ystride = input_strides[0]
+        Ustride = input_strides[1]
+        Vstride = input_strides[2]
+
+        PyObject_AsReadBuffer(planes[0], <const void**> &Ybuf, &buf_len)
+        assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small"
+        PyObject_AsReadBuffer(planes[1], <const void**> &Ubuf, &buf_len)
+        assert buf_len>=Ustride*image.get_height(), "buffer for U plane is too small"
+        PyObject_AsReadBuffer(planes[2], <const void**> &Vbuf, &buf_len)
+        assert buf_len>=Vstride*image.get_height(), "buffer for V plane is too small"
+
+        #allocate output buffer:
+        output_image = <unsigned char*> xmemalign(self.buffer_size)
+
+        #we process 4 pixels at a time:
+        workw = roundup(self.dst_width/2, 2)
+        workh = roundup(self.dst_height/2, 2)
+        #from now on, we can release the gil:
+        with nogil:
+            for y in xrange(workh):
+                for x in xrange(workw):
+                    #assert x*2<=self.src_width and y*2<=self.src_height
+                    #read U and V for the next 4 pixels:
+                    U = Ubuf[y*Ustride + x]
+                    V = Vbuf[y*Vstride + x]
+                    #now read up to 4 Y values and write an RGB pixel for each:
+                    for i in range(4):
+                        dx = i%2
+                        dy = i/2
+                        if x*2+dx<self.src_width and y*2+dy<self.src_height:
+                            Y = Ybuf[(y*2+dy)*Ystride + (x*2+dx)]
+                            o = y*2*stride + (x*2)*4
+                            output_image[o + Rindex] = clamp(RY * Y + RU * U + RV * V)
+                            output_image[o + Gindex] = clamp(GY * Y + GU * U + GV * V)
+                            output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
+
+        rgb = PyBuffer_FromMemory(<void *> output_image, self.dst_sizes[0])
+        elapsed = time.time()-start
+        log("%s took %.1fms", self, 1000.0*elapsed)
+        self.time += elapsed
+        self.frames += 1
+        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, rgb, self.dst_format, 24, stride, ImageWrapper._3_PLANES)
         out_image.cython_buffer = <unsigned long> output_image
         return out_image

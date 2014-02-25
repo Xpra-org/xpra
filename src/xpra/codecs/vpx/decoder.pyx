@@ -93,18 +93,19 @@ cdef extern from "vpx/vpx_decoder.h":
     vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
 
 
-#https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
-#"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES = ["YUV420P"]
-def get_colorspaces():
-    return COLORSPACES
-
 CODECS = []
 IF ENABLE_VP8 == True:
     CODECS.append("vp8")
 IF ENABLE_VP9 == True:
     CODECS.append("vp9")
 
+#https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
+#"RGB is not supported.  You need to convert your source to YUV, and then compress that."
+COLORSPACES = ["YUV420P"]
+
+
+def init_module():
+    assert len(CODECS)>0, "no supported encodings!"
 
 def get_abi_version():
     return VPX_DECODER_ABI_VERSION
@@ -118,16 +119,22 @@ def get_type():
 def get_encodings():
     return CODECS
 
+def get_colorspaces(encoding):
+    assert encoding in ("vp8", "vp9")
+    return COLORSPACES
+
+def get_output_colorspace(encoding, csc):
+    #same as input
+    assert encoding in CODECS and csc in COLORSPACES
+    return csc
+
+
 def get_info():
     global CODECS
     return {"version"       : get_version(),
             "encodings"     : CODECS,
             "abi_version"   : get_abi_version(),
             "build_config"  : vpx_codec_build_config()}
-
-
-def init_module():
-    pass
 
 
 def get_spec(colorspace):

@@ -707,8 +707,6 @@ class UIXpraClient(XpraClientBase):
             "encoding.video_separateplane"  : get_codec("dec_avcodec") is None and get_codec("dec_avcodec2") is not None,
             "encoding.rgb_lz4"          : use_lz4 and self.compression_level==1,
             "encoding.transparency"     : self.has_transparency(),
-            #TODO: check for csc support (swscale only?)
-            "encoding.csc_modes"        : ("YUV420P", "YUV422P", "YUV444P", "BGRA", "BGRX"),
             "rgb24zlib"                 : True,
             "encoding.rgb24zlib"        : True,
             "named_cursors"             : False,
@@ -756,6 +754,22 @@ class UIXpraClient(XpraClientBase):
             capabilities["encoding.speed"] = self.speed
         if self.min_speed>=0:
             capabilities["encoding.min-speed"] = self.min_speed
+
+        #figure out the CSC modes supported:
+        #these are the modes we want (the ones we can display):
+        wanted_csc_modes = ["BGRA", "BGRX"]
+        csc_modes = wanted_csc_modes[:]
+        #now look for CSC input modes that can give us those and add them:
+        vh = getVideoHelper()
+        for csc_mode in vh.get_csc_inputs():
+            csc_conv = vh.get_csc_specs(csc_mode)       #dict: (out_csc, specs)
+            matches = [x for x in wanted_csc_modes if x in csc_conv.keys()]
+            log("matches(%s)=%s", csc_mode, matches)
+            if len(matches)>0:
+                csc_modes.append(csc_mode)
+        log("supported csc_modes=%s", csc_modes)
+        capabilities["encoding.csc_modes"] = csc_modes
+
         log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["encoding.uses_swscale"] = True
         if "h264" in self.get_core_encodings():

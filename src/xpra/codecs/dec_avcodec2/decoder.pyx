@@ -129,32 +129,27 @@ FORMAT_TO_ENUM = {
             "BGRA"      : AV_PIX_FMT_BGRA,
             "GBRP"      : AV_PIX_FMT_GBRP,
             }
+
 COLORSPACES = FORMAT_TO_ENUM.keys()
 ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
     ENUM_TO_FORMAT[av_enum] = pix_fmt
 
+avcodec_register_all()
+CODECS = []
+if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
+    CODECS.append("h264")
+if avcodec_find_decoder(AV_CODEC_ID_VP8)!=NULL:
+    CODECS.append("vp8")
+if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
+    CODECS.append("vp9")
+if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
+    CODECS.append("h265")
+log("avcodec2.init_module: CODECS=%s", CODECS)
 
-def get_colorspaces():
-    return COLORSPACES
 
-CODECS = None
-def get_encodings():
-    global CODECS
-    if CODECS is None:
-        avcodec_register_all()
-        CODECS = []
-        if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
-            CODECS.append("h264")
-        if avcodec_find_decoder(AV_CODEC_ID_VP8)!=NULL:
-            CODECS.append("vp8")
-        if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
-            CODECS.append("vp9")
-        if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
-            CODECS.append("h265")
-        log("avcodec2.get_encodings()=%s", CODECS)
-    return CODECS
-
+def init_module():
+    pass
 
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
@@ -164,13 +159,28 @@ def get_type():
 
 def get_info():
     return  {"version"      : get_version(),
-             "encodings"    : get_encodings(),
+             "encodings"    : CODECS,
              "formats"      : get_colorspaces(),
              }
 
+def get_encodings():
+    global CODECS
+    return CODECS
 
-def init_module():
-    pass
+def get_colorspaces(encoding):
+    if encoding in ("h264", "h265"):
+        return COLORSPACES
+    assert encoding in ("vp8", "vp9")
+    return ["YUV420P", "YUV422P", "YUV444P"]
+
+def get_output_colorspace(encoding, csc):
+    assert encoding in CODECS
+    if encoding=="h264" and csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
+        #h264 from plain RGB data is returned as "GBRP"!
+        return "GBRP"
+    #everything else as normal:
+    return csc
+
 
 
 cdef void clear_frame(AVFrame *frame):

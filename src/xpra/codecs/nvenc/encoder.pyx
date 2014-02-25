@@ -1051,6 +1051,13 @@ COLORSPACES = ("BGRX", )
 def get_colorspaces():
     return COLORSPACES
 
+def get_output_colorspaces():
+    #the output will actually be in one of those two formats once decoded
+    #because internally that's what we convert to
+    #(well, NV12... which is equivallent to YUV420P here...)
+    return ["YUV420P", "YUV444P"]
+
+
 WIDTH_MASK = 0xFFFE
 HEIGHT_MASK = 0xFFFE
 

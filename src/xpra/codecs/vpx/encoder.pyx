@@ -154,8 +154,6 @@ cdef extern from "vpxlib.h":
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES = ["YUV420P"]
-def get_colorspaces():
-    return COLORSPACES
 
 CODECS = []
 IF ENABLE_VP8 == True:
@@ -163,6 +161,9 @@ IF ENABLE_VP8 == True:
 IF ENABLE_VP9 == True:
     CODECS.append("vp9")
 
+
+def init_module():
+    assert len(CODECS)>0, "no supported encodings!"
 
 def get_abi_version():
     return VPX_ENCODER_ABI_VERSION
@@ -175,6 +176,13 @@ def get_type():
 
 def get_encodings():
     return CODECS
+
+def get_colorspaces():
+    return COLORSPACES
+
+def get_output_colorspaces():
+    #the vpx decoders will only output this mode:
+    return ["YUV420P"]
 
 def get_info():
     global CODECS
@@ -204,10 +212,6 @@ def get_spec(encoding, colorspace):
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
     return VPX_IMG_FMT_I420
-
-def init_module():
-    #nothing to do!
-    pass
 
 
 cdef class Encoder:

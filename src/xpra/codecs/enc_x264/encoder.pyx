@@ -213,6 +213,9 @@ COLORSPACES = {
     }
 
 
+def init_module():
+    pass
+
 def get_version():
     return X264_BUILD
 
@@ -227,15 +230,13 @@ def get_info():
 def get_encodings():
     return ["h264"]
 
-def init_module():
-    #nothing to do!
-    pass
-
-
-#copy C list of colorspaces to a python list:
 def get_colorspaces():
     global COLORSPACES
     return  COLORSPACES.keys()
+
+def get_output_colorspaces():
+    #same as input:
+    return COLORSPACES
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
