@@ -290,8 +290,8 @@ class WindowBackingBase(object):
                 old_csc_fmt = options.get("csc_pixel_format")
                 input_colorspace = get_colorspace_from_avutil_enum(old_csc_fmt)
                 if input_colorspace is None:
-                    #completely broken and out of date clients (ie: v0.3.x):
-                    log("csc was not specified and we cannot find a colorspace from csc_pixel_format=%s, assuming it is an old client and using YUV420P", old_csc_fmt)
+                    #completely broken and out of date servers (ie: v0.3.x):
+                    log("csc was not specified and we cannot find a colorspace from csc_pixel_format=%s, assuming it is an old server and using YUV420P", old_csc_fmt)
                     input_colorspace = "YUV420P"
 
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
