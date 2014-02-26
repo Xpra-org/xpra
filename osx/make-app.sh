@@ -7,7 +7,7 @@ echo "**************************************************************************
 echo "Deleting existing xpra modules and temporary directories"
 PYTHON_PREFIX=`python-config --prefix`
 PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python*/site-packages | sort | tail -n 1`
-rm -fr "${PYTHON_PACKAGES}/xpra"
+rm -fr "${PYTHON_PACKAGES}/xpra"*
 rm -fr image/* dist/*
 
 echo
@@ -17,6 +17,7 @@ pushd ../src
 
 svn upgrade ../.. >& /dev/null
 python -c "from add_build_info import record_src_info;record_src_info()"
+rm -fr build/*
 ./setup.py clean
 ./setup.py install ${BUILD_ARGS}
 if [ "$?" != "0" ]; then
