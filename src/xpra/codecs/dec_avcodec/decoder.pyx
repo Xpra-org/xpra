@@ -166,7 +166,7 @@ def get_encodings():
     global CODECS
     return CODECS
 
-def get_colorspaces(encoding):
+def get_input_colorspaces(encoding):
     global COLORSPACES
     if encoding=="h264":
         return COLORSPACES

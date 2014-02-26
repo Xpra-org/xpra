@@ -160,7 +160,7 @@ def get_type():
 def get_info():
     f = {}
     for e in get_encodings():
-        f["formats.%s" % e] = get_colorspaces(e)
+        f["formats.%s" % e] = get_input_colorspaces(e)
     return  {"version"      : get_version(),
              "encodings"    : get_encodings(),
              "formats"      : f,
@@ -170,7 +170,7 @@ def get_encodings():
     global CODECS
     return CODECS
 
-def get_colorspaces(encoding):
+def get_input_colorspaces(encoding):
     assert encoding in CODECS
     if encoding in ("h264", "h265"):
         return COLORSPACES

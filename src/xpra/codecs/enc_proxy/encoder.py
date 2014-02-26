@@ -35,7 +35,7 @@ class Encoder(object):
         the raw pixels and the metadata that goes with it.
     """
 
-    def init_context(self, width, height, src_format, encoding, quality, speed, scaling, options):
+    def init_context(self, width, height, src_format, dst_formats, encoding, quality, speed, scaling, options):
         self.encoding = encoding
         self.width = width
         self.height = height
@@ -43,6 +43,7 @@ class Encoder(object):
         self.speed = speed
         self.scaling = scaling
         self.src_format = src_format
+        self.dst_formats = dst_formats
         self.last_frame_times = maxdeque(200)
         self.frames = 0
         self.time = 0
@@ -59,6 +60,7 @@ class Encoder(object):
                      "quality"   : self.quality,
                      "encoding"  : self.encoding,
                      "src_format": self.src_format,
+                     "dst_formats" : self.dst_formats,
                      "version"   : get_version()})
         if self.scaling!=(1,1):
             info["scaling"] = self.scaling
@@ -110,8 +112,6 @@ class Encoder(object):
         #pass the pixels as they are
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         pixels = str(image.get_pixels())
-        if self.frames==0:
-            self.first_frame_timestamp = image.get_timestamp()
         #info used by proxy encoder:
         client_options = {
                 "proxy"     : True,
@@ -129,6 +129,11 @@ class Encoder(object):
                 "depth"     : image.get_depth(),
                 "rgb_format": image.get_pixel_format(),
                 }
+        if self.frames==0:
+            self.first_frame_timestamp = image.get_timestamp()
+            #must pass dst_formats so the proxy can instantiate the video encoder
+            #with the correct CSC config:
+            client_options["dst_formats"] = self.dst_formats
         if self.scaling!=(1,1):
             client_options["scaling"] = self.scaling
         log("compress_image(%s, %s) returning %s bytes and options=%s", image, options, len(pixels), client_options)

@@ -184,6 +184,7 @@ class ProxyInstanceProcess(Process):
 
         self.video_encoding_defs = {}
         self.video_encoders = {}
+        self.video_encoders_dst_formats = []
         self.video_encoders_last_used_time = {}
         self.video_encoder_types = []
 
@@ -623,7 +624,16 @@ class ProxyInstanceProcess(Process):
 
             log("creating new video encoder %s for window %s", spec, wid)
             ve = spec.make_instance()
-            ve.init_context(width, height, rgb_format, encoding, quality, speed, scaling, {})
+            #dst_formats is specified with first frame only:
+            dst_formats = client_options.get("dst_formats")
+            if dst_formats is not None:
+                #save it in case we timeout the video encoder,
+                #so we can instantiate it again, even from a frame no>1
+                self.video_encoders_dst_formats = dst_formats
+            else:
+                assert self.video_encoders_dst_formats, "BUG: dst_formats not specified for proxy and we don't have it either"
+                dst_formats = self.video_encoders_dst_formats
+            ve.init_context(width, height, rgb_format, dst_formats, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
             self.video_encoders_last_used_time[wid] = time.time()       #just to make sure this is always set
         else:

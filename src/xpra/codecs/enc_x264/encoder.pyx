@@ -10,7 +10,7 @@ from xpra.log import Logger
 log = Logger("encoder", "x264")
 X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 
-from xpra.codecs.codec_constants import get_subsampling_divs, codec_spec
+from xpra.codecs.codec_constants import get_subsampling_divs, video_codec_spec
 from xpra.deque import maxdeque
 
 cdef extern from "string.h":
@@ -202,7 +202,7 @@ I422_PROFILES = [PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE]
 I444_PROFILES = [PROFILE_HIGH444_PREDICTIVE]
 RGB_PROFILES = [PROFILE_HIGH444_PREDICTIVE]
 
-COLORSPACES = {
+COLORSPACE_FORMATS = {
     "YUV420P"   : (X264_CSP_I420,    PROFILE_HIGH,                  I420_PROFILES),
     "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,               I422_PROFILES),
     "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444_PREDICTIVE,    I444_PROFILES),
@@ -210,6 +210,15 @@ COLORSPACES = {
     "BGRA"      : (X264_CSP_BGRA,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
     "BGRX"      : (X264_CSP_BGRA,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
     "RGB"       : (X264_CSP_RGB,     PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
+    }
+COLORSPACES = {
+    "YUV420P"   : ("YUV420P",),
+    "YUV422P"   : ("YUV422P",),
+    "YUV444P"   : ("YUV444P",),
+    "BGR"       : ("BGR",),
+    "BGRA"      : ("BGRA",),
+    "BGRX"      : ("BGRX",),
+    "RGB"       : ("RGB",),
     }
 
 
@@ -230,20 +239,21 @@ def get_info():
 def get_encodings():
     return ["h264"]
 
-def get_colorspaces():
+def get_input_colorspaces():
     global COLORSPACES
     return  COLORSPACES.keys()
 
-def get_output_colorspaces():
-    #same as input:
-    return COLORSPACES
+def get_output_colorspaces(input_colorspace):
+    assert input_colorspace in COLORSPACES
+    return COLORSPACE_FORMATS[input_colorspace]
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
-    return codec_spec(Encoder, codec_type=get_type(), encoding=encoding, speed=0, setup_cost=50, width_mask=0xFFFE, height_mask=0xFFFE)
+    return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
+                            codec_class=Encoder, codec_type=get_type(), speed=0, setup_cost=50, width_mask=0xFFFE, height_mask=0xFFFE)
 
 
 cdef class Encoder:
@@ -265,10 +275,10 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
-        global COLORSPACES
-        cs_info = COLORSPACES.get(src_format)
-        assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACES.keys())
+    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
+        global COLORSPACE_FORMATS
+        cs_info = COLORSPACE_FORMATS.get(src_format)
+        assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
         assert encoding=="h264", "invalid encoding: %s" % encoding
         assert scaling==(1,1), "x264 does not handle scaling"
         self.width = width

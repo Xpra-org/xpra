@@ -295,7 +295,7 @@ class WindowBackingBase(object):
                     input_colorspace = "YUV420P"
 
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
-            decoder_colorspaces = decoder_module.get_colorspaces(coding)
+            decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
             decoder_colorspace = input_colorspace
             if input_colorspace not in decoder_colorspaces:
                 log("colorspace not supported by %s directly", decoder_module)

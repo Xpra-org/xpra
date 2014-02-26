@@ -49,6 +49,15 @@ RGB_FORMATS = ("XRGB",
                "RGB")
 
 
+def get_default_csc_modes(encoding_client_options=True):
+    if not encoding_client_options:
+        #very old clients can only use 420P:
+        return ("YUV420P", )
+    #default for newer clients that don't specify "csc_modes":
+    #(0.10 onwards should have specified csc_modes)
+    return ("YUV420P", "YUV422P", "YUV444P")
+
+
 class TransientCodecException(Exception):
     pass
 
@@ -59,7 +68,7 @@ class codec_spec(object):
     #encoders or csc modules active at the same time!
     WARN_LIMIT = 25
 
-    def __init__(self, codec_class, codec_type="", encoding=None,
+    def __init__(self, codec_class, codec_type="",
                     quality=100, speed=100,
                     setup_cost=50, cpu_cost=100, gpu_cost=0,
                     min_w=1, min_h=1, max_w=4*1024, max_h=4*1024,
@@ -81,14 +90,14 @@ class codec_spec(object):
         self.width_mask = width_mask
         self.height_mask = height_mask
         self.can_scale = can_scale
-        self.encoding = encoding                #ie: "h264"
         self.max_instances = 0
-        self._exported_fields = ("codec_class", "codec_type", "quality", "speed",
+        self._exported_fields = ["codec_class", "codec_type",
+                        "quality", "speed",
                         "setup_cost", "cpu_cost", "gpu_cost", "score_boost",
                         "min_w", "min_h", "max_w", "max_h",
                         "width_mask", "height_mask",
-                        "can_scale", "encoding",
-                        "max_instances")
+                        "can_scale",
+                        "max_instances"]
         #not exported:
         self.instances = weakref.WeakKeyDictionary()
         self._all_fields = list(self._exported_fields)+["instances"]
@@ -154,3 +163,12 @@ class codec_spec(object):
             return "%s:%s" % (self.codec_type, s)
         except:
             return "%s" % (self.codec_type or self.codec_class)
+
+
+class video_codec_spec(codec_spec):
+
+    def __init__(self, encoding=None, output_colorspaces=None, **kwargs):
+        codec_spec.__init__(self, **kwargs)
+        self.encoding = encoding                        #ie: "h264"
+        self.output_colorspaces = output_colorspaces    #ie: ["YUV420P" : "YUV420P", ...]
+        self._exported_fields += ["encoding", "output_colorspaces"]

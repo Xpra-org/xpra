@@ -9,7 +9,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x265")
 
-from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, codec_spec
+from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_codec_spec
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
@@ -222,12 +222,12 @@ def get_type():
 def get_encodings():
     return ["h265"]
 
-def get_colorspaces():
+def get_input_colorspaces():
     return COLORSPACES
 
-def get_output_colorspaces():
-    #same as input
-    return COLORSPACES
+def get_output_colorspaces(input_colorspace):
+    assert input_colorspace in COLORSPACES
+    return (input_colorspace, )
 
 
 def get_spec(encoding, colorspace):
@@ -236,7 +236,8 @@ def get_spec(encoding, colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
-    return codec_spec(Encoder, codec_type=get_type(), encoding=encoding,
+    return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
+                      Encoder, codec_type=get_type(), 
                       min_w=64, min_h=64,
                       setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
 
@@ -257,7 +258,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
         global COLORSPACES
         assert src_format in COLORSPACES, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACES)
         assert encoding=="h265", "invalid encoding: %s" % encoding

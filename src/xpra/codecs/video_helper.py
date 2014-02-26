@@ -226,7 +226,7 @@ class VideoHelper(object):
         except Exception, e:
             log.warn("cannot use %s module %s: %s", encoder_type, encoder_module, e, exc_info=True)
             return
-        colorspaces = encoder_module.get_colorspaces()
+        colorspaces = encoder_module.get_input_colorspaces()
         log("init_video_encoder_option(%s) %s input colorspaces=%s", encoder_module, encoder_type, colorspaces)
         encodings = encoder_module.get_encodings()
         log("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
@@ -304,7 +304,7 @@ class VideoHelper(object):
         encodings = decoder_module.get_encodings()
         log("init_video_decoder_option(%s) %s encodings=%s", decoder_module, encoder_type, encodings)
         for encoding in encodings:
-            colorspaces = decoder_module.get_colorspaces(encoding)
+            colorspaces = decoder_module.get_input_colorspaces(encoding)
             log("init_video_decoder_option(%s) %s input colorspaces for %s: %s", decoder_module, encoder_type, encoding, colorspaces)
             for colorspace in colorspaces:
                 output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
@@ -342,10 +342,11 @@ class VideoHelper(object):
 
     def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes):
         """ given a list of RGB modes the client can handle,
-            returns the CSC modes per encoding that the server can encode with)
+            returns the CSC modes per encoding that the server can encode with,
+            this will include the RGB modes themselves too.
         """
         log("get_server_full_csc_modes_for_rgb%s", target_rgb_modes)
-        supported_csc_modes = []
+        supported_csc_modes = list(target_rgb_modes)
         for src_format, specs in self._csc_encoder_specs.items():
             for dst_format, csc_specs in specs.items():
                 if dst_format in target_rgb_modes and len(csc_specs)>0:

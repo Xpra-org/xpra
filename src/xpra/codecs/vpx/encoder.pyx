@@ -5,7 +5,7 @@
 
 import time
 import os
-from xpra.codecs.codec_constants import codec_spec
+from xpra.codecs.codec_constants import video_codec_spec
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
@@ -153,7 +153,7 @@ cdef extern from "vpxlib.h":
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES = ["YUV420P"]
+COLORSPACES = {"YUV420P" : ["YUV420P"]}
 
 CODECS = []
 IF ENABLE_VP8 == True:
@@ -177,12 +177,12 @@ def get_type():
 def get_encodings():
     return CODECS
 
-def get_colorspaces():
-    return COLORSPACES
+def get_input_colorspaces():
+    return COLORSPACES.keys()
 
-def get_output_colorspaces():
-    #the vpx decoders will only output this mode:
-    return ["YUV420P"]
+def get_output_colorspaces(input_colorspace):
+    return COLORSPACES[input_colorspace]
+
 
 def get_info():
     global CODECS
@@ -205,9 +205,11 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
 def get_spec(encoding, colorspace):
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
-    #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
+    #quality: we only handle YUV420P but this is already accounted for by the subsampling factor
     #setup cost is reasonable (usually about 5ms)
-    return codec_spec(Encoder, codec_type=get_type(), encoding=encoding, setup_cost=40)
+    return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
+                            codec_class=Encoder, codec_type=get_type(), setup_cost=40)
+
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
@@ -227,7 +229,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, int width, int height, src_format, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
         assert encoding in CODECS, "invalid encoding: %s" % encoding
         assert scaling==(1,1), "vpx does not handle scaling"
         cdef const vpx_codec_iface_t *codec_iface = make_codec_cx(encoding)
@@ -235,7 +237,7 @@ cdef class Encoder:
         self.width = width
         self.height = height
         self.frames = 0
-        assert src_format=="YUV420P"
+        assert src_format=="YUV420P" and "YUV420P" in dst_formats
         self.src_format = "YUV420P"
         self.pixfmt = get_vpx_colorspace(self.src_format)
         try:

@@ -11,7 +11,8 @@ from threading import Lock
 
 from xpra.util import AtomicInteger
 from xpra.net.protocol import Compressed
-from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
+from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, get_default_csc_modes, \
+                                        TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.server.window_source import WindowSource, AUTO_SWITCH_TO_RGB, MAX_PIXELS_PREFER_RGB
 from xpra.gtk_common.region import rectangle, merge_all
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
@@ -71,7 +72,7 @@ class WindowVideoSource(WindowSource):
         self.video_subregion_non_waited = 0
         self.video_subregion_non_max_wait = 150
 
-        self.csc_modes = self.get_default_csc_modes()       #for pre 0.12 clients: just one list of modes for all encodings..
+        self.csc_modes = get_default_csc_modes(self.encoding_client_options)       #for pre 0.12 clients: just one list of modes for all encodings..
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
         self.parse_csc_modes(self.encoding_options.get("csc_modes"), self.encoding_options.get("full_csc_modes"))
 
@@ -101,14 +102,6 @@ class WindowVideoSource(WindowSource):
         self.last_pipeline_params = None
         self.last_pipeline_scores = []
 
-
-    def get_default_csc_modes(self):
-        if not self.encoding_client_options:
-            #very old clients can only use 420P:
-            return ("YUV420P", )
-        #default for newer clients that don't specify "csc_modes":
-        #(0.10 onwards should have specified csc_modes)
-        return ("YUV420P", "YUV422P", "YUV444P")
 
     def parse_csc_modes(self, csc_modes, full_csc_modes):
         #only override if values are specified:
@@ -658,19 +651,27 @@ class WindowVideoSource(WindowSource):
             score (best solution comes first).
         """
         scores = []
+        #these are the CSC modes the client can handle for this encoding:
+        #we must check that the output csc mode for each encoder is one of those
         supported_csc_modes = self.full_csc_modes.get(encoding, self.csc_modes)
         if len(supported_csc_modes)==0:
             return scores
         encoder_specs = self.video_helper.get_encoder_specs(encoding)
-        assert len(encoder_specs)>0, "no encoders found for '%s'" % encoding
+        if len(encoder_specs)==0:
+            return scores
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self.get_min_speed(), int(self.get_current_quality()), self.get_min_quality())
         def add_scores(info, csc_spec, enc_in_format):
+            #find encoders that take 'enc_in_format' as input:
             colorspace_specs = encoder_specs.get(enc_in_format)
             scorelog("add_scores(%s, %s, %s) colorspace_specs=%s", info, csc_spec, enc_in_format, colorspace_specs)
             if not colorspace_specs:
                 return
             #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
             for encoder_spec in colorspace_specs:
+                #ensure that the output of the encoder can be processed by the client:
+                matches = [x for x in encoder_spec.output_colorspaces if x in supported_csc_modes]
+                if len(matches)==0:
+                    continue
                 score = self.get_score(enc_in_format,
                                        csc_spec, encoder_spec,
                                        width, height)
@@ -678,8 +679,9 @@ class WindowVideoSource(WindowSource):
                 if score>=0:
                     item = score, csc_spec, enc_in_format, encoder_spec
                     scores.append(item)
-        if src_format in supported_csc_modes and (not FORCE_CSC or src_format==FORCE_CSC_MODE):
+        if not FORCE_CSC or src_format==FORCE_CSC_MODE:
             add_scores("direct (no csc)", None, src_format)
+
         #now add those that require a csc step:
         csc_specs = self.video_helper.get_csc_specs(src_format)
         if csc_specs:
@@ -687,7 +689,7 @@ class WindowVideoSource(WindowSource):
             #we have csc module(s) that can get us from pixel_format to out_csc:
             for out_csc, csc_specs in csc_specs.items():
                 actual_csc = self.csc_equiv(out_csc)
-                if actual_csc in supported_csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
+                if not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc:
                     for csc_spec in csc_specs:
                         add_scores("via %s (%s)" % (out_csc, actual_csc), csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
@@ -1025,8 +1027,10 @@ class WindowVideoSource(WindowSource):
                     #log.warn("skipping invalid dimensions..")
                     continue
                 enc_start = time.time()
+                #FIXME: filter dst_formats to only contain formats the encoder knows about?
+                dst_formats = self.full_csc_modes.get(encoder_spec.encoding, self.csc_modes)
                 self._video_encoder = encoder_spec.make_instance()
-                self._video_encoder.init_context(enc_width, enc_height, enc_in_format, encoder_spec.encoding, quality, speed, encoder_scaling, self.encoding_options)
+                self._video_encoder.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, self.encoding_options)
                 #record new actual limits:
                 self.actual_scaling = scaling
                 self.min_w = min_w

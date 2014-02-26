@@ -119,7 +119,7 @@ def get_type():
 def get_encodings():
     return CODECS
 
-def get_colorspaces(encoding):
+def get_input_colorspaces(encoding):
     assert encoding in ("vp8", "vp9")
     return COLORSPACES
 
