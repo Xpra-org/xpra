@@ -23,6 +23,10 @@ IGNORE_EVENTS = {
             WM_WTSSESSION_CHANGE            : "WM_WTSSESSION_CHANGE",
             WM_DWMNCRENDERINGCHANGED        : "WM_DWMNCRENDERINGCHANGED",
             }
+LOG_EVENTS = {
+            win32con.WM_POWERBROADCAST      : "WM_POWERBROADCAST: power management event",
+            win32con.WM_TIMECHANGE          : "WM_TIMECHANGE: time change event",
+            }
 KNOWN_WM_EVENTS = IGNORE_EVENTS.copy()
 for x in dir(win32con):
     if x.startswith("WM_"):
@@ -130,6 +134,8 @@ class Win32EventListener(object):
                     log.error("error in callback %s", c, exc_info=True)
         elif msg in IGNORE_EVENTS:
             log("%s: %s / %s", IGNORE_EVENTS.get(msg), wParam, lParam)
+        elif msg in LOG_EVENTS:
+            log.info("%s: %s / %s", LOG_EVENTS.get(msg), wParam, lParam)
         #elif msg==win32con.WM_ACTIVATEAPP:
         #    log("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
         else:
