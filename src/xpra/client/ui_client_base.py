@@ -760,9 +760,14 @@ class UIXpraClient(XpraClientBase):
             rgb_formats = ["RGB"]
         capabilities["encodings.rgb_formats"] = rgb_formats
 
-        csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
-        log("supported csc_modes=%s", csc_modes)
-        capabilities["encoding.csc_modes"] = csc_modes
+        full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
+        log("supported full csc_modes=%s", full_csc_modes)
+        capabilities["encoding.full_csc_modes"] = full_csc_modes
+        #for older servers (remove per-encoding):
+        csc_modes = []
+        for modes in full_csc_modes.values():
+            csc_modes += modes
+        capabilities["encoding.full_csc_modes"] = list(set(full_csc_modes))
 
         log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["encoding.uses_swscale"] = True

@@ -19,6 +19,7 @@ class GLClientWindow(GTK2WindowBase):
 
     gl_pixmap_backing_class = GLPixmapBacking
     full_csc_modes = None
+    csc_modes = None
 
     def __init__(self, *args):
         log("GLClientWindow(..)")
@@ -26,9 +27,10 @@ class GLClientWindow(GTK2WindowBase):
         self.add(self._backing._backing)
 
     def setup_window(self):
-        GTK2WindowBase.setup_window(self)
         self._client_properties["encoding.uses_swscale"] = False
         self._client_properties["encoding.full_csc_modes"] = self.get_full_csc_modes()
+        self._client_properties["encoding.csc_modes"] = self.get_csc_modes()
+        GTK2WindowBase.setup_window(self)
 
 
     def __str__(self):
@@ -39,6 +41,15 @@ class GLClientWindow(GTK2WindowBase):
         if GLClientWindow.full_csc_modes is None:
             GLClientWindow.full_csc_modes = getVideoHelper().get_server_full_csc_modes("YUV420P", "YUV422P", "YUV444P", "GBRP")
         return GLClientWindow.full_csc_modes
+
+    def get_csc_modes(self):
+        #initialize just once per class
+        if GLClientWindow.csc_modes is None:
+            csc_modes = []
+            for modes in self.get_full_csc_modes().values():
+                csc_modes += modes
+            GLClientWindow.csc_modes = list(set(csc_modes))
+        return GLClientWindow.csc_modes
 
     def is_GL(self):
         return True

@@ -28,10 +28,12 @@ Actual instantiable plain GTK2 Client Window
 class ClientWindow(GTK2WindowBase):
 
     full_csc_modes = None
+    csc_modes = None
 
     def setup_window(self):
-        GTK2WindowBase.setup_window(self)
         self._client_properties["encoding.full_csc_modes"] = self.get_full_csc_modes()
+        self._client_properties["encoding.csc_modes"] = self.get_csc_modes()
+        GTK2WindowBase.setup_window(self)
 
     def new_backing(self, w, h):
         self._backing = self.make_new_backing(BACKING_CLASS, w, h)
@@ -48,3 +50,12 @@ class ClientWindow(GTK2WindowBase):
             ClientWindow.full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
             log("full csc modes (%s)=%s", target_rgb_modes, ClientWindow.full_csc_modes)
         return ClientWindow.full_csc_modes
+
+    def get_csc_modes(self):
+        #initialize just once per class
+        if ClientWindow.csc_modes is None:
+            csc_modes = []
+            for modes in self.get_full_csc_modes().values():
+                csc_modes += modes
+            ClientWindow.csc_modes = list(set(csc_modes))
+        return ClientWindow.csc_modes
