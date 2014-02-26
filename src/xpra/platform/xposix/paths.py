@@ -6,8 +6,7 @@
 import os.path
 import sys
 
-
-def get_app_dir():
+def get_resources_dir():
     try:
         # test for a local installation path (run from source tree):
         local_share_path = os.path.join(os.path.dirname(sys.argv[0]), "..", "share", "xpra")
@@ -23,6 +22,9 @@ def get_app_dir():
         if os.path.exists(x):
             return x
     return os.getcwd()
+
+def get_app_dir():
+    return get_resources_dir()
 
 def get_icon_dir():
     return os.path.join(get_app_dir(), "icons")

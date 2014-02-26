@@ -104,6 +104,7 @@ def get_license_text(self):
 
 from xpra.platform import platform_import
 platform_import(globals(), "paths", True,
+                "get_resources_dir",
                 "get_app_dir",
                 "get_icon_dir")
 platform_import(globals(), "paths", False,
