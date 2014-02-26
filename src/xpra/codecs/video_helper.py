@@ -344,6 +344,7 @@ class VideoHelper(object):
         """ given a list of RGB modes the client can handle,
             returns the CSC modes per encoding that the server can encode with)
         """
+        log("get_server_full_csc_modes_for_rgb%s", target_rgb_modes)
         supported_csc_modes = []
         for src_format, specs in self._csc_encoder_specs.items():
             for dst_format, csc_specs in specs.items():
@@ -351,7 +352,7 @@ class VideoHelper(object):
                     supported_csc_modes.append(src_format)
                     break
         supported_csc_modes = sorted(supported_csc_modes)
-        return self.get_server_full_csc_modes(supported_csc_modes)
+        return self.get_server_full_csc_modes(*supported_csc_modes)
 
 
 instance = VideoHelper()
