@@ -20,7 +20,7 @@ where we can place widgets.
 class TopBarClientWindow(ClientWindow):
 
     def setup_window(self):
-        self.debug("setup_window()")
+        log("setup_window()")
         self._has_custom_decorations = False
         self._top_bar_box = None
         if not self._override_redirect:
@@ -32,7 +32,7 @@ class TopBarClientWindow(ClientWindow):
             self.add(vbox)
             vbox.show_all()
             w, h = vbox.size_request()
-            self.debug("vbox size: %sx%s", w, h)
+            log("vbox size: %sx%s", w, h)
             self._top_bar_box = vbox
             self._top_bar_box.hide()
         ClientWindow.setup_window(self)

@@ -10,6 +10,9 @@ import gobject
 from xpra.client.gtk2.topbar_client_window import TopBarClientWindow
 from xpra.gtk_common.gtk_util import imagebutton, CheckMenuItem
 
+from xpra.log import Logger
+log = Logger("window")
+
 
 """
 Example of a custom client window top bar with some icons and a menu.
@@ -31,7 +34,7 @@ class CustomClientWindow(TopBarClientWindow):
                   "clipboard.png"   : "Clipboard"}.items():
             icon = self._client.get_pixbuf(i)
             def clicked(*args):
-                self.info("clicked(%s)", args)
+                log("clicked(%s)", args)
             button = imagebutton(l, icon, clicked_callback=clicked, label_color=white)
             button.set_relief(gtk.RELIEF_NONE)
             b.add(button)
@@ -45,7 +48,7 @@ class CustomClientWindow(TopBarClientWindow):
                            ):
             item = CheckMenuItem(l)
             def item_changed(item):
-                self.info("item_changed(%s)", item)
+                log("item_changed(%s)", item)
             item.set_active(a)
             item.set_sensitive(s)
             item.set_draw_as_radio(r)
@@ -53,7 +56,7 @@ class CustomClientWindow(TopBarClientWindow):
             submenu.append(item)
         submenu.show_all()
         def show_menu(btn, *args):
-            self.info("show_menu(%s, %s)", btn, args)
+            log("show_menu(%s, %s)", btn, args)
             submenu.popup(None, None, None, 1, 0)
         menu_button = imagebutton("Xpra", icon, clicked_callback=show_menu, label_color=white)
         menu_button.set_relief(gtk.RELIEF_NONE)

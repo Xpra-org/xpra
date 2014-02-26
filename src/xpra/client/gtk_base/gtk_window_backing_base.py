@@ -14,10 +14,11 @@ log = Logger("window", "paint")
 
 
 """
-Generic superclass for Backing code,
+Generic GTK superclass for Backing code (for both GTK2 and GTK3),
 see CairoBacking and PixmapBacking for actual implementations
 """
 class GTKWindowBacking(WindowBackingBase):
+
     def __init__(self, wid):
         WindowBackingBase.__init__(self, wid, gobject.idle_add)
 

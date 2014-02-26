@@ -93,13 +93,13 @@ class ClientWindowBase(ClientWidgetBase):
         if not self._can_set_workspace or self._been_mapped:
             return -1
         workspace = self._client_properties.get("workspace", -1)
-        self.debug("set_workspace() workspace=%s", workspace)
+        log("set_workspace() workspace=%s", workspace)
         if workspace<0 or workspace==self.get_current_workspace():
             return -1
         try:
             return self.do_set_workspace(workspace)
         except Exception, e:
-            self.error("failed to set workspace: %s", e)
+            log.error("failed to set workspace: %s", e)
             return -1
 
 
@@ -168,7 +168,7 @@ class ClientWindowBase(ClientWidgetBase):
             try:
                 self.apply_geometry_hints(hints)
             except:
-                self.error("with hints=%s", hints, exc_info=True)
+                log.error("with hints=%s", hints, exc_info=True)
             #TODO: handle gravity
             #gravity = size_metadata.get("gravity")
 
@@ -220,8 +220,8 @@ class ClientWindowBase(ClientWidgetBase):
             if hint is not None:
                 hints |= hint
             else:
-                self.debug("ignoring unknown window type hint: %s", window_type)
-        self.debug("set_window_type(%s) hints=%s", window_types, hints)
+                log("ignoring unknown window type hint: %s", window_type)
+        log("set_window_type(%s) hints=%s", window_types, hints)
         if hints:
             self.set_type_hint(hints)
 
@@ -235,10 +235,10 @@ class ClientWindowBase(ClientWidgetBase):
         pass
 
     def magic_key(self, *args):
-        self.info("magic_key(%s) not handled in %s", args, type(self))
+        log.info("magic_key(%s) not handled in %s", args, type(self))
 
     def refresh_window(self, *args):
-        self.debug("refresh_window(%s) wid=%s", args, self._id)
+        log("refresh_window(%s) wid=%s", args, self._id)
         self._client.send_refresh(self._id)
 
     def refresh_all_windows(self):
