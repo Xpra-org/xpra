@@ -123,7 +123,8 @@ class WindowVideoSource(WindowSource):
         prefix = "window[%s]." % self.wid
         info[prefix+"client.csc_modes"] = self.csc_modes
         if self.full_csc_modes is not None:
-            info[prefix+"client.full_csc_modes"] = self.full_csc_modes
+            for enc, csc_modes in self.full_csc_modes.items():
+                info[prefix+"client.csc_modes.%s" % enc] = csc_modes
         info[prefix+"client.uses_swscale"] = self.uses_swscale
         info[prefix+"client.uses_csc_atoms"] = self.uses_csc_atoms
         info[prefix+"client.supports_video_scaling"] = self.supports_video_scaling
