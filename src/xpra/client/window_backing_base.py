@@ -270,7 +270,7 @@ class WindowBackingBase(object):
                                dst_width, dst_height, dst_format, speed)
                     return csc
                 except:
-                    log.error("failed to create csc instance of %s", spec.codec_class, exc_info=True)
+                    log.error("failed to create csc instance of %s for %s to %s", spec.codec_class, src_format, dst_format, exc_info=True)
         raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s) in %s" % (src_format, src_width, src_height, " or ".join(dst_format_options), dst_width, dst_height, CSC_OPTIONS))
 
     def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
