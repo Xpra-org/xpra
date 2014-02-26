@@ -24,6 +24,7 @@ cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
+    object PyBuffer_FromReadWriteMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 
@@ -41,6 +42,7 @@ cdef uint8_t BGRA_A = tmp.find('\3')
 cdef uint8_t BGRX_R = BGRA_R
 cdef uint8_t BGRX_G = BGRA_G
 cdef uint8_t BGRX_B = BGRA_B
+cdef uint8_t BGRX_X = BGRA_A
 
 tmp = str(struct.pack("=BBBB", 0, 1, 2, 3))
 cdef uint8_t RGBX_R = tmp.find('\0')
@@ -100,27 +102,35 @@ DEF shift = 16
 DEF YR = 16843      # 0.257 * 2**16
 DEF YG = 33030      # 0.504 * 2**16
 DEF YB = 6423       # 0.098 * 2**16
+DEF Yc = 16
 DEF YC = 1048576    # 16    * 2**16
 #U[y*self.dst_strides[1] + x] = clamp(-0.148 * Rsum/sum - 0.291 * Gsum/sum + 0.439 * Bsum/sum + 128)
 # U = -0.148 * R - 0.291 * G + 0.439 * B + 128
 DEF UR = -9699      #-0.148 * 2**16
 DEF UG = -19071     #-0.291 * 2**16
 DEF UB = 28770      # 0.439 * 2**16
+DEF Uc = 128
 DEF UC = 8388608    # 128   * 2**16
 #V[y*self.dst_strides[2] + x] = clamp(0.439 * Rsum/sum - 0.368 * Gsum/sum - 0.071 * Bsum/sum + 128)
 # V = 0.439 * R - 0.368 * G - 0.071 * B + 128
 DEF VR = 28770      # 0.439  * 2**16
 DEF VG = -24117     #-0.368  * 2**16
 DEF VB = -4653      #-0.071  * 2**16
+DEF Vc = 128
 DEF VC = 8388608    # 128    * 2**16
 
 DEF max_clamp = 16777216    #2**(16+8)
 
 #YUV to RGB:
-#TODO!
-#R = Y + 1.5958  * Cb 
-#G = Y - 0.81290 * Cb - 0.39173 * Cr 
-#B = Y                + 2.017   * Cr
+#Y, Cb and Cr are adjusted as:
+#Y'  = Y - 16
+#Cb' = Cb - 128
+#Cr' = Cr - 128
+# (see YC, UC and VC above)
+#RGB:
+#R = Y' + 1.5958  * Cb' 
+#G = Y' - 0.81290 * Cb' - 0.39173 * Cr' 
+#B = Y'                 + 2.017   * Cr'
 DEF RY = 65536      #1        * 2**16
 DEF RU = 104582     #1.5958   * 2**16
 DEF RV = 0
@@ -153,6 +163,8 @@ cdef class ColorspaceConverter:
     cdef int[3] dst_strides
     cdef int[3] dst_sizes
     cdef int[3] offsets
+
+    cdef convert_image_function
 
     cdef int frames
     cdef double time
@@ -192,7 +204,7 @@ cdef class ColorspaceConverter:
             #output buffer ends after V + 1 line of padding:
             self.buffer_size = self.offsets[2] + (self.dst_strides[2] * (self.dst_height/2+1))
 
-            self.convert_image = self.BGRX_to_YUV420P
+            self.convert_image_function = self.BGRX_to_YUV420P
         elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX"):
             #4 bytes per pixel:
             self.dst_strides[0] = roundup(self.dst_width*4, STRIDE_ROUNDUP)
@@ -207,10 +219,10 @@ cdef class ColorspaceConverter:
             self.buffer_size = self.dst_sizes[0] + roundup(dst_width*4, STRIDE_ROUNDUP)
 
             if dst_format=="RGBX":
-                self.convert_image = self.YUV420P_to_RGBX
+                self.convert_image_function = self.YUV420P_to_RGBX
             else:
                 assert dst_format=="BGRX"
-                self.convert_image = self.YUV420P_to_BGRX
+                self.convert_image_function = self.YUV420P_to_BGRX
         else:
             raise Exception("BUG: src_format=%s, dst_format=%s", src_format, dst_format)
 
@@ -263,6 +275,10 @@ cdef class ColorspaceConverter:
 
     def clean(self):                        #@DuplicatedSignature
         pass
+
+
+    def convert_image(self, image):
+        return self.convert_image_function(image)
 
 
     def BGRX_to_YUV420P(self, image):
@@ -353,12 +369,12 @@ cdef class ColorspaceConverter:
         return out_image
 
     def YUV420P_to_RGBX(self, image):
-        return self.do_YUV420P_to_RGB(image, RGBX_R, RGBX_G, RGBX_B)
+        return self.do_YUV420P_to_RGB(image, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
 
     def YUV420P_to_BGRX(self, image):
-        return self.do_YUV420P_to_RGB(image, BGRX_R, BGRX_G, BGRX_B)
+        return self.do_YUV420P_to_RGB(image, BGRX_R, BGRX_G, BGRX_B, BGRX_X)
 
-    cdef do_YUV420P_to_RGB(self, image, uint8_t Rindex, uint8_t Gindex, uint8_t Bindex):
+    cdef do_YUV420P_to_RGB(self, image, uint8_t Rindex, uint8_t Gindex, uint8_t Bindex, uint8_t Xindex):
         cdef Py_ssize_t buf_len = 0
         cdef unsigned char *output_image        #
         cdef int x,y,i,o,dx,dy,sum              #@DuplicatedSignature
@@ -367,7 +383,7 @@ cdef class ColorspaceConverter:
         cdef unsigned char *Ybuf
         cdef unsigned char *Ubuf
         cdef unsigned char *Vbuf
-        cdef unsigned char Y, U, V
+        cdef short Y, U, V
         cdef int Ystride, Ustride, Vstride      #
         cdef object rgb
 
@@ -378,7 +394,7 @@ cdef class ColorspaceConverter:
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         planes = image.get_pixels()
         input_strides = image.get_rowstride()
-        log("convert_image(%s) input=%s, strides=%s" % (image, [len(x) for x in planes], input_strides))
+        log("convert_image(%s) strides=%s" % (image, input_strides))
 
         #copy to local variables:
         stride = self.dst_strides[0]
@@ -387,11 +403,11 @@ cdef class ColorspaceConverter:
         Vstride = input_strides[2]
 
         PyObject_AsReadBuffer(planes[0], <const void**> &Ybuf, &buf_len)
-        assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small"
+        assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
         PyObject_AsReadBuffer(planes[1], <const void**> &Ubuf, &buf_len)
-        assert buf_len>=Ustride*image.get_height(), "buffer for U plane is too small"
+        assert buf_len>=Ustride*image.get_height()/2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()/2)
         PyObject_AsReadBuffer(planes[2], <const void**> &Vbuf, &buf_len)
-        assert buf_len>=Vstride*image.get_height(), "buffer for V plane is too small"
+        assert buf_len>=Vstride*image.get_height()/2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()/2)
 
         #allocate output buffer:
         output_image = <unsigned char*> xmemalign(self.buffer_size)
@@ -405,24 +421,25 @@ cdef class ColorspaceConverter:
                 for x in xrange(workw):
                     #assert x*2<=self.src_width and y*2<=self.src_height
                     #read U and V for the next 4 pixels:
-                    U = Ubuf[y*Ustride + x]
-                    V = Vbuf[y*Vstride + x]
+                    U = Ubuf[y*Ustride + x] - Uc
+                    V = Vbuf[y*Vstride + x] - Vc
                     #now read up to 4 Y values and write an RGB pixel for each:
                     for i in range(4):
                         dx = i%2
                         dy = i/2
                         if x*2+dx<self.src_width and y*2+dy<self.src_height:
-                            Y = Ybuf[(y*2+dy)*Ystride + (x*2+dx)]
-                            o = y*2*stride + (x*2)*4
+                            Y = Ybuf[(y*2+dy)*Ystride + (x*2+dx)] - Yc
+                            o = ((y*2) + dy)*stride + ((x*2) + dx)*4
                             output_image[o + Rindex] = clamp(RY * Y + RU * U + RV * V)
                             output_image[o + Gindex] = clamp(GY * Y + GU * U + GV * V)
                             output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
+                            output_image[o + Xindex] = 255
 
-        rgb = PyBuffer_FromMemory(<void *> output_image, self.dst_sizes[0])
+        rgb = PyBuffer_FromReadWriteMemory(<void *> output_image, self.dst_sizes[0])
         elapsed = time.time()-start
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
-        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, rgb, self.dst_format, 24, stride, ImageWrapper._3_PLANES)
+        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
         out_image.cython_buffer = <unsigned long> output_image
         return out_image
