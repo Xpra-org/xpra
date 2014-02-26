@@ -155,13 +155,26 @@ log("colorspaces supported by avcodec %s: %s", get_version(), COLORSPACES)
 if len(COLORSPACES)==0:
     log.error("avcodec installation problem: no colorspaces found!")
 
+
+def init_module():
+    pass
+
+def get_type():
+    return "avcodec"
+
+def get_encodings():
+    global CODECS
+    return CODECS
+
 def get_colorspaces(encoding):
+    global COLORSPACES
     if encoding=="h264":
         return COLORSPACES
     assert encoding=="vp8"
     return ["YUV420P", "YUV422P", "YUV444P"]
 
 def get_output_colorspace(encoding, csc):
+    global CODECS
     assert encoding in CODECS
     if encoding=="h264" and csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
         #h264 from plain RGB data is returned as "GBRP"!
@@ -173,17 +186,13 @@ def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
 def get_info():
+    f = {}
+    for e in get_encodings():
+        f["formats.%s" % e] = get_colorspaces(e)
     return  {"version"      : get_version(),
              "encodings"    : get_encodings(),
-             "formats"      : get_colorspaces(),
+             "formats"      : f,
              }
-
-def get_type():
-    return "avcodec"
-
-
-def init_module():
-    pass
 
 
 #maps AVCodecContext to the Decoder that manages it

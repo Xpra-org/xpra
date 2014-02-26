@@ -158,9 +158,12 @@ def get_type():
     return "avcodec2"
 
 def get_info():
+    f = {}
+    for e in get_encodings():
+        f["formats.%s" % e] = get_colorspaces(e)
     return  {"version"      : get_version(),
-             "encodings"    : CODECS,
-             "formats"      : get_colorspaces(),
+             "encodings"    : get_encodings(),
+             "formats"      : f,
              }
 
 def get_encodings():
@@ -180,7 +183,6 @@ def get_output_colorspace(encoding, csc):
         return "GBRP"
     #everything else as normal:
     return csc
-
 
 
 cdef void clear_frame(AVFrame *frame):
