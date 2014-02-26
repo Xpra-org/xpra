@@ -695,8 +695,15 @@ if WIN32:
 
     def pkgconfig(*packages, **ekw):
         kw = dict(ekw)
+        #remove static flag on win32..
+        static = kw.get("static", None)
+        if static is not None:
+            del kw["static"]
+        #always add the win32 include dirs, everyone needs that:
+        add_to_keywords(kw, 'include_dirs', win32_include_dir)
         if len(packages)==0:
             return kw
+
         def add_to_PATH(bindir):
             if os.environ['PATH'].find(bindir)<0:
                 os.environ['PATH'] = bindir + ';' + os.environ['PATH']
@@ -704,7 +711,7 @@ if WIN32:
                 sys.path.append(bindir)
         if "avcodec" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
-            add_to_keywords(kw, 'include_dirs', win32_include_dir, libffmpeg_include_dir)
+            add_to_keywords(kw, 'include_dirs', libffmpeg_include_dir)
             add_to_keywords(kw, 'libraries', "avcodec", "avutil")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_bin_dir)
@@ -712,7 +719,7 @@ if WIN32:
             checkdirs(libffmpeg_include_dir, libffmpeg_lib_dir, libffmpeg_bin_dir)
         elif "swscale" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
-            add_to_keywords(kw, 'include_dirs', win32_include_dir, libffmpeg_include_dir)
+            add_to_keywords(kw, 'include_dirs', libffmpeg_include_dir)
             add_to_keywords(kw, 'libraries', "swscale", "avutil")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_bin_dir)
@@ -721,7 +728,7 @@ if WIN32:
         elif "x264" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_PATH(x264_bin_dir)
-            add_to_keywords(kw, 'include_dirs', win32_include_dir, x264_include_dir)
+            add_to_keywords(kw, 'include_dirs', x264_include_dir)
             add_to_keywords(kw, 'libraries', "libx264")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x264_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
@@ -729,14 +736,14 @@ if WIN32:
         elif "x265" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_PATH(x265_bin_dir)
-            add_to_keywords(kw, 'include_dirs', win32_include_dir, x265_include_dir)
+            add_to_keywords(kw, 'include_dirs', x265_include_dir)
             add_to_keywords(kw, 'libraries', "libx265")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x265_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(x265_include_dir, x265_lib_dir)
         elif "vpx" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
-            add_to_keywords(kw, 'include_dirs', win32_include_dir, vpx_include_dir)
+            add_to_keywords(kw, 'include_dirs', vpx_include_dir)
             add_to_keywords(kw, 'libraries', *vpx_lib_names)
             add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
@@ -751,7 +758,7 @@ if WIN32:
             add_to_keywords(kw, 'include_dirs', *dirs)
             checkdirs(*dirs)
         elif "cuda" in packages[0]:
-            add_to_keywords(kw, 'include_dirs', win32_include_dir, cuda_include_dir)
+            add_to_keywords(kw, 'include_dirs', cuda_include_dir)
             checkdirs(cuda_include_dir)
             data_files.append(('.', glob.glob("%s/*32*.dll" % cuda_bin_dir)))
         else:
@@ -1140,9 +1147,10 @@ if csc_swscale_ENABLED:
 
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 if csc_cython_ENABLED:
+    csc_cython_pkgconfig = pkgconfig()
     cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
                 ["xpra/codecs/csc_cython/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c"],
-                ), min_version=(0, 15))
+                **csc_cython_pkgconfig), min_version=(0, 15))
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
