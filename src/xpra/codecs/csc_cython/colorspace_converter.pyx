@@ -128,18 +128,18 @@ DEF max_clamp = 16777216    #2**(16+8)
 #Cr' = Cr - 128
 # (see YC, UC and VC above)
 #RGB:
-#R = Y' + 1.5958  * Cb' 
-#G = Y' - 0.81290 * Cb' - 0.39173 * Cr' 
-#B = Y'                 + 2.017   * Cr'
-DEF RY = 65536      #1        * 2**16
+#R = 1.164*Y' + 1.5958  * Cb' 
+#G = 1.164*Y' - 0.8129  * Cb' - 0.39173 * Cr' 
+#B = 1.164*Y'                 + 2.017   * Cr'
+DEF RY = 76284      #1.164    * 2**16
 DEF RU = 104582     #1.5958   * 2**16
 DEF RV = 0
 
-DEF GY = 65536      #1        * 2**16
+DEF GY = 76284      #1.164    * 2**16
 DEF GU = -53274     #-0.81290 * 2**16
 DEF GV = -25672     #-0.39173 * 2**16
 
-DEF BY = 65536      #1        * 2**16
+DEF BY = 76284      #1.164    * 2**16
 DEF BU = 0
 DEF BV = 132186     #2.017    * 2**16
 
@@ -423,12 +423,12 @@ cdef class ColorspaceConverter:
                     #read U and V for the next 4 pixels:
                     U = Ubuf[y*Ustride + x] - Uc
                     V = Vbuf[y*Vstride + x] - Vc
-                    #now read up to 4 Y values and write an RGB pixel for each:
+                    #now read up to 4 Y values and write an RGBX pixel for each:
                     for i in range(4):
                         dx = i%2
                         dy = i/2
                         if x*2+dx<self.src_width and y*2+dy<self.src_height:
-                            Y = Ybuf[(y*2+dy)*Ystride + (x*2+dx)] - Yc
+                            Y = Ybuf[(y*2+dy)*Ystride + x*2+dx] - Yc
                             o = ((y*2) + dy)*stride + ((x*2) + dx)*4
                             output_image[o + Rindex] = clamp(RY * Y + RU * U + RV * V)
                             output_image[o + Gindex] = clamp(GY * Y + GU * U + GV * V)
