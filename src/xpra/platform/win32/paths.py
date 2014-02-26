@@ -37,6 +37,9 @@ if hasattr(sys, 'frozen') and sys.frozen in ("windows_exe", "console_exe"):    #
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
 
+def get_resources_dir():
+    return get_app_dir()
+
 def get_app_dir():
     global APP_DIR
     if APP_DIR is not None:
