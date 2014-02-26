@@ -118,6 +118,13 @@ echo "include all codecs found: "
 find $PYTHON_PACKAGES/xpra/codecs/* -type d -maxdepth 0 -exec basename {} \;
 rsync -rpl $PYTHON_PACKAGES/xpra/codecs/* $LIBDIR/python/xpra/codecs/
 
+
+echo
+echo "*******************************************************************************"
+echo "Ship a default xpra.conf"
+cp ../src/etc/xpra/client-only/xpra.conf ${RSCDIR}/
+
+
 echo
 echo "*******************************************************************************"
 echo "Hacks"
