@@ -76,7 +76,7 @@ def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
     assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
     #low score as this should be used as fallback only:
-    return codec_spec(ColorspaceConverter, codec_type=get_type(), quality=50, speed=10, setup_cost=10, min_w=2, min_h=2, can_scale=False)
+    return codec_spec(ColorspaceConverter, codec_type=get_type(), quality=50, speed=10, setup_cost=10, min_w=2, min_h=2, can_scale=True)
 
 
 class CythonImageWrapper(ImageWrapper):
@@ -177,8 +177,6 @@ cdef class ColorspaceConverter:
         cdef int i
         assert src_format in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (src_format, get_input_colorspaces())
         assert dst_format in get_output_colorspaces(src_format), "invalid output colorspace: %s (must be one of %s)" % (dst_format, get_output_colorspaces(src_format))
-        assert src_width==dst_width
-        assert src_height==dst_height
         log("csc_cython.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
         self.src_width = src_width
         self.src_height = src_height
@@ -287,6 +285,7 @@ cdef class ColorspaceConverter:
         cdef unsigned char *output_image
         cdef int input_stride
         cdef int x,y,i,o,dx,dy,sum          #@DuplicatedSignature
+        cdef int sx, sy
         cdef int workw, workh
         cdef int Ystride, Ustride, Vstride
         cdef unsigned char R, G, B
@@ -334,8 +333,10 @@ cdef class ColorspaceConverter:
                     for i in range(4):
                         dx = i%2
                         dy = i/2
-                        if x*2+dx<self.src_width and y*2+dy<self.src_height:
-                            o = (y*2+dy)*input_stride + (x*2+dx)*4
+                        if x*2+dx<self.dst_width and y*2+dy<self.dst_height:
+                            sx = (x*2+dx)*self.src_width/self.dst_width
+                            sy = (y*2+dy)*self.src_height/self.dst_height
+                            o = sy*input_stride + sx*4
                             R = input_image[o + BGRA_R]
                             G = input_image[o + BGRA_G]
                             B = input_image[o + BGRA_B]
@@ -378,6 +379,7 @@ cdef class ColorspaceConverter:
         cdef Py_ssize_t buf_len = 0
         cdef unsigned char *output_image        #
         cdef int x,y,i,o,dx,dy,sum              #@DuplicatedSignature
+        cdef int sx, sy                         #
         cdef int workw, workh                   #
         cdef int stride
         cdef unsigned char *Ybuf
@@ -421,14 +423,18 @@ cdef class ColorspaceConverter:
                 for x in xrange(workw):
                     #assert x*2<=self.src_width and y*2<=self.src_height
                     #read U and V for the next 4 pixels:
-                    U = Ubuf[y*Ustride + x] - Uc
-                    V = Vbuf[y*Vstride + x] - Vc
+                    sx = x*self.src_width/self.dst_width
+                    sy = y*self.src_height/self.dst_height
+                    U = Ubuf[sy*Ustride + sx] - Uc
+                    V = Vbuf[sy*Vstride + sx] - Vc
                     #now read up to 4 Y values and write an RGBX pixel for each:
                     for i in range(4):
                         dx = i%2
                         dy = i/2
-                        if x*2+dx<self.src_width and y*2+dy<self.src_height:
-                            Y = Ybuf[(y*2+dy)*Ystride + x*2+dx] - Yc
+                        if x*2+dx<self.dst_width and y*2+dy<self.dst_height:
+                            sx = (x*2+dx)*self.src_width/self.dst_width
+                            sy = (y*2+dy)*self.src_height/self.dst_height
+                            Y = Ybuf[sy*Ystride + sx] - Yc
                             o = ((y*2) + dy)*stride + ((x*2) + dx)*4
                             output_image[o + Rindex] = clamp(RY * Y + RU * U + RV * V)
                             output_image[o + Gindex] = clamp(GY * Y + GU * U + GV * V)
