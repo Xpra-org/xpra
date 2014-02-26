@@ -179,18 +179,26 @@ def read_xpra_defaults():
         returns a dict with values as strings and arrays of strings.
     """
     #first, read the global defaults:
-    if sys.platform.startswith("win"):
-        conf_dir = os.path.dirname(os.path.abspath(sys.executable))
+    from xpra.platform.paths import get_resources_dir, get_default_conf_dir
+    if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+        #OSX and win32 use binary installers,
+        #we must look for the default config in the bundled resource location:
+        
+        conf_dir = get_resources_dir()
     elif sys.prefix == '/usr':
+        #default posix config location:
         conf_dir = '/etc/xpra'
     else:
+        #hope the prefix is something like "/usr/local":
         conf_dir = sys.prefix + '/etc/xpra/'
-    defaults = read_xpra_conf(conf_dir)
+    defaults = {}
+    if conf_dir:
+        defaults = read_xpra_conf(conf_dir)
     #now load the per-user config over it:
-    from xpra.platform.paths import get_default_conf_dir
-    user_defaults = read_xpra_conf(get_default_conf_dir())
-    for k,v in user_defaults.items():
-        defaults[k] = v
+    def_dir = get_default_conf_dir()
+    if def_dir and def_dir!=conf_dir:
+        user_defaults = read_xpra_conf(get_default_conf_dir())
+        defaults.update(user_defaults)
     return defaults
 
 
