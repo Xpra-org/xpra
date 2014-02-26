@@ -71,14 +71,9 @@ class WindowVideoSource(WindowSource):
         self.video_subregion_non_waited = 0
         self.video_subregion_non_max_wait = 150
 
-        if not self.encoding_client_options:
-            #old clients can only use 420P:
-            def_csc_modes = ("YUV420P")
-        else:
-            #default for newer clients that don't specify "csc_modes":
-            def_csc_modes = ("YUV420P", "YUV422P", "YUV444P")
-        #0.10 onwards should have specified csc_modes:
-        self.csc_modes = self.encoding_options.get("csc_modes", def_csc_modes)
+        self.csc_modes = self.get_default_csc_modes()       #for pre 0.12 clients: just one list of modes for all encodings..
+        self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
+        self.parse_csc_modes(self.encoding_options.get("csc_modes"), self.encoding_options.get("full_csc_modes"))
 
         self.video_encodings = self.video_helper.get_encodings()
         for x in self.video_encodings:
@@ -107,10 +102,28 @@ class WindowVideoSource(WindowSource):
         self.last_pipeline_scores = []
 
 
+    def get_default_csc_modes(self):
+        if not self.encoding_client_options:
+            #very old clients can only use 420P:
+            return ("YUV420P", )
+        #default for newer clients that don't specify "csc_modes":
+        #(0.10 onwards should have specified csc_modes)
+        return ("YUV420P", "YUV422P", "YUV444P")
+
+    def parse_csc_modes(self, csc_modes, full_csc_modes):
+        #only override if values are specified:
+        if csc_modes is not None:
+            self.csc_modes = csc_modes
+        if full_csc_modes is not None:
+            self.full_csc_modes = full_csc_modes
+
+
     def add_stats(self, info, suffix=""):
         WindowSource.add_stats(self, info, suffix)
         prefix = "window[%s]." % self.wid
         info[prefix+"client.csc_modes"] = self.csc_modes
+        if self.full_csc_modes is not None:
+            info[prefix+"client.full_csc_modes"] = self.full_csc_modes
         info[prefix+"client.uses_swscale"] = self.uses_swscale
         info[prefix+"client.uses_csc_atoms"] = self.uses_csc_atoms
         info[prefix+"client.supports_video_scaling"] = self.supports_video_scaling
@@ -195,7 +208,7 @@ class WindowVideoSource(WindowSource):
 
     def set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
-        self.csc_modes = properties.get("encoding.csc_modes", self.csc_modes)
+        self.parse_csc_modes(properties.get("encoding.csc_modes"), properties.get("encoding.full_csc_modes"))
         self.supports_video_scaling = properties.get("encoding.video_scaling", self.supports_video_scaling)
         self.supports_video_subregion = properties.get("encoding.video_subregion", self.supports_video_subregion)
         self.uses_swscale = properties.get("encoding.uses_swscale", self.uses_swscale)
@@ -203,7 +216,7 @@ class WindowVideoSource(WindowSource):
         #encodings may have changed, so redo this:
         common = [x for x in self.server_core_encodings if x in self.core_encodings]
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in common and x not in self.video_encodings)]
-        log("set_client_properties(%s) csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
+        log("set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
 
     def unmap(self):
         WindowSource.cancel_damage(self)
@@ -643,9 +656,12 @@ class WindowVideoSource(WindowSource):
             Each solution is rated and we return all of them in descending
             score (best solution comes first).
         """
+        scores = []
+        supported_csc_modes = self.full_csc_modes.get(encoding, self.csc_modes)
+        if len(supported_csc_modes)==0:
+            return scores
         encoder_specs = self.video_helper.get_encoder_specs(encoding)
         assert len(encoder_specs)>0, "no encoders found for '%s'" % encoding
-        scores = []
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self.get_min_speed(), int(self.get_current_quality()), self.get_min_quality())
         def add_scores(info, csc_spec, enc_in_format):
             colorspace_specs = encoder_specs.get(enc_in_format)
@@ -661,7 +677,7 @@ class WindowVideoSource(WindowSource):
                 if score>=0:
                     item = score, csc_spec, enc_in_format, encoder_spec
                     scores.append(item)
-        if src_format in self.csc_modes and (not FORCE_CSC or src_format==FORCE_CSC_MODE):
+        if src_format in supported_csc_modes and (not FORCE_CSC or src_format==FORCE_CSC_MODE):
             add_scores("direct (no csc)", None, src_format)
         #now add those that require a csc step:
         csc_specs = self.video_helper.get_csc_specs(src_format)
@@ -670,7 +686,7 @@ class WindowVideoSource(WindowSource):
             #we have csc module(s) that can get us from pixel_format to out_csc:
             for out_csc, csc_specs in csc_specs.items():
                 actual_csc = self.csc_equiv(out_csc)
-                if actual_csc in self.csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
+                if actual_csc in supported_csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
                     for csc_spec in csc_specs:
                         add_scores("via %s (%s)" % (out_csc, actual_csc), csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])

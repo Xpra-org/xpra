@@ -171,9 +171,14 @@ def get_encodings():
     return CODECS
 
 def get_colorspaces(encoding):
+    assert encoding in CODECS
     if encoding in ("h264", "h265"):
         return COLORSPACES
-    assert encoding in ("vp8", "vp9")
+    elif encoding=="vp8":
+        return ["YUV420P"]
+    assert encoding=="vp9"
+    #we only handle YUV420P encoding at present,
+    #but we ought to be able to support the other YUV modes out of the box already:
     return ["YUV420P", "YUV422P", "YUV444P"]
 
 def get_output_colorspace(encoding, csc):
@@ -181,6 +186,8 @@ def get_output_colorspace(encoding, csc):
     if encoding=="h264" and csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
         #h264 from plain RGB data is returned as "GBRP"!
         return "GBRP"
+    elif encoding=="vp8":
+        return "YUV420P"
     #everything else as normal:
     return csc
 

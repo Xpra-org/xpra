@@ -725,9 +725,6 @@ class UIXpraClient(XpraClientBase):
             "encodings.core"            : self.get_core_encodings(),
             "encodings.rgb_formats"     : ["RGB", "RGBA"],
             })
-        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            #win32 and osx cannot handle transparency, so don't bother with RGBA
-            capabilities["encodings.rgb_formats"] = ["RGB", ]
         control_commands = ["show_session_info", "enable_bencode", "enable_zlib"]
         from xpra.net.protocol import use_bencode, use_rencode
         if use_lz4:
@@ -757,16 +754,13 @@ class UIXpraClient(XpraClientBase):
 
         #figure out the CSC modes supported:
         #these are the modes we want (the ones we can display):
-        wanted_csc_modes = ["BGRA", "BGRX"]
-        csc_modes = wanted_csc_modes[:]
-        #now look for CSC input modes that can give us those and add them:
-        vh = getVideoHelper()
-        for csc_mode in vh.get_csc_inputs():
-            csc_conv = vh.get_csc_specs(csc_mode)       #dict: (out_csc, specs)
-            matches = [x for x in wanted_csc_modes if x in csc_conv.keys()]
-            log("matches(%s)=%s", csc_mode, matches)
-            if len(matches)>0:
-                csc_modes.append(csc_mode)
+        rgb_formats = ["RGB", "RGBX", "RGBA"]
+        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+            #win32 and osx cannot handle transparency, so don't bother with RGBA
+            rgb_formats = ["RGB"]
+        capabilities["encodings.rgb_formats"] = rgb_formats
+
+        csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
         log("supported csc_modes=%s", csc_modes)
         capabilities["encoding.csc_modes"] = csc_modes
 

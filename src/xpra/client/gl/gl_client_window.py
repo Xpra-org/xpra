@@ -8,29 +8,43 @@ from xpra.log import Logger
 log = Logger("opengl", "window")
 
 from gtk import gdk
-from xpra.client.gtk2.client_window import ClientWindow
+import gobject
+
+from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase
 from xpra.client.gl.gl_window_backing import GLPixmapBacking, log
+from xpra.codecs.video_helper import getVideoHelper
 
 
-class GLClientWindow(ClientWindow):
+class GLClientWindow(GTK2WindowBase):
 
     gl_pixmap_backing_class = GLPixmapBacking
+    full_csc_modes = None
 
     def __init__(self, *args):
         log("GLClientWindow(..)")
-        ClientWindow.__init__(self, *args)
-        self._client_properties["encoding.uses_swscale"] = False
-        self.set_reallocate_redraws(True)
+        GTK2WindowBase.__init__(self, *args)
         self.add(self._backing._backing)
+
+    def setup_window(self):
+        GTK2WindowBase.setup_window(self)
+        self._client_properties["encoding.uses_swscale"] = False
+        self._client_properties["encoding.full_csc_modes"] = self.get_full_csc_modes()
+
 
     def __str__(self):
         return "GLClientWindow(%s : %s)" % (self._id, self._backing)
+
+    def get_full_csc_modes(self):
+        #initialize just once per class
+        if GLClientWindow.full_csc_modes is None:
+            GLClientWindow.full_csc_modes = getVideoHelper().get_server_full_csc_modes("YUV420P", "YUV422P", "YUV444P", "GBRP")
+        return GLClientWindow.full_csc_modes
 
     def is_GL(self):
         return True
 
     def set_alpha(self):
-        ClientWindow.set_alpha(self)
+        GTK2WindowBase.set_alpha(self)
         rgb_formats = self._client_properties.get("encodings.rgb_formats", [])
         #gl_window_backing supports BGR(A) too:
         if "RGBA" in rgb_formats:
@@ -57,12 +71,12 @@ class GLClientWindow(ClientWindow):
 
     def do_configure_event(self, event):
         log("GL do_configure_event(%s)", event)
-        ClientWindow.do_configure_event(self, event)
+        GTK2WindowBase.do_configure_event(self, event)
         self._backing.paint_screen = True
 
     def destroy(self):
         self._backing.paint_screen = False
-        ClientWindow.destroy(self)
+        GTK2WindowBase.destroy(self)
 
     def new_backing(self, w, h):
         self._backing = self.make_new_backing(self.gl_pixmap_backing_class, w, h)
@@ -72,3 +86,5 @@ class GLClientWindow(ClientWindow):
         if self.border:
             self.border.shown = (not self.border.shown)
             self.queue_draw(0, 0, *self._size)
+
+gobject.type_register(GLClientWindow)

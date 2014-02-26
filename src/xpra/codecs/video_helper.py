@@ -319,6 +319,41 @@ class VideoHelper(object):
         self._video_decoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append((decoder_name, decoder_module))
 
 
+    def get_server_full_csc_modes(self, *client_supported_csc_modes):
+        """ given a list of CSC modes the client can handle,
+            returns the CSC modes per encoding that the server can encode with.
+            (taking into account the decoder's actual output colorspace for each encoding)
+        """
+        full_csc_modes = {}
+        for encoding, encoding_specs in self._video_decoder_specs.items():
+            assert encoding_specs is not None
+            for colorspace, decoder_specs in sorted(encoding_specs.items()):
+                for decoder_name, decoder_module in decoder_specs:
+                    log("found decoder %s for %s with %s mode", decoder_name, encoding, colorspace)
+                    #figure out the actual output colorspace:
+                    output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
+                    if output_colorspace in client_supported_csc_modes:
+                        encoding_colorspaces = full_csc_modes.setdefault(encoding, [])
+                        if colorspace not in encoding_colorspaces:
+                            encoding_colorspaces.append(colorspace)
+        log("get_client_full_csc_modes(%s)=%s", client_supported_csc_modes, full_csc_modes)
+        return full_csc_modes
+
+
+    def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes):
+        """ given a list of RGB modes the client can handle,
+            returns the CSC modes per encoding that the server can encode with)
+        """
+        supported_csc_modes = []
+        for src_format, specs in self._csc_encoder_specs.items():
+            for dst_format, csc_specs in specs.items():
+                if dst_format in target_rgb_modes and len(csc_specs)>0:
+                    supported_csc_modes.append(src_format)
+                    break
+        supported_csc_modes = sorted(supported_csc_modes)
+        return self.get_server_full_csc_modes(supported_csc_modes)
+
+
 instance = VideoHelper()
 def getVideoHelper():
     global instance
