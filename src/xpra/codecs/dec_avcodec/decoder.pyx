@@ -190,7 +190,7 @@ def get_version():
 def get_info():
     f = {}
     for e in get_encodings():
-        f["formats.%s" % e] = get_colorspaces(e)
+        f["formats.%s" % e] = get_input_colorspaces(e)
     return  {"version"      : get_version(),
              "encodings"    : get_encodings(),
              "formats"      : f,
