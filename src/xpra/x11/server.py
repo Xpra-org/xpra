@@ -489,7 +489,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         focuslog("focus: giving focus to %s", window)
         #using idle_add seems to prevent some focus races:
-        gobject.idle_add(window.give_client_focus)
+        def give_focus():
+            window.raise_window()
+            window.give_client_focus()
+        gobject.idle_add(give_focus)
         if server_source and modifiers is not None:
             focuslog("focus: will set modified mask to %s", modifiers)
             server_source.make_keymask_match(modifiers)
