@@ -634,19 +634,34 @@ def parse_display_name(error_cb, opts, display_name):
         desc["local"] = False
         parts = display_name.split(separator)
         if len(parts)>2:
+            #ssh:HOST:DISPLAY or ssh/HOST/DISPLAY
             host = separator.join(parts[1:-1])
             display = ":" + parts[-1]
             desc["display"] = display
             opts.display = display
             desc["display_as_args"] = [display]
         else:
+            #ssh:HOST or ssh/HOST
             host = parts[1]
             desc["display"] = None
             desc["display_as_args"] = []
-        desc["ssh"] = shlex.split(opts.ssh)
-        full_ssh = desc["ssh"]
+        #ie: ssh=["/usr/bin/ssh", "-v"]
+        ssh = shlex.split(opts.ssh)
+        desc["ssh"] = ssh
+        full_ssh = ssh
+
+        #maybe restrict to win32 only?
+        #sys.platform.startswith("win")
+        ssh_cmd = ssh[0].lower()
+        is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
+        if is_putty:
+            #putty needs those:
+            full_ssh.append("-ssh")
+            full_ssh.append("-agent")
+
         upos = host.find("@")
         if upos>=0:
+            #HOST=username@host
             username = host[:upos]
             host = host[upos+1:]
             ppos = username.find(":")
@@ -654,12 +669,28 @@ def parse_display_name(error_cb, opts, display_name):
                 password = username[ppos+1:]
                 username = username[:ppos]
                 desc["password"] = password
+                if password and is_putty:
+                    full_ssh += ["-pw", password]
             if username:
                 desc["username"] = username
                 opts.username = username
-            full_ssh += ["-l", username]
-        desc["host"] = host
+                full_ssh += ["-l", username]
+        upos = host.find(":")
+        if upos>0:
+            port = host[upos+1:]
+            host = host[:upos]
+            try:
+                desc["port"] = int(port)
+            except:
+                error_cb("invalid ssh port specified: %s", port)
+            #grr why bother doing it different?
+            if is_putty:
+                full_ssh += ["-P", port]
+            else:
+                full_ssh += ["-p", port]
+
         full_ssh += ["-T", host]
+        desc["host"] = host
         desc["full_ssh"] = full_ssh
         remote_xpra = opts.remote_xpra.split()
         if opts.socket_dir:
@@ -768,17 +799,8 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     conn = None
     if dtype == "ssh":
         cmd = display_desc["full_ssh"]
-        if sys.platform.startswith("win"):
-            #use putty plink.exe syntax
-            #unless it looks like we're using a cygwin ssh exe:
-            ssh_cmd = display_desc.get("ssh", [""])[0].lower()
-            if not (ssh_cmd.endswith("ssh") or ssh_cmd.endswith("ssh.exe")):
-                password = display_desc.get("password")
-                if password:
-                    cmd += ["-pw", password]
-                cmd.append("-ssh")
-                cmd.append("-agent")
         cmd += display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
+        print("cmd=%s" % str(cmd))
         try:
             kwargs = {}
             kwargs["stderr"] = sys.stderr
