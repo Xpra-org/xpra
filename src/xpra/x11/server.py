@@ -22,6 +22,8 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                                add_event_receiver,          #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
+                               cleanup_x11_filter,          #@UnresolvedImport
+                               cleanup_all_event_receivers  #@UnresolvedImport
                                )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
@@ -155,7 +157,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
-        init_x11_filter()
+        assert init_x11_filter() is True
 
         self._has_focus = 0
         # Do this before creating the Wm object, to avoid clobbering its
@@ -244,6 +246,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._tray.cleanup()
             self._tray = None
         X11ServerBase.cleanup(self)
+        cleanup_x11_filter()
+        cleanup_all_event_receivers()
 
     def load_existing_windows(self, system_tray):
         # Tray handler:

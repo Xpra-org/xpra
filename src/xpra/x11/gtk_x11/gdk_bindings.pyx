@@ -6,6 +6,7 @@
 
 import os
 import time
+import traceback
 
 import gobject
 import gtk
@@ -611,6 +612,10 @@ cdef extern from "gtk-2.0/gdk/gdkevents.h":
                                GdkFilterFunc filter,
                                void * userdata)
 
+    void gdk_window_remove_filter(cGdkWindow *window,
+                               GdkFilterFunc function,
+                               void * data)
+
 
 # No need to select for ClientMessage; in fact, one cannot select for
 # ClientMessages.  If they are sent with an empty mask, then they go to the
@@ -625,7 +630,6 @@ cpdef add_event_receiver(window, receiver, max_receivers=3):
         window.set_data(_ev_receiver_key, receivers)
     if max_receivers>0 and len(receivers)>max_receivers:
         log.warn("already too many receivers for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
-        import traceback
         traceback.print_stack()
     if receiver not in receivers:
         receivers.add(receiver)
@@ -637,6 +641,14 @@ cpdef remove_event_receiver(window, receiver):
     receivers.discard(receiver)
     if not receivers:
         window.set_data(_ev_receiver_key, None)
+
+cpdef cleanup_all_event_receivers():
+    root = gtk.gdk.get_default_root_window()
+    root.set_data(_ev_receiver_key, None)
+    for window in get_children(root):
+        receivers = window.get_data(_ev_receiver_key)
+        if receivers is not None:
+            window.set_data(_ev_receiver_key, None)
 
 
 CursorNotify = 0
@@ -1048,9 +1060,19 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
 
 _INIT_X11_FILTER_DONE = False
 cpdef init_x11_filter():
+    """ returns True if we did initialize it, False if it was already initialized """
     global _INIT_X11_FILTER_DONE
     if _INIT_X11_FILTER_DONE:
-        return
+        return False
     init_x11_events()
     gdk_window_add_filter(<cGdkWindow*>0, x_event_filter, <void*>0)
     _INIT_X11_FILTER_DONE = True
+    return True
+
+cpdef cleanup_x11_filter():
+    global _INIT_X11_FILTER_DONE
+    if not _INIT_X11_FILTER_DONE:
+        return False
+    gdk_window_remove_filter(<cGdkWindow*>0, x_event_filter, <void*>0)
+    _INIT_X11_FILTER_DONE = False
+    return True
