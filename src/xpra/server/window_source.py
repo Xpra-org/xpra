@@ -1030,10 +1030,10 @@ class WindowSource(object):
             #something went wrong.. nothing we can do about it here!
             return  None
 
-        encoder_type, data, client_options, outw, outh, outstride, bpp = ret
+        coding, data, client_options, outw, outh, outstride, bpp = ret
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
-        if coding!="mmap" and (self.is_cancelled(sequence)  or self.suspended):
+        if coding!="mmap" and (self.is_cancelled(sequence) or self.suspended):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         #tell client about delta/store for this pixmap:
@@ -1054,7 +1054,7 @@ class WindowSource(object):
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
-        self.statistics.encoding_stats.append((encoder_type, w*h, bpp, len(data), end-start))
+        self.statistics.encoding_stats.append((coding, w*h, bpp, len(data), end-start))
         #record number of frames and pixels:
         totals = self.statistics.encoding_totals.setdefault(coding, [0, 0])
         totals[0] = totals[0] + 1

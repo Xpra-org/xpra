@@ -1068,7 +1068,12 @@ class WindowVideoSource(WindowSource):
         try:
             self._lock.acquire()
             if not self.check_pipeline(encoding, w, h, src_format):
-                raise Exception("failed to setup a video pipeline for %s encoding with source format %s" % (encoding, src_format))
+                #find one that is not video:
+                fallback_encodings = [x for x in self._encoders.keys() if x not in self.video_encodings]
+                log.error("BUG: failed to setup a video pipeline for %s encoding with source format %s, will fallback to: %s", encoding, src_format, fallback_encodings)
+                assert len(fallback_encodings)>0
+                fallback_encoding = fallback_encodings[0]
+                return self._encoders[fallback_encoding](fallback_encoding, image, options)
 
             #dw and dh are the edges we don't handle here
             width = w & self.width_mask
@@ -1103,7 +1108,7 @@ class WindowVideoSource(WindowSource):
                     client_options["scaled_size"] = enc_width, enc_height
             log("video_encode encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                                 encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
-            return self._video_encoder.get_type(), Compressed(encoding, data), client_options, width, height, 0, 24
+            return self._video_encoder.get_encoding(), Compressed(encoding, data), client_options, width, height, 0, 24
         finally:
             self._lock.release()
 
