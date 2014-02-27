@@ -371,8 +371,15 @@ class ApplicationWindow:
         self.update_options_from_gui()
         self.do_connect()
 
+
+    def reset_client(self):
+        #lose current client class and make a new one:
+        self.client = make_client(Exception, self.config)
+
+
     def handle_exception(self, e):
         def ui_handle_exception():
+            self.reset_client()
             self.set_sensitive(True)
             self.set_info_color(True)
             self.set_info_text(str(e))
@@ -502,13 +509,10 @@ class ApplicationWindow:
                 self.client.warn_and_quit = ignore_further_quit_events
                 self.client.quit = ignore_further_quit_events
                 self.set_sensitive(True)
+                self.reset_client()
                 gobject.idle_add(self.window.show)
             else:
                 do_quit()
-
-        def reset_client():
-            #lose current client class and make a new one:
-            self.client = make_client(Exception, self.config)
 
         def quit_override(exit_code):
             log("quit_override(%s)", exit_code)
@@ -518,7 +522,7 @@ class ApplicationWindow:
             if self.exit_code==0:
                 do_quit()
             else:
-                reset_client()
+                self.reset_client()
 
         self.client.warn_and_quit = warn_and_quit_override
         self.client.quit = quit_override
@@ -526,8 +530,8 @@ class ApplicationWindow:
             self.client.run()
         except Exception, e:
             log.error("client error", exc_info=True)
-            reset_client()
             self.handle_exception(e)
+
 
     def password_ok(self, *args):
         self.password_entry.modify_text(gtk.STATE_NORMAL, black)
