@@ -299,7 +299,7 @@ class UIXpraClient(XpraClientBase):
     def cleanup(self):
         log("UIXpraClient.cleanup()")
         XpraClientBase.cleanup(self)
-        for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras):
+        for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
                 continue
             if not hasattr(x, "cleanup"):

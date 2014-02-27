@@ -379,6 +379,7 @@ class ServerBase(ServerCore):
             thread.start_new_thread(self.notifications_forwarder.release, ())
             self.notifications_forwarder = None
         ServerCore.cleanup(self)
+        getVideoHelper().cleanup()
 
     def add_listen_socket(self, socktype, socket):
         raise NotImplementedError()

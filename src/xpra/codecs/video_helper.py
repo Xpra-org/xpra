@@ -133,6 +133,22 @@ class VideoHelper(object):
         self.csc_modules    = [x for x in csc_modules    if x in ALL_CSC_MODULE_OPTIONS]
         self.video_decoders = [x for x in video_decoders if x in ALL_VIDEO_DECODER_OPTIONS]
 
+    def cleanup(self):
+        try:
+            self._lock.acquire()
+            #check again with lock held (in case of race):
+            if not self._initialized:
+                return
+            self._video_encoder_specs = {}
+            self._csc_encoder_specs = {}
+            self._video_decoder_specs = {}
+            self.video_encoders = []
+            self.csc_modules = []
+            self.video_decoders = []
+            self._initialized = False
+        finally:
+            self._lock.release()
+
     def clone(self):
         if not self._initialized:
             self.init()
