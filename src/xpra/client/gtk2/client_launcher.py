@@ -68,8 +68,9 @@ class ApplicationWindow:
     def    __init__(self):
         # Default connection options
         self.config = make_defaults_struct()
+        self.config.ssh_port = "22"
         #what we save by default:
-        self.config_keys = set(["username", "password", "host", "port", "mode",
+        self.config_keys = set(["username", "password", "host", "port", "mode", "ssh_port",
                                 "encoding", "quality", "min-quality", "speed", "min-speed"])
         self.config.client_toolkit = "gtk2"
         self.client = make_client(Exception, self.config)
@@ -193,12 +194,19 @@ class ApplicationWindow:
         self.host_entry.set_width_chars(24)
         self.host_entry.connect("changed", self.validate)
         set_tooltip_text(self.host_entry, "hostname")
+        self.ssh_port_entry = gtk.Entry(max=5)
+        self.ssh_port_entry.set_width_chars(5)
+        self.ssh_port_entry.connect("changed", self.validate)
+        set_tooltip_text(self.ssh_port_entry, "SSH port")
         self.port_entry = gtk.Entry(max=5)
         self.port_entry.set_width_chars(5)
         self.port_entry.connect("changed", self.validate)
+        set_tooltip_text(self.port_entry, "port/display")
+
         hbox.pack_start(self.username_entry)
         hbox.pack_start(self.username_label)
         hbox.pack_start(self.host_entry)
+        hbox.pack_start(self.ssh_port_entry)
         hbox.pack_start(gtk.Label(":"))
         hbox.pack_start(self.port_entry)
         vbox.pack_start(hbox)
@@ -257,6 +265,14 @@ class ApplicationWindow:
         errs = []
         host = self.host_entry.get_text()
         errs.append((self.host_entry, not bool(host), "specify the host"))
+        if ssh:
+            #validate ssh port:
+            ssh_port = self.ssh_port_entry.get_text()
+            try:
+                ssh_port = int(ssh_port)
+            except:
+                ssh_port = -1
+            errs.append((self.ssh_port_entry, ssh_port<0 or ssh_port>=2**16, "invalid SSH port number"))
         port = self.port_entry.get_text()
         if ssh and not port:
             port = 0        #port optional with ssh
@@ -295,11 +311,13 @@ class ApplicationWindow:
         ssh = self.mode_combo.get_active_text()=="SSH"
         self.port_entry.set_text("")
         if ssh:
-            set_tooltip_text(self.port_entry, "Display number")
+            self.ssh_port_entry.show()
+            set_tooltip_text(self.port_entry, "Display number (optional)")
             set_tooltip_text(self.password_entry, "SSH Password")
             self.username_entry.show()
             self.username_label.show()
         else:
+            self.ssh_port_entry.hide()
             set_tooltip_text(self.port_entry, "port number")
             set_tooltip_text(self.password_entry, "Session Password")
             self.username_entry.hide()
@@ -401,6 +419,15 @@ class ApplicationWindow:
                 params["username"] = username
                 full_ssh += ["-l", username]
             full_ssh += ["-T", host]
+            if sys.platform.startswith("win"):
+                #putty needs those:
+                full_ssh.append("-ssh")
+                full_ssh.append("-agent")
+            if self.config.ssh_port!="22":
+                if sys.platform.startswith("win"):
+                    full_ssh += ["-P", self.config.ssh_port]
+                else:
+                    full_ssh += ["-p", self.config.ssh_port]
             params["full_ssh"] = full_ssh
             params["password"] = password
             params["display_name"] = "ssh:%s:%s" % (self.config.host, self.config.port)
@@ -479,6 +506,10 @@ class ApplicationWindow:
             else:
                 do_quit()
 
+        def reset_client():
+            #lose current client class and make a new one:
+            self.client = make_client(Exception, self.config)
+
         def quit_override(exit_code):
             log("quit_override(%s)", exit_code)
             if self.exit_code == None:
@@ -486,6 +517,8 @@ class ApplicationWindow:
             self.client.cleanup()
             if self.exit_code==0:
                 do_quit()
+            else:
+                reset_client()
 
         self.client.warn_and_quit = warn_and_quit_override
         self.client.quit = quit_override
@@ -493,6 +526,7 @@ class ApplicationWindow:
             self.client.run()
         except Exception, e:
             log.error("client error", exc_info=True)
+            reset_client()
             self.handle_exception(e)
 
     def password_ok(self, *args):
@@ -521,6 +555,7 @@ class ApplicationWindow:
 
     def update_options_from_gui(self):
         self.config.host = self.host_entry.get_text()
+        self.config.ssh_port = self.ssh_port_entry.get_text()
         self.config.port = self.port_entry.get_text()
         self.config.username = self.username_entry.get_text()
         self.config.encoding = self.get_selected_encoding()
@@ -548,14 +583,16 @@ class ApplicationWindow:
         self.username_entry.set_text(self.config.username)
         self.password_entry.set_text(self.config.password)
         self.host_entry.set_text(self.config.host)
-        port = ""
-        try:
-            iport = int(self.config.port)
-            if iport>0:
-                port = str(iport)
-        except:
-            pass
-        self.port_entry.set_text(port)
+        def get_port(v):
+            try:
+                iport = int(v)
+                if iport>0:
+                    return str(iport)
+            except:
+                pass
+            return ""
+        self.port_entry.set_text(get_port(self.config.port))
+        self.ssh_port_entry.set_text(get_port(self.config.ssh_port))
 
     def destroy(self, *args):
         self.window.destroy()
@@ -564,7 +601,11 @@ class ApplicationWindow:
 
     def update_options_from_file(self, filename):
         props = read_config(filename)
-        options = validate_config(props)
+        #we rely on "ssh_port" being defined on the config object
+        #so try to load it from file, and define it if not present:
+        options = validate_config(props, extras={"ssh_port" : int})
+        if "ssh_port" not in options:
+            options["ssh_port"] = 22
         for k,v in options.items():
             fn = k.replace("-", "_")
             setattr(self.config, fn, v)
@@ -593,7 +634,7 @@ class ApplicationWindow:
     def save_clicked(self, *args):
         self.update_options_from_gui()
         def do_save(filename):
-            save_config(filename, self.config, self.config_keys)
+            save_config(filename, self.config, self.config_keys, extras={"ssh_port" : int})
         self.choose_session_file("Save session settings to file", gtk.FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, do_save)
 
     def load_clicked(self, *args):

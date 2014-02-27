@@ -99,10 +99,12 @@ def get_build_info():
     return info
 
 
-def save_config(conf_file, config, keys):
+def save_config(conf_file, config, keys, extras={}):
     f = open(conf_file, "w")
+    option_types = OPTION_TYPES.copy()
+    option_types.update(extras)
     for key in keys:
-        assert key in OPTION_TYPES, "invalid configuration key: %s" % key
+        assert key in option_types, "invalid configuration key: %s" % key
         fn = key.replace("-", "_")
         v = getattr(config, fn)
         f.write("%s=%s%s" % (key, v, os.linesep))
@@ -419,19 +421,21 @@ def parse_number(numtype, k, v, auto=-1):
         warn("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
         return None
 
-def validate_config(d={}, discard=NO_FILE_OPTIONS):
+def validate_config(d={}, discard=NO_FILE_OPTIONS, extras={}):
     """
         Validates all the options given in a dict with fields as keys and
         strings or arrays of strings as values.
         Each option is strongly typed and invalid value are discarded.
         We get the required datatype from OPTION_TYPES
     """
+    option_types = OPTION_TYPES.copy()
+    option_types.update(extras)
     nd = {}
     for k, v in d.items():
         if k in discard:
             warn("Warning: option '%s' is not allowed in configuration files" % k)
             continue
-        vt = OPTION_TYPES.get(k)
+        vt = option_types.get(k)
         if vt is None:
             warn("Warning: invalid option: '%s'" % k)
             continue
