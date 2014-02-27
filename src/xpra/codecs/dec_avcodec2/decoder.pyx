@@ -440,7 +440,7 @@ cdef class Decoder:
         return self.height
 
     def get_encoding(self):
-        return "h264"
+        return self.encoding
 
     def get_type(self):                             #@DuplicatedSignature
         return "avcodec"
