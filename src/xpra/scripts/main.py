@@ -1181,6 +1181,8 @@ def run_list(parser, opts, extra_args):
 
 
 if __name__ == "__main__":
+    from xpra.platform import init
+    init()
     code = main("xpra.exe", sys.argv)
     if not code:
         code = 0

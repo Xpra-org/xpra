@@ -7,7 +7,7 @@
 import sys
 from xpra.platform.win32 import set_redirect_output
 from xpra.platform import init
-set_redirect_output(False)
+set_redirect_output(True)
 init()
 
 try:

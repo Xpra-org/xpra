@@ -6,8 +6,6 @@
 
 import os as os
 import sys as sys
-from xpra.log import Logger
-log = Logger("platform", "import")
 
 
 _init_done = False
@@ -34,7 +32,10 @@ def platform_import(where, pm, required, *imports):
     module = "xpra.platform.%s" % p
     if pm:
         module += ".%s" % pm
-    log("importing %s from %s (required=%s)" % (imports, module, required))
+
+    #cannot log this early! (win32 needs log to file redirection..)
+    #log = Logger("platform", "import")
+    #log("importing %s from %s (required=%s)" % (imports, module, required))
     platform_module = __import__(module, {}, {}, imports)
     assert platform_module
     for x in imports:
@@ -43,10 +44,8 @@ def platform_import(where, pm, required, *imports):
             if required:
                 raise Exception("could not find %s in %s" % (x, module))
             else:
-                log("%s=%s (unchanged)", x, where[x])
                 continue
         v = getattr(platform_module, x)
-        log("%s=%s" % (x, str(v).replace("\n", "\\n")))
         where[x] = v
 
 platform_import(globals(), None, True, "do_init")
