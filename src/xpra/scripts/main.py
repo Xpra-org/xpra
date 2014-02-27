@@ -800,7 +800,6 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     if dtype == "ssh":
         cmd = display_desc["full_ssh"]
         cmd += display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
-        print("cmd=%s" % str(cmd))
         try:
             kwargs = {}
             kwargs["stderr"] = sys.stderr
