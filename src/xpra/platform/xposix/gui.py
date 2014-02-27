@@ -83,13 +83,15 @@ class ClientExtras(object):
         try:
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
-            self._xsettings_watcher = XSettingsWatcher()
-            self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
-            self._handle_xsettings_changed()
-            self._root_props_watcher = XRootPropWatcher(ROOT_PROPS)
-            self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
-            #ensure we get the initial value:
-            self._root_props_watcher.do_notify("RESOURCE_MANAGER")
+            if self._xsettings_watcher is None:
+                self._xsettings_watcher = XSettingsWatcher()
+                self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
+                self._handle_xsettings_changed()
+            if self._root_props_watcher is None:
+                self._root_props_watcher = XRootPropWatcher(ROOT_PROPS)
+                self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
+                #ensure we get the initial value:
+                self._root_props_watcher.do_notify("RESOURCE_MANAGER")
         except ImportError, e:
             log.error("failed to load X11 properties/settings bindings: %s - root window properties will not be propagated", e)
 
