@@ -806,10 +806,10 @@ if WIN32:
     py2exe_exclude("xpra.platform.darwin", "xpra.platform.xposix")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
     setup_options["windows"] = [
-                    {'script': 'xpra/scripts/main.py',                      'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
-                    {'script': 'xpra/gtk_common/gtk_view_keyboard.py',      'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
-                    {'script': 'xpra/gtk_common/gtk_view_clipboard.py',     'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
-                    {'script': 'xpra/client/gtk2/client_launcher.py',       'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
+                    {'script': 'win32/xpra.py',                         'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
+                    {'script': 'xpra/gtk_common/gtk_view_keyboard.py',  'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
+                    {'script': 'xpra/gtk_common/gtk_view_clipboard.py', 'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
+                    {'script': 'xpra/client/gtk2/client_launcher.py',   'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
               ]
     #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
     console = [
