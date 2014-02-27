@@ -28,8 +28,6 @@ class XRootPropWatcher(gobject.GObject):
         self._root.set_events(self._saved_event_mask | gtk.gdk.PROPERTY_CHANGE_MASK)
         self._own_x11_filter = init_x11_filter()
         add_event_receiver(self._root, self)
-        import traceback
-        traceback.print_stack()
 
     def cleanup(self):
         remove_event_receiver(self._root, self)
