@@ -767,7 +767,7 @@ class UIXpraClient(XpraClientBase):
         csc_modes = []
         for modes in full_csc_modes.values():
             csc_modes += modes
-        capabilities["encoding.full_csc_modes"] = list(set(full_csc_modes))
+        capabilities["encoding.csc_modes"] = list(set(csc_modes))
 
         log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["encoding.uses_swscale"] = True
