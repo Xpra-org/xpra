@@ -105,9 +105,9 @@ class WindowVideoSource(WindowSource):
 
     def parse_csc_modes(self, csc_modes, full_csc_modes):
         #only override if values are specified:
-        if csc_modes is not None:
+        if csc_modes is not None and type(csc_modes) in (list, tuple):
             self.csc_modes = csc_modes
-        if full_csc_modes is not None:
+        if full_csc_modes is not None and type(full_csc_modes)==dict:
             self.full_csc_modes = full_csc_modes
 
 
