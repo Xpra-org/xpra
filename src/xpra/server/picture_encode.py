@@ -80,12 +80,17 @@ def webp_encode(coding, image, quality):
 
 def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4, encoding_client_options, supports_rgb24zlib):
     pixel_format = image.get_pixel_format()
-    #log("rgb_encode(%s, %s, %s) rgb_formats=%s", coding, image, options, self.rgb_formats)
+    #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4, encoding_client_options, supports_rgb24zlib), pixel_format, rgb_formats)
     if pixel_format not in rgb_formats:
         if not rgb_reformat(image, rgb_formats, supports_transparency):
             raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))
         #get the new format:
         pixel_format = image.get_pixel_format()
+        #switch encoding if necessary:
+        if len(pixel_format)==4 and coding=="rgb24":
+            coding = "rgb32"
+        elif len(pixel_format)==3 and coding=="rgb32":
+            coding = "rgb24"
     #always tell client which pixel format we are sending:
     options = {"rgb_format" : pixel_format}
     #compress here and return a wrapper so network code knows it is already zlib compressed:
