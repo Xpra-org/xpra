@@ -101,7 +101,6 @@ class ClientTray(ClientWidgetBase):
 
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
-        assert coding in ("rgb24", "rgb32", "png", "mmap", "webp"), "invalid encoding for tray data: %s" % coding
         log("%s.draw_region%s", self, [x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks])
 
         def after_draw_update_tray(success):
