@@ -496,6 +496,11 @@ class GLPixmapBacking(GTK2WindowBacking):
         return True
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
+        #note: we clone here unconditionally because this gives us the pixels
+        #as a string object which PyOpenGL can use for upload, whereas the buffer objects
+        #we get from the avcodec and vpx decoders cannot be used.
+        #PyOpenGL version 3.1 has some support for the memory view interface
+        #but this requires memoryview support which requires python>=2.7
         img.clone_pixel_data()
         gobject.idle_add(self.gl_paint_planar, img, x, y, enc_width, enc_height, width, height, callbacks)
 
