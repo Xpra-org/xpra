@@ -102,26 +102,27 @@ class ClientTray(ClientWidgetBase):
 
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
-        log("%s.draw_region%s", self, [x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks])
+        log("%s.draw_region%s", self, (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks))
 
         def after_draw_update_tray(success):
             log("%s.after_draw_update_tray(%s)", self, success)
             if not success:
                 log.warn("after_draw_update_tray(%s) options=%s", success, options)
                 return
-            if not self._backing.pixels:
-                log.warn("TrayBacking does not have any pixels / format!")
+            tray_data = self._backing.data
+            if tray_data is None:
+                log.warn("TrayBacking does not have any pixel data!")
                 return
-            self.set_tray_icon()
+            self.idle_add(self.set_tray_icon, tray_data)
             self.idle_add(self.reconfigure)
         callbacks.append(after_draw_update_tray)
         self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
-    def set_tray_icon(self):
-        log("%s.set_tray_icon() format=%s", self, self._backing.format)
-        enc, w, h, rowstride = self._backing.format
+    def set_tray_icon(self, tray_data):
+        enc, w, h, rowstride, pixels = tray_data
+        log("%s.set_tray_icon(%s, %s, %s, %s, %s bytes)", self, enc, w, h, rowstride, len(pixels))
         has_alpha = enc=="rgb32"
-        self.tray_widget.set_icon_from_data(self._backing.pixels, has_alpha, w, h, rowstride)
+        self.tray_widget.set_icon_from_data(pixels, has_alpha, w, h, rowstride)
 
 
     def destroy(self):
@@ -140,16 +141,15 @@ class TrayBacking(GTKWindowBacking):
     """
 
     def __init__(self, wid, w, h, has_alpha):
-        self.pixels = None
-        self.format = None
+        self.data = None
         GTKWindowBacking.__init__(self, wid)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        self.pixels = img_data
-        self.format = ("rgb24", width, height, rowstride)
+        log("TrayBacking._do_paint_rgb24%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options, callbacks))
+        self.data = ["rgb24", width, height, rowstride, img_data[:]]
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        self.pixels = img_data
-        self.format = ("rgb32", width, height, rowstride)
+        log("TrayBacking._do_paint_rgb32%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options, callbacks))
+        self.data = ["rgb32", width, height, rowstride, img_data[:]]
         return True
