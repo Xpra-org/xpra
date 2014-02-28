@@ -103,6 +103,9 @@ class GTKStatusIconTray(TrayBase):
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
         tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+        tw, th = self.get_geometry()[2:]
+        if tw!=w or th!=h:
+            tray_icon = tray_icon.scale_simple(tw, th, gtk.gdk.INTERP_HYPER)
         self.tray_widget.set_from_pixbuf(tray_icon)
 
 
