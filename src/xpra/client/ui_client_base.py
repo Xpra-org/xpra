@@ -752,17 +752,18 @@ class UIXpraClient(XpraClientBase):
             capabilities["encoding.min-speed"] = self.min_speed
 
         #figure out the CSC modes supported:
-        #these are the modes we want (the ones we can display):
-        rgb_formats = ["RGB", "RGBX", "RGBA"]
-        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            #win32 and osx cannot handle transparency, so don't bother with RGBA
-            rgb_formats = ["RGB"]
+        #these are the RGB modes we want (the ones we can paint with):
+        rgb_formats = ["RGB", "RGBX"]
+        if not sys.platform.startswith("win") and not sys.platform.startswith("darwin"):
+            #only win32 and osx cannot handle transparency
+            rgb_formats.append("RGBA")
         capabilities["encodings.rgb_formats"] = rgb_formats
 
+        #figure out which CSC modes (usually YUV) can give us those RGB modes:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
         log("supported full csc_modes=%s", full_csc_modes)
         capabilities["encoding.full_csc_modes"] = full_csc_modes
-        #for older servers (remove per-encoding):
+        #for older servers (remove per-encoding and hope for the best..):
         csc_modes = []
         for modes in full_csc_modes.values():
             csc_modes += modes
