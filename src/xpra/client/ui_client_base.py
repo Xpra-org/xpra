@@ -723,7 +723,6 @@ class UIXpraClient(XpraClientBase):
             "generic-rgb-encodings"     : True,
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
-            "encodings.rgb_formats"     : ["RGB", "RGBA"],
             })
         control_commands = ["show_session_info", "enable_bencode", "enable_zlib"]
         from xpra.net.protocol import use_bencode, use_rencode
