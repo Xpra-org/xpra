@@ -245,6 +245,24 @@ def argb_swap(image, rgb_formats, supports_transparency):
     return False
 
 
+#source format  : [(PIL input format, output format), ..]
+PIL_conv = {
+             "XRGB"   : [("XRGB", "RGB")],
+             #try to drop alpha channel since it isn't used:
+             "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
+             #try with alpha first:
+             "BGRA"   : [("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")],
+             }
+#as above but for clients which cannot handle alpha:
+PIL_conv_noalpha = {
+             "XRGB"   : [("XRGB", "RGB")],
+             #try to drop alpha channel since it isn't used:
+             "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
+             #try with alpha first:
+             "BGRA"   : [("BGRX", "RGB"), ("BGRA", "RGBA"), ("BGRX", "RGBX")],
+             }
+
+
 def rgb_reformat(image, rgb_formats, supports_transparency):
     """ convert the RGB pixel data into a format supported by the client """
     #need to convert to a supported format!
@@ -254,13 +272,10 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     if not PIL:
         #try to fallback to argb module
         return argb_swap(image, rgb_formats, supports_transparency)
-    modes = {
-             #source  : [(PIL input format, output format), ..]
-             "XRGB"   : [("XRGB", "RGB")],
-             "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
-             #try with alpha first:
-             "BGRA"   : [("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")]
-             }.get(pixel_format)
+    if supports_transparency:
+        modes = PIL_conv.get(pixel_format)
+    else:
+        modes = PIL_conv_noalpha.get(pixel_format)
     target_rgb = [(im,om) for (im,om) in modes if om in rgb_formats]
     if len(target_rgb)==0:
         #try argb module:
