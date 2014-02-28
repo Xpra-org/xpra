@@ -224,8 +224,11 @@ class WindowSource(object):
         self.supports_transparency = HAS_ALPHA and properties.get("encoding.transparency", self.supports_transparency)
         self.encodings = properties.get("encodings", self.encodings)
         self.core_encodings = properties.get("encodings.core", self.core_encodings)
-        #unless the client tells us it does support alpha, assume it does not:
-        self.rgb_formats = properties.get("encodings.rgb_formats", [x for x in self.rgb_formats if x.find("A")<0])
+        rgb_formats = properties.get("encodings.rgb_formats", self.rgb_formats)
+        if not self.supports_transparency:
+            #remove rgb formats with alpha
+            rgb_formats = [x for x in rgb_formats if x.find("A")<0]
+        self.rgb_formats = rgb_formats
         log("set_client_properties: window rgb_formats=%s", self.rgb_formats)
 
 
