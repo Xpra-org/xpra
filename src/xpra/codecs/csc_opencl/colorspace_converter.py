@@ -424,6 +424,19 @@ from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
 def init_module():
     build_kernels()
 
+def cleanup_module():
+    global program, selected_device, selected_platform, selected_device_cpu_cost, selected_device_gpu_cost, selected_device_setup_cost
+    program = None
+    context = None
+    selected_device = None
+    selected_platform = None
+    selected_device_cpu_cost = 50
+    selected_device_gpu_cost = 50
+    selected_device_setup_cost = 50
+
+context = None
+
+
 def get_type():
     return "opencl"
 

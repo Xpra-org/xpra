@@ -163,7 +163,11 @@ IF ENABLE_VP9 == True:
 
 
 def init_module():
+    log("vpx.encoder.init_module()")
     assert len(CODECS)>0, "no supported encodings!"
+
+def cleanup_module():
+    log("vpx.encoder.cleanup_module()")
 
 def get_abi_version():
     return VPX_ENCODER_ABI_VERSION

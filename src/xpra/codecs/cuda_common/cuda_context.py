@@ -103,9 +103,15 @@ def check_devices():
     assert len(devices)>0, "no valid CUDA devices found!"
 
 
-def select_device(preferred_device_id=DEFAULT_CUDA_DEVICE_ID, min_compute=0):
+def reset_state():
+    log("cuda_context.reset_state()")
     global DEVICE_STATE
+    DEVICES = None
+
+
+def select_device(preferred_device_id=DEFAULT_CUDA_DEVICE_ID, min_compute=0):
     devices = init_all_devices()
+    global DEVICE_STATE
     free_pct = 0
     cf = driver.ctx_flags
     #split device list according to device state:

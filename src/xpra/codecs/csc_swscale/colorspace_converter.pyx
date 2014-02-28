@@ -175,7 +175,10 @@ def get_swscale_flags_strs(int flags):
 
 def init_module():
     #nothing to do!
-    pass
+    log("csc_swscale.init_module()")
+
+def cleanup_module():
+    log("csc_swscale.cleanup_module()")
 
 def get_type():
     return "swscale"

@@ -13,7 +13,7 @@ import threading
 import numpy
 import time
 
-from xpra.codecs.cuda_common.cuda_context import get_pycuda_version, get_pycuda_info, driver, select_device, compile_all, get_CUDA_function, device_info
+from xpra.codecs.cuda_common.cuda_context import get_pycuda_version, get_pycuda_info, driver, select_device, compile_all, reset_state, get_CUDA_function, device_info
 from xpra.codecs.csc_nvcuda.CUDA_kernels import gen_rgb_to_yuv_kernels
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
@@ -41,7 +41,7 @@ def gen_all_kernels():
     _kernel_names_ = sorted(set([x[0] for x in kernels.values()]))
     log.info("%s csc_nvcuda kernels: %s", len(_kernel_names_), ", ".join(_kernel_names_))
     return kernels
-KERNELS_MAP = gen_all_kernels()
+KERNELS_MAP = {}
 
 
 init_done = False
@@ -52,10 +52,22 @@ def init_module():
     global init_done
     if init_done:
         return
+    global KERNELS_MAP
+    if len(KERNELS_MAP)==0:
+        KERNELS_MAP = gen_all_kernels()
     for function_name, kernel_src in KERNELS_MAP.values():
         compile_all(function_name, kernel_src)
     init_done = True
 
+def cleanup_module():
+    log("csc_nvcuda.cleanup_module()")
+    global init_done, KERNELS_MAP
+    if not init_done:
+        return
+    reset_state()
+    KERNELS_MAP = {}
+    init_done = False
+    
 
 KERNEL_cubins = {}
 def get_CUDA_csc_function(device_id, src_format, dst_format):

@@ -223,7 +223,10 @@ COLORSPACES = {
 
 
 def init_module():
-    pass
+    log("enc_x264.init_module()")
+
+def cleanup_module():
+    log("enc_x264.cleanup_module()")
 
 def get_version():
     return X264_BUILD

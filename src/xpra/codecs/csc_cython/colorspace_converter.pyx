@@ -57,6 +57,9 @@ def init_module():
     #nothing to do!
     log("csc_cython.init_module()")
 
+def cleanup_module():
+    log("csc_cython.cleanup_module()")
+
 def get_type():
     return "cython"
 

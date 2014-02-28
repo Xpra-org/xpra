@@ -149,7 +149,10 @@ log("avcodec2.init_module: CODECS=%s", CODECS)
 
 
 def init_module():
-    pass
+    log("dec_avcodec2.init_module()")
+
+def cleanup_module():
+    log("dec_avcodec2.cleanup_module()")
 
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)

@@ -210,8 +210,10 @@ COLORSPACES = ["YUV420P", "YUV444P"]
 
 
 def init_module():
-    #nothing to do!
-    pass
+    log("enc_x265.init_module()")
+
+def cleanup_module():
+    log("enc_x265.cleanup_module()")
 
 def get_version():
     return x265_version_str

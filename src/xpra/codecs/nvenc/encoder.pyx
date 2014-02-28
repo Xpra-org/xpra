@@ -14,7 +14,7 @@ from pycuda.compiler import compile
 
 from xpra.util import AtomicInteger
 from xpra.deque import maxdeque
-from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, device_info, get_CUDA_function, \
+from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, device_info, reset_state, get_CUDA_function, \
                 record_device_failure, record_device_success
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -1937,6 +1937,7 @@ cdef class Encoder:
 
 
 def init_module():
+    log("nvenc.init_module()")
     if NVENCAPI_VERSION<=0x20:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
 
@@ -1951,3 +1952,7 @@ def init_module():
             test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
         finally:
             test_encoder.clean()
+
+def cleanup_module():
+    log("nvenc.cleanup_module()")
+    reset_state()

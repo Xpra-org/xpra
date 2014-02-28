@@ -25,8 +25,10 @@ def get_encodings():
     return ["proxy"]
 
 def init_module():
-    #nothing to do!
-    pass
+    log("enc_proxy.init_module()")
+
+def cleanup_module():
+    log("enc_proxy.cleanup_module()")
 
 
 class Encoder(object):

@@ -157,7 +157,10 @@ if len(COLORSPACES)==0:
 
 
 def init_module():
-    pass
+    log("dec_avcodec.init_module()")
+
+def cleanup_module():
+    log("dec_avcodec.cleanup_module()")
 
 def get_type():
     return "avcodec"

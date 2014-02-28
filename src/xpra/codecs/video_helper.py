@@ -122,6 +122,8 @@ class VideoHelper(object):
         self.csc_modules = []
         self.video_decoders = []
 
+        self._cleanup_modules = []
+
         #bits needed to ensure we can initialize just once
         #even when called from multiple threads:
         self._initialized = init
@@ -139,6 +141,12 @@ class VideoHelper(object):
             #check again with lock held (in case of race):
             if not self._initialized:
                 return
+            for module in self._cleanup_modules:
+                try:
+                    module.cleanup_module()
+                except:
+                    log.error("error cleaning up %s", module, exc_info=True)
+            self._cleanup_modules = []
             self._video_encoder_specs = {}
             self._csc_encoder_specs = {}
             self._video_decoder_specs = {}
@@ -239,6 +247,7 @@ class VideoHelper(object):
         encoder_type = encoder_module.get_type()
         try:
             encoder_module.init_module()
+            self._cleanup_modules.append(encoder_module)
         except Exception, e:
             log.warn("cannot use %s module %s: %s", encoder_type, encoder_module, e, exc_info=True)
             return
@@ -280,6 +289,7 @@ class VideoHelper(object):
         csc_type = csc_module.get_type()
         try:
             csc_module.init_module()
+            self._cleanup_modules.append(csc_module)
         except Exception, e:
             log.warn("cannot use %s module %s: %s", csc_type, csc_module, e)
             return
@@ -314,6 +324,7 @@ class VideoHelper(object):
         encoder_type = decoder_module.get_type()
         try:
             decoder_module.init_module()
+            self._cleanup_modules.append(decoder_module)
         except Exception, e:
             log.warn("cannot use %s module %s: %s", encoder_type, decoder_module, e, exc_info=True)
             return
