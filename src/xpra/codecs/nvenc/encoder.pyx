@@ -1063,9 +1063,9 @@ def get_output_colorspaces(input_colorspace):
 WIDTH_MASK = 0xFFFE
 HEIGHT_MASK = 0xFFFE
 
-#Note: these counters should be per-device, but:
-#1) although the support code is there, we currently only use one device
-#2) when we call get_runtime_factor(), we don't know which device is going to get used!
+#Note: these counters should be per-device, but
+#when we call get_runtime_factor(), we don't know which device is going to get used!
+#since we have load balancing, using an overall factor isn't too bad
 context_counter = AtomicInteger()
 last_context_failure = 0
 
