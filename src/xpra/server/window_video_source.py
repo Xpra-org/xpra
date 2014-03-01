@@ -57,6 +57,7 @@ class WindowVideoSource(WindowSource):
     """
 
     def __init__(self, *args):
+        #this will call init_vars():
         WindowSource.__init__(self, *args)
         #client uses uses_swscale (has extra limits on sizes)
         self.uses_swscale = self.encoding_options.get("uses_swscale", True)
@@ -64,13 +65,6 @@ class WindowVideoSource(WindowSource):
         self.supports_video_scaling = self.encoding_options.get("video_scaling", False)
         self.supports_video_reinit = self.encoding_options.get("video_reinit", False)
         self.supports_video_subregion = self.encoding_options.get("video_subregion", False)
-        self.video_subregion = None
-        self.video_subregion_counter = 0
-        self.video_subregion_set_at = 0
-        self.video_subregion_time = 0
-        #keep track of how much extra we batch non-video regions (milliseconds):
-        self.video_subregion_non_waited = 0
-        self.video_subregion_non_max_wait = 150
 
         self.csc_modes = get_default_csc_modes(self.encoding_client_options)       #for pre 0.12 clients: just one list of modes for all encodings..
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
@@ -85,6 +79,23 @@ class WindowVideoSource(WindowSource):
         common = [x for x in self.server_core_encodings if x in self.core_encodings]
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in common and x not in self.video_encodings)]
 
+        self._csc_encoder = None
+        self._video_encoder = None
+        self._lock = Lock()               #to ensure we serialize access to the encoder and its internals
+
+    def __repr__(self):
+        return "WindowVideoSource(%s : %s)" % (self.wid, self.window_dimensions)
+
+    def init_vars(self):
+        WindowSource.init_vars(self)
+        self.video_subregion = None
+        self.video_subregion_counter = 0
+        self.video_subregion_set_at = 0
+        self.video_subregion_time = 0
+        #keep track of how much extra we batch non-video regions (milliseconds):
+        self.video_subregion_non_waited = 0
+        self.video_subregion_non_max_wait = 150
+
         #these constraints get updated with real values
         #when we construct the video pipeline:
         self.min_w = 1
@@ -95,15 +106,19 @@ class WindowVideoSource(WindowSource):
         self.height_mask = 0xFFFF
         self.actual_scaling = (1, 1)
 
-        self._csc_encoder = None
-        self._video_encoder = None
-        self._lock = Lock()               #to ensure we serialize access to the encoder and its internals
-
         self.last_pipeline_params = None
         self.last_pipeline_scores = []
 
-    def __repr__(self):
-        return "WindowVideoSource(%s : %s)" % (self.wid, self.window_dimensions)
+        self.uses_swscale = False
+        self.uses_csc_atoms = False
+        self.supports_video_scaling = False
+        self.supports_video_reinit = False
+        self.supports_video_subregion = False
+
+        self.csc_modes = []
+        self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
+        self.video_encodings = []
+        self.non_video_encodings = []
 
 
     def parse_csc_modes(self, csc_modes, full_csc_modes):
@@ -173,13 +188,6 @@ class WindowVideoSource(WindowSource):
             self._lock.acquire()
             self.do_csc_encoder_cleanup()
             self.do_video_encoder_cleanup()
-
-            #reset subregion state:
-            self.video_subregion = None
-            self.video_subregion_counter = 0
-            self.video_subregion_set_at = 0
-            self.video_subregion_time = 0
-            self.video_subregion_non_waited = 0
         finally:
             self._lock.release()
 

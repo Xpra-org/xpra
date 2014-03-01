@@ -73,6 +73,8 @@ class WindowSource(object):
         self.timeout_add = timeout_add
         self.source_remove = source_remove
 
+        self.init_vars()
+
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
         self.wid = wid
@@ -83,7 +85,6 @@ class WindowSource(object):
         self.server_encodings = server_encodings
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
-        self.encoding_last_used = None
         refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg")]
         client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", refresh_encodings)
         self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.server_core_encodings]
@@ -102,19 +103,10 @@ class WindowSource(object):
         self.supports_delta = []
         if xor_str is not None and not window.is_tray():
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
-        self.last_pixmap_data = None
         self.batch_config = batch_config
-        self.suspended = False
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
         self.video_helper = video_helper
-        self.refresh_timer = None
-        self.timeout_timer = None
-        self.expire_timer = None
-        self.soft_timer = None
-        self.soft_expired = 0
-        self.max_soft_expired = 5
-        self.max_delta_size = MAX_DELTA_SIZE
         if window.is_shadow():
             self.max_delta_size = -1
 
@@ -150,19 +142,8 @@ class WindowSource(object):
         self._fixed_speed = default_encoding_options.get("speed", -1)
         self._fixed_min_speed = default_encoding_options.get("min-speed", -1)
 
-        # for managing/cancelling damage requests:
-        self._damage_delayed = None                     #may store a delayed region when batching in progress
-        self._damage_delayed_expired = False            #when this is True, the region should have expired
-                                                        #but it is now waiting for the backlog to clear
-        self._sequence = 1                              #increase with every region we process or delay
-        self._last_sequence_queued = 0                  #the latest sequence we queued for sending (after encoding it)
-        self._damage_cancelled = 0                      #stores the highest _sequence cancelled
-        self._damage_packet_sequence = 1                #increase with every damage packet created
-
-        self._encoders = {
-                          "rgb24"   : self.rgb_encode,
-                          "rgb32"   : self.rgb_encode,
-                          }
+        self._encoders["rgb24"] = self.rgb_encode
+        self._encoders["rgb32"] = self.rgb_encode
         for x in ("png", "png/P", "png/L", "jpeg"):
             if x in self.server_core_encodings:
                 self._encoders[x] = self.PIL_encode
@@ -175,11 +156,73 @@ class WindowSource(object):
         return "WindowSource(%s : %s)" % (self.wid, self.window_dimensions)
 
 
+    def init_vars(self):
+        self.server_core_encodings = []
+        self.server_encodings = []
+        self.encoding = None
+        self.encodings = []
+        self.encoding_last_used = None
+        self.auto_refresh_encodings = []
+        self.core_encodings = []
+        self.rgb_formats = []
+        self.encoding_options = {}
+        self.encoding_client_options = {}
+        self.supports_rgb24zlib = False
+        self.rgb_zlib = False
+        self.rgb_lz4 = False
+        self.generic_encodings = []
+        self.supports_transparency = False
+        self.full_frames_only = False
+        self.supports_delta = []
+        self.last_pixmap_data = None
+        self.batch_config = None
+        self.suspended = False
+        #
+        self.auto_refresh_delay = 0
+        self.video_helper = None
+        self.refresh_timer = None
+        self.timeout_timer = None
+        self.expire_timer = None
+        self.soft_timer = None
+        self.soft_expired = 0
+        self.max_soft_expired = 5
+        self.max_delta_size = MAX_DELTA_SIZE
+        self.is_OR = False
+        self.window_dimensions = 0, 0
+        self.fullscreen = False
+        self.scaling = None
+        self.maximized = False
+        #
+        self.max_small_regions = 0
+        self.max_bytes_percent = 0
+        self.small_packet_cost = 0
+        #
+        self._mmap = None
+        self._mmap_size = 0
+        #
+        self._encoding_quality = None
+        self._encoding_speed = None
+        #
+        self._fixed_quality = -1
+        self._fixed_min_quality = -1
+        self._fixed_speed = -1
+        self._fixed_min_speed = -1
+        #
+        self._damage_delayed = None
+        self._damage_delayed_expired = False
+        self._sequence = 1
+        self._last_sequence_queued = 0
+        self._damage_cancelled = 0
+        self._damage_packet_sequence = 1
+        #
+        self._encoders = {}
+
     def cleanup(self):
         self.cancel_damage()
         self._damage_cancelled = float("inf")
         self.statistics.reset()
         log("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
+        self.init_vars()
 
     def suspend(self):
         self.cancel_damage()
