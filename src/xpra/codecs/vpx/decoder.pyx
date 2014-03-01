@@ -227,7 +227,7 @@ cdef class Decoder:
             raise Exception("failed to instantiate vpx decoder: %s" % vpx_codec_error(self.context))
         log("vpx_codec_dec_init_ver for %s succeeded", encoding)
 
-    def __str__(self):
+    def __repr__(self):
         return "vpx.Decoder(%s)" % self.encoding
 
     def get_info(self):                 #@DuplicatedSignature
@@ -264,6 +264,13 @@ cdef class Decoder:
         if self.context!=NULL:
             vpx_codec_destroy(self.context)
             self.context = NULL
+        self.width = 0
+        self.height = 0
+        self.max_threads = 0
+        self.pixfmt = 0
+        self.dst_format = ""
+        self.encoding = ""
+
 
     def decompress_image(self, input, options):
         cdef vpx_image_t *img

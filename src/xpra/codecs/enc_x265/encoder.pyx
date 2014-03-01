@@ -345,6 +345,26 @@ cdef class Encoder:
         log("init_encoder() x265 context=%#x", <unsigned long> self.context)
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
+    def clean(self):                        #@DuplicatedSignature
+        log("clean() x265 param=%#x, context=%#x", <unsigned long> self.param, <unsigned long> self.context)
+        if self.param!=NULL:
+            x265_param_free(self.param)
+            self.param = NULL
+        if self.context!=NULL:
+            x265_encoder_close(self.context)
+            self.context = NULL
+        self.width = 0
+        self.height = 0
+        self.src_format = ""
+        self.preset = None
+        self.profile = ""
+        self.quality = 0
+        self.speed = 0
+        self.time = 0
+        self.frames = 0
+        self.first_frame_timestamp = 0
+        
+
     def get_info(self):
         cdef float pps
         if self.profile is None:
@@ -363,7 +383,7 @@ cdef class Encoder:
             info["pixels_per_second"] = int(pps)
         return info
 
-    def __str__(self):
+    def __repr__(self):
         if self.src_format is None:
             return "x264_encoder(uninitialized)"
         return "x264_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
@@ -388,15 +408,6 @@ cdef class Encoder:
 
     def get_src_format(self):
         return self.src_format
-
-    def clean(self):                        #@DuplicatedSignature
-        log("clean() x265 param=%#x, context=%#x", <unsigned long> self.param, <unsigned long> self.context)
-        if self.param!=NULL:
-            x265_param_free(self.param)
-            self.param = NULL
-        if self.context!=NULL:
-            x265_encoder_close(self.context)
-            self.context = NULL
 
 
     def compress_image(self, image, options={}):

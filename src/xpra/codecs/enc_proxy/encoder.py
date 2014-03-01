@@ -79,7 +79,7 @@ class Encoder(object):
             info["fps"] = int(0.5+f/(now-last_time))
         return info
 
-    def __str__(self):
+    def __repr__(self):
         if self.src_format is None:
             return "proxy_encoder(uninitialized)"
         return "proxy_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
@@ -108,6 +108,14 @@ class Encoder(object):
         self.quality = 0
         self.speed = 0
         self.src_format = None
+        self.encoding = ""
+        self.scaling = None
+        self.src_format = ""
+        self.dst_formats = []
+        self.last_frame_times = []
+        self.frames = 0
+        self.time = 0
+        self.first_frame_timestamp = 0
 
     def compress_image(self, image, options={}):
         log("compress_image(%s, %s)", image, options)

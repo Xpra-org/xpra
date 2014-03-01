@@ -284,7 +284,7 @@ cdef class Encoder:
             raise Exception("failed to initialized vpx encoder: %s", vpx_codec_error(self.context))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
 
-    def __str__(self):
+    def __repr__(self):
         return "vpx.Encoder(%s)" % self.encoding
 
     def get_info(self):                     #@DuplicatedSignature
@@ -326,6 +326,14 @@ cdef class Encoder:
         if self.cfg:
             free(self.cfg)
             self.cfg = NULL
+        self.frames = 0
+        self.pixfmt = 0
+        self.width = 0
+        self.height = 0
+        self.max_threads = 0
+        self.encoding = ""
+        self.src_format = ""
+
 
     def compress_image(self, image, options):
         cdef uint8_t *pic_in[3]

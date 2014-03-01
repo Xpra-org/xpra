@@ -122,6 +122,16 @@ class ColorspaceConverter(object):
     """
 
     def __init__(self):
+        self.init_vars()
+
+    def clean(self):                        #@DuplicatedSignature
+        log("%s.clean() context=%s", self, self.cuda_context)
+        if self.cuda_context:
+            self.cuda_context.detach()
+            self.cuda_context = None
+        self.init_vars()
+
+    def init_vars(self):
         self.src_width = 0
         self.src_height = 0
         self.src_format = ""
@@ -140,6 +150,7 @@ class ColorspaceConverter(object):
         self.max_threads_per_block = 0
         self.kernel_function = None
         self.kernel_function_name = None
+        self.convert_image_fn = None
 
     def init_context(self, src_width, src_height, src_format,
                            dst_width, dst_height, dst_format, speed=100):  #@DuplicatedSignature
@@ -190,20 +201,24 @@ class ColorspaceConverter(object):
         log("init_context(..) convert_image=%s", self.convert_image)
 
 
-    def get_info(self):
-        info = self.pycuda_info.copy()
-        info.update({"frames"       : self.frames,
-                     "src_width"    : self.src_width,
-                     "src_height"   : self.src_height,
-                     "src_format"   : self.src_format,
-                     "dst_width"    : self.dst_width,
-                     "dst_height"   : self.dst_height,
-                     "dst_format"   : self.dst_format})
-        info.update(self.cuda_device_info)
-        if self.frames>0 and self.time>0:
-            pps = float(self.src_width) * float(self.src_height) * float(self.frames) / self.time
-            info["total_time_ms"] = int(self.time*1000.0)
-            info["pixels_per_second"] = int(pps)
+    def __repr__(self):
+        return "csc_nvcuda(%s)" % self.get_info(False)
+
+    def get_info(self, detailed=True):
+        info = {"frames"       : self.frames,
+                "src_width"    : self.src_width,
+                "src_height"   : self.src_height,
+                "src_format"   : self.src_format,
+                "dst_width"    : self.dst_width,
+                "dst_height"   : self.dst_height,
+                "dst_format"   : self.dst_format}
+        if detailed:
+            info.update(self.pycuda_info)
+            info.update(self.cuda_device_info)
+            if self.frames>0 and self.time>0:
+                pps = float(self.src_width) * float(self.src_height) * float(self.frames) / self.time
+                info["total_time_ms"] = int(self.time*1000.0)
+                info["pixels_per_second"] = int(pps)
         return info
 
     def __str__(self):
@@ -239,12 +254,6 @@ class ColorspaceConverter(object):
     def get_type(self):
         return  "nvcuda"
 
-
-    def clean(self):                        #@DuplicatedSignature
-        log("%s.clean() context=%s", self, self.cuda_context)
-        if self.cuda_context:
-            self.cuda_context.detach()
-            self.cuda_context = None
 
     def convert_image(self, image):
         try:

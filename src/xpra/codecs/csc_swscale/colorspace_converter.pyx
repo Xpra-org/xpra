@@ -334,7 +334,7 @@ cdef class ColorspaceConverter:
             info["pixels_per_second"] = int(pps)
         return info
 
-    def __str__(self):
+    def __repr__(self):
         if self.src_format==NULL or self.dst_format==NULL:
             return "swscale(uninitialized)"
         return "swscale(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
@@ -366,10 +366,28 @@ cdef class ColorspaceConverter:
 
 
     def clean(self):                        #@DuplicatedSignature
+        #overzealous clean is cheap!
+        cdef int i
         log("swscale.ColorspaceConverter.clean()")
         if self.context!=NULL:
             sws_freeContext(self.context)
             self.context = NULL
+        self.src_width = 0
+        self.src_height = 0
+        self.src_format_enum = PIX_FMT_NONE
+        self.src_format = ""
+        self.dst_width = 0
+        self.dst_height = 0
+        self.dst_format_enum = PIX_FMT_NONE
+        self.dst_format = ""
+        self.frames = 0
+        self.time = 0
+        self.flags = 0
+        for i in range(4):
+            self.out_height[i] = 0
+            self.out_stride[i] = 0
+            self.out_size[i] = 0
+        self.buffer_size = 0
 
     def convert_image(self, image):
         cdef Py_ssize_t pic_buf_len = 0

@@ -227,8 +227,26 @@ cdef class ColorspaceConverter:
         else:
             raise Exception("BUG: src_format=%s, dst_format=%s", src_format, dst_format)
 
+    def clean(self):                        #@DuplicatedSignature
+        #overzealous clean is cheap!
+        cdef int i                          #
+        self.src_width = 0
+        self.src_height = 0
+        self.dst_width = 0
+        self.dst_height = 0
+        self.src_format = ""
+        self.dst_format = ""
+        self.time = 0
+        self.frames = 0
+        for i in range(3):
+            self.dst_strides[i] = 0
+            self.dst_sizes[i] = 0
+            self.offsets[i] = 0
+        self.convert_image_function = None
+        self.buffer_size = 0
 
-    def get_info(self):                     #@DuplicatedSignature
+
+    def get_info(self):      #@DuplicatedSignature
         info = {
                 "frames"    : self.frames,
                 "src_width" : self.src_width,
@@ -245,7 +263,7 @@ cdef class ColorspaceConverter:
             info["pixels_per_second"] = int(pps)
         return info
 
-    def __str__(self):
+    def __repr__(self):
         return "csc_cython(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
                                                  self.dst_format, self.dst_width, self.dst_height)
 
@@ -272,10 +290,6 @@ cdef class ColorspaceConverter:
 
     def get_type(self):                     #@DuplicatedSignature
         return  "cython"
-
-
-    def clean(self):                        #@DuplicatedSignature
-        pass
 
 
     def convert_image(self, image):

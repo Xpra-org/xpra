@@ -326,6 +326,26 @@ cdef class Encoder:
         self.context = x264_encoder_open(&param)
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
+    def clean(self):                        #@DuplicatedSignature
+        if self.context!=NULL:
+            x264_encoder_close(self.context)
+            self.context = NULL
+        self.frames = 0
+        self.width = 0
+        self.height = 0
+        self.src_format = ""
+        self.profile = None
+        self.time = 0
+        self.colorspace = 0
+        self.preset = 0
+        self.quality = 0
+        self.speed = 0
+        self.bytes_in = 0
+        self.bytes_out = 0
+        self.last_frame_times = 0
+        self.first_frame_timestamp = 0
+
+
     def get_info(self):             #@DuplicatedSignature
         cdef double pps
         if self.profile is None:
@@ -364,7 +384,7 @@ cdef class Encoder:
             info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
         return info
 
-    def __str__(self):
+    def __repr__(self):
         if self.src_format is None:
             return "x264_encoder(uninitialized)"
         return "x264_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
@@ -403,11 +423,6 @@ cdef class Encoder:
                             }.get(csc_mode, csc_mode)
             profile = options.get("x264.%s.profile" % csc_mode, profile)
         return profile
-
-    def clean(self):                        #@DuplicatedSignature
-        if self.context!=NULL:
-            x264_encoder_close(self.context)
-            self.context = NULL
 
 
     def compress_image(self, image, options={}):

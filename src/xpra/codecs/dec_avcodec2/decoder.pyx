@@ -369,7 +369,21 @@ cdef class Decoder:
         return True
 
     def clean(self):
+        cdef int i                                  #
         self.clean_decoder()
+        self.codec = NULL
+        self.pix_fmt = 0
+        self.actual_pix_fmt = 0
+        self.colorspace = ""
+        self.framewrappers = {}
+        self.weakref_images = []
+        for i in range(3):
+            self.av_frames[i] = NULL                #should be redundant
+        self.frames = 0
+        self.width = 0
+        self.height = 0
+        self.encoding = ""
+
 
     def clean_decoder(self):
         cdef int r, i
@@ -407,7 +421,7 @@ cdef class Decoder:
             return str(err_str[:128])
         return str(errnum)
 
-    def __str__(self):                      #@DuplicatedSignature
+    def __repr__(self):                      #@DuplicatedSignature
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
     def get_info(self):                      #@DuplicatedSignature

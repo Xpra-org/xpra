@@ -497,6 +497,9 @@ class ColorspaceConverter(object):
     def __init__(self):
         global context, program
         build_kernels()
+        self.init_vars()
+
+    def init_vars(self):
         self.src_width = 0
         self.src_height = 0
         self.src_format = ""
@@ -548,6 +551,14 @@ class ColorspaceConverter(object):
         log("init_context(..) kernel_function %s: %s", self.kernel_function_name, self.kernel_function)
         assert self.kernel_function
 
+    def clean(self):                        #@DuplicatedSignature
+        log("clean() queue=%s", self.queue)
+        if self.queue:
+            self.queue.finish()
+            self.queue = None
+        self.init_vars()
+
+
     def get_info(self):
         info = get_info()
         info.update({"frames"    : self.frames,
@@ -563,7 +574,7 @@ class ColorspaceConverter(object):
             info["pixels_per_second"] = int(pps)
         return info
 
-    def __str__(self):
+    def __repr__(self):
         if self.queue is None:
             return "opencl(uninitialized or closed)"
         return "opencl(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
@@ -595,14 +606,6 @@ class ColorspaceConverter(object):
 
     def get_type(self):
         return  "opencl"
-
-
-    def clean(self):                        #@DuplicatedSignature
-        log("clean() queue=%s", self.queue)
-        if self.queue:
-            self.queue.finish()
-            self.queue = None
-            self.kernel_function = None
 
 
     def get_work_sizes(self, wwidth, wheight):

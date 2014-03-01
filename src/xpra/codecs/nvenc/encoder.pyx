@@ -1466,7 +1466,7 @@ cdef class Encoder:
             info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
         return info
 
-    def __str__(self):
+    def __repr__(self):
         return "nvenc(%s/%s - %sx%s)" % (self.src_format, self.pixel_format, self.width, self.height)
 
     def is_closed(self):
@@ -1485,6 +1485,46 @@ cdef class Encoder:
                 self.cuda_context.pop()
                 self.cuda_context.detach()
                 self.cuda_context = None
+        self.width = 0
+        self.height = 0
+        self.input_width = 0
+        self.input_height = 0
+        self.encoder_width = 0
+        self.encoder_height = 0
+        self.separate_plane = 0
+        self.src_format = ""
+        self.scaling = None
+        self.speed = 0
+        self.quality = 0
+        #PyCUDA:
+        self.driver = 0
+        self.cuda_device_id = -1
+        self.cuda_device_info = None
+        self.cuda_device = None
+        self.kernels = None
+        self.kernel_names = None
+        self.max_block_sizes = 0
+        self.max_grid_sizes = 0
+        self.max_threads_per_block = 0
+        self.free_memory = 0
+        self.total_memory = 0
+        #NVENC (mostly already cleaned up in cuda_clean):
+        self.inputPitch = 0
+        self.outputPitch = 0
+        self.bitstreamBuffer = NULL
+        self.bufferFmt = NV_ENC_BUFFER_FORMAT_UNDEFINED
+        self.codec_name = ""
+        self.preset_name = ""
+        self.pixel_format = ""
+        #statistics, etc:
+        self.time = 0
+        self.frames = 0
+        self.first_frame_timestamp = 0
+        self.index = 0
+        self.last_frame_times = []
+        self.bytes_in = 0
+        self.bytes_out = 0
+
 
     cdef cuda_clean(self):
         if self.context!=NULL:
