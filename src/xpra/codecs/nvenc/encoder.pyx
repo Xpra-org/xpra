@@ -1090,7 +1090,7 @@ def get_spec(encoding, colorspace):
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     cs = video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
-                      codec_class=Encoder, codec_type=get_type(), 
+                      codec_class=Encoder, codec_type=get_type(),
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
                       min_w=32, min_h=32,
@@ -1186,12 +1186,12 @@ cdef class Encoder:
     cdef object pixel_format
     #statistics, etc:
     cdef double time
-    cdef int frames
     cdef long first_frame_timestamp
-    cdef int index
+    cdef unsigned long frames
+    cdef unsigned long index
     cdef object last_frame_times
-    cdef long long bytes_in
-    cdef long long bytes_out
+    cdef unsigned long long bytes_in
+    cdef unsigned long long bytes_out
 
     cdef object __weakref__
 

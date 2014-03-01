@@ -116,7 +116,7 @@ cdef extern from "x264.h":
         int i_bframe_pyramid    #Keep some B-frames as references: 0=off, 1=strict hierarchical, 2=normal
         int b_open_gop
         int b_bluray_compat
-        
+
         rc  rc                  #rate control
 
     ctypedef struct x264_t:
@@ -260,7 +260,7 @@ def get_spec(encoding, colorspace):
 
 
 cdef class Encoder:
-    cdef int frames
+    cdef unsigned long frames
     cdef x264_t *context
     cdef int width
     cdef int height
@@ -271,8 +271,8 @@ cdef class Encoder:
     cdef int preset
     cdef int quality
     cdef int speed
-    cdef long long bytes_in
-    cdef long long bytes_out
+    cdef unsigned long long bytes_in
+    cdef unsigned long long bytes_out
     cdef object last_frame_times
     cdef long first_frame_timestamp
 

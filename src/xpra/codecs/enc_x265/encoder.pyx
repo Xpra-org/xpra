@@ -239,7 +239,7 @@ def get_spec(encoding, colorspace):
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
-                      Encoder, codec_type=get_type(), 
+                      Encoder, codec_type=get_type(),
                       min_w=64, min_h=64,
                       setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
 
@@ -255,7 +255,7 @@ cdef class Encoder:
     cdef int quality
     cdef int speed
     cdef double time
-    cdef int frames
+    cdef unsigned long frames
     cdef long first_frame_timestamp
 
     cdef object __weakref__
@@ -363,7 +363,7 @@ cdef class Encoder:
         self.time = 0
         self.frames = 0
         self.first_frame_timestamp = 0
-        
+
 
     def get_info(self):
         cdef float pps

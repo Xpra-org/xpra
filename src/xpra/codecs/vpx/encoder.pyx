@@ -221,7 +221,7 @@ cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
 
 
 cdef class Encoder:
-    cdef int frames
+    cdef unsigned long frames
     cdef vpx_codec_ctx_t *context
     cdef vpx_codec_enc_cfg_t *cfg
     cdef vpx_img_fmt_t pixfmt

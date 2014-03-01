@@ -64,7 +64,7 @@ cdef extern from "libavcodec/avcodec.h":
     int AV_PIX_FMT_ARGB
     int AV_PIX_FMT_BGRA
     int AV_PIX_FMT_GBRP
-    
+
     int CODEC_FLAG2_FAST
 
 
@@ -281,7 +281,7 @@ cdef class Decoder:
     #we usually use just one, but 3-pass decoding will use all 3
     cdef AVFrame *av_frames[3]
     #this is the actual number of images we have returned
-    cdef int frames
+    cdef unsigned long frames
     cdef int width
     cdef int height
     cdef object encoding

@@ -254,15 +254,15 @@ cdef class ColorspaceConverter:
     cdef AVPixelFormat dst_format_enum
     cdef char* dst_format
 
-    cdef int frames
+    cdef unsigned long frames
     cdef double time
     cdef SwsContext *context
     cdef int flags                              #@DuplicatedSignature
 
     cdef int out_height[4]
     cdef int out_stride[4]
-    cdef int out_size[4]
-    cdef int buffer_size
+    cdef unsigned long out_size[4]
+    cdef unsigned long buffer_size
 
     cdef object __weakref__
 

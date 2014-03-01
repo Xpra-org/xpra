@@ -131,8 +131,8 @@ DEF max_clamp = 16777216    #2**(16+8)
 #Cr' = Cr - 128
 # (see YC, UC and VC above)
 #RGB:
-#R = 1.164*Y' + 1.5958  * Cb' 
-#G = 1.164*Y' - 0.8129  * Cb' - 0.39173 * Cr' 
+#R = 1.164*Y' + 1.5958  * Cb'
+#G = 1.164*Y' - 0.8129  * Cb' - 0.39173 * Cr'
 #B = 1.164*Y'                 + 2.017   * Cr'
 DEF RY = 76284      #1.164    * 2**16
 DEF RU = 104582     #1.5958   * 2**16
@@ -163,15 +163,15 @@ cdef class ColorspaceConverter:
     cdef int dst_width
     cdef int dst_height
     cdef object dst_format
-    cdef int[3] dst_strides
-    cdef int[3] dst_sizes
-    cdef int[3] offsets
+    cdef unsigned long[3] dst_strides
+    cdef unsigned long[3] dst_sizes
+    cdef unsigned long[3] offsets
 
     cdef convert_image_function
 
-    cdef int frames
+    cdef unsigned long frames
     cdef double time
-    cdef int buffer_size
+    cdef unsigned long buffer_size
 
     cdef object __weakref__
 

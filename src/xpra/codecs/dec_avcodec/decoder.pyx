@@ -372,7 +372,7 @@ cdef class Decoder:
     cdef object framewrappers
     cdef object weakref_images
     cdef AVFrame *frame                             #@DuplicatedSignature
-    cdef int frames
+    cdef unsigned long frames
     cdef int width
     cdef int height
     cdef object encoding
