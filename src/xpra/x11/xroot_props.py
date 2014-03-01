@@ -9,6 +9,7 @@ import gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver, cleanup_all_event_receivers    #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter             #@UnresolvedImport
+from xpra.x11.gtk_x11.error import trap
 
 from xpra.log import Logger
 log = Logger("x11", "util")
@@ -30,12 +31,19 @@ class XRootPropWatcher(gobject.GObject):
         add_event_receiver(self._root, self)
 
     def cleanup(self):
+        #this must be called from the UI thread!
         remove_event_receiver(self._root, self)
         self._root.set_events(self._saved_event_mask)
         if self._own_x11_filter:
             #only remove the x11 filter if we initialized it (ie: when running in client)
-            cleanup_x11_filter()
-            cleanup_all_event_receivers()
+            try:
+                trap.call_synced(cleanup_x11_filter)
+            except Exception, e:
+                log.error("failed to remove x11 event filter: %s", e)
+            try:
+                trap.call_synced(cleanup_all_event_receivers)
+            except Exception, e:
+                log.error("failed to remove event receivers: %s", e)
 
     def do_xpra_property_notify_event(self, event):
         log("XRootPropWatcher.do_xpra_property_notify_event(%s)", event)
