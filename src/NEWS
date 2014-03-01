@@ -6,6 +6,8 @@ v0.12.0 (2014-02-23)
 	-- fix fullscreen on multiple monitors via fakeXinerama (except on OSX)
 	-- OpenGL rendering improvements (for transparent windows, etc)
 	-- support window grabs (drop down menus, etc)
+	-- support specifying the SSH port number more easily
+	-- enabled TCP_NODELAY socket option by default (lower latency)
 	-- add ability to easily select video encoders and csc modules
 	-- add local unix domain socket support to proxy server instances
 	-- add "xpra control" commands to control encoding speed and quality
@@ -18,6 +20,42 @@ v0.12.0 (2014-02-23)
 	-- make it easier to distinguish xpra windows from local windows
 	-- improved MS Windows (un)installer checks
 	-- automatically stop remote shadow servers when client disconnects
+
+
+v0.11.4 (2014-02-29)
+======================
+	-- fix NVENC GPU memory leak
+	-- fix video compatibility with ancient clients
+	-- fix vpx decoding in ffmpeg decoders
+	-- fix transparent system tray image with RGB encoding
+	-- fix client crashes with system tray forwarding
+	-- fix webp codec loader error handler
+
+
+v0.11.3 (2014-02-14)
+======================
+	-- fix compatibility with ancient versions of GTK
+	-- fix crashes with malformed socket names
+	-- fix server builds without client modules
+	-- honour mdns flag set in config file
+	-- blacklist VMware OpenGL driver which causes client crashes
+	-- ensure all "control" subcommands run in UI thread
+
+
+v0.11.2 (2014-01-29)
+======================
+	-- fix Cython 0.20 compatibility
+	-- fix OpenGL pixel upload alignment code
+	-- fix xpra command line help page tokens
+	-- fix compatibility with old versions of the python glib library
+
+
+v0.11.1 (2014-01-24)
+======================
+	-- fix compatibility with old/unsupported servers
+	-- fix shadow mode
+	-- fix paint issue with transparent tooltips on OSX and MS Windows
+	-- fix pixel format typo in OpenGL logging
 
 
 v0.11.0 (2014-01-20)

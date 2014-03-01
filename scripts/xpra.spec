@@ -197,13 +197,15 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Sun Jan 23 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
+* Sat Mar 01 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
 - NVENC support for YUV444 mode
 - NVENC and CUDA load balancing for multiple cards
 - proxy encoding: ability to encode on proxy server
 - fix fullscreen on multiple monitors via fakeXinerama (except on OSX)
 - OpenGL rendering improvements (for transparent windows, etc)
 - support window grabs (drop down menus, etc)
+- support specifying the SSH port number more easily
+- enabled TCP_NODELAY socket option by default (lower latency)
 - add ability to easily select video encoders and csc modules
 - add local unix domain socket support to proxy server instances
 - add "xpra control" commands to control encoding speed and quality
@@ -216,6 +218,34 @@ So basically it's screen for remote X apps.
 - make it easier to distinguish xpra windows from local windows
 - improved MS Windows (un)installer checks
 - automatically stop remote shadow servers when client disconnects
+
+* Sat Mar 01 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.4-1
+- fix NVENC GPU memory leak
+- fix video compatibility with ancient clients
+- fix vpx decoding in ffmpeg decoders
+- fix transparent system tray image with RGB encoding
+- fix client crashes with system tray forwarding
+- fix webp codec loader error handler
+
+* Fri Feb 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.3-1
+- fix compatibility with ancient versions of GTK
+- fix crashes with malformed socket names
+- fix server builds without client modules
+- honour mdns flag set in config file
+- blacklist VMware OpenGL driver which causes client crashes
+- ensure all "control" subcommands run in UI thread
+
+* Wed Jan 29 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.2-1
+- fix Cython 0.20 compatibility
+- fix OpenGL pixel upload alignment code
+- fix xpra command line help page tokens
+- fix compatibility with old versions of the python glib library
+
+* Fri Jan 24 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.1-1
+- fix compatibility with old/unsupported servers
+- fix shadow mode
+- fix paint issue with transparent tooltips on OSX and MS Windows
+- fix pixel format typo in OpenGL logging
 
 * Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
 - NVENC hardware h264 encoding acceleration
