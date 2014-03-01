@@ -307,23 +307,23 @@ class UIXpraClient(XpraClientBase):
         for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
                 continue
-            if not hasattr(x, "cleanup"):
-                log.warn("missing a cleanup method on %s: %s", type(x), x)
-                continue
-            cleanup = getattr(x, "cleanup")
-            log("UIXpraClient.cleanup() calling %s.cleanup() : %s", type(x), cleanup)
+            log("UIXpraClient.cleanup() calling %s.cleanup() : %s", type(x))
             try:
-                cleanup()
+                x.cleanup()
             except:
                 log.error("error on %s cleanup", type(x), exc_info=True)
+        #the protocol has been closed, it is now safe to close all the windows:
+        #(cleaner and needed when we run embedded in the client launcher)
+        self.destroy_all_windows()
+        self.clean_mmap()
         if self.sound_source:
             self.stop_sending_sound()
         if self.sound_sink:
             self.stop_receiving_sound()
-        time.sleep(0.1)
-        self.clean_mmap()
-        #the protocol has been closed, it is now safe to close all the windows:
-        #(cleaner and needed when we run embedded in the client launcher)
+        time.sleep(0.2)
+        log("UIXpraClient.cleanup() done")
+
+    def destroy_all_windows(self):
         for wid, window in self._id_to_window.items():
             try:
                 self.destroy_window(wid, window)
@@ -331,7 +331,6 @@ class UIXpraClient(XpraClientBase):
                 pass
         self._id_to_window = {}
         self._window_to_id = {}
-        log("UIXpraClient.cleanup() done")
 
 
     def show_session_info(self, *args):
