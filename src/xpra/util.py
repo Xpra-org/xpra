@@ -162,6 +162,32 @@ def do_log_screen_sizes(sizes):
             log.info("    '%s' %sx%s at %sx%s (%sx%s mm)", prettify_plug_name(plug_name, "monitor %s" % i), width, height, x, y, wmm, hmm)
 
 
+def dump_references(log, instances):
+    import gc
+    import inspect
+    gc.collect()
+    cf = inspect.currentframe()
+    for instance in instances:
+        referrers = [x for x in gc.get_referrers(instance) if x not in (instances, cf)]
+        log.info("referrers for %s: %s", instance, len(referrers))
+        for i in range(len(referrers)):
+            r = referrers[i]
+            log.info("[%s] in %s", i, type(r))
+            if inspect.isframe(r):
+                log.info("  frame info: %s", inspect.getframeinfo(r))
+            elif type(r)==list:
+                listref = gc.get_referrers(r)
+                log.info("  list: %s referrers: %s", r, listref)
+            elif type(r)==dict:
+                for k,v in r.items():
+                    if k is instance:
+                        log.info("  key with value=%s", v)
+                    elif v is instance:
+                        log.info("  for key=%s", k)
+            else:
+                log.info("     %s : %s", type(r), r)
+
+
 def std(_str, extras="-,./ "):
     def f(v):
         return str.isalnum(str(v)) or v in extras
