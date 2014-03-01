@@ -214,15 +214,16 @@ class WindowSource(object):
         self._last_sequence_queued = 0
         self._damage_cancelled = 0
         self._damage_packet_sequence = 1
-        #
-        self._encoders = {}
+        #we must always have mmap as stored data
+        #must be sent to be reclaimed
+        self._encoders = {"mmap" : self.mmap_encode}
 
     def cleanup(self):
         self.cancel_damage()
-        self._damage_cancelled = float("inf")
         self.statistics.reset()
         log("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
         self.init_vars()
+        self._damage_cancelled = float("inf")
 
     def suspend(self):
         self.cancel_damage()
@@ -1074,7 +1075,11 @@ class WindowSource(object):
 
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
-        assert encoder is not None, "encoder not found for %s" % coding
+        if encoder is None:
+            if self.is_cancelled(sequence):
+                return None
+            else:
+                raise Exception("BUG: no encoder not found for %s" % coding)
         ret = encoder(coding, image, options)
         if ret is None:
             #something went wrong.. nothing we can do about it here!
