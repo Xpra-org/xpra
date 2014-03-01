@@ -171,6 +171,10 @@ class WindowSource(object):
         if self._mmap and self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
 
+    def __repr__(self):
+        return "WindowSource(%s : %s)" % (self.wid, self.window_dimensions)
+
+
     def cleanup(self):
         self.cancel_damage()
         self._damage_cancelled = float("inf")

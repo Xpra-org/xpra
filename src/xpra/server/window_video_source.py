@@ -102,6 +102,9 @@ class WindowVideoSource(WindowSource):
         self.last_pipeline_params = None
         self.last_pipeline_scores = []
 
+    def __repr__(self):
+        return "WindowVideoSource(%s : %s)" % (self.wid, self.window_dimensions)
+
 
     def parse_csc_modes(self, csc_modes, full_csc_modes):
         #only override if values are specified:
