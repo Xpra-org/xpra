@@ -58,7 +58,7 @@ class rectangle(AdHocStruct):
         iw = min(self.x+self.width, x+w) - ix
         ih = min(self.y+self.height, y+h) - iy
         if iw<=0 or ih<=0:
-            return None 
+            return None
         return rectangle(ix, iy, iw, ih)
 
     def intersection_rect(self, rect):
@@ -107,7 +107,7 @@ class rectangle(AdHocStruct):
                 rects.append(rectangle(rhsx, sy, rhsw, sh))
         if self.y+self.height>y+h:
             #bottom:
-            rects.append(rectangle(self.x, y+h, self.width, self.y+self.height-(y+h)))            
+            rects.append(rectangle(self.x, y+h, self.width, self.y+self.height-(y+h)))
         return rects
 
     def substract_rect(self, rect):

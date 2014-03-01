@@ -63,7 +63,7 @@ class Win32EventListener(object):
         self.wc.hbrBackground = win32con.COLOR_WINDOW
         #shame we would have to register those in advance:
         self.wc.lpfnWndProc = {}    #win32con.WM_SOMETHING : OnSomething}
-        win32gui.RegisterClass(self.wc)        
+        win32gui.RegisterClass(self.wc)
         self.hwnd = win32gui.CreateWindow(self.wc.lpszClassName,
                         'For events only',
                         win32con.WS_CAPTION,

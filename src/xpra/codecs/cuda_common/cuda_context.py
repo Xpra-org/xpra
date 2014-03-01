@@ -186,7 +186,7 @@ def compile_all(function_name, kernel_src, device_ids=None):
     """
         Pre-compiles kernel source on the given devices,
         so we can then call get_CUDA_function quickly
-        to get the function to call. 
+        to get the function to call.
     """
     global KERNEL_cubins
     if device_ids is None:
@@ -209,7 +209,7 @@ def compile_all(function_name, kernel_src, device_ids=None):
         finally:
             if context:
                 context.pop()
-        
+
 
 def main():
     import sys

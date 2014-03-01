@@ -67,7 +67,7 @@ def cleanup_module():
     reset_state()
     KERNELS_MAP = {}
     init_done = False
-    
+
 
 KERNEL_cubins = {}
 def get_CUDA_csc_function(device_id, src_format, dst_format):

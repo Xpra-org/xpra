@@ -144,7 +144,7 @@ def parse_cmdline(cmdline):
     else:
         hidden_options["daemon"] = False
         hidden_options["log_file"] = defaults.log_file
-        
+
     if (supports_server or supports_shadow):
         group.add_option("--exit-with-client", action="store_true",
                           dest="exit_with_client", default=False,
@@ -877,7 +877,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     elif dtype == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(SOCKET_TIMEOUT)
-        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY) 
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
 

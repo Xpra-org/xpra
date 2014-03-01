@@ -185,7 +185,6 @@ def read_xpra_defaults():
     if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
         #OSX and win32 use binary installers,
         #we must look for the default config in the bundled resource location:
-        
         conf_dir = get_resources_dir()
     elif sys.prefix == '/usr':
         #default posix config location:

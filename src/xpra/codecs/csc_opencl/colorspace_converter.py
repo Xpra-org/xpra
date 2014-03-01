@@ -486,7 +486,7 @@ def validate_in_out(in_colorspace, out_colorspace):
 def get_spec(in_colorspace, out_colorspace):
     validate_in_out(in_colorspace, out_colorspace)
     global selected_device_cpu_cost, selected_device_gpu_cost, selected_device_setup_cost
-    return codec_spec(ColorspaceConverter, codec_type=get_type(), 
+    return codec_spec(ColorspaceConverter, codec_type=get_type(),
                       speed=100,
                       setup_cost=selected_device_setup_cost,
                       cpu_cost=selected_device_cpu_cost, gpu_cost=selected_device_gpu_cost, min_w=128, min_h=128, can_scale=True)

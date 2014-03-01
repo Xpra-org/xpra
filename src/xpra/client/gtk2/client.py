@@ -71,7 +71,7 @@ class XpraClient(GTKXpraClient):
             self.ClientWindowClass = BorderClientWindow
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
 
-    
+
     def parse_border(self, border_str):
         parts = [x.strip() for x in border_str.split(",")]
         color_str = parts[0]
@@ -105,7 +105,7 @@ class XpraClient(GTKXpraClient):
                 return
         self.border = WindowBorder(True, color.red_float, color.green_float, color.blue_float, alpha, size)
         log("parse_border(%s)=%s", border_str, self.border)
-            
+
 
     def gtk_main(self):
         gtk2main()

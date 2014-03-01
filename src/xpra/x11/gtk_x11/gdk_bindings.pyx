@@ -199,7 +199,7 @@ cdef extern from "X11/Xlib.h":
     ctypedef struct XFocusChangeEvent:
         Window window
         int mode                #NotifyNormal, NotifyGrab, NotifyUngrab
-        int detail              #NotifyAncestor, NotifyVirtual, NotifyInferior, 
+        int detail              #NotifyAncestor, NotifyVirtual, NotifyInferior,
                                 #NotifyNonlinear,NotifyNonlinearVirtual, NotifyPointer,
                                 #NotifyPointerRoot, NotifyDetailNone
     # We have to generate synthetic ConfigureNotify's:

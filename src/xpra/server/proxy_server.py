@@ -52,7 +52,7 @@ class ProxyServer(ServerCore):
         self._socket_dir = None
         self.control_commands = ["hello", "stop"]
         #ensure we cache the platform info before intercepting SIGCHLD
-        #as this will cause a fork and SIGCHLD to be emitted: 
+        #as this will cause a fork and SIGCHLD to be emitted:
         from xpra.version_util import get_platform_info
         get_platform_info()
         signal.signal(signal.SIGCHLD, self.sigchld)

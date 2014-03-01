@@ -676,7 +676,7 @@ class ServerBase(ServerCore):
                     pass
                 if window is None:
                     raise Exception("cannot find window id %s" % wid_str)
-    
+
             for csource in sources:
                 for wid in wids:
                     window = self._id_to_window.get(wid)
@@ -909,7 +909,7 @@ class ServerBase(ServerCore):
             info["encoding.video-encoder.%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), vh.video_encoders)
         for x in ALL_CSC_MODULE_OPTIONS:
             info["encoding.csc-module.%s" % x] = modstatus(x, get_DEFAULT_CSC_MODULES(), vh.csc_modules)
-            
+
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
         info.update({
              "keyboard.sync"            : self.keyboard_sync,

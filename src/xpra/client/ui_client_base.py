@@ -286,7 +286,7 @@ class UIXpraClient(XpraClientBase):
         self._draw_queue = Queue()
         self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw")
 
-    
+
     def parse_border(self, border_str):
         #not implemented here (see gtk2 client)
         pass
