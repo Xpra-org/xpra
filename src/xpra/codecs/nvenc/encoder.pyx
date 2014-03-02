@@ -1234,7 +1234,6 @@ cdef class Encoder:
         self.width = width
         self.height = height
         self.speed = speed
-        self.update_bitrate()
         self.quality = quality
         self.scaling = scaling
         v, u = scaling or (1,1)
@@ -1252,6 +1251,7 @@ cdef class Encoder:
         self.separate_plane = options.get("video_separateplane", False)
         self.pixel_format = ""
         self.last_frame_times = maxdeque(200)
+        self.update_bitrate()
         start = time.time()
 
         if "YUV444P" in dst_formats and ((self.separate_plane and quality>=80) or ("YUV420P" not in dst_formats)):
@@ -1583,9 +1583,14 @@ cdef class Encoder:
         self.quality = max(0, min(100, quality))
 
     def update_bitrate(self):
-        #use an exponential scale so roughly:
-        #speed=0 -> 1Mbit/s, speed=50 -> 10Mbit/s, speed=90 -> 66Mbit/s, speed=100 -> 100Mbit/s
-        self.target_bitrate = max(1, int((((0.5+self.speed/200.0)**8)*100.0)*1000000))
+        #use an exponential scale so for a 1Kx1K image (after scaling), roughly:
+        #speed=0   -> 1Mbit/s
+        #speed=50  -> 10Mbit/s
+        #speed=90  -> 66Mbit/s
+        #speed=100 -> 100Mbit/s
+        MPixels = (self.encoder_width * self.encoder_height) / (1000.0 * 1000.0)
+        lim = 100*1000000
+        self.target_bitrate = min(lim, max(1000000, int(((0.5+self.speed/200.0)**8)*lim*MPixels)))
         self.max_bitrate = 2*self.target_bitrate
 
 
