@@ -1367,6 +1367,7 @@ cdef class Encoder:
         assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
         try:
             presetConfig = self.get_preset_config(self.preset_name, codec, preset)
+            assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
 
             #PROFILE
             profiles = self.query_profiles(NV_ENC_CODEC_H264_GUID)
@@ -1382,14 +1383,13 @@ cdef class Encoder:
             params.darHeight = self.encoder_height
             params.enableEncodeAsync = 0            #not supported on Linux
             params.enablePTD = 0                    #not supported in sync mode!?
-            if presetConfig!=NULL:
-                presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
-                presetConfig.presetCfg.encodeCodecConfig.h264Config.idrPeriod = NVENC_INFINITE_GOPLENGTH
-                if self.pixel_format=="YUV444P":
-                    presetConfig.presetCfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1
-                params.encodeConfig = &presetConfig.presetCfg
-            else:
-                self.preset_name = None
+
+            presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
+            presetConfig.presetCfg.encodeCodecConfig.h264Config.idrPeriod = NVENC_INFINITE_GOPLENGTH
+            if self.pixel_format=="YUV444P":
+                presetConfig.presetCfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1
+            params.encodeConfig = &presetConfig.presetCfg
+
             raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params), "initializing encoder")
             log("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
