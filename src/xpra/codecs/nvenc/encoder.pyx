@@ -1156,6 +1156,8 @@ cdef class Encoder:
     cdef object scaling
     cdef int speed
     cdef int quality
+    cdef uint32_t target_bitrate
+    cdef uint32_t max_bitrate
     #PyCUDA:
     cdef object driver
     cdef int cuda_device_id
@@ -1166,9 +1168,9 @@ cdef class Encoder:
     cdef object kernel_names
     cdef object max_block_sizes
     cdef object max_grid_sizes
-    cdef int max_threads_per_block
-    cdef int free_memory
-    cdef int total_memory
+    cdef long max_threads_per_block
+    cdef long free_memory
+    cdef long total_memory
     #NVENC:
     cdef NV_ENCODE_API_FUNCTION_LIST functionList               #@DuplicatedSignature
     cdef void *context
@@ -1232,6 +1234,7 @@ cdef class Encoder:
         self.width = width
         self.height = height
         self.speed = speed
+        self.update_bitrate()
         self.quality = quality
         self.scaling = scaling
         v, u = scaling or (1,1)
@@ -1424,6 +1427,7 @@ cdef class Encoder:
                 "codec"     : self.codec_name,
                 "encoder_width"     : self.encoder_width,
                 "encoder_height"    : self.encoder_height,
+                "bitrate"   : self.target_bitrate,
                 "version"   : get_version()}
         if self.scaling!=(1,1):
             info.update({
@@ -1572,10 +1576,17 @@ cdef class Encoder:
         return self.src_format
 
     def set_encoding_speed(self, speed):
-        self.speed = speed
+        self.speed = max(0, min(100, speed))
+        self.update_bitrate()
 
     def set_encoding_quality(self, quality):
-        self.quality = quality
+        self.quality = max(0, min(100, quality))
+
+    def update_bitrate(self):
+        #use an exponential scale so roughly:
+        #speed=0 -> 1Mbit/s, speed=50 -> 10Mbit/s, speed=90 -> 66Mbit/s, speed=100 -> 100Mbit/s
+        self.target_bitrate = max(1, int((((0.5+self.speed/200.0)**8)*100.0)*1000000))
+        self.max_bitrate = 2*self.target_bitrate
 
 
     cdef flushEncoder(self):
@@ -1730,8 +1741,8 @@ cdef class Encoder:
                 picParams.inputTimeStamp = image.get_timestamp()-self.first_frame_timestamp
                 #inputDuration = 0      #FIXME: use frame delay?
                 picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
-                picParams.rcParams.averageBitRate = 5000000   #5Mbits/s
-                picParams.rcParams.maxBitRate = 10000000      #10Mbits/s
+                picParams.rcParams.averageBitRate = self.target_bitrate
+                picParams.rcParams.maxBitRate = self.max_bitrate
 
                 raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
                 encode_end = time.time()
