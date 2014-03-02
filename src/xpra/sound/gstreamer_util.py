@@ -11,6 +11,7 @@ from xpra.log import Logger
 log = Logger("sound")
 
 SOUND_TEST_MODE = os.environ.get("XPRA_SOUND_TEST", "0")!="0"
+ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 
 
 VORBIS = "vorbis"
@@ -25,7 +26,7 @@ WAVPACK = "wavpack"
 #format: encoder, formatter, decoder, parser
 CODECS = {
             #VORBIS : ("vorbisenc", "oggmux", "vorbisdec", "oggdemux"),
-            #AAC : ("faac", "mp4mux", "faad", "aacparse"),
+            #AAC     : ("faac",          "oggmux",   "faad",         "aacparse"),
             FLAC    : ("flacenc",       "oggmux",   "flacdec",      "oggdemux"),
             MP3     : ("lamemp3enc",    None,       "mad",          "mp3parse"),
             WAV     : ("wavenc",        None,       None,           "wavparse"),
@@ -289,8 +290,10 @@ def main():
     log.enable_debug()
     log.info("GStreamer plugins found: %s", ", ".join(get_all_plugin_names()))
     log.info("")
-    log.info("encoders supported: %s", [x for x in CODEC_ORDER if has_encoder(x)])
-    log.info("decoders supported: %s", [x for x in CODEC_ORDER if has_decoder(x)])
+    encs = [x for x in CODEC_ORDER if has_encoder(x)]
+    decs = [x for x in CODEC_ORDER if has_decoder(x)]
+    log.info("encoders supported: %s", encs)
+    log.info("decoders supported: %s", decs)
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
         sys.stdin.readline()

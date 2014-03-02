@@ -1192,8 +1192,8 @@ class UIXpraClient(XpraClientBase):
         soundlog("start_sending_sound()")
         assert self.microphone_allowed
         assert self.server_sound_receive
-
-        if self._remote_machine_id and self._remote_machine_id==get_machine_id():
+        from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP
+        if self._remote_machine_id and self._remote_machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
             #looks like we're on the same machine, verify it's a different user:
             if self._remote_uuid==get_user_uuid():
                 log.warn("cannot start sound: identical user environment as the server (loop)")

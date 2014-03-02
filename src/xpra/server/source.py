@@ -33,7 +33,6 @@ from xpra.server.background_worker import add_work_item
 from xpra.util import std, typedict
 
 
-ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
@@ -673,16 +672,16 @@ class ServerSource(object):
         if self.suspended:
             log.warn("not starting sound as we are suspended")
             return
-        if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
-            #looks like we're on the same machine, verify it's a different user:
-            if self.uuid==get_user_uuid():
-                log.warn("cannot start sound: identical user environment as the server (loop)")
-                return
-        assert self.supports_speaker, "cannot send sound: support not enabled on the server"
-        assert self.sound_source is None, "a sound source already exists"
-        assert self.sound_receive, "cannot send sound: support is not enabled on the client"
         try:
-            from xpra.sound.gstreamer_util import start_sending_sound
+            from xpra.sound.gstreamer_util import start_sending_sound, ALLOW_SOUND_LOOP
+            if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
+                #looks like we're on the same machine, verify it's a different user:
+                if self.uuid==get_user_uuid():
+                    log.warn("cannot start sound: identical user environment as the server (loop)")
+                    return
+            assert self.supports_speaker, "cannot send sound: support not enabled on the server"
+            assert self.sound_source is None, "a sound source already exists"
+            assert self.sound_receive, "cannot send sound: support is not enabled on the client"
             self.sound_source = start_sending_sound(codec, volume, self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
             soundlog("start_sending_sound() sound source=%s", self.sound_source)
             if self.sound_source:
