@@ -232,6 +232,43 @@ class ServerSource(object):
         self.default_min_quality = default_min_quality #default minimum encoding quality
         self.default_speed = default_speed          #encoding speed (only used by x264)
         self.default_min_speed = default_min_speed  #default minimum encoding speed
+
+        self.default_batch_config = DamageBatchConfig()     #contains default values, some of which may be supplied by the client
+        self.global_batch_config = self.default_batch_config.clone()      #global batch config
+
+        self.connection_time = time.time()
+
+        # the queues of damage requests we work through:
+        self.damage_data_queue = Queue()           #holds functions to call to process damage data
+                                                    #items placed in this queue are picked off by the "data_to_packet" thread,
+                                                    #the functions should add the packets they generate to the 'damage_packet_queue'
+        self.damage_packet_queue = deque()         #holds actual packets ready for sending (already encoded)
+                                                    #these packets are picked off by the "protocol" via 'next_packet()'
+                                                    #format: packet, wid, pixels, start_send_cb, end_send_cb
+        #if we "proxy video", we will modify the video helper to add
+        #new encoders, so we must make a deep copy to preserve the original
+        #which may be used by other clients (other ServerSource instances)
+        self.video_helper = getVideoHelper().clone()
+        #these statistics are shared by all WindowSource instances:
+        self.statistics = GlobalPerformanceStatistics()
+        self.last_user_event = time.time()
+        self.last_ping_echoed_time = 0
+
+        self.init_vars()
+
+        # ready for processing:
+        protocol.set_packet_source(self.next_packet)
+        self.encode_thread = make_daemon_thread(self.data_to_packet, "encode")
+        self.encode_thread.start()
+        #for managing the recalculate_delays work:
+        self.calculate_window_ids = set()
+        self.calculate_due = False
+        self.calculate_last_time = 0
+
+    def __str__(self):
+        return  "ServerSource(%s)" % self.protocol
+
+    def init_vars(self):
         self.encoding = None                        #the default encoding for all windows
         self.encodings = []                         #all the encodings supported by the client
         self.core_encodings = []
@@ -239,8 +276,6 @@ class ServerSource(object):
         self.generic_rgb_encodings = False
         self.generic_encodings = False
         self.encoding_options = typedict()
-        self.default_batch_config = DamageBatchConfig()     #contains default values, some of which may be supplied by the client
-        self.global_batch_config = self.default_batch_config.clone()      #global batch config
         self.default_encoding_options = {}
 
         self.window_sources = {}                    #WindowSource for each Window ID
@@ -251,7 +286,6 @@ class ServerSource(object):
         self.hostname = ""
         self.username = ""
         self.name = ""
-        self.connection_time = time.time()
         # client capabilities/options:
         self.client_type = None
         self.client_version = None
@@ -294,32 +328,27 @@ class ServerSource(object):
         self.cursor_data = None
         self.send_cursor_pending = False
 
-        # the queues of damage requests we work through:
-        self.damage_data_queue = Queue()           #holds functions to call to process damage data
-                                                    #items placed in this queue are picked off by the "data_to_packet" thread,
-                                                    #the functions should add the packets they generate to the 'damage_packet_queue'
-        self.damage_packet_queue = deque()         #holds actual packets ready for sending (already encoded)
-                                                    #these packets are picked off by the "protocol" via 'next_packet()'
-                                                    #format: packet, wid, pixels, start_send_cb, end_send_cb
-        self.video_helper = getVideoHelper()
-        #these statistics are shared by all WindowSource instances:
-        self.statistics = GlobalPerformanceStatistics()
-        self.last_user_event = time.time()
-        self.last_ping_echoed_time = 0
-        # ready for processing:
-        protocol.set_packet_source(self.next_packet)
-        self.encode_thread = make_daemon_thread(self.data_to_packet, "encode")
-        self.encode_thread.start()
-        #for managing the recalculate_delays work:
-        self.calculate_window_ids = set()
-        self.calculate_due = False
-        self.calculate_last_time = 0
-
-    def __str__(self):
-        return  "ServerSource(%s)" % self.protocol
 
     def is_closed(self):
         return self.close_event.isSet()
+
+    def close(self):
+        log("%s.close()", self)
+        self.close_event.set()
+        self.damage_data_queue.put(None, block=False)
+        for window_source in self.window_sources.values():
+            window_source.cleanup()
+        self.window_sources = {}
+        #this should be a noop since we inherit an initialized helper:
+        self.video_helper.cleanup()
+        if self.mmap:
+            self.mmap.close()
+            self.mmap = None
+            self.mmap_size = 0
+        self.stop_sending_sound()
+        if self.protocol:
+            self.protocol.close()
+            self.protocol = None
 
 
     def recalculate_delays(self):
@@ -333,6 +362,7 @@ class ServerSource(object):
         wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
         focus = self.get_focus()
         for wid in wids:
+            #this is safe because we only add to this set from other threads:
             self.calculate_window_ids.remove(wid)
             ws = self.window_sources.get(wid)
             if ws is None:
@@ -387,21 +417,6 @@ class ServerSource(object):
         else:
             self.timeout_add(int(1000*(RECALCULATE_DELAY-delta)), add_work_item, recalculate_work)
 
-    def close(self):
-        log("%s.close()", self)
-        self.close_event.set()
-        self.damage_data_queue.put(None, block=False)
-        for window_source in self.window_sources.values():
-            window_source.cleanup()
-        self.window_sources = {}
-        if self.mmap:
-            self.mmap.close()
-            self.mmap = None
-            self.mmap_size = 0
-        self.stop_sending_sound()
-        if self.protocol:
-            self.protocol.close()
-            self.protocol = None
 
     def suspend(self, ui, wd):
         log("suspend(%s, %s) suspended=%s, sound_source=%s",
@@ -591,10 +606,6 @@ class ServerSource(object):
 
         #handle proxy video: add proxy codec to video helper:
         if self.encoding_options.get("proxy.video", False):
-            #if we "proxy video", we will modify the video helper to add
-            #new encoders, so we must make a deep copy to preserve the original
-            #which may be used by other clients (other ServerSource instances):
-            self.video_helper = getVideoHelper().clone()
             #enabling video proxy:
             try:
                 self.parse_proxy_video()
