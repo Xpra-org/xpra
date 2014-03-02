@@ -18,6 +18,7 @@ elog = Logger("encoding")
 soundlog = Logger("sound")
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
+from xpra.server.window_source import WindowSource, HAS_ALPHA
 from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
@@ -35,6 +36,28 @@ from xpra.util import std, typedict
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
+
+
+def get_generic_window_type(window, strip_net=True):
+    window_types = window.get_property("window-type")
+    assert window_types is not None, "window-type is not defined for %s" % window
+    log("window_types=%s", window_types)
+    wts = []
+    for window_type in window_types:
+        s = str(window_type)
+        if strip_net:
+            s = s.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "")
+        else:
+            #for older clients: ensure values do have the prefix.
+            #(shadow servers expose their root window as "NORMAL",
+            #we handle all the legitimate values here for correctness):
+            if s in ("NORMAL", "DIALOG", "MENU", "TOOLBAR", "SPLASH",
+                     "UTILITY", "DOCK", "DESKTOP", "DROPDOWN_MENU",
+                     "POPUP_MENU", "TOOLTIP", "NOTIFICATION", "COMBO", "DND"):
+                s = "_NET_WM_WINDOW_TYPE_"+s
+        wts.append(s)
+    log("window_types=%s", wts)
+    return wts
 
 
 def make_window_metadata(window, propname, generic_window_types=False, client_supports_png=False, get_transient_for=None, get_window_id=None):
@@ -77,24 +100,7 @@ def make_window_metadata(window, propname, generic_window_types=False, client_su
             return {"transient-for" : wid}
         return {}
     elif propname == "window-type":
-        window_types = window.get_property("window-type")
-        assert window_types is not None, "window-type is not defined for %s" % window
-        log("window_types=%s", window_types)
-        wts = []
-        for window_type in window_types:
-            s = str(window_type)
-            if generic_window_types:
-                s = s.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "")
-            else:
-                #for older clients: ensure values do have the prefix.
-                #(shadow servers expose their root window as "NORMAL",
-                #we handle all the legitimate values here for correctness):
-                if s in ("NORMAL", "DIALOG", "MENU", "TOOLBAR", "SPLASH",
-                         "UTILITY", "DOCK", "DESKTOP", "DROPDOWN_MENU",
-                         "POPUP_MENU", "TOOLTIP", "NOTIFICATION", "COMBO", "DND"):
-                    s = "_NET_WM_WINDOW_TYPE_"+s
-            wts.append(s)
-        log("window_types=%s", wts)
+        wts = get_generic_window_type(window, strip_net=generic_window_types)
         return {"window-type" : wts}
     elif propname in ("has-alpha", "override-redirect", "tray", "modal", "fullscreen", "maximized"):
         return {propname : window.get_property(propname)}
@@ -276,6 +282,7 @@ class ServerSource(object):
         self.generic_window_types = False
         self.notify_startup_complete = False
         self.control_commands = []
+        self.supports_transparency = False
         #sound props:
         self.pulseaudio_id = None
         self.pulseaudio_server = None
@@ -490,6 +497,7 @@ class ServerSource(object):
         self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.namespace = c.boolget("namespace")
         self.control_commands = c.strlistget("control_commands")
+        self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
 
         self.desktop_size = c.intpair("desktop_size")
         self.set_screen_sizes(c.listget("screen_sizes"))
@@ -1418,7 +1426,16 @@ class ServerSource(object):
             ratio = float(w*h) / 1000000
             batch_config.delay = self.global_batch_config.delay * sqrt(ratio)
 
-            ws = WindowVideoSource(self.idle_add, self.timeout_add, self.source_remove,
+            wclass = WindowSource
+            #don't use video for system trays
+            #or for transparent windows (if the client supports transparency) since video doesn't do alpha (yet?)
+            if not window.is_tray() and (not window.has_alpha() or not self.supports_transparency):
+                wts = get_generic_window_type(window, strip_net=True)
+                video_window_types = ("NORMAL", "DIALOG", "DESKTOP")
+                if len([x for x in wts if x in video_window_types])>0:
+                    wclass = WindowVideoSource
+
+            ws = wclass(self.idle_add, self.timeout_add, self.source_remove,
                               self.queue_damage, self.queue_packet,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
