@@ -171,7 +171,7 @@ class VideoHelper(object):
         for ifmt, d in self._csc_encoder_specs.items():
             for ofmt, l in d.items():
                 for cspec in l:
-                    ces.setdefault(ifmt, []).append((ofmt, cspec))
+                    ces.setdefault(ifmt, {}).setdefault(ofmt, []).append(cspec)
         vds = {}
         for enc, d in self._video_encoder_specs.items():
             for ifmt, l in d.items():
@@ -223,7 +223,7 @@ class VideoHelper(object):
         return self._video_encoder_specs.get(encoding, {})
 
     def get_csc_specs(self, src_format):
-        return self._csc_encoder_specs.get(src_format, [])
+        return self._csc_encoder_specs.get(src_format, {})
 
     def get_decoder_specs(self, encoding):
         return self._video_decoder_specs.get(encoding, {})
@@ -276,9 +276,9 @@ class VideoHelper(object):
             except:
                 log.warn("init_csc_options() cannot add %s csc", x, exc_info=True)
         log("init_csc_options() csc specs: %s", self._csc_encoder_specs)
-        for src_format, specs in sorted(self._csc_encoder_specs.items()):
-            log("%s - %s options:", src_format, len(specs))
-            for dst_format, specs in sorted(specs.items()):
+        for src_format, d in sorted(self._csc_encoder_specs.items()):
+            log("%s - %s options:", src_format, len(d))
+            for dst_format, specs in sorted(d.items()):
                 log(" * %s via: %s", dst_format, sorted(list(specs)))
 
     def init_csc_option(self, csc_name):
