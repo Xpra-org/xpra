@@ -1245,7 +1245,6 @@ cdef class Encoder:
         self.codec_name = "H264"
         self.preset_name = None
         self.frames = 0
-        self.index = 0
         self.cuda_device = None
         self.cuda_context = None
         self.separate_plane = options.get("video_separateplane", False)
@@ -1524,7 +1523,6 @@ cdef class Encoder:
         self.time = 0
         self.frames = 0
         self.first_frame_timestamp = 0
-        self.index = 0
         self.last_frame_times = []
         self.bytes_in = 0
         self.bytes_out = 0
@@ -1589,8 +1587,14 @@ cdef class Encoder:
         #speed=90  -> 66Mbit/s
         #speed=100 -> 100Mbit/s
         MPixels = (self.encoder_width * self.encoder_height) / (1000.0 * 1000.0)
+        if self.pixel_format=="NV12":
+            #subsampling halves the input size:
+            mult = 0.5
+        else:
+            #yuv444p preserves it:
+            mult = 1.0
         lim = 100*1000000
-        self.target_bitrate = min(lim, max(1000000, int(((0.5+self.speed/200.0)**8)*lim*MPixels)))
+        self.target_bitrate = min(lim, max(1000000, int(((0.5+self.speed/200.0)**8)*lim*MPixels*mult)))
         self.max_bitrate = 2*self.target_bitrate
 
 
@@ -1740,9 +1744,9 @@ cdef class Encoder:
                 picParams.codecPicParams.h264PicParams.refPicFlag = self.frames==0
                 picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
                 picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
+                picParams.codecPicParams.h264PicParams.colourPlaneId = step
                 #picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
-                picParams.frameIdx = self.index
-                self.index += 1
+                picParams.frameIdx = self.frames
                 picParams.inputTimeStamp = image.get_timestamp()-self.first_frame_timestamp
                 #inputDuration = 0      #FIXME: use frame delay?
                 picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
