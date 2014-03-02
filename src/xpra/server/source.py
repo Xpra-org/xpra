@@ -360,6 +360,9 @@ class ServerSource(object):
         self.statistics.update_averages()
         wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
         focus = self.get_focus()
+        sources = list(self.window_sources.items())
+        maximized_wids = [wid for wid, source in sources if source is not None and source.maximized]
+        fullscreen_wids = [wid for wid, source in sources if source is not None and source.fullscreen]
         for wid in wids:
             #this is safe because we only add to this set from other threads:
             self.calculate_window_ids.remove(wid)
@@ -368,7 +371,9 @@ class ServerSource(object):
                 continue
             try:
                 ws.statistics.update_averages()
-                ws.calculate_batch_delay(wid==focus)
+                ws.calculate_batch_delay(wid==focus,
+                                         len(fullscreen_wids)>0 and wid not in fullscreen_wids,
+                                         len(maximized_wids)>0 and wid not in maximized_wids)
                 ws.reconfigure()
             except:
                 log.error("error on window %s", wid, exc_info=True)

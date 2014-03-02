@@ -381,8 +381,8 @@ class WindowSource(object):
             add_last_rec_info(sp, self._encoding_speed)
         self.batch_config.add_stats(info, prefix, suffix)
 
-    def calculate_batch_delay(self, has_focus):
-        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
+    def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):
+        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
 
     def update_speed(self):
         if self.suspended:
