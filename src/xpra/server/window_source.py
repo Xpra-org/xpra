@@ -754,33 +754,25 @@ class WindowSource(object):
             decide which encoding to use: transparent windows and trays need special treatment
             (this is also overriden in WindowVideoSource)
         """
+        if AUTO_SWITCH_TO_RGB and pixel_count<=MAX_PIXELS_PREFER_RGB:
+            if has_alpha and self.supports_transparency:
+                return self.pick_encoding(["rgb32"])
+            return self.pick_encoding(["rgb24"])
         if has_alpha and self.supports_transparency:
             return self.get_transparent_encoding(current_encoding)
         if is_tray:
             #tray needs a lossless encoder
-            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, pixel_count)
-            log("do_get_best_encoding(..) using %s encoder for %s tray pixels", coding, pixel_count)
-            return coding
-        if AUTO_SWITCH_TO_RGB and pixel_count<MAX_PIXELS_PREFER_RGB and current_encoding in ("png", "webp"):
-            if has_alpha and self.supports_transparency:
-                return self.pick_encoding(["rgb32"])
-            else:
-                return self.pick_encoding(["rgb24"])
+            return self.find_common_lossless_encoder(has_alpha, current_encoding, pixel_count)
         return None
 
     def get_transparent_encoding(self, current_encoding):
         if current_encoding in ("png", "png/P", "png/L", "rgb32", "webp"):
             return current_encoding
         if current_encoding=="rgb":
-            encs = ("rgb32", "png", "webp")
+            encs = ("rgb32", "png")
         else:
-            encs = ("png", "rgb32", "webp")
-        for x in encs:
-            if x in self.server_core_encodings and x in self.core_encodings:
-                log("do_get_best_encoding(..) using %s for alpha channel support", x)
-                return x
-        log("no alpha channel encodings supported: no %s in %s", encs, [x for x in self.server_core_encodings if x in self.core_encodings])
-        return None
+            encs = ("png", "rgb32")
+        return self.pick_encoding(encs)
 
     def get_core_encoding(self, has_alpha, current_encoding):
         if current_encoding=="rgb":
@@ -791,10 +783,7 @@ class WindowSource(object):
             else:
                 encs.insert(0, "rgb24")
                 encs.insert(1, "rgb32")
-            log("get_core_encodings(%s, %s) encs=%s, server_core_encodings=%s, core_encodings=%s", has_alpha, current_encoding, encs, self.server_core_encodings, self.core_encodings)
-            for e in encs:
-                if e in self.server_core_encodings and e in self.core_encodings:
-                    return e
+            return self.pick_encoding(encs, current_encoding)
         return current_encoding
 
     def find_common_lossless_encoder(self, has_alpha, fallback, pixel_count):
@@ -803,9 +792,10 @@ class WindowSource(object):
         else:
             rgb_fmt = "rgb24"
         if pixel_count<=MAX_PIXELS_PREFER_RGB:
-            encs = rgb_fmt, "png", "rgb24"
+            encs = rgb_fmt, "png", "rgb24", "rgb32"
         else:
-            encs = "png", rgb_fmt, "rgb24"
+            encs = "png", rgb_fmt, "rgb24", "rgb32"
+        #webp could go here if it wasn't leaking
         return self.pick_encoding(encs, fallback)
 
     def pick_encoding(self, encodings, fallback=None):
