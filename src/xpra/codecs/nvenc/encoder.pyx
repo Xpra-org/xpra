@@ -1253,7 +1253,7 @@ cdef class Encoder:
         self.update_bitrate()
         start = time.time()
 
-        if "YUV444P" in dst_formats and ((self.separate_plane and quality>=50) or ("YUV420P" not in dst_formats)):
+        if "YUV444P" in dst_formats and ((self.separate_plane and quality>=50 and v==1 and u==1) or ("YUV420P" not in dst_formats)):
             dst_format = "YUV444P"
         else:
             assert "YUV420P" in dst_formats
