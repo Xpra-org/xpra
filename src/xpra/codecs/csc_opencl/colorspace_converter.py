@@ -129,7 +129,7 @@ def select_device():
 
                 options.setdefault(score, []).append((d, platform))
     log("best device/platform options: %s", options)
-    for score in sorted(options.keys()):
+    for score in reversed(sorted(options.keys())):
         for d, p in options.get(score):
             try:
                 log("trying platform: %s", platform_info(p))
