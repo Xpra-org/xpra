@@ -96,7 +96,7 @@ class UIXpraClient(XpraClientBase):
         self.info_request_pending = False
         self.screen_size_change_pending = False
         self.core_encodings = None
-        self.encoding = self.get_encodings()[0]
+        self.encoding = None
 
         #sound:
         self.speaker_allowed = False
@@ -183,7 +183,7 @@ class UIXpraClient(XpraClientBase):
         self.bell_enabled = False
         self.border = None
 
-        self.supports_mmap = MMAP_SUPPORTED and ("rgb24" in self.get_core_encodings())
+        self.supports_mmap = MMAP_SUPPORTED
 
         #helpers and associated flags:
         self.client_extras = None
@@ -201,6 +201,7 @@ class UIXpraClient(XpraClientBase):
 
 
     def init(self, opts):
+        """ initialize variables from configuration """
         self.encoding = opts.encoding
         self.title = opts.title
         self.session_name = opts.session_name
@@ -242,6 +243,15 @@ class UIXpraClient(XpraClientBase):
         if not self.readonly:
             self.keyboard_helper = self.make_keyboard_helper(opts.keyboard_sync, opts.key_shortcut)
 
+        #until we add the ability to choose decoders, use all of them:
+        #(and default to non grahics card csc modules if not specified)
+        vh = getVideoHelper()
+        vh.set_modules(video_decoders=ALL_VIDEO_DECODER_OPTIONS, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
+        vh.init()
+
+
+    def init_ui(self, opts):
+        """ initialize user interface """
         tray_icon_filename = opts.tray_icon
         if opts.tray:
             self.menu_helper = self.make_tray_menu_helper()
@@ -269,12 +279,6 @@ class UIXpraClient(XpraClientBase):
                 add_audio_tagging_env(tray_icon_filename)
             except ImportError, e:
                 log("failed to set pulseaudio audio tagging: %s", e)
-
-        #until we add the ability to choose decoders, use all of them:
-        #(and default to non grahics card csc modules if not specified)
-        vh = getVideoHelper()
-        vh.set_modules(video_decoders=ALL_VIDEO_DECODER_OPTIONS, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
-        vh.init()
 
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self)
@@ -373,22 +377,17 @@ class UIXpraClient(XpraClientBase):
                 log("do_get_core_encodings() not adding %s because of missing modules: %s", encodings, missing)
                 continue
             core_encodings += encodings
-        #special case for "dec_avcodec" which may be able to decode both 'vp8' and 'h264':
-        #and for "dec_vpx" which may be able to decode both 'vp8' and 'vp9':
-        #(both may "need" some way of converting YUV data to RGB - at least until we get more clever
-        # and test the availibility of GL windows... but those aren't always applicable..
-        # or test if the codec can somehow gives us plain RGB out)
-        if has_codec("csc_swscale"):    # or has_codec("csc_opencl"): (see window_backing_base)
-            for module in ("dec_avcodec", "dec_avcodec2", "dec_vpx"):
-                decoder = get_codec(module)
-                log("decoder(%s)=%s", module, decoder)
-                if decoder:
-                    for encoding in decoder.get_encodings():
-                        if encoding not in core_encodings:
-                            core_encodings.append(encoding)
-        log("do_get_core_encodings()=%s", core_encodings)
+        #we enable all the video decoders we know about,
+        #what will actually get used by the server will still depend on the csc modes supported
+        video_decodings = getVideoHelper().get_decodings()
+        log("video_decodings=%s", video_decodings)
+        for encoding in video_decodings:
+            if encoding not in core_encodings:
+                core_encodings.append(encoding)
         #remove duplicates and use prefered encoding order:
-        return [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings)]
+        core_encodings = [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings)]
+        log("do_get_core_encodings()=%s", core_encodings)
+        return core_encodings
 
 
     def get_supported_window_layouts(self):
@@ -490,10 +489,10 @@ class UIXpraClient(XpraClientBase):
         t = []
         if self.session_name:
             t.append(self.session_name)
-        if self._protocol._conn:
+        if self._protocol and self._protocol._conn:
             t.append(self._protocol._conn.target)
         if len(t)==0:
-            t.index(0, "Xpra")
+            t.insert(0, "Xpra")
         v = "\n".join(t)
         traylog("get_tray_title()=%s", nonl(v))
         return v

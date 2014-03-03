@@ -926,6 +926,7 @@ def run_client(parser, opts, extra_args, mode):
             sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
             sys.stdout.flush()
         app = make_client(parser.error, opts)
+        app.init(opts)
         if opts.encoding:
             #fix old encoding names if needed:
             from xpra.codecs.loader import encodings_help
@@ -952,7 +953,7 @@ def run_client(parser, opts, extra_args, mode):
         if hasattr(app, "connect"):
             app.connect("handshake-complete", handshake_complete)
         app.setup_connection(conn)
-        app.init(opts)
+        app.init_ui(opts)
     return do_run_client(app)
 
 def make_client(error_cb, opts):
