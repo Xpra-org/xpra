@@ -28,6 +28,8 @@ from xpra.gtk_common.cursor_names import cursor_names
 from xpra.client.window_border import WindowBorder
 from xpra.log import Logger
 log = Logger("gtk", "client")
+cursorlog = Logger("gtk", "client", "cursor")
+clipboardlog = Logger("gtk", "client", "clipboard")
 
 from xpra.client.gtk2.border_client_window import BorderClientWindow
 from xpra.client.gtk2.client_window import ClientWindow
@@ -185,11 +187,11 @@ class XpraClient(GTKXpraClient):
 
 
     def process_clipboard_packet(self, packet):
-        log("process_clipboard_packet(%s) level=%s", packet, gtk.main_level())
+        clipboardlog("process_clipboard_packet(%s) level=%s", packet, gtk.main_level())
         #check for clipboard loops:
         if gtk.main_level()>=10:
-            log.warn("loop nesting too deep: %s", gtk.main_level())
-            log.warn("you may have a clipboard forwarding loop, disabling the clipboard")
+            clipboardlog.warn("loop nesting too deep: %s", gtk.main_level())
+            clipboardlog.warn("you may have a clipboard forwarding loop, disabling the clipboard")
             self.clipboard_enabled = False
             self.emit("clipboard-toggled")
             return
@@ -202,14 +204,14 @@ class XpraClient(GTKXpraClient):
         """
         from xpra.platform.features import CLIPBOARDS, CLIPBOARD_NATIVE_CLASS
         clipboards = [x for x in CLIPBOARDS if x in self.server_clipboards]
-        log("make_clipboard_helper() server_clipboards=%s, local clipboards=%s, common=%s", self.server_clipboards, CLIPBOARDS, clipboards)
+        clipboardlog("make_clipboard_helper() server_clipboards=%s, local clipboards=%s, common=%s", self.server_clipboards, CLIPBOARDS, clipboards)
         #first add the platform specific one, (may be None):
         clipboard_options = []
         if CLIPBOARD_NATIVE_CLASS:
             clipboard_options.append(CLIPBOARD_NATIVE_CLASS)
         clipboard_options.append(("xpra.clipboard.gdk_clipboard", "GDKClipboardProtocolHelper", {"clipboards" : clipboards}))
         clipboard_options.append(("xpra.clipboard.clipboard_base", "DefaultClipboardProtocolHelper", {"clipboards" : clipboards}))
-        log("make_clipboard_helper() clipboard_options=%s", clipboard_options)
+        clipboardlog("make_clipboard_helper() clipboard_options=%s", clipboard_options)
         for module_name, classname, kwargs in clipboard_options:
             c = self.try_load_clipboard_helper(module_name, classname, kwargs)
             if c:
@@ -227,20 +229,20 @@ class XpraClient(GTKXpraClient):
                 if c:
                     return self.setup_clipboard_helper(c, **kwargs)
         except:
-            log.error("cannot load %s.%s", module, classname, exc_info=True)
+            clipboardlog.error("cannot load %s.%s", module, classname, exc_info=True)
             return None
-        log.error("cannot load %s.%s", module, classname)
+        clipboardlog.error("cannot load %s.%s", module, classname)
         return None
 
     def setup_clipboard_helper(self, helperClass, *args, **kwargs):
-        log("setup_clipboard_helper(%s, %s, %s)", helperClass, args, kwargs)
+        clipboardlog("setup_clipboard_helper(%s, %s, %s)", helperClass, args, kwargs)
         def clipboard_send(*parts):
             if self.clipboard_enabled:
                 self.send(*parts)
             else:
-                log("clipboard is disabled, not sending clipboard packet")
+                clipboardlog("clipboard is disabled, not sending clipboard packet")
         def clipboard_progress(local_requests, remote_requests):
-            log("clipboard_progress(%s, %s)", local_requests, remote_requests)
+            clipboardlog("clipboard_progress(%s, %s)", local_requests, remote_requests)
             if local_requests is not None:
                 self.local_clipboard_requests = local_requests
             if remote_requests is not None:
@@ -249,7 +251,7 @@ class XpraClient(GTKXpraClient):
             self.clipboard_notify(n)
         def register_clipboard_toggled(*args):
             def clipboard_toggled(*targs):
-                log("clipboard_toggled(%s) enabled=%s, server_supports_clipboard=%s", targs, self.clipboard_enabled, self.server_supports_clipboard)
+                clipboardlog("clipboard_toggled(%s) enabled=%s, server_supports_clipboard=%s", targs, self.clipboard_enabled, self.server_supports_clipboard)
                 if self.clipboard_enabled and self.server_supports_clipboard:
                     assert self.clipboard_helper is not None
                     self.clipboard_helper.send_all_tokens()
@@ -266,7 +268,7 @@ class XpraClient(GTKXpraClient):
     def clipboard_notify(self, n):
         if not self.tray:
             return
-        log("clipboard_notify(%s)", n)
+        clipboardlog("clipboard_notify(%s)", n)
         if n>0 and self.clipboard_enabled:
             self.tray.set_icon("clipboard")
             self.tray.set_tooltip("%s clipboard requests in progress" % n)
@@ -361,18 +363,18 @@ class XpraClient(GTKXpraClient):
             if cursor_name:
                 gdk_cursor = cursor_names.get(cursor_name.upper())
                 if gdk_cursor is not None:
-                    log("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
+                    cursorlog("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
                     return gdk.Cursor(gdk_cursor)
                 else:
                     global missing_cursor_names
                     if cursor_name not in missing_cursor_names:
-                        log("cursor name '%s' not found", cursor_name)
+                        cursorlog("cursor name '%s' not found", cursor_name)
                         missing_cursor_names.add(cursor_name)
         #create cursor from the pixel data:
         w, h, xhot, yhot, serial, pixels = cursor_data[2:8]
         if len(pixels)<w*h*4:
             import binascii
-            log.warn("not enough pixels provided in cursor data: %s needed and only %s bytes found (%s)", w*h*4, len(pixels), binascii.hexlify(pixels)[:100])
+            cursorlog.warn("not enough pixels provided in cursor data: %s needed and only %s bytes found (%s)", w*h*4, len(pixels), binascii.hexlify(pixels)[:100])
             return
         pixbuf = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
         x = max(0, min(xhot, w-1))
@@ -383,12 +385,12 @@ class XpraClient(GTKXpraClient):
         if len(cursor_data)>=11:
             ssize = cursor_data[9]
             smax = cursor_data[10]
-            log("server cursor sizes: default=%s, max=%s", ssize, smax)
-        log("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", xhot,yhot, serial, w,h, len(pixels), csize, (cmaxw, cmaxh))
+            cursorlog("server cursor sizes: default=%s, max=%s", ssize, smax)
+        cursorlog("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", xhot,yhot, serial, w,h, len(pixels), csize, (cmaxw, cmaxh))
         ratio = 1
         if w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
             ratio = max(float(w)/cmaxw, float(h)/cmaxh, float(max(w,h))/csize)
-            log("downscaling cursor by %.2f", ratio)
+            cursorlog("downscaling cursor by %.2f", ratio)
             pixbuf = pixbuf.scale_simple(int(w/ratio), int(h/ratio), gdk.INTERP_BILINEAR)
             x = int(x/ratio)
             y = int(y/ratio)
@@ -400,7 +402,7 @@ class XpraClient(GTKXpraClient):
             try:
                 cursor = self.make_cursor(cursor_data)
             except Exception, e:
-                log.warn("error creating cursor: %s (using default)", e, exc_info=True)
+                cursorlog.warn("error creating cursor: %s (using default)", e, exc_info=True)
             if cursor is None:
                 #use default:
                 cursor = gdk.Cursor(gtk.gdk.X_CURSOR)
