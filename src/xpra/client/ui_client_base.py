@@ -236,13 +236,6 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing
 
-        self.supports_mmap = MMAP_SUPPORTED and opts.mmap and ("rgb24" in self.get_core_encodings())
-        if self.supports_mmap:
-            self.init_mmap(opts.mmap_group, self._protocol._conn.filename)
-
-        if not self.readonly:
-            self.keyboard_helper = self.make_keyboard_helper(opts.keyboard_sync, opts.key_shortcut)
-
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)
         vh = getVideoHelper()
@@ -252,6 +245,13 @@ class UIXpraClient(XpraClientBase):
 
     def init_ui(self, opts):
         """ initialize user interface """
+        self.supports_mmap = MMAP_SUPPORTED
+        if self.supports_mmap:
+            self.init_mmap(opts.mmap_group, self._protocol._conn.filename)
+
+        if not self.readonly:
+            self.keyboard_helper = self.make_keyboard_helper(opts.keyboard_sync, opts.key_shortcut)
+
         tray_icon_filename = opts.tray_icon
         if opts.tray:
             self.menu_helper = self.make_tray_menu_helper()
