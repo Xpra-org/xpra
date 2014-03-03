@@ -85,11 +85,18 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         raise ImportError("gl_begin failed on %s" % gldrawable)
     props = {}
     try:
-        fhlogger = logging.getLogger('OpenGL.formathandler')
-        fhlogger.saved_handlers = fhlogger.handlers
-        fhlogger.saved_propagate = fhlogger.propagate
-        fhlogger.handlers = [CaptureHandler()]
-        fhlogger.propagate = 0
+        #log redirection:
+        def redirect_log(logger_name):
+            logger = logging.getLogger(logger_name)
+            assert logger is not None
+            logger.saved_handlers = logger.handlers
+            logger.saved_propagate = logger.propagate
+            logger.handlers = [CaptureHandler()]
+            logger.propagate = 0
+            return logger
+        fhlogger = redirect_log('OpenGL.formathandler')
+        elogger = redirect_log('OpenGL.extensions')
+
         import OpenGL
         props["pyopengl"] = OpenGL.__version__
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
@@ -206,6 +213,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
         return props
     finally:
+        #format handler messages:
         STRIP_LOG_MESSAGE = "Unable to load registered array format handler "
         for x in fhlogger.handlers[0].records:
             msg = x.getMessage()
@@ -219,9 +227,20 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             if p>0:
                 format_handler = format_handler[:p]
             log.warn("PyOpenGL warning: "+STRIP_LOG_MESSAGE+format_handler)
-        #restore logger state:
-        fhlogger.handlers = fhlogger.saved_handlers
-        fhlogger.propagate = fhlogger.saved_propagate
+
+        for x in elogger.handlers[0].records:
+            msg = x.getMessage()
+            p = msg.startswith("GL Extension ") and msg.endswith("available")
+            if p>=0:
+                #ignore extension messages
+                continue
+            log.info(msg)
+        
+        def restore_logger(logger):
+            logger.handlers = logger.saved_handlers
+            logger.propagate = logger.saved_propagate
+        restore_logger(fhlogger)
+        restore_logger(elogger)
         gldrawable.gl_end()
 
 def check_support(min_texture_size=0, force_enable=False):
