@@ -18,6 +18,8 @@ PREFERRED_DEVICE_TYPE = os.environ.get("XPRA_OPENCL_DEVICE_TYPE", "GPU")
 PREFERRED_DEVICE_NAME = os.environ.get("XPRA_OPENCL_DEVICE_NAME", "")
 PREFERRED_DEVICE_PLATFORM = os.environ.get("XPRA_OPENCL_PLATFORM", "")
 
+NVIDIA_YUV2RGB = os.environ.get("XPRA_OPENCL_NVIDIA_YUV2RGB", "0")=="1"
+
 
 opencl_platforms = pyopencl.get_platforms()
 if len(opencl_platforms)==0:
@@ -101,19 +103,22 @@ def select_device():
     other_options = []
     for platform in opencl_platforms:
         devices = platform.get_devices()
+        is_cuda = platform.name.find("CUDA")>=0
         for d in devices:
             if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
                 dtype = device_type(d)
                 add_to = other_options
                 if dtype==PREFERRED_DEVICE_TYPE and \
-                    (len(PREFERRED_DEVICE_NAME)==0 or d.name.find(PREFERRED_DEVICE_NAME)>=0) and \
-                    (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0):
+                    ((not is_cuda) or \
+                     (len(PREFERRED_DEVICE_NAME)==0 or d.name.find(PREFERRED_DEVICE_NAME)>=0) and \
+                     (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0)):
                     add_to = best_options
                 if not is_supported(platform.name) and (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)<0):
                     log("ignoring unsupported platform/device: %s / %s", platform.name, d.name)
                     continue
-                #Intel SDK does not work (well?) on AMD CPUs:
-                if platform.name.startswith("Intel") and d.name.startswith("AMD"):
+                #Intel SDK does not work (well?) on AMD CPUs
+                #and CUDA has problems doing YUV to RGB..
+                if (platform.name.startswith("Intel") and d.name.startswith("AMD")) or is_cuda:
                     #less likely to work: add to end of the list...
                     add_to.append((d, platform))
                 else:
@@ -204,10 +209,15 @@ def has_same_channels(src, dst):
     return len(scheck)==0 and len(dcheck)==0
 
 def gen_yuv_to_rgb():
-    global context
+    global context,selected_platform
     from xpra.codecs.csc_opencl.opencl_kernels import gen_yuv_to_rgb_kernels, rgb_mode_to_indexes, indexes_to_rgb_mode
 
     YUV_to_RGB_KERNELS = {}
+
+    if selected_platform.name.find("CUDA")>=0 and not NVIDIA_YUV2RGB:
+        log.warn("CUDA device detected, YUV to RGB disabled")
+        return
+
     #for YUV to RGB support we need to be able to handle the channel_order in WRITE_ONLY mode
     #so we can download the result of the CSC:
     sif = pyopencl.get_supported_image_formats(context, mem_flags.WRITE_ONLY,  pyopencl.mem_object_type.IMAGE2D)
