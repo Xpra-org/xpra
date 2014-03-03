@@ -36,6 +36,7 @@ from xpra.log import Logger
 log = Logger("server")
 focuslog = Logger("server", "focus")
 windowlog = Logger("server", "window")
+cursorlog = Logger("server", "cursor")
 
 import xpra
 from xpra.os_util import StringIOClass
@@ -184,7 +185,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.cursor_sizes = None
         def get_default_cursor():
             self.default_cursor_data = X11Keyboard.get_cursor_image()
-            log("get_default_cursor=%s", self.default_cursor_data)
+            cursorlog("get_default_cursor=%s", self.default_cursor_data)
         trap.swallow_synced(get_default_cursor)
         self._wm.enableCursors(True)
 
@@ -311,6 +312,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #cursors: get sizes and send:
         display = gtk.gdk.display_get_default()
         self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
+        cursorlog("cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor(self.cursor_data, self.cursor_sizes)
 
 
@@ -417,8 +419,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if not self.cursors:
             return
         if self.last_cursor_serial==event.cursor_serial:
-            log("ignoring cursor event with the same serial number")
+            cursorlog("ignoring cursor event %s with the same serial number %s", event, self.last_cursor_serial)
             return
+        cursorlog("cursor_event: %s", event)
         self.last_cursor_serial = event.cursor_serial
         if not self.send_cursor_pending:
             self.send_cursor_pending = True
@@ -431,9 +434,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
         if self.cursor_data is not None:
             pixels = self.cursor_data[7]
-            log("send_cursor() cursor=%s", self.cursor_data[:7]+["%s bytes" % len(pixels)]+self.cursor_data[8:])
+            cursorlog("send_cursor() cursor=%s", self.cursor_data[:7]+["%s bytes" % len(pixels)]+self.cursor_data[8:])
             if self.default_cursor_data is not None and str(pixels)==str(self.default_cursor_data[7]):
-                log("send_cursor(): default cursor - clearing it")
+                cursorlog("send_cursor(): default cursor - clearing it")
                 self.cursor_data = None
             elif pixels is not None:
                 #convert bytearray to string:
@@ -443,7 +446,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 else:
                     self.cursor_data[7] = compressed_wrapper("cursor", pixels)
         else:
-            log("send_cursor() failed to get cursor image")
+            cursorlog("send_cursor() failed to get cursor image")
         for ss in self._server_sources.values():
             ss.send_cursor(self.cursor_data, self.cursor_sizes)
         return False
