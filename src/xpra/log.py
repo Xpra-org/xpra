@@ -154,3 +154,19 @@ class Logger(object):
         self.log(logging.WARN, msg, *args, **kwargs)
     def error(self, msg, *args, **kwargs):
         self.log(logging.ERROR, msg, *args, **kwargs)
+
+
+class CaptureHandler(logging.Handler):
+
+    def __init__(self):
+        logging.Handler.__init__(self, logging.DEBUG)
+        self.records = []
+
+    def handle(self, record):
+        self.records.append(record)
+
+    def emit(self, record):
+        self.records.append(record)
+
+    def createLock(self):
+        self.lock = None
