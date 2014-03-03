@@ -215,6 +215,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
     finally:
         #format handler messages:
         STRIP_LOG_MESSAGE = "Unable to load registered array format handler "
+        missing_handlers = []
         for x in fhlogger.handlers[0].records:
             msg = x.getMessage()
             p = msg.find(STRIP_LOG_MESSAGE)
@@ -226,7 +227,9 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             p = format_handler.find(":")
             if p>0:
                 format_handler = format_handler[:p]
-            log.warn("PyOpenGL warning: "+STRIP_LOG_MESSAGE+format_handler)
+                missing_handlers.append(format_handler)
+        if len(missing_handlers)>0:
+            log.warn("PyOpenGL warning: missing array format handlers: %s", ", ".join(missing_handlers))
 
         for x in elogger.handlers[0].records:
             msg = x.getMessage()
