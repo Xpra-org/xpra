@@ -99,57 +99,62 @@ def select_device():
     log_version_info()
     log_platforms_info()
     #try to choose a platform and device using *our* heuristics / env options:
-    best_options = []
-    other_options = []
+    options = {}
     for platform in opencl_platforms:
         devices = platform.get_devices()
         is_cuda = platform.name.find("CUDA")>=0
         for d in devices:
             if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
-                dtype = device_type(d)
-                add_to = other_options
-                if dtype==PREFERRED_DEVICE_TYPE and \
-                    ((not is_cuda) or \
-                     (len(PREFERRED_DEVICE_NAME)==0 or d.name.find(PREFERRED_DEVICE_NAME)>=0) and \
-                     (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0)):
-                    add_to = best_options
                 if not is_supported(platform.name) and (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)<0):
                     log("ignoring unsupported platform/device: %s / %s", platform.name, d.name)
                     continue
+                dtype = device_type(d)
+                if is_cuda:
+                    score = 0
+                elif dtype==PREFERRED_DEVICE_TYPE:
+                    score = 40
+                else:
+                    score = 10
+
+                if not is_cuda:
+                    if len(PREFERRED_DEVICE_NAME)>0 and d.name.find(PREFERRED_DEVICE_NAME)>=0:
+                        score += 50
+                    if len(PREFERRED_DEVICE_PLATFORM)>0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0:
+                        score += 50
+
                 #Intel SDK does not work (well?) on AMD CPUs
                 #and CUDA has problems doing YUV to RGB..
                 if (platform.name.startswith("Intel") and d.name.startswith("AMD")) or is_cuda:
-                    #less likely to work: add to end of the list...
-                    add_to.append((d, platform))
+                    score = max(0, score - 20)
+
+                options.setdefault(score, []).append((d, platform))
+    log("best device/platform options: %s", options)
+    for score in sorted(options.keys()):
+        for d, p in options.get(score):
+            try:
+                log("trying platform: %s", platform_info(p))
+                log("with %s device: %s", device_type(d), device_info(d))
+                context = pyopencl.Context([d])
+                selected_platform = p
+                selected_device = d
+                log.info(" using platform: %s", platform_info(selected_platform))
+                log_device_info(selected_device)
+                #save device costs:
+                global selected_device_cpu_cost, selected_device_gpu_cost, selected_device_setup_cost
+                if device_type(d)=="GPU":
+                    selected_device_cpu_cost = 0
+                    selected_device_gpu_cost = 50
+                    selected_device_setup_cost = 40
                 else:
-                    add_to.insert(0, (d, platform))
-    log("best device/platform options: %s", best_options)
-    log("other device/platform options: %s", other_options)
-    for d, p in best_options+other_options:
-        try:
-            log("trying platform: %s", platform_info(p))
-            log("with %s device: %s", device_type(d), device_info(d))
-            context = pyopencl.Context([d])
-            selected_platform = p
-            selected_device = d
-            log.info(" using platform: %s", platform_info(selected_platform))
-            log_device_info(selected_device)
-            #save device costs:
-            global selected_device_cpu_cost, selected_device_gpu_cost, selected_device_setup_cost
-            if device_type(d)=="GPU":
-                selected_device_cpu_cost = 0
-                selected_device_gpu_cost = 50
-                selected_device_setup_cost = 40
-            else:
-                selected_device_cpu_cost = 100
-                selected_device_gpu_cost = 0
-                selected_device_setup_cost = 20
-            log("device is a %s, using CPU cost=%s, GPU cost=%s", device_type(d), selected_device_cpu_cost, selected_device_gpu_cost)
-            return
-        except Exception, e:
-            log.warn(" failed to use %s", platform_info(p))
-            log.warn(" with %s device %s", device_type(d), device_info(d))
-            log.warn(" Error: %s", e)
+                    selected_device_cpu_cost = 100
+                    selected_device_gpu_cost = 0
+                    selected_device_setup_cost = 20
+                log("device is a %s, using CPU cost=%s, GPU cost=%s", device_type(d), selected_device_cpu_cost, selected_device_gpu_cost)
+                return
+            except Exception, e:
+                log.warn(" failed to use %s", platform_info(p))
+                log.warn(" with %s device %s", device_type(d), device_info(d))
+                log.warn(" Error: %s", e)
     #fallback to pyopencl auto mode:
     log.warn("OpenCL Error: failed to find a working platform and device combination... trying with pyopencl's 'create_some_context'")
     context = pyopencl.create_some_context(interactive=False)
