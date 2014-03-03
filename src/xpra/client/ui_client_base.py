@@ -247,7 +247,7 @@ class UIXpraClient(XpraClientBase):
         self.init_opengl(opts.opengl)
 
         self.supports_mmap = MMAP_SUPPORTED
-        if self.supports_mmap:
+        if self.supports_mmap and opts.mmap:
             self.init_mmap(opts.mmap_group, self._protocol._conn.filename)
 
         if not self.readonly:
