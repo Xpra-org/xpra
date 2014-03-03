@@ -74,7 +74,6 @@ class WindowBackingBase(object):
         self._backing = None
         self._last_pixmap_data = None
         self._video_decoder = None
-        self._csc_prep = None
         self._csc_decoder = None
         self._decoder_lock = Lock()
         self.draw_needs_refresh = True
@@ -98,17 +97,11 @@ class WindowBackingBase(object):
         if self._decoder_lock is None or not self._decoder_lock.acquire(blocking):
             return False
         try:
-            self.do_clean_csc_prep()
             self.do_clean_video_decoder()
             self.do_clean_csc_decoder()
             return True
         finally:
             self._decoder_lock.release()
-
-    def do_clean_csc_prep(self):
-        if self._csc_prep:
-            self._csc_prep.clean()
-            self._csc_prep = None
 
     def do_clean_video_decoder(self):
         if self._video_decoder:
@@ -296,31 +289,7 @@ class WindowBackingBase(object):
 
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
-            decoder_colorspace = input_colorspace
-            if input_colorspace not in decoder_colorspaces:
-                log("colorspace not supported by %s directly", decoder_module)
-                assert input_colorspace in ("BGRA", "BGRX"), "colorspace %s cannot be handled directly or via a csc preparation step!" % input_colorspace
-                decoder_colorspace = "YUV444P"
-                if self._csc_prep:
-                    if self._csc_prep.get_src_format()!=input_colorspace:
-                        #this should not happen!
-                        log.warn("input colorspace has changed from %s to %s", self._csc_prep.get_src_format(), input_colorspace)
-                        self.do_clean_csc_prep()
-                    elif self._csc_prep.get_dst_format() not in decoder_colorspaces:
-                        #this should not happen!
-                        log.warn("csc prep colorspace %s is now invalid!?", self._csc_prep.get_dst_format())
-                        self.do_clean_csc_prep()
-                    elif self._csc_prep.get_src_width()!=enc_width or self._csc_prep.get_src_height()!=enc_height:
-                        log("csc prep dimensions have changed from %s to %s", (self._csc_prep.get_src_width(), self._csc_prep.get_src_height()), (enc_width, enc_height))
-                        self.do_clean_csc_prep()
-                if self._csc_prep is None:
-                    csc_speed = 0   #always best quality
-                    self._csc_prep = self.make_csc(enc_width, enc_height, input_colorspace,
-                                           width, height, [decoder_colorspace], csc_speed)
-                    log("csc preparation step: %s", self._csc_prep)
-            elif self._csc_prep:
-                #no longer needed?
-                self.do_clean_csc_prep()
+            assert input_colorspace in decoder_colorspaces, "decoder does not support %s for %s" % (input_colorspace, coding)
 
             if self._video_decoder:
                 if self._video_decoder.get_encoding()!=coding:
@@ -329,16 +298,16 @@ class WindowBackingBase(object):
                 elif self._video_decoder.get_width()!=enc_width or self._video_decoder.get_height()!=enc_height:
                     log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
-                elif self._video_decoder.get_colorspace()!=decoder_colorspace:
-                    log("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), decoder_colorspace)
+                elif self._video_decoder.get_colorspace()!=input_colorspace:
+                    log("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), input_colorspace)
                     self.do_clean_video_decoder()
                 elif options.get("frame")==0:
                     log("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
-                log("paint_with_video_decoder: new %s(%s,%s,%s)", decoder_module.Decoder, width, height, decoder_colorspace)
+                log("paint_with_video_decoder: new %s(%s,%s,%s)", decoder_module.Decoder, width, height, input_colorspace)
                 self._video_decoder = decoder_module.Decoder()
-                self._video_decoder.init_context(coding, enc_width, enc_height, decoder_colorspace)
+                self._video_decoder.init_context(coding, enc_width, enc_height, input_colorspace)
                 log("paint_with_video_decoder: info=%s", self._video_decoder.get_info())
 
             img = self._video_decoder.decompress_image(img_data, options)
