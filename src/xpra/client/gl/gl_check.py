@@ -7,14 +7,11 @@
 
 import sys, os
 import logging
-from xpra.log import Logger
+from xpra.log import Logger, CaptureHandler
 log = Logger("opengl")
 
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
-#warnings seem unavoidable on win32, so silence them
-#(other platforms should fix their packages instead)
-SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win") or sys.platform.startswith("darwin")
 
 BLACKLIST = {"vendor" : ["nouveau", "Humper", "VMware, Inc."]}
 
@@ -88,9 +85,11 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         raise ImportError("gl_begin failed on %s" % gldrawable)
     props = {}
     try:
-        if SILENCE_FORMAT_HANDLER_LOGGER:
-            log("silencing formathandler warnings")
-            logging.getLogger('OpenGL.formathandler').setLevel(logging.WARN)
+        fhlogger = logging.getLogger('OpenGL.formathandler')
+        fhlogger.saved_handlers = fhlogger.handlers
+        fhlogger.saved_propagate = fhlogger.propagate
+        fhlogger.handlers = [CaptureHandler()]
+        fhlogger.propagate = 0
         import OpenGL
         props["pyopengl"] = OpenGL.__version__
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
@@ -207,11 +206,22 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
         return props
     finally:
-        if SILENCE_FORMAT_HANDLER_LOGGER:
-            try:
-                logging.getLogger('OpenGL.formathandler').setLevel(logging.INFO)
-            except:
-                pass
+        STRIP_LOG_MESSAGE = "Unable to load registered array format handler "
+        for x in fhlogger.handlers[0].records:
+            msg = x.getMessage()
+            p = msg.find(STRIP_LOG_MESSAGE)
+            if p<0:
+                #unknown message, log it:
+                log.info(msg)
+                continue
+            format_handler = msg[p+len(STRIP_LOG_MESSAGE):]
+            p = format_handler.find(":")
+            if p>0:
+                format_handler = format_handler[:p]
+            log.warn("PyOpenGL warning: "+STRIP_LOG_MESSAGE+format_handler)
+        #restore logger state:
+        fhlogger.handlers = fhlogger.saved_handlers
+        fhlogger.propagate = fhlogger.saved_propagate
         gldrawable.gl_end()
 
 def check_support(min_texture_size=0, force_enable=False):
