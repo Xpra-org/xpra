@@ -664,6 +664,20 @@ class UIXpraClient(XpraClientBase):
                 capabilities[k] = v
             capabilities["xkbmap_layout"] = nn(self.keyboard_helper.xkbmap_layout)
             capabilities["xkbmap_variant"] = nn(self.keyboard_helper.xkbmap_variant)
+            #show the user a summary of what we have detected:
+            kb_info = {}
+            xkbq = capabilities.get("xkbmap_query")
+            if xkbq:
+                from xpra.keyboard.layouts import parse_xkbmap_query
+                d = parse_xkbmap_query(xkbq)
+                for x in ["rules", "model", "layout"]:
+                    v = d.get(x)
+                    if v:
+                        kb_info[x] = v
+            if self.keyboard_helper.xkbmap_layout:
+                kb_info["layout"] = self.keyboard_helper.xkbmap_layout
+            log.info("detected keyboard: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in kb_info.items()]))
+
         capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = self.get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]

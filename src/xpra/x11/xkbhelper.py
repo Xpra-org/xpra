@@ -11,6 +11,7 @@ from xpra.x11.gtk_x11 import gdk_display_source
 assert gdk_display_source
 
 from xpra.util import std
+from xpra.keyboard.layouts import parse_xkbmap_query
 from xpra.x11.gtk_x11.error import trap
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
@@ -77,12 +78,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         (we execute the options separately in case that fails..)
         """
         #parse the data into a dict:
-        settings = {}
-        opt_re = re.compile("(\w*):\s*(.*)")
-        for line in xkbmap_query.splitlines():
-            m = opt_re.match(line)
-            if m:
-                settings[m.group(1)] = m.group(2).strip()
+        settings = parse_xkbmap_query(xkbmap_query)
         #construct the command line arguments for setxkbmap:
         args = ["setxkbmap"]
         used_settings = {}
