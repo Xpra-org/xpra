@@ -224,7 +224,6 @@ class UIXpraClient(XpraClientBase):
             self.microphone_codecs = get_sound_codecs(False, False)
             self.microphone_allowed = len(self.microphone_codecs)>0
 
-        self.init_opengl(opts.opengl)
         self.readonly = opts.readonly
         self.windows_enabled = opts.windows
         self.pings = opts.pings
@@ -245,6 +244,8 @@ class UIXpraClient(XpraClientBase):
 
     def init_ui(self, opts):
         """ initialize user interface """
+        self.init_opengl(opts.opengl)
+
         self.supports_mmap = MMAP_SUPPORTED
         if self.supports_mmap:
             self.init_mmap(opts.mmap_group, self._protocol._conn.filename)
