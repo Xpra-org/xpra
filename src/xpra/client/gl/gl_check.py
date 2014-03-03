@@ -230,12 +230,11 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
 
         for x in elogger.handlers[0].records:
             msg = x.getMessage()
+            #ignore extension messages:
             p = msg.startswith("GL Extension ") and msg.endswith("available")
-            if p>=0:
-                #ignore extension messages
-                continue
-            log.info(msg)
-        
+            if not p:
+                log.info(msg)
+
         def restore_logger(logger):
             logger.handlers = logger.saved_handlers
             logger.propagate = logger.saved_propagate
