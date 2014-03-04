@@ -457,7 +457,7 @@ class XpraClient(GTKXpraClient):
         check = OpenGL_safety_check()
         if check:
             if enable_opengl is True:
-                log.warn("OpenGL enabled despite: %s", check)
+                log.warn("OpenGL loading despite: %s", check)
             else:
                 self.opengl_props["info"] = "disabled: %s" % check
                 log.warn("OpenGL disabled: %s", check)
