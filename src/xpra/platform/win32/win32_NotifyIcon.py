@@ -43,11 +43,12 @@ FALLBACK_ICON = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
 class win32NotifyIcon(object):
 
     click_callbacks = {}
+    move_callbacks = {}
     exit_callbacks = {}
     command_callbacks = {}
     live_hwnds = set()
 
-    def __init__(self, title, click_callback, exit_callback, command_callback=None, iconPathName=None):
+    def __init__(self, title, move_callbacks, click_callback, exit_callback, command_callback=None, iconPathName=None):
         self.title = title[:127]
         self.current_icon = None
         # Register the Window class.
@@ -62,6 +63,7 @@ class win32NotifyIcon(object):
         win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, self.make_nid(win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP))
         #register callbacks:
         win32NotifyIcon.live_hwnds.add(self.hwnd)
+        win32NotifyIcon.move_callbacks[self.hwnd] = move_callbacks
         win32NotifyIcon.click_callbacks[self.hwnd] = click_callback
         win32NotifyIcon.exit_callbacks[self.hwnd] = exit_callback
         win32NotifyIcon.command_callbacks[self.hwnd] = command_callback
@@ -212,8 +214,12 @@ class win32NotifyIcon(object):
 
     @classmethod
     def OnTaskbarNotify(cls, hwnd, msg, wparam, lparam):
-        bm = BUTTON_MAP.get(lparam)
-        cc = cls.click_callbacks.get(hwnd)
+        if lparam==win32con.WM_MOUSEMOVE:
+            cc = cls.move_callbacks.get(hwnd)
+            bm = [(hwnd, msg, wparam, lparam)]
+        else:
+            cc = cls.click_callbacks.get(hwnd)
+            bm = BUTTON_MAP.get(lparam)
         log("OnTaskbarNotify(%s,%s,%s,%s) button(s) lookup: %s, callback=%s", hwnd, msg, wparam, lparam, bm, cc)
         if bm is not None and cc:
             for button_event in bm:

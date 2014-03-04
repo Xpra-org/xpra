@@ -12,8 +12,7 @@ import win32con, win32api        #@UnresolvedImport
 from xpra.log import Logger
 log = Logger("tray", "win32")
 
-from xpra.platform.win32.win32_events import get_win32_event_listener, BALLOON_EVENTS
-from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon, WM_TRAY_EVENT, BUTTON_MAP
+from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
 from xpra.client.tray_base import TrayBase
 
 
@@ -24,10 +23,7 @@ class Win32Tray(TrayBase):
         self.default_icon_extension = "ico"
         self.default_icon_name = "xpra.ico"
         icon_filename = self.get_tray_icon_filename(self.default_icon_filename)
-        self.tray_widget = win32NotifyIcon(self.tooltip, self.click_cb, self.exit_cb, None, icon_filename)
-        #now let's try to hook the session notification
-        el = get_win32_event_listener()
-        el.add_event_callback(WM_TRAY_EVENT, self.tray_event)
+        self.tray_widget = win32NotifyIcon(self.tooltip, self.move_cb, self.click_cb, self.exit_cb, None, icon_filename)
 
     def ready(self):
         pass
@@ -72,17 +68,10 @@ class Win32Tray(TrayBase):
         return self.geometry_guess
 
 
-    def tray_event(self, wParam, lParam):
+    def move_cb(self, *args):
         x, y = win32api.GetCursorPos()
         size = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
+        log("move_cb%s x=%s, y=%s, size=%s", args, x, y, size)
         self.recalculate_geometry(x, y, size, size)
-        if lParam in BALLOON_EVENTS:
-            log("WM_TRAY_EVENT: %s", BALLOON_EVENTS.get(lParam))
-        elif lParam==win32con.WM_MOUSEMOVE:
-            log("WM_TRAY_EVENT: WM_MOUSEMOVE")
-            if self.mouseover_cb:
-                self.mouseover_cb(x, y)
-        elif lParam in BUTTON_MAP:
-            log("WM_TRAY_EVENT: click %s", BUTTON_MAP.get(lParam))
-        else:
-            log.warn("WM_TRAY_EVENT: unknown event: %s / %s", wParam, lParam)
+        if self.mouseover_cb:
+            self.mouseover_cb(x, y)

@@ -54,6 +54,7 @@ class ClientTray(ClientWidgetBase):
 
     def reconfigure(self, force_send_configure=False):
         geometry = self.tray_widget.get_geometry()
+        log("%s.reconfigure(%s) geometry=%s", self, force_send_configure, geometry)
         if geometry is None:
             if self._geometry:
                 geometry = self._geometry
@@ -76,6 +77,7 @@ class ClientTray(ClientWidgetBase):
             screen = self.tray_widget.get_screen()
             if screen>=0:
                 client_properties["screen"] = screen
+            log("%s.reconfigure(%s) sending configure: %s", self, force_send_configure, (x, y, w, h, client_properties))
             self._client.send("configure-window", self._id, x, y, w, h, client_properties)
         if self._size!=(w, h):
             self.new_backing(w, h)

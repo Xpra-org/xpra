@@ -107,6 +107,7 @@ class TrayBase(object):
         raise Exception("override me!")
 
     def recalculate_geometry(self, x, y, width, height):
+        log("recalculate_geometry%s tray event locations: %s", (x, y, width, height), len(self.tray_event_locations))
         if len(self.tray_event_locations)>0 and self.tray_event_locations[-1]==(x,y):
             #unchanged
             return
@@ -139,6 +140,6 @@ class TrayBase(object):
         miny -= pady/2
         oldgeom = self.geometry_guess
         self.geometry_guess = minx, miny, width, height
-        log("recalculate_geometry() %s", self.geometry_guess)
+        log("recalculate_geometry() geometry guess=%s", self.geometry_guess)
         if self.size_changed_cb and self.geometry_guess!=oldgeom:
             self.size_changed_cb()
