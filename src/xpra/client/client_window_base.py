@@ -124,21 +124,26 @@ class ClientWindowBase(ClientWidgetBase):
 
     def set_metadata(self, metadata):
         if "title" in metadata:
-            title = u(self._client.title)
-            if title.find("@")>=0:
-                #perform metadata variable substitutions:
-                default_values = {"title" : u("<untitled window>"),
-                                  "client-machine" : u("<unknown machine>")}
-                def metadata_replace(match):
-                    atvar = match.group(0)          #ie: '@title@'
-                    var = atvar[1:len(atvar)-1]     #ie: 'title'
-                    default_value = default_values.get(var, u("<unknown %s>") % var)
-                    value = self._metadata.get(var, default_value)
-                    if sys.version<'3':
-                        value = value.decode("utf-8")
-                    return value
-                title = re.sub("@[\w\-]*@", metadata_replace, title)
-            self.set_title(title)
+            try:
+                title = u(self._client.title)
+                if title.find("@")>=0:
+                    #perform metadata variable substitutions:
+                    default_values = {"title" : u("<untitled window>"),
+                                      "client-machine" : u("<unknown machine>")}
+                    def metadata_replace(match):
+                        atvar = match.group(0)          #ie: '@title@'
+                        var = atvar[1:len(atvar)-1]     #ie: 'title'
+                        default_value = default_values.get(var, u("<unknown %s>") % var)
+                        value = self._metadata.get(var, default_value)
+                        if sys.version<'3':
+                            value = value.decode("utf-8")
+                        return value
+                    title = re.sub("@[\w\-]*@", metadata_replace, title)
+                utf8_title = title.encode("utf-8")
+            except Exception, e:
+                log.error("error parsing window title: %s", e)
+                utf8_title = ""
+            self.set_title(utf8_title)
 
         if "icon-title" in metadata:
             icon_title = metadata["icon-title"]
