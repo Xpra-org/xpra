@@ -37,6 +37,7 @@ log = Logger("server")
 focuslog = Logger("server", "focus")
 windowlog = Logger("server", "window")
 cursorlog = Logger("server", "cursor")
+traylog = Logger("server", "tray")
 
 import xpra
 from xpra.os_util import StringIOClass
@@ -598,6 +599,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         if window.is_tray():
             assert self._tray
+            traylog("tray %s configured to: %s", window, (x, y, w, h))
             self._tray.move_resize(window, x, y, w, h)
         else:
             assert not window.is_OR()
