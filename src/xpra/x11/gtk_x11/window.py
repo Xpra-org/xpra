@@ -688,9 +688,13 @@ class SystemTrayWindowModel(OverrideRedirectWindowModel):
     def is_tray(self):
         return  True
 
+    def has_alpha(self):
+        return  True
+
     def _read_initial_properties(self):
         BaseWindowModel._read_initial_properties(self)
         self._internal_set_property("tray", True)
+        self._internal_set_property("has-alpha", True)
 
     def move_resize(self, x, y, width, height):
         #Used by clients to tell us where the tray is located on screen
