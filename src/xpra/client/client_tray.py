@@ -69,7 +69,7 @@ class ClientTray(ClientWidgetBase):
         if force_send_configure or self._geometry is None or geometry!=self._geometry:
             self._geometry = geometry
             client_properties = {"encoding.transparency": True,
-                                 "encoding.rgb_formats" : ["RGBA", "RGB", "RGBX"]}
+                                 "encodings.rgb_formats" : ["RGBA", "RGB", "RGBX"]}
             orientation = self.tray_widget.get_orientation()
             if orientation:
                 client_properties["orientation"] = orientation
