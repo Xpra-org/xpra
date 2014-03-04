@@ -185,7 +185,7 @@ class SystemTray(gobject.GObject):
             title = prop_get(window, "WM_NAME", "latin1", ignore_errors=True)
         if title is None:
             title = ""
-        log("dock_tray(%s) window=%#x, geometry=%s, title=%s, visual.depth=%s", xid, window, window.get_geometry(), title, window.get_visual().depth)
+        log("dock_tray(%#x) window=%s, geometry=%s, title=%s, visual.depth=%s", xid, window, window.get_geometry(), title, window.get_visual().depth)
         event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
         tray_window = gtk.gdk.Window(root, width=w, height=h,
                                            window_type=gtk.gdk.WINDOW_TOPLEVEL,
