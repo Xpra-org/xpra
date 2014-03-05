@@ -66,6 +66,8 @@ class WindowVideoSource(WindowSource):
         self.supports_video_reinit = self.encoding_options.get("video_reinit", False)
         self.supports_video_subregion = self.encoding_options.get("video_subregion", False)
 
+    def init_encoders(self):
+        WindowSource.init_encoders(self)
         self.csc_modes = get_default_csc_modes(self.encoding_client_options)       #for pre 0.12 clients: just one list of modes for all encodings..
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
         self.parse_csc_modes(self.encoding_options.get("csc_modes"), self.encoding_options.get("full_csc_modes"))

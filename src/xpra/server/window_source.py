@@ -142,6 +142,12 @@ class WindowSource(object):
         self._fixed_speed = default_encoding_options.get("speed", -1)
         self._fixed_min_speed = default_encoding_options.get("min-speed", -1)
 
+        self.init_encoders()
+        #ensure the encoding chosen is supported by this source:
+        self.encoding = self.pick_encoding([encoding]+self._encoders.keys())
+        assert self.encoding is not None
+
+    def init_encoders(self):
         self._encoders["rgb24"] = self.rgb_encode
         self._encoders["rgb32"] = self.rgb_encode
         for x in ("png", "png/P", "png/L", "jpeg"):
@@ -249,7 +255,10 @@ class WindowSource(object):
             return
         self.statistics.reset()
         self.last_pixmap_data = None
-        self.encoding = encoding
+        if encoding in self._encoders:
+            self.encoding = encoding
+        else:
+            log("not setting encoding to %s for window source %s as it only supports: %s", encoding, self.wid, self._encoders.keys())
 
     def _scaling_changed(self, window, *args):
         self.scaling = window.get_property("scaling")
@@ -786,7 +795,9 @@ class WindowSource(object):
                 encs.insert(0, "rgb24")
                 encs.insert(1, "rgb32")
             return self.pick_encoding(encs, current_encoding)
-        return current_encoding
+        #fallback to current encoding if possible
+        #(not possible if this is a video encoding and this class is not a video source)
+        return self.pick_encoding([current_encoding]+self._encoders.keys())
 
     def find_common_lossless_encoder(self, has_alpha, fallback, pixel_count):
         if has_alpha and self.supports_transparency:
@@ -802,7 +813,7 @@ class WindowSource(object):
 
     def pick_encoding(self, encodings, fallback=None):
         for e in encodings:
-            if e in self.server_core_encodings and e in self.core_encodings:
+            if e in self._encoders and e in self.core_encodings:
                 return e
         return fallback
 
