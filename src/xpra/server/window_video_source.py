@@ -562,7 +562,7 @@ class WindowVideoSource(WindowSource):
 
         if time.time()-self.statistics.last_resized<0.150:
             #window has just been resized
-            log.info("resized not long ago")
+            log("resized not long ago")
             return switch_to_fast()
 
         def switch_to_lossless(reason):
