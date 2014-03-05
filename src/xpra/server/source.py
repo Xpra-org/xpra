@@ -16,6 +16,7 @@ from xpra.log import Logger
 log = Logger("server")
 elog = Logger("encoding")
 soundlog = Logger("sound")
+keylog = Logger("keyboard")
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_source import WindowSource, HAS_ALPHA
@@ -564,8 +565,9 @@ class ServerSource(object):
             self.assign_keymap_options(c)
             self.keyboard_config.xkbmap_layout = c.strget("xkbmap_layout")
             self.keyboard_config.xkbmap_variant = c.strget("xkbmap_variant")
+            keylog("keyboard_config=%s", self.keyboard_config)
         except ImportError, e:
-            log.error("failed to load keyboard support: %s", e)
+            keylog.error("failed to load keyboard support: %s", e)
             self.keyboard_config = None
 
         #encodings:
@@ -849,6 +851,7 @@ class ServerSource(object):
 # Keyboard magic
 #
     def set_layout(self, layout, variant):
+        keylog("set_layout(%s, %s)", layout, variant)
         if layout!=self.keyboard_config.xkbmap_layout or variant!=self.keyboard_config.xkbmap_variant:
             self.keyboard_config.xkbmap_layout = layout
             self.keyboard_config.xkbmap_variant = variant
@@ -858,7 +861,7 @@ class ServerSource(object):
     def assign_keymap_options(self, props):
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
-        modded = False
+        modded = []
         for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
                   "xkbmap_mod_managed", "xkbmap_mod_pointermissing",
                   "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
@@ -866,38 +869,40 @@ class ServerSource(object):
             nv = props.get(x)
             if cv!=nv:
                 setattr(self.keyboard_config, x, nv)
-                modded = True
-        return modded
+                modded.append(x)
+        keylog("assign_keymap_options(..) modified %s", modded)
+        return len(modded)>0
 
     def keys_changed(self):
         if self.keyboard_config:
             self.keyboard_config.compute_modifier_map()
             self.keyboard_config.compute_modifier_keynames()
+        keylog("keys_changed() updated keyboard config=%s", self.keyboard_config)
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         if self.keyboard_config and self.keyboard_config.enabled:
             self.keyboard_config.make_keymask_match(modifier_list, ignored_modifier_keycode, ignored_modifier_keynames)
 
     def set_keymap(self, current_keyboard_config, keys_pressed, force):
-        log("set_keymap%s", (current_keyboard_config, keys_pressed, force))
+        keylog("set_keymap%s", (current_keyboard_config, keys_pressed, force))
         if self.keyboard_config and self.keyboard_config.enabled:
             current_id = None
             if current_keyboard_config and current_keyboard_config.enabled:
                 current_id = current_keyboard_config.get_hash()
             keymap_id = self.keyboard_config.get_hash()
-            log("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
+            keylog("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
             if force or current_id is None or keymap_id!=current_id:
                 self.keyboard_config.keys_pressed = keys_pressed
                 self.keyboard_config.set_keymap(self.client_platform)
                 current_keyboard_config = self.keyboard_config
             else:
-                log.info("keyboard mapping already configured (skipped)")
+                keylog.info("keyboard mapping already configured (skipped)")
                 self.keyboard_config = current_keyboard_config
         return current_keyboard_config
 
     def get_keycode(self, client_keycode, keyname, modifiers):
         if self.keyboard_config is None or not self.keyboard_config.enabled:
-            log.info("ignoring keycode since keyboard is turned off")
+            keylog.info("ignoring keycode since keyboard is turned off")
             return -1
         server_keycode = self.keyboard_config.keycode_translation.get((client_keycode, keyname))
         if server_keycode is None:

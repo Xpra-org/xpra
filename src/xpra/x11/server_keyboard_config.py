@@ -57,6 +57,9 @@ class KeyboardConfig(object):
         self.modifiers_filter = []
         self.is_native_keymap = True
 
+    def __repr__(self):
+        return "KeyboardConfig(%s / %s)" % (self.xkbmap_layout, self.xkbmap_variant)
+
     def get_info(self):
         info = {"enabled"   : self.enabled,
                 "native"    : self.is_native_keymap,
