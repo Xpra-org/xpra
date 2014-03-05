@@ -251,6 +251,11 @@ class WindowVideoSource(WindowSource):
             self.video_subregion = None
             return
         ww, wh = self.window_dimensions
+        #validate against window dimensions:
+        if self.video_subregion and (self.video_subregion.width>ww or self.video_subregion.height>wh):
+            #region is now bigger than the window!
+            self.video_subregion = None
+
         #arbitrary minimum size for regions we will look at:
         #(we don't want video regions smaller than this - too much effort for little gain)
         min_w = max(256, ww/4)
@@ -319,7 +324,12 @@ class WindowVideoSource(WindowSource):
         def select_most_damaged():
             #use the region responsible for most of the large damage requests:
             most_damaged_regions = [k for k,v in damage_count.items() if v==most_damaged]
-            self.video_subregion = rectangle(*most_damaged_regions[0])
+            rect = rectangle(*most_damaged_regions[0])
+            if rect.width>=ww or rect.height>=wh:
+                sublog("most damaged region is the whole window!")
+                self.video_subregion = None
+                return
+            self.video_subregion = rect
             self.video_subregion_set_at = self.statistics.damage_events_count
             sublog("identified video region (%s%% of large damage requests): %s", most_pct, self.video_subregion)
 
@@ -366,6 +376,8 @@ class WindowVideoSource(WindowSource):
             #now this will match more than one area..
             #so find a recent one:
             for _,x,y,w,h in reversed(lde):
+                if w>=ww or h>=wh:
+                    continue
                 if w==mcw and h==mch:
                     #recent and matching size, assume this is the one
                     self.video_subregion_set_at = self.statistics.damage_events_count
@@ -377,10 +389,13 @@ class WindowVideoSource(WindowSource):
         #(flash player with firefox and youtube does stupid unnecessary repaints)
         if len(damage_count)>=2:
             merged = merge_all(damage_count.keys())
+            #clamp it:
+            merged.width = min(ww, merged.width)
+            merged.height = min(wh, merged.height)
             #and make sure this does not end up much bigger than needed:
             merged_pixels = merged.width*merged.height
             unmerged_pixels = sum((int(w*h) for _,_,w,h in damage_count.keys()))
-            if merged_pixels<ww*wh*70/100 and unmerged_pixels*140/100<merged_pixels:
+            if merged_pixels<ww*wh*70/100 and unmerged_pixels*140/100<merged_pixels and (merged.width<ww or merged.height<wh):
                 self.video_subregion_set_at = self.statistics.damage_events_count
                 self.video_subregion = merged
                 sublog("identified merged video region: %s", self.video_subregion)
