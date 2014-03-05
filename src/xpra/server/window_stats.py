@@ -59,6 +59,8 @@ class WindowPerformanceStatistics(object):
         self.damage_events_count = 0
         self.packet_count = 0
 
+        self.last_resized = 0
+
         #these values are calculated from the values above (see update_averages)
         self.target_latency = self.DEFAULT_TARGET_LATENCY
         self.avg_damage_in_latency = self.DEFAULT_DAMAGE_LATENCY

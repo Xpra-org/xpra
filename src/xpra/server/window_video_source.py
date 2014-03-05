@@ -557,6 +557,14 @@ class WindowVideoSource(WindowSource):
             #we have a video region, and this is not it, so don't use video:
             return None
 
+        def switch_to_fast():
+            return self.pick_encoding(["jpeg", "rgb24"])
+
+        if time.time()-self.statistics.last_resized<0.150:
+            #window has just been resized
+            log.info("resized not long ago")
+            return switch_to_fast()
+
         def switch_to_lossless(reason):
             coding = self.find_common_lossless_encoder(has_alpha, current_encoding, pixel_count)
             log("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
