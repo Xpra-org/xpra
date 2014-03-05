@@ -215,10 +215,11 @@ class Protocol(object):
         """
         assert scheduler is not None
         assert conn is not None
-        self.scheduler = scheduler
+        self.timeout_add = scheduler.timeout_add
+        self.idle_add = scheduler.idle_add
         self._conn = conn
         if FAKE_JITTER>0:
-            fj = FakeJitter(self.scheduler, process_packet_cb)
+            fj = FakeJitter(self.timeout_add, process_packet_cb)
             self._process_packet_cb =  fj.process_packet_cb
         else:
             self._process_packet_cb = process_packet_cb
@@ -376,7 +377,7 @@ class Protocol(object):
                 self._read_thread.start()
                 self._read_parser_thread.start()
                 self._write_format_thread.start()
-        self.scheduler.idle_add(do_start)
+        self.idle_add(do_start)
 
     def send_now(self, packet):
         if self._closed:
@@ -671,7 +672,7 @@ class Protocol(object):
 
     def _call_connection_lost(self, message="", exc_info=False):
         log("will call connection lost: %s", message)
-        self.scheduler.idle_add(self._connection_lost, message, exc_info)
+        self.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
         log.info("connection lost: %s", message, exc_info=exc_info)
@@ -679,9 +680,9 @@ class Protocol(object):
         return False
 
     def gibberish(self, msg, data):
-        self.scheduler.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, data])
+        self.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, data])
         # Then hang up:
-        self.scheduler.timeout_add(1000, self._connection_lost, msg)
+        self.timeout_add(1000, self._connection_lost, msg)
 
     def _invalid_header(self, data):
         self.invalid_header(self, data)
@@ -722,7 +723,7 @@ class Protocol(object):
             buf = self._read_queue.get()
             if not buf:
                 log("read thread: empty marker, exiting")
-                self.scheduler.idle_add(self.close)
+                self.idle_add(self.close)
                 return
             if read_buffer:
                 read_buffer = read_buffer + buf
@@ -773,7 +774,7 @@ class Protocol(object):
                                     self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
                                                                   (size_to_check, self.max_packet_size, repr_ellipsized(packet_header)))
                             return False
-                        self.scheduler.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
+                        self.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
 
                 if bl<payload_size:
                     # incomplete packet, wait for the rest to arrive
@@ -894,7 +895,7 @@ class Protocol(object):
                     self.close()
                 else:
                     log("flush_then_close: still waiting for queue to flush")
-                    self.scheduler.timeout_add(100, wait_for_queue, timeout-1)
+                    self.timeout_add(100, wait_for_queue, timeout-1)
             else:
                 log("flush_then_close: queue is now empty, sending the last packet and closing")
                 chunks, proto_flags = self.encode(last_packet)
@@ -902,7 +903,7 @@ class Protocol(object):
                     self.close()
                 self._add_chunks_to_queue(chunks, proto_flags, start_send_cb=None, end_send_cb=close_cb)
                 self._write_lock.release()
-                self.scheduler.timeout_add(5*1000, self.close)
+                self.timeout_add(5*1000, self.close)
 
         def wait_for_write_lock(timeout=100):
             if not self._write_lock.acquire(False):
@@ -911,7 +912,7 @@ class Protocol(object):
                     self.close()
                 else:
                     log("flush_then_close: write lock is busy, will retry %s more times", timeout)
-                    self.scheduler.timeout_add(10, wait_for_write_lock, timeout-1)
+                    self.timeout_add(10, wait_for_write_lock, timeout-1)
             else:
                 log("flush_then_close: acquired the write lock")
                 #we have the write lock - we MUST free it!
@@ -928,7 +929,7 @@ class Protocol(object):
         if self._closed:
             return
         self._closed = True
-        self.scheduler.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
+        self.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
         if self._conn:
             try:
                 self._conn.close()
@@ -944,7 +945,7 @@ class Protocol(object):
                 log.error("error closing %s", self._conn, exc_info=True)
             self._conn = None
         self.terminate_queue_threads()
-        self.scheduler.idle_add(self.clean)
+        self.idle_add(self.clean)
 
     def steal_connection(self):
         #so we can re-use this connection somewhere else
@@ -982,8 +983,8 @@ class Protocol(object):
 
 class FakeJitter(object):
 
-    def __init__(self, scheduler, process_packet_cb):
-        self.scheduler = scheduler
+    def __init__(self, timeout_add, process_packet_cb):
+        self.timeout_add = timeout_add
         self.real_process_packet_cb = process_packet_cb
         self.delay = FAKE_JITTER
         self.ok_delay = 10*1000
@@ -996,7 +997,7 @@ class FakeJitter(object):
     def start_buffering(self):
         log.info("FakeJitter.start_buffering() will buffer for %s ms", FAKE_JITTER)
         self.delaying = True
-        self.scheduler.timeout_add(FAKE_JITTER, self.flush)
+        self.timeout_add(FAKE_JITTER, self.flush)
 
     def flush(self):
         log.info("FakeJitter.flush() processing %s delayed packets", len(self.pending))
@@ -1008,7 +1009,7 @@ class FakeJitter(object):
             self.delaying = False
         finally:
             self.lock.release()
-        self.scheduler.timeout_add(self.ok_delay, self.start_buffering)
+        self.timeout_add(self.ok_delay, self.start_buffering)
         log.info("FakeJitter.flush() will start buffering again in %s ms", self.ok_delay)
 
     def process_packet_cb(self, proto, packet):
