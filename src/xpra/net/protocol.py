@@ -227,8 +227,10 @@ class Protocol(object):
         # Invariant: if .source is None, then _source_has_more == False
         self._get_packet_cb = get_packet_cb
         #counters:
+        self.input_stats = {}
         self.input_packetcount = 0
         self.input_raw_packetcount = 0
+        self.output_stats = {}
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
@@ -332,10 +334,12 @@ class Protocol(object):
         return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread] if x is not None]
 
     def add_stats(self, info, prefix="net.", suffix=""):
+        info[prefix+"input.count" + suffix] = self.input_stats
         info[prefix+"input.bytecount" + suffix] = self._conn.input_bytecount
         info[prefix+"input.packetcount" + suffix] = self.input_packetcount
         info[prefix+"input.raw_packetcount" + suffix] = self.input_raw_packetcount
         info[prefix+"input.cipher" + suffix] = self.cipher_in_name or ""
+        info[prefix+"output.count" + suffix] = self.output_stats
         info[prefix+"output.bytecount" + suffix] = self._conn.output_bytecount
         info[prefix+"output.packetcount" + suffix] = self.output_packetcount
         info[prefix+"output.raw_packetcount" + suffix] = self.output_raw_packetcount
@@ -569,6 +573,7 @@ class Protocol(object):
                 log.warn("unexpected data type in %s packet: %s", packet[0], ti)
         #now the main packet (or what is left of it):
         packet_type = packet[0]
+        self.output_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
         if USE_ALIASES and self.send_aliases and packet_type in self.send_aliases:
             #replace the packet type with the alias:
             packet[0] = self.send_aliases[packet_type]
@@ -861,6 +866,7 @@ class Protocol(object):
                 if self.receive_aliases and type(packet_type)==int and packet_type in self.receive_aliases:
                     packet_type = self.receive_aliases.get(packet_type)
                     packet[0] = packet_type
+                self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
 
                 self.input_packetcount += 1
                 log("processing packet %s", packet_type)
