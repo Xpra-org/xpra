@@ -264,7 +264,7 @@ for x in check:
 
 
 HEADERS = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
-           "Encoding", "Quality", "Speed", "OpenGL", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
+           "Encoding", "Quality", "Speed","OpenGL", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
            "CPU info", "Platform", "Kernel Version", "Xorg version", "OpenGL", "Client Window Manager", "Screen Size",
            "Compression", "Encryption", "Connect via", "download limit (KB)", "upload limit (KB)", "latency (ms)",
            "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s",
@@ -275,6 +275,9 @@ HEADERS = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Cu
            "Min Client Ping Latency (ms)", "Max Client Ping Latency (ms)", "Avg Client Ping Latency (ms)",
            "Min Server Ping Latency (ms)", "Max Server Ping Latency (ms)", "Avg Server Ping Latency (ms)",
            "Min Damage Latency (ms)", "Max Damage Latency (ms)", "Avg Damage Latency (ms)",
+           "Avg Quality", "Min Quality", "Max Quality",
+           "Avg Speed", "Min Speed", "Max Speed",
+           "Video Encoder", "CSC", "CSC Mode", "Scaling",
            "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
            "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (MB)",
            ]
@@ -708,7 +711,7 @@ def xpra_get_stats(last_record=None):
             if v is not None:
                 return v
         return default_value
-    return {
+    data = {
             "Regions/s"                     : get(["encoding.regions_per_second", "regions_per_second"]),
             "Pixels/s Sent"                 : get(["encoding.regions_per_second", "regions_per_second"]),
             "Encoding Pixels/s"             : get(["encoding.pixels_per_second", "pixels_per_second"]),
@@ -734,6 +737,31 @@ def xpra_get_stats(last_record=None):
             "Max Damage Latency (ms)"       : get(["damage.in_latency.max", "damage_in_latency.max"]),
             "Avg Damage Latency (ms)"       : get(["damage.in_latency.avg", "damage_in_latency.avg"]),
            }
+    #try to get speed and quality:
+    for suffix in ("Avg", "Min", "Max"):
+        q = [d.get(x) for x in d.keys() if x.endswith(".encoding.quality.%s" % suffix.lower())]
+        if len(q)>0:
+            try:
+                q = [int(x) for x in q]
+                qval = sum(q)/len(q)
+                data["%s Quality" % suffix] = qval
+            except Exception, e:
+                print("error parsing quality '%s': %s", q, e)
+        s = [d.get(x) for x in d.keys() if x.endswith(".encoding.speed.%s" % suffix.lower())]
+        if len(s)>0:
+            try:
+                s = [int(x) for x in s]
+                sval = sum(s)/len(s)
+                data["%s Speed" % suffix] = sval
+            except Exception, e:
+                print("error parsing speed '%s': %s", s, e)
+    #video encoder
+    data["Video Encoder"] = ", ".join([x for x in d.keys() if x.endswith(".encoder")])
+    #record CSC:
+    data["CSC"] = ", ".join([x for x in d.keys() if x.endswith(".csc")])
+    data["CSC Mode"] = ", ".join([x for x in d.keys() if x.endswith(".csc.dst_format")])
+    data["Scaling"] = ", ".join([x for x in d.keys() if x.endswith(".scaling")])
+    return data
 
 def get_xpra_start_server_command():
     cmd = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % PORT]
