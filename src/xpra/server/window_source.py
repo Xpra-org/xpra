@@ -45,7 +45,7 @@ except Exception, e:
     log("cannot load argb module: %s", e)
     bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
-from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD
+from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 
 
@@ -86,8 +86,7 @@ class WindowSource(object):
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg")]
-        client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", refresh_encodings)
-        self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.server_core_encodings]
+        self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", refresh_encodings)
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
@@ -143,8 +142,18 @@ class WindowSource(object):
         self._fixed_min_speed = default_encoding_options.get("min-speed", -1)
 
         self.init_encoders()
+        self.update_encoding_selection(encoding)
+        log("initial encoding for %s: %s", self.wid, self.encoding)
+
+
+    def update_encoding_selection(self, encoding=None):
+        #now we have the real list of encodings we can use:
+        #"rgb32" and "rgb24" encodings are both aliased to "rgb"
+        common_encodings = [{"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self._encoders.keys() if x in self.core_encodings]
+        self.common_encodings = [x for x in PREFERED_ENCODING_ORDER if x in common_encodings]
         #ensure the encoding chosen is supported by this source:
-        self.encoding = self.pick_encoding([encoding]+self._encoders.keys())
+        self.encoding = self.pick_encoding([encoding]+self.common_encodings)
+        self.auto_refresh_encodings = [x for x in self.client_refresh_encodings if x in self.common_encodings]
         assert self.encoding is not None
 
     def init_encoders(self):
@@ -171,6 +180,7 @@ class WindowSource(object):
         self.auto_refresh_encodings = []
         self.core_encodings = []
         self.rgb_formats = []
+        self.client_refresh_encodings = []
         self.encoding_options = {}
         self.encoding_client_options = {}
         self.supports_rgb24zlib = False
@@ -255,10 +265,13 @@ class WindowSource(object):
             return
         self.statistics.reset()
         self.last_pixmap_data = None
-        if encoding in self._encoders:
-            self.encoding = encoding
+        if encoding not in self.server_core_encodings:
+            log("not setting encoding to %s for window source %s as it only supports: %s", encoding, self.wid, self.server_core_encodings)
+        elif encoding not in self.core_encodings:
+            log("not setting encoding to %s for window source %s as the client only supports: %s", encoding, self.wid, self.core_encodings)
         else:
-            log("not setting encoding to %s for window source %s as it only supports: %s", encoding, self.wid, self._encoders.keys())
+            assert encoding in self.common_encodings
+            self.update_encoding_selection(encoding)
 
     def _scaling_changed(self, window, *args):
         self.scaling = window.get_property("scaling")
@@ -276,17 +289,19 @@ class WindowSource(object):
 
     def set_client_properties(self, properties):
         log("set_client_properties(%s)", properties)
-        self.maximized = properties.get("maximized", False)
-        self.full_frames_only = properties.get("encoding.full_frames_only", self.full_frames_only)
-        self.supports_transparency = HAS_ALPHA and properties.get("encoding.transparency", self.supports_transparency)
-        self.encodings = properties.get("encodings", self.encodings)
-        self.core_encodings = properties.get("encodings.core", self.core_encodings)
-        rgb_formats = properties.get("encodings.rgb_formats", self.rgb_formats)
+        self.maximized = properties.boolget("maximized", False)
+        self.client_refresh_encodings = properties.strlistget("encoding.auto_refresh_encodings", self.client_refresh_encodings)
+        self.full_frames_only = properties.boolget("encoding.full_frames_only", self.full_frames_only)
+        self.supports_transparency = HAS_ALPHA and properties.boolget("encoding.transparency", self.supports_transparency)
+        self.encodings = properties.strlistget("encodings", self.encodings)
+        self.core_encodings = properties.strlistget("encodings.core", self.core_encodings)
+        rgb_formats = properties.strlistget("encodings.rgb_formats", self.rgb_formats)
         if not self.supports_transparency:
             #remove rgb formats with alpha
             rgb_formats = [x for x in rgb_formats if x.find("A")<0]
         self.rgb_formats = rgb_formats
         log("set_client_properties: window rgb_formats=%s", self.rgb_formats)
+        self.update_encoding_selection(self.encoding)
 
 
     def unmap(self):
@@ -787,17 +802,12 @@ class WindowSource(object):
 
     def get_core_encoding(self, has_alpha, current_encoding):
         if current_encoding=="rgb":
-            encs = [current_encoding]
             if has_alpha and self.supports_transparency:
-                encs.insert(0, "rgb32")
-                encs.insert(1, "rgb24")
-            else:
-                encs.insert(0, "rgb24")
-                encs.insert(1, "rgb32")
-            return self.pick_encoding(encs, current_encoding)
+                return self.pick_encoding(("rgb32", "rgb24"), current_encoding)
+            return self.pick_encoding(("rgb24", "rgb32"), current_encoding)
         #fallback to current encoding if possible
         #(not possible if this is a video encoding and this class is not a video source)
-        return self.pick_encoding([current_encoding]+self._encoders.keys())
+        return self.pick_encoding([current_encoding]+self.common_encodings)
 
     def find_common_lossless_encoder(self, has_alpha, fallback, pixel_count):
         if has_alpha and self.supports_transparency:
@@ -813,9 +823,9 @@ class WindowSource(object):
 
     def pick_encoding(self, encodings, fallback=None):
         for e in encodings:
-            if e in self._encoders and e in self.core_encodings:
+            if e is not None and e in self.common_encodings:
                 return e
-        return fallback
+        return {"rgb" : "rgb24"}.get(fallback, fallback)
 
 
     def free_image_wrapper(self, image):

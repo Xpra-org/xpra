@@ -20,7 +20,7 @@ from xpra.server.server_core import ServerCore
 from xpra.util import log_screen_sizes
 from xpra.os_util import thread, get_hex_uuid
 from xpra.version_util import add_version_info
-from xpra.util import alnum
+from xpra.util import alnum, typedict
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, get_DEFAULT_VIDEO_ENCODERS, ALL_CSC_MODULE_OPTIONS, get_DEFAULT_CSC_MODULES
 if sys.version > '3':
@@ -1245,7 +1245,7 @@ class ServerBase(ServerCore):
         """
         ss = self._server_sources.get(proto)
         if ss:
-            ss.set_client_properties(wid, window, new_client_properties)
+            ss.set_client_properties(wid, window, typedict(new_client_properties))
             client_properties = self.client_properties.setdefault("%s|%s" % (wid, ss.uuid), {})
             log("set_client_properties updating %s with %s", client_properties, new_client_properties)
             client_properties.update(new_client_properties)
