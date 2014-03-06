@@ -261,6 +261,25 @@ for x in check:
     if not os.path.exists(x):
         raise Exception("cannot run tests: %s is missing!" % x)
 
+
+
+HEADERS = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
+           "Encoding", "Quality", "Speed", "OpenGL", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
+           "CPU info", "Platform", "Kernel Version", "Xorg version", "OpenGL", "Client Window Manager", "Screen Size",
+           "Compression", "Encryption", "Connect via", "download limit (KB)", "upload limit (KB)", "latency (ms)",
+           "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s",
+           "Regions/s", "Pixels/s Sent", "Encoding Pixels/s", "Decoding Pixels/s",
+           "Min Batch Delay (ms)", "Max Batch Delay (ms)", "Avg Batch Delay (ms)",
+           "Application packets in/s", "Application bytes in/s", "Application packets out/s", "Application bytes out/s", "mmap bytes/s",
+           "Min Client Latency (ms)", "Max Client Latency (ms)", "Avg Client Latency (ms)",
+           "Min Client Ping Latency (ms)", "Max Client Ping Latency (ms)", "Avg Client Ping Latency (ms)",
+           "Min Server Ping Latency (ms)", "Max Server Ping Latency (ms)", "Avg Server Ping Latency (ms)",
+           "Min Damage Latency (ms)", "Max Damage Latency (ms)", "Avg Damage Latency (ms)",
+           "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
+           "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (MB)",
+           ]
+
+
 def is_process_alive(process, grace=0):
     i = 0
     while i<grace:
@@ -397,7 +416,7 @@ def update_pidstat(pid):
     #print("update_pidstat(%s): %s" % (pid, pid_stat))
     return pid_stat
 
-def compute_stat(time_total_diff, old_pid_stat, new_pid_stat):
+def compute_stat(prefix, time_total_diff, old_pid_stat, new_pid_stat):
     #found help here:
     #http://stackoverflow.com/questions/1420426/calculating-cpu-usage-of-a-process-in-linux
     old_utime = int(old_pid_stat[13])
@@ -410,7 +429,12 @@ def compute_stat(time_total_diff, old_pid_stat, new_pid_stat):
     nthreads = int((int(old_pid_stat[19])+int(new_pid_stat[19]))/2)
     vsize = int(max(int(old_pid_stat[22]), int(new_pid_stat[22]))/1024/1024)
     rss = int(max(int(old_pid_stat[23]), int(new_pid_stat[23]))*PAGE_SIZE/1024/1024)
-    return [user_pct, sys_pct, nthreads, vsize, rss]
+    return {prefix+" user cpu_pct"       : user_pct,
+            prefix+" system cpu pct"     : sys_pct,
+            prefix+" number of threads"  : nthreads,
+            prefix+" vsize (MB)"         : vsize,
+            prefix+" rss (MB)"           : rss,
+            }
 
 def getiptables_line(chain, pattern, setup_info):
     cmd = IPTABLES_CMD + ["-vnL", chain]
@@ -466,16 +490,26 @@ def measure_client(server_pid, name, cmd, get_stats_cb):
             new_server_pid_stat = update_pidstat(server_pid)
         ni,isize = get_iptables_INPUT_count()
         no,osize = get_iptables_OUTPUT_count()
+        #[ni, isize, no, osize]
+        iptables_stat = {"packets in/s"         : ni,
+                         "packets in: bytes/s"  : isize,
+                         "packets out/s"        : no,
+                         "packets out: bytes/s" : osize}
         stats = get_stats_cb(initial_stats)
         #now collect the data
-        client_process_data = compute_stat(new_time_total-old_time_total, old_pid_stat, new_pid_stat)
+        client_process_data = compute_stat("client", new_time_total-old_time_total, old_pid_stat, new_pid_stat)
         if server_pid>0:
-            server_process_data = compute_stat(new_time_total-old_time_total, old_server_pid_stat, new_server_pid_stat)
+            server_process_data = compute_stat("server", new_time_total-old_time_total, old_server_pid_stat, new_server_pid_stat)
         else:
             server_process_data = []
         print("process_data (client/server): %s / %s" % (client_process_data, server_process_data))
         print("input/output on tcp port %s: %s / %s packets, %s / %s KBytes" % (PORT, ni, no, isize, osize))
-        return [ni, isize, no, osize] + stats + client_process_data + server_process_data
+        data = {}
+        data.update(iptables_stat)
+        data.update(stats)
+        data.update(client_process_data)
+        data.update(server_process_data)
+        return data
     finally:
         #stop the process
         if client_process and client_process.poll() is None:
@@ -554,13 +588,35 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     print("test command %s is running with pid=%s" % (cmd, test_command_process.pid))
 
                     #run the client test
-                    result = [name, tech_name, server_version, client_version, " ".join(sys.argv[1:]), SVN_VERSION]
-                    result += [encoding, quality, speed, opengl, get_command_name(test_command)]
-                    result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, KERNEL_VERSION, XORG_VERSION, OPENGL_INFO, WINDOW_MANAGER]
-                    result += ["%sx%s" % gdk.get_default_root_window().get_size()]
-                    result += [compression, encryption, ssh, down, up, latency]
-                    result += measure_client(server_pid, name, client_cmd, get_stats_cb)
-                    results.append(result)
+                    data = {"Test Name"      : name,
+                            "Remoting Tech"  : tech_name,
+                            "Server Version" : server_version,
+                            "Client Version" : client_version,
+                            "Custom Params"  : " ".join(sys.argv[1:]),
+                            "SVN Version"    : SVN_VERSION,
+                            "Encoding"       : encoding,
+                            "Quality"        : quality,
+                            "Speed"          : speed,
+                            "OpenGL"         : opengl,
+                            "Test Command"   : get_command_name(test_command),
+                            "Sample Duration (s)"    : MEASURE_TIME,
+                            "Sample Time (epoch)"    : time.time(),
+                            "CPU info"       : CPU_INFO,
+                            "Platform"       : PLATFORM,
+                            "Kernel Version" : KERNEL_VERSION,
+                            "Xorg version"   : XORG_VERSION,
+                            "OpenGL"         : OPENGL_INFO,
+                            "Client Window Manager"  : WINDOW_MANAGER,
+                            "Screen Size"    : "%sx%s" % gdk.get_default_root_window().get_size(),
+                            "Compression"    : compression,
+                            "Encryption"     : encryption,
+                            "Connect via"    : ssh,
+                            "download limit (KB)"    : down,
+                            "upload limit (KB)"      : up,
+                            "latency (ms)"           : latency,
+                            }
+                    data.update(measure_client(server_pid, name, client_cmd, get_stats_cb))
+                    results.append([data.get(x, "") for x in HEADERS])
                 except Exception, e:
                     import traceback
                     traceback.print_exc()
@@ -624,46 +680,27 @@ def get_command_name(command_arg):
     assert type(c)==str
     return c.split("/")[-1]             #/usr/bin/xterm -> xterm
 
-def get_stats_headers():
-    #the stats that are returned by get_xpra_stats or get_vnc_stats
-    return  ["Regions/s", "Pixels/s Sent", "Encoding Pixels/s", "Decoding Pixels/s",
-             "Min Batch Delay (ms)", "Max Batch Delay (ms)", "Avg Batch Delay (ms)",
-             "Application packets in/s", "Application bytes in/s", "Application packets out/s", "Application bytes out/s", "mmap bytes/s",
-             "Min Client Latency (ms)", "Max Client Latency (ms)", "Avg Client Latency (ms)",
-             "Min Client Ping Latency (ms)", "Max Client Ping Latency (ms)", "Avg Client Ping Latency (ms)",
-             "Min Server Ping Latency (ms)", "Max Server Ping Latency (ms)", "Avg Server Ping Latency (ms)",
-             "Min Damage Latency (ms)", "Max Damage Latency (ms)", "Avg Damage Latency (ms)",
-             ]
-
-def no_stats(last_record=None):
-    return  ["" for _ in xrange(24)]
 
 def xpra_get_stats(last_record=None):
     if XPRA_VERSION_NO<[0, 3]:
-        return  no_stats(last_record)
+        return  {}
     info_cmd = XPRA_INFO_COMMAND
     if XPRA_USE_PASSWORD and password_filename:
         info_cmd.append("--password-file=%s" % password_filename)
     out = getoutput(info_cmd)
     if not out:
-        return  no_stats(last_record)
+        return  {}
     d = {}
     for line in out.splitlines():
         parts = line.split("=")
         if len(parts)==2:
             d[parts[0]] = parts[1]
-    last_input_packetcount = 0
-    last_output_packetcount = 0
-    last_mmap_bytes = 0
-    last_input_bytecount = 0
-    last_output_bytecount = 0
-    if last_record:
-        index = 7
-        last_input_packetcount = last_record[index]
-        last_input_bytecount = last_record[index+1]
-        last_output_packetcount = last_record[index+2]
-        last_output_bytecount = last_record[index+3]
-        last_mmap_bytes = last_record[index+4]
+    lookup = last_record or {}
+    last_input_packetcount  = lookup.get("Application packets in/s", 0)
+    last_input_bytecount    = lookup.get("Application bytes in/s", 0)
+    last_output_packetcount = lookup.get("Application packets out/s", 0)
+    last_output_bytecount   = lookup.get("Application bytes out/s", 0)
+    last_mmap_bytes         = lookup.get("mmap bytes/s", 0)
     def get(names, default_value=""):
         """ some of the fields got renamed, try both old and new names """
         for n in names:
@@ -671,32 +708,32 @@ def xpra_get_stats(last_record=None):
             if v is not None:
                 return v
         return default_value
-    return [
-            get(["encoding.regions_per_second", "regions_per_second"]),
-            get(["encoding.pixels_per_second", "pixels_per_second"]),
-            get(["encoding.pixels_encoded_per_second", "pixels_encoded_per_second"]),
-            get(["encoding.pixels_decoded_per_second", "pixels_decoded_per_second"]),
-            get(["batch.delay.min", "batch_delay.min", "min_batch_delay"]),
-            get(["batch.delay.max", "batch_delay.max", "max_batch_delay"]),
-            get(["batch.delay.avg", "batch_delay.avg", "avg_batch_delay"]),
-            (int(get(["client.connection.input.packetcount", "input_packetcount"], 0))-last_input_packetcount)/MEASURE_TIME,
-            (int(get(["client.connection.input.bytecount", "input_bytecount"], 0))-last_input_bytecount)/MEASURE_TIME,
-            (int(get(["client.connection.output.packetcount", "output_packetcount"], 0))-last_output_packetcount)/MEASURE_TIME,
-            (int(get(["client.connection.output.bytecount", "output_bytecount"], 0))-last_output_bytecount)/MEASURE_TIME,
-            (int(get(["client.connection.output.mmap_bytecount", "output_mmap_bytecount"], 0))-last_mmap_bytes)/MEASURE_TIME,
-            get(["client.latency.min", "client_latency.min", "min_client_latency"]),
-            get(["client.latency.max", "client_latency.max", "max_client_latency"]),
-            get(["client.latency.avg", "client_latency.avg", "avg_client_latency"]),
-            get(["client.ping_latency.min", "client_ping_latency.min"]),
-            get(["client.ping_latency.max", "client_ping_latency.max"]),
-            get(["client.ping_latency.avg", "client_ping_latency.avg"]),
-            get(["server.ping_latency.min", "server_ping_latency.min", "server_latency.min", "min_server_latency"]),
-            get(["server.ping_latency.max", "server_ping_latency.max", "server_latency.max", "max_server_latency"]),
-            get(["server.ping_latency.avg", "server_ping_latency.avg", "server_latency.avg", "avg_server_latency"]),
-            get(["damage.in_latency.min", "damage_in_latency.min"]),
-            get(["damage.in_latency.max", "damage_in_latency.max"]),
-            get(["damage.in_latency.avg", "damage_in_latency.avg"]),
-           ]
+    return {
+            "Regions/s"                     : get(["encoding.regions_per_second", "regions_per_second"]),
+            "Pixels/s Sent"                 : get(["encoding.regions_per_second", "regions_per_second"]),
+            "Encoding Pixels/s"             : get(["encoding.pixels_per_second", "pixels_per_second"]),
+            "Decoding Pixels/s"             : get(["encoding.pixels_encoded_per_second", "pixels_encoded_per_second"]),
+            "Min Batch Delay (ms)"          : get(["batch.delay.min", "batch_delay.min", "min_batch_delay"]),
+            "Max Batch Delay (ms)"          : get(["batch.delay.max", "batch_delay.max", "max_batch_delay"]),
+            "Avg Batch Delay (ms)"          : get(["batch.delay.avg", "batch_delay.avg", "avg_batch_delay"]),
+            "Application packets in/s"      : (int(get(["client.connection.input.packetcount", "input_packetcount"], 0))-last_input_packetcount)/MEASURE_TIME,
+            "Application bytes in/s"        : (int(get(["client.connection.input.bytecount", "input_bytecount"], 0))-last_input_bytecount)/MEASURE_TIME,
+            "Application packets out/s"     : (int(get(["client.connection.output.packetcount", "output_packetcount"], 0))-last_output_packetcount)/MEASURE_TIME,
+            "Application bytes out/s"       : (int(get(["client.connection.output.bytecount", "output_bytecount"], 0))-last_output_bytecount)/MEASURE_TIME,
+            "mmap bytes/s"                  : (int(get(["client.connection.output.mmap_bytecount", "output_mmap_bytecount"], 0))-last_mmap_bytes)/MEASURE_TIME,
+            "Min Client Latency (ms)"       : get(["client.latency.min", "client_latency.min", "min_client_latency"]),
+            "Max Client Latency (ms)"       : get(["client.latency.max", "client_latency.max", "max_client_latency"]),
+            "Avg Client Latency (ms)"       : get(["client.latency.avg", "client_latency.avg", "avg_client_latency"]),
+            "Min Client Ping Latency (ms)"  : get(["client.ping_latency.min", "client_ping_latency.min"]),
+            "Max Client Ping Latency (ms)"  : get(["client.ping_latency.max", "client_ping_latency.max"]),
+            "Avg Client Ping Latency (ms)"  : get(["client.ping_latency.avg", "client_ping_latency.avg"]),
+            "Min Server Ping Latency (ms)"  : get(["server.ping_latency.min", "server_ping_latency.min", "server_latency.min", "min_server_latency"]),
+            "Max Server Ping Latency (ms)"  : get(["server.ping_latency.max", "server_ping_latency.max", "server_latency.max", "max_server_latency"]),
+            "Avg Server Ping Latency (ms)"  : get(["server.ping_latency.avg", "server_ping_latency.avg", "server_latency.avg", "avg_server_latency"]),
+            "Min Damage Latency (ms)"       : get(["damage.in_latency.min", "damage_in_latency.min"]), 
+            "Max Damage Latency (ms)"       : get(["damage.in_latency.max", "damage_in_latency.max"]),
+            "Avg Damage Latency (ms)"       : get(["damage.in_latency.avg", "damage_in_latency.avg"]),
+           }
 
 def get_xpra_start_server_command():
     cmd = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % PORT]
@@ -841,11 +878,11 @@ def get_vnc_stats(last_record=None):
         print("info for client test window: %s" % str(test_window_info))
         info = get_x11_client_window_info(None, "TigerVNC: x11", "Vncviewer")
         if not info:
-            return  no_stats(last_record)
+            return  {}
         print("info for TigerVNC: %s" % str(info))
         wid, _, _, w, h = info
         if not wid:
-            return  no_stats(last_record)
+            return  {}
         if test_window_info:
             _, _, _, w, h = test_window_info
         command = [TCBENCH, "-wh%s" % wid, "-t%s" % (MEASURE_TIME-5)]
@@ -857,18 +894,19 @@ def get_vnc_stats(last_record=None):
         tcbench_log  = open(TCBENCH_LOG, 'w')
         try:
             print("tcbench starting: %s, logging to %s" % (command, TCBENCH_LOG))
-            return  subprocess.Popen(command, stdin=None, stdout=tcbench_log, stderr=tcbench_log)
+            proc = subprocess.Popen(command, stdin=None, stdout=tcbench_log, stderr=tcbench_log)
+            return {"tcbench" : proc}
         except Exception, e:
             import traceback
             traceback.print_exc()
             print("error running %s: %s" % (command, e))
-        return  no_stats(last_record)           #we failed...
+        return  {}           #we failed...
     regions_s = ""
-    if last_record!="":
+    if "tcbench" in last_record:
         #found the process watcher,
         #parse the tcbench output and look for frames/sec:
-        assert type(last_record)==subprocess.Popen
-        process = last_record
+        process = last_record.get("tcbench")
+        assert type(process)==subprocess.Popen
         #print("get_vnc_stats(%s) process.poll()=%s" % (last_record, process.poll()))
         if process.poll() is None:
             try_to_stop(process)
@@ -884,7 +922,9 @@ def get_vnc_stats(last_record=None):
                 parts = line.split()
                 regions_s = parts[-1]
                 print("Frames/sec=%s" % regions_s)
-    return  [regions_s] + ["" for _ in xrange(20)]
+    return {
+            "Regions/s"                     : regions_s,
+           }
 
 def test_vnc():
     print("")
@@ -947,16 +987,7 @@ def main():
     print("*"*80)
     print("RESULTS:")
     print("")
-    headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
-               "Encoding", "Quality", "Speed", "OpenGL", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
-               "CPU info", "Platform", "Kernel Version", "Xorg version", "OpenGL", "Client Window Manager", "Screen Size",
-               "Compression", "Encryption", "Connect via", "download limit (KB)", "upload limit (KB)", "latency (ms)",
-               "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
-    headers += get_stats_headers()
-    headers += ["client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
-               "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (MB)",
-               ]
-    print(", ".join(headers))
+    print(", ".join(HEADERS))
     for result in xpra_results+vnc_results:
         print ", ".join([str(x) for x in result])
 
