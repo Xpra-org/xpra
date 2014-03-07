@@ -34,8 +34,6 @@ from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_enc
 from xpra.client.gtk_base.about import about
 from xpra.client.client_base import SIGNAMES
 from xpra.scripts.main import connect_to, make_client
-from xpra.platform import init as platform_init
-from xpra.platform.gui import init as gui_init, ready as gui_ready
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
 log = Logger("launcher")
@@ -650,7 +648,8 @@ class ApplicationWindow:
 
 
 def main():
-    from xpra.log import enable_debug_for
+    from xpra.platform import init as platform_init
+    from xpra.platform.gui import init as gui_init, ready as gui_ready
     if sys.platform.startswith("win"):
         from xpra.platform.win32 import set_log_filename
         set_log_filename("Xpra-Launcher.log")
@@ -662,6 +661,7 @@ def main():
     from xpra.scripts.main import parse_cmdline
     _, options, args = parse_cmdline(sys.argv)
     if options.debug:
+        from xpra.log import enable_debug_for
         enable_debug_for("all")
 
     app = ApplicationWindow()
