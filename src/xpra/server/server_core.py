@@ -429,7 +429,6 @@ class ServerCore(object):
         auth_caps = self.verify_hello(proto, c)
         if auth_caps is not False:
             if c.boolget("info_request", False):
-                log.info("processing info request from %s", proto._conn)
                 self.send_hello_info(proto)
                 return
             command_req = c.strlistget("command_request")
@@ -609,6 +608,7 @@ class ServerCore(object):
     def send_hello_info(self, proto):
         #Note: this can be overriden in subclasses to pass arguments to get_ui_info()
         #(ie: see server_base)
+        log.info("processing info request from %s", proto._conn)
         self.get_all_info(self.do_send_info, proto)
 
     def do_send_info(self, proto, info):
