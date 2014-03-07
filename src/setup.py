@@ -180,7 +180,7 @@ data_files = []
 setup_options["data_files"] = data_files
 packages = [
           "xpra.scripts", "xpra.keyboard",
-          "xpra.net",
+          "xpra.net", "xpra.codecs.xor",
           ]
 setup_options["packages"] = packages
 py2exe_excludes = []       #only used on win32
@@ -1069,7 +1069,7 @@ if bundle_tests_ENABLED:
         data_files.append(("tests"+k, v))
 
 toggle_packages(client_ENABLED, "xpra.client", "xpra.client.notifications")
-toggle_packages(client_ENABLED and gtk2_ENABLED or gtk3_ENABLED, "xpra.client.gtk_base")
+toggle_packages((client_ENABLED and gtk2_ENABLED or gtk3_ENABLED) or server_ENABLED, "xpra.client.gtk_base", "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
 toggle_packages(client_ENABLED and qt4_ENABLED, "xpra.client.qt4")
