@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import sys
 import subprocess
 import os.path
@@ -37,6 +38,7 @@ START_SERVER = True         #if False, you are responsible for starting it
 
 SETTLE_TIME = 3             #how long to wait before we start measuring
 MEASURE_TIME = 120          #run for N seconds
+COLLECT_STATS_TIME = 10     #collect statistics every N seconds
 SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
 DEFAULT_TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
                             #this is the default value, some tests may override this below
@@ -269,19 +271,19 @@ HEADERS = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Cu
            "Compression", "Encryption", "Connect via", "download limit (KB)", "upload limit (KB)", "latency (ms)",
            "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s",
            "Regions/s", "Pixels/s Sent", "Encoding Pixels/s", "Decoding Pixels/s",
-           "Min Batch Delay (ms)", "Max Batch Delay (ms)", "Avg Batch Delay (ms)",
-           "Min Actual Batch Delay (ms)", "Max Actual Batch Delay (ms)", "Avg Actual Batch Delay (ms)",
-           "Application packets in/s", "Application bytes in/s", "Application packets out/s", "Application bytes out/s", "mmap bytes/s",
-           "Min Client Latency (ms)", "Max Client Latency (ms)", "Avg Client Latency (ms)",
-           "Min Client Ping Latency (ms)", "Max Client Ping Latency (ms)", "Avg Client Ping Latency (ms)",
-           "Min Server Ping Latency (ms)", "Max Server Ping Latency (ms)", "Avg Server Ping Latency (ms)",
-           "Min Damage Latency (ms)", "Max Damage Latency (ms)", "Avg Damage Latency (ms)",
-           "Avg Quality", "Min Quality", "Max Quality",
-           "Avg Speed", "Min Speed", "Max Speed",
+           "Application packets in/s", "Application bytes in/s",
+           "Application packets out/s", "Application bytes out/s", "mmap bytes/s",
            "Video Encoder", "CSC", "CSC Mode", "Scaling",
-           "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
-           "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (MB)",
            ]
+for x in ("client", "server"):
+    HEADERS += [x+" user cpu_pct", x+" system cpu pct", x+" number of threads", x+" vsize (MB)", x+" rss (MB)"]
+#all these headers have min/max/avg:
+for h in ("Batch Delay (ms)", "Actual Batch Delay (ms)",
+          "Client Latency (ms)", "Client Ping Latency (ms)", "Server Ping Latency (ms)",
+          "Damage Latency (ms)",
+          "Quality", "Speed"):
+    for x in ("Min", "Avg", "Max"):
+        HEADERS.append(x+" "+h)
 
 
 def is_process_alive(process, grace=0):
@@ -468,6 +470,7 @@ def get_iptables_OUTPUT_count():
     setup = "iptables -I OUTPUT -p tcp --sport %s -j ACCEPT" % PORT
     return  parse_ipt("OUTPUT", "tcp spt:%s" % PORT, setup)
 
+
 def measure_client(server_pid, name, cmd, get_stats_cb):
     print("starting client: %s" % cmd)
     try:
@@ -484,9 +487,17 @@ def measure_client(server_pid, name, cmd, get_stats_cb):
         if server_pid>0:
             old_server_pid_stat = update_pidstat(server_pid)
         #we start measuring
-        time.sleep(MEASURE_TIME)
-        code = client_process.poll()
-        assert code is None, "client crashed, return code is %s" % code
+        t = 0
+        all_stats = [initial_stats]
+        while t<MEASURE_TIME:
+            time.sleep(COLLECT_STATS_TIME)
+            t += COLLECT_STATS_TIME
+
+            code = client_process.poll()
+            assert code is None, "client crashed, return code is %s" % code
+
+            stats = get_stats_cb(initial_stats, all_stats)
+
         #stop the counters
         new_time_total = update_proc_stat()
         new_pid_stat = update_pidstat(client_process.pid)
@@ -499,7 +510,6 @@ def measure_client(server_pid, name, cmd, get_stats_cb):
                          "packets in: bytes/s"  : isize,
                          "packets out/s"        : no,
                          "packets out: bytes/s" : osize}
-        stats = get_stats_cb(initial_stats)
         #now collect the data
         client_process_data = compute_stat("client", new_time_total-old_time_total, old_pid_stat, new_pid_stat)
         if server_pid>0:
@@ -685,7 +695,7 @@ def get_command_name(command_arg):
     return c.split("/")[-1]             #/usr/bin/xterm -> xterm
 
 
-def xpra_get_stats(last_record=None):
+def xpra_get_stats(initial_stats=None, all_stats=[]):
     if XPRA_VERSION_NO<[0, 3]:
         return  {}
     info_cmd = XPRA_INFO_COMMAND
@@ -694,77 +704,110 @@ def xpra_get_stats(last_record=None):
     out = getoutput(info_cmd)
     if not out:
         return  {}
+    #parse output:
     d = {}
     for line in out.splitlines():
         parts = line.split("=")
         if len(parts)==2:
             d[parts[0]] = parts[1]
-    lookup = last_record or {}
-    last_input_packetcount  = lookup.get("Application packets in/s", 0)
-    last_input_bytecount    = lookup.get("Application bytes in/s", 0)
-    last_output_packetcount = lookup.get("Application packets out/s", 0)
-    last_output_bytecount   = lookup.get("Application bytes out/s", 0)
-    last_mmap_bytes         = lookup.get("mmap bytes/s", 0)
-    def get(names, default_value=""):
+    #functions for accessing the data:
+    def iget(names, default_value=""):
         """ some of the fields got renamed, try both old and new names """
         for n in names:
             v = d.get(n)
             if v is not None:
-                return v
+                return int(v)
         return default_value
+    #values always based on initial data only:
+    #(difference from initial value)
+    lookup = initial_stats or {}
+    initial_input_packetcount  = lookup.get("Application packets in/s", 0)
+    initial_input_bytecount    = lookup.get("Application bytes in/s", 0)
+    initial_output_packetcount = lookup.get("Application packets out/s", 0)
+    initial_output_bytecount   = lookup.get("Application bytes out/s", 0)
+    initial_mmap_bytes         = lookup.get("mmap bytes/s", 0)
     data = {
-            "Regions/s"                     : get(["encoding.regions_per_second", "regions_per_second"]),
-            "Pixels/s Sent"                 : get(["encoding.regions_per_second", "regions_per_second"]),
-            "Encoding Pixels/s"             : get(["encoding.pixels_per_second", "pixels_per_second"]),
-            "Decoding Pixels/s"             : get(["encoding.pixels_encoded_per_second", "pixels_encoded_per_second"]),
-            "Min Batch Delay (ms)"          : get(["batch.delay.min", "batch_delay.min", "min_batch_delay"]),
-            "Max Batch Delay (ms)"          : get(["batch.delay.max", "batch_delay.max", "max_batch_delay"]),
-            "Avg Batch Delay (ms)"          : get(["batch.delay.avg", "batch_delay.avg", "avg_batch_delay"]),
-            "Min Actual Batch Delay (ms)"   : get(["batch.actual_delay.min"]),
-            "Max Actual Batch Delay (ms)"   : get(["batch.actual_delay.max"]),
-            "Avg Actual Batch Delay (ms)"   : get(["batch.actual_delay.avg"]),
-            "Application packets in/s"      : (int(get(["client.connection.input.packetcount", "input_packetcount"], 0))-last_input_packetcount)/MEASURE_TIME,
-            "Application bytes in/s"        : (int(get(["client.connection.input.bytecount", "input_bytecount"], 0))-last_input_bytecount)/MEASURE_TIME,
-            "Application packets out/s"     : (int(get(["client.connection.output.packetcount", "output_packetcount"], 0))-last_output_packetcount)/MEASURE_TIME,
-            "Application bytes out/s"       : (int(get(["client.connection.output.bytecount", "output_bytecount"], 0))-last_output_bytecount)/MEASURE_TIME,
-            "mmap bytes/s"                  : (int(get(["client.connection.output.mmap_bytecount", "output_mmap_bytecount"], 0))-last_mmap_bytes)/MEASURE_TIME,
-            "Min Client Latency (ms)"       : get(["client.latency.min", "client_latency.min", "min_client_latency"]),
-            "Max Client Latency (ms)"       : get(["client.latency.max", "client_latency.max", "max_client_latency"]),
-            "Avg Client Latency (ms)"       : get(["client.latency.avg", "client_latency.avg", "avg_client_latency"]),
-            "Min Client Ping Latency (ms)"  : get(["client.ping_latency.min", "client_ping_latency.min"]),
-            "Max Client Ping Latency (ms)"  : get(["client.ping_latency.max", "client_ping_latency.max"]),
-            "Avg Client Ping Latency (ms)"  : get(["client.ping_latency.avg", "client_ping_latency.avg"]),
-            "Min Server Ping Latency (ms)"  : get(["server.ping_latency.min", "server_ping_latency.min", "server_latency.min", "min_server_latency"]),
-            "Max Server Ping Latency (ms)"  : get(["server.ping_latency.max", "server_ping_latency.max", "server_latency.max", "max_server_latency"]),
-            "Avg Server Ping Latency (ms)"  : get(["server.ping_latency.avg", "server_ping_latency.avg", "server_latency.avg", "avg_server_latency"]),
-            "Min Damage Latency (ms)"       : get(["damage.in_latency.min", "damage_in_latency.min"]), 
-            "Max Damage Latency (ms)"       : get(["damage.in_latency.max", "damage_in_latency.max"]),
-            "Avg Damage Latency (ms)"       : get(["damage.in_latency.avg", "damage_in_latency.avg"]),
-           }
-    #try to get speed and quality:
-    for suffix in ("Avg", "Min", "Max"):
-        q = [d.get(x) for x in d.keys() if x.endswith(".encoding.quality.%s" % suffix.lower())]
-        if len(q)>0:
-            try:
-                q = [int(x) for x in q]
-                qval = sum(q)/len(q)
-                data["%s Quality" % suffix] = qval
-            except Exception, e:
-                print("error parsing quality '%s': %s", q, e)
-        s = [d.get(x) for x in d.keys() if x.endswith(".encoding.speed.%s" % suffix.lower())]
-        if len(s)>0:
-            try:
-                s = [int(x) for x in s]
-                sval = sum(s)/len(s)
-                data["%s Speed" % suffix] = sval
-            except Exception, e:
-                print("error parsing speed '%s': %s", s, e)
+            "Application packets in/s"      : (iget(["client.connection.input.packetcount", "input_packetcount"], 0)-initial_input_packetcount)/MEASURE_TIME,
+            "Application bytes in/s"        : (iget(["client.connection.input.bytecount", "input_bytecount"], 0)-initial_input_bytecount)/MEASURE_TIME,
+            "Application packets out/s"     : (iget(["client.connection.output.packetcount", "output_packetcount"], 0)-initial_output_packetcount)/MEASURE_TIME,
+            "Application bytes out/s"       : (iget(["client.connection.output.bytecount", "output_bytecount"], 0)-initial_output_bytecount)/MEASURE_TIME,
+            "mmap bytes/s"                  : (iget(["client.connection.output.mmap_bytecount", "output_mmap_bytecount"], 0)-initial_mmap_bytes)/MEASURE_TIME,
+            }
+
+    #values that are averages or min/max:
+    def add(prefix, op, name, prop_names):
+        values = []
+        #cook the property names using the lowercase prefix if needed
+        #(all xpra info properties are lowercase):
+        actual_prop_names = []
+        full_search = []
+        for prop_name in prop_names:
+            if prop_name.find("%s")>=0:
+                prop_name = prop_name % prefix.lower()
+            actual_prop_names.append(prop_name)
+            if prop_name.find("*")>=0 or prop_name.find("+")>=0:        #ie: "window\[\d+\].encoding.quality.avg"
+                #make it a proper python regex:
+                full_search.append(prop_name)
+        if len(full_search)>0:
+            for s in full_search:
+                regex = re.compile(s)
+                matches = [d.get(x) for x in d.keys() if regex.match(x)]
+                for v in matches:
+                    values.append(int(v))
+            #print("add(%s, %s, %s, %s) values from full_search=%s: %s" % (prefix, op, name, prop_names, full_search, values))
+        else:
+            #match just one record:
+            values.append(iget(actual_prop_names))
+            #print("add(%s, %s, %s, %s) values from iget: %s" % (prefix, op, name, prop_names, values))
+        #this is the stat property name:
+        full_name = name                            #ie: "Application packets in/s"
+        if prefix:
+            full_name = prefix+" "+name             #ie: "Min" + " " + "Batch Delay"
+        for s in all_stats:                         #add all previously found values to list
+            values.append(s.get(full_name))
+        #strip missing values:
+        values = [x for x in values if x is not None and x!=""]
+        if len(values)>0:
+            v = op(values)                          #ie: avg([4,5,4]) or max([4,5,4])
+            #print("%s: %s(%s)=%s" % (full_name, op, values, v))
+            data[full_name] = v
+
+    def avg(l):
+        return sum(l)/len(l)
+
+    add("", avg, "Regions/s",                       ["encoding.regions_per_second", "regions_per_second"])
+    add("", avg, "Pixels/s Sent",                   ["encoding.pixels_per_second", "pixels_per_second"])
+    add("", avg, "Encoding Pixels/s",               ["encoding.pixels_encoded_per_second", "pixels_encoded_per_second"])
+    add("", avg, "Decoding Pixels/s",               ["encoding.pixels_decoded_per_second", "pixels_decoded_per_second"])
+
+    for prefix, op in (("Min", min), ("Max", max), ("Avg", avg)):
+        add(prefix, op, "Batch Delay (ms)",         ["batch.delay.%s", "batch_delay.%s", "%s_batch_delay"])
+        add(prefix, op, "Actual Batch Delay (ms)",  ["batch.actual_delay.%s"])
+        add(prefix, op, "Client Latency (ms)",      ["client.latency.%s", "client_latency.%s", "%s_client_latency"])
+        add(prefix, op, "Client Ping Latency (ms)", ["client.ping_latency.%s", "client_ping_latency.%s"])
+        add(prefix, op, "Server Ping Latency (ms)", ["server.ping_latency.%s", "server_ping_latency.%s", "server_latency.%s", "%s_server_latency"])
+        add(prefix, op, "Damage Latency (ms)",      ["damage.in_latency.%s", "damage_in_latency.%s"])
+
+        add(prefix, op, "Quality",                  ["^window\[\d+\].encoding.quality.%s$"])
+        add(prefix, op, "Speed",                    ["^window\[\d+\].encoding.speed.%s$"])
+
+    def addset(name, prop_name):
+        regex = re.compile(prop_name)
+        def getdictvalues(from_dict):
+            return [from_dict.get(x) for x in from_dict.keys() if regex.match(x)]
+        values = getdictvalues(d)
+        for s in all_stats:                         #add all previously found values to list
+            values += getdictvalues(s)
+        data[name] = list(set(values))
+
     #video encoder
-    data["Video Encoder"] = ", ".join([x for x in d.keys() if x.endswith(".encoder")])
+    addset("Video Encoder", "^window\[\d+\].encoder$")
     #record CSC:
-    data["CSC"] = ", ".join([x for x in d.keys() if x.endswith(".csc")])
-    data["CSC Mode"] = ", ".join([x for x in d.keys() if x.endswith(".csc.dst_format")])
-    data["Scaling"] = ", ".join([x for x in d.keys() if x.endswith(".scaling")])
+    addset("CSC", "^window\[\d+\].csc$")
+    addset("CSC Mode", "^window\[\d+\].csc.dst_format$")
+    addset("Scaling", "^window\[\d+\].scaling$")
+    #add this record to the list:
+    all_stats.append(data)
     return data
 
 def get_xpra_start_server_command():
@@ -898,9 +941,9 @@ def get_x11_client_window_info(display, *app_name_strings):
         return  wid, x, y, w, h
     return  None
 
-def get_vnc_stats(last_record=None):
+def get_vnc_stats(initial_stats=None, all_stats=[]):
     #print("get_vnc_stats(%s)" % last_record)
-    if last_record==None:
+    if initial_stats==None:
         #this is the initial call,
         #start the thread to watch the output of tcbench
         #we first need to figure out the dimensions of the client window
@@ -934,10 +977,10 @@ def get_vnc_stats(last_record=None):
             print("error running %s: %s" % (command, e))
         return  {}           #we failed...
     regions_s = ""
-    if "tcbench" in last_record:
+    if "tcbench" in initial_stats:
         #found the process watcher,
         #parse the tcbench output and look for frames/sec:
-        process = last_record.get("tcbench")
+        process = initial_stats.get("tcbench")
         assert type(process)==subprocess.Popen
         #print("get_vnc_stats(%s) process.poll()=%s" % (last_record, process.poll()))
         if process.poll() is None:
@@ -1020,8 +1063,21 @@ def main():
     print("RESULTS:")
     print("")
     print(", ".join(HEADERS))
+    def s(x):
+        if x is None:
+            return ""
+        elif type(x) in (list, tuple, set):
+            return '"' + (", ".join(list(x))) + '"'
+        elif type(x) in (unicode, str):
+            if len(x)==0:
+                return ""
+            return '"%s"' % x
+        elif type(x) in (float, long, int):
+            return str(x)
+        else:
+            return "unhandled-type: %s" % type(x)
     for result in xpra_results+vnc_results:
-        print ", ".join([str(x) for x in result])
+        print ", ".join([s(x) for x in result])
 
 if __name__ == "__main__":
     main()
