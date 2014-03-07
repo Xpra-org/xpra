@@ -179,8 +179,8 @@ setup_options["long_description"] = xpra_desc
 data_files = []
 setup_options["data_files"] = data_files
 packages = [
-          "xpra", "xpra.scripts", "xpra.keyboard",
-          "xpra.net", "xpra.codecs", "xpra.codecs.xor",
+          "xpra.scripts", "xpra.keyboard",
+          "xpra.net",
           ]
 setup_options["packages"] = packages
 py2exe_excludes = []       #only used on win32
