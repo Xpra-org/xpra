@@ -479,6 +479,7 @@ class ApplicationWindow:
         log("start_XpraClient() client=%s", self.client)
         self.client.setup_connection(conn)
         self.client.init(self.config)
+        self.client.init_ui(self.config)
         log("start_XpraClient() client initialized")
 
         if self.config.password:
