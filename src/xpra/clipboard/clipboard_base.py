@@ -379,9 +379,7 @@ class DefaultClipboardProtocolHelper(ClipboardProtocolHelperBase):
         Default clipboard implementation with all 3 selections.
         But without gdk atom support, see gdk_clipboard for a better one!
     """
-
-    def __init__(self, send_packet_cb, progress_cb=None):
-        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, ["CLIPBOARD", "PRIMARY", "SECONDARY"])
+    pass
 
 
 class ClipboardProxy(gtk.Invisible):
