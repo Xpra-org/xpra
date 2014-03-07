@@ -10,13 +10,16 @@ from xpra.log import Logger
 log = Logger("paint")
 
 from threading import Lock
-from xpra.codecs.xor import xor_str
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net.protocol import has_lz4, LZ4_uncompress
 from xpra.os_util import BytesIOClass, bytestostr
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
+try:
+    from xpra.codecs.xor import xor_str
+except:
+    xor_str = None
 
 
 #ie:
@@ -132,6 +135,8 @@ class WindowBackingBase(object):
         if delta>=0:
             if not self._last_pixmap_data:
                 raise Exception("delta region references pixmap data we do not have!")
+            if xor_str is None:
+                raise Exception("received a delta region but we do not support delta encoding!")
             lwidth, lheight, store, ldata = self._last_pixmap_data
             assert width==lwidth and height==lheight and delta==store
             rgb_data = xor_str(img_data, ldata)
