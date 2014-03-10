@@ -23,7 +23,6 @@ from xpra.x11.bindings.window_bindings import (
                 X11WindowBindings,          #@UnresolvedImport
                 NoSuchProperty,             #@UnresolvedImport
                 PropertyError)              #@UnresolvedImport
-from xpra.codecs.argb.argb import premultiply_argb_in_place #@UnresolvedImport
 X11Window = X11WindowBindings()
 
 from xpra.os_util import StringIOClass
@@ -31,6 +30,12 @@ from xpra.x11.xsettings_prop import set_settings, get_settings
 from xpra.x11.gtk_x11.error import trap, XError
 from xpra.log import Logger
 log = Logger("x11", "window")
+
+try:
+    from xpra.codecs.argb.argb import premultiply_argb_in_place #@UnresolvedImport
+except:
+    log.warn("argb module is missing, icon transparency will be incorrect")
+    premultiply_argb_in_place = None
 
 import sys
 if sys.version > '3':
@@ -204,7 +209,8 @@ def _read_image(disp, stream):
     # Cairo uses premultiplied alpha. EWMH actually doesn't specify what it
     # uses, but apparently the de-facto standard is non-premultiplied. (At
     # least that's what Compiz's sources say.)
-    premultiply_argb_in_place(surf.get_data())
+    if premultiply_argb_in_place:
+        premultiply_argb_in_place(surf.get_data())
     return (width * height, surf)
 
 # This returns a cairo ImageSurface which contains the largest icon defined in
