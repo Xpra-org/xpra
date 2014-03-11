@@ -1,31 +1,33 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import glob
 from distutils.core import setup
-from distutils.extension import Extension
 import py2app    #@UnresolvedImport
 assert py2app is not None
-import subprocess, sys, traceback
-import os.path
-import stat
+import imp
+import os
 
-setup_options = {}
-setup_options["name"] = "Xpra"
-setup_options["author"] = "Antoine Martin"
-setup_options["author_email"] = "antoine@devloop.org.uk"
-setup_options["version"] = "0.8.0"
-setup_options["url"] = "http://xpra.org/"
-setup_options["download_url"] = "http://xpra.org/src/"
-setup_options["description"] = """'screen for X' -- a tool to detach/reattach running X programs"""
+#import settings from main setup file (ugly!):
+cwd = os.getcwd()
+os.chdir("../src")
+add_build_info = imp.load_source('add_build_info', '../src/add_build_info.py')
+main_setup = imp.load_source('', '../src/setup.py')
+os.chdir(cwd)
+setup_options = main_setup.setup_options
+#but remove things we don't care about:
+for k in ("ext_modules", "py_modules", "cmdclass", "scripts"):
+    del setup_options[k]
+
 
 data_files = []
-setup_options["data_files"] = data_files
 packages = ["osxxpra"]
+
+setup_options["data_files"] = data_files
 setup_options["packages"] = packages
 
 
@@ -52,12 +54,6 @@ py2app_options = {
     "frameworks": ['CoreFoundation', 'Foundation', 'AppKit'],
     }
 
-print("")
-print("py2app setup_options:")
-for k,v in py2app_options.items():
-    print("%s : %s" % (k,v))
-print("")
-
 setup_options["options"] = {"py2app": py2app_options}
 xpra_src = "../src/"
 data_files += [
@@ -70,4 +66,20 @@ data_files += [
               ]
 data_files.append(('share/xpra/webm', [xpra_src+"xpra/codecs/webm/LICENSE"]))
 
-setup(**setup_options)
+
+def main():
+    print("")
+    print("setup_options:")
+    for k,v in setup_options.items():
+        if k!="options":
+            print("* %s=%s" % (k, v))
+    print("")
+    print("py2app options:")
+    for k,v in py2app_options.items():
+        print("%s : %s" % (k,v))
+    print("")
+    setup(**setup_options)
+
+
+if __name__ == "__main__":
+    main()
