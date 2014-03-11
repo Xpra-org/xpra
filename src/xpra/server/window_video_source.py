@@ -244,6 +244,9 @@ class WindowVideoSource(WindowSource):
 
 
     def identify_video_subregion(self):
+        if self.statistics.damage_events_count < self.video_subregion_set_at:
+            #stats got reset
+            self.video_subregion_set_at = 0
         if self.encoding not in self.video_encodings:
             sublog("identify video: not using a video mode! (%s)", self.encoding)
             self.video_subregion = None
@@ -274,7 +277,7 @@ class WindowVideoSource(WindowSource):
         def few_damage_events(event_types, event_count):
             elapsed = time.time()-self.video_subregion_time
             #how many damage events occurred since we chose this region:
-            event_count = self.statistics.damage_events_count - self.video_subregion_set_at
+            event_count = max(0, self.statistics.damage_events_count - self.video_subregion_set_at)
             #make the timeout longer when the region has worked longer:
             slow_region_timeout = 10 + math.log(2+event_count, 1.5)
             if self.video_subregion is not None and elapsed>=slow_region_timeout:
@@ -351,7 +354,7 @@ class WindowVideoSource(WindowSource):
                 #proportion of damage pixels contained within the region:
                 pix_pct = 100*pixels_contained/pixels_total
                 #how many damage events occurred since we chose this region:
-                event_count = self.statistics.damage_events_count - self.video_subregion_set_at
+                event_count = max(0, self.statistics.damage_events_count - self.video_subregion_set_at)
                 #high ratio of damage events to window area at first,
                 #but lower it as we get more events that match
                 #(edge resistance of sorts: prevents outliers from making us drop the region
@@ -504,7 +507,7 @@ class WindowVideoSource(WindowSource):
         sublog("send_delayed_regions: substracted %s from %s gives us %s", actual_vr, regions, trimmed)
 
         #decide if we want to send the rest now or delay some more:
-        event_count = self.statistics.damage_events_count - self.video_subregion_set_at
+        event_count = max(0, self.statistics.damage_events_count - self.video_subregion_set_at)
         #only delay once the video encoder has deal with a few frames:
         if event_count>100:
             elapsed = int(1000.0*(time.time()-damage_time)) + self.video_subregion_non_waited
