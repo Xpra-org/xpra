@@ -39,7 +39,8 @@ Plist = dict(CFBundleDocumentTypes=[
 setup_options["app"]= ["osxxpra/osx_xpra_launcher.py"]
 includes = ["glib", "gio", "cairo", "pango", "pangocairo", "atk", "gobject", "gtk.keysyms",
             "osxxpra",
-            "hashlib", "Image"]
+            "hashlib", "PIL"]
+
 py2app_options = {
     'iconfile': './xpra.icns',
     'plist': Plist,
