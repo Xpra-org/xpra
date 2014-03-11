@@ -12,11 +12,12 @@ import ctypes
 
 from xpra.log import Logger
 log = Logger("client")
-paintlog = Logger("paint")
-focuslog = Logger("focus")
-soundlog = Logger("sound")
-traylog = Logger("tray")
-keylog = Logger("keyboard")
+windowlog = Logger("client", "window")
+paintlog = Logger("client", "paint")
+focuslog = Logger("client", "focus")
+soundlog = Logger("client", "sound")
+traylog = Logger("client", "tray")
+keylog = Logger("client", "keyboard")
 
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
@@ -331,6 +332,7 @@ class UIXpraClient(XpraClientBase):
     def destroy_all_windows(self):
         for wid, window in self._id_to_window.items():
             try:
+                windowlog("destroy_all_windows() destroying %s / %s", wid, window)
                 self.destroy_window(wid, window)
             except:
                 pass
@@ -627,7 +629,7 @@ class UIXpraClient(XpraClientBase):
             try:
                 self.do_set_window_icon(window_icon)
             except Exception, e:
-                log.error("failed to set window icon %s: %s", window_icon, e)
+                windowlog.error("failed to set window icon %s: %s", window_icon, e)
 
 
     def send_focus(self, wid):
@@ -1485,9 +1487,10 @@ class UIXpraClient(XpraClientBase):
     def _process_new_common(self, packet, override_redirect):
         self._ui_event()
         wid, x, y, w, h, metadata = packet[1:7]
+        windowlog("process_new_common: %s, OR=%s", packet[1:7], override_redirect)
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         if w<=0 or h<=0:
-            log.error("window dimensions are wrong: %sx%s", w, h)
+            windowlog.error("window dimensions are wrong: %sx%s", w, h)
             w, h = 1, 1
         client_properties = {}
         if len(packet)>=8:
@@ -1502,14 +1505,15 @@ class UIXpraClient(XpraClientBase):
         client_window_classes = self.get_client_window_classes(metadata, override_redirect)
         group_leader_window = self.get_group_leader(metadata, override_redirect)
         window = None
+        windowlog("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
                 window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay, self.border)
                 break
             except:
-                log.warn("failed to instantiate %s", cwc, exc_info=True)
+                windowlog.warn("failed to instantiate %s", cwc, exc_info=True)
         if window is None:
-            log.warn("no more options.. this window will not be shown, sorry")
+            windowlog.warn("no more options.. this window will not be shown, sorry")
             return None
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
@@ -1539,14 +1543,14 @@ class UIXpraClient(XpraClientBase):
             metadata = packet[4]
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         tray = self.setup_system_tray(self, wid, w, h, metadata.get("title", ""))
-        log("process_new_tray(%s) tray=%s", packet, tray)
+        traylog("process_new_tray(%s) tray=%s", packet, tray)
         self._id_to_window[wid] = tray
         self._window_to_id[tray] = wid
 
     def _process_window_resized(self, packet):
         (wid, w, h) = packet[1:4]
         window = self._id_to_window.get(wid)
-        log("_process_window_resized resizing window %s (id=%s) to %s", window, wid, (w,h))
+        windowlog("_process_window_resized resizing window %s (id=%s) to %s", window, wid, (w,h))
         if window:
             window.resize(w, h)
 
@@ -1672,7 +1676,7 @@ class UIXpraClient(XpraClientBase):
             window.update_metadata(metadata)
 
     def _process_window_icon(self, packet):
-        log("_process_window_icon(%s,%s bytes)", packet[1:5], len(packet[5]))
+        windowlog("_process_window_icon(%s,%s bytes)", packet[1:5], len(packet[5]))
         wid, w, h, pixel_format, data = packet[1:6]
         window = self._id_to_window.get(wid)
         if window:
@@ -1691,12 +1695,12 @@ class UIXpraClient(XpraClientBase):
             del self._window_to_id[window]
             self.destroy_window(wid, window)
         if len(self._id_to_window)==0:
-            log("last window gone, clearing key repeat")
+            windowlog("last window gone, clearing key repeat")
             if self.keyboard_helper:
                 self.keyboard_helper.clear_repeat()
 
     def destroy_window(self, wid, window):
-        log("destroy_window(%s, %s)", wid, window)
+        windowlog("destroy_window(%s, %s)", wid, window)
         window.destroy()
 
     def _process_desktop_size(self, packet):
