@@ -93,10 +93,7 @@ sed -i -e 's+@executable_path/../Resources/lib/gdk-pixbuf-2.0/.*/loaders/++g' "$
 echo
 echo "*******************************************************************************"
 echo "Add xpra/server/python scripts"
-cp ./Python "${HELPERS_DIR}/"
-cp ./Xpra "${HELPERS_DIR}/"
-cp ./Keyboard_Tool "${HELPERS_DIR}/"
-cp ./SSH_ASKPASS "${HELPERS_DIR}/"
+rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
 # copy "python" binary as another name so we can have a process that is not called "python"
 # for each one of the tools we provide a script for:
 cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra"
@@ -106,7 +103,7 @@ cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Keyboard_Tool"
 rm "${MACOS_DIR}/Xpra_Launcher-bin"
 
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
-cp Xpra_Launcher ${MACOS_DIR}
+cp ./Helpers/Xpra_Launcher ${MACOS_DIR}
 # Add the icon:
 cp ./*.icns ${RSCDIR}/
 
