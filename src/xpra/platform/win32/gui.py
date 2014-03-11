@@ -132,7 +132,7 @@ class ClientExtras(object):
                        win32con.CTRL_SHUTDOWN_EVENT,
                        win32con.CTRL_CLOSE_EVENT]
         if event in info_events:
-            log.info("received win32 console event %s", event_name)
+            log.info("received console event %s", str(event_name).replace("_EVENT", ""))
         else:
             log.warn("unknown console event: %s", event_name)
         return 0
