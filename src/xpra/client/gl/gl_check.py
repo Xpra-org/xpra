@@ -204,9 +204,17 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             glBindProgramARB, glProgramStringARB
         check_functions(glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
 
-        from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE, GL_MAX_TEXTURE_SIZE
-        texture_size = glGetInteger(GL_MAX_TEXTURE_SIZE)
-        rect_texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE)
+        try:
+            from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE, GL_MAX_TEXTURE_SIZE
+            texture_size = glGetInteger(GL_MAX_TEXTURE_SIZE)
+            rect_texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE)
+        except Exception, e:
+            emsg = str(e)
+            if hasattr(e, "description"):
+                emsg = e.description
+            gl_check_error("unable to query max texture size: %s" % emsg)
+            return props
+
         if min_texture_size>texture_size or min_texture_size>rect_texture_size:
             gl_check_error("The texture size is too small: %s" % texture_size)
         else:
@@ -338,7 +346,8 @@ def main():
     log.info("")
     log.info("OpenGL properties:")
     for k,v in props.items():
-        if k!="extensions":
+        #skip not human readable:
+        if k not in ("extensions", "glconfig"):
             log.info("  %s : %s", str(k).ljust(24), v)
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
