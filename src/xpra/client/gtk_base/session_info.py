@@ -349,11 +349,11 @@ class SessionInfo(gtk.Window):
 
         self.graph_box = gtk.VBox(False, 10)
         self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
-        bandwidth_label = "Number of bytes measured by the networks sockets"
+        bandwidth_label = "Bandwidth used"
         if SHOW_PIXEL_STATS:
             bandwidth_label += ",\nand number of pixels rendered"
         self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
-        self.latency_graph = self.add_graph_button("The time it takes to send an echo packet and get the reply", self.save_graphs)
+        self.latency_graph = self.add_graph_button(None, self.save_graphs)
         self.pixel_in_data = maxdeque(N_SAMPLES+4)
         self.net_in_bytecount = maxdeque(N_SAMPLES+4)
         self.net_out_bytecount = maxdeque(N_SAMPLES+4)
@@ -454,7 +454,8 @@ class SessionInfo(gtk.Window):
         graph.set_size_request(0, 0)
         button.connect("button_press_event", click_cb)
         button.add(graph)
-        set_tooltip_text(graph, tooltip)
+        if tooltip:
+            set_tooltip_text(graph, tooltip)
         self.graph_box.add(button)
         return graph
 
