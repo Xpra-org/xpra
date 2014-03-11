@@ -39,8 +39,8 @@ client_ENABLED = True
 x11_ENABLED = not WIN32 and not OSX
 argb_ENABLED = True
 gtk2_ENABLED = client_ENABLED
-gtk3_ENABLED = client_ENABLED
-qt4_ENABLED = client_ENABLED
+gtk3_ENABLED = False
+qt4_ENABLED = False
 opengl_ENABLED = client_ENABLED
 html5_ENABLED = True
 
@@ -180,8 +180,7 @@ data_files = []
 setup_options["data_files"] = data_files
 modules = []
 setup_options["py_modules"] = modules
-py2exe_excludes = []       #only used on win32
-py2exe_includes = []       #only used on win32
+excludes = []       #only used by py2exe on win32
 ext_modules = []
 cmdclass = {}
 
@@ -196,11 +195,15 @@ cmdclass = {}
 #and directories from the list.
 
 def remove_modules(*mods):
-    global modules
+    global modules, excludes
     for m in list(modules):
         for x in mods:
             if m.startswith(x):
                 modules.remove(m)
+                break
+    for x in mods:
+        if x not in excludes:
+            excludes.append(x)
 
 def add_modules(*mods):
     global modules
@@ -211,11 +214,18 @@ def add_modules(*mods):
         if os.path.exists(pathname) and os.path.isdir(pathname):
             #add all file modules found in this directory
             for f in os.listdir(pathname):
-                if f.endswith(".py"):
+                if f.endswith(".py") and f.find("Copy of")<0:
                     fname = os.path.join(pathname, f)
                     if os.path.isfile(fname):
                         modname = "%s.%s" % (x, f.replace(".py", ""))
                         modules.append(modname)
+
+def toggle_modules(enabled, *module_names):
+    print("toggle_modules(%s, %s)" % (enabled, module_names))
+    if enabled:
+        add_modules(*module_names)
+    else:
+        remove_modules(*module_names)
 
 #always included:
 add_modules("xpra",
@@ -355,19 +365,19 @@ def get_static_pkgconfig(*libnames):
     return defs
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
-def pkgconfig(*packages_options, **ekw):
+def pkgconfig(*pkgs_options, **ekw):
     static = ekw.get("static", None)
     if static is not None:
         del ekw["static"]
         if static:
-            return get_static_pkgconfig(*packages_options)
+            return get_static_pkgconfig(*pkgs_options)
 
     kw = dict(ekw)
-    if len(packages_options)>0:
+    if len(pkgs_options)>0:
         package_names = []
         #find out which package name to use from potentially many options
         #and bail out early with a meaningful error if we can't find any valid options
-        for package_options in packages_options:
+        for package_options in pkgs_options:
             #for this package options, find the ones that work
             valid_option = None
             if type(package_options)==str:
@@ -387,8 +397,8 @@ def pkgconfig(*packages_options, **ekw):
             if not valid_option:
                 sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
             package_names.append(valid_option)
-        if verbose_ENABLED and list(packages_options)!=list(package_names):
-            print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, package_names))
+        if verbose_ENABLED and list(pkgs_options)!=list(package_names):
+            print("pkgconfig(%s,%s) using package names=%s" % (pkgs_options, ekw, package_names))
         flag_map = {'-I': 'include_dirs',
                     '-L': 'library_dirs',
                     '-l': 'libraries'}
@@ -428,7 +438,7 @@ def pkgconfig(*packages_options, **ekw):
             add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
-        print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
+        print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
     return kw
 
 
@@ -521,7 +531,7 @@ def get_xorg_conf_and_script():
 if 'clean' in sys.argv or 'sdist' in sys.argv:
     #clean and sdist don't actually use cython,
     #so skip this (and avoid errors)
-    def pkgconfig(*packages_options, **ekw):
+    def pkgconfig(*pkgs_options, **ekw):
         return {}
     #always include all platform code in this case:
     add_modules("xpra.platform.xposix",
@@ -722,7 +732,7 @@ if WIN32:
             if not os.path.exists(d) or not os.path.isdir(d):
                 raise Exception("cannot find a directory which is required for building: %s" % d)
 
-    def pkgconfig(*packages, **ekw):
+    def pkgconfig(*pkgs_options, **ekw):
         kw = dict(ekw)
         #remove static flag on win32..
         static = kw.get("static", None)
@@ -730,7 +740,7 @@ if WIN32:
             del kw["static"]
         #always add the win32 include dirs, everyone needs that:
         add_to_keywords(kw, 'include_dirs', win32_include_dir)
-        if len(packages)==0:
+        if len(pkgs_options)==0:
             return kw
 
         def add_to_PATH(bindir):
@@ -738,7 +748,7 @@ if WIN32:
                 os.environ['PATH'] = bindir + ';' + os.environ['PATH']
             if bindir not in sys.path:
                 sys.path.append(bindir)
-        if "avcodec" in packages[0]:
+        if "avcodec" in pkgs_options[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', libffmpeg_include_dir)
             add_to_keywords(kw, 'libraries', "avcodec", "avutil")
@@ -746,7 +756,7 @@ if WIN32:
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_bin_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(libffmpeg_include_dir, libffmpeg_lib_dir, libffmpeg_bin_dir)
-        elif "swscale" in packages[0]:
+        elif "swscale" in pkgs_options[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', libffmpeg_include_dir)
             add_to_keywords(kw, 'libraries', "swscale", "avutil")
@@ -754,7 +764,7 @@ if WIN32:
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_bin_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(libffmpeg_include_dir, libffmpeg_lib_dir, libffmpeg_bin_dir)
-        elif "x264" in packages[0]:
+        elif "x264" in pkgs_options[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_PATH(x264_bin_dir)
             add_to_keywords(kw, 'include_dirs', x264_include_dir)
@@ -762,7 +772,7 @@ if WIN32:
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x264_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(x264_include_dir, x264_lib_dir)
-        elif "x265" in packages[0]:
+        elif "x265" in pkgs_options[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_PATH(x265_bin_dir)
             add_to_keywords(kw, 'include_dirs', x265_include_dir)
@@ -770,7 +780,7 @@ if WIN32:
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x265_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(x265_include_dir, x265_lib_dir)
-        elif "vpx" in packages[0]:
+        elif "vpx" in pkgs_options[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', vpx_include_dir)
             add_to_keywords(kw, 'libraries', *vpx_lib_names)
@@ -778,7 +788,7 @@ if WIN32:
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(vpx_include_dir, vpx_lib_dir)
-        elif "pygobject-2.0" in packages[0]:
+        elif "pygobject-2.0" in pkgs_options[0]:
             dirs = (python_include_path,
                     pygtk_include_dir, atk_include_dir, gtk2_include_dir,
                     gtk2_base_include_dir, gdkconfig_include_dir, gdkpixbuf_include_dir,
@@ -786,12 +796,12 @@ if WIN32:
                     cairo_include_dir, pango_include_dir)
             add_to_keywords(kw, 'include_dirs', *dirs)
             checkdirs(*dirs)
-        elif "cuda" in packages[0]:
+        elif "cuda" in pkgs_options[0]:
             add_to_keywords(kw, 'include_dirs', cuda_include_dir)
             checkdirs(cuda_include_dir)
             data_files.append(('.', glob.glob("%s/*32*.dll" % cuda_bin_dir)))
         else:
-            sys.exit("ERROR: unknown package config: %s" % str(packages))
+            sys.exit("ERROR: unknown package config: %s" % str(pkgs_options))
         if debug_ENABLED:
             #Od will override whatever may be specified elsewhere
             #and allows us to use the debug switches,
@@ -800,39 +810,28 @@ if WIN32:
                 add_to_keywords(kw, 'extra_compile_args', flag)
             add_to_keywords(kw, 'extra_link_args', "/DEBUG")
             kw['cython_gdb'] = True
-        print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
+        print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
         return kw
 
     import py2exe    #@UnresolvedImport
     assert py2exe is not None
 
-    def py2exe_exclude(*pkgs):
-        global py2exe_excludes
-        for x in pkgs:
-            if x not in py2exe_excludes:
-                py2exe_excludes.append(x)
-    def py2exe_include(*pkgs):
-        global py2exe_includes
-        for x in pkgs:
-            if x not in py2exe_includes:
-                py2exe_includes.append(x)
-
-    #with py2exe, we have to remove the default packages and let it figure it out the rest
-    #(otherwise, we can't remove specific files from those packages)
-    remove_modules("xpra", "xpra.scripts")
-    def toggle_modules(enabled, *module_names):
-        #on win32: we tell py2exe NOT to include them
+    #with py2exe, we don't use py_modules, we use "packages"... sigh
+    #(and it is a little bit different too - see below)
+    del setup_options["py_modules"]
+    packages = []
+    setup_options["packages"] = packages
+    #we must ignore packages if we exclude some of their submodules,
+    #and we may include some clients but not all:
+    ignored = ["xpra.client"]
+    def add_modules(*mods):
         global packages
-        if enabled:
-            add_modules(*module_names)
-        else:
-            remove_modules(*module_names)
-            #FIXME: this breaks things...
-            # we need a better way of excluding packages with py2exe
-            #py2exe_exclude(*package_names)
+        for x in mods:
+            if x not in ignored:
+                packages.append(x)
 
-    add_modules("xpra.platform.win32")
-    py2exe_exclude("xpra.platform.darwin", "xpra.platform.xposix")
+    add_modules("xpra.platform.win32", "xpra.net")
+    remove_modules("xpra.platform.darwin", "xpra.platform.xposix")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
     setup_options["windows"] = [
                     {'script': 'win32/xpra.py',                         'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
@@ -853,14 +852,14 @@ if WIN32:
         console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})
     setup_options["console"] = console
 
-    py2exe_include("cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
+    py2exe_includes = ["cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                         "Crypto", "Crypto.Cipher",
                         "hashlib",
                         "PIL",
                         "ctypes", "platform",
-                        "win32con", "win32gui", "win32process", "win32api")
+                        "win32con", "win32gui", "win32process", "win32api"]
     dll_excludes = ["w9xpopen.exe","tcl85.dll", "tk85.dll"]
-    py2exe_exclude(
+    remove_modules(
                         #Tcl/Tk
                         "Tkconstants", "Tkinter", "tcl",
                         #PIL bits that import TK:
@@ -882,16 +881,16 @@ if WIN32:
 
     if not cyxor_ENABLED or opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
-        py2exe_include("numpy")
+        py2exe_includes.append("numpy")
     else:
-        py2exe_exclude("numpy",
-                        "unittest", "difflib",  #avoid numpy warning (not an error)
-                        "pydoc")
+        remove_modules("numpy",
+                     "unittest", "difflib",  #avoid numpy warning (not an error)
+                     "pydoc")
 
     if sound_ENABLED:
-        py2exe_include("pygst", "gst", "gst.extend")
+        py2exe_includes += ["pygst", "gst", "gst.extend"]
     else:
-        py2exe_exclude("pygst", "gst", "gst.extend")
+        remove_modules("pygst", "gst", "gst.extend")
 
     if opengl_ENABLED:
         #for this hack to work, you must add "." to the sys.path
@@ -919,7 +918,7 @@ if WIN32:
                                            "skip_archive"   : False,
                                            "packages"       : packages,
                                            "includes"       : py2exe_includes,
-                                           "excludes"       : py2exe_excludes,
+                                           "excludes"       : excludes,
                                            "dll_excludes"   : dll_excludes,
                                         }
                                 }
@@ -978,17 +977,12 @@ else:
         #(we remove it during the 'install' step below if it isn't actually needed)
         scripts.append("scripts/xpra_Xdummy")
 
-    def toggle_modules(enabled, *module_names):
-        global modules
-        if enabled:
-            add_modules(*module_names)
-
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
     #> python2.7 setup.py build -b build-2.7 install --no-compile --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
     #otherwise we use the flags to skip pkgconfig
     if ("--no-compile" in sys.argv or "--skip-build" in sys.argv) and not ("build" in sys.argv and "install" in sys.argv):
-        def pkgconfig(*packages_options, **ekw):
+        def pkgconfig(*pkgs_options, **ekw):
             return {}
     if "install" in sys.argv:
         #prepare default [/usr/local]/etc configuration files:
@@ -1020,11 +1014,6 @@ if html5_ENABLED:
 
 #*******************************************************************************
 toggle_modules(server_ENABLED, "xpra.server", "xpra.server.stats", "xpra.server.auth")
-if WIN32 and not server_ENABLED:
-    #with py2exe, we have to remove the default packages and let it figure it out...
-    #(otherwise, we can't remove specific files from those packages)
-    remove_modules("xpra", "xpra.scripts")
-
 toggle_modules(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
 
@@ -1073,10 +1062,6 @@ if x11_ENABLED:
                 ["xpra/x11/gtk_x11/gdk_bindings.pyx"],
                 **pkgconfig(*GDK_BINDINGS_PACKAGES)
                 ))
-elif WIN32:
-    #with py2exe, we have to remove the default packages and let it figure it out...
-    #(otherwise, we can't remove specific files from those packages)
-    remove_modules("xpra", "xpra.scripts")
 
 
 if argb_ENABLED:
@@ -1093,11 +1078,11 @@ if bundle_tests_ENABLED:
         data_files.append(("tests"+k, v))
 
 toggle_modules(client_ENABLED, "xpra.client", "xpra.client.notifications")
-toggle_modules((client_ENABLED and gtk2_ENABLED or gtk3_ENABLED) or server_ENABLED, "xpra.client.gtk_base", "xpra.gtk_common")
+toggle_modules((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or server_ENABLED, "xpra.gtk_common")
 toggle_modules(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
-toggle_modules(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
-toggle_modules(client_ENABLED and qt4_ENABLED, "xpra.client.qt4")
-toggle_modules(client_ENABLED and gtk2_ENABLED or gtk3_ENABLED, "xpra.client.gtk_base")
+toggle_modules(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "gi")
+toggle_modules(client_ENABLED and qt4_ENABLED, "xpra.client.qt4", "PyQt4")
+toggle_modules(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_modules(sound_ENABLED, "xpra.sound")
 toggle_modules(webp_ENABLED, "xpra.codecs.webm")
 toggle_modules(client_ENABLED and gtk2_ENABLED and opengl_ENABLED, "xpra.client.gl")
@@ -1222,5 +1207,6 @@ if ext_modules:
     setup_options["ext_modules"] = ext_modules
 if cmdclass:
     setup_options["cmdclass"] = cmdclass
+
 
 setup(**setup_options)
