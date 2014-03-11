@@ -968,31 +968,20 @@ def make_client(error_cb, opts):
 
     ct = opts.client_toolkit.lower()
     toolkits = {}
-    try:
-        import gtk.gdk                      #@UnusedImport
-        import xpra.client.gtk2             #@UnusedImport
-        toolkits["gtk2"] = "xpra.client.gtk2.client"
-    except Exception, e:
-        print("cannot load gtk2: %s" % e)
-    try:
-        from gi.repository import Gtk       #@UnresolvedImport @UnusedImport
-        import xpra.client.gtk3             #@UnusedImport
-        toolkits["gtk3"] = "xpra.client.gtk3.client"
-    except Exception, e:
-        if "gtk2" not in toolkits:
-            print("cannot load gtk3: %s" % e)
-        pass
-    try:
-        from PyQt4 import QtCore, QtGui     #@UnresolvedImport @UnusedImport
+    def check_toolkit(*modules):
         try:
-            import xpra.client.qt4              #@UnusedImport
-            toolkits["qt4"] = "xpra.client.qt4.client"
-        except Exception, e:
-            print("failed to load qt client: %s", e)
-            pass
-    except ImportError, e:
-        #qt not installed
-        pass
+            for x in modules:
+                __import__(x, {}, {}, [])
+            return True
+        except:
+            return False
+
+    if check_toolkit("gtk.gdk", "xpra.client.gtk2"):
+        toolkits["gtk2"] = "xpra.client.gtk2.client"
+    elif check_toolkit("gi", "xpra.client.gtk3"):
+        toolkits["gtk3"] = "xpra.client.gtk3.client"
+    if check_toolkit("PyQt4.QtCore", "PyQt4.QtGui", "xpra.client.qt4"):
+        toolkits["qt4"] = "xpra.client.qt4.client"
     if ct=="help":
         error_cb("The following client toolkits are available: %s" % (", ".join(toolkits.keys())))
     client_module = toolkits.get(ct)
