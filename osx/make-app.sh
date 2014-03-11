@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #by default use avcodec2 (ffmpeg2):
-BUILD_ARGS="--without-dec_avcodec --with-dec_avcodec2"
+BUILD_ARGS="--without-dec_avcodec --with-dec_avcodec2 --without-csc_opencl"
 
 echo "*******************************************************************************"
 echo "Deleting existing xpra modules and temporary directories"
