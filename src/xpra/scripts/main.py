@@ -982,6 +982,9 @@ def make_client(error_cb, opts):
         toolkits["gtk3"] = "xpra.client.gtk3.client"
     if check_toolkit("PyQt4.QtCore", "PyQt4.QtGui", "xpra.client.qt4"):
         toolkits["qt4"] = "xpra.client.qt4.client"
+
+    if len(toolkits)==0:
+        error_cb("no client toolkit found! (maybe this is a server-only installation?)")
     if ct=="help":
         error_cb("The following client toolkits are available: %s" % (", ".join(toolkits.keys())))
     client_module = toolkits.get(ct)
