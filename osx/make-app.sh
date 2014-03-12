@@ -8,7 +8,8 @@ echo "Deleting existing xpra modules and temporary directories"
 PYTHON_PREFIX=`python-config --prefix`
 PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python*/site-packages | sort | tail -n 1`
 rm -fr "${PYTHON_PACKAGES}/xpra"*
-rm -fr image/* dist/*
+rm -fr image/* dist
+ln -sf ../src/dist ./dist
 
 echo
 echo "*******************************************************************************"
@@ -24,15 +25,17 @@ if [ "$?" != "0" ]; then
 	echo "ERROR: install failed"
 	exit 1
 fi
-popd
+
 echo
 echo "*******************************************************************************"
 echo "pyapp"
-./setup.py py2app
+./setup.py py2app ${BUILD_ARGS}
 if [ "$?" != "0" ]; then
 	echo "ERROR: py2app failed"
 	exit 1
 fi
+popd
+
 
 IMAGE_DIR="./image/Xpra.app"
 CONTENTS_DIR="${IMAGE_DIR}/Contents"

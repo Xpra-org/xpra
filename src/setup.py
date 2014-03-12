@@ -180,32 +180,54 @@ data_files = []
 setup_options["data_files"] = data_files
 modules = []
 setup_options["py_modules"] = modules
+packages = []       #used by py2app and py2exe
 excludes = []       #only used by py2exe on win32
 ext_modules = []
 cmdclass = {}
+scripts = []
+
+external_includes = ["cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
+                     "Crypto", "Crypto.Cipher",
+                     "hashlib",
+                     "PIL",
+                     "ctypes", "platform"]
 
 
-#because we want to exclude some modules
-#we have to use "py_modules" and not "packages"
-#as argument to distutils.
-#which means that we have to manage every single module...
-#so those two methods help us do just that:
-#we specify modules using regular dot separated import syntax,
-#and the functions will add and remove the appropriate files
-#and directories from the list.
 
-def remove_modules(*mods):
-    global modules, excludes
+#because of differences in how we specify packages and modules
+#for distutils / py2app and py2exe
+#use the following functions, which should get the right
+#data in the global variables "packages", "modules" and "excludes"
+
+def remove_packages(*mods):
+    """ ensures that the given packages are not included:
+        removes them from the "modules" and "packages" list and adds them to "excludes" list
+    """
+    global packages, modules, excludes
     for m in list(modules):
         for x in mods:
             if m.startswith(x):
                 modules.remove(m)
                 break
     for x in mods:
+        if x in packages:
+            packages.remove(x)
         if x not in excludes:
             excludes.append(x)
 
+def add_packages(*pkgs):
+    """ adds the given packages to the packages list,
+        and adds all the modules found in this package (including the package itself)
+    """
+    global packages
+    for x in pkgs:
+        if x not in packages:
+            packages.append(x)
+    add_modules(*pkgs)
+
 def add_modules(*mods):
+    """ adds the packages and any .py module found in the packages to the "modules" list
+    """
     global modules
     for x in mods:
         if x not in modules:
@@ -220,18 +242,18 @@ def add_modules(*mods):
                         modname = "%s.%s" % (x, f.replace(".py", ""))
                         modules.append(modname)
 
-def toggle_modules(enabled, *module_names):
-    print("toggle_modules(%s, %s)" % (enabled, module_names))
+def toggle_packages(enabled, *module_names):
     if enabled:
-        add_modules(*module_names)
+        add_packages(*module_names)
     else:
-        remove_modules(*module_names)
+        remove_packages(*module_names)
 
 #always included:
 add_modules("xpra",
-          "xpra.codecs",
-          "xpra.scripts", "xpra.keyboard",
-          "xpra.net", "xpra.codecs.xor")
+            "xpra.platform",
+            "xpra.codecs",
+            "xpra.codecs.xor")
+add_packages("xpra.scripts", "xpra.keyboard", "xpra.net")
 
 
 #*******************************************************************************
@@ -533,10 +555,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     #so skip this (and avoid errors)
     def pkgconfig(*pkgs_options, **ekw):
         return {}
-    #always include all platform code in this case:
-    add_modules("xpra.platform.xposix",
-                 "xpra.platform.win32",
-                 "xpra.platform.darwin")
+    #always include everything in this case:
+    add_packages("xpra")
     #ensure we remove the files we generate:
     CLEAN_FILES = [
                    "xpra/gtk_common/gdk_atoms.c",
@@ -819,19 +839,9 @@ if WIN32:
     #with py2exe, we don't use py_modules, we use "packages"... sigh
     #(and it is a little bit different too - see below)
     del setup_options["py_modules"]
-    packages = []
     setup_options["packages"] = packages
-    #we must ignore packages if we exclude some of their submodules,
-    #and we may include some clients but not all:
-    ignored = ["xpra.client"]
-    def add_modules(*mods):
-        global packages
-        for x in mods:
-            if x not in ignored:
-                packages.append(x)
-
-    add_modules("xpra.platform.win32", "xpra.net")
-    remove_modules("xpra.platform.darwin", "xpra.platform.xposix")
+    add_packages("xpra.platform.win32")
+    remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
     setup_options["windows"] = [
                     {'script': 'win32/xpra.py',                         'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
@@ -852,45 +862,39 @@ if WIN32:
         console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})
     setup_options["console"] = console
 
-    py2exe_includes = ["cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
-                        "Crypto", "Crypto.Cipher",
-                        "hashlib",
-                        "PIL",
-                        "ctypes", "platform",
-                        "win32con", "win32gui", "win32process", "win32api"]
+    py2exe_includes = external_includes + ["win32con", "win32gui", "win32process", "win32api"]
     dll_excludes = ["w9xpopen.exe","tcl85.dll", "tk85.dll"]
-    remove_modules(
-                        #Tcl/Tk
-                        "Tkconstants", "Tkinter", "tcl",
-                        #PIL bits that import TK:
-                        "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
-                        #formats we don't use:
-                        "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
-                        #not used on win32:
-                        "mmap",
-                        #we handle GL separately below:
-                        "OpenGL", "OpenGL_accelerate",
-                        #this is a mac osx thing:
-                        "ctypes.macholib",
-                        #not used:
-                        "curses", "email", "mimetypes", "mimetools", "pdb",
-                        "urllib", "urllib2", "tty",
-                        "ssl", "_ssl",
-                        "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
-                        "distutils", "setuptools", "doctest")
+    remove_packages(#Tcl/Tk
+                    "Tkconstants", "Tkinter", "tcl",
+                    #PIL bits that import TK:
+                    "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
+                    #formats we don't use:
+                    "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
+                    #not used on win32:
+                    "mmap",
+                    #we handle GL separately below:
+                    "OpenGL", "OpenGL_accelerate",
+                    #this is a mac osx thing:
+                    "ctypes.macholib",
+                    #not used:
+                    "curses", "email", "mimetypes", "mimetools", "pdb",
+                    "urllib", "urllib2", "tty",
+                    "ssl", "_ssl",
+                    "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
+                    "distutils", "setuptools", "doctest")
 
     if not cyxor_ENABLED or opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
         py2exe_includes.append("numpy")
     else:
-        remove_modules("numpy",
-                     "unittest", "difflib",  #avoid numpy warning (not an error)
-                     "pydoc")
+        remove_packages("numpy",
+                        "unittest", "difflib",  #avoid numpy warning (not an error)
+                        "pydoc")
 
     if sound_ENABLED:
         py2exe_includes += ["pygst", "gst", "gst.extend"]
     else:
-        remove_modules("pygst", "gst", "gst.extend")
+        remove_packages("pygst", "gst", "gst.extend")
 
     if opengl_ENABLED:
         #for this hack to work, you must add "." to the sys.path
@@ -952,27 +956,26 @@ if WIN32:
 
 #*******************************************************************************
 else:
-    scripts = ["scripts/xpra", "scripts/xpra_launcher"]
-    man_pages = ["man/xpra.1", "man/xpra_launcher.1"]
+    #OSX and *nix:
+    scripts += ["scripts/xpra", "scripts/xpra_launcher"]
     data_files += [
-                    ("share/man/man1", man_pages),
-                    ("share/xpra", ["README", "COPYING"]),
-                    ("share/xpra/icons", glob.glob("icons/*")),
-                    ("share/applications", ["xdg/xpra_launcher.desktop", "xdg/xpra.desktop"]),
-                    ("share/icons", ["xdg/xpra.png"])
+                    ("share/man/man1",      ["man/xpra.1", "man/xpra_launcher.1"]),
+                    ("share/xpra",          ["README", "COPYING"]),
+                    ("share/xpra/icons",    glob.glob("icons/*")),
+                    ("share/applications",  ["xdg/xpra_launcher.desktop", "xdg/xpra.desktop"]),
+                    ("share/icons",         ["xdg/xpra.png"])
                   ]
     html5_dir = "share/xpra/www"
     if webp_ENABLED:
         data_files.append(('share/xpra/webm', ["xpra/codecs/webm/LICENSE"]))
 
-    add_modules("xpra", "xpra.platform")
     if OSX:
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
-        add_modules("xpra.platform.darwin")
+        add_packages("xpra.platform.darwin")
     else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
-        add_modules("xpra.platform.xposix")
+        add_packages("xpra.platform.xposix")
         #always include the wrapper in case we need it later:
         #(we remove it during the 'install' step below if it isn't actually needed)
         scripts.append("scripts/xpra_Xdummy")
@@ -1001,8 +1004,40 @@ else:
                 scripts.remove("scripts/xpra_Xdummy")
             etc_files.append(xorg_conf)
         data_files.append((etc_prefix, etc_files))
-    setup_options["scripts"] = scripts
 
+    if OSX and "py2app" in sys.argv:
+        import py2app    #@UnresolvedImport
+        assert py2app is not None
+
+        #don't use py_modules or scripts with py2app, and no cython:
+        del setup_options["py_modules"]
+        scripts = []
+        def cython_add(*args, **kwargs):
+            pass
+
+        Plist = {"CFBundleDocumentTypes" : {
+                        "CFBundleTypeExtensions"    : ["Xpra"],
+                        "CFBundleTypeName"          : "Xpra Session Config File",
+                        "CFBundleName"              : "Xpra",
+                        "CFBundleTypeRole"          : "Viewer",
+                        }}
+        py2app_includes = external_includes + modules
+        py2app_options = {
+            'iconfile'          : '../osx/xpra.icns',
+            'plist'             : Plist,
+            'site_packages'     : False,
+            'argv_emulation'    : True,
+            'strip'             : False,
+            "includes"          : py2app_includes,
+            "frameworks"        : ['CoreFoundation', 'Foundation', 'AppKit'],
+            }
+        setup_options["options"] = {"py2app": py2app_options}
+        setup_options["app"]     = ["xpra/client/gtk2/client_launcher.py"]
+
+        print("py2app_options:")
+        for k,v in py2app_options.items():
+            print("* %s=%s" % (k,v))
+        print("")
 
 if html5_ENABLED:
     for k,v in glob_recurse("html5").items():
@@ -1013,11 +1048,11 @@ if html5_ENABLED:
 
 
 #*******************************************************************************
-toggle_modules(server_ENABLED, "xpra.server", "xpra.server.stats", "xpra.server.auth")
-toggle_modules(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
+toggle_packages(server_ENABLED, "xpra.server", "xpra.server.stats", "xpra.server.auth")
+toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
 
-toggle_modules(x11_ENABLED, "xpra.x11", "xpra.x11.gtk_x11", "xpra.x11.bindings")
+toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.gtk_x11", "xpra.x11.bindings")
 if x11_ENABLED:
     make_constants("xpra", "x11", "bindings", "constants")
     make_constants("xpra", "x11", "gtk_x11", "constants")
@@ -1064,8 +1099,8 @@ if x11_ENABLED:
                 ))
 
 
+toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 if argb_ENABLED:
-    toggle_modules(True, "xpra.codecs.argb")
     cython_add(Extension("xpra.codecs.argb.argb",
                 ["xpra/codecs/argb/argb.pyx"]))
 
@@ -1077,17 +1112,19 @@ if bundle_tests_ENABLED:
             k = os.sep+k
         data_files.append(("tests"+k, v))
 
-toggle_modules(client_ENABLED, "xpra.client", "xpra.client.notifications")
-toggle_modules((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or server_ENABLED, "xpra.gtk_common")
-toggle_modules(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
-toggle_modules(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "gi")
-toggle_modules(client_ENABLED and qt4_ENABLED, "xpra.client.qt4", "PyQt4")
-toggle_modules(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
-toggle_modules(sound_ENABLED, "xpra.sound")
-toggle_modules(webp_ENABLED, "xpra.codecs.webm")
-toggle_modules(client_ENABLED and gtk2_ENABLED and opengl_ENABLED, "xpra.client.gl")
+#special case for client: cannot use toggle_packages which would include gtk3, qt, etc:
+if client_ENABLED:
+    add_modules("xpra.client", "xpra.client.notifications")
+toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or server_ENABLED, "xpra.gtk_common")
+toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "gi")
+toggle_packages(client_ENABLED and qt4_ENABLED, "xpra.client.qt4", "PyQt4")
+toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
+toggle_packages(sound_ENABLED, "xpra.sound")
+toggle_packages(webp_ENABLED, "xpra.codecs.webm")
+toggle_packages(client_ENABLED and gtk2_ENABLED and opengl_ENABLED, "xpra.client.gl")
 
-toggle_modules(clipboard_ENABLED, "xpra.clipboard")
+toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:
     cython_add(Extension("xpra.gtk_common.gdk_atoms",
                 ["xpra/gtk_common/gdk_atoms.pyx"],
@@ -1105,15 +1142,14 @@ if cymaths_ENABLED:
                 **pkgconfig()))
 
 
-
 #needed for both nvenc and csc_cuda:
-toggle_modules(csc_nvcuda_ENABLED or nvenc_ENABLED, "xpra.codecs.cuda_common")
+toggle_packages(csc_nvcuda_ENABLED or nvenc_ENABLED, "xpra.codecs.cuda_common")
 
-toggle_modules(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
-toggle_modules(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
-toggle_modules(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
+toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
+toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
+toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
-toggle_modules(nvenc_ENABLED, "xpra.codecs.nvenc")
+toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 if nvenc_ENABLED:
     make_constants("xpra", "codecs", "nvenc", "constants")
     nvenc_pkgconfig = pkgconfig("nvenc3", "cuda")
@@ -1121,21 +1157,21 @@ if nvenc_ENABLED:
                          ["xpra/codecs/nvenc/encoder.pyx"],
                          **nvenc_pkgconfig), min_version=(0, 16))
 
-toggle_modules(enc_x264_ENABLED, "xpra.codecs.enc_x264")
+toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
     x264_pkgconfig = pkgconfig("x264", static=x264_static_ENABLED)
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx"],
                 **x264_pkgconfig), min_version=(0, 16))
 
-toggle_modules(enc_x265_ENABLED, "xpra.codecs.enc_x265")
+toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
 if enc_x265_ENABLED:
     x265_pkgconfig = pkgconfig("x265", static=x265_static_ENABLED)
     cython_add(Extension("xpra.codecs.enc_x265.encoder",
                 ["xpra/codecs/enc_x265/encoder.pyx"],
                 **x265_pkgconfig), min_version=(0, 16))
 
-toggle_modules(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
+toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec", "constants")
     avcodec_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec_static_ENABLED)
@@ -1143,7 +1179,7 @@ if dec_avcodec_ENABLED:
                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **avcodec_pkgconfig), min_version=(0, 19))
 
-toggle_modules(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
+toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec2_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
@@ -1151,7 +1187,7 @@ if dec_avcodec2_ENABLED:
                 **avcodec2_pkgconfig), min_version=(0, 19))
 
 
-toggle_modules(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
+toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     make_constants("xpra", "codecs", "csc_swscale", "constants")
     swscale_pkgconfig = pkgconfig("swscale", static=swscale_static_ENABLED)
@@ -1159,14 +1195,14 @@ if csc_swscale_ENABLED:
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
                 **swscale_pkgconfig), min_version=(0, 19))
 
-toggle_modules(csc_cython_ENABLED, "xpra.codecs.csc_cython")
+toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 if csc_cython_ENABLED:
     csc_cython_pkgconfig = pkgconfig()
     cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
                 ["xpra/codecs/csc_cython/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c"],
                 **csc_cython_pkgconfig), min_version=(0, 15))
 
-toggle_modules(vpx_ENABLED, "xpra.codecs.vpx")
+toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     vpx_pkgconfig = pkgconfig("vpx", static=vpx_static_ENABLED)
     cython_add(Extension("xpra.codecs.vpx.encoder",
@@ -1177,7 +1213,7 @@ if vpx_ENABLED:
                 **vpx_pkgconfig), min_version=(0, 16))
 
 
-toggle_modules(rencode_ENABLED, "xpra.net.rencode")
+toggle_packages(rencode_ENABLED, "xpra.net.rencode")
 if rencode_ENABLED:
     rencode_pkgconfig = pkgconfig()
     if not debug_ENABLED:
@@ -1190,7 +1226,7 @@ if rencode_ENABLED:
                 **rencode_pkgconfig))
 
 
-toggle_modules(bencode_ENABLED, "xpra.net.bencode")
+toggle_packages(bencode_ENABLED, "xpra.net.bencode")
 if cython_bencode_ENABLED:
     bencode_pkgconfig = pkgconfig()
     if not debug_ENABLED:
@@ -1207,6 +1243,8 @@ if ext_modules:
     setup_options["ext_modules"] = ext_modules
 if cmdclass:
     setup_options["cmdclass"] = cmdclass
+if scripts:
+    setup_options["scripts"] = scripts
 
 
 def main():
