@@ -1094,9 +1094,14 @@ class WindowModel(BaseWindowModel):
             size = calc_constrained_size(clw, clh, hints)
             log("resize_corral_window() new constrained size=%s", size)
             w, h, wvis, hvis = size
-            self._internal_set_property("actual-size", (w, h))
-            self._internal_set_property("user-friendly-size", (wvis, hvis))
-            return True
+            modded = False
+            if self.get_property("actual-size")!=(w, h):
+                self._internal_set_property("actual-size", (w, h))
+                modded = True
+            if self.get_property("user-friendly-size")!=(wvis, hvis):
+                self._internal_set_property("user-friendly-size", (wvis, hvis))
+                modded = True
+            return modded
         return False
 
     def do_child_configure_request_event(self, event):
