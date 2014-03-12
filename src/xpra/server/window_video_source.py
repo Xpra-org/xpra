@@ -916,9 +916,9 @@ class WindowVideoSource(WindowSource):
                 actual_scaling = 1,3
             elif self.maximized and (qs or ffps>=10):
                 actual_scaling = 1,2
-            elif width*height>=2048*1200 and (q==100 or ffps>=25):
+            elif width*height>=2048*1200 and (q<80 or ffps>=25):
                 actual_scaling = 1,3
-            elif width*height>=1024*1024 and (q==100 or ffps>=30):
+            elif width*height>=1024*1024 and (q<80 or ffps>=30):
                 actual_scaling = 2,3
         if actual_scaling is None:
             actual_scaling = 1, 1
