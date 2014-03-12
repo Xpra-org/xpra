@@ -1209,4 +1209,9 @@ if cmdclass:
     setup_options["cmdclass"] = cmdclass
 
 
-setup(**setup_options)
+def main():
+    setup(**setup_options)
+
+
+if __name__ == "__main__":
+    main()
