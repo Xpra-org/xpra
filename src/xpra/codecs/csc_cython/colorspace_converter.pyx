@@ -51,7 +51,7 @@ cdef uint8_t RGBX_B = tmp.find('\2')
 cdef uint8_t RGBX_X = tmp.find('\3')
 
 
-COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGBX", "BGRX"]}
+COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
 
 def init_module():
     #nothing to do!
@@ -191,6 +191,12 @@ cdef class ColorspaceConverter:
         self.time = 0
         self.frames = 0
 
+        #explicity clear all strides / sizes / offsets: 
+        for i in range(2):
+            self.dst_strides[i] = 0
+            self.dst_sizes[i]   = 0
+            self.offsets[i]     = 0
+
         if src_format=="BGRX" and dst_format=="YUV420P":
             self.dst_strides[0] = roundup(self.dst_width,   STRIDE_ROUNDUP)
             self.dst_strides[1] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
@@ -211,11 +217,6 @@ cdef class ColorspaceConverter:
             self.dst_strides[0] = roundup(self.dst_width*4, STRIDE_ROUNDUP)
             self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
             self.offsets[0] = 0
-            #clear the rest:
-            for i in range(2):
-                self.dst_strides[i+1] = 0
-                self.dst_sizes[i+1] = 0
-                self.offsets[i+1] = 0
             #output buffer ends after 1 line of padding:
             self.buffer_size = self.dst_sizes[0] + roundup(dst_width*4, STRIDE_ROUNDUP)
 
@@ -224,6 +225,19 @@ cdef class ColorspaceConverter:
             else:
                 assert dst_format=="BGRX"
                 self.convert_image_function = self.YUV420P_to_BGRX
+        elif src_format=="GBRP" and dst_format in ("RGBX", "BGRX"):
+            #4 bytes per pixel:
+            self.dst_strides[0] = roundup(self.dst_width*4, STRIDE_ROUNDUP)
+            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
+            self.offsets[0] = 0
+            #output buffer ends after 1 line of padding:
+            self.buffer_size = self.dst_sizes[0] + roundup(dst_width*4, STRIDE_ROUNDUP)
+
+            if dst_format=="RGBX":
+                self.convert_image_function = self.GBRP_to_RGBX
+            else:
+                assert dst_format=="BGRX"
+                self.convert_image_function = self.GBRP_to_BGRX
         else:
             raise Exception("BUG: src_format=%s, dst_format=%s", src_format, dst_format)
 
@@ -386,6 +400,7 @@ cdef class ColorspaceConverter:
         out_image.cython_buffer = <unsigned long> output_image
         return out_image
 
+
     def YUV420P_to_RGBX(self, image):
         return self.do_YUV420P_to_RGB(image, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
 
@@ -395,7 +410,7 @@ cdef class ColorspaceConverter:
     cdef do_YUV420P_to_RGB(self, image, uint8_t Rindex, uint8_t Gindex, uint8_t Bindex, uint8_t Xindex):
         cdef Py_ssize_t buf_len = 0
         cdef unsigned char *output_image        #
-        cdef int x,y,i,o,dx,dy,sum              #@DuplicatedSignature
+        cdef int x,y,i,o,dx,dy                  #@DuplicatedSignature
         cdef int sx, sy                         #
         cdef int workw, workh                   #
         cdef int stride
@@ -457,6 +472,79 @@ cdef class ColorspaceConverter:
                             output_image[o + Gindex] = clamp(GY * Y + GU * U + GV * V)
                             output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
                             output_image[o + Xindex] = 255
+
+        rgb = PyBuffer_FromReadWriteMemory(<void *> output_image, self.dst_sizes[0])
+        elapsed = time.time()-start
+        log("%s took %.1fms", self, 1000.0*elapsed)
+        self.time += elapsed
+        self.frames += 1
+        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
+        out_image.cython_buffer = <unsigned long> output_image
+        return out_image
+
+
+    def GBRP_to_RGBX(self, image):
+        return self.do_RGBP_to_RGB(image, 2, 0, 1, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
+
+    def GBRP_to_BGRX(self, image):
+        return self.do_RGBP_to_RGB(image, 2, 0, 1, RGBX_B, RGBX_G, RGBX_R, RGBX_X)
+
+    cdef do_RGBP_to_RGB(self, image, uint8_t Rsrc, uint8_t Gsrc, uint8_t Bsrc,
+                                     uint8_t Rdst, uint8_t Gdst, uint8_t Bdst, uint8_t Xdst):
+        cdef Py_ssize_t buf_len = 0             #
+        cdef unsigned char *output_image        #@DuplicatedSignature
+        cdef int x,y,i,o,sum                    #@DuplicatedSignature
+        cdef int sx, sy                         #@DuplicatedSignature
+        cdef int stride                         #@DuplicatedSignature
+        cdef unsigned char *Gbuf                #@DuplicatedSignature
+        cdef unsigned char *Gptr
+        cdef unsigned char *Bbuf                #@DuplicatedSignature
+        cdef unsigned char *Bptr
+        cdef unsigned char *Rbuf                #@DuplicatedSignature
+        cdef unsigned char *Rptr
+        cdef int Gstride, Bstride, Rstride
+        cdef object rgb                         #@DuplicatedSignature
+
+        start = time.time()
+        iplanes = image.get_planes()
+        assert iplanes==ImageWrapper._3_PLANES, "invalid input format: %s planes" % iplanes
+        assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
+        assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
+        planes = image.get_pixels()
+        input_strides = image.get_rowstride()
+        log("convert_image(%s) strides=%s" % (image, input_strides))
+
+        #copy to local variables:
+        Rstride = input_strides[Rsrc]
+        Gstride = input_strides[Gsrc]
+        Bstride = input_strides[Bsrc]
+        stride = self.dst_strides[0]
+
+        PyObject_AsReadBuffer(planes[Rsrc], <const void**> &Rbuf, &buf_len)
+        assert buf_len>=Rstride*image.get_height(), "buffer for R plane is too small: %s bytes, expected at least %s" % (buf_len, Rstride*image.get_height())
+        PyObject_AsReadBuffer(planes[Gsrc], <const void**> &Gbuf, &buf_len)
+        assert buf_len>=Gstride*image.get_height(), "buffer for G plane is too small: %s bytes, expected at least %s" % (buf_len, Gstride*image.get_height())
+        PyObject_AsReadBuffer(planes[Bsrc], <const void**> &Bbuf, &buf_len)
+        assert buf_len>=Bstride*image.get_height(), "buffer for B plane is too small: %s bytes, expected at least %s" % (buf_len, Bstride*image.get_height())
+
+        #allocate output buffer:
+        output_image = <unsigned char*> xmemalign(self.buffer_size)
+
+        #from now on, we can release the gil:
+        with nogil:
+            for y in xrange(self.dst_height):
+                o = stride*y
+                sy = y*self.src_height/self.dst_height
+                Rptr  = Rbuf + (sy * Rstride)
+                Gptr  = Gbuf + (sy * Gstride)
+                Bptr  = Bbuf + (sy * Bstride)
+                for x in xrange(self.dst_width):
+                    sx = x*self.src_width/self.dst_width
+                    output_image[o+Rdst] = Rptr[sx]
+                    output_image[o+Gdst] = Gptr[sx]
+                    output_image[o+Bdst] = Bptr[sx]
+                    output_image[o+Xdst] = 255
+                    o += 4
 
         rgb = PyBuffer_FromReadWriteMemory(<void *> output_image, self.dst_sizes[0])
         elapsed = time.time()-start
