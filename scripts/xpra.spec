@@ -10,7 +10,6 @@
 %endif
 %define include_egg 1
 %define old_xdg 0
-%define PIL_bug 1
 
 %define requires_lz4 python-lz4
 %define requires_fakexinerama libfakeXinerama
@@ -54,10 +53,6 @@
 %define requires_x264 , x264-libs
 %define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %define requires_opengl , PyOpenGL, pygtkglext, python-numeric, numpy
-# Fedora 19 onwards ship with Pillow in place of PIL, which has the bug fix:
-%if %(egrep -vq 'release 18' /etc/redhat-release && echo 1 || echo 0)
-%define PIL_bug 0
-%endif
 %if %(egrep -q 'release 20|release 21' /etc/redhat-release && echo 1 || echo 0)
 %define avcodec_build_args --without-dec_avcodec --with-dec_avcodec2
 %endif
@@ -186,7 +181,6 @@ Patch8: old-libav.patch
 Patch9: old-libav-pixfmtconsts.patch
 Patch10: old-libav-no0RGB.patch
 Patch12: old-xdg-desktop.patch
-Patch15: PIL-cannot-optimize-bug.patch
 
 
 %description
@@ -1011,10 +1005,6 @@ cd xpra-%{version}
 %if 0%{?old_xdg}
 %patch12 -p1
 (echo "xdg/*.desktop" >> %{S:ignored_changed_files.txt})
-%endif
-%if 0%{?PIL_bug}
-%patch15 -p1
-(echo "xpra/server/window_source.py" >> %{S:ignored_changed_files.txt})
 %endif
 
 %debug_package
