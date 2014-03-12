@@ -72,6 +72,7 @@ class ApplicationWindow:
                                 "encoding", "quality", "min-quality", "speed", "min-speed"])
         self.config.client_toolkit = "gtk2"
         self.client = make_client(Exception, self.config)
+        self.client.init(self.config)
         self.exit_code = None
 
     def create_window(self):
