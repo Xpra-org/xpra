@@ -2,41 +2,6 @@
 
 #by default use avcodec2 (ffmpeg2):
 BUILD_ARGS="--without-dec_avcodec --with-dec_avcodec2 --without-csc_opencl"
-
-echo "*******************************************************************************"
-echo "Deleting existing xpra modules and temporary directories"
-PYTHON_PREFIX=`python-config --prefix`
-PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python*/site-packages | sort | tail -n 1`
-rm -fr "${PYTHON_PACKAGES}/xpra"*
-rm -fr image/* dist
-ln -sf ../src/dist ./dist
-
-echo
-echo "*******************************************************************************"
-echo "Building and installing"
-pushd ../src
-
-svn upgrade ../.. >& /dev/null
-python -c "from add_build_info import record_src_info;record_src_info()"
-rm -fr build/*
-./setup.py clean
-./setup.py install ${BUILD_ARGS}
-if [ "$?" != "0" ]; then
-	echo "ERROR: install failed"
-	exit 1
-fi
-
-echo
-echo "*******************************************************************************"
-echo "pyapp"
-./setup.py py2app ${BUILD_ARGS}
-if [ "$?" != "0" ]; then
-	echo "ERROR: py2app failed"
-	exit 1
-fi
-popd
-
-
 IMAGE_DIR="./image/Xpra.app"
 CONTENTS_DIR="${IMAGE_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
@@ -49,6 +14,52 @@ if [ "${UNAME_ARCH}" == "powerpc" ]; then
 	ARCH="ppc"
 fi
 export ARCH
+
+
+echo "*******************************************************************************"
+echo "Deleting existing xpra modules and temporary directories"
+PYTHON_PREFIX=`python-config --prefix`
+PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python*/site-packages | sort | tail -n 1`
+rm -fr "${PYTHON_PACKAGES}/xpra"*
+rm -fr image/* dist
+ln -sf ../src/dist ./dist
+rm -fr "$PYTHON_PACKAGES/xpra"
+
+echo
+echo "*******************************************************************************"
+echo "Building and installing"
+pushd ../src
+
+svn upgrade ../.. >& /dev/null
+python -c "from add_build_info import record_src_info;record_src_info()"
+rm -fr build/*
+./setup.py clean
+echo "./setup.py install ${BUILD_ARGS}"
+echo " (see install.log for details - this may take a minute or two)"
+./setup.py install ${BUILD_ARGS} >& install.log
+if [ "$?" != "0" ]; then
+	echo "ERROR: install failed"
+	echo
+	tail -n 10 install.log
+	exit 1
+fi
+echo "OK"
+
+echo
+echo "*******************************************************************************"
+echo "py2app step:"
+echo "./setup.py py2app ${BUILD_ARGS}"
+echo " (see py2app.log for details - this may take a minute or two)"
+./setup.py py2app ${BUILD_ARGS} >& py2app.log
+if [ "$?" != "0" ]; then
+	echo "ERROR: py2app failed"
+	echo
+	tail -n 10 py2app.log
+	exit 1
+fi
+echo "OK"
+popd
+
 
 echo
 echo "*******************************************************************************"
@@ -115,9 +126,14 @@ rsync -rplog $XDG_DATA_DIRS/xpra/* ${RSCDIR}/share/xpra/
 
 echo
 echo "*******************************************************************************"
-echo "include all codecs found: "
-find $PYTHON_PACKAGES/xpra/codecs/* -type d -maxdepth 0 -exec basename {} \;
-rsync -rpl $PYTHON_PACKAGES/xpra/codecs/* $LIBDIR/python/xpra/codecs/
+echo "include all xpra modules found: "
+find $PYTHON_PACKAGES/xpra/* -type d -maxdepth 0 -exec basename {} \;
+rsync -rpl $PYTHON_PACKAGES/xpra/* $LIBDIR/python/xpra/
+echo "removing files that should not be installed in the first place (..)"
+for x in "*.c" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
+	echo "removing $x:"
+	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm {} \; | sed "s+$LIBDIR/python/xpra/++g"
+done
 
 
 echo
