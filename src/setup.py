@@ -189,8 +189,23 @@ scripts = []
 external_includes = ["cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                      "Crypto", "Crypto.Cipher",
                      "hashlib",
-                     "PIL",
+                     "PIL", "PIL.Image",
                      "ctypes", "platform"]
+
+external_excludes = [
+                    #Tcl/Tk
+                    "Tkconstants", "Tkinter", "tcl",
+                    #PIL bits that import TK:
+                    "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
+                    #formats we don't use:
+                    "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
+                    #not used:
+                    "curses", "email", "mimetypes", "mimetools", "pdb",
+                    "urllib", "urllib2", "tty",
+                    "ssl", "_ssl",
+                    "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
+                    "distutils", "setuptools", "doctest"
+                    ]
 
 
 
@@ -236,7 +251,7 @@ def add_modules(*mods):
         if os.path.exists(pathname) and os.path.isdir(pathname):
             #add all file modules found in this directory
             for f in os.listdir(pathname):
-                if f.endswith(".py") and f.find("Copy of")<0:
+                if f.endswith(".py") and f.find("Copy ")<0:
                     fname = os.path.join(pathname, f)
                     if os.path.isfile(fname):
                         modname = "%s.%s" % (x, f.replace(".py", ""))
@@ -839,7 +854,6 @@ if WIN32:
     #with py2exe, we don't use py_modules, we use "packages"... sigh
     #(and it is a little bit different too - see below)
     del setup_options["py_modules"]
-    setup_options["packages"] = packages
     add_packages("xpra.platform.win32")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
@@ -864,24 +878,13 @@ if WIN32:
 
     py2exe_includes = external_includes + ["win32con", "win32gui", "win32process", "win32api"]
     dll_excludes = ["w9xpopen.exe","tcl85.dll", "tk85.dll"]
-    remove_packages(#Tcl/Tk
-                    "Tkconstants", "Tkinter", "tcl",
-                    #PIL bits that import TK:
-                    "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
-                    #formats we don't use:
-                    "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
-                    #not used on win32:
+    remove_packages(*external_excludes)
+    remove_packages(#not used on win32:
                     "mmap",
                     #we handle GL separately below:
                     "OpenGL", "OpenGL_accelerate",
                     #this is a mac osx thing:
-                    "ctypes.macholib",
-                    #not used:
-                    "curses", "email", "mimetypes", "mimetools", "pdb",
-                    "urllib", "urllib2", "tty",
-                    "ssl", "_ssl",
-                    "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
-                    "distutils", "setuptools", "doctest")
+                    "ctypes.macholib")
 
     if not cyxor_ENABLED or opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
@@ -913,29 +916,26 @@ if WIN32:
             except WindowsError, error:     #@UndefinedVariable
                 if not "already exists" in str( error ):
                     raise
-    setup_options["options"] = {
-                                "py2exe": {
-                                           "skip_archive"   : False,
-                                           "optimize"       : 0,    #WARNING: do not change - causes crashes
-                                           "unbuffered"     : True,
-                                           "compressed"     : True,
-                                           "skip_archive"   : False,
-                                           "packages"       : packages,
-                                           "includes"       : py2exe_includes,
-                                           "excludes"       : excludes,
-                                           "dll_excludes"   : dll_excludes,
-                                        }
-                                }
+    py2exe_options = {
+                      "skip_archive"   : False,
+                      "optimize"       : 0,    #WARNING: do not change - causes crashes
+                      "unbuffered"     : True,
+                      "compressed"     : True,
+                      "skip_archive"   : False,
+                      "packages"       : packages,
+                      "includes"       : py2exe_includes,
+                      "excludes"       : excludes,
+                      "dll_excludes"   : dll_excludes,
+                     }
+    setup_options["options"] = {"py2exe" : py2exe_options}
     data_files += [
-                   ('', ['COPYING']),
-                   ('', ['README']),
-                   ('', ['win32/website.url']),
-                   ('', ['etc/xpra/client-only/xpra.conf']),
-                   ('icons', glob.glob('win32\\*.ico')),
-                   ('icons', glob.glob('icons\\*.*')),
+                   ('', ['COPYING', 'README',
+                         'win32/website.url',
+                         'etc/xpra/client-only/xpra.conf'] +
+                         glob.glob('%s\\bin\\*.dll' % libffmpeg_path)),
+                   ('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
-                   ('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path)),
                    ]
     if enc_x264_ENABLED:
         data_files.append(('', ['%s\\libx264.dll' % x264_bin_dir]))
@@ -1015,29 +1015,28 @@ else:
         def cython_add(*args, **kwargs):
             pass
 
+        remove_packages(*external_excludes)
+
         Plist = {"CFBundleDocumentTypes" : {
                         "CFBundleTypeExtensions"    : ["Xpra"],
                         "CFBundleTypeName"          : "Xpra Session Config File",
                         "CFBundleName"              : "Xpra",
                         "CFBundleTypeRole"          : "Viewer",
                         }}
-        py2app_includes = external_includes + modules
+        add_modules(*external_includes)
         py2app_options = {
             'iconfile'          : '../osx/xpra.icns',
             'plist'             : Plist,
             'site_packages'     : False,
             'argv_emulation'    : True,
             'strip'             : False,
-            "includes"          : py2app_includes,
-            "frameworks"        : ['CoreFoundation', 'Foundation', 'AppKit'],
+            'includes'          : modules,
+            'excludes'          : excludes,
+            'frameworks'        : ['CoreFoundation', 'Foundation', 'AppKit'],
             }
         setup_options["options"] = {"py2app": py2app_options}
         setup_options["app"]     = ["xpra/client/gtk2/client_launcher.py"]
 
-        print("py2app_options:")
-        for k,v in py2app_options.items():
-            print("* %s=%s" % (k,v))
-        print("")
 
 if html5_ENABLED:
     for k,v in glob_recurse("html5").items():
@@ -1247,7 +1246,21 @@ if scripts:
     setup_options["scripts"] = scripts
 
 
+def print_option(prefix, k, v):
+    if type(v)==dict:
+        print("%s* %s:" % (prefix, k))
+        for kk,vv in v.items():
+            print_option(" "+prefix, kk, vv)
+    else:
+        print("%s* %s=%s" % (prefix, k, v))
+
 def main():
+    if OSX or WIN32 or debug_ENABLED:
+        print("setup options:")
+        for k,v in setup_options.items():
+            print_option("", k, v)
+        print("")
+
     setup(**setup_options)
 
 
