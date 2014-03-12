@@ -42,7 +42,7 @@ gtk2_ENABLED = client_ENABLED
 gtk3_ENABLED = False
 qt4_ENABLED = False
 opengl_ENABLED = client_ENABLED
-html5_ENABLED = True
+html5_ENABLED = not WIN32 and not OSX
 
 bencode_ENABLED = True
 cython_bencode_ENABLED = True
@@ -1023,6 +1023,8 @@ else:
                         "CFBundleName"              : "Xpra",
                         "CFBundleTypeRole"          : "Viewer",
                         }}
+        #Note: despite our best efforts, py2app will not copy all the modules we need
+        #so the make-app.sh script still has to hack around this problem.
         add_modules(*external_includes)
         py2app_options = {
             'iconfile'          : '../osx/xpra.icns',
