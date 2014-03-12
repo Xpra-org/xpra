@@ -2,7 +2,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4172)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -91,8 +91,8 @@
+@@ -95,8 +95,8 @@
      AVCodec *avcodec_find_decoder(AVCodecID id)
      AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
      int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
@@ -13,18 +13,18 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
      int avcodec_close(AVCodecContext *avctx)
  
      #actual decoding:
-@@ -396,7 +396,7 @@
-             error("could not open codec: %s", self.av_error_str(r))
+@@ -435,7 +435,7 @@
+             log.error("could not open codec: %s", self.av_error_str(r))
              self.clean_decoder()
              return  False
 -        self.frame = avcodec_alloc_frame()
 +        self.frame = <AVFrame *> xmemalign(sizeof(AVFrame))
          if self.frame==NULL:
-             error("could not allocate an AVFrame for decoding")
+             log.error("could not allocate an AVFrame for decoding")
              self.clean_decoder()
-@@ -433,8 +433,8 @@
+@@ -484,8 +484,8 @@
  
-         debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
+         log("clean_decoder() freeing AVFrame: %#x", <unsigned long> self.frame)
          if self.frame!=NULL:
 -            avcodec_free_frame(&self.frame)
 -            #redundant: self.frame = NULL
@@ -32,4 +32,4 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 +            self.frame = NULL
  
          cdef unsigned long ctx_key          #@DuplicatedSignature
-         debug("clean_decoder() freeing AVCodecContext: %s", hex(<unsigned long> self.codec_ctx))
+         log("clean_decoder() freeing AVCodecContext: %#x", <unsigned long> self.codec_ctx)

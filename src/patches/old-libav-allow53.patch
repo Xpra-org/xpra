@@ -2,12 +2,12 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4990)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -117,7 +117,7 @@
- def get_type():
-     return "avcodec"
+@@ -110,7 +110,7 @@
+     void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
+ 
  
 -MIN_AVCODEC_VERSION = 54
 +MIN_AVCODEC_VERSION = 53
  COLORSPACES = None
+ OUTPUT_COLORSPACES = None
  FORMAT_TO_ENUM = {}
- ENUM_TO_FORMAT = {}

@@ -1,8 +1,6 @@
-Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
-===================================================================
---- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	2013-10-23 10:39:56.374770130 +0700
-+++ b/xpra/codecs/csc_swscale/colorspace_converter.pyx	2013-10-23 10:40:04.119709156 +0700
-@@ -79,8 +79,8 @@
+--- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	2014-03-12 21:52:39.246777924 +0700
++++ b/xpra/codecs/csc_swscale/colorspace_converter.pyx	2014-03-12 21:52:58.031638402 +0700
+@@ -80,8 +80,8 @@
      ("PIX_FMT_RGB24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "RGB"  ),
      ("PIX_FMT_BGR24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "BGR"  ),
      ("PIX_FMT_0RGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
@@ -13,10 +11,8 @@ Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
      ("PIX_FMT_BGRA",     (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
      ("PIX_FMT_YUV420P",  (1, 0.5, 0.5, 0),   (1, 0.5, 0.5, 0),   "YUV420P"),
      ("PIX_FMT_YUV422P",  (1, 0.5, 0.5, 0),   (1, 1, 1, 0),       "YUV422P"),
-Index: xpra/codecs/csc_swscale/constants.txt
-===================================================================
---- a/xpra/codecs/csc_swscale/constants.txt	(revision 4578)
-+++ b/xpra/codecs/csc_swscale/constants.txt	(working copy)
+--- a/xpra/codecs/csc_swscale/constants.txt	2014-03-12 21:52:43.278747974 +0700
++++ b/xpra/codecs/csc_swscale/constants.txt	2014-03-12 21:52:58.031638402 +0700
 @@ -14,8 +14,8 @@
  PIX_FMT_YUV422P
  PIX_FMT_YUV444P
@@ -28,10 +24,8 @@ Index: xpra/codecs/csc_swscale/constants.txt
  PIX_FMT_ARGB
  PIX_FMT_BGRA
  PIX_FMT_GBRP
-Index: xpra/codecs/dec_avcodec/constants.txt
-===================================================================
---- a/xpra/codecs/dec_avcodec/constants.txt	(revision 4578)
-+++ b/xpra/codecs/dec_avcodec/constants.txt	(working copy)
+--- a/xpra/codecs/dec_avcodec/constants.txt	2014-03-12 21:52:47.094719630 +0700
++++ b/xpra/codecs/dec_avcodec/constants.txt	2014-03-12 21:52:58.052638246 +0700
 @@ -14,8 +14,8 @@
  PIX_FMT_YUV422P
  PIX_FMT_YUV444P
@@ -43,16 +37,16 @@ Index: xpra/codecs/dec_avcodec/constants.txt
  PIX_FMT_ARGB
  PIX_FMT_BGRA
  PIX_FMT_GBRP
---- a/xpra/codecs/dec_avcodec/decoder.pyx	2013-10-23 10:39:20.390053525 +0700
-+++ b/xpra/codecs/dec_avcodec/decoder.pyx	2013-10-23 10:40:04.124709116 +0700
-@@ -136,8 +136,8 @@
-             "YUV422P"   : "PIX_FMT_YUV422P",
-             "YUV444P"   : "PIX_FMT_YUV444P",
-             "RGB"       : "PIX_FMT_RGB24",
--            "XRGB"      : "PIX_FMT_0RGB",
--            "BGRX"      : "PIX_FMT_BGR0",
-+            "XRGB"      : "PIX_FMT_ARGB",
-+            "BGRX"      : "PIX_FMT_BGRA",
-             "ARGB"      : "PIX_FMT_ARGB",
-             "BGRA"      : "PIX_FMT_BGRA",
-             "GBRP"      : "PIX_FMT_GBRP",
+--- a/xpra/codecs/dec_avcodec/decoder.pyx	2014-03-12 21:52:51.654685761 +0700
++++ b/xpra/codecs/dec_avcodec/decoder.pyx	2014-03-12 21:53:59.746180312 +0700
+@@ -138,8 +138,8 @@
+         "YUV422P"   : "PIX_FMT_YUV422P",
+         "YUV444P"   : "PIX_FMT_YUV444P",
+         "RGB"       : "PIX_FMT_RGB24",
+-        "XRGB"      : "PIX_FMT_0RGB",
+-        "BGRX"      : "PIX_FMT_BGR0",
++        "XRGB"      : "PIX_FMT_ARGB",
++        "BGRX"      : "PIX_FMT_BGRA",
+         "ARGB"      : "PIX_FMT_ARGB",
+         "BGRA"      : "PIX_FMT_BGRA",
+         "GBRP"      : "PIX_FMT_GBRP",

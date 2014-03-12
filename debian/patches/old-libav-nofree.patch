@@ -2,7 +2,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 5061)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -97,7 +97,7 @@
+@@ -96,7 +96,7 @@
      AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
      int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
      AVFrame *avcodec_alloc_frame()
@@ -11,9 +11,9 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
      int avcodec_close(AVCodecContext *avctx)
  
      #actual decoding:
-@@ -444,8 +444,8 @@
+@@ -484,8 +484,8 @@
  
-         debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
+         log("clean_decoder() freeing AVFrame: %#x", <unsigned long> self.frame)
          if self.frame!=NULL:
 -            avcodec_free_frame(&self.frame)
 -            #redundant: self.frame = NULL
@@ -21,4 +21,4 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 +            self.frame = NULL
  
          cdef unsigned long ctx_key          #@DuplicatedSignature
-         debug("clean_decoder() freeing AVCodecContext: %s", hex(<unsigned long> self.codec_ctx))
+         log("clean_decoder() freeing AVCodecContext: %#x", <unsigned long> self.codec_ctx)

@@ -2,7 +2,7 @@ Index: src/xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4745)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -388,8 +388,8 @@
+@@ -427,8 +427,8 @@
          self.codec_ctx.get_buffer = avcodec_get_buffer
          self.codec_ctx.release_buffer = avcodec_release_buffer
          self.codec_ctx.thread_safe_callbacks = 1
