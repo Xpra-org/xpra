@@ -1015,6 +1015,7 @@ else:
         def cython_add(*args, **kwargs):
             pass
 
+        remove_packages("ctypes.wintypes", "colorsys")
         remove_packages(*external_excludes)
 
         Plist = {"CFBundleDocumentTypes" : {
