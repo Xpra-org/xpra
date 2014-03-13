@@ -43,6 +43,19 @@ if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
 
+PMaxSize        = constants["PMaxSize"]
+PMinSize        = constants["PMinSize"]
+PBaseSize       = constants["PBaseSize"]
+PResizeInc      = constants["PResizeInc"]
+PAspect         = constants["PAspect"]
+PWinGravity     = constants["PWinGravity"]
+XUrgencyHint    = constants["XUrgencyHint"]
+WindowGroupHint = constants["WindowGroupHint"]
+StateHint       = constants["StateHint"]
+IconicState     = constants["IconicState"]
+InputHint       = constants["InputHint"]
+
+
 def unsupported(*args):
     raise Exception("unsupported")
 
@@ -60,6 +73,10 @@ class WMSizeHints(object):
     def __init__(self, disp, data):
         # pre-ICCCM size is 15
         data = _force_length("WM_SIZE_HINTS", data, 18*4, noerror_length=15*4)
+        def normint(v):
+            if v==(2**32-1):
+                return -1
+            return v
         (flags,
          pad1, pad2, pad3, pad4,            #@UnusedVariable
          min_width, min_height,
@@ -68,25 +85,25 @@ class WMSizeHints(object):
          min_aspect_num, min_aspect_denom,
          max_aspect_num, max_aspect_denom,
          base_width, base_height,
-         win_gravity) = struct.unpack("=" + "I" * 18, data) #@UnusedVariable
+         win_gravity) = [normint(x) for x in struct.unpack("=" + "I" * 18, data)] #@UnusedVariable
         # We only extract the pieces we care about:
-        if flags & constants["PMaxSize"]:
+        if flags & PMaxSize:
             self.max_size = (max_width, max_height)
         else:
             self.max_size = None
-        if flags & constants["PMinSize"]:
+        if flags & PMinSize:
             self.min_size = (min_width, min_height)
         else:
             self.min_size = None
-        if flags & constants["PBaseSize"]:
+        if flags & PBaseSize:
             self.base_size = (base_width, base_height)
         else:
             self.base_size = None
-        if flags & constants["PResizeInc"]:
+        if flags & PResizeInc:
             self.resize_inc = (width_inc, height_inc)
         else:
             self.resize_inc = None
-        if flags & constants["PAspect"]:
+        if flags & PAspect:
             self.min_aspect = min_aspect_num * 1.0 / min_aspect_denom
             self.min_aspect_ratio = (min_aspect_num, min_aspect_denom)
             self.max_aspect = max_aspect_num * 1.0 / max_aspect_denom
@@ -94,7 +111,7 @@ class WMSizeHints(object):
         else:
             self.min_aspect, self.max_aspect = (None, None)
             self.min_aspect_ratio, self.max_aspect_ratio = (None, None)
-        if flags & constants["PWinGravity"]:
+        if flags & PWinGravity:
             self.win_gravity = win_gravity
         else:
             self.win_gravity = -1
@@ -134,8 +151,8 @@ class WMHints(object):
          window_group) = struct.unpack("=" + "i" * 9, data)
         # NB the last field is missing from at least some ICCCM 2.0's (typo).
         # FIXME: extract icon stuff too
-        self.urgency = bool(flags & constants["XUrgencyHint"])
-        if flags & constants["WindowGroupHint"]:
+        self.urgency = bool(flags & XUrgencyHint)
+        if flags & WindowGroupHint:
             try:
                 pywin = get_pywindow(disp, window_group)
             except:
@@ -143,11 +160,11 @@ class WMHints(object):
             self.group_leader = (window_group, pywin)
         else:
             self.group_leader = None
-        if flags & constants["StateHint"]:
-            self.start_iconic = (initial_state == constants["IconicState"])
+        if flags & StateHint:
+            self.start_iconic = (initial_state == IconicState)
         else:
             self.start_iconic = None
-        if flags & constants["InputHint"]:
+        if flags & InputHint:
             self.input = _input
         else:
             self.input = None
