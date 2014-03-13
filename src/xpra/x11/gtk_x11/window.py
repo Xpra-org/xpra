@@ -1022,8 +1022,9 @@ class WindowModel(BaseWindowModel):
             maxw,maxh = maxs
             if maxw<minw or maxh<minh:
                 size_hints.min_size = min(minw, maxw), min(minh, maxh)
-                log.warn("invalid min_size=%s for max_size=%s has now been changed to: %s",
-                         mins, maxs, size_hints.min_size)
+                size_hints.max_size = max(minw, maxw), max(minh, maxh)
+                log.warn("invalid min_size=%s / max_size=%s changed to: %s / %s",
+                         mins, maxs, size_hints.min_size, size_hints.max_size)
 
     def _update_client_geometry(self):
         owner = self.get_property("owner")
@@ -1087,13 +1088,15 @@ class WindowModel(BaseWindowModel):
         if cow!=clw or coh!=clh:
             log("resize_corral_window() corral window (%sx%s) does not match client window (%sx%s), resizing it",
                      cow, coh, clw, clh)
-            self.corral_window.resize(clw, clh)
             hints = self.get_property("size-hints")
             self._sanitize_size_hints(hints)
             size = calc_constrained_size(clw, clh, hints)
             log("resize_corral_window() new constrained size=%s", size)
             w, h, wvis, hvis = size
             modded = False
+            if w!=cow or h!=coh:
+                self.corral_window.resize(w, h)
+                modded = True
             if self.get_property("actual-size")!=(w, h):
                 self._internal_set_property("actual-size", (w, h))
                 modded = True
