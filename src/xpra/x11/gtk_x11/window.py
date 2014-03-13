@@ -1065,19 +1065,26 @@ class WindowModel(BaseWindowModel):
 
     def do_xpra_configure_event(self, event):
         log("WindowModel.do_xpra_configure_event(%s)", event)
-        if not self._managed:
-            return
-        BaseWindowModel.do_xpra_configure_event(self, event)
-        if self.corral_window is None or not self.corral_window.is_visible():
-            return
-        if self.client_window is None or not self.client_window.is_visible():
-            return
-        try:
-            #workaround applications whose windows disappear from underneath us:
-            if trap.call_synced(self.resize_corral_window):
-                self.notify("geometry")
-        except XError, e:
-            log.warn("failed to resize corral window: %s", e)
+        def can_resize():
+            if not self._managed:
+                return False
+            if self.corral_window is None or not self.corral_window.is_visible():
+                return False
+            if self.client_window is None or not self.client_window.is_visible():
+                return False
+            return True
+        def may_resize():
+            if not can_resize():
+                return
+            try:
+                BaseWindowModel.do_xpra_configure_event(self, event)
+                #workaround applications whose windows disappear from underneath us:
+                if trap.call_synced(self.resize_corral_window):
+                    self.notify("geometry")
+            except XError, e:
+                log.warn("failed to resize corral window: %s", e)
+        if can_resize():
+            gobject.idle_add(may_resize)
 
     def resize_corral_window(self):
         #the client window may have been resized (generally programmatically)
