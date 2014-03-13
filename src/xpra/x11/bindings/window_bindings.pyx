@@ -312,10 +312,6 @@ class BadPropertyType(PropertyError):
     pass
 class PropertyOverflow(PropertyError):
     pass
-class NoSuchProperty(PropertyError):
-    pass
-
-
 
 
 from core_bindings cimport X11CoreBindings
@@ -734,7 +730,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         if status != Success:
             raise PropertyError("no such window")
         if xactual_type == XNone:
-            raise NoSuchProperty(property)
+            return None
         if xreq_type and xreq_type != xactual_type:
             raise BadPropertyType(xactual_type)
         # This should only occur for bad property types:

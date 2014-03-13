@@ -21,7 +21,6 @@ from xpra.x11.gtk_x11.gdk_bindings import (
 from xpra.x11.bindings.window_bindings import (
                 constants,                      #@UnresolvedImport
                 X11WindowBindings,          #@UnresolvedImport
-                NoSuchProperty,             #@UnresolvedImport
                 PropertyError)              #@UnresolvedImport
 X11Window = X11WindowBindings()
 
@@ -384,10 +383,10 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     (_, atom, _, _, _, _) = _prop_types[scalar_type]
     try:
         data = trap.call_synced(X11Window.XGetWindowProperty, get_xwindow(target), key, atom)
-    except NoSuchProperty:
-        if not ignore_errors:
-            log("Missing property %s (%s)", key, etype)
-        return None
+        if data is None:
+            if not ignore_errors:
+                log("Missing property %s (%s)", key, etype)
+            return None
     except XError:
         if raise_xerrors:
             raise
