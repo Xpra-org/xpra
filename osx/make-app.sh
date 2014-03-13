@@ -134,6 +134,14 @@ for x in "*.c" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
 	echo "removing $x:"
 	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm {} \; | sed "s+$LIBDIR/python/xpra/++g"
 done
+#only remove ".py" source if we have a binary ".pyc" for it:
+for x in `find $LIBDIR/python/xpra -name "*.py" -type f`; do
+	d="`dirname $x`"
+	f="`basename $x`"
+	if [ -r "$d/$fc" ]; then
+		rm "$x"
+	fi
+done
 
 
 echo
