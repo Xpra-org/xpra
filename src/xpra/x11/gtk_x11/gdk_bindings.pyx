@@ -448,26 +448,6 @@ cpdef get_pyatom(display_source, xatom):
     return str(PyGdkAtom_New(gdk_atom))
 
 
-
-# Property handling:
-
-# (Note: GDK actually has a wrapper for the Xlib property API,
-# gdk_property_{get,change,delete}.  However, the documentation for
-# gtk_property_get says "gtk_property_get() makes the situation worse...the
-# semantics should be considered undefined...You are advised to use
-# XGetWindowProperty() directly".  In light of this, we just ignore the GDK
-# property API and use the Xlib functions directly.)
-
-class PropertyError(Exception):
-    pass
-class BadPropertyType(PropertyError):
-    pass
-class PropertyOverflow(PropertyError):
-    pass
-class NoSuchProperty(PropertyError):
-    pass
-
-
 # Children listing
 cdef _query_tree(pywindow):
     cdef Window root = 0, parent = 0
