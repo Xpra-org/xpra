@@ -76,5 +76,10 @@ class GTK2WindowBacking(GTKWindowBacking):
         raw_data = pixbuf.get_pixels()
         rowstride = pixbuf.get_rowstride()
         img_data = self.process_delta(raw_data, width, height, rowstride, options)
-        self.do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+        n = pixbuf.get_n_channels()
+        if n==3:
+            self.do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+        else:
+            assert n==4, "invalid number of channels: %s" % n
+            self.do_paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
         return False
