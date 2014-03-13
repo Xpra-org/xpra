@@ -156,6 +156,7 @@ class SystemTray(gobject.GObject):
             SYSTEM_TRAY_CANCEL_MESSAGE = 2
             if opcode==SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
+                log("tray docking request from %#x", xid)
                 trap.call_synced(self.dock_tray, xid)
             elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]
@@ -174,6 +175,9 @@ class SystemTray(gobject.GObject):
     def dock_tray(self, xid):
         root = gtk.gdk.get_default_root_window()
         window = gtk.gdk.window_foreign_new(xid)
+        if window is None:
+            log.warn("could not find gdk window for tray window %#x", xid)
+            return
         w, h = window.get_geometry()[2:4]
         event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
         window.set_events(event_mask=event_mask)
