@@ -1057,7 +1057,9 @@ class WindowModel(BaseWindowModel):
         x, y = window_position_cb(w, h)
         log("_do_update_client_geometry: position=%s", (x,y))
         self.corral_window.move_resize(x, y, w, h)
-        trap.swallow_synced(X11Window.configureAndNotify, self.client_window.xid, 0, 0, w, h)
+        cww, cwh = self.client_window.get_geometry()[2:4]
+        if cww!=w or cwh!=h:
+            trap.swallow_synced(X11Window.configureAndNotify, self.client_window.xid, 0, 0, w, h)
         self._internal_set_property("actual-size", (w, h))
         self._internal_set_property("user-friendly-size", (wvis, hvis))
 
