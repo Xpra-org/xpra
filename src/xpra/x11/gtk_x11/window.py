@@ -1035,13 +1035,12 @@ class WindowModel(BaseWindowModel):
                 return  owner.window_position(self, w, h)
             self._do_update_client_geometry(window_size, window_position)
         elif not self._setup_done:
-            log("_update_client_geometry: using initial size=%s and position=%s",
-                self.get_property("requested-size"), self.get_property("requested-position"))
             #try to honour initial size and position requests during setup:
             def window_size():
                 return self.get_property("requested-size")
-            def window_position(w, h):
+            def window_position(w=0, h=0):
                 return self.get_property("requested-position")
+            log("_update_client_geometry: using initial size=%s and position=%s", window_size(), window_position())
             self._do_update_client_geometry(window_size, window_position)
 
     def _do_update_client_geometry(self, window_size_cb, window_position_cb):
