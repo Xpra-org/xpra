@@ -6,7 +6,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 5710)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -104,6 +104,12 @@
+@@ -109,6 +109,12 @@
      int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic)
      void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
  
@@ -17,5 +17,5 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 +    #AVCodecID CODEC_ID_VP9
 +
  
- MIN_AVCODEC_VERSION = 53
+ MIN_AVCODEC_VERSION = 54
  COLORSPACES = None
