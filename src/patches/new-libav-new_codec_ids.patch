@@ -4,21 +4,9 @@ Description: libav10 compatibility
 
 Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
---- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 5648)
+--- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 5710)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -85,11 +85,6 @@
-         int flags
-         int flags2
- 
--    AVPixelFormat PIX_FMT_NONE
--    AVCodecID CODEC_ID_H264
--    AVCodecID CODEC_ID_VP8
--    #AVCodecID CODEC_ID_VP9
--
-     #init and free:
-     void avcodec_register_all()
-     AVCodec *avcodec_find_decoder(AVCodecID id)
-@@ -109,7 +104,13 @@
+@@ -104,6 +104,12 @@
      int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic)
      void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
  
@@ -27,8 +15,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 +    AVCodecID CODEC_ID_H264
 +    AVCodecID CODEC_ID_VP8
 +    #AVCodecID CODEC_ID_VP9
- 
 +
- MIN_AVCODEC_VERSION = 54
+ 
+ MIN_AVCODEC_VERSION = 53
  COLORSPACES = None
- OUTPUT_COLORSPACES = None
