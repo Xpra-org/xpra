@@ -1021,9 +1021,9 @@ class WindowModel(BaseWindowModel):
             minw,minh = mins
             maxw,maxh = maxs
             if maxw<minw or maxh<minh:
-                size_hints.max_size = max(minw, maxw), max(minh, maxh)
-                log.warn("invalid max_size=%s for min_size=%s has now been changed to: %s",
-                         maxs, mins, size_hints.max_size)
+                size_hints.min_size = min(minw, maxw), min(minh, maxh)
+                log.warn("invalid min_size=%s for max_size=%s has now been changed to: %s",
+                         mins, maxs, size_hints.min_size)
 
     def _update_client_geometry(self):
         owner = self.get_property("owner")
