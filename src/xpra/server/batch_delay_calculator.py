@@ -69,7 +69,7 @@ def update_batch_delay(batch, factors):
     decay = max(1, logp(current_delay/batch.min_delay)/5.0)
     max_delay = batch.max_delay
     for delays in (batch.last_delays, batch.last_actual_delays):
-        if len(delays)>0:
+        if delays is not None and len(delays)>0:
             #get the weighted average
             #older values matter less, we decay them according to how much we batch already
             #(older values matter more when we batch a lot)
@@ -178,14 +178,15 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     packets_bl = 1.0 - logp(packets_backlog/low_limit)
     target = packets_bl
     batch_q = -1
-    recs = len(batch.last_actual_delays)
-    if recs>0:
-        #weighted average between start delay and min_delay
-        #so when we start and we don't have any records, we don't lower quality
-        #just because the start delay is higher than min_delay
-        ref_delay = (batch.START_DELAY*10.0/recs + batch.min_delay*recs) / (recs+10.0/recs)
-        batch_q = ref_delay / max(batch.min_delay, batch.delay)
-        target = min(1.0, target, batch_q)
+    if batch is not None:
+        recs = len(batch.last_actual_delays)
+        if recs>0:
+            #weighted average between start delay and min_delay
+            #so when we start and we don't have any records, we don't lower quality
+            #just because the start delay is higher than min_delay
+            ref_delay = (batch.START_DELAY*10.0/recs + batch.min_delay*recs) / (recs+10.0/recs)
+            batch_q = ref_delay / max(batch.min_delay, batch.delay)
+            target = min(1.0, target, batch_q)
     latency_q = -1
     if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
         latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
