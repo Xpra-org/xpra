@@ -356,7 +356,7 @@ class WindowSource(object):
             self.timeout_timer = None
 
 
-    def is_cancelled(self, sequence=0):
+    def is_cancelled(self, sequence=1):
         """ See cancel_damage(wid) """
         return self._damage_cancelled>=sequence
 
