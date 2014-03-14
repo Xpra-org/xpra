@@ -59,6 +59,7 @@ class DesktopManager(gtk.Widget):
         s = AdHocStruct()
         s.shown = False
         s.geom = [x, y, w, h]
+        s.resize_counter = 0
         self._models[model] = s
         model.connect("unmanaged", self._unmanaged)
         model.connect("ownership-election", self._elect_me)
@@ -70,6 +71,12 @@ class DesktopManager(gtk.Widget):
     def window_geometry(self, model):
         return self._models[model].geom
 
+    def get_resize_counter(self, window, inc=0):
+        model = self._models[window]
+        v = model.resize_counter+inc
+        model.resize_counter = v
+        return v
+
     def show_window(self, model):
         self._models[model].shown = True
         model.ownership_election()
@@ -79,13 +86,16 @@ class DesktopManager(gtk.Widget):
     def is_shown(self, model):
         return self._models[model].shown
 
-    def configure_window(self, win, x, y, w, h):
-        log("DesktopManager.configure_window(%s, %s, %s, %s, %s)", win, x, y, w, h)
+    def configure_window(self, win, x, y, w, h, resize_counter=0):
+        log("DesktopManager.configure_window(%s, %s, %s, %s, %s, %s)", win, x, y, w, h, resize_counter)
         model = self._models[win]
         if not self.visible(win):
             model.shown = True
             win.set_property("iconic", False)
             win.ownership_election()
+        if resize_counter>0 and resize_counter<model.resize_counter:
+            log("resize ignored: counter %s vs %s", resize_counter, model.resize_counter)
+            return
         new_geom = [x, y, w, h]
         if model.geom!=new_geom:
             model.geom = [x, y, w, h]
@@ -197,6 +207,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def make_hello(self):
         capabilities = X11ServerBase.make_hello(self)
         capabilities["window.raise"] = True
+        capabilities["window.resize-counter"] = True
         capabilities["pointer.grabs"] = True
         return capabilities
 
@@ -358,8 +369,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #unchanged
             return
         geom[2:4] = nw,nh
+        resize_counter = self._desktop_manager.get_resize_counter(window, 1)
         for ss in self._server_sources.values():
-            ss.resize_window(self._window_to_id[window], window, nw, nh)
+            ss.resize_window(self._window_to_id[window], window, nw, nh, resize_counter)
 
     def _add_new_or_window(self, raw_window):
         xid = raw_window.xid
@@ -598,6 +610,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
+        client_properties = {}
+        if len(packet)>=7:
+            client_properties = packet[6]
         window = self._id_to_window.get(wid)
         windowlog("client configured window %s - %s, at: %s", wid, window, (x, y, w, h))
         if not window:
@@ -611,9 +626,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
             assert not window.is_OR()
             owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
             windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-            self._desktop_manager.configure_window(window, x, y, w, h)
-        if len(packet)>=7:
-            self._set_client_properties(proto, wid, window, packet[6])
+            self._desktop_manager.configure_window(window, x, y, w, h, client_properties.get("resize_counter", 0))
+        if client_properties:
+            self._set_client_properties(proto, wid, window, client_properties)
         if window.is_tray() or (self._desktop_manager.visible(window) and (oww!=w or owh!=h)):
             self._damage(window, 0, 0, w, h)
 
@@ -629,6 +644,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._desktop_manager.configure_window(window, x, y, w, h)
 
     def _process_resize_window(self, proto, packet):
+        #Note: this code is no longer used, newer versions use configure-window
         wid, w, h = packet[1:4]
         window = self._id_to_window.get(wid)
         if not window:

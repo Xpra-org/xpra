@@ -750,6 +750,7 @@ class UIXpraClient(XpraClientBase):
             "xsettings-tuple"           : True,
             "generic_window_types"      : True,
             "server-window-resize"      : True,
+            "window.resize-counter"     : True,
             "notify-startup-complete"   : True,
             "generic-rgb-encodings"     : True,
             "encodings"                 : self.get_encodings(),
@@ -1550,10 +1551,13 @@ class UIXpraClient(XpraClientBase):
 
     def _process_window_resized(self, packet):
         (wid, w, h) = packet[1:4]
+        resize_counter = -1
+        if len(packet)>4:
+            resize_counter = packet[4]
         window = self._id_to_window.get(wid)
         windowlog("_process_window_resized resizing window %s (id=%s) to %s", window, wid, (w,h))
         if window:
-            window.resize(w, h)
+            window.resize(w, h, resize_counter)
 
     def _process_draw(self, packet):
         self._draw_queue.put(packet)

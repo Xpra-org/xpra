@@ -62,6 +62,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def init_window(self, metadata):
         self._fullscreen = None
         self._iconified = False
+        self._resize_counter = 0
         ClientWindowBase.init_window(self, metadata)
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
 
@@ -285,6 +286,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 workspace = self.get_current_workspace()
         if workspace>=0:
             props["workspace"] = workspace
+        if self._resize_counter>0:
+            props["resize_counter"] = self._resize_counter
         log("map-window for wid=%s with client props=%s", self._id, props)
         self.send("map-window", self._id, x, y, w, h, props)
         self._pos = (x, y)
@@ -317,6 +320,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     workspace = self.get_current_workspace()
                 if workspace>=0:
                     props["workspace"] = workspace
+            if self._resize_counter>0:
+                props["resize_counter"] = self._resize_counter
             log("sending configure-window with client props=%s", props)
             self.send("configure-window", self._id, x, y, w, h, props)
         if dx!=0 or dy!=0:
@@ -334,8 +339,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if not self._client.window_configure:
                 self.send("resize-window", self._id, w, h)
 
+    def resize(self, w, h, resize_counter=0):
+        log("resize(%s, %s, %s)", w, h, resize_counter)
+        self._resize_counter = resize_counter
+        gtk.Window.resize(self, w, h)
+
     def move_resize(self, x, y, w, h):
         assert self._override_redirect
+        log("move_resize%s", (x, y, w, h))
         w = max(1, w)
         h = max(1, h)
         self.window.move_resize(x, y, w, h)

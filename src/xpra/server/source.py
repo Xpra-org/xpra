@@ -296,6 +296,7 @@ class ServerSource(object):
         self.client_proxy = False
         self.auto_refresh_delay = 0
         self.server_window_resize = False
+        self.server_resize_counter = False
         self.send_cursors = False
         self.send_bell = False
         self.send_notifications = False
@@ -502,6 +503,7 @@ class ServerSource(object):
         self.window_raise = c.boolget("window.raise")
         self.pointer_grabs = c.boolget("pointer.grabs")
         self.server_window_resize = c.boolget("server-window-resize")
+        self.server_resize_counter = c.boolget("window.resize-counter")
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.send_bell = c.boolget("bell")
         self.send_notifications = c.boolget("notifications")
@@ -1319,7 +1321,7 @@ class ServerSource(object):
             return
         self.send("lost-window", wid)
 
-    def resize_window(self, wid, window, ww, wh):
+    def resize_window(self, wid, window, ww, wh, resize_counter):
         """
         The server detected that the application window has been resized,
         we forward it if the client supports this type of event.
@@ -1327,7 +1329,10 @@ class ServerSource(object):
         if not self.can_send_window(window):
             return
         if self.server_window_resize:
-            self.send("window-resized", wid, ww, wh)
+            packet = ["window-resized", wid, ww, wh]
+            if self.server_resize_counter:
+                packet.append(resize_counter)
+            self.send(*packet)
 
     def cancel_damage(self, wid, window):
         """
