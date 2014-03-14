@@ -373,7 +373,11 @@ class ApplicationWindow:
 
     def reset_client(self):
         #lose current client class and make a new one:
+        if self.client:
+            self.client.cleanup()
+            self.client = None
         self.client = make_client(Exception, self.config)
+        self.client.init(self.config)
 
 
     def handle_exception(self, e):
@@ -477,7 +481,6 @@ class ApplicationWindow:
     def do_start_XpraClient(self, conn):
         log("start_XpraClient() client=%s", self.client)
         self.client.setup_connection(conn)
-        self.client.init(self.config)
         self.client.init_ui(self.config)
         log("start_XpraClient() client initialized")
 
@@ -497,6 +500,7 @@ class ApplicationWindow:
             if self.exit_code == None:
                 self.exit_code = exit_code
             self.client.cleanup()
+            self.client = None
             password_warning = warning.find("invalid password")>=0
             if password_warning:
                 self.password_warning()
@@ -702,5 +706,7 @@ def main():
 
 
 if __name__ == "__main__":
+    from xpra.platform import init
+    init()
     v = main()
     sys.exit(v)
