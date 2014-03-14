@@ -191,7 +191,6 @@ class WindowSource(object):
         self.full_frames_only = False
         self.supports_delta = []
         self.last_pixmap_data = None
-        self.batch_config = None
         self.suspended = False
         #
         self.auto_refresh_delay = 0
