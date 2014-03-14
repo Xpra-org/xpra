@@ -8,9 +8,6 @@ import os as os
 import sys as sys
 
 
-__all__ = ["init", "set_prgname", "set_application_name"]
-
-
 _init_done = False
 def init(prgname=None, appname=None):
     """ do whatever is needed to prepare an application for running,
@@ -44,6 +41,10 @@ def do_set_prgname(name):
     except:
         pass
 
+def get_prgname():
+    global _prg_name
+    return _prg_name
+
 
 #platforms can override this
 _application_name = None
@@ -59,6 +60,11 @@ def do_set_application_name(name):
         glib.set_application_name(name)
     except:
         pass
+
+def get_application_name():
+    global _application_name
+    return _application_name
+
 
 
 def platform_import(where, pm, required, *imports):
