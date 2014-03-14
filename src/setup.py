@@ -858,19 +858,19 @@ if WIN32:
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
     setup_options["windows"] = [
-                    {'script': 'win32/xpra.py',                         'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
+                    {'script': 'scripts/xpra',                          'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
+                    {'script': 'scripts/xpra_launcher',                 'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
                     {'script': 'xpra/gtk_common/gtk_view_keyboard.py',  'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
                     {'script': 'xpra/gtk_common/gtk_view_clipboard.py', 'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
-                    {'script': 'xpra/client/gtk2/client_launcher.py',   'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
               ]
     #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
     console = [
                     {'script': 'win32/xpra_cmd.py',                     'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
+                    {'script': 'win32/python_execfile.py',              'icon_resources': [(1, "win32/python.ico")],    "dest_base": "Python_execfile",},
                     {'script': 'xpra/codecs/loader.py',                 'icon_resources': [(1, "win32/encoding.ico")],  "dest_base": "Encoding_info",},
                     {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},
                     {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
                     {'script': 'xpra/sound/sink.py',                    'icon_resources': [(1, "win32/speaker.ico")],   "dest_base": "Sound_Play",},
-                    {'script': 'win32/python_execfile.py',              'icon_resources': [(1, "win32/python.ico")],    "dest_base": "Python_execfile",},
               ]
     if opengl_ENABLED:
         console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})

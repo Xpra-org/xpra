@@ -61,12 +61,7 @@ if supports_server:
 
 
 def main(script_file, cmdline):
-    platform_init()
-    try:
-        import glib
-        glib.set_prgname("Xpra")
-    except:
-        pass
+    platform_init("Xpra")
     parser, options, args = parse_cmdline(cmdline)
     if not args:
         parser.error("need a mode")
@@ -1195,8 +1190,6 @@ def run_list(parser, opts, extra_args):
 
 
 if __name__ == "__main__":
-    from xpra.platform import init
-    init()
     code = main("xpra.exe", sys.argv)
     if not code:
         code = 0

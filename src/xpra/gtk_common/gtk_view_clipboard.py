@@ -223,14 +223,7 @@ class ClipboardStateInfoWindow(object):
 
 
 def main():
-    from xpra.os_util import set_application_name, set_prgname
-    set_prgname("Clipboard Test Tool")
-    set_application_name("Clipboard Test Tool")
-    if sys.platform.startswith("win"):
-        from xpra.platform.win32 import set_redirect_output, set_log_filename
-        set_redirect_output(True)
-        set_log_filename("Clipboard_Test.log")
-    init()
+    init("Clipboard-Test", "Clipboard Test Tool")
     ClipboardStateInfoWindow()
     gtk.main()
 

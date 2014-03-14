@@ -13,9 +13,8 @@ from xpra.scripts.config import make_defaults_struct
 from xpra.platform.shadow_server import ShadowServer
 
 def main():
-    from xpra.os_util import set_application_name, set_prgname
-    set_prgname("OSX Shadow Test")
-    set_application_name("OSX Shadow Test")
+    from xpra.platform import init
+    init("OSX-Shadow-Test", "OSX Shadow Test")
 
     defaults = make_defaults_struct()
     for x in ("daemon", "clipboard", "mmap", "speaker", "microphone",

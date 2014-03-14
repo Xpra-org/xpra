@@ -89,9 +89,3 @@ class SimpleClient(object):
     def get_packet(self, *args):
         log.info("get_packet(%s)", args)
         return None
-
-
-def init_main(prgname):
-    from xpra.os_util import set_application_name, set_prgname
-    set_prgname(prgname)
-    set_application_name(prgname)

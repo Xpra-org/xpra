@@ -24,7 +24,8 @@ from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
-from xpra.os_util import set_application_name, load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
+from xpra.platform import set_application_name
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info, get_platform_info
 from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps, repr_ellipsized
 from xpra.server.background_worker import stop_worker
@@ -137,7 +138,7 @@ class ServerCore(object):
     def init(self, opts):
         log("ServerCore.init(%s)", opts)
         self.session_name = opts.session_name
-        set_application_name(self.session_name)
+        set_application_name(self.session_name or "Xpra")
 
         self._tcp_proxy = opts.tcp_proxy
         self.encryption_keyfile = opts.encryption_keyfile

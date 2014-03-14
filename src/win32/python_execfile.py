@@ -10,13 +10,8 @@ import os.path
 import sys
 from xpra.platform.win32 import set_redirect_output
 set_redirect_output(False)
-
-try:
-    import win32api                     #@UnresolvedImport
-    win32api.SetConsoleTitle("Python")
-except:
-    pass
-
+from xpra.platform import init
+init("Xpra-Python-Exec")
 
 if len(sys.argv)<2:
     print("you must specify a python script file to run!")

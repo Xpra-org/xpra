@@ -4,7 +4,6 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 import gobject
-import sys
 
 from xpra.platform import init
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
@@ -40,14 +39,7 @@ class FakeRemoteClipboard(object):
 
 
 def main():
-	from xpra.os_util import set_application_name, set_prgname
-	set_prgname("Primary Clipboard Test Tool")
-	set_application_name("Primary Clipboard Test Tool")
-	if sys.platform.startswith("win"):
-		from xpra.platform.win32 import set_redirect_output, set_log_filename
-		set_redirect_output(True)
-		set_log_filename("Primary_Clipboard_Test.log")
-	init()
+	init("Clipboard-Test", "Primary Clipboard Test Tool")
 
 	frc = FakeRemoteClipboard()
 	gobject.timeout_add(1000, frc.fake_token)

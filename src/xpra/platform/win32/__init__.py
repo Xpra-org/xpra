@@ -9,14 +9,20 @@
 import os.path
 import sys
 
-LOG_FILENAME = "Xpra.log"
 REDIRECT_OUTPUT = True
 def set_redirect_output(on):
     global REDIRECT_OUTPUT
     REDIRECT_OUTPUT = on
-def set_log_filename(filename):
-    global LOG_FILENAME
-    LOG_FILENAME = filename
+
+def set_prgname(name):
+    try:
+        import win32api                     #@UnresolvedImport
+        win32api.SetConsoleTitle("Xpra")
+        import glib
+        glib.set_prgname(name)
+    except:
+        pass
+
 
 def fix_unicode_out():
     #code found here:
@@ -177,7 +183,8 @@ def do_init():
     if not REDIRECT_OUTPUT:
         fix_unicode_out()
         return
-    global LOG_FILENAME
+    from xpra.platform import get_prgname
+    LOG_FILENAME = get_prgname()+".log"
     from paths import _get_data_dir
     d = _get_data_dir()
     log_file = os.path.join(d, LOG_FILENAME)

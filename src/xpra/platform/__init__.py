@@ -8,15 +8,57 @@ import os as os
 import sys as sys
 
 
+__all__ = ["init", "set_prgname", "set_application_name"]
+
+
 _init_done = False
-def init():
+def init(prgname=None, appname=None):
+    """ do whatever is needed to prepare an application for running,
+        some platforms may initialize logging to file, etc
+    """
     global _init_done
     if not _init_done:
         _init_done = True
+        if prgname:
+            set_prgname(prgname)
+        if appname:
+            set_application_name(appname)
         do_init()
 
+#platforms can override this
 def do_init():
     pass
+
+#platforms can override this
+_prg_name = None
+def set_prgname(name):
+    global _prg_name
+    if _prg_name is None:
+        _prg_name = name
+        do_set_prgname(name)
+
+def do_set_prgname(name):
+    try:
+        import glib
+        glib.set_prgname(name)
+    except:
+        pass
+
+
+#platforms can override this
+_application_name = None
+def set_application_name(name):
+    global _application_name
+    if _application_name is None:
+        _application_name = name
+        do_set_application_name(name)
+
+def do_set_application_name(name):
+    try:
+        import glib
+        glib.set_application_name(name)
+    except:
+        pass
 
 
 def platform_import(where, pm, required, *imports):
@@ -49,3 +91,5 @@ def platform_import(where, pm, required, *imports):
         where[x] = v
 
 platform_import(globals(), None, True, "do_init")
+platform_import(globals(), None, False, "do_set_prgname")
+platform_import(globals(), None, False, "do_set_application_name")

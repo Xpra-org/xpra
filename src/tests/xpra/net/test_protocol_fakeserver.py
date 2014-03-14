@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 
 
-from tests.xpra.net.test_protocol_base import SimpleServer, init_main
+from xpra.platform import init
+from tests.xpra.net.test_protocol_base import SimpleServer
 import gobject
 import os.path
 import socket
@@ -32,7 +33,7 @@ if PLATFORM_GUI_INIT:
 
 
 def main():
-    init_main("Shadow Protocol Test Tool")
+    init("Fake-Server-Test", "Xpra Fake Server Test Tool")
     if GTK:
         import gtk
         loop_exit = gtk.main_quit

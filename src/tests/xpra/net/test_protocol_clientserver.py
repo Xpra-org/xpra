@@ -5,11 +5,12 @@
 # later version. See the file COPYING for details.
 
 
-from tests.xpra.net.test_protocol_base import SimpleClient, SimpleServer, init_main
+from xpra.platform import init
+from tests.xpra.net.test_protocol_base import SimpleClient, SimpleServer
 import gobject
 
 def main():
-    init_main("Network Protocol Test Tool")
+    init("Network-Test", "Xpra Network Protocol Test Tool")
     mainloop = gobject.MainLoop()
     ss = SimpleServer()
     ss.init(mainloop.quit)

@@ -24,6 +24,7 @@ from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
+from xpra.platform import set_application_name
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW
@@ -31,7 +32,7 @@ from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_DECODER_OPTIONS, 
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import set_application_name, thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid
+from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid
 from xpra.util import nn, nonl, std, AtomicInteger, log_screen_sizes
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -981,7 +982,7 @@ class UIXpraClient(XpraClientBase):
             return
         if not self.session_name:
             self.session_name = c.strget("session_name", "")
-        set_application_name(self.session_name)
+        set_application_name(self.session_name or "Xpra")
         self.window_configure = c.boolget("window_configure")
         self.window_unmap = c.boolget("window_unmap")
         self.suspend_resume = c.boolget("suspend-resume")
