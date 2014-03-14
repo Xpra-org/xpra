@@ -356,7 +356,7 @@ class WindowSource(object):
             self.timeout_timer = None
 
 
-    def is_cancelled(self, sequence):
+    def is_cancelled(self, sequence=0):
         """ See cancel_damage(wid) """
         return self._damage_cancelled>=sequence
 
@@ -684,8 +684,9 @@ class WindowSource(object):
         self.cancel_timeout_timer()
         self.cancel_soft_timer()
         delayed = self._damage_delayed
-        self._damage_delayed = None
-        self.send_delayed_regions(*delayed)
+        if delayed:
+            self._damage_delayed = None
+            self.send_delayed_regions(*delayed)
         return False
 
     def send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, get_region_encoding=None):
@@ -694,6 +695,8 @@ class WindowSource(object):
             so figure out if we want to send them all or if we
             just send one full window update instead.
         """
+        if self.is_cancelled():
+            return
         ww,wh = window.get_dimensions()
         if get_region_encoding is None:
             get_region_encoding = self.get_best_encoding

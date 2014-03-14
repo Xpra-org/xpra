@@ -418,6 +418,8 @@ class WindowVideoSource(WindowSource):
         #so we can ensure we don't use the video encoder when we don't want to:
         def get_non_video_encoding(batching, window, pixel_count, ww, wh, current_encoding):
             def get_fallback():
+                if len(self.non_video_encodings)==0:
+                    return None
                 return self.non_video_encodings[0]
             if window.has_alpha() and self.supports_transparency:
                 return self.get_transparent_encoding(current_encoding) or get_fallback()
@@ -430,6 +432,8 @@ class WindowVideoSource(WindowSource):
                 return self.pick_encoding(["jpeg"]) or get_fallback()
             return get_fallback()
 
+        if self.is_cancelled():
+            return
 
         if window.is_tray():
             sublog("tray - don't use video region!")
