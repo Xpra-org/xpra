@@ -1077,9 +1077,10 @@ class WindowModel(BaseWindowModel):
             if not can_resize():
                 return
             try:
-                BaseWindowModel.do_xpra_configure_event(self, event)
+                oldgeom = self._geometry
+                self._geometry = (event.x, event.y, event.width, event.height, event.border_width)
                 #workaround applications whose windows disappear from underneath us:
-                if trap.call_synced(self.resize_corral_window):
+                if trap.call_synced(self.resize_corral_window) or oldgeom!=self._geometry:
                     self.notify("geometry")
             except XError, e:
                 log.warn("failed to resize corral window: %s", e)
