@@ -382,7 +382,7 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
         scalar_type = etype
     (_, atom, _, _, _, _) = _prop_types[scalar_type]
     try:
-        data = trap.call_synced(X11Window.XGetWindowProperty, get_xwindow(target), key, atom)
+        data = trap.call_synced(X11Window.XGetWindowProperty, get_xwindow(target), key, atom, etype)
         if data is None:
             if not ignore_errors:
                 log("Missing property %s (%s)", key, etype)

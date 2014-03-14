@@ -52,6 +52,7 @@ cdef extern from "X11/Xlib.h":
     ctypedef CARD32 Time
 
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
+    char *XGetAtomName(Display *display, Atom atom)
 
     Window XDefaultRootWindow(Display * display)
 
@@ -378,6 +379,10 @@ cdef class X11WindowBindings(X11CoreBindings):
         string = str_or_int
         return XInternAtom(self.display, string, False)
 
+    cpdef XGetAtomName(self, Atom atom):
+        v = XGetAtomName(self.display, atom)
+        return v[:]
+
     cpdef MapRaised(self, Window xwindow):
         XMapRaised(self.display, xwindow)
 
@@ -702,12 +707,13 @@ cdef class X11WindowBindings(X11CoreBindings):
         self.addXSelectInput(xwindow, FocusChangeMask)
 
 
-    cpdef XGetWindowProperty(self, Window xwindow, property, req_type):
+    cpdef XGetWindowProperty(self, Window xwindow, property, req_type, etype=None):
         # NB: Accepts req_type == 0 for AnyPropertyType
         # "64k is enough for anybody"
-        # (Except, I've found window icons that are strictly larger, hence the
-        # added * 5...)
-        cdef int buffer_size = 64 * 1024 * 5
+        # (Except, I've found window icons that are strictly larger)
+        cdef int buffer_size = 64 * 1024
+        if etype=="icon":
+            buffer_size = 4 * 1024 * 1024
         cdef Atom xactual_type = <Atom> 0
         cdef int actual_format = 0
         cdef unsigned long nitems = 0, bytes_after = 0
@@ -732,9 +738,11 @@ cdef class X11WindowBindings(X11CoreBindings):
         if xactual_type == XNone:
             return None
         if xreq_type and xreq_type != xactual_type:
-            raise BadPropertyType(xactual_type)
+            raise BadPropertyType("expected %s but got %s" % (req_type, self.XGetAtomName(xactual_type)))
         # This should only occur for bad property types:
         assert not (bytes_after and not nitems)
+        if bytes_after:
+            raise PropertyOverflow("reserved %s bytes for %s buffer, but data is bigger by %s bytes!" % (buffer_size, etype, bytes_after))
         # actual_format is in (8, 16, 32), and is the number of bits in a logical
         # element.  However, this doesn't mean that each element is stored in that
         # many bits, oh no.  On a 32-bit machine it is, but on a 64-bit machine,
@@ -750,8 +758,6 @@ cdef class X11WindowBindings(X11CoreBindings):
         else:
             assert False
         cdef int nbytes = bytes_per_item * nitems
-        if bytes_after:
-            raise PropertyOverflow(nbytes + bytes_after)
         data = (<char *> prop)[:nbytes]
         XFree(prop)
         if actual_format == 32:
