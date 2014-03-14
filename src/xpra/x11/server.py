@@ -79,14 +79,17 @@ class DesktopManager(gtk.Widget):
     def is_shown(self, model):
         return self._models[model].shown
 
-    def configure_window(self, model, x, y, w, h):
-        log("DesktopManager.configure_window(%s, %s, %s, %s, %s)", model, x, y, w, h)
-        if not self.visible(model):
-            self._models[model].shown = True
-            model.set_property("iconic", False)
-            model.ownership_election()
-        self._models[model].geom = [x, y, w, h]
-        model.maybe_recalculate_geometry_for(self)
+    def configure_window(self, win, x, y, w, h):
+        log("DesktopManager.configure_window(%s, %s, %s, %s, %s)", win, x, y, w, h)
+        model = self._models[win]
+        if not self.visible(win):
+            model.shown = True
+            win.set_property("iconic", False)
+            win.ownership_election()
+        new_geom = [x, y, w, h]
+        if model.geom!=new_geom:
+            model.geom = [x, y, w, h]
+            win.maybe_recalculate_geometry_for(self)
 
     def hide_window(self, model):
         if not model.get_property("iconic"):
