@@ -553,7 +553,7 @@ def get_xorg_conf_and_script():
             print("Xorg version could not be detected, Xdummy support unavailable")
             return Xvfb()
         if xorg_version<[1, 12]:
-            print("Xorg version %s is too old (1.12 or later required), Xdummy support not available" % (".".join(xorg_version)))
+            print("Xorg version %s is too old (1.12 or later required), Xdummy support not available" % v_str)
             return Xvfb()
         print("found valid recent version of Xorg server: %s" % v_str)
         return Xorg_suid_check()
