@@ -865,7 +865,7 @@ if WIN32:
               ]
     #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
     console = [
-                    {'script': 'win32/xpra_cmd.py',                     'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
+                    {'script': 'scripts/xpra',                          'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
                     {'script': 'win32/python_execfile.py',              'icon_resources': [(1, "win32/python.ico")],    "dest_base": "Python_execfile",},
                     {'script': 'xpra/codecs/loader.py',                 'icon_resources': [(1, "win32/encoding.ico")],  "dest_base": "Encoding_info",},
                     {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},

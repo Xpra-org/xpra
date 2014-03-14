@@ -9,10 +9,9 @@
 import os.path
 import sys
 
-REDIRECT_OUTPUT = True
-def set_redirect_output(on):
-    global REDIRECT_OUTPUT
-    REDIRECT_OUTPUT = on
+#redirect output if we are launched from py2exe's gui mode:
+REDIRECT_OUTPUT = hasattr(sys, "frozen") and sys.frozen=="windows_exe"
+
 
 def set_prgname(name):
     try:
