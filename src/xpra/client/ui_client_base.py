@@ -313,7 +313,7 @@ class UIXpraClient(XpraClientBase):
         for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
                 continue
-            log("UIXpraClient.cleanup() calling %s.cleanup() : %s", type(x))
+            log("UIXpraClient.cleanup() calling %s.cleanup()", type(x))
             try:
                 x.cleanup()
             except:
