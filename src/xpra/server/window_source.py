@@ -270,7 +270,6 @@ class WindowSource(object):
         elif encoding not in self.core_encodings:
             log("not setting encoding to %s for window source %s as the client only supports: %s", encoding, self.wid, self.core_encodings)
         else:
-            assert encoding in self.common_encodings
             self.update_encoding_selection(encoding)
 
     def _scaling_changed(self, window, *args):
