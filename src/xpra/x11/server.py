@@ -351,6 +351,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         nw,nh = window.get_property("actual-size")
         geom = self._desktop_manager.window_geometry(window)
         windowlog("XpraServer._window_resized_signaled(%s,%s) actual-size=%sx%s, current geometry=%s", window, args, nw, nh, geom)
+        if geom[2:4]==[nw, nh]:
+            #unchanged
+            return
         geom[2:4] = nw,nh
         for ss in self._server_sources.values():
             ss.resize_window(self._window_to_id[window], window, nw, nh)
