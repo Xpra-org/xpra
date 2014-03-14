@@ -27,7 +27,7 @@ rm -fr "$PYTHON_PACKAGES/xpra"
 
 echo
 echo "*******************************************************************************"
-echo "Building and installing"
+echo "Building and installing locally"
 pushd ../src
 
 svn upgrade ../.. >& /dev/null
@@ -121,9 +121,6 @@ cp ./Helpers/Xpra_Launcher ${MACOS_DIR}
 # Add the icon:
 cp ./*.icns ${RSCDIR}/
 
-# Add Xpra share (for icons)
-rsync -rplog $XDG_DATA_DIRS/xpra/* ${RSCDIR}/share/xpra/
-
 echo
 echo "*******************************************************************************"
 echo "include all xpra modules found: "
@@ -132,7 +129,7 @@ rsync -rpl $PYTHON_PACKAGES/xpra/* $LIBDIR/python/xpra/
 echo "removing files that should not be installed in the first place (..)"
 for x in "*.c" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
 	echo "removing $x:"
-	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm {} \; | sed "s+$LIBDIR/python/xpra/++g"
+	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm {} \; | sed "s+$LIBDIR/python/xpra/++g" | xargs -L 1 echo "* "
 done
 #only remove ".py" source if we have a binary ".pyc" for it:
 for x in `find $LIBDIR/python/xpra -name "*.py" -type f`; do

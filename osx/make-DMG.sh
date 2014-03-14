@@ -32,6 +32,7 @@ echo "Creating compressed DMG"
 hdiutil convert image/Blank.dmg -format UDBZ -o image/$DMG_NAME
 echo "Copying to the desktop"
 cp image/$DMG_NAME ~/Desktop/
+echo "Size of disk image: `du -sh image/$DMG_NAME`"
 
 echo "Done"
 echo "*******************************************************************************"
