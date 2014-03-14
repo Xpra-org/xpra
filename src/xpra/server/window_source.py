@@ -760,7 +760,6 @@ class WindowSource(object):
         #we're processing a number of regions with a non video encoding:
         for region in regions:
             actual_encoding = get_region_encoding(True, window, region.width*region.height, ww, wh, coding)
-            assert actual_encoding is not None, "failed to get an encoding for: %s" % ((True, window, pixel_count, ww, wh, coding))
             self.process_damage_region(damage_time, window, region.x, region.y, region.width, region.height, actual_encoding, options)
 
 
@@ -850,7 +849,6 @@ class WindowSource(object):
             we extract the rgb data from the pixmap and place it on the damage queue.
             This runs in the UI thread.
         """
-        assert coding is not None
         if w==0 or h==0:
             return
         if not window.is_managed():
@@ -864,6 +862,8 @@ class WindowSource(object):
         if self.is_cancelled(sequence):
             log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
+
+        assert coding is not None
         rgb_request_time = time.time()
         image = window.get_image(x, y, w, h, logger=log)
         if image is None:
