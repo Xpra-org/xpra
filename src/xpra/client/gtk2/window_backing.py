@@ -27,6 +27,7 @@ except:
     log.warn("argb module is missing, cannot support alpha channels")
     unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer  = None, None, None
     HAS_ALPHA = False
+USE_PIL = os.environ.get("XPRA_USE_PIL", "1")=="1"
 
 
 """
@@ -56,8 +57,7 @@ class GTK2WindowBacking(GTKWindowBacking):
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        use_PIL = has_codec("PIL") and os.environ.get("XPRA_USE_PIL", "1")=="1"
-        if use_PIL:
+        if USE_PIL and has_codec("PIL"):
             return GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
         #gdk needs UI thread:
         gobject.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
