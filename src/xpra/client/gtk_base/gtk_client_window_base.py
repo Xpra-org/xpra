@@ -263,12 +263,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def do_map_event(self, event):
         log("%s.do_map_event(%s) OR=%s", self, event, self._override_redirect)
         gtk.Window.do_map_event(self, event)
-        self._been_mapped = True
         xid = self._metadata.get("xid")
         if xid:
             self.set_xid(xid)
         if not self._override_redirect:
             self.process_map_event()
+        self._been_mapped = True
 
     def process_map_event(self):
         x, y, w, h = self.get_window_geometry()
