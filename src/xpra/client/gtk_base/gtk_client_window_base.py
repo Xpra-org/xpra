@@ -28,6 +28,7 @@ if os.name=="posix":
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
         from xpra.x11.gtk_x11.error import trap
+        X11Window = X11WindowBindings()
         HAS_X11_BINDINGS = True
 
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]
@@ -61,8 +62,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def init_window(self, metadata):
         self._fullscreen = None
         self._iconified = False
-        self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         ClientWindowBase.init_window(self, metadata)
+        self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
 
     def setup_window(self):
         ClientWindowBase.setup_window(self)
@@ -175,7 +176,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         def send():
             root_xid = root.xid
             xwin = self.gdk_window().xid
-            X11WindowBindings.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_DESKTOP",
+            X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_DESKTOP",
                   workspace, CurrentTime, 0, 0, 0)
         trap.call_synced(send)
         return workspace
