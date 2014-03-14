@@ -158,7 +158,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def property_changed(self, widget, event):
-        log("%s.property_changed(%s, %s) : %s", self, widget, event.atom)
+        log("%s.property_changed(%s, %s) : %s", self, widget, event, event.atom)
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
             #fake a configure event to send the new client_properties with
             #the updated workspace number:
