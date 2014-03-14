@@ -273,21 +273,24 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def process_map_event(self):
         x, y, w, h = self.get_window_geometry()
+        props = self._client_properties
+        self._client_properties = {}
         if not self._been_mapped:
             workspace = self.set_workspace()
         else:
             #window has been mapped, so these attributes can be read (if present):
-            self._client_properties["screen"] = self.get_screen().get_number()
+            props["screen"] = self.get_screen().get_number()
             workspace = self.get_window_workspace()
             if workspace<0:
                 workspace = self.get_current_workspace()
         if workspace>=0:
-            self._client_properties["workspace"] = workspace
-        log("map-window for wid=%s with client props=%s", self._id, self._client_properties)
-        self.send("map-window", self._id, x, y, w, h, self._client_properties)
+            props["workspace"] = workspace
+        log("map-window for wid=%s with client props=%s", self._id, props)
+        self.send("map-window", self._id, x, y, w, h, props)
         self._pos = (x, y)
         self._size = (w, h)
         self.idle_add(self._focus_change, "initial")
+
 
     def do_configure_event(self, event):
         log("%s.do_configure_event(%s)", self, event)
@@ -304,16 +307,18 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._pos = (x, y)
         if self._client.window_configure:
             #if we support configure-window, send that first
+            props = self._client_properties
+            self._client_properties = {}
             if self._been_mapped:
                 #if the window has been mapped already, the workspace should be set:
-                self._client_properties["screen"] = self.get_screen().get_number()
+                props["screen"] = self.get_screen().get_number()
                 workspace = self.get_window_workspace()
                 if workspace<0:
                     workspace = self.get_current_workspace()
                 if workspace>=0:
-                    self._client_properties["workspace"] = workspace
-            log("%s sending configure-window with client props=%s", self, self._client_properties)
-            self.send("configure-window", self._id, x, y, w, h, self._client_properties)
+                    props["workspace"] = workspace
+            log("sending configure-window with client props=%s", props)
+            self.send("configure-window", self._id, x, y, w, h, props)
         if dx!=0 or dy!=0:
             #window has moved
             if not self._client.window_configure:
