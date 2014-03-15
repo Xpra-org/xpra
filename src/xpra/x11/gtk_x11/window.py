@@ -1069,27 +1069,20 @@ class WindowModel(BaseWindowModel):
         if event.window!=self.client_window:
             #we only care about events on the client window
             return
-        def can_resize():
-            if not self._managed:
-                return False
-            if self.corral_window is None or not self.corral_window.is_visible():
-                return False
-            if self.client_window is None or not self.client_window.is_visible():
-                return False
-            return True
-        def may_resize():
-            if not can_resize():
-                return
-            try:
-                oldgeom = self._geometry
-                self._geometry = (event.x, event.y, event.width, event.height, event.border_width)
-                #workaround applications whose windows disappear from underneath us:
-                if trap.call_synced(self.resize_corral_window) or oldgeom!=self._geometry:
-                    self.notify("geometry")
-            except XError, e:
-                log.warn("failed to resize corral window: %s", e)
-        if can_resize():
-            gobject.idle_add(may_resize)
+        if not self._managed:
+            return
+        if self.corral_window is None or not self.corral_window.is_visible():
+            return
+        if self.client_window is None or not self.client_window.is_visible():
+            return
+        try:
+            oldgeom = self._geometry
+            self._geometry = (event.x, event.y, event.width, event.height, event.border_width)
+            #workaround applications whose windows disappear from underneath us:
+            if trap.call_synced(self.resize_corral_window) or oldgeom!=self._geometry:
+                self.notify("geometry")
+        except XError, e:
+            log.warn("failed to resize corral window: %s", e)
 
     def resize_corral_window(self):
         #the client window may have been resized (generally programmatically)
