@@ -391,7 +391,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     _property_handlers = {}
 
     def _handle_property_change(self, name):
-        log("Property changed on %s: %s", self.client_window.xid, name)
+        log("Property changed on %#x: %s", self.client_window.xid, name)
         if name in PROPERTIES_IGNORED:
             return
         self._call_property_handler(name)
@@ -818,7 +818,7 @@ class WindowModel(BaseWindowModel):
                                             window_type=gtk.gdk.WINDOW_CHILD,
                                             wclass=gtk.gdk.INPUT_OUTPUT,
                                             event_mask=gtk.gdk.PROPERTY_CHANGE_MASK,
-                                            title = "CorralWindow-0x%s" % self.client_window.xid)
+                                            title = "CorralWindow-%#x" % self.client_window.xid)
         log("setup() corral_window=%s", self.corral_window)
         X11Window.substructureRedirect(self.corral_window.xid)
         add_event_receiver(self.corral_window, self)
@@ -1182,7 +1182,7 @@ class WindowModel(BaseWindowModel):
     _property_handlers["_NET_WM_STRUT_PARTIAL"] = _handle_wm_strut
 
     def _handle_net_wm_icon(self):
-        log("_NET_WM_ICON changed on %s, re-reading", self.client_window.xid)
+        log("_NET_WM_ICON changed on %#x, re-reading", self.client_window.xid)
         surf = self.prop_get("_NET_WM_ICON", "icon")
         if surf is not None:
             # FIXME: There is no Pixmap.new_for_display(), so this isn't
