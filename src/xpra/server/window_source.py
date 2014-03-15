@@ -286,7 +286,6 @@ class WindowSource(object):
         self.reconfigure(False)
 
     def set_client_properties(self, properties):
-        log("set_client_properties(%s)", properties)
         self.maximized = properties.boolget("maximized", False)
         self.client_refresh_encodings = properties.strlistget("encoding.auto_refresh_encodings", self.client_refresh_encodings)
         self.full_frames_only = properties.boolget("encoding.full_frames_only", self.full_frames_only)
@@ -298,7 +297,6 @@ class WindowSource(object):
             #remove rgb formats with alpha
             rgb_formats = [x for x in rgb_formats if x.find("A")<0]
         self.rgb_formats = rgb_formats
-        log("set_client_properties: window rgb_formats=%s", self.rgb_formats)
         self.update_encoding_selection(self.encoding)
 
 

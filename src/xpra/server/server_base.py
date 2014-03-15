@@ -1247,7 +1247,7 @@ class ServerBase(ServerCore):
         if ss:
             ss.set_client_properties(wid, window, typedict(new_client_properties))
             client_properties = self.client_properties.setdefault("%s|%s" % (wid, ss.uuid), {})
-            log("set_client_properties updating %s with %s", client_properties, new_client_properties)
+            log("set_client_properties updating window %s with %s", wid, new_client_properties)
             client_properties.update(new_client_properties)
 
 
