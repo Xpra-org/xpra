@@ -1022,8 +1022,8 @@ class WindowModel(BaseWindowModel):
             minw,minh = mins
             maxw,maxh = maxs
             if maxw<minw or maxh<minh:
-                size_hints.min_size = min(minw, maxw), min(minh, maxh)
-                size_hints.max_size = max(minw, maxw), max(minh, maxh)
+                size_hints.min_size = max(minw, maxw), max(minh, maxh)
+                size_hints.max_size = size_hints.min_size
                 log.warn("invalid min_size=%s / max_size=%s changed to: %s / %s",
                          mins, maxs, size_hints.min_size, size_hints.max_size)
 
