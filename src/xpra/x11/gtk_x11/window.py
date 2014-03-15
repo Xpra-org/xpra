@@ -1066,6 +1066,9 @@ class WindowModel(BaseWindowModel):
 
     def do_xpra_configure_event(self, event):
         log("WindowModel.do_xpra_configure_event(%s)", event)
+        if event.window!=self.client_window:
+            #we only care about events on the client window
+            return
         def can_resize():
             if not self._managed:
                 return False
@@ -1187,8 +1190,7 @@ class WindowModel(BaseWindowModel):
         if surf is not None:
             # FIXME: There is no Pixmap.new_for_display(), so this isn't
             # actually display-clean.  Oh well.
-            pixmap = gtk.gdk.Pixmap(None,
-                                    surf.get_width(), surf.get_height(), 32)
+            pixmap = gtk.gdk.Pixmap(None, surf.get_width(), surf.get_height(), 32)
             screen = get_display_for(pixmap).get_default_screen()
             pixmap.set_colormap(screen.get_rgba_colormap())
             cr = pixmap.cairo_create()
@@ -1202,7 +1204,7 @@ class WindowModel(BaseWindowModel):
             pixmap = None
         self._internal_set_property("icon", surf)
         self._internal_set_property("icon-pixmap", pixmap)
-        log("icon is now %r", self.get_property("icon"))
+        log("icon is now %r", surf)
     _property_handlers["_NET_WM_ICON"] = _handle_net_wm_icon
 
     def _read_initial_properties(self):
