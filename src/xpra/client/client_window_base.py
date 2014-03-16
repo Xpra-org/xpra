@@ -63,6 +63,9 @@ class ClientWindowBase(ClientWidgetBase):
         self.group_leader = None
         self._override_redirect_windows = []
         self._metadata = {}
+        if self._refresh_timer:
+            self.source_remove(self._refresh_timer)
+            self._refresh_timer = None
         if self._backing:
             self._backing.close()
             self._backing = None

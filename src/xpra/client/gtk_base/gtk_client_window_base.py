@@ -67,10 +67,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
 
 
-    def destroy(self):
-        ClientWindowBase.destroy(self)
-        gtk.Window.destroy(self)
-
     def setup_window(self):
         ClientWindowBase.setup_window(self)
         self.set_app_paintable(True)
@@ -376,11 +372,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.new_backing(w, h)
 
     def destroy(self):
-        if self._refresh_timer:
-            self.source_remove(self._refresh_timer)
-        if self._backing:
-            self._backing.close()
-            self._backing = None
+        ClientWindowBase.destroy(self)
         gtk.Window.destroy(self)
         self._unfocus()
 
