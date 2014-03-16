@@ -155,7 +155,6 @@ class UIXpraClient(XpraClientBase):
         self.opengl_props = {}
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
-        self.window_configure = False
         self.window_unmap = False
         self.server_generic_encodings = False
         self.server_encodings = []
@@ -985,7 +984,6 @@ class UIXpraClient(XpraClientBase):
         if not self.session_name:
             self.session_name = c.strget("session_name", "")
         set_application_name(self.session_name or "Xpra")
-        self.window_configure = c.boolget("window_configure")
         self.window_unmap = c.boolget("window_unmap")
         self.suspend_resume = c.boolget("suspend-resume")
         self.server_supports_notifications = c.boolget("notifications")

@@ -306,38 +306,28 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ox, oy = self._pos
         dx, dy = x-ox, y-oy
         self._pos = (x, y)
-        if self._client.window_configure:
-            #if we support configure-window, send that first
-            props = self._client_properties
-            self._client_properties = {}
-            if self._been_mapped:
-                #if the window has been mapped already, the workspace should be set:
-                props["screen"] = self.get_screen().get_number()
-                workspace = self.get_window_workspace()
-                if workspace<0:
-                    workspace = self.get_current_workspace()
-                if workspace>=0:
-                    props["workspace"] = workspace
-
-            packet = ["configure-window", self._id, x, y, w, h, props]
-            if self._resize_counter>0:
-                packet.append(self._resize_counter)
-            log.info("sending configure-window with client props=%s", props)
-            self.send(*packet)
+        props = self._client_properties
+        self._client_properties = {}
+        if self._been_mapped:
+            #if the window has been mapped already, the workspace should be set:
+            props["screen"] = self.get_screen().get_number()
+            workspace = self.get_window_workspace()
+            if workspace<0:
+                workspace = self.get_current_workspace()
+            if workspace>=0:
+                props["workspace"] = workspace
+        packet = ["configure-window", self._id, x, y, w, h, props]
+        if self._resize_counter>0:
+            packet.append(self._resize_counter)
+        self.send(*packet)
         if dx!=0 or dy!=0:
-            #window has moved
-            if not self._client.window_configure:
-                #if we don't handle the move via configure:
-                self.send("move-window", self._id, x, y)
-            #move any OR window with their parent:
+            #window has moved, also move any child OR window:
             for window in self._override_redirect_windows:
                 x, y = window.get_position()
                 window.move(x+dx, y+dy)
         if (w, h) != self._size:
             self._size = (w, h)
             self.new_backing(w, h)
-            if not self._client.window_configure:
-                self.send("resize-window", self._id, w, h)
 
     def resize(self, w, h, resize_counter=0):
         log("resize(%s, %s, %s)", w, h, resize_counter)
