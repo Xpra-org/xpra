@@ -58,6 +58,16 @@ class ClientWindowBase(ClientWidgetBase):
         self._override_redirect_windows = []
         self.update_metadata(metadata)
 
+    def destroy(self):
+        #ensure we clear reference to other windows:
+        self.group_leader = None
+        self._override_redirect_windows = []
+        self._metadata = {}
+        if self._backing:
+            self._backing.close()
+            self._backing = None
+
+
     def setup_window(self):
         self.new_backing(*self._size)
 

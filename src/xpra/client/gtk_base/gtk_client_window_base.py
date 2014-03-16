@@ -66,6 +66,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ClientWindowBase.init_window(self, metadata)
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
 
+
+    def destroy(self):
+        ClientWindowBase.destroy(self)
+        gtk.Window.destroy(self)
+
     def setup_window(self):
         ClientWindowBase.setup_window(self)
         self.set_app_paintable(True)
