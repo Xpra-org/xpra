@@ -191,8 +191,8 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Sat Mar 01 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
-- NVENC support for YUV444 mode
+* Sun Mar 16 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
+- NVENC support for YUV444 mode, support for automatic bitrate tuning
 - NVENC and CUDA load balancing for multiple cards
 - proxy encoding: ability to encode on proxy server
 - fix fullscreen on multiple monitors via fakeXinerama (except on OSX)
@@ -203,13 +203,17 @@ So basically it's screen for remote X apps.
 - add ability to easily select video encoders and csc modules
 - add local unix domain socket support to proxy server instances
 - add "xpra control" commands to control encoding speed and quality
+- improved handling of window resizing
 - ensure iconified windows don't waste bandwidth
+- ensure maximized and fullscreen windows are prioritised
 - better bandwidth utilization of jittery connections
 - faster network code (larger receive buffers)
 - better automatic encoding selection for smaller regions
 - improved command line options (add ability to enable options which are disabled in the config file)
+- trimmed all the ugly PyOpenGL warnings on startup
 - much improved logging and debugging tools
-- make it easier to distinguish xpra windows from local windows
+- make it easier to distinguish xpra windows from local windows (border command line option)
+- improved build system: smaller and more correct build output (much smaller OSX images)
 - improved MS Windows (un)installer checks
 - automatically stop remote shadow servers when client disconnects
 

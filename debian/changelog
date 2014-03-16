@@ -1,5 +1,5 @@
 xpra (0.12.0-1) UNRELEASED; urgency=low
-  * NVENC support for YUV444 mode
+  * NVENC support for YUV444 mode, support for automatic bitrate tuning
   * NVENC and CUDA load balancing for multiple cards
   * proxy encoding: ability to encode on proxy server
   * fix fullscreen on multiple monitors via fakeXinerama (except on OSX)
@@ -10,17 +10,21 @@ xpra (0.12.0-1) UNRELEASED; urgency=low
   * add ability to easily select video encoders and csc modules
   * add local unix domain socket support to proxy server instances
   * add "xpra control" commands to control encoding speed and quality
+  * improved handling of window resizing
   * ensure iconified windows don't waste bandwidth
+  * ensure maximized and fullscreen windows are prioritised
   * better bandwidth utilization of jittery connections
   * faster network code (larger receive buffers)
   * better automatic encoding selection for smaller regions
-  * improved command line options (add ability to enable options which are disabled in the config file)
+  * improved command line options
+  * trimmed all the ugly PyOpenGL warnings on startup
   * much improved logging and debugging tools
   * make it easier to distinguish xpra windows from local windows
+  * improved build system: smaller and more correct build output
   * improved MS Windows (un)installer checks
   * automatically stop remote shadow servers when client disconnects
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 01 Feb 2014 10:34:59 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 16 Mard 2014 13:01:40 +0700
 
 xpra (0.11.4-1) UNRELEASED; urgency=low
   * fix NVENC GPU memory leak
