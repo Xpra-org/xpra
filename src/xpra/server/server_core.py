@@ -410,16 +410,13 @@ class ServerCore(object):
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
         c = typedict(capabilities)
-
-        proto.chunked_compression = c.boolget("chunked_compression")
-        if proto.chunked_compression:
-            proto.set_compression_level(c.intget("compression_level", self.compression_level))
+        proto.set_compression_level(c.intget("compression_level", self.compression_level))
         if use_rencode and c.boolget("rencode"):
             proto.enable_rencode()
         else:
             proto.enable_bencode()
 
-        if c.boolget("lz4") and use_lz4 and proto.chunked_compression and self.compression_level==1:
+        if c.boolget("lz4") and use_lz4 and self.compression_level==1:
             proto.enable_lz4()
 
         log("process_hello: capabilities=%s", capabilities)

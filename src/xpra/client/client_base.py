@@ -435,10 +435,9 @@ class XpraClientBase(object):
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version '%s': %s" % (self._remote_version, verr))
             return False
 
-        self._protocol.chunked_compression = c.boolget("chunked_compression")
         if use_rencode and c.boolget("rencode"):
             self._protocol.enable_rencode()
-        if use_lz4 and c.boolget("lz4") and self._protocol.chunked_compression and self.compression_level==1:
+        if use_lz4 and c.boolget("lz4") and self.compression_level==1:
             self._protocol.enable_lz4()
         if self.encryption:
             #server uses a new cipher after second hello:

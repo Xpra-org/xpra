@@ -38,7 +38,7 @@ except Exception, e:
     log("pycrypto is missing: %s", e)
 
 
-from zlib import compress, decompress, decompressobj
+from zlib import compress, decompress
 try:
     from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
@@ -129,6 +129,7 @@ def new_cipher_caps(proto, cipher, encryption_key):
 def get_network_caps():
     caps = {
                 "raw_packets"           : True,
+                #for backwards compatibility only:
                 "chunked_compression"   : True,
                 "digest"                : ("hmac", "xor"),
                 "rencode"               : use_rencode,
@@ -240,12 +241,10 @@ class Protocol(object):
         self.large_packets = ["hello"]
         self.send_aliases = {}
         self.receive_aliases = {}
-        self.chunked_compression = True
         self._log_stats = None          #None here means auto-detect
         self._closed = False
         self._encoder = self.noencode
         self._compress = zcompress
-        self._decompressor = decompressobj()
         self.compression_level = 0
         self.cipher_in = None
         self.cipher_in_name = None
@@ -262,7 +261,6 @@ class Protocol(object):
         self.enable_default_encoder()
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
-                    "chunked_compression",
                     "cipher_in", "cipher_in_name", "cipher_in_block_size",
                     "cipher_out", "cipher_out_name", "cipher_out_block_size",
                     "compression_level")
@@ -345,7 +343,6 @@ class Protocol(object):
         info[prefix+"output.packetcount" + suffix] = self.output_packetcount
         info[prefix+"output.raw_packetcount" + suffix] = self.output_raw_packetcount
         info[prefix+"output.cipher" + suffix] = self.cipher_out_name or ""
-        info[prefix+"chunked_compression" + suffix] = self.chunked_compression
         info[prefix+"large_packets" + suffix] = self.large_packets
         info[prefix+"compression_level" + suffix] = self.compression_level
         if self._compress==zcompress:
@@ -512,7 +509,6 @@ class Protocol(object):
 
     def enable_lz4(self):
         assert has_lz4, "lz4 cannot be enabled: the module failed to load!"
-        assert self.chunked_compression, "cannot enable lz4 without chunked compression"
         log("enable_lz4()")
         self._compress = lz4_compress
 
@@ -807,14 +803,11 @@ class Protocol(object):
                 #uncompress if needed:
                 if compression_level>0:
                     try:
-                        if self.chunked_compression:
-                            if compression_level & LZ4_FLAG:
-                                assert has_lz4
-                                data = LZ4_uncompress(data)
-                            else:
-                                data = decompress(data)
+                        if compression_level & LZ4_FLAG:
+                            assert has_lz4
+                            data = LZ4_uncompress(data)
                         else:
-                            data = self._decompressor.decompress(data)
+                            data = decompress(data)
                     except Exception, e:
                         if self.cipher_in:
                             return self._call_connection_lost("decompression failed (invalid encryption key?): %s" % e)
