@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import gtk
+import gobject
 
 def change_callback(self, window, entry):
 	print("text=%s" % entry.get_text())
@@ -8,6 +9,7 @@ def change_callback(self, window, entry):
 
 width = 400
 height = 200
+counter = 0
 def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 	window.set_size_request(width, height)
@@ -38,6 +40,24 @@ def main():
 		window.resize(width, height)
 	btn.connect('clicked', resize)
 	vbox.add(btn)
+
+	btn = gtk.Button("fast resize")
+	def do_resize_fast():
+		global counter
+		global width, height
+		width = max(200, (width+1) % 600)
+		height = max(200, (height+1) % 400)
+		print("resizing to %s x %s" % (width, height))
+		window.resize(width, height)
+		counter -= 1
+		return counter>0
+	def resize_fast(*args):
+		global counter
+		counter = 200
+		gobject.idle_add(do_resize_fast)
+	btn.connect('clicked', resize_fast)
+	vbox.add(btn)
+
 	window.add(vbox)
 	window.show_all()
 	gtk.main()
