@@ -613,6 +613,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         client_properties = {}
         if len(packet)>=7:
             client_properties = packet[6]
+        resize_counter = 0
+        if len(packet)>=8:
+            resize_counter = packet[7]
         window = self._id_to_window.get(wid)
         windowlog("client configured window %s - %s, at: %s", wid, window, (x, y, w, h))
         if not window:
@@ -626,11 +629,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             assert not window.is_OR()
             owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
             windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-            self._desktop_manager.configure_window(window, x, y, w, h, client_properties.get("resize_counter", 0))
+            self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)
         if client_properties:
-            #don't keep the resize counter!
-            if "resize_counter" in client_properties:
-                del client_properties["resize_counter"]
             self._set_client_properties(proto, wid, window, client_properties)
         if window.is_tray() or (self._desktop_manager.visible(window) and (oww!=w or owh!=h)):
             self._damage(window, 0, 0, w, h)

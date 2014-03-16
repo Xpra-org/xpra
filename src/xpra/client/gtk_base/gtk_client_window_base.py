@@ -286,8 +286,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 workspace = self.get_current_workspace()
         if workspace>=0:
             props["workspace"] = workspace
-        if self._resize_counter>0:
-            props["resize_counter"] = self._resize_counter
         log("map-window for wid=%s with client props=%s", self._id, props)
         self.send("map-window", self._id, x, y, w, h, props)
         self._pos = (x, y)
@@ -320,10 +318,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     workspace = self.get_current_workspace()
                 if workspace>=0:
                     props["workspace"] = workspace
+
+            packet = ["configure-window", self._id, x, y, w, h, props]
             if self._resize_counter>0:
-                props["resize_counter"] = self._resize_counter
-            log("sending configure-window with client props=%s", props)
-            self.send("configure-window", self._id, x, y, w, h, props)
+                packet.append(self._resize_counter)
+            log.info("sending configure-window with client props=%s", props)
+            self.send(*packet)
         if dx!=0 or dy!=0:
             #window has moved
             if not self._client.window_configure:
