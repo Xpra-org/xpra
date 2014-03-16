@@ -329,8 +329,6 @@ class ServerBase(ServerCore):
             "map-window":                           self._process_map_window,
             "unmap-window":                         self._process_unmap_window,
             "configure-window":                     self._process_configure_window,
-            "move-window":                          self._process_move_window,
-            "resize-window":                        self._process_resize_window,
             "close-window":                         self._process_close_window,
             "focus":                                self._process_focus,
             #keyboard:
@@ -1493,12 +1491,6 @@ class ServerBase(ServerCore):
 
     def _process_configure_window(self, proto, packet):
         log.info("_process_configure_window(%s, %s)", proto, packet)
-
-    def _process_move_window(self, proto, packet):
-        log.info("_process_move_window(%s, %s)", proto, packet)
-
-    def _process_resize_window(self, proto, packet):
-        log.info("_process_resize_window(%s, %s)", proto, packet)
 
 
     def process_clipboard_packet(self, ss, packet):

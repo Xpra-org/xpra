@@ -202,20 +202,6 @@ class ShadowServerBase(object):
         if len(packet)>=7:
             self._set_client_properties(proto, wid, self.root_window_model, packet[6])
 
-    def _process_move_window(self, proto, packet):
-        wid, x, y = packet[1:4]
-        self._process_window_common(wid)
-        assert self.mapped_at
-        w, h = self.mapped_at[2:4]
-        self.mapped_at = x, y, w, h
-
-    def _process_resize_window(self, proto, packet):
-        wid = packet[1]
-        self._process_window_common(wid)
-        #wid, w, h = packet[1:4]
-        #window = self._process_window_common(wid)
-        #self._cancel_damage(wid, window)
-        #self._damage(window, 0, 0, w, h)
 
     def _process_close_window(self, proto, packet):
         wid = packet[1]

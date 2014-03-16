@@ -636,34 +636,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if window.is_tray() or (self._desktop_manager.visible(window) and (oww!=w or owh!=h)):
             self._damage(window, 0, 0, w, h)
 
-    def _process_move_window(self, proto, packet):
-        wid, x, y = packet[1:4]
-        window = self._id_to_window.get(wid)
-        if not window:
-            log("cannot move window %s: already removed!", wid)
-            return
-        assert not window.is_OR()
-        windowlog("client configured window %s - %s, at: %s", wid, window, packet[1:])
-        _, _, w, h = self._desktop_manager.window_geometry(window)
-        self._desktop_manager.configure_window(window, x, y, w, h)
-
-    def _process_resize_window(self, proto, packet):
-        #Note: this code is no longer used, newer versions use configure-window
-        wid, w, h = packet[1:4]
-        window = self._id_to_window.get(wid)
-        if not window:
-            log("cannot resize window %s: already removed!", wid)
-            return
-        assert not window.is_OR()
-        windowlog("client resized window %s - %s, to: %s", wid, window, packet[1:])
-        self._cancel_damage(wid, window)
-        x, y, _, _ = self._desktop_manager.window_geometry(window)
-        self._desktop_manager.configure_window(window, x, y, w, h)
-        _, _, ww, wh = self._desktop_manager.window_geometry(window)
-        visible = self._desktop_manager.visible(window)
-        windowlog("resize_window to %sx%s, desktop manager set it to %sx%s, visible=%s", w, h, ww, wh, visible)
-        if visible:
-            self._damage(window, 0, 0, w, h)
 
     """ override so we can raise the window under the cursor
         (gtk raise does not change window stacking, just focus) """

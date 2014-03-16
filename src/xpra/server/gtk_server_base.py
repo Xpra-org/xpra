@@ -136,12 +136,6 @@ class GTKServerBase(ServerBase):
     def _process_configure_window(self, proto, packet):
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
-    def _process_move_window(self, proto, packet):
-        log.info("_process_move_window(%s, %s)", proto, packet)
-
-    def _process_resize_window(self, proto, packet):
-        log.info("_process_resize_window(%s, %s)", proto, packet)
-
 
     def send_clipboard_packet(self, *parts):
         #overriden so we can inject the nesting check:
