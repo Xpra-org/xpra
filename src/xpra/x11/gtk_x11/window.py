@@ -598,11 +598,15 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 self.set_property("maximized", maximized)
             else:
                 log("do_xpra_client_message_event(%s) atom=%s", event, atom1)
-        if event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0]==1:
+        if event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0] in (0, 1):
+            self.set_active()
             self.emit("raised", event)
         else:
             log("do_xpra_client_message_event(%s)", event)
         self._last_wm_state_serial = event.serial
+
+    def set_active(self):
+        prop_set(self.client_window.get_screen().get_root_window(), "_NET_ACTIVE_WINDOW", "u32", self.client_window.xid)
 
     #bits to do with grabs: just re-emit the signal
     def pointer_grab_event(self, gh, event):
@@ -1405,6 +1409,7 @@ class WindowModel(BaseWindowModel):
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             focuslog("... using WM_TAKE_FOCUS")
             send_wm_take_focus(self.client_window, now)
+        self.set_active()
 
     ################################
     # Killing clients:
