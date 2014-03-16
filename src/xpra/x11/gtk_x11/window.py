@@ -1080,42 +1080,55 @@ class WindowModel(BaseWindowModel):
         if self.client_window is None or not self.client_window.is_visible():
             return
         try:
-            oldgeom = self._geometry
-            self._geometry = (event.x, event.y, event.width, event.height, event.border_width)
             #workaround applications whose windows disappear from underneath us:
-            if trap.call_synced(self.resize_corral_window) or oldgeom!=self._geometry:
+            if trap.call_synced(self.resize_corral_window, event.x, event.y, event.width, event.height, event.border_width):
                 self.notify("geometry")
         except XError, e:
             log.warn("failed to resize corral window: %s", e)
 
-    def resize_corral_window(self):
-        #the client window may have been resized (generally programmatically)
+    def resize_corral_window(self, x, y, w, h, border):
+        #the client window may have been resized or moved (generally programmatically)
         #so we may need to update the corral_window to match
-        cow, coh = self.corral_window.get_geometry()[2:4]
-        clx, cly, clw, clh = self.client_window.get_geometry()[:4]
-        if (clx, cly) != (0, 0):
-            log("resize_corral_window() client window has moved, resetting it")
-            self.client_window.move(0, 0)
-        if cow!=clw or coh!=clh:
-            log("resize_corral_window() corral window (%sx%s) does not match client window (%sx%s), resizing it",
-                     cow, coh, clw, clh)
-            hints = self.get_property("size-hints")
-            self._sanitize_size_hints(hints)
-            size = calc_constrained_size(clw, clh, hints)
-            log("resize_corral_window() new constrained size=%s", size)
-            w, h, wvis, hvis = size
-            modded = False
-            if w!=cow or h!=coh:
+        cox, coy, cow, coh = self.corral_window.get_geometry()[:4]
+        modded = False
+        if self._geometry[4]!=border:
+            modded = True
+        #size changes (and position if any):
+        hints = self.get_property("size-hints")
+        self._sanitize_size_hints(hints)
+        size = calc_constrained_size(w, h, hints)
+        log("resize_corral_window() new constrained size=%s", size)
+        w, h, wvis, hvis = size
+        if cow!=w or coh!=h:
+            if (x, y) != (0, 0):
+                log("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
+                self.corral_window.move_resize(x, y, w, h)
+                cox, coy, cow, coh = x, y, w, h
+            else:
+                #just resize:
+                log("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
                 self.corral_window.resize(w, h)
-                modded = True
-            if self.get_property("actual-size")!=(w, h):
-                self._internal_set_property("actual-size", (w, h))
-                modded = True
-            if self.get_property("user-friendly-size")!=(wvis, hvis):
-                self._internal_set_property("user-friendly-size", (wvis, hvis))
-                modded = True
-            return modded
-        return False
+                cow, coh = w, h
+            modded = True
+        #these two should be using geometry rather than duplicating it?
+        if self.get_property("actual-size")!=(w, h):
+            self._internal_set_property("actual-size", (w, h))
+            modded = True
+        if self.get_property("user-friendly-size")!=(wvis, hvis):
+            self._internal_set_property("user-friendly-size", (wvis, hvis))
+            modded = True
+        #just position change:
+        elif (x, y) != (0, 0):
+            log("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
+            self.corral_window.move(x, y)
+            self.client_window.move(0, 0)
+            cox, coy = x, y
+            modded = True
+
+        if modded:
+            self._geometry = (cox, coy, cow, coh, border)
+        log("resize_corral_window() modified=%s, geometry=%s", modded, self._geometry)
+        return modded
 
     def do_child_configure_request_event(self, event):
         log("do_child_configure_request_event(%s)", event)

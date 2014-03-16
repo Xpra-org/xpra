@@ -749,6 +749,7 @@ class UIXpraClient(XpraClientBase):
             "system_tray"               : self.client_supports_system_tray,
             "xsettings-tuple"           : True,
             "generic_window_types"      : True,
+            "server-window-move-resize" : True,
             "server-window-resize"      : True,
             "window.resize-counter"     : True,
             "notify-startup-complete"   : True,
@@ -1549,6 +1550,16 @@ class UIXpraClient(XpraClientBase):
         self._id_to_window[wid] = tray
         self._window_to_id[tray] = wid
 
+    def _process_window_move_resize(self, packet):
+        (wid, x, y, w, h) = packet[1:6]
+        resize_counter = -1
+        if len(packet)>4:
+            resize_counter = packet[4]
+        window = self._id_to_window.get(wid)
+        windowlog("_process_window_resized moving / resizing window %s (id=%s) to %s", window, wid, (x, y, w, h))
+        if window:
+            window.move_resize(x, y, w, h, resize_counter)
+
     def _process_window_resized(self, packet):
         (wid, w, h) = packet[1:4]
         resize_counter = -1
@@ -1690,7 +1701,7 @@ class UIXpraClient(XpraClientBase):
     def _process_configure_override_redirect(self, packet):
         wid, x, y, w, h = packet[1:6]
         window = self._id_to_window[wid]
-        window.move_resize(x, y, w, h)
+        window.move_resize(x, y, w, h, -1)
 
     def _process_lost_window(self, packet):
         wid = packet[1]
@@ -1738,6 +1749,7 @@ class UIXpraClient(XpraClientBase):
             "new-override-redirect":self._process_new_override_redirect,
             "new-tray":             self._process_new_tray,
             "raise-window":         self._process_raise_window,
+            "window-move-resize":   self._process_window_move_resize,
             "window-resized":       self._process_window_resized,
             "cursor":               self._process_cursor,
             "bell":                 self._process_bell,

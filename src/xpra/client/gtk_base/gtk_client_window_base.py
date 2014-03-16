@@ -344,12 +344,29 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._resize_counter = resize_counter
         gtk.Window.resize(self, w, h)
 
-    def move_resize(self, x, y, w, h):
-        assert self._override_redirect
-        log("move_resize%s", (x, y, w, h))
+    def move_resize(self, x, y, w, h, resize_counter=0):
+        log("move_resize%s", (x, y, w, h, resize_counter))
         w = max(1, w)
         h = max(1, h)
-        self.window.move_resize(x, y, w, h)
+        mw, mh = gtk.gdk.get_default_root_window().get_size()
+        if not self.is_realized():
+            self.realize()
+        #adjust for window frame:
+        ox, oy = self.window.get_origin()
+        rx, ry = self.window.get_root_origin()
+        ax = x - (ox - rx)
+        ay = y - (oy - ry)
+        #validate against edge of screen (ensure window is shown):
+        if (ax + w)<0:
+            ax = -w + 1
+        elif ax >= mw:
+            ax = mw - 1
+        if (ay + h)<0:
+            ay = -y + 1
+        elif ay >= mh:
+            ay = mh -1
+        self._resize_counter = resize_counter
+        self.window.move_resize(ax, ay, w, h)
         if (w, h) != self._size:
             self._size = (w, h)
             self.new_backing(w, h)
