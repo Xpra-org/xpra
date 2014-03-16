@@ -1640,15 +1640,6 @@ class UIXpraClient(XpraClientBase):
             new_cursor = packet[1:]
         else:
             raise Exception("invalid cursor packet: %s items" % len(packet))
-        if len(new_cursor)>0:
-            pixels = new_cursor[7]
-            if type(pixels)==tuple:
-                #newer versions encode as a list, see "compressible_cursors" capability
-                import array
-                a = array.array('b', '\0'* len(pixels))
-                a.fromlist(list(pixels))
-                new_cursor = list(new_cursor)
-                new_cursor[7] = a
         self.set_windows_cursor(self._id_to_window.values(), new_cursor)
 
     def _process_bell(self, packet):
