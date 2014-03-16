@@ -11,7 +11,6 @@ class FakeClient(object):
     def __init__(self):
         self.supports_mmap = False
         self.mmap = None
-        self.window_configure = True
         self._focused = None
         self.readonly = False
         self.title = "test"
