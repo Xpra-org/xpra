@@ -353,9 +353,9 @@ class WindowSource(object):
             self.timeout_timer = None
 
 
-    def is_cancelled(self, sequence=1):
+    def is_cancelled(self, sequence=None):
         """ See cancel_damage(wid) """
-        return self._damage_cancelled>=sequence
+        return self._damage_cancelled>=(sequence or float("inf"))
 
     def add_stats(self, info, suffix=""):
         """
@@ -405,7 +405,7 @@ class WindowSource(object):
         calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
 
     def update_speed(self):
-        if self.suspended:
+        if self.suspended or self._mmap:
             return
         speed = self._fixed_speed
         if speed<0:
@@ -448,7 +448,7 @@ class WindowSource(object):
         return max(ms, self._encoding_speed[-1][-1])
 
     def update_quality(self):
-        if self.suspended:
+        if self.suspended or self._mmap:
             return
         quality = self._fixed_quality
         if quality<0:
@@ -893,7 +893,7 @@ class WindowSource(object):
             if not packet:
                 return
             self.queue_damage_packet(packet, damage_time, process_damage_time)
-            if coding.startswith("png") or coding.startswith("rgb"):
+            if coding.startswith("png") or coding.startswith("rgb") or self._mmap:
                 #primary encoding is lossless, no need for auto-refresh
                 return
             #see if we need an auto-refresh:
@@ -1116,7 +1116,7 @@ class WindowSource(object):
             #old clients use non-generic encoding names:
             encoding = NEW_ENCODING_NAMES_TO_OLD.get(coding, coding)
         #actual network packet:
-        packet = ["draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options]
+        packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
         log("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%% (%sKB to %sKB), delta=%s",
                  (end-start)*1000.0, w, h, coding, 100.0*len(data)/psize, psize/1024, len(data)/1024, delta)
