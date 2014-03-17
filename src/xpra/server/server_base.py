@@ -20,7 +20,7 @@ from xpra.server.server_core import ServerCore
 from xpra.util import log_screen_sizes
 from xpra.os_util import thread, get_hex_uuid
 from xpra.version_util import add_version_info
-from xpra.util import alnum, typedict
+from xpra.util import typedict
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, get_DEFAULT_VIDEO_ENCODERS, ALL_CSC_MODULE_OPTIONS, get_DEFAULT_CSC_MODULES
 if sys.version > '3':
@@ -1271,8 +1271,7 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
-        cinfo = alnum(ss.hostname) or str(proto)
-        log.info("received new keymap from client %s @ %s", ss.uuid, cinfo)
+        log("received new keymap from client")
         if ss.assign_keymap_options(props):
             self.set_keymap(ss, True)
         modifiers = props.get("modifiers")
