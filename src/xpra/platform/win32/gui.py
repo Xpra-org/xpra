@@ -20,7 +20,7 @@ KNOWN_EVENTS = {}
 try:
     import win32con             #@UnresolvedImport
     for x in dir(win32con):
-        if x.endswith("_EVENT"):
+        if x.endswith("_EVENT") or x.startswith("PBT_"):
             v = getattr(win32con, x)
             KNOWN_EVENTS[v] = x
 except:
@@ -59,6 +59,7 @@ class ClientExtras(object):
             el = get_win32_event_listener(True)
             if el:
                 el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
+                el.add_event_callback(win32con.WM_POWERBROADCAST, self.power_broadcast_event)
         except:
             log.error("cannot register focus callback")
 
@@ -78,6 +79,16 @@ class ClientExtras(object):
             log("window with grab=%s, UNGRAB_KEY=%s", wid, UNGRAB_KEY)
             if wid is not None and UNGRAB_KEY:
                 self.force_ungrab(wid)
+
+    def power_broadcast_event(self, wParam, lParam):
+        log("WM_POWERBROADCAST: %s/%s client=%s", KNOWN_EVENTS.get(wParam, wParam), lParam, self.client)
+        #maybe also "PBT_APMQUERYSUSPEND" and "PBT_APMQUERYSTANDBY"?
+        if wParam==win32con.PBT_APMSUSPEND:
+            self.client.suspend()
+        #According to the documentation:
+        #The system always sends a PBT_APMRESUMEAUTOMATIC message whenever the system resumes.
+        elif wParam==win32con.PBT_APMRESUMEAUTOMATIC:
+            self.client.resume()
 
     def force_ungrab(self, wid):
         kh = self.client.keyboard_helper

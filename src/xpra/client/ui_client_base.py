@@ -340,6 +340,13 @@ class UIXpraClient(XpraClientBase):
         self._window_to_id = {}
 
 
+    def suspend(self):
+        log.info("suspend()")
+
+    def resume(self):
+        log.info("resume()")
+
+
     def show_session_info(self, *args):
         log.warn("show_session_info() is not implemented in %s", self)
 

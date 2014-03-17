@@ -21,3 +21,13 @@ def init_session_bus():
     import dbus
     _session_bus = dbus.SessionBus()
     return _session_bus
+
+_system_bus = None
+def init_system_bus():
+    global _system_bus
+    if _system_bus:
+        return _system_bus
+    loop_init()
+    import dbus
+    _system_bus = dbus.SystemBus()
+    return _system_bus

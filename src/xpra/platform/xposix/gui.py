@@ -63,6 +63,7 @@ class ClientExtras(object):
         self._root_props_watcher = None
         if client.xsettings_enabled:
             self.setup_xprops()
+        self.setup_dbus_signals()
 
     def cleanup(self):
         log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
@@ -73,6 +74,46 @@ class ClientExtras(object):
             self._root_props_watcher.cleanup()
             self._root_props_watcher = None
 
+
+    def resuming_callback(self, *args):
+        self.client.resume()
+
+    def sleeping_callback(self, *args):
+        self.client.suspend()
+
+
+    def setup_dbus_signals(self):
+        try:
+            from xpra.x11.dbus_common import init_system_bus
+            bus = init_system_bus()
+        except Exception, e:
+            log.warn("dbus setup error: %s", e)
+            return
+
+        #the UPower signals:
+        try:
+            iface_name  = 'org.freedesktop.UPower'
+            bus_name    = 'org.freedesktop.UPower'
+            bus.add_signal_receiver(self.resuming_callback, 'Resuming', iface_name, bus_name)
+            bus.add_signal_receiver(self.sleeping_callback, 'Sleeping', iface_name, bus_name)
+            log("listening for 'Resuming' and 'Sleeping' signals on %s", iface_name)
+        except Exception, e:
+            log("failed to setup UPower event listener: %s", e)
+
+        #the "logind" signals:
+        try:
+            def sleep_event_handler(suspend):
+                if suspend:
+                    self.sleeping_callback()
+                else:
+                    self.resuming_callback()
+            iface_name  = 'org.freedesktop.login1.Manager'
+            bus_name    = 'org.freedesktop.login1'
+            bus.add_signal_receiver(sleep_event_handler, 'PrepareForSleep', iface_name, bus_name)
+            log("listening for 'PrepareForSleep' signal on %s", iface_name)
+        except Exception, e:
+            log("failed to setup login1 event listener: %s", e)
+        
     def setup_xprops(self):
         #wait for handshake to complete:
         self.client.connect("handshake-complete", self.do_setup_xprops)
