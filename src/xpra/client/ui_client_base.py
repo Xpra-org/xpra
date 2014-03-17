@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import ctypes
+import datetime
 
 from xpra.log import Logger
 log = Logger("client")
@@ -197,6 +198,7 @@ class UIXpraClient(XpraClientBase):
         #state:
         self._focused = None
         self._last_screen_settings = None
+        self._suspended_at = 0
 
         self.init_packet_handlers()
         self.init_aliases()
@@ -342,11 +344,16 @@ class UIXpraClient(XpraClientBase):
 
 
     def suspend(self):
-        log.info("suspend()")
+        log.info("system is suspending")
+        self._suspended_at = time.time()
 
     def resume(self):
-        log.info("resume()")
-
+        elapsed = 0
+        if self._suspended_at>0:
+            elapsed = time.time()-self._suspended_at
+        delta = datetime.timedelta(seconds=int(elapsed))
+        log.info("system resumed, was suspended for %s", delta)
+        self.send_refresh_all()
 
     def show_session_info(self, *args):
         log.warn("show_session_info() is not implemented in %s", self)
