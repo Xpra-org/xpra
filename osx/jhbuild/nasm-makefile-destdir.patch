@@ -1,0 +1,21 @@
+--- Makefile.in.orig	2014-03-14 03:50:16.000000000 -0700
++++ Makefile.in	2014-03-14 03:50:41.000000000 -0700
+@@ -201,12 +201,12 @@
+ manpages: nasm.1 ndisasm.1
+ 
+ install: nasm$(X) ndisasm$(X)
+-	$(MKDIR) -p $(INSTALLROOT)$(bindir)
+-	$(INSTALL_PROGRAM) nasm$(X) $(INSTALLROOT)$(bindir)/nasm$(X)
+-	$(INSTALL_PROGRAM) ndisasm$(X) $(INSTALLROOT)$(bindir)/ndisasm$(X)
+-	$(MKDIR) -p $(INSTALLROOT)$(mandir)/man1
+-	$(INSTALL_DATA) $(srcdir)/nasm.1 $(INSTALLROOT)$(mandir)/man1/nasm.1
+-	$(INSTALL_DATA) $(srcdir)/ndisasm.1 $(INSTALLROOT)$(mandir)/man1/ndisasm.1
++	$(MKDIR) -p $(DESTDIR)$(bindir)
++	$(INSTALL_PROGRAM) nasm$(X) $(DESTDIR)$(bindir)/nasm$(X)
++	$(INSTALL_PROGRAM) ndisasm$(X) $(DESTDIR)$(bindir)/ndisasm$(X)
++	$(MKDIR) -p $(DESTDIR)$(mandir)/man1
++	$(INSTALL_DATA) $(srcdir)/nasm.1 $(DESTDIR)$(mandir)/man1/nasm.1
++	$(INSTALL_DATA) $(srcdir)/ndisasm.1 $(DESTDIR)$(mandir)/man1/ndisasm.1
+ 
+ clean:
+ 	$(RM) -f *.$(O) *.s *.i
