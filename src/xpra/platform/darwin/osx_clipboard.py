@@ -13,18 +13,27 @@ from xpra.clipboard.clipboard_base import ClipboardProxy, TEXT_TARGETS
 
 def update_clipboard_change_count():
     return 0
+
 change_callbacks = []
 change_count = 0
-try:
-    from AppKit import NSPasteboard      #@UnresolvedImport
-    pasteboard = NSPasteboard.generalPasteboard()
-    if pasteboard is None:
-        log.warn("cannot load Pasteboard, maybe not running from a GUI session?")
-    else:
+pasteboard = None
+
+def init_pasteboard():
+    global pasteboard, change_callbacks, change_count
+    if pasteboard is not None:
+        return
+    try:
+        from AppKit import NSPasteboard      #@UnresolvedImport
+        pasteboard = NSPasteboard.generalPasteboard()
+        if pasteboard is None:
+            log.warn("cannot load Pasteboard, maybe not running from a GUI session?")
+            return
+
         def update_clipboard_change_count():
             global change_count
             change_count = pasteboard.changeCount()
             return change_count
+
         def timer_clipboard_check():
             global change_count
             c = change_count
@@ -36,13 +45,16 @@ try:
                         x()
                     except Exception, e:
                         log("error in change callback %s: %s", x, e)
+
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         w = get_UI_watcher()
+        if w is None:
+            log.warn("no UI watcher available, cannot watch for clipboard events")
+            return
         log("UI watcher=%s", w)
-        if w:
-            w.add_alive_callback(timer_clipboard_check)
-except ImportError, e:
-    log.warn("cannot monitor OSX clipboard count: %s", e)
+        w.add_alive_callback(timer_clipboard_check)
+    except ImportError, e:
+        log.warn("cannot monitor OSX clipboard count: %s", e)
 
 
 class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
@@ -54,6 +66,7 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
     """
 
     def __init__(self, send_packet_cb, progress_cb=None):
+        init_pasteboard()
         GDKClipboardProtocolHelper.__init__(self, send_packet_cb, progress_cb, ["CLIPBOARD"])
 
     def make_proxy(self, clipboard):
