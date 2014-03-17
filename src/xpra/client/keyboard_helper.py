@@ -40,6 +40,8 @@ class KeyboardHelper(object):
         self.xkbmap_print = ""
         self.xkbmap_query = ""
 
+        self.hash = None
+
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
         self.keys_pressed = {}
@@ -246,11 +248,27 @@ class KeyboardHelper(object):
         self.xkbmap_keycodes = self.get_full_keymap()
         self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()
         self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self.keyboard.get_keymap_modifiers()
+        self.update_hash()
         log("layout=%s, variant=%s", self.xkbmap_layout, self.xkbmap_variant)
         log("print=%s, query=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query))
         log("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
         log("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
         log("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
+        log("hash=%s", self.hash)
+
+    def update_hash(self):
+        try:
+            import hashlib
+            h = hashlib.sha1()
+        except:
+            #try python2.4 variant:
+            import sha
+            h = sha.new()
+        for x in (self.xkbmap_print, self.xkbmap_query, \
+                  self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
+                  self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
+            h.update("/%s" % str(x))
+        self.hash = "%s".join([str(x) for x in (self.xkbmap_layout, self.xkbmap_variant, h.hexdigest()) if bool(x)])
 
     def get_full_keymap(self):
         return []

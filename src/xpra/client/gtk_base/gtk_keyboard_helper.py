@@ -32,18 +32,19 @@ class GTKKeyboardHelper(KeyboardHelper):
         self._keymap = gdk.keymap_get_default()
         if not self._keymap_changing:
             self._keymap_changing = True
-            log.info("keymap has changed, sending updated mappings to the server")
             gobject.timeout_add(500, self._do_keys_changed, True)
 
-    def _do_keys_changed(self, sendkeymap=False):
+    def _do_keys_changed(self, send_if_changed=False):
         self._keymap_changing = False
+        old_hash = self.hash
         self.query_xkbmap()
         try:
             self.keyboard.update_modifier_map(gdk.display_get_default(), self.xkbmap_mod_meanings)
         except:
             pass
-        log("do_keys_changed() modifier_map=%s" % self.keyboard.modifier_map)
-        if sendkeymap:
+        log("do_keys_changed() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
+        if send_if_changed and old_hash!=self.hash:
+            log.info("keymap has changed, sending updated mappings to the server")
             if self.xkbmap_layout:
                 self.send_layout()
             self.send_keymap()
