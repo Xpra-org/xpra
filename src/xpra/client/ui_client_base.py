@@ -922,7 +922,7 @@ class UIXpraClient(XpraClientBase):
         if len(self.server_ping_latency)>0:
             l = [x for _,x in list(self.server_ping_latency)]
             avg = sum(l) / len(l)
-            wait = 1.0+avg*2.0
+            wait = min(5, 1.0+avg*2.0)
             log("average server latency=%.1f, using max wait %.2fs", 1000.0*avg, wait)
         self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
         return True
