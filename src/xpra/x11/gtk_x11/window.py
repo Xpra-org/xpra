@@ -1025,6 +1025,12 @@ class WindowModel(BaseWindowModel):
         if mins is not None and maxs is not None:
             minw,minh = mins
             maxw,maxh = maxs
+            if minw<=0 and minh<=0:
+                #doesn't do anything
+                size_hints.min_size = None
+            if maxw<=0 or maxh<=0:
+                #doesn't mak sense!
+                size_hints.max_size = None
             if maxw<minw or maxh<minh:
                 size_hints.min_size = max(minw, maxw), max(minh, maxh)
                 size_hints.max_size = size_hints.min_size
