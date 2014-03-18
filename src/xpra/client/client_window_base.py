@@ -47,7 +47,6 @@ class ClientWindowBase(ClientWidgetBase):
         return "ClientWindow(%s)" % self._id
 
     def init_window(self, metadata):
-        self._can_set_workspace = False
         self._backing = None
         self._metadata = {}
         self._refresh_timer = None
@@ -98,22 +97,6 @@ class ClientWindowBase(ClientWidgetBase):
     def xget_u32_property(self, target, name):
         raise Exception("override me!")
 
-    def do_set_workspace(self, workspace):
-        raise Exception("override me!")
-
-
-    def set_workspace(self):
-        if not self._can_set_workspace or self._been_mapped:
-            return -1
-        workspace = self._client_properties.get("workspace", -1)
-        log("set_workspace() workspace=%s", workspace)
-        if workspace<0 or workspace==self.get_current_workspace():
-            return -1
-        try:
-            return self.do_set_workspace(workspace)
-        except Exception, e:
-            log.error("failed to set workspace: %s", e)
-            return -1
 
 
     def is_OR(self):
@@ -122,7 +105,6 @@ class ClientWindowBase(ClientWidgetBase):
 
     def update_metadata(self, metadata):
         #normalize window-type:
-        log("update_metadata(%s)", metadata)
         window_type = metadata.get("window-type")
         if window_type is not None:
             #normalize the window type for servers that don't do "generic_window_types"

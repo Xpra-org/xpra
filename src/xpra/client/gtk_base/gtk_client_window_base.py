@@ -7,6 +7,7 @@
 
 from xpra.log import Logger
 focuslog = Logger("focus")
+workspacelog = Logger("workspace")
 log = Logger("window")
 
 from xpra.util import AdHocStruct, nn
@@ -63,6 +64,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._fullscreen = None
         self._iconified = False
         self._resize_counter = 0
+        self._current_workspace = self._client_properties.get("workspace")
         ClientWindowBase.init_window(self, metadata)
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
 
@@ -163,16 +165,18 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
             #fake a configure event to send the new client_properties with
             #the updated workspace number:
+            workspacelog("_NET_WM_DESKTOP modified, faking configure event")
             self.process_configure_event()
 
-    def do_set_workspace(self, workspace):
-        assert HAS_X11_BINDINGS
+
+    def set_workspace(self):
+        assert HAS_X11_BINDINGS and not self._been_mapped
         root = self.gdk_window().get_screen().get_root_window()
         ndesktops = self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
-        log("%s.do_set_workspace(%s) ndesktops=%s", self, workspace, ndesktops)
+        workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, self._current_workspace, ndesktops)
         if ndesktops is None or ndesktops<=1:
             return  -1
-        workspace = max(0, min(ndesktops-1, workspace))
+        workspace = max(0, min(ndesktops-1, self._current_workspace))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
 
         def send():
@@ -285,7 +289,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspace = self.get_window_workspace()
             if workspace<0:
                 workspace = self.get_current_workspace()
-        if workspace>=0:
+        if self._current_workspace!=workspace:
+            workspacelog("map event: changed workspace from %s to %s", self._current_workspace, workspace)
+            self._current_workspace = workspace
             props["workspace"] = workspace
         log("map-window for wid=%s with client props=%s", self._id, props)
         self.send("map-window", self._id, x, y, w, h, props)
@@ -315,7 +321,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspace = self.get_window_workspace()
             if workspace<0:
                 workspace = self.get_current_workspace()
-            if workspace>=0:
+            if self._current_workspace!=workspace:
+                workspacelog("configure event: changed workspace from %s to %s", self._current_workspace, workspace)
+                self._current_workspace = workspace
                 props["workspace"] = workspace
         packet = ["configure-window", self._id, x, y, w, h, props]
         if self._resize_counter>0:
