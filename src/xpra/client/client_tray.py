@@ -91,7 +91,10 @@ class ClientTray(ClientWidgetBase):
 
     def new_backing(self, w, h):
         self._size = w, h
-        self._backing = TrayBacking(self._id, w, h, self._has_alpha)
+        data = None
+        if self._backing:
+            data = self._backing.data
+        self._backing = TrayBacking(self._id, w, h, self._has_alpha, data)
         if self.mmap_enabled:
             self._backing.enable_mmap(self.mmap)
 
@@ -142,8 +145,8 @@ class TrayBacking(GTKWindowBacking):
         we can use them with the real widget.
     """
 
-    def __init__(self, wid, w, h, has_alpha):
-        self.data = None
+    def __init__(self, wid, w, h, has_alpha, data=None):
+        self.data = data
         GTKWindowBacking.__init__(self, wid)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
