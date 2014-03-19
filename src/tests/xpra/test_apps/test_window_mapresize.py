@@ -62,7 +62,10 @@ def main():
 	gobject.idle_add(w.Xresize)
 	gobject.idle_add(w.show_all)
 	gobject.idle_add(w.Xresize)
-	gobject.timeout_add(10*1000, gtk.mainquit)
+	def end():
+		print("test finished, closing")
+		gtk.mainquit()
+	gobject.timeout_add(10*1000, end)
 	gtk.main()
 	return 0
 
