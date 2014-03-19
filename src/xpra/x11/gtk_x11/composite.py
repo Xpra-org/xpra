@@ -200,14 +200,14 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             trap.swallow_synced(set_pixmap)
         return self._contents_handle
 
-    def do_xpra_unmap_event(self, *args):
+    def do_xpra_unmap_event(self, event):
         self.invalidate_pixmap()
 
     def do_xpra_configure_event(self, event):
         self._border_width = event.border_width
         self.invalidate_pixmap()
 
-    def do_xpra_reparent_event(self, *args):
+    def do_xpra_reparent_event(self, event):
         self.invalidate_pixmap()
 
     def do_xpra_damage_event(self, event):
