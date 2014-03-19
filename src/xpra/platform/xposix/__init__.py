@@ -5,3 +5,6 @@
 
 def do_init():
     pass
+
+def do_clean():
+    pass
