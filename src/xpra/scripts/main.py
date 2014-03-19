@@ -21,7 +21,6 @@ from xpra.dotxpra import DotXpra, osexpand
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.platform.paths import get_default_socket_dir
-from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.net.protocol import ConnectionClosedException
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
@@ -61,12 +60,16 @@ if supports_server:
 
 
 def main(script_file, cmdline):
-    platform_init("Xpra")
-    parser, options, args = parse_cmdline(cmdline)
-    if not args:
-        parser.error("need a mode")
-    mode = args.pop(0)
-    return run_mode(script_file, parser, options, args, mode)
+    from xpra.platform import init as platform_init, clean as platform_clean
+    try:
+        platform_init("Xpra")
+        parser, options, args = parse_cmdline(cmdline)
+        if not args:
+            parser.error("need a mode")
+        mode = args.pop(0)
+        return run_mode(script_file, parser, options, args, mode)
+    finally:
+        platform_clean()
 
 
 def parse_cmdline(cmdline):

@@ -177,10 +177,23 @@ def fix_unicode_out():
     except Exception as e:
         _complain("exception %r while fixing up sys.stdout and sys.stderr" % (e,))
 
+_wait_for_input = False
 
 def do_init():
     if not REDIRECT_OUTPUT:
         fix_unicode_out()
+        #figure out if we want to wait for input at the end:
+        global _wait_for_input
+        try:
+            import win32console, win32con       #@UnresolvedImport
+            handle = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+            #handle.SetConsoleTextAttribute(win32console.FOREGROUND_BLUE)
+            console_info = handle.GetConsoleScreenBufferInfo()            
+            cpos = console_info["CursorPosition"]
+            #wait for input if this is a brand new console:
+            _wait_for_input = cpos.X==0 and cpos.Y==0
+        except Exception, e:
+            print("error accessing console: %s" % e)
         return
     from xpra.platform import get_prgname
     LOG_FILENAME = get_prgname()+".log"
@@ -189,3 +202,9 @@ def do_init():
     log_file = os.path.join(d, LOG_FILENAME)
     sys.stdout = open(log_file, "a")
     sys.stderr = sys.stdout
+
+def do_clean():
+    global _wait_for_input
+    if _wait_for_input:
+        print("\nPress Enter to close")
+        sys.stdin.readline()

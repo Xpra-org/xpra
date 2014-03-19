@@ -329,30 +329,34 @@ def check_support(min_texture_size=0, force_enable=False):
 
 
 def main():
-    log.enable_debug()
-    #replace ImportError with a log message:
-    global gl_check_error
-    errors = []
-    def log_error(msg):
-        log.error("ERROR: %s", msg)
-        errors.append(msg)
-    gl_check_error = log_error
-    props = check_support(True)
-    log.info("")
-    if len(errors)>0:
-        log.info("OpenGL errors:")
-        for e in errors:
-            log.info("  %s", e)
-    log.info("")
-    log.info("OpenGL properties:")
-    for k,v in props.items():
-        #skip not human readable:
-        if k not in ("extensions", "glconfig"):
-            log.info("  %s : %s", str(k).ljust(24), v)
-    if sys.platform.startswith("win"):
-        print("\nPress Enter to close")
-        sys.stdin.readline()
+    from xpra.platform import init,clean
+    try:
+        init("OpenGL-Check")
+        if "-v" in sys.argv or "--verbose" in sys.argv:
+            log.enable_debug()
+        #replace ImportError with a log message:
+        global gl_check_error
+        errors = []
+        def log_error(msg):
+            log.error("ERROR: %s", msg)
+            errors.append(msg)
+        gl_check_error = log_error
+        props = check_support(True)
+        log.info("")
+        if len(errors)>0:
+            log.info("OpenGL errors:")
+            for e in errors:
+                log.info("  %s", e)
+        log.info("")
+        log.info("OpenGL properties:")
+        for k,v in props.items():
+            #skip not human readable:
+            if k not in ("extensions", "glconfig"):
+                log.info("  %s : %s", str(k).ljust(24), v)
+        return len(errors)
+    finally:
+        clean()
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

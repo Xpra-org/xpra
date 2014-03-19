@@ -287,16 +287,19 @@ def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_p
 
 
 def main():
-    log.enable_debug()
-    log.info("GStreamer plugins found: %s", ", ".join(get_all_plugin_names()))
-    log.info("")
-    encs = [x for x in CODEC_ORDER if has_encoder(x)]
-    decs = [x for x in CODEC_ORDER if has_decoder(x)]
-    log.info("encoders supported: %s", encs)
-    log.info("decoders supported: %s", decs)
-    if sys.platform.startswith("win"):
-        print("\nPress Enter to close")
-        sys.stdin.readline()
+    from xpra.platform import init, clean
+    try:
+        init("GStreamer-Info", "GStreamer Information")
+        if "-v" in sys.argv or "--verbose" in sys.argv:
+            log.enable_debug()
+        log.info("GStreamer plugins found: %s", ", ".join(get_all_plugin_names()))
+        log.info("")
+        encs = [x for x in CODEC_ORDER if has_encoder(x)]
+        decs = [x for x in CODEC_ORDER if has_decoder(x)]
+        log.info("encoders supported: %s", encs)
+        log.info("decoders supported: %s", decs)
+    finally:
+        clean()
 
 
 if __name__ == "__main__":

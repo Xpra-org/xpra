@@ -114,79 +114,82 @@ class SoundSource(SoundPipeline):
 
 
 def main():
-    import os.path
-    if len(sys.argv) not in (2, 3):
-        print("usage: %s filename [codec]" % sys.argv[0])
-        sys.exit(1)
-        return
-    filename = sys.argv[1]
-    if os.path.exists(filename):
-        print("file %s already exists" % filename)
-        sys.exit(2)
-        return
-    codec = None
-    if len(sys.argv)==3:
-        codec = sys.argv[2]
-        if codec not in CODECS:
-            print("invalid codec: %s, codecs supported: %s" % (codec, CODECS))
-            sys.exit(2)
-            return
-    else:
-        parts = filename.split(".")
-        if len(parts)>1:
-            extension = parts[-1]
-            if extension.lower() in CODECS:
-                codec = extension.lower()
-                print("guessed codec %s from file extension %s" % (codec, extension))
-        if codec is None:
-            codec = MP3
-            print("using default codec: %s" % codec)
-
-    log.enable_debug()
-    from threading import Lock
-    f = open(filename, "wb")
-    from xpra.sound.pulseaudio_util import get_pa_device_options
-    monitor_devices = get_pa_device_options(True, False)
-    log.info("found pulseaudio monitor devices: %s", monitor_devices)
-    if len(monitor_devices)==0:
-        log.warn("could not detect any pulseaudio monitor devices - will use a test source")
-        ss = SoundSource("audiotestsrc", src_options={"wave":2, "freq":100, "volume":0.4}, codec=codec)
-    else:
-        monitor_device = monitor_devices.items()[0][0]
-        log.info("using pulseaudio source device: %s", monitor_device)
-        ss = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
-    lock = Lock()
-    def new_buffer(ss, data, metadata):
-        log.info("new buffer: %s bytes, metadata=%s" % (len(data), metadata))
+    from xpra.platform import init, clean
+    init("Sound-Play")
+    try:
+        import os.path
+        if len(sys.argv) not in (2, 3):
+            print("usage: %s filename [codec]" % sys.argv[0])
+            return 1
+        filename = sys.argv[1]
+        if os.path.exists(filename):
+            print("file %s already exists" % filename)
+            return 2
+        codec = None
+        if len(sys.argv)==3:
+            codec = sys.argv[2]
+            if codec not in CODECS:
+                print("invalid codec: %s, codecs supported: %s" % (codec, CODECS))
+                return 2
+        else:
+            parts = filename.split(".")
+            if len(parts)>1:
+                extension = parts[-1]
+                if extension.lower() in CODECS:
+                    codec = extension.lower()
+                    print("guessed codec %s from file extension %s" % (codec, extension))
+            if codec is None:
+                codec = MP3
+                print("using default codec: %s" % codec)
+    
+        log.enable_debug()
+        from threading import Lock
+        f = open(filename, "wb")
+        from xpra.sound.pulseaudio_util import get_pa_device_options
+        monitor_devices = get_pa_device_options(True, False)
+        log.info("found pulseaudio monitor devices: %s", monitor_devices)
+        if len(monitor_devices)==0:
+            log.warn("could not detect any pulseaudio monitor devices - will use a test source")
+            ss = SoundSource("audiotestsrc", src_options={"wave":2, "freq":100, "volume":0.4}, codec=codec)
+        else:
+            monitor_device = monitor_devices.items()[0][0]
+            log.info("using pulseaudio source device: %s", monitor_device)
+            ss = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
+        lock = Lock()
+        def new_buffer(ss, data, metadata):
+            log.info("new buffer: %s bytes, metadata=%s" % (len(data), metadata))
+            try:
+                lock.acquire()
+                if f:
+                    f.write(data)
+            finally:
+                lock.release()
+        ss.connect("new-buffer", new_buffer)
+        ss.start()
+    
+        gobject_mainloop = gobject.MainLoop()
+        gobject.threads_init()
+    
+        import signal
+        def deadly_signal(*args):
+            gobject.idle_add(gobject_mainloop.quit)
+        signal.signal(signal.SIGINT, deadly_signal)
+        signal.signal(signal.SIGTERM, deadly_signal)
+    
+        gobject_mainloop.run()
+    
+        f.flush()
+        log.info("wrote %s bytes to %s", f.tell(), filename)
         try:
             lock.acquire()
-            if f:
-                f.write(data)
+            f.close()
+            f = None
         finally:
             lock.release()
-    ss.connect("new-buffer", new_buffer)
-    ss.start()
-
-    gobject_mainloop = gobject.MainLoop()
-    gobject.threads_init()
-
-    import signal
-    def deadly_signal(*args):
-        gobject.idle_add(gobject_mainloop.quit)
-    signal.signal(signal.SIGINT, deadly_signal)
-    signal.signal(signal.SIGTERM, deadly_signal)
-
-    gobject_mainloop.run()
-
-    f.flush()
-    log.info("wrote %s bytes to %s", f.tell(), filename)
-    try:
-        lock.acquire()
-        f.close()
-        f = None
+        return 0
     finally:
-        lock.release()
+        clean()
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

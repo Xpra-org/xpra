@@ -206,24 +206,25 @@ def encodings_help(encodings):
 
 
 def main():
-    import sys
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        log.enable_debug()
-
-    load_codecs()
-    print("codecs/csc modules found:")
-    #print("codec_status=%s" % codecs)
-    for name in ALL_CODECS:
-        print("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), codecs.get(name, "")))
-    print("")
-    print("codecs versions:")
-    for name, version in codec_versions.items():
-        print("* %s : %s" % (name.ljust(20), version))
-
-    if sys.platform.startswith("win"):
-        print("\nPress Enter to close")
-        sys.stdin.readline()
-
+    from xpra.platform import init, clean
+    try:
+        init("Loader", "Encoding Info")
+        import sys
+        if "-v" in sys.argv or "--verbose" in sys.argv:
+            log.enable_debug()
+    
+        load_codecs()
+        print("codecs/csc modules found:")
+        #print("codec_status=%s" % codecs)
+        for name in ALL_CODECS:
+            print("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), codecs.get(name, "")))
+        print("")
+        print("codecs versions:")
+        for name, version in codec_versions.items():
+            print("* %s : %s" % (name.ljust(20), version))
+    finally:
+        #this will wait for input on win32:
+        clean()
 
 if __name__ == "__main__":
     main()

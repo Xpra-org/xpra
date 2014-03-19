@@ -26,6 +26,19 @@ def init(prgname=None, appname=None):
 def do_init():
     pass
 
+
+_clean_done = False
+def clean():
+    global _clean_done
+    if not _clean_done:
+        _clean_done = True
+        do_clean()
+
+#platforms can override this
+def do_clean():
+    pass
+
+
 #platforms can override this
 _prg_name = None
 def set_prgname(name):
@@ -96,6 +109,6 @@ def platform_import(where, pm, required, *imports):
         v = getattr(platform_module, x)
         where[x] = v
 
-platform_import(globals(), None, True, "do_init")
+platform_import(globals(), None, True, "do_init", "do_clean")
 platform_import(globals(), None, False, "do_set_prgname")
 platform_import(globals(), None, False, "do_set_application_name")

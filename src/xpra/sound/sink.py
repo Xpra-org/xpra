@@ -181,73 +181,76 @@ class SoundSink(SoundPipeline):
 
 
 def main():
-    import os.path
-    import gobject
-    if len(sys.argv) not in (2, 3):
-        print("usage: %s filename [codec]" % sys.argv[0])
-        sys.exit(1)
-        return
-    filename = sys.argv[1]
-    if not os.path.exists(filename):
-        print("file %s does not exist" % filename)
-        sys.exit(2)
-        return
-    if len(sys.argv)==3:
-        codec = sys.argv[2]
-        if codec not in CODECS:
-            print("invalid codec: %s" % codec)
-            sys.exit(2)
-            return
-    else:
-        codec = None
-        parts = filename.split(".")
-        if len(parts)>1:
-            extension = parts[-1]
-            if extension.lower() in CODECS:
-                codec = extension.lower()
-                print("guessed codec %s from file extension %s" % (codec, extension))
-        if codec is None:
-            print("assuming this is an mp3 file...")
-            codec = MP3
-
-    log.enable_debug()
-    f = open(filename, "rb")
-    data = f.read()
-    f.close()
-    print("loaded %s bytes from %s" % (len(data), filename))
-    #force no leak since we push all the data at once
-    global QUEUE_LEAK, GST_QUEUE_NO_LEAK, QUEUE_SILENT
-    QUEUE_LEAK = GST_QUEUE_NO_LEAK
-    QUEUE_SILENT = 1
-    ss = SoundSink(codec=codec)
-    ss.add_data(data)
-    def eos(*args):
-        print("eos")
-        gobject.idle_add(gobject_mainloop.quit)
-    ss.connect("eos", eos)
-    ss.start()
-
-    gobject_mainloop = gobject.MainLoop()
-    gobject.threads_init()
-
-    import signal
-    def deadly_signal(*args):
-        gobject.idle_add(gobject_mainloop.quit)
-    signal.signal(signal.SIGINT, deadly_signal)
-    signal.signal(signal.SIGTERM, deadly_signal)
-
-    def check_for_end(*args):
-        qtime = int(ss.queue.get_property("current-level-time")/MS_TO_NS)
-        if qtime<=0:
-            log.info("underrun (end of stream)")
-            thread.start_new_thread(ss.stop, ())
-            gobject.timeout_add(500, gobject_mainloop.quit)
-            return False
-        return True
-    gobject.timeout_add(1000, check_for_end)
-
-    gobject_mainloop.run()
+    from xpra.platform import init, clean
+    init("Sound-Record")
+    try:
+        import os.path
+        import gobject
+        if len(sys.argv) not in (2, 3):
+            print("usage: %s filename [codec]" % sys.argv[0])
+            return 1
+        filename = sys.argv[1]
+        if not os.path.exists(filename):
+            print("file %s does not exist" % filename)
+            return 2
+        if len(sys.argv)==3:
+            codec = sys.argv[2]
+            if codec not in CODECS:
+                print("invalid codec: %s" % codec)
+                return 2
+        else:
+            codec = None
+            parts = filename.split(".")
+            if len(parts)>1:
+                extension = parts[-1]
+                if extension.lower() in CODECS:
+                    codec = extension.lower()
+                    print("guessed codec %s from file extension %s" % (codec, extension))
+            if codec is None:
+                print("assuming this is an mp3 file...")
+                codec = MP3
+    
+        log.enable_debug()
+        f = open(filename, "rb")
+        data = f.read()
+        f.close()
+        print("loaded %s bytes from %s" % (len(data), filename))
+        #force no leak since we push all the data at once
+        global QUEUE_LEAK, GST_QUEUE_NO_LEAK, QUEUE_SILENT
+        QUEUE_LEAK = GST_QUEUE_NO_LEAK
+        QUEUE_SILENT = 1
+        ss = SoundSink(codec=codec)
+        ss.add_data(data)
+        def eos(*args):
+            print("eos")
+            gobject.idle_add(gobject_mainloop.quit)
+        ss.connect("eos", eos)
+        ss.start()
+    
+        gobject_mainloop = gobject.MainLoop()
+        gobject.threads_init()
+    
+        import signal
+        def deadly_signal(*args):
+            gobject.idle_add(gobject_mainloop.quit)
+        signal.signal(signal.SIGINT, deadly_signal)
+        signal.signal(signal.SIGTERM, deadly_signal)
+    
+        def check_for_end(*args):
+            qtime = int(ss.queue.get_property("current-level-time")/MS_TO_NS)
+            if qtime<=0:
+                log.info("underrun (end of stream)")
+                thread.start_new_thread(ss.stop, ())
+                gobject.timeout_add(500, gobject_mainloop.quit)
+                return False
+            return True
+        gobject.timeout_add(1000, check_for_end)
+    
+        gobject_mainloop.run()
+        return 0
+    finally:
+        clean()
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

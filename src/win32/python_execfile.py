@@ -5,19 +5,23 @@
 #
 import os.path
 import sys
-from xpra.platform import init
+from xpra.platform import init, clean
 init("Xpra-Python-Exec")
+
+def ret(v):
+    clean()
+    sys.exit(v)
 
 if len(sys.argv)<2:
     print("you must specify a python script file to run!")
-    sys.exit(1)
+    ret(1)
 filename = sys.argv[1]
 if not os.path.exists(filename):
     print("script file '%s' not found" % filename)
-    sys.exit(1)
+    ret(1)
 
 cwd = os.getcwd()
 if cwd not in sys.path:
     sys.path.append(cwd)
 execfile(filename)
-sys.exit(0)
+ret(0)
