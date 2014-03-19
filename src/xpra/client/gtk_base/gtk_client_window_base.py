@@ -170,7 +170,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def set_workspace(self):
-        assert HAS_X11_BINDINGS and not self._been_mapped
+        if not HAS_X11_BINDINGS or not self._been_mapped:
+            return -1
         root = self.gdk_window().get_screen().get_root_window()
         ndesktops = self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
         workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, self._current_workspace, ndesktops)
