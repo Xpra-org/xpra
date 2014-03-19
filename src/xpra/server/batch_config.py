@@ -25,10 +25,10 @@ class DamageBatchConfig(object):
     TIME_UNIT = 1                       #per second
     MIN_DELAY = 5                       #lower than 5 milliseconds does not make sense, just don't batch
     START_DELAY = 50
-    MAX_DELAY = 15000
+    MAX_DELAY = 500
+    TIMEOUT_DELAY = 15000
     RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
                                         #(this theoretical limit is never achieved since calculations take time + scheduling also does)
-
 
     def __init__(self):
         self.always = self.ALWAYS
@@ -37,6 +37,7 @@ class DamageBatchConfig(object):
         self.time_unit = self.TIME_UNIT
         self.min_delay = self.MIN_DELAY
         self.max_delay = self.MAX_DELAY
+        self.timeout_delay = self.TIMEOUT_DELAY
         self.delay = self.START_DELAY
         self.last_delays = maxdeque(64)                 #the delays we have tried to use (milliseconds)
         self.last_actual_delays = maxdeque(64)          #the delays we actually used (milliseconds)
@@ -63,7 +64,7 @@ class DamageBatchConfig(object):
     def clone(self):
         c = DamageBatchConfig()
         for x in ["always", "max_events", "max_pixels", "time_unit",
-                  "min_delay", "max_delay", "delay"]:
+                  "min_delay", "max_delay", "timeout_delay", "delay"]:
             setattr(c, x, getattr(self, x))
         return c
 

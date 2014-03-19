@@ -606,7 +606,7 @@ class WindowSource(object):
             #the region should now get sent when we eventually receive the pending ACKs
             #but if somehow they go missing... clean it up from a timeout:
             delayed_region_time = self._damage_delayed[0]
-            self.timeout_timer = self.timeout_add(self.batch_config.max_delay, self.delayed_region_timeout, delayed_region_time)
+            self.timeout_timer = self.timeout_add(self.batch_config.timeout_delay, self.delayed_region_timeout, delayed_region_time)
 
     def delayed_region_soft_timeout(self):
         self.soft_timer = None
