@@ -158,7 +158,8 @@ class X11ServerBase(GTKServerBase):
 
     def get_window_info(self, window):
         info = GTKServerBase.get_window_info(self, window)
-        info["has-grab"] = window.get_property("has-grab")
+        if "has-grab" in window.get_property_names():
+            info["has-grab"] = window.get_property("has-grab")
         info["XShm"] = window.uses_XShm()
         return info
 
