@@ -44,10 +44,10 @@ class MapResizeWindow(gtk.Window):
 		if self.window:
 			self.window.invalidate_rect(gdk.Rectangle(0, 0, self.width, self.height), False)
 
-	def Xresize(self, *args):
+	def Xresize(self, new_width, new_height):
 		self.step += 1
-		self.width = WIDTH+20*(self.step % 20)
-		self.height = HEIGHT+20*(self.step % 20)
+		self.width = new_width
+		self.height = new_height
 		print("resizing to %s x %s" % (self.width, self.height))
 		self.resize(self.width, self.height)
 		self.Xdraw()
@@ -59,13 +59,11 @@ gobject.type_register(MapResizeWindow)
 def main():
 	w = MapResizeWindow()
 	gobject.idle_add(w.realize)
-	gobject.idle_add(w.Xresize)
+	gobject.idle_add(w.Xresize, WIDTH/2, HEIGHT/2)
+	print("window *should* (BUG!) be shown with size=%sx%s" % (WIDTH/2, HEIGHT/2))
 	gobject.idle_add(w.show_all)
-	gobject.idle_add(w.Xresize)
-	def end():
-		print("test finished, closing")
-		gtk.mainquit()
-	gobject.timeout_add(10*1000, end)
+	gobject.timeout_add(5*1000, w.Xresize, WIDTH*2, HEIGHT*2)
+	print("window should now be shown resized to=%sx%s" % (WIDTH*2, HEIGHT*2))
 	gtk.main()
 	return 0
 
