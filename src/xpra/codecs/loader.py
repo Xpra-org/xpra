@@ -217,7 +217,10 @@ def main():
         print("codecs/csc modules found:")
         #print("codec_status=%s" % codecs)
         for name in ALL_CODECS:
-            print("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), codecs.get(name, "")))
+            mod = codecs.get(name, "")
+            if mod and hasattr(mod, "__file__"):
+                mod = mod.__file__
+            print("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), mod))
         print("")
         print("codecs versions:")
         for name, version in codec_versions.items():
