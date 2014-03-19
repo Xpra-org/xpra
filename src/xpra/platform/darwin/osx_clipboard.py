@@ -11,28 +11,28 @@ log = Logger("clipboard", "osx")
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.clipboard.clipboard_base import ClipboardProxy, TEXT_TARGETS
 
-def update_clipboard_change_count():
-    return 0
+update_clipboard_change_count = None
 
 change_callbacks = []
 change_count = 0
 pasteboard = None
 
 def init_pasteboard():
-    global pasteboard, change_callbacks, change_count
+    global pasteboard, change_callbacks, change_count, update_clipboard_change_count
     if pasteboard is not None:
-        return
+        return False
     try:
         from AppKit import NSPasteboard      #@UnresolvedImport
         pasteboard = NSPasteboard.generalPasteboard()
         if pasteboard is None:
             log.warn("cannot load Pasteboard, maybe not running from a GUI session?")
-            return
+            return False
 
-        def update_clipboard_change_count():
+        def update_change_count():
             global change_count
             change_count = pasteboard.changeCount()
             return change_count
+        update_clipboard_change_count = update_change_count
 
         def timer_clipboard_check():
             global change_count
@@ -50,11 +50,13 @@ def init_pasteboard():
         w = get_UI_watcher()
         if w is None:
             log.warn("no UI watcher available, cannot watch for clipboard events")
-            return
+            return False
         log("UI watcher=%s", w)
         w.add_alive_callback(timer_clipboard_check)
+        return True
     except ImportError, e:
         log.warn("cannot monitor OSX clipboard count: %s", e)
+        return False
 
 
 class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
@@ -105,8 +107,9 @@ class OSXClipboardProxy(ClipboardProxy):
                     log("clipboard %s set to '%s'", self._selection, text_data)
                     self._clipboard.set_text(text_data)
         #prevent our change from firing another clipboard update:
-        c = update_clipboard_change_count()
-        log("change count now at %s", c)
+        if update_clipboard_change_count:
+            c = update_clipboard_change_count()
+            log("change count now at %s", c)
         gobject.idle_add(self.remove_block)
 
     def local_clipboard_changed(self):
@@ -117,3 +120,49 @@ class OSXClipboardProxy(ClipboardProxy):
             self._sent_token_events += 1
 
 gobject.type_register(OSXClipboardProxy)
+
+
+
+
+
+def main():
+    global change_count
+    import time
+    from xpra.platform import init
+    init("OSX Clipboard Change Test")
+
+    #init UI watcher with gobject (required by pasteboard monitoring code)
+    from xpra.platform.ui_thread_watcher import get_UI_watcher
+    gobject.threads_init()
+    import gtk.gdk
+    gtk.gdk.threads_init()
+    get_UI_watcher(gobject.timeout_add)
+
+    log.info("testing pasteboard")
+    if not init_pasteboard():
+        return
+    assert update_clipboard_change_count is not None
+    log.info("pasteboard=%s", pasteboard)
+    log.info("direct call to pasteboard.changeCount()=%s", pasteboard.changeCount())
+    cc = update_clipboard_change_count()
+    log.info("current change count=%s", cc)
+    clipboard = gtk.Clipboard(selection="CLIPBOARD")
+    log.info("changing clipboard %s contents", clipboard)
+    clipboard.set_text("HELLO WORLD %s" % time.time())
+    cc = update_clipboard_change_count()
+    log.info("new change count=%s", cc)
+    log.info("please update your clipboard at least once in the next 20 seconds")
+    for _ in range(20):
+        v = update_clipboard_change_count()
+        if v!=cc:
+            log.info("success! the clipboard change has been detected, new change count=%s", v)
+            break
+        else:
+            log.info(".")
+        time.sleep(1)
+    if v==cc:
+        log.info("no clipboard change detected")
+
+
+if __name__ == "__main__":
+    main()
