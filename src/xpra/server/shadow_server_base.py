@@ -13,6 +13,8 @@ from xpra.net.protocol import Compressed
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.util import AdHocStruct
 
+DEFAULT_DELAY = 50              #50ms refresh
+
 
 class RootWindowModel(object):
 
@@ -107,8 +109,8 @@ class ShadowServerBase(object):
     def calculate_workarea(self):
         pass
 
-    def start_refresh(self):
-        self.timeout_add(50, self.refresh)
+    def start_refresh(self, delay=DEFAULT_DELAY):
+        self.timeout_add(delay, self.refresh)
 
     def timeout_add(self, *args):
         #usually done via gobject
