@@ -77,6 +77,12 @@ def set_tray_orientation(tray_window, orientation):
 
 
 class SystemTray(gobject.GObject):
+    """ This is an X11 system tray area,
+        owning the "_NET_SYSTEM_TRAY_S0" selection,
+        X11 client applications can request to embed their tray icon in it,
+        the xpra server can request to "move_resize" to where the xpra client has it mapped.
+    """
+
     __gsignals__ = {
         "xpra-unmap-event": one_arg_signal,
         "xpra-client-message-event": one_arg_signal,
@@ -90,13 +96,13 @@ class SystemTray(gobject.GObject):
         self.setup_tray_window()
 
     def cleanup(self):
-        log("Tray.cleanup()")
+        log("SystemTray.cleanup()")
         root = gtk.gdk.get_default_root_window()
         owner = X11Window.XGetSelectionOwner(SELECTION)
         if owner==self.tray_window.xid:
             X11Window.XSetSelectionOwner(root.xid, SELECTION)
         else:
-            log.warn("Tray.cleanup() we were no longer the selection owner")
+            log.warn("SystemTray.cleanup() we were no longer the selection owner")
         remove_event_receiver(self.tray_window, self)
         def undock(window):
             log("undocking %s", window)
@@ -108,7 +114,7 @@ class SystemTray(gobject.GObject):
             tray_window.destroy()
         self.tray_window.destroy()
         self.tray_window = None
-        log("Tray.cleanup() done")
+        log("SystemTray.cleanup() done")
 
     def setup_tray_window(self):
         display = gtk.gdk.display_get_default()
