@@ -96,6 +96,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             return logger
         fhlogger = redirect_log('OpenGL.formathandler')
         elogger = redirect_log('OpenGL.extensions')
+        alogger = redirect_log('OpenGL.acceleratesupport')
 
         import OpenGL
         props["pyopengl"] = OpenGL.__version__
@@ -221,6 +222,13 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
         return props
     finally:
+        for x in alogger.handlers[0].records:
+            #strip default message prefix:
+            msg = x.getMessage().replace("No OpenGL_accelerate module loaded: ", "")
+            if msg=="No module named OpenGL_accelerate":
+                msg = "accelerate module is missing"
+            log.info("PyOpenGL warning: %s" % msg)
+
         #format handler messages:
         STRIP_LOG_MESSAGE = "Unable to load registered array format handler "
         missing_handlers = []
@@ -251,6 +259,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             logger.propagate = logger.saved_propagate
         restore_logger(fhlogger)
         restore_logger(elogger)
+        restore_logger(alogger)
         gldrawable.gl_end()
 
 def check_support(min_texture_size=0, force_enable=False):
