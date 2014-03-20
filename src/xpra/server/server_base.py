@@ -506,7 +506,7 @@ class ServerBase(ServerCore):
         try:
             dw, dh = ss.desktop_size
             log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
-            log_screen_sizes(ss.screen_sizes)
+            log_screen_sizes(dw, dh, ss.screen_sizes)
         except:
             pass
         self._server_sources[proto] = ss
@@ -1073,7 +1073,7 @@ class ServerBase(ServerCore):
             ss.set_screen_sizes(packet[3])
             log.info("received new display dimensions from client %s:", ss.uuid)
             log.info("client root window size is %sx%s with %s displays:", width, height, len(ss.screen_sizes))
-            log_screen_sizes(ss.screen_sizes)
+            log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea()
 
     def calculate_workarea(self):

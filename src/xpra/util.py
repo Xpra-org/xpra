@@ -122,9 +122,9 @@ class typedict(dict):
         return v
 
 
-def log_screen_sizes(sizes):
+def log_screen_sizes(root_w, root_h, sizes):
     try:
-        do_log_screen_sizes(sizes)
+        do_log_screen_sizes(root_w, root_h, sizes)
     except Exception, e:
         from xpra.log import Logger
         log = Logger("util")
@@ -136,7 +136,7 @@ def prettify_plug_name(s, default=""):
     #prettify strings on win32
     return s.lstrip("0\\").lstrip(".\\").replace("0\\", "-")
 
-def do_log_screen_sizes(sizes):
+def do_log_screen_sizes(root_w, root_h, sizes):
     from xpra.log import Logger
     log = Logger()
     #old format, used by some clients (android):
@@ -149,17 +149,34 @@ def do_log_screen_sizes(sizes):
         #more detailed output:
         display_name, width, height, width_mm, height_mm, \
         monitors, work_x, work_y, work_width, work_height = s[:11]
-        log.info("  '%s' %sx%s (%sx%s mm) workarea: %sx%s at %sx%s",
-                    prettify_plug_name(display_name), width, height, width_mm, height_mm,
-                    work_width, work_height, work_x, work_y)
+        #always log plug name:
+        info = ["'%s'" % prettify_plug_name(display_name)]
+        if width!=root_w or height!=root_h:
+            #log plug dimensions if not the same as display (root):
+            info.append("%sx%s" % (width, height))
+        info.append("(%sx%s mm)" % (width_mm, height_mm))
+        if work_width!=width or work_height!=height or work_x!=0 or work_y!=0:
+            #log workarea if not the same as plug size:
+            info.append("workarea: %sx%s" % (work_width, work_height))
+            if work_x!=0 or work_y!=0:
+                #log position if not (0, 0)
+                info.append("at %sx%s" % (work_x, work_y))
+        log.info("  "+" ".join(info))
         i = 0
         for m in monitors:
             i += 1
             if len(m)<7:
                 log.info("    %s", m)
                 continue
-            plug_name, x, y, width, height, wmm, hmm = m[:8]
-            log.info("    '%s' %sx%s at %sx%s (%sx%s mm)", prettify_plug_name(plug_name, "monitor %s" % i), width, height, x, y, wmm, hmm)
+            plug_name, plug_x, plug_y, plug_width, plug_height, plug_width_mm, plug_height_mm = m[:8]
+            info = ['%s' % prettify_plug_name(plug_name, "monitor %s" % i)]
+            if plug_width!=width or plug_height!=height or plug_x!=0 or plug_y!=0:
+                info.append("%sx%s" % (plug_width, plug_height))
+                if plug_x!=0 or plug_y!=0:
+                    info.append("at %sx%s" % (plug_x, plug_y))
+            if plug_width_mm!=width_mm or plug_height_mm!=height_mm:
+                info.append("(%sx%s mm)" % (plug_width_mm, plug_height_mm))
+            log.info("    "+" ".join(info))
 
 
 def dump_references(log, instances):

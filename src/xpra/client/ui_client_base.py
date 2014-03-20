@@ -564,7 +564,7 @@ class UIXpraClient(XpraClientBase):
                 log("screen size unchanged")
                 return
             log.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(ss))
-            log_screen_sizes(ss)
+            log_screen_sizes(root_w, root_h, ss)
             self.send("desktop_size", *screen_settings)
             self.last_screen_settings = screen_settings
             #update the max packet size (may have gone up):
@@ -705,7 +705,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["desktop_size"] = [root_w, root_h]
         ss = self.get_screen_sizes()
         log.info("desktop size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
-        log_screen_sizes(ss)
+        log_screen_sizes(root_w, root_h, ss)
         capabilities["screen_sizes"] = ss
         self._last_screen_settings = (root_w, root_h, ss)
         if self.keyboard_helper:
