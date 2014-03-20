@@ -191,7 +191,7 @@ cdef class ColorspaceConverter:
         self.time = 0
         self.frames = 0
 
-        #explicity clear all strides / sizes / offsets: 
+        #explicity clear all strides / sizes / offsets:
         for i in range(2):
             self.dst_strides[i] = 0
             self.dst_sizes[i]   = 0

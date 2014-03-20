@@ -212,7 +212,7 @@ def main():
         import sys
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
-    
+
         load_codecs()
         print("codecs/csc modules found:")
         #print("codec_status=%s" % codecs)

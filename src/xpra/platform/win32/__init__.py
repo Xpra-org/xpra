@@ -188,7 +188,7 @@ def do_init():
             import win32console, win32con       #@UnresolvedImport
             handle = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
             #handle.SetConsoleTextAttribute(win32console.FOREGROUND_BLUE)
-            console_info = handle.GetConsoleScreenBufferInfo()            
+            console_info = handle.GetConsoleScreenBufferInfo()
             cpos = console_info["CursorPosition"]
             #wait for input if this is a brand new console:
             _wait_for_input = cpos.X==0 and cpos.Y==0

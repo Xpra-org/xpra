@@ -209,7 +209,7 @@ def main():
             if codec is None:
                 print("assuming this is an mp3 file...")
                 codec = MP3
-    
+
         log.enable_debug()
         f = open(filename, "rb")
         data = f.read()
@@ -226,16 +226,16 @@ def main():
             gobject.idle_add(gobject_mainloop.quit)
         ss.connect("eos", eos)
         ss.start()
-    
+
         gobject_mainloop = gobject.MainLoop()
         gobject.threads_init()
-    
+
         import signal
         def deadly_signal(*args):
             gobject.idle_add(gobject_mainloop.quit)
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
-    
+
         def check_for_end(*args):
             qtime = int(ss.queue.get_property("current-level-time")/MS_TO_NS)
             if qtime<=0:
@@ -245,7 +245,7 @@ def main():
                 return False
             return True
         gobject.timeout_add(1000, check_for_end)
-    
+
         gobject_mainloop.run()
         return 0
     finally:

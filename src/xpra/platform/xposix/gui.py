@@ -113,7 +113,7 @@ class ClientExtras(object):
             log("listening for 'PrepareForSleep' signal on %s", iface_name)
         except Exception, e:
             log("failed to setup login1 event listener: %s", e)
-        
+
     def setup_xprops(self):
         #wait for handshake to complete:
         self.client.connect("handshake-complete", self.do_setup_xprops)
