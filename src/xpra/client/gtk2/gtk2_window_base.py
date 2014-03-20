@@ -130,7 +130,7 @@ class GTK2WindowBase(GTKClientWindowBase):
             log.error("xget_u32_property error on %s / %s: %s", target, name, e)
         return GTKClientWindowBase.xget_u32_property(self, target, name)
 
-    def get_current_workspace(self):
+    def get_desktop_workspace(self):
         window = self.gdk_window()
         root = window.get_screen().get_root_window()
         return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")

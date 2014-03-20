@@ -1440,24 +1440,40 @@ class ServerSource(object):
         w, h = window.get_dimensions()
         self.damage(wid, window, 0, 0, w, h, opts)
 
+    def update_batch(self, wid, window, batch_props):
+        ws = self.window_sources.get(wid)
+        if ws:
+            if "reset" in batch_props:
+                ws.batch_config = self.make_batch_config(wid, window)
+            for x in ("always", "locked"):
+                if x in batch_props:
+                    setattr(ws.batch_config, x, batch_props.boolget(x))
+            for x in ("min_delay", "max_delay", "timeout_delay", "delay"):
+                if x in batch_props:
+                    setattr(ws.batch_config, x, batch_props.intget(x))
+            log("batch config updated for window %s: %s", wid, ws.batch_config)
+
     def set_client_properties(self, wid, window, new_client_properties):
         ws = self.make_window_source(wid, window)
         ws.set_client_properties(new_client_properties)
 
+    def make_batch_config(self, wid, window):
+        batch_config = self.default_batch_config.clone()
+        batch_config.wid = wid
+        #scale initial delay based on window size
+        #(the global value is normalized to 1MPixel)
+        #but use sqrt to smooth things and prevent excesses
+        #(ie: a 4MPixel window, will start at 2 times the global delay)
+        #(ie: a 0.5MPixel window will start at 0.7 times the global delay)
+        w, h = window.get_dimensions()
+        ratio = float(w*h) / 1000000
+        batch_config.delay = self.global_batch_config.delay * sqrt(ratio)
+        return batch_config
+
     def make_window_source(self, wid, window):
         ws = self.window_sources.get(wid)
         if ws is None:
-            batch_config = self.default_batch_config.clone()
-            batch_config.wid = wid
-            #scale initial delay based on window size
-            #(the global value is normalized to 1MPixel)
-            #but use sqrt to smooth things and prevent excesses
-            #(ie: a 4MPixel window, will start at 2 times the global delay)
-            #(ie: a 0.5MPixel window will start at 0.7 times the global delay)
-            w, h = window.get_dimensions()
-            ratio = float(w*h) / 1000000
-            batch_config.delay = self.global_batch_config.delay * sqrt(ratio)
-
+            batch_config = self.make_batch_config(wid, window)
             wclass = WindowSource
             #don't use video for system trays
             #or for transparent windows (if the client supports transparency) since video doesn't do alpha (yet?)

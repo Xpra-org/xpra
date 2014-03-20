@@ -158,6 +158,7 @@ class UIXpraClient(XpraClientBase):
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
         self.window_unmap = False
+        self.window_refresh_config = False
         self.server_generic_encodings = False
         self.server_encodings = []
         self.server_core_encodings = []
@@ -998,7 +999,16 @@ class UIXpraClient(XpraClientBase):
 
 
     def send_refresh(self, wid):
-        self.send("buffer-refresh", wid, True, 95)
+        packet = ["buffer-refresh", wid, True, 100]
+        if self.window_refresh_config:
+            #explicit refresh (should be assumed True anyway),
+            #also force a reset of batch configs:
+            packet.append({
+                           "refresh-now"    : True,
+                           "batch"          : {"reset" : True}
+                           })
+            packet.append({})   #no client_properties
+        self.send(*packet)
 
     def send_refresh_all(self):
         log("Automatic refresh for all windows ")
@@ -1012,6 +1022,7 @@ class UIXpraClient(XpraClientBase):
             self.session_name = c.strget("session_name", "")
         set_application_name(self.session_name or "Xpra")
         self.window_unmap = c.boolget("window_unmap")
+        self.window_refresh_config = c.boolget("window_refresh_config")
         self.suspend_resume = c.boolget("suspend-resume")
         self.server_supports_notifications = c.boolget("notifications")
         self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications

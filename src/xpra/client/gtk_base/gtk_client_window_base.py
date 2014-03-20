@@ -42,8 +42,8 @@ if os.name=="posix":
             root = gtk.gdk.get_default_root_window()
             supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
             CAN_SET_WORKSPACE = bool(supported) and "_NET_WM_DESKTOP" in supported
-        except:
-            pass
+        except Exception, e:
+            log.info("failed to setup workspace hooks: %s", e)
     except ImportError, e:
         pass
 
@@ -65,7 +65,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._fullscreen = None
         self._iconified = False
         self._resize_counter = 0
-        self._current_workspace = self._client_properties.get("workspace")
+        self._window_workspace = self._client_properties.get("workspace")
+        self._desktop_workspace = -1
         ClientWindowBase.init_window(self, metadata)
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
 
@@ -164,10 +165,49 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def property_changed(self, widget, event):
         log("%s.property_changed(%s, %s) : %s", self, widget, event, event.atom)
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
-            #fake a configure event to send the new client_properties with
-            #the updated workspace number:
-            workspacelog("_NET_WM_DESKTOP modified, faking configure event")
+            self.do_workspace_changed(event)
+
+    def workspace_changed(self):
+        #on X11 clients, this fires from the root window property watcher 
+        ClientWindowBase.workspace_changed(self)
+        self.do_workspace_changed("desktop workspace changed")
+    
+    def do_workspace_changed(self, info):
+        #call this method whenever something workspace related may have changed
+        window_workspace = self.get_window_workspace()
+        desktop_workspace = self.get_desktop_workspace()
+        workspacelog("do_worskpace_changed(%s) window/desktop: from %s to %s", info, (self._window_workspace, self._desktop_workspace), (window_workspace, desktop_workspace))
+        if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
+            #no change
+            return
+        if desktop_workspace<0 or window_workspace<0:
+            #not sure about which workspace we are on!?
+            #maybe the property has been cleared? maybe the window is being scrubbed? do nothing.
+            return
+        if not self._client.window_refresh_config:
+            workspacelog("sending configure event to update workspace value")
             self.process_configure_event()
+            return
+        #we can tell the server using a "buffer-refresh" packet instead
+        #and also take care of tweaking the batch config
+        client_properties = {"workspace" : window_workspace}
+        options = {"refresh-now" : False}               #no need to refresh it
+        if desktop_workspace!=window_workspace:
+            options["batch"] = {
+                                "reset"     : True,
+                                "delay"     : 1000,
+                                "locked"    : True,
+                                "always"    : True,
+                                }
+            workspacelog("window is on a different workspace, increasing its batch delay: %s", options)
+        elif self._window_workspace!=self._desktop_workspace:
+            options["batch"] = {
+                                "reset"     : True,
+                                }
+            workspacelog("window was on a different workspace, resetting its batch delay: %s", options)
+        self.send("buffer-refresh", self._id, 0, 100, options, client_properties)
+        self._window_workspace = window_workspace
+        self._desktop_workspace = desktop_workspace
 
 
     def set_workspace(self):
@@ -175,10 +215,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return -1
         root = self.gdk_window().get_screen().get_root_window()
         ndesktops = self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
-        workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, self._current_workspace, ndesktops)
+        workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, self._window_workspace, ndesktops)
         if ndesktops is None or ndesktops<=1:
             return  -1
-        workspace = max(0, min(ndesktops-1, self._current_workspace))
+        workspace = max(0, min(ndesktops-1, self._window_workspace))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
 
         def send():
@@ -189,7 +229,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         trap.call_synced(send)
         return workspace
 
-    def get_current_workspace(self):
+    def get_desktop_workspace(self):
         return -1
 
     def get_window_workspace(self):
@@ -290,10 +330,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             props["screen"] = self.get_screen().get_number()
             workspace = self.get_window_workspace()
             if workspace<0:
-                workspace = self.get_current_workspace()
-        if self._current_workspace!=workspace:
-            workspacelog("map event: changed workspace from %s to %s", self._current_workspace, workspace)
-            self._current_workspace = workspace
+                workspace = self.get_desktop_workspace()
+        if self._window_workspace!=workspace:
+            workspacelog("map event: changed workspace from %s to %s", self._window_workspace, workspace)
+            self._window_workspace = workspace
             props["workspace"] = workspace
         log("map-window for wid=%s with client props=%s", self._id, props)
         self.send("map-window", self._id, x, y, w, h, props)
@@ -321,11 +361,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #if the window has been mapped already, the workspace should be set:
             props["screen"] = self.get_screen().get_number()
             workspace = self.get_window_workspace()
-            if workspace<0:
-                workspace = self.get_current_workspace()
-            if self._current_workspace!=workspace:
-                workspacelog("configure event: changed workspace from %s to %s", self._current_workspace, workspace)
-                self._current_workspace = workspace
+            if self._window_workspace!=workspace:
+                workspacelog("configure event: changed workspace from %s to %s", self._window_workspace, workspace)
+                self._window_workspace = workspace
                 props["workspace"] = workspace
         packet = ["configure-window", self._id, x, y, w, h, props]
         if self._resize_counter>0:

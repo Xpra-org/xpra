@@ -39,6 +39,7 @@ class DamageBatchConfig(object):
         self.max_delay = self.MAX_DELAY
         self.timeout_delay = self.TIMEOUT_DELAY
         self.delay = self.START_DELAY
+        self.locked = False                             #to force a specific delay
         self.last_delays = maxdeque(64)                 #the delays we have tried to use (milliseconds)
         self.last_actual_delays = maxdeque(64)          #the delays we actually used (milliseconds)
         self.last_updated = 0
@@ -49,6 +50,10 @@ class DamageBatchConfig(object):
 
 
     def add_stats(self, info, prefix, suffix=""):
+        info[prefix+"batch.min-delay"] = self.min_delay
+        info[prefix+"batch.max-delay"] = self.max_delay
+        info[prefix+"batch.timeout-delay"] = self.timeout_delay
+        info[prefix+"batch.locked"] = self.locked
         if len(self.last_delays)>0:
             batch_delays = [x for _,x in list(self.last_delays)]
             add_list_stats(info, prefix+"batch.delay"+suffix, batch_delays)
@@ -69,5 +74,5 @@ class DamageBatchConfig(object):
         return c
 
     def __str__(self):
-        return  "DamageBatchConfig(wid=%s, always=%s, min=%s, max=%s, current=%s, max events=%s, max pixels=%s, time unit=%s)" % \
-                (self.wid, self.always, self.min_delay, self.max_delay, self.delay, self.max_events, self.max_pixels, self.time_unit)
+        return  "DamageBatchConfig(wid=%s, always=%s, min=%s, max=%s, current=%s, locked=%s, max events=%s, max pixels=%s, time unit=%s)" % \
+                (self.wid, self.always, self.min_delay, self.max_delay, self.delay, self.locked, self.max_events, self.max_pixels, self.time_unit)

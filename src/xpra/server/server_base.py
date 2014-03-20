@@ -586,6 +586,7 @@ class ServerBase(ServerCore):
              "toggle_keyboard_sync"         : True,
              "window_configure"             : True,
              "window_unmap"                 : True,
+             "window_refresh_config"        : True,
              "xsettings-tuple"              : True,
              "change-quality"               : True,
              "change-min-quality"           : True,
@@ -1422,17 +1423,40 @@ class ServerBase(ServerCore):
 
 
     def _process_buffer_refresh(self, proto, packet):
-        [wid, _, qual] = packet[1:4]
+        """ can be used for requesting a refresh, or tuning batch config, or both """
+        wid, _, qual = packet[1:4]
+        options = typedict({})
+        client_properties = {}
+        if len(packet)>=6:
+            options = typedict(packet[4])
+            client_properties = packet[5]
         if wid==-1:
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:
             wid_windows = {wid : self._id_to_window.get(wid)}
         else:
+            log.warn("invalid window specified for refresh: %s", wid)
             return
-        opts = {"quality" : qual,
-                "override_options" : True}
-        log("process_buffer_refresh for windows: %s, with options=%s", wid_windows, opts)
-        self.refresh_windows(proto, wid_windows, opts)
+        log("process_buffer_refresh for windows: %s options=%s, client_properties=%s", wid_windows, options, client_properties)
+        batch_props = options.dictget("batch", {})
+        if batch_props or client_properties:
+            #change batch config and/or client properties
+            self.update_batch_config(proto, wid_windows, typedict(batch_props), client_properties)
+        #default to True for backwards compatibility:
+        if options.get("refresh-now", True):
+            refresh_opts = {"quality"           : qual,
+                            "override_options"  : True}
+            self.refresh_windows(proto, wid_windows, refresh_opts)
+
+    def update_batch_config(self, proto, wid_windows, batch_props, client_properties):
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        for wid, window in wid_windows.items():
+            if window is None or not window.is_managed():
+                continue
+            self._set_client_properties(proto, wid, window, client_properties)
+            ss.update_batch(wid, window, batch_props)
 
     def refresh_windows(self, proto, wid_windows, opts=None):
         ss = self._server_sources.get(proto)

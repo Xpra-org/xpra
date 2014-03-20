@@ -403,7 +403,8 @@ class WindowSource(object):
         self.batch_config.add_stats(info, prefix, suffix)
 
     def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):
-        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
+        if not self.batch_config.locked:
+            calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
 
     def update_speed(self):
         if self.suspended or self._mmap:
@@ -538,7 +539,7 @@ class WindowSource(object):
             log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
                 x, y, w, h, options, self.wid, self._damage_delayed[3], now-self._damage_delayed[0])
             return
-        elif self.batch_config.delay < self.batch_config.min_delay:
+        elif self.batch_config.delay < self.batch_config.min_delay and not self.batch_config.always:
             #work out if we have too many damage requests
             #or too many pixels in those requests
             #for the last time_unit, and if so we force batching on
@@ -659,10 +660,14 @@ class WindowSource(object):
             #may_send_delayed() may not be called again by an ACK packet,
             #so we must either process the region now or set a timer to
             #check again later:
-            def check_again():
-                delay = int(max(10, actual_delay/10.0))
+            def check_again(delay=actual_delay/10.0):
+                delay = int(min(self.batch_config.max_delay, max(10, delay)))
                 self.timeout_add(delay, self.may_send_delayed)
                 return False
+            if self.batch_config.locked:
+                #ensure we honour the fixed delay
+                #(as we may get called from a damage ack before we expire)
+                return check_again(self.batch_config.delay-actual_delay)
             pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
             ww, wh = self.window_dimensions
             if pixels_encoding_backlog>=(ww*wh):
