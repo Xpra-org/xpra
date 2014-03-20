@@ -456,6 +456,7 @@ class X11ServerBase(GTKServerBase):
         try:
             trap.call_synced(X11Keyboard.xtest_fake_button, button, pressed)
         except XError:
-            log.warn("Failed to pass on (un)press of mouse button %s"
-                     + " (perhaps your Xvfb does not support mousewheels?)",
-                     button)
+            err = "Failed to pass on (un)press of mouse button %s" % button
+            if button>=4:
+                err += " (perhaps your Xvfb does not support mousewheels?)"
+            log.warn(err)
