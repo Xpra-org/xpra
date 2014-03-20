@@ -102,7 +102,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-window\-layout\fP=\fILAYOUT\fP]
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-tray\-icon\fP=\fIFILENAME\fP]
-[\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-ssh\fP=\fICMD\fP]
+[\fB\-\-exit\-ssh\fP] [\fB\-\-no\-exit\-ssh]
+[\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
@@ -810,7 +812,7 @@ The client and server will exchange ping and echo packets
 which are used to gather latency statistics.
 Those statistics can be seen using the \fBxpra info\fP command.
 
-.SS Options for attach, stop
+.SS Options for attach, stop, info, screenshot, version
 .TP
 \fB\-\-ssh\fP\=\fICMD\fP
 When you use an \fBssh:\fP address to connect to a remote display,
@@ -832,6 +834,17 @@ arcfour encryption, then you should run
 is redundant with xpra's own compression, and will just waste your
 CPU.  See also xpra's \fB\-\-compress\fP switch.
 .RE
+.TP
+\fB\-\-exit\-ssh\fP or \fB\-\-no\-exit\-ssh\fP
+Choose whether the SSH client process should be forcibly terminated
+when xpra disconnects from the server.
+If you are using SSH connection sharing, you may want to avoid
+stopping the SSH master process instance spawned by xpra as it may be
+used by other SSH sessions.
+Note: the \fB\-\-no\-exit\-ssh\fP detaches the SSH process from the
+terminal which prevents the SSH process from interacting with
+the terminal input, this disables the keyboard interaction required
+for password input, host key verification, etc..
 .TP
 \fB\-\-remote\-xpra\fP=\fICMD\fP
 When connecting to a remote server over ssh, xpra needs to be able to

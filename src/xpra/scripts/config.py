@@ -270,6 +270,7 @@ OPTION_TYPES = {
                     "autoconnect"       : bool,
                     "exit-with-children": bool,
                     "exit-with-client"  : bool,
+                    "exit-ssh"          : bool,
                     "opengl"            : bool,
                     "mdns"              : bool,
                     #arrays of strings (default value, allowed options):
@@ -360,6 +361,7 @@ def get_defaults():
                     "autoconnect"       : False,
                     "exit-with-children": False,
                     "exit-with-client"  : False,
+                    "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : True,
                     "video-encoders"    : [],
@@ -402,11 +404,13 @@ def parse_bool(k, v):
     else:
         warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
 
-def print_bool(k, v):
+def print_bool(k, v, true_str='yes', false_str='no'):
     if type(v)==type(None):
         return 'auto'
     if type(v)==bool:
-        return v and 'yes' or 'no'
+        if v:
+            return true_str
+        return false_str
     warn("Warning: cannot print value '%s' for '%s' as a boolean" % (v, k))
 
 def parse_number(numtype, k, v, auto=-1):

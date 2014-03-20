@@ -424,6 +424,12 @@ def parse_cmdline(cmdline):
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",
                       help="How to run ssh (default: '%default')")
+    group.add_option("--exit-ssh", action="store_true",
+                      dest="exit_ssh", default=defaults.exit_ssh,
+                      help="Terminate SSH when disconnecting (default: %s)" % print_bool("exit_ssh", defaults.exit_ssh, 'terminate', 'do not terminate'))
+    group.add_option("--no-exit-ssh", action="store_false",
+                      dest="exit_ssh", default=defaults.exit_ssh,
+                      help="Do not terminate SSH when disconnecting, this may break password authentication on some platforms (default: %s)" % print_bool("exit_ssh", defaults.exit_ssh, 'terminate', 'do not terminate'))
     group.add_option("--username", action="store",
                       dest="username", default=defaults.username,
                       help="The username supplied by the client for authentication (default: '%default')")
@@ -630,6 +636,7 @@ def parse_display_name(error_cb, opts, display_name):
         desc["type"] = "ssh"
         desc["proxy_command"] = ["_proxy"]
         desc["local"] = False
+        desc["exit_ssh"] = opts.exit_ssh
         parts = display_name.split(separator)
         if len(parts)>2:
             #ssh:HOST:DISPLAY or ssh/HOST/DISPLAY
@@ -801,7 +808,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         try:
             kwargs = {}
             kwargs["stderr"] = sys.stderr
-            if os.name=="posix" and not sys.platform.startswith("darwin"):
+            if not display_desc.get("exit_ssh", False) and os.name=="posix" and not sys.platform.startswith("darwin"):
                 def setsid():
                     #run in a new session
                     os.setsid()
@@ -849,7 +856,9 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                             fd.close()
                     except Exception, e:
                         print("error closing ssh tunnel %s: %s" % (name, e))
-                return
+                if not display_desc.get("exit_ssh", False):
+                    #leave it running
+                    return
             try:
                 if child.poll() is None:
                     #only supported on win32 since Python 2.7
