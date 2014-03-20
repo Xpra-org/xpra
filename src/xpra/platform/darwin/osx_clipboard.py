@@ -15,48 +15,105 @@ update_clipboard_change_count = None
 
 change_callbacks = []
 change_count = 0
-pasteboard = None
+_initialised = False
 
-def init_pasteboard():
-    global pasteboard, change_callbacks, change_count, update_clipboard_change_count
-    if pasteboard is not None:
-        return False
-    try:
-        from AppKit import NSPasteboard      #@UnresolvedImport
-        pasteboard = NSPasteboard.generalPasteboard()
+
+def get_ctypes_Pasteboard_changeCount():
+    """ a ctypes implementation to access the Pasteboard's changeCount """
+    import ctypes.util
+    appkit = ctypes.cdll.LoadLibrary(ctypes.util.find_library('AppKit'))
+    assert appkit
+    objc = ctypes.cdll.LoadLibrary(ctypes.util.find_library('objc'))
+    objc.objc_getClass.restype = ctypes.c_void_p
+    objc.sel_registerName.restype = ctypes.c_void_p
+    objc.objc_msgSend.restype = ctypes.c_void_p
+    objc.objc_msgSend.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    # Without this, it will still work, but it'll leak memory
+    NSAutoreleasePool = objc.objc_getClass('NSAutoreleasePool')
+    NSPasteboard = objc.objc_getClass('NSPasteboard')
+    def get_change_count():
+        pool = objc.objc_msgSend(NSAutoreleasePool, objc.sel_registerName('alloc'))
+        pool = objc.objc_msgSend(pool, objc.sel_registerName('init'))
+        # get the pasteboard class id then an instance:
+        pasteboard = objc.objc_msgSend(NSPasteboard, objc.sel_registerName('generalPasteboard'))
         if pasteboard is None:
             log.warn("cannot load Pasteboard, maybe not running from a GUI session?")
-            return False
+            return None
+        changeCount = objc.objc_msgSend(pasteboard, objc.sel_registerName('changeCount'))
+        objc.objc_msgSend(pool, objc.sel_registerName('release'))
+        return changeCount
+    return get_change_count
 
-        def update_change_count():
-            global change_count
-            change_count = pasteboard.changeCount()
-            return change_count
-        update_clipboard_change_count = update_change_count
 
-        def timer_clipboard_check():
-            global change_count
-            c = change_count
-            change_count = pasteboard.changeCount()
-            log("timer_clipboard_check() was %s, now %s", c, change_count)
-            if c!=change_count:
-                for x in change_callbacks:
-                    try:
-                        x()
-                    except Exception, e:
-                        log("error in change callback %s: %s", x, e)
+def get_AppKit_Pasteboard_changeCount():
+    """ PyObjC AppKit implementation to access Pasteboard's changeCount """
+    from AppKit import NSPasteboard      #@UnresolvedImport
+    pasteboard = NSPasteboard.generalPasteboard()
+    if pasteboard is None:
+        log.warn("cannot load Pasteboard, maybe not running from a GUI session?")
+        return None
 
-        from xpra.platform.ui_thread_watcher import get_UI_watcher
-        w = get_UI_watcher()
-        if w is None:
-            log.warn("no UI watcher available, cannot watch for clipboard events")
-            return False
-        log("UI watcher=%s", w)
-        w.add_alive_callback(timer_clipboard_check)
-        return True
-    except ImportError, e:
-        log.warn("cannot monitor OSX clipboard count: %s", e)
+    def get_change_count():
+        return pasteboard.changeCount()
+    return get_change_count
+
+
+def init_pasteboard():
+    global _initialised
+    if _initialised:
+        return
+    _initialised = True
+    #try both implementations, ctypes first
+    for info, init_fn in (("ctypes", get_ctypes_Pasteboard_changeCount),
+                          ("AppKit", get_AppKit_Pasteboard_changeCount)):
+        try:
+            log("init_pasteboard: trying %s using %s", info, init_fn)
+            get_change_count = init_fn()
+            if get_change_count is None:
+                continue
+            #test it (may throw an exception?):
+            v = get_change_count()
+            if v is None:
+                continue
+            log("%s pasteboard access success, current change count=%s, setting up timer to watch for changes", info, v)
+            #good, use it:
+            setup_watcher(get_change_count)
+            return True
+        except:
+            log.error("error initializing %s pasteboard", info, exc_info=True)
+    return False
+
+def setup_watcher(get_change_count):
+    global change_callbacks, update_clipboard_change_count
+
+    #this function will update the globalcount:
+    def update_change_count():
+        global change_count
+        change_count = get_change_count()
+        return change_count
+    update_clipboard_change_count = update_change_count
+
+    #register this function to check periodically:
+    def timer_clipboard_check():
+        global change_count
+        c = change_count
+        change_count = update_change_count()
+        log("timer_clipboard_check() was %s, now %s", c, change_count)
+        if c!=change_count:
+            for x in change_callbacks:
+                try:
+                    x()
+                except Exception, e:
+                    log("error in change callback %s: %s", x, e)
+
+    from xpra.platform.ui_thread_watcher import get_UI_watcher
+    w = get_UI_watcher()
+    if w is None:
+        log.warn("no UI watcher available, cannot watch for clipboard events")
         return False
+    log("UI watcher=%s", w)
+    w.add_alive_callback(timer_clipboard_check)
+    return True
 
 
 class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
@@ -130,6 +187,7 @@ def main():
     import time
     from xpra.platform import init
     init("OSX Clipboard Change Test")
+    log.enable_debug()
 
     #init UI watcher with gobject (required by pasteboard monitoring code)
     from xpra.platform.ui_thread_watcher import get_UI_watcher
@@ -140,10 +198,9 @@ def main():
 
     log.info("testing pasteboard")
     if not init_pasteboard():
+        log.warn("failed to initialize a pasteboard!")
         return
-    assert update_clipboard_change_count is not None
-    log.info("pasteboard=%s", pasteboard)
-    log.info("direct call to pasteboard.changeCount()=%s", pasteboard.changeCount())
+    assert update_clipboard_change_count is not None, "cannot access clipboard change count"
     cc = update_clipboard_change_count()
     log.info("current change count=%s", cc)
     clipboard = gtk.Clipboard(selection="CLIPBOARD")
