@@ -19,6 +19,7 @@ focuslog = Logger("client", "focus")
 soundlog = Logger("client", "sound")
 traylog = Logger("client", "tray")
 keylog = Logger("client", "keyboard")
+workspacelog = Logger("client", "workspace")
 
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
@@ -549,6 +550,11 @@ class UIXpraClient(XpraClientBase):
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
         return ClientTray(client, wid, w, h, tray_widget, self.mmap_enabled, self.mmap)
+
+    def workspace_changed(self, *args):
+        workspacelog("workspace_changed%s", args)
+        for win in self._id_to_window.values():
+            win.workspace_changed()
 
     def screen_size_changed(self, *args):
         log("screen_size_changed(%s) pending=%s", args, self.screen_size_change_pending)

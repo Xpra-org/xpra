@@ -120,7 +120,7 @@ class ClientExtras(object):
 
     def do_setup_xprops(self, *args):
         log.debug("do_setup_xprops(%s)", args)
-        ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA"]
+        ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
         try:
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
@@ -159,5 +159,7 @@ class ClientExtras(object):
                 self.client.send("server-settings", {"resource-manager" : value.encode("utf-8")})
         elif prop=="_NET_WORKAREA":
             self.client.screen_size_changed("from %s event" % self._root_props_watcher)
+        elif prop=="_NET_CURRENT_DESKTOP":
+            self.client.workspace_changed("from %s event" % self._root_props_watcher)
         else:
             log.error("unknown property %s", prop)

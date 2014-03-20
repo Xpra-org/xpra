@@ -40,6 +40,9 @@ class ClientWidgetBase(object):
         backing.init(w, h)
         return backing
 
+    def workspace_changed(self):
+        pass
+
     def new_backing(self, w, h):
         raise Exception("override me!")
 
