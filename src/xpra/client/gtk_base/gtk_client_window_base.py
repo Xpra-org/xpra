@@ -9,6 +9,7 @@ from xpra.log import Logger
 focuslog = Logger("focus")
 workspacelog = Logger("workspace")
 log = Logger("window")
+keylog = Logger("window", "keyboard")
 
 from xpra.util import AdHocStruct, nn
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
@@ -418,6 +419,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         key_event.group = event.group
         key_event.string = nn(event.string)
         key_event.pressed = pressed
+        keylog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
         return key_event
 
     def do_key_press_event(self, event):

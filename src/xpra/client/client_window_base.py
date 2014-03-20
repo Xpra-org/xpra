@@ -14,6 +14,7 @@ from xpra.log import Logger
 log = Logger("window")
 plog = Logger("paint")
 focuslog = Logger("focus")
+mouselog = Logger("mouse")
 
 #pretend to draw the windows, but don't actually do anything
 USE_FAKE_BACKING = os.environ.get("XPRA_USE_FAKE_BACKING", "0")=="1"
@@ -319,6 +320,7 @@ class ClientWindowBase(ClientWidgetBase):
         if self._client.readonly:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
+        mouselog("do_motion_notify_event(%s) wid=%s, pointer=%s, modifiers=%s, buttons=%s", event, self._id, pointer, modifiers, buttons)
         self._client.send_mouse_position(["pointer-position", self._id,
                                           pointer, modifiers, buttons])
 
@@ -326,14 +328,15 @@ class ClientWindowBase(ClientWidgetBase):
         if self._client.readonly:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
+        mouselog("_button_action(%s, %s, %s) wid=%s, pointer=%s, modifiers=%s, buttons=%s", button, event, depressed, self._id, pointer, modifiers, buttons)
         def send_button(pressed):
             self._client.send_positional(["button-action", self._id,
                                           button, pressed,
                                           pointer, modifiers, buttons])
         pressed_state = self.button_state.get(button, False)
         if pressed_state is False and depressed is False:
-            #we're getting a mouse-up event for this window but we never got
-            #the mouse-down event, so simulate one (needed for some dialogs on win32):
+            mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", self._id)
+            #(needed for some dialogs on win32):
             send_button(True)
         self.button_state[button] = depressed
         send_button(depressed)
