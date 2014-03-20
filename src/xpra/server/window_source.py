@@ -12,6 +12,7 @@ import os
 from xpra.log import Logger
 log = Logger("window", "encoding")
 refreshlog = Logger("window", "refresh")
+compresslog = Logger("window", "compress")
 
 
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
@@ -1118,7 +1119,7 @@ class WindowSource(object):
         #actual network packet:
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
-        log("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%% (%sKB to %sKB), delta=%s",
+        compresslog("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%% (%sKB to %sKB), delta=%s",
                  (end-start)*1000.0, w, h, coding, 100.0*len(data)/psize, psize/1024, len(data)/1024, delta)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
