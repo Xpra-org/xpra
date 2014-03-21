@@ -18,6 +18,9 @@ IGNORE_EVENTS = {
             win32con.WM_COMMAND             : "WM_COMMAND",
             win32con.WM_DEVICECHANGE        : "WM_DEVICECHANGE",
             win32con.WM_DISPLAYCHANGE       : "WM_DISPLAYCHANGE",       #already taken care of by gtk event
+            win32con.WM_NCCALCSIZE          : "WM_NCCALCSIZE",          #happens after resume too?
+            win32con.WM_WINDOWPOSCHANGED    : "WM_WINDOWPOSCHANGED",    #happens after resume too?
+            win32con.WM_WININICHANGE        : "WM_WININICHANGE",        #happens after resume too?
             win32con.WM_WINDOWPOSCHANGING   : "WM_WINDOWPOSCHANGING",
             win32con.WM_GETMINMAXINFO       : "WM_GETMINMAXINFO",       #could be used to limit window size?
             WM_WTSSESSION_CHANGE            : "WM_WTSSESSION_CHANGE",

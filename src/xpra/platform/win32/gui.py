@@ -83,11 +83,11 @@ class ClientExtras(object):
     def power_broadcast_event(self, wParam, lParam):
         log("WM_POWERBROADCAST: %s/%s client=%s", KNOWN_EVENTS.get(wParam, wParam), lParam, self.client)
         #maybe also "PBT_APMQUERYSUSPEND" and "PBT_APMQUERYSTANDBY"?
-        if wParam==win32con.PBT_APMSUSPEND:
+        if wParam==win32con.PBT_APMSUSPEND and self.client:
             self.client.suspend()
         #According to the documentation:
         #The system always sends a PBT_APMRESUMEAUTOMATIC message whenever the system resumes.
-        elif wParam==win32con.PBT_APMRESUMEAUTOMATIC:
+        elif wParam==win32con.PBT_APMRESUMEAUTOMATIC and self.client:
             self.client.resume()
 
     def force_ungrab(self, wid):
@@ -147,3 +147,40 @@ class ClientExtras(object):
         else:
             log.warn("unknown console event: %s", event_name)
         return 0
+
+
+def main():
+    from xpra.platform import init, clean
+    try:
+        init("Platform-Events", "Platform Events Test")
+        import sys
+        if "-v" in sys.argv or "--verbose" in sys.argv:
+            from xpra.platform.win32.win32_events import log as win32_event_logger
+            log.enable_debug()
+            win32_event_logger.enable_debug()
+
+        def suspend():
+            log.info("suspend event")
+        def resume():
+            log.info("resume event")
+        fake_client = AdHocStruct()
+        fake_client.window_with_grab = None
+        fake_client.suspend = suspend
+        fake_client.resume = resume
+        fake_client.keyboard_helper = None
+        ClientExtras(fake_client)
+
+        import gobject
+        gobject.threads_init()
+
+        loop = gobject.MainLoop()
+        try:
+            loop.run()
+        except KeyboardInterrupt:
+            print("exiting on keyboard interrupt")
+    finally:
+        #this will wait for input on win32:
+        clean()
+
+if __name__ == "__main__":
+    main()
