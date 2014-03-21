@@ -691,7 +691,13 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     elif proxying:
         from xpra.server.proxy_server import ProxyServer
         app = ProxyServer()
-        app.init(opts)
+        try:
+            app.init(opts)
+        except Exception, e:
+            log.error("Error: cannot start the proxy server")
+            log.error(str(e))
+            log.info("")
+            return 1
     else:
         assert starting or upgrading
         from xpra.x11.gtk_x11 import gdk_display_source
