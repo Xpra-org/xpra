@@ -298,7 +298,7 @@ class ProxyInstanceProcess(Process):
                 proto.send_now(("hello", {"version" : __version__}))
                 self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
                 return
-        self.send_disconnect(proto, "this socket only handles 'hello', 'version' and 'stop' requests")
+        self.send_disconnect(proto, "this socket only handles 'info', 'version' and 'stop' requests")
 
     def send_disconnect(self, proto, reason):
         log("send_disconnect(%s, %s)", proto, reason)
