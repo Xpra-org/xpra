@@ -349,6 +349,10 @@ this mode of operation.
 This command allows a single server to proxy connections for multiple
 others, potentially serving as a load balancing or authentication
 entry point for many sessions.
+The proxy server will spawn a new process for each proxy connection,
+this proxy process will create an unauthenticated new unix domain socket
+which can be used with the subcommands \fBinfo\fP, \fBversion\fP and
+\fBstop\fP.
 
 .SS Important Note
 Some platforms and package managers may choose to only build the client
