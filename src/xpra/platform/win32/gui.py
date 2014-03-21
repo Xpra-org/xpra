@@ -17,12 +17,16 @@ UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
 
 KNOWN_EVENTS = {}
+POWER_EVENTS = {}
 try:
     import win32con             #@UnresolvedImport
     for x in dir(win32con):
-        if x.endswith("_EVENT") or x.startswith("PBT_"):
+        if x.endswith("_EVENT"):
             v = getattr(win32con, x)
             KNOWN_EVENTS[v] = x
+        if x.startswith("PBT_"):
+            v = getattr(win32con, x)
+            POWER_EVENTS[v] = x
 except:
     pass
 
@@ -81,7 +85,7 @@ class ClientExtras(object):
                 self.force_ungrab(wid)
 
     def power_broadcast_event(self, wParam, lParam):
-        log("WM_POWERBROADCAST: %s/%s client=%s", KNOWN_EVENTS.get(wParam, wParam), lParam, self.client)
+        log("WM_POWERBROADCAST: %s/%s client=%s", POWER_EVENTS.get(wParam, wParam), lParam, self.client)
         #maybe also "PBT_APMQUERYSUSPEND" and "PBT_APMQUERYSTANDBY"?
         if wParam==win32con.PBT_APMSUSPEND and self.client:
             self.client.suspend()
