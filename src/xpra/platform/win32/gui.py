@@ -60,8 +60,8 @@ class ClientExtras(object):
             if el:
                 el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
                 el.add_event_callback(win32con.WM_POWERBROADCAST, self.power_broadcast_event)
-        except:
-            log.error("cannot register focus callback")
+        except Exception, e:
+            log.error("cannot register focus and power callbacks: %s", e)
 
     def cleanup(self):
         self.setup_console_event_listener(False)
