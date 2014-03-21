@@ -173,11 +173,12 @@ def main():
         import gobject
         gobject.threads_init()
 
+        log.info("Event loop is running")
         loop = gobject.MainLoop()
         try:
             loop.run()
         except KeyboardInterrupt:
-            print("exiting on keyboard interrupt")
+            log.info("exiting on keyboard interrupt")
     finally:
         #this will wait for input on win32:
         clean()
