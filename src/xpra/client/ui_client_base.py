@@ -348,6 +348,8 @@ class UIXpraClient(XpraClientBase):
     def suspend(self):
         log.info("system is suspending")
         self._suspended_at = time.time()
+        #tell the server to slow down refresh for all the windows:
+        self.control_refresh(-1, True, False)
 
     def resume(self):
         elapsed = 0
@@ -355,7 +357,48 @@ class UIXpraClient(XpraClientBase):
             elapsed = time.time()-self._suspended_at
         delta = datetime.timedelta(seconds=int(elapsed))
         log.info("system resumed, was suspended for %s", delta)
+        #this will reset the refresh rate too:
         self.send_refresh_all()
+
+
+    def control_refresh(self, wid, suspend_resume, refresh, quality=100, options={}, client_properties={}):
+        packet = ["buffer-refresh", wid, 0, quality]
+        if self.window_refresh_config:
+            options["refresh-now"] = bool(refresh)
+            if suspend_resume is True:
+                options["batch"] = {"reset"     : True,
+                                    "delay"     : 1000,
+                                    "locked"    : True,
+                                    "always"    : True}
+            elif suspend_resume is False:
+                options["batch"] = {"reset"     : True}
+            else:
+                pass    #batch unchanged
+            log("sending buffer refresh: options=%s, client_properties=%s", options, client_properties)
+            packet.append(options)
+            packet.append(client_properties)
+        elif not refresh:
+            #we don't really want a refresh, we want to use the "window_refresh_config" feature
+            #but since the server doesn't support it, we can't do anything
+            return
+        self.send(*packet)
+
+    def send_refresh(self, wid):
+        packet = ["buffer-refresh", wid, 0, 100]
+        if self.window_refresh_config:
+            #explicit refresh (should be assumed True anyway),
+            #also force a reset of batch configs:
+            packet.append({
+                           "refresh-now"    : True,
+                           "batch"          : {"reset" : True}
+                           })
+            packet.append({})   #no client_properties
+        self.send(*packet)
+
+    def send_refresh_all(self):
+        log("Automatic refresh for all windows ")
+        self.send_refresh(-1)
+
 
     def show_session_info(self, *args):
         log.warn("show_session_info() is not implemented in %s", self)
@@ -996,23 +1039,6 @@ class UIXpraClient(XpraClientBase):
         s = self.min_speed
         assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
         self.send("min-speed", s)
-
-
-    def send_refresh(self, wid):
-        packet = ["buffer-refresh", wid, True, 100]
-        if self.window_refresh_config:
-            #explicit refresh (should be assumed True anyway),
-            #also force a reset of batch configs:
-            packet.append({
-                           "refresh-now"    : True,
-                           "batch"          : {"reset" : True}
-                           })
-            packet.append({})   #no client_properties
-        self.send(*packet)
-
-    def send_refresh_all(self):
-        log("Automatic refresh for all windows ")
-        self.send_refresh(-1)
 
 
     def parse_server_capabilities(self, c):

@@ -191,21 +191,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #we can tell the server using a "buffer-refresh" packet instead
         #and also take care of tweaking the batch config
         client_properties = {"workspace" : window_workspace}
+        suspend_resume = None
         options = {"refresh-now" : False}               #no need to refresh it
         if desktop_workspace!=window_workspace:
-            options["batch"] = {
-                                "reset"     : True,
-                                "delay"     : 1000,
-                                "locked"    : True,
-                                "always"    : True,
-                                }
-            workspacelog("window is on a different workspace, increasing its batch delay: %s", options)
+            workspacelog("window is on a different workspace, increasing its batch delay")
+            suspend_resume = True
         elif self._window_workspace!=self._desktop_workspace:
-            options["batch"] = {
-                                "reset"     : True,
-                                }
-            workspacelog("window was on a different workspace, resetting its batch delay: %s", options)
-        self.send("buffer-refresh", self._id, 0, 100, options, client_properties)
+            workspacelog("window was on a different workspace, resetting its batch delay")
+            suspend_resume = False
+        self._client.control_refresh(self._id, suspend_resume, refresh=False, options=options, client_properties=client_properties)
         self._window_workspace = window_workspace
         self._desktop_workspace = desktop_workspace
 
