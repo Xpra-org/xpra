@@ -208,12 +208,11 @@ def main():
     clipboard.set_text("HELLO WORLD %s" % time.time())
     cc = update_clipboard_change_count()
     log.info("new change count=%s", cc)
-    log.info("please update your clipboard at least once in the next 20 seconds")
-    for _ in range(20):
+    log.info("any update to your clipboard should get logged (^C to exit)")
+    while True:
         v = update_clipboard_change_count()
         if v!=cc:
             log.info("success! the clipboard change has been detected, new change count=%s", v)
-            break
         else:
             log.info(".")
         time.sleep(1)
