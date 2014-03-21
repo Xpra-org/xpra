@@ -285,7 +285,10 @@ class ProxyInstanceProcess(Process):
                 self.potential_protocols.remove(proto)
             return
         if packet_type=="hello":
-            caps = packet[1]
+            caps = typedict(packet[1])
+            if caps.boolget("challenge"):
+                self.send_disconnect(proto, "this socket does not use authentication")
+                return
             if caps.get("info_request", False):
                 proto.send_now(("hello", self.get_proxy_info(proto)))
                 self.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
