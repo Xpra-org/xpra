@@ -21,19 +21,25 @@ class DBusHelper(object):
             obj = self.bus.get_object(bus_name, path)
             log("dbus.get_object(%s, %s)=%s", bus_name, path, obj)
         except dbus.DBusException:
-            err_cb("failed to locate object at: %s:%s" % (bus_name, path))
+            msg = "failed to locate object at: %s:%s" % (bus_name, path)
+            log("DBusHelper: %s", msg)
+            err_cb(msg)
             return
         try:
             fn = obj.get_dbus_method(function, interface)
             log("%s.get_dbus_method(%s, %s)=%s", obj, function, interface, fn)
         except:
-            err_cb("failed to locate remote function '%s' on %s" % (function, obj))
+            msg = "failed to locate remote function '%s' on %s" % (function, obj)
+            log("DBusHelper: %s", msg)
+            err_cb(msg)
             return
         try:
             log("calling %s(%s)", fn, args)
             fn(*args, dbus_interface=interface, reply_handler=ok_cb, error_handler=err_cb)
         except Exception, e:
-            err_cb("error invoking %s on %s: %s", function, obj, e)
+            msg = "error invoking %s on %s: %s" % (function, obj, e)
+            log("DBusHelper: %s", msg)
+            err_cb(msg)
 
     def dbus_to_native(self, value):
         #log("dbus_to_native(%s) type=%s", value, type(value))
