@@ -283,7 +283,10 @@ class X11ServerBase(GTKServerBase):
                 log.error("odd, failed to set the new resolution, "
                           "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)
             else:
-                log.info("new resolution matching %sx%s : screen now set to %sx%s", desired_w, desired_h, root_w, root_h)
+                msg = "server virtual display now set to %sx%s" % (root_w, root_h)
+                if desired_w!=root_w or desired_h!=root_h:
+                    msg += " (best match for %sx%s)" % (desired_w, desired_h)
+                log.info(msg)
         except Exception, e:
             log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         return  root_w, root_h
