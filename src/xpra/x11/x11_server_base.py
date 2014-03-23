@@ -224,7 +224,7 @@ class X11ServerBase(GTKServerBase):
             w, h = client_size
             max_w = max(max_w, w)
             max_h = max(max_h, h)
-        log.info("maximum client resolution is %sx%s (current server resolution is %sx%s)", max_w, max_h, root_w, root_h)
+        log("maximum client resolution is %sx%s (current server resolution is %sx%s)", max_w, max_h, root_w, root_h)
         if max_w>0 and max_h>0:
             return self.set_screen_size(max_w, max_h)
         return  root_w, root_h
