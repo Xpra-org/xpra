@@ -13,6 +13,9 @@ log = Logger("mmap")
 Utility functions for communicating via mmap
 """
 
+def can_use_mmap():
+    return hasattr(ctypes.c_ubyte, "from_buffer")
+
 
 def init_client_mmap(token, mmap_group=None, socket_filename=None):
     """
@@ -21,6 +24,9 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None):
         The caller must keep hold of temp_file to ensure it does not get deleted!
         This is used by the client.
     """
+    if not can_use_mmap():
+        log.error("cannot use mmap: python version is too old?")
+        return False, None, 0, None, None
     log("init_mmap(%s, %s, %s)", token, mmap_group, socket_filename)
     try:
         import mmap
@@ -87,6 +93,9 @@ def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
         and verifies the token if supplied.
         Returns the mmap object and its size: (mmap, size)
     """
+    if not can_use_mmap():
+        log.error("cannot use mmap: python version is too old?")
+        return None, 0
     import mmap
     mmap_area = None
     try:
