@@ -20,6 +20,7 @@ soundlog = Logger("client", "sound")
 traylog = Logger("client", "tray")
 keylog = Logger("client", "keyboard")
 workspacelog = Logger("client", "workspace")
+dbuslog = Logger("client", "dbus")
 
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
@@ -1201,7 +1202,9 @@ class UIXpraClient(XpraClientBase):
             return
         rpcid = self.dbus_counter.increase()
         self.dbus_filter_pending()
-        self.dbus_pending_requests[rpcid] = (time.time(), bus_name, path, interface, function, reply_handler, error_handler)
+        req = (time.time(), bus_name, path, interface, function, reply_handler, error_handler)
+        dbuslog("sending dbus request %s to server: %s", rpcid, req)
+        self.dbus_pending_requests[rpcid] = req
         self.send("rpc", "dbus", rpcid, wid, bus_name, path, interface, function, args)
         self.timeout_add(5000, self.dbus_filter_pending)
 
@@ -1213,7 +1216,7 @@ class UIXpraClient(XpraClientBase):
                 continue
             t, bn, p, i, fn, _, ecb = v
             if time.time()-t>=5:
-                log.warn("dbus request: %s:%s (%s).%s has timed out", bn, p, i, fn)
+                dbuslog.warn("dbus request: %s:%s (%s).%s has timed out", bn, p, i, fn)
                 del self.dbus_pending_requests[k]
                 if ecb is not None:
                     ecb("timeout")
@@ -1221,7 +1224,7 @@ class UIXpraClient(XpraClientBase):
     def _process_rpc_reply(self, packet):
         rpc_type, rpcid, success, args = packet[1:5]
         assert rpc_type=="dbus", "unsupported rpc reply type: %s" % rpc_type
-        log("rpc_reply: %s", (rpc_type, rpcid, success, args))
+        dbuslog("rpc_reply: %s", (rpc_type, rpcid, success, args))
         v = self.dbus_pending_requests.get(rpcid)
         assert v is not None, "pending dbus handler not found for id %s" % rpcid
         del self.dbus_pending_requests[rpcid]
@@ -1232,13 +1235,13 @@ class UIXpraClient(XpraClientBase):
             ctype = "error"
             rh = v[-1]      #error callback
         if rh is None:
-            log("no %s rpc callback defined, return values=%s", ctype, args)
+            dbuslog("no %s rpc callback defined, return values=%s", ctype, args)
             return
-        log("calling %s callback %s(%s)", ctype, rh, args)
+        dbuslog("calling %s callback %s(%s)", ctype, rh, args)
         try:
             rh(*args)
         except Exception, e:
-            log.warn("error processing rpc reply handler %s(%s) : %s", rh, args, e)
+            dbuslog.warn("error processing rpc reply handler %s(%s) : %s", rh, args, e)
 
 
     def _process_control(self, packet):
