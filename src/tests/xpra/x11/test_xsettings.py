@@ -10,21 +10,21 @@ class TestXSettings(TestWithSession):
     def test_basic_set_get(self):
         blob = "asdfwheeeee"
         manager = XSettingsManager()
-        manager.set_blob_in_place(blob)
+        manager.set_settings(blob)
         watcher = XSettingsWatcher()
-        assert watcher.get_settings_blob() == blob
+        assert watcher.get_settings() == blob
 
     def test_watching(self):
         blob1 = "blob1"
         manager1 = XSettingsManager()
-        manager1.set_blob_in_place(blob1)
+        manager1.set_settings(blob1)
         watcher = XSettingsWatcher()
-        assert watcher.get_settings_blob() == blob1
+        assert watcher.get_settings() == blob1
         blob2 = "blob2"
         manager2 = XSettingsManager()
-        manager2.set_blob_in_place(blob2)
+        manager2.set_settings(blob2)
         assert_mainloop_emits(watcher, "xsettings-changed")
-        assert watcher.get_settings_blob() == blob2
+        assert watcher.get_settings() == blob2
         # It's likely that (due to how the GTK+ clipboard code works
         # underneath) all of the managers that we create within a single
         # process are actually using the same selection window, and thus the
@@ -33,13 +33,13 @@ class TestXSettings(TestWithSession):
         # Test where the property change but no manager change message
         # is sent:
         blob3 = "blob3"
-        manager2.set_blob_in_place(blob3)
+        manager2.set_settings(blob3)
         assert_mainloop_emits(watcher, "xsettings-changed")
-        assert watcher.get_settings_blob() == blob3
+        assert watcher.get_settings() == blob3
         # Test where the property does not change, but a manager change
         # message is sent:
         manager3 = XSettingsManager()
-        manager3.set_blob_in_place(blob3)
+        manager3.set_settings(blob3)
         assert_mainloop_emits(watcher, "xsettings-changed")
-        assert watcher.get_settings_blob() == blob3
+        assert watcher.get_settings() == blob3
 

@@ -474,12 +474,12 @@ class ServerBase(ServerCore):
             else:
                 share_count += 1
         if share_count>0:
-            log.info("sharing with %s other session(s)", share_count)
+            log.info("sharing with %s other client(s)", share_count)
         self.dpi = c.intget("dpi", self.default_dpi)
         if self.dpi>0:
             #some non-posix clients never send us 'resource-manager' settings
             #so just use a fake one to ensure the dpi gets applied:
-            self.update_server_settings({'resource-manager' : ""})
+            self.update_server_settings({'resource-manager' : ""}, reset=(share_count==0))
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.send_aliases = c.dictget("aliases")
@@ -549,7 +549,7 @@ class ServerBase(ServerCore):
 
         ss.startup_complete()
 
-    def update_server_settings(self, settings):
+    def update_server_settings(self, settings, reset=False):
         log("server settings ignored: ", settings)
 
     def set_keyboard_repeat(self, key_repeat):

@@ -138,13 +138,13 @@ class ClientExtras(object):
 
     def _handle_xsettings_changed(self, *args):
         try:
-            blob = self._xsettings_watcher.get_settings_blob()
+            settings = self._xsettings_watcher.get_settings()
         except:
             log.error("failed to get XSETTINGS", exc_info=True)
             return
-        log("xsettings_changed new value=%s", blob)
-        if blob is not None:
-            self.client.send("server-settings", {"xsettings-blob": blob})
+        log("xsettings_changed new value=%s", settings)
+        if settings is not None:
+            self.client.send("server-settings", {"xsettings-blob": settings})
 
     def _handle_root_prop_changed(self, obj, prop):
         log("root_prop_changed(%s, %s)", obj, prop)

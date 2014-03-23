@@ -16,8 +16,10 @@ import gobject
 
 from xpra.util import AdHocStruct
 from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
 from xpra.x11.gtk_x11.wm import Wm
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
+from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.gdk_bindings import (
                                add_event_receiver,          #@UnresolvedImport
                                get_children,                #@UnresolvedImport
@@ -38,6 +40,7 @@ focuslog = Logger("server", "focus")
 windowlog = Logger("server", "window")
 cursorlog = Logger("server", "cursor")
 traylog = Logger("server", "tray")
+settingslog = Logger("x11", "xsettings")
 
 import xpra
 from xpra.os_util import StringIOClass
@@ -169,6 +172,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def init(self, clobber, opts):
         X11ServerBase.init(self, clobber, opts)
+        self.xsettings_enabled = opts.xsettings
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
@@ -192,6 +196,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
 
+        #save default xsettings:
+        self.default_xsettings = XSettingsHelper().get_settings()
+        settingslog("default_xsettings=%s", self.default_xsettings)
+        self._settings = {}
+        self._xsettings_manager = None
+
+        #cursor:
         self.default_cursor_data = None
         self.last_cursor_serial = None
         self.send_cursor_pending = False
@@ -264,6 +275,16 @@ class XpraServer(gobject.GObject, X11ServerBase):
         X11ServerBase.cleanup(self)
         cleanup_x11_filter()
         cleanup_all_event_receivers()
+
+
+    def cleanup_source(self, protocol):
+        had_client = len(self._server_sources)>0
+        X11ServerBase.cleanup_source(self, protocol)
+        has_client = len(self._server_sources)>0
+        if had_client and not has_client:
+            #last client is gone:
+            self.reset_settings()
+
 
     def load_existing_windows(self, system_tray):
         # Tray handler:
@@ -745,6 +766,71 @@ class XpraServer(gobject.GObject, X11ServerBase):
         packet = ["screenshot", width, height, "png", width*4, Compressed("png", data)]
         debug("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
         return packet
+
+
+    def reset_settings(self):
+        if not self.xsettings_enabled:
+            return
+        settingslog("resetting xsettings to: %s", self.default_xsettings)
+        self.set_xsettings(self.default_xsettings or (0, ()))
+
+    def set_xsettings(self, v):
+        if self._xsettings_manager is None:
+            self._xsettings_manager = XSettingsManager()
+        self._xsettings_manager.set_settings(v)
+
+    def update_server_settings(self, settings, reset=False):
+        if not self.xsettings_enabled:
+            settingslog("ignoring xsettings update: %s", settings)
+            return
+        if reset:
+            self.reset_settings()
+            self._settings = self.default_xsettings
+        old_settings = dict(self._settings)
+        settingslog("server_settings: old=%s, updating with=%s", old_settings, settings)
+        self._settings.update(settings)
+        root = gtk.gdk.get_default_root_window()
+        for k, v in settings.items():
+            #cook the "resource-manager" value to add the DPI:
+            if k == "resource-manager" and self.dpi>0:
+                value = v.decode("utf-8")
+                #parse the resources into a dict:
+                values={}
+                options = value.split("\n")
+                for option in options:
+                    if not option:
+                        continue
+                    parts = option.split(":\t")
+                    if len(parts)!=2:
+                        continue
+                    values[parts[0]] = parts[1]
+                values["Xft.dpi"] = self.dpi
+                values["gnome.Xft/DPI"] = self.dpi*1024
+                settingslog("server_settings: resource-manager values=%s", values)
+                #convert the dict back into a resource string:
+                value = ''
+                for vk, vv in values.items():
+                    value += "%s:\t%s\n" % (vk, vv)
+                value += '\n'
+                #record the actual value used
+                self._settings["resource-manager"] = value
+                v = value.encode("utf-8")
+
+            if k not in old_settings or v != old_settings[k]:
+                def root_set(p):
+                    settingslog("server_settings: setting %s to %s", p, v)
+                    prop_set(root, p, "latin1", v.decode("utf-8"))
+                if k == "xsettings-blob":
+                    self.set_xsettings(v)
+                elif k == "resource-manager":
+                    root_set("RESOURCE_MANAGER")
+                elif self.pulseaudio:
+                    if k == "pulse-cookie":
+                        root_set("PULSE_COOKIE")
+                    elif k == "pulse-id":
+                        root_set("PULSE_ID")
+                    elif k == "pulse-server":
+                        root_set("PULSE_SERVER")
 
 
 gobject.type_register(XpraServer)

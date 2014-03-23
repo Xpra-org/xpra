@@ -20,7 +20,6 @@ from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@Unresolved
 X11Keyboard = X11KeyboardBindings()
 from xpra.x11.bindings.core_bindings import X11CoreBindings #@UnresolvedImport
 X11Core = X11CoreBindings()
-from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.error import XError, trap
 from xpra.server.server_uuid import save_uuid, get_uuid
 
@@ -32,7 +31,6 @@ mouselog = Logger("x11", "server", "mouse")
 from xpra.util import prettify_plug_name
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
-from xpra.x11.xsettings import XSettingsManager
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
@@ -65,7 +63,6 @@ class X11ServerBase(GTKServerBase):
     """
 
     def init(self, clobber, opts):
-        self.xsettings_enabled = opts.xsettings
         self.clobber = clobber
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
@@ -90,8 +87,6 @@ class X11ServerBase(GTKServerBase):
                 screen.connect("size-changed", self._screen_size_changed)
                 i += 1
         log("randr enabled: %s", self.randr)
-        self._settings = {}
-        self._xsettings_manager = None
 
     def init_x11_atoms(self):
         #some applications (like openoffice), do not work properly
@@ -370,59 +365,12 @@ class X11ServerBase(GTKServerBase):
 
     def _process_server_settings(self, proto, packet):
         settings = packet[1]
-        if not self.xsettings_enabled:
-            log("ignoring xsettings update: %s", settings)
-            return
         self.update_server_settings(settings)
 
     def update_server_settings(self, settings):
-        old_settings = dict(self._settings)
-        log("server_settings: old=%s, updating with=%s", old_settings, settings)
-        self._settings.update(settings)
-        root = gtk.gdk.get_default_root_window()
-        for k, v in settings.items():
-            #cook the "resource-manager" value to add the DPI:
-            if k == "resource-manager" and self.dpi>0:
-                value = v.decode("utf-8")
-                #parse the resources into a dict:
-                values={}
-                options = value.split("\n")
-                for option in options:
-                    if not option:
-                        continue
-                    parts = option.split(":\t")
-                    if len(parts)!=2:
-                        continue
-                    values[parts[0]] = parts[1]
-                values["Xft.dpi"] = self.dpi
-                values["gnome.Xft/DPI"] = self.dpi*1024
-                log("server_settings: resource-manager values=%s", values)
-                #convert the dict back into a resource string:
-                value = ''
-                for vk, vv in values.items():
-                    value += "%s:\t%s\n" % (vk, vv)
-                value += '\n'
-                #record the actual value used
-                self._settings["resource-manager"] = value
-                v = value.encode("utf-8")
-
-            if k not in old_settings or v != old_settings[k]:
-                def root_set(p):
-                    log("server_settings: setting %s to %s", p, v)
-                    prop_set(root, p, "latin1", v.decode("utf-8"))
-                if k == "xsettings-blob":
-                    if self._xsettings_manager is None:
-                        self._xsettings_manager = XSettingsManager()
-                    self._xsettings_manager.set_blob_in_place(v)
-                elif k == "resource-manager":
-                    root_set("RESOURCE_MANAGER")
-                elif self.pulseaudio:
-                    if k == "pulse-cookie":
-                        root_set("PULSE_COOKIE")
-                    elif k == "pulse-id":
-                        root_set("PULSE_ID")
-                    elif k == "pulse-server":
-                        root_set("PULSE_SERVER")
+        #implemented in the X11 xpra server only for now
+        #(does not make sense to update a shadow server)
+        log("ignoring server settings update in %s", self)
 
 
     def fake_key(self, keycode, press):
