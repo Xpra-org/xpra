@@ -1257,8 +1257,11 @@ class ServerSource(object):
         log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
-        if self.randr_notify:
+        log("updated_desktop_size%s randr_notify=%s, desktop_size=%s", (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)
+        if self.randr_notify and (not self.desktop_size or tuple(self.desktop_size)!=(root_w, root_h)):
             self.send("desktop_size", root_w, root_h, max_w, max_h)
+            return True
+        return False
 
     def or_window_geometry(self, wid, window, x, y, w, h):
         if not self.can_send_window(window):

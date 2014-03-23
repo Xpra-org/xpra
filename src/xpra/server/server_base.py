@@ -1039,9 +1039,12 @@ class ServerBase(ServerCore):
     def send_updated_screen_size(self):
         max_w, max_h = self.get_max_screen_size()
         root_w, root_h = self.get_root_window_size()
-        log.info("sending updated screen size to clients: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
+        count = 0
         for ss in self._server_sources.values():
-            ss.updated_desktop_size(root_w, root_h, max_w, max_h)
+            if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
+                count +=1
+        if count>0:
+            log.info("sent updated screen size to %s clients: %sx%s (max %sx%s)", count, root_w, root_h, max_w, max_h)
 
     def get_max_screen_size(self):
         max_w, max_h = self.get_root_window_size()
