@@ -15,7 +15,7 @@ except:
     pass
 import gtk
 from gtk import gdk
-gtk.threads_init()
+gdk.threads_init()
 
 
 from xpra.platform.ui_thread_watcher import get_UI_watcher
