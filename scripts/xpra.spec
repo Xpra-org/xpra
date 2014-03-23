@@ -191,11 +191,11 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Sun Mar 16 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
+* Sun Mar 23 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
 - NVENC support for YUV444 mode, support for automatic bitrate tuning
 - NVENC and CUDA load balancing for multiple cards
 - proxy encoding: ability to encode on proxy server
-- fix fullscreen on multiple monitors via fakeXinerama (except on OSX)
+- fix fullscreen on multiple monitors via fakeXinerama
 - OpenGL rendering improvements (for transparent windows, etc)
 - support window grabs (drop down menus, etc)
 - support specifying the SSH port number more easily
@@ -204,8 +204,11 @@ So basically it's screen for remote X apps.
 - add local unix domain socket support to proxy server instances
 - add "xpra control" commands to control encoding speed and quality
 - improved handling of window resizing
-- ensure iconified windows don't waste bandwidth
+- improved compatibility with command line tools (xdotool, wmctrl)
+- ensure windows on other workspaces do not waste bandwidth
+- ensure iconified windows do not waste bandwidth
 - ensure maximized and fullscreen windows are prioritised
+- ensure we reset xsettings when client disconnects
 - better bandwidth utilization of jittery connections
 - faster network code (larger receive buffers)
 - better automatic encoding selection for smaller regions
@@ -214,8 +217,20 @@ So basically it's screen for remote X apps.
 - much improved logging and debugging tools
 - make it easier to distinguish xpra windows from local windows (border command line option)
 - improved build system: smaller and more correct build output (much smaller OSX images)
-- improved MS Windows (un)installer checks
 - automatically stop remote shadow servers when client disconnects
+
+* Tue Mar 18 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.6-1
+- correct fix for system tray forwarding
+
+* Tue Mar 18 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.5-1
+- fix "xpra info" with bencoder
+- ensure we re-sanitize window size hints when they change
+- workaround applications with nonsensical size hints (ie: handbrake)
+- fix 32-bit painting with GTK pixbuf loader (when PIL is not installed or disabled)
+- fix system tray forwarding geometry issues
+- fix workspace restore
+- fix compilation warning
+- remove spurious cursor warnings
 
 * Sat Mar 01 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.4-1
 - fix NVENC GPU memory leak
