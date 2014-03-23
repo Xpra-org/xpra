@@ -157,11 +157,11 @@ cdef unsigned char clamp(long v) nogil:
 
 
 cdef class ColorspaceConverter:
-    cdef int src_width
-    cdef int src_height
+    cdef unsigned int src_width
+    cdef unsigned int src_height
     cdef object src_format
-    cdef int dst_width
-    cdef int dst_height
+    cdef unsigned int dst_width
+    cdef unsigned int dst_height
     cdef object dst_format
     cdef unsigned long[3] dst_strides
     cdef unsigned long[3] dst_sizes
@@ -314,11 +314,11 @@ cdef class ColorspaceConverter:
         cdef Py_ssize_t pic_buf_len = 0
         cdef const unsigned char *input_image
         cdef unsigned char *output_image
-        cdef int input_stride
-        cdef int x,y,i,o,dx,dy,sum          #@DuplicatedSignature
-        cdef int sx, sy
-        cdef int workw, workh
-        cdef int Ystride, Ustride, Vstride
+        cdef unsigned int input_stride
+        cdef unsigned int x,y,i,o,dx,dy,sum          #@DuplicatedSignature
+        cdef unsigned int sx, sy
+        cdef unsigned int workw, workh
+        cdef unsigned int Ystride, Ustride, Vstride
         cdef unsigned char R, G, B
         cdef unsigned short Rsum
         cdef unsigned short Gsum
@@ -410,15 +410,15 @@ cdef class ColorspaceConverter:
     cdef do_YUV420P_to_RGB(self, image, uint8_t Rindex, uint8_t Gindex, uint8_t Bindex, uint8_t Xindex):
         cdef Py_ssize_t buf_len = 0
         cdef unsigned char *output_image        #
-        cdef int x,y,i,o,dx,dy                  #@DuplicatedSignature
-        cdef int sx, sy                         #
-        cdef int workw, workh                   #
-        cdef int stride
+        cdef unsigned int x,y,i,o,dx,dy         #@DuplicatedSignature
+        cdef unsigned int sx, sy                #
+        cdef unsigned int workw, workh          #
+        cdef unsigned int stride
         cdef unsigned char *Ybuf
         cdef unsigned char *Ubuf
         cdef unsigned char *Vbuf
         cdef short Y, U, V
-        cdef int Ystride, Ustride, Vstride      #
+        cdef unsigned int Ystride, Ustride, Vstride      #
         cdef object rgb
 
         start = time.time()
@@ -493,16 +493,16 @@ cdef class ColorspaceConverter:
                                      uint8_t Rdst, uint8_t Gdst, uint8_t Bdst, uint8_t Xdst):
         cdef Py_ssize_t buf_len = 0             #
         cdef unsigned char *output_image        #@DuplicatedSignature
-        cdef int x,y,i,o,sum                    #@DuplicatedSignature
-        cdef int sx, sy                         #@DuplicatedSignature
-        cdef int stride                         #@DuplicatedSignature
+        cdef unsigned int x,y,i,o,sum           #@DuplicatedSignature
+        cdef unsigned int sx, sy                #@DuplicatedSignature
+        cdef unsigned int stride                #@DuplicatedSignature
         cdef unsigned char *Gbuf                #@DuplicatedSignature
         cdef unsigned char *Gptr
         cdef unsigned char *Bbuf                #@DuplicatedSignature
         cdef unsigned char *Bptr
         cdef unsigned char *Rbuf                #@DuplicatedSignature
         cdef unsigned char *Rptr
-        cdef int Gstride, Bstride, Rstride
+        cdef unsigned int Gstride, Bstride, Rstride
         cdef object rgb                         #@DuplicatedSignature
 
         start = time.time()
