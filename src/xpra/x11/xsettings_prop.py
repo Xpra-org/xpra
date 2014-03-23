@@ -17,7 +17,7 @@ It is used by xpra.x11.gtk_x11.prop
 import sys
 import struct
 from xpra.log import Logger
-log = Logger("x11", "util")
+log = Logger("x11", "xsettings")
 
 
 #undocumented XSETTINGS endianess values:
@@ -92,12 +92,10 @@ def get_settings(disp, d):
     return  serial, settings
 
 def set_settings(disp, d):
-    #TODO: detect old clients
     assert len(d)==2, "invalid format for XSETTINGS: %s" % str(d)
     serial, settings = d
     log("set_settings(%s) serial=%s, %s settings", d, serial, len(settings))
-    all_bin_settings = None
-    n_settings = 0
+    all_bin_settings = []
     for setting in settings:
         setting_type, prop_name, value, last_change_serial = setting
         log("set_settings(..) processing property %s of type %s", prop_name, XSettingsNames.get(setting_type, "INVALID!"))
@@ -122,14 +120,10 @@ def set_settings(disp, d):
             log.error("invalid xsetting type: %s, skipped %s", setting_type, prop_name)
             continue
         log("set_settings(..) %s -> %s", setting, list(x))
-        if all_bin_settings is None:
-            all_bin_settings = x
-        else:
-            all_bin_settings += x
-        n_settings += 1
+        all_bin_settings.append(x)
     #header
-    v = struct.pack("=BBBBII", get_local_byteorder(), 0, 0, 0, serial, n_settings)
-    v += all_bin_settings   #values
-    v += '\0'               #null terminated
+    v = struct.pack("=BBBBII", get_local_byteorder(), 0, 0, 0, serial, len(all_bin_settings))
+    v += "".join(all_bin_settings)  #values
+    v += '\0'                       #null terminated
     log("set_settings(%s)=%s", d, list(v))
     return  v
