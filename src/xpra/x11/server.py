@@ -43,6 +43,7 @@ traylog = Logger("server", "tray")
 settingslog = Logger("x11", "xsettings")
 
 import xpra
+from xpra.util import nonl
 from xpra.os_util import StringIOClass
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 from xpra.net.protocol import compressed_wrapper, Compressed
@@ -787,7 +788,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.reset_settings()
             self._settings = self.default_xsettings or {}
         old_settings = dict(self._settings)
-        settingslog("server_settings: old=%s, updating with=%s", old_settings, settings)
+        settingslog("server_settings: old=%s, updating with=%s", nonl(old_settings), nonl(settings))
         self._settings.update(settings)
         root = gtk.gdk.get_default_root_window()
         for k, v in settings.items():
@@ -806,7 +807,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     values[parts[0]] = parts[1]
                 values["Xft.dpi"] = self.dpi
                 values["gnome.Xft/DPI"] = self.dpi*1024
-                settingslog("server_settings: resource-manager values=%s", values)
+                settingslog("server_settings: resource-manager values=%s", nonl(values))
                 #convert the dict back into a resource string:
                 value = ''
                 for vk, vv in values.items():
@@ -818,7 +819,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
             if k not in old_settings or v != old_settings[k]:
                 def root_set(p):
-                    settingslog("server_settings: setting %s to %s", p, v)
+                    settingslog("server_settings: setting %s to %s", nonl(p), nonl(v))
                     prop_set(root, p, "latin1", v.decode("utf-8"))
                 if k == "xsettings-blob":
                     self.set_xsettings(v)
