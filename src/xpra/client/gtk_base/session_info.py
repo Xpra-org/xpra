@@ -107,7 +107,10 @@ class SessionInfo(gtk.Window):
         def make_os_str(*args):
             s = os_info(*args)
             return "\n".join(s)
-        LOCAL_PLATFORM_NAME = make_os_str(sys.platform, python_platform.release(), python_platform.platform(), python_platform.linux_distribution())
+        distro = ""
+        if hasattr(python_platform, "linux_distribution"):
+            distro = python_platform.linux_distribution()
+        LOCAL_PLATFORM_NAME = make_os_str(sys.platform, python_platform.release(), python_platform.platform(), distro)
         SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform, self.client._remote_platform_release, self.client._remote_platform_platform, self.client._remote_platform_linux_distribution)
         tb.new_row("Operating System", label(LOCAL_PLATFORM_NAME), label(SERVER_PLATFORM_NAME))
         scaps = self.client.server_capabilities

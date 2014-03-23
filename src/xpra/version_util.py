@@ -61,7 +61,7 @@ def do_get_platform_info():
             "platform.machine"   : python_platform.machine(),
             "platform.processor" : python_platform.processor(),
             }
-    if sys.platform.startswith("linux"):
+    if sys.platform.startswith("linux") and hasattr(python_platform, "linux_distribution"):
         info["platform.linux_distribution"] = python_platform.linux_distribution()
     return info
 #cache the output:

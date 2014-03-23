@@ -33,7 +33,9 @@ except:
 
 def OpenGL_safety_check():
     #Ubuntu 12.04 will just crash on you if you try:
-    distro = python_platform.linux_distribution()
+    distro = ""
+    if hasattr(python_platform, "linux_distribution"):
+        distro = python_platform.linux_distribution()
     if distro and len(distro)==3 and distro[0]=="Ubuntu":
         ur = distro[1]  #ie: "12.04"
         try:
