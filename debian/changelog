@@ -19,11 +19,11 @@ xpra (0.12.0-1) UNRELEASED; urgency=low
   * better bandwidth utilization of jittery connections
   * faster network code (larger receive buffers)
   * better automatic encoding selection for smaller regions
-  * improved command line options (add ability to enable options which are disabled in the config file)
+  * improved command line options
   * trimmed all the ugly PyOpenGL warnings on startup
   * much improved logging and debugging tools
-  * make it easier to distinguish xpra windows from local windows (border command line option)
-  * improved build system: smaller and more correct build output (much smaller OSX images)
+  * make it easier to distinguish xpra windows from local windows
+  * improved build system: smaller and more correct build output
   * automatically stop remote shadow servers when client disconnects
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 23 Mar 2014 13:30:38 +0700
