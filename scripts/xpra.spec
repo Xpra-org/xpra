@@ -16,7 +16,7 @@
 %define avcodec_build_args %{nil}
 %define webp_build_args --with-webp
 %define server_build_args --with-server
-#define opencl_build_args --with-csc_opencl
+%define opencl_build_args --with-csc_opencl
 #if building a generic rpm: exclude anything that requires cython modules:
 %if 0%{?generic}
 %define webp_build_args --without-webp
@@ -107,7 +107,7 @@
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
 %define webp_build_args --without-webp
-#define opencl_build_args --without-csc_opencl
+%define opencl_build_args --without-csc_opencl
 %define requires_sound %{nil}
 %define xim %{nil}
 %define no_sound 1
