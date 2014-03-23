@@ -174,7 +174,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 info.append("%sx%s" % (plug_width, plug_height))
                 if plug_x!=0 or plug_y!=0:
                     info.append("at %sx%s" % (plug_x, plug_y))
-            if plug_width_mm!=width_mm or plug_height_mm!=height_mm:
+            if (plug_width_mm!=width_mm or plug_height_mm!=height_mm) and (plug_width_mm>0 or plug_height_mm>0):
                 info.append("(%sx%s mm)" % (plug_width_mm, plug_height_mm))
             log.info("    "+" ".join(info))
 
