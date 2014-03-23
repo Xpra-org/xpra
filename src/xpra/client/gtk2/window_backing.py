@@ -65,6 +65,8 @@ class GTK2WindowBacking(GTKWindowBacking):
 
     def paint_pixbuf_gdk(self, coding, img_data, x, y, width, height, options, callbacks):
         """ must be called from UI thread """
+        if coding.startswith("png"):
+            coding = "png"
         loader = gdk.PixbufLoader(coding)
         loader.write(img_data, len(img_data))
         loader.close()
