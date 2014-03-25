@@ -13,9 +13,24 @@ import socket
 #raises an IOError but we should continue if the error code is EINTR
 #this wrapper takes care of it.
 CONTINUE = [errno.EINTR]
+ABORT = [errno.ECONNRESET, errno.EPIPE]
 if sys.platform.startswith("win"):
+    #on win32, we have to deal with a few more odd error codes:
+    #(it would be nicer if those were wrapped using errno instead..)
     WSAEWOULDBLOCK = 10035
     CONTINUE.append(WSAEWOULDBLOCK)
+
+    #some of these may be redundant or impossible to hit? (does not hurt I think)
+    WSAENETDOWN     = 10050
+    WSAENETUNREACH  = 10051
+    WSAECONNABORTED = 10053         #this one has been seen, see ticket #492
+    WSAECONNRESET   = 10054
+    WSAENOTCONN     = 10057
+    WSAESHUTDOWN    = 10058
+    ABORT += [WSAECONNABORTED, WSAECONNRESET, WSAENETDOWN,
+              WSAENETUNREACH, WSAENOTCONN, WSAENOTCONN]
+
+
 def untilConcludes(is_active_cb, f, *a, **kw):
     while is_active_cb():
         try:

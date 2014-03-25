@@ -14,7 +14,6 @@ from socket import error as socket_error
 import struct
 import os
 import threading
-import errno
 import binascii
 from threading import Lock
 
@@ -28,6 +27,7 @@ debug = log.debug
 from xpra.os_util import Queue, strtobytes, get_hex_uuid
 from xpra.daemon_thread import make_daemon_thread
 from xpra.simple_stats import std_unit, std_unit_dec
+from xpra.net.bytestreams import ABORT
 
 try:
     from Crypto.Cipher import AES
@@ -615,8 +615,8 @@ class Protocol(object):
                 self._call_connection_lost("%s connection closed: %s" % (name, e))
         except (OSError, IOError, socket_error), e:
             if not self._closed:
-                if e.args[0] in (errno.ECONNRESET, errno.EPIPE):
-                    log.error("%s connection reset for %s", name, self._conn)
+                if e.args[0] in ABORT:
+                    log.error("%s connection reset or aborted for %s", name, self._conn)
                     self._call_connection_lost("%s connection reset: %s" % (name, e))
                 else:
                     log.error("%s error for %s", name, self._conn, exc_info=True)
