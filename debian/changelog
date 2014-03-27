@@ -1,3 +1,8 @@
+xpra (0.12.0-2) UNRELEASED; urgency=low
+  * fix x264 decoding
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 27 Mar 2014 09:28:54 +0700
+
 xpra (0.12.0-1) UNRELEASED; urgency=low
   * NVENC support for YUV444 mode, support for automatic bitrate tuning
   * NVENC and CUDA load balancing for multiple cards
