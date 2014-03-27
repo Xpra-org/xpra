@@ -1,9 +1,9 @@
 Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
---- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4990)
+--- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 5906)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -110,7 +110,7 @@
-     void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
+@@ -114,7 +114,7 @@
+     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
  
  
 -MIN_AVCODEC_VERSION = 54
