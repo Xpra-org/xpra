@@ -8,6 +8,7 @@ import os
 import time
 
 import errno as pyerrno
+from libc.stdint cimport uint64_t
 
 from xpra.log import Logger
 xshmlog = Logger("x11", "bindings", "ximage", "xshm")
@@ -219,7 +220,7 @@ cdef class XImageWrapper:
     cdef char *pixel_format
     cdef char *pixels
     cdef object del_callback
-    cdef long timestamp
+    cdef uint64_t timestamp
 
     def __cinit__(self, int x, int y, int width, int height):
         self.image = NULL

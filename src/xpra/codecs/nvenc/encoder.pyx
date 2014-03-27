@@ -1188,7 +1188,7 @@ cdef class Encoder:
     cdef object pixel_format
     #statistics, etc:
     cdef double time
-    cdef long first_frame_timestamp
+    cdef uint64_t first_frame_timestamp
     cdef unsigned long frames
     cdef unsigned long index
     cdef object last_frame_times

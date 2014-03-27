@@ -17,7 +17,7 @@ cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
     void * memset ( void * ptr, int value, size_t num )
 
-from libc.stdint cimport int64_t, uint8_t
+from libc.stdint cimport int64_t, uint64_t, uint8_t
 
 cdef extern from *:
     ctypedef unsigned long size_t
@@ -274,7 +274,7 @@ cdef class Encoder:
     cdef unsigned long long bytes_in
     cdef unsigned long long bytes_out
     cdef object last_frame_times
-    cdef long first_frame_timestamp
+    cdef uint64_t first_frame_timestamp
 
     cdef object __weakref__
 

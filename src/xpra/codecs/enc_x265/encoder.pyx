@@ -256,7 +256,7 @@ cdef class Encoder:
     cdef int speed
     cdef double time
     cdef unsigned long frames
-    cdef long first_frame_timestamp
+    cdef int64_t first_frame_timestamp
 
     cdef object __weakref__
 
