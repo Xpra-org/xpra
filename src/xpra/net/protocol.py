@@ -637,13 +637,17 @@ class Protocol(object):
             self.close()
             return
         for buf, start_cb, end_cb in items:
+            con = self._conn
+            if not con:
+                return
             if start_cb:
                 try:
-                    start_cb(self._conn.output_bytecount)
+                    start_cb(con.output_bytecount)
                 except:
-                    log.error("error on %s", start_cb, exc_info=True)
+                    if not self._closed:
+                        log.error("error on %s", start_cb, exc_info=True)
             while buf and not self._closed:
-                written = self._conn.write(buf)
+                written = con.write(buf)
                 if written:
                     buf = buf[written:]
                     self.output_raw_packetcount += 1
