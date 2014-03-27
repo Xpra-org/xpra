@@ -936,11 +936,11 @@ def run_client(parser, opts, extra_args, mode):
         app.init(opts)
         if opts.encoding:
             #fix old encoding names if needed:
-            from xpra.codecs.loader import encodings_help
             err = opts.encoding not in app.get_encodings()
             if err and opts.encoding!="help":
                 print("invalid encoding: %s" % opts.encoding)
             if opts.encoding=="help" or err:
+                from xpra.codecs.loader import encodings_help
                 print("%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(app.get_encodings()))))
                 if err:
                     return 1
