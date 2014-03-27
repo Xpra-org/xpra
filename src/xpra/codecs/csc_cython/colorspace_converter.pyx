@@ -6,6 +6,12 @@
 
 import time
 import struct
+try:
+    from xpra.build_info import CYTHON_VERSION as CYTHON_VERSION_STR
+    CYTHON_VERSION = CYTHON_VERSION_STR.split(".")
+except ImportError:
+    CYTHON_VERSION = []
+
 
 from xpra.log import Logger
 log = Logger("csc", "cython")
@@ -53,7 +59,7 @@ cdef uint8_t RGBX_X = tmp.find('\3')
 
 COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
 
-CSC_CYTHON_VERSION = (0, 3)
+CSC_CYTHON_VERSION = [0, 3]
 
 
 def init_module():
@@ -67,10 +73,13 @@ def get_type():
     return "cython"
 
 def get_version():
-    return CSC_CYTHON_VERSION
+    return tuple(CSC_CYTHON_VERSION + CYTHON_VERSION)
 
 def get_info():
-    return {"version"   : CSC_CYTHON_VERSION}
+    info = {"version"   : CSC_CYTHON_VERSION}
+    if CYTHON_VERSION:
+        info["Cython"] = CYTHON_VERSION
+    return info
 
 def get_input_colorspaces():
     return COLORSPACES.keys()
