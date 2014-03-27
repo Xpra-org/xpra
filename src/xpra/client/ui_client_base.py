@@ -277,7 +277,7 @@ class UIXpraClient(XpraClientBase):
 
         if self.client_supports_notifications:
             self.notifier = self.make_notifier()
-            log("using notifier=%s", self.notifier)
+            traylog("using notifier=%s", self.notifier)
             self.client_supports_notifications = self.notifier is not None
 
         #audio tagging:
@@ -465,7 +465,9 @@ class UIXpraClient(XpraClientBase):
 
 
     def make_notifier(self):
-        return self.make_instance(self.get_notifier_classes())
+        nc = self.get_notifier_classes()
+        traylog("make_notifier() notifier classes: %s", nc)
+        return self.make_instance(nc)
 
     def get_notifier_classes(self):
         #subclasses will generally add their toolkit specific variants

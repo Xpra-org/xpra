@@ -318,6 +318,7 @@ class GTKTrayMenuBase(object):
         self.bell_menuitem = self.checkitem("Bell", bell_toggled)
         self.bell_menuitem.set_sensitive(False)
         def set_bell_menuitem(*args):
+            log("set_bell_menuitem%s enabled=%s", args, self.client.bell_enabled)
             self.bell_menuitem.set_active(self.client.bell_enabled)
             c = self.client
             can_toggle_bell = c.toggle_cursors_bell_notify and c.server_supports_bell and c.client_supports_bell
@@ -342,6 +343,7 @@ class GTKTrayMenuBase(object):
         self.cursors_menuitem = self.checkitem("Cursors", cursors_toggled)
         self.cursors_menuitem.set_sensitive(False)
         def set_cursors_menuitem(*args):
+            log("set_cursors_menuitem%s enabled=%s", args, self.client.cursors_enabled)
             self.cursors_menuitem.set_active(self.client.cursors_enabled)
             c = self.client
             can_toggle_cursors = c.toggle_cursors_bell_notify and c.server_supports_cursors and c.client_supports_cursors
@@ -358,12 +360,13 @@ class GTKTrayMenuBase(object):
             v = self.notifications_menuitem.get_active()
             changed = self.client.notifications_enabled != v
             self.client.notifications_enabled = v
+            log("notifications_toggled%s active=%s changed=%s", args, v, changed)
             if changed and self.client.toggle_cursors_bell_notify:
                 self.client.send_notify_enabled()
-            log("notifications_toggled(%s) notifications_enabled=%s", args, self.client.notifications_enabled)
         self.notifications_menuitem = self.checkitem("Notifications", notifications_toggled)
         self.notifications_menuitem.set_sensitive(False)
         def set_notifications_menuitem(*args):
+            log("set_notifications_menuitem%s enabled=%s", args, self.client.notifications_enabled)
             self.notifications_menuitem.set_active(self.client.notifications_enabled)
             c = self.client
             can_notify = c.toggle_cursors_bell_notify and c.server_supports_notifications and c.client_supports_notifications
@@ -385,6 +388,7 @@ class GTKTrayMenuBase(object):
         self.clipboard_menuitem = self.checkitem("Clipboard", menu_clipboard_toggled)
         self.clipboard_menuitem.set_sensitive(False)
         def set_clipboard_menuitem(*args):
+            log("set_clipboard_menuitem%s enabled=%s", args, self.client.clipboard_enabled)
             self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
             c = self.client
             can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard
@@ -486,6 +490,7 @@ class GTKTrayMenuBase(object):
         self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization", keyboard_sync_toggled)
         self.keyboard_sync_menuitem.set_sensitive(False)
         def set_keyboard_sync_menuitem(*args):
+            log("set_keyboard_sync_menuitem%s enabled=%s", args, self.client.keyboard_helper.keyboard_sync)
             self.keyboard_sync_menuitem.set_active(self.client.keyboard_helper.keyboard_sync)
             self.keyboard_sync_menuitem.set_sensitive(self.client.toggle_keyboard_sync)
             set_keyboard_sync_tooltip()
@@ -502,6 +507,7 @@ class GTKTrayMenuBase(object):
                 set_tooltip_text(gl, "no server support for runtime switching")
                 return
             def opengl_toggled(*args):
+                log("opengl_toggled%s", args)
                 self.client.toggle_opengl()
             gl.connect("toggled", opengl_toggled)
         self.client.connect("handshake-complete", gl_set)
@@ -511,6 +517,7 @@ class GTKTrayMenuBase(object):
         encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)
         encodings.set_sensitive(False)
         def set_encodingsmenuitem(*args):
+            log("set_encodingsmenuitem%s", args)
             encodings.set_sensitive(not self.client.mmap_enabled)
             if self.client.mmap_enabled:
                 #mmap disables encoding and uses raw rgb24
@@ -557,7 +564,6 @@ class GTKTrayMenuBase(object):
     def make_qualitysubmenu(self):
         quality_submenu = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
                                            self.get_min_quality, self.get_quality, self.set_min_quality, self.set_quality)
-        #WARNING: this changes "min-quality", not "quality" (or at least it tries to..)
         self.popup_menu_workaround(quality_submenu)
         quality_submenu.show_all()
         return quality_submenu
