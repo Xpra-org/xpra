@@ -110,6 +110,10 @@ cdef extern from "libavcodec/avcodec.h":
     void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
 
 
+def get_version():
+    return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
+
+
 MIN_AVCODEC_VERSION = 54
 COLORSPACES = None
 OUTPUT_COLORSPACES = None
@@ -129,6 +133,7 @@ if avcodec_find_decoder(CODEC_ID_H264)!=NULL:
     CODECS.append("h264")
 if avcodec_find_decoder(CODEC_ID_VP8)!=NULL:
     CODECS.append("vp8")
+
 
 #populate mappings:
 COLORSPACES = []
@@ -186,9 +191,6 @@ def get_output_colorspace(encoding, csc):
         return "YUV420P"
     #everything else as normal:
     return csc
-
-def get_version():
-    return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
 def get_info():
     f = {}
