@@ -215,7 +215,7 @@ def main():
             log.enable_debug()
 
         load_codecs()
-        print("codecs/csc modules found:")
+        print("codecs and csc modules found:")
         #print("codec_status=%s" % codecs)
         for name in ALL_CODECS:
             mod = codecs.get(name, "")
@@ -223,9 +223,9 @@ def main():
                 mod = mod.__file__
                 if mod.startswith(os.getcwd()):
                     mod = mod[len(os.getcwd()):]
-                if mod.startswith(os.path.sep):
-                    mod = mod[1:]
-            print("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), mod))
+                    if mod.startswith(os.path.sep):
+                        mod = mod[1:]
+            print("* %s : %s" % (name.ljust(20), mod))
         print("")
         print("codecs versions:")
         def pver(v):
