@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os.path
 from xpra.log import Logger
 log = Logger("codec", "loader")
 
@@ -220,11 +221,21 @@ def main():
             mod = codecs.get(name, "")
             if mod and hasattr(mod, "__file__"):
                 mod = mod.__file__
+                if mod.startswith(os.getcwd()):
+                    mod = mod[len(os.getcwd()):]
+                if mod.startswith(os.path.sep):
+                    mod = mod[1:]
             print("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), mod))
         print("")
         print("codecs versions:")
+        def pver(v):
+            if type(v)==tuple:
+                return ".".join([str(x) for x in v])
+            elif type(v)==str and v.startswith("v"):
+                return v[1:]
+            return str(v)
         for name, version in codec_versions.items():
-            print("* %s : %s" % (name.ljust(20), version))
+            print("* %s : %s" % (name.ljust(20), pver(version)))
     finally:
         #this will wait for input on win32:
         clean()
