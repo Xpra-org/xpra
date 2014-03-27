@@ -538,6 +538,22 @@ def verify_display_ready(xvfb, display_name, shadowing):
         return  None
     return display
 
+def find_fakeXinerama():
+    #locate the fakeXinerama lib:
+    #it would be better to rely on dlopen to find the paths
+    #but I cannot find a way of getting ctypes to tell us the path
+    #it found the library in
+    libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
+    libpaths.append("/usr/lib64")
+    libpaths.append("/usr/lib")
+    for libpath in libpaths:
+        if not libpath or not os.path.exists(libpath):
+            continue
+        libfakeXinerama_so = "%s/%s" % (libpath, "libfakeXinerama.so.1")
+        if os.path.exists(libfakeXinerama_so):
+            return libfakeXinerama_so
+    return None
+
 def start_children(child_reaper, commands, fake_xinerama):
     assert os.name=="posix"
     from xpra.log import Logger
@@ -545,19 +561,9 @@ def start_children(child_reaper, commands, fake_xinerama):
     env = os.environ.copy()
     #add fake xinerama:
     if fake_xinerama:
-        #locate the fakeXinerama lib:
-        #it would be better to rely on dlopen to find the paths
-        #but I cannot find a way of getting ctypes to tell us the path
-        #it found the library in
-        libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
-        libpaths.append("/usr/lib64")
-        libpaths.append("/usr/lib")
-        for libpath in libpaths:
-            if not libpath or not os.path.exists(libpath):
-                continue
-            libfakeXinerama_so = "%s/%s" % (libpath, "libfakeXinerama.so.1")
-            if os.path.exists(libfakeXinerama_so):
-                env["LD_PRELOAD"] = libfakeXinerama_so
+        libfakeXinerama_so = find_fakeXinerama()
+        if libfakeXinerama_so:
+            env["LD_PRELOAD"] = libfakeXinerama_so
     #disable ubuntu's global menu using env vars:
     env.update({
         "UBUNTU_MENUPROXY"          : "",
