@@ -55,7 +55,7 @@ cdef uint8_t RGBX_X = tmp.find('\3')
 
 COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
 
-CSC_CYTHON_VERSION = [0, 2]
+CSC_CYTHON_VERSION = [0, 3]
 
 
 def init_module():
@@ -72,7 +72,7 @@ def get_version():
     return tuple(CSC_CYTHON_VERSION + Cython_version)
 
 def get_info():
-    return {"version"   : get_version(),
+    return {"version"   : CSC_CYTHON_VERSION,
             "Cython"    : Cython_version}
 
 def get_input_colorspaces():
