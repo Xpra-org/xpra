@@ -29,15 +29,14 @@ else:
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay, border):
-        log("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay))
+    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, border):
+        log("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties))
         ClientWidgetBase.__init__(self, client, wid)
         self._override_redirect = override_redirect
         self.group_leader = group_leader
         self._pos = (x, y)
         self._size = (w, h)
         self._client_properties = client_properties
-        self._auto_refresh_delay = auto_refresh_delay
         self.border = border
         self.button_state = {}
 
@@ -50,9 +49,6 @@ class ClientWindowBase(ClientWidgetBase):
     def init_window(self, metadata):
         self._backing = None
         self._metadata = {}
-        self._refresh_timer = None
-        self._refresh_min_pixels = -1
-        self._refresh_ignore_sequence = -1
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
         self._override_redirect_windows = []
@@ -63,9 +59,6 @@ class ClientWindowBase(ClientWidgetBase):
         self.group_leader = None
         self._override_redirect_windows = []
         self._metadata = {}
-        if self._refresh_timer:
-            self.source_remove(self._refresh_timer)
-            self._refresh_timer = None
         if self._backing:
             self._backing.close()
             self._backing = None
@@ -253,26 +246,8 @@ class ClientWindowBase(ClientWidgetBase):
         assert self._backing, "window %s has no backing!" % self._id
         def after_draw_refresh(success):
             plog("after_draw_refresh(%s) %sx%s at %sx%s encoding=%s, options=%s", success, width, height, x, y, coding, options)
-            if self._backing is None:
-                return
-            if success and self._backing.draw_needs_refresh:
+            if success and self._backing and self._backing.draw_needs_refresh:
                 self.queue_draw(x, y, width, height)
-            #clear the auto refresh if enough pixels were sent (arbitrary limit..)
-            if success and self._refresh_timer and width*height>=self._refresh_min_pixels:
-                self.source_remove(self._refresh_timer)
-                self._refresh_timer = None
-            #if we need to set a refresh timer, do it:
-            is_hq = options.get("quality", 0)>=95
-            is_lossy = coding in ("jpeg", "vp8", "h264")
-            if self._refresh_timer is None and self._auto_refresh_delay>0 and is_lossy and not is_hq:
-                #make sure our own refresh does not make us fire again
-                #FIXME: this should be per-window!
-                if self._refresh_ignore_sequence<packet_sequence:
-                    #NOTE: for x264 and vpx, we always get full frames (whole window refresh)
-                    #this is not the case with jpeg but since jpeg does not switch the encoding on the fly, we're ok
-                    self._refresh_min_pixels = width*height
-                    self._refresh_ignore_sequence = packet_sequence+1
-                    self._refresh_timer = self.timeout_add(int(1000 * self._auto_refresh_delay), self.refresh_window)
         callbacks.append(after_draw_refresh)
         self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 

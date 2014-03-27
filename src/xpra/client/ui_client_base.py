@@ -89,7 +89,6 @@ class UIXpraClient(XpraClientBase):
         self.server_max_desktop_size = None
         self.server_display = None
         self.server_randr = False
-        self.server_auto_refresh_delay = 0
         self.pixel_counter = maxdeque(maxlen=1000)
         self.server_ping_latency = maxdeque(maxlen=1000)
         self.server_load = None
@@ -1078,7 +1077,9 @@ class UIXpraClient(XpraClientBase):
                     self.mmap_enabled = False
                     self.quit(EXIT_MMAP_TOKEN_FAILURE)
                     return
-        self.server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
+        server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
+        if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
+            log.warn("server does not support auto-refresh!")
         def getenclist(k, default_value=[]):
             #deals with old servers and substitute old encoding names for the new ones
             v = c.strlistget(k, default_value)
@@ -1568,20 +1569,16 @@ class UIXpraClient(XpraClientBase):
         client_properties = {}
         if len(packet)>=8:
             client_properties = packet[7]
-        if self.server_auto_refresh_delay>0:
-            auto_refresh_delay = 0                          #server takes care of it
-        else:
-            auto_refresh_delay = self.auto_refresh_delay    #we do it
-        self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+        self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
 
-    def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
+    def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties):
         client_window_classes = self.get_client_window_classes(metadata, override_redirect)
         group_leader_window = self.get_group_leader(metadata, override_redirect)
         window = None
         windowlog("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay, self.border)
+                window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, self.border)
                 break
             except:
                 windowlog.warn("failed to instantiate %s", cwc, exc_info=True)

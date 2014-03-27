@@ -582,7 +582,6 @@ class XpraClient(GTKXpraClient):
             x, y = window._pos
             w, h = window._size
             client_properties = window._client_properties
-            auto_refresh_delay = window._auto_refresh_delay
             metadata = window._metadata
             override_redirect = window._override_redirect
             backing = window._backing
@@ -615,7 +614,7 @@ class XpraClient(GTKXpraClient):
                 except:
                     pass
                 #create the new window, which should honour the new state of the opengl_enabled flag:
-                window = self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+                window = self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
                 if video_decoder or csc_decoder:
                     backing = window._backing
                     backing._video_decoder = video_decoder
