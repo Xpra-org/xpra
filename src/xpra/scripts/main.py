@@ -952,15 +952,15 @@ def run_client(parser, opts, extra_args, mode):
             return 0
         if opts.window_layout and opts.window_layout not in layouts:
             parser.error("window layout '%s' is not supported by the %s toolkit, valid options are: %s" % (opts.window_layout, app.client_toolkit(), layouts_str))
-        conn = connect()
         def handshake_complete(*args):
             from xpra.log import Logger
             log = Logger()
             log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
         if hasattr(app, "connect"):
             app.connect("handshake-complete", handshake_complete)
-        app.setup_connection(conn)
         app.init_ui(opts)
+        conn = connect()
+        app.setup_connection(conn)
     return do_run_client(app)
 
 def make_client(error_cb, opts):
