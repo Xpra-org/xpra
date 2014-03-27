@@ -149,6 +149,13 @@ class X11ServerBase(GTKServerBase):
             info["server.XShm"] = CompositeHelper.XShmEnabled
         except:
             pass
+        #randr:
+        try:
+            sizes = RandR.get_screen_sizes()
+            if self.randr and len(sizes)>=0:
+                info["randr.options"] = sizes
+        except:
+            pass
         return info
 
     def get_window_info(self, window):
