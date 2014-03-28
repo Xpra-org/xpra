@@ -1035,6 +1035,7 @@ def run_remote_server(parser, opts, args, mode):
     app = make_client(parser.error, opts)
     app.setup_connection(conn)
     app.init(opts)
+    app.init_ui(opts)
     do_run_client(app)
 
 def find_X11_displays(max_display_no=10):
