@@ -1032,7 +1032,7 @@ def run_remote_server(parser, opts, args, mode):
         if getattr(opts, e.replace("-", "_")) is True:
             proxy_args.append("--%s" % e)
     #older versions only support disabling:
-    for e in ("pulseaudio", "mmap", "mdns",
+    for e in ("pulseaudio", "mmap",
               "system-tray", "clipboard", "bell"):
         if getattr(opts, e.replace("-", "_")) is False:
             proxy_args.append("--no-%s" % e)
