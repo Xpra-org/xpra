@@ -265,12 +265,7 @@ class WindowSource(object):
             return
         self.statistics.reset()
         self.last_pixmap_data = None
-        if encoding not in self.server_core_encodings:
-            log("not setting encoding to %s for window source %s as it only supports: %s", encoding, self.wid, self.server_core_encodings)
-        elif encoding not in self.core_encodings:
-            log("not setting encoding to %s for window source %s as the client only supports: %s", encoding, self.wid, self.core_encodings)
-        else:
-            self.update_encoding_selection(encoding)
+        self.update_encoding_selection(encoding)
 
     def _scaling_changed(self, window, *args):
         self.scaling = window.get_property("scaling")
