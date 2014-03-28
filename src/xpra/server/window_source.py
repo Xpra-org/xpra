@@ -155,6 +155,7 @@ class WindowSource(object):
         #ensure the encoding chosen is supported by this source:
         self.encoding = self.pick_encoding([encoding]+self.common_encodings)
         self.auto_refresh_encodings = [x for x in self.client_refresh_encodings if x in self.common_encodings]
+        log("update_encoding_selection(%s) encoding=%s, common encodings=%s, auto_refresh_encodings=%s", encoding, self.encoding, self.common_encodings, self.auto_refresh_encodings)
         assert self.encoding is not None
 
     def init_encoders(self):
