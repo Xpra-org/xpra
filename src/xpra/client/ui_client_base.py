@@ -152,6 +152,7 @@ class UIXpraClient(XpraClientBase):
         self.mmap_token = None
         self.mmap_filename = None
         self.mmap_size = 0
+        self.mmap_group = None
 
         #features:
         self.opengl_enabled = False
@@ -215,6 +216,8 @@ class UIXpraClient(XpraClientBase):
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.dpi = int(opts.dpi)
         self.xsettings_enabled = opts.xsettings
+        self.supports_mmap = MMAP_SUPPORTED and opts.mmap
+        self.mmap_group = opts.mmap_group
 
         try:
             from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
@@ -252,10 +255,6 @@ class UIXpraClient(XpraClientBase):
     def init_ui(self, opts):
         """ initialize user interface """
         self.init_opengl(opts.opengl)
-
-        self.supports_mmap = MMAP_SUPPORTED
-        if self.supports_mmap and opts.mmap:
-            self.init_mmap(opts.mmap_group, self._protocol._conn.filename)
 
         if not self.readonly:
             self.keyboard_helper = self.make_keyboard_helper(opts.keyboard_sync, opts.key_shortcut)
@@ -297,6 +296,11 @@ class UIXpraClient(XpraClientBase):
         #draw thread:
         self._draw_queue = Queue()
         self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw")
+
+    def setup_connection(self, conn):
+        XpraClientBase.setup_connection(self, conn)
+        if self.supports_mmap:
+            self.init_mmap(self.mmap_group, conn.filename)
 
 
     def parse_border(self, border_str):
