@@ -164,11 +164,11 @@ def PIL_encode(coding, image, quality, supports_transparency):
         raise e
     buf = StringIOClass()
     client_options = {}
-    if coding=="jpeg":
+    if coding in ("jpeg", "webp"):
         q = int(min(99, max(1, quality)))
         kwargs = im.info
         kwargs["quality"] = q
-        im.save(buf, "JPEG", **kwargs)
+        im.save(buf, coding.upper(), **kwargs)
         client_options["quality"] = q
     else:
         assert coding in ("png", "png/P", "png/L"), "unsupported png encoding: %s" % coding

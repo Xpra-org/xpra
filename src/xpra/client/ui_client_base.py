@@ -30,7 +30,7 @@ from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_application_name
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
-from xpra.codecs.codec_constants import get_PIL_encodings
+from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_DECODER_OPTIONS, NO_GFX_CSC_OPTIONS
 from xpra.simple_stats import std_unit
@@ -433,7 +433,7 @@ class UIXpraClient(XpraClientBase):
         #we always support rgb24:
         core_encodings = ["rgb24"]
         #PIL:
-        core_encodings += get_PIL_encodings(get_codec("PIL"))
+        core_encodings += get_PIL_decodings(get_codec("PIL"))
         if has_codec("dec_webp") and "webp" not in core_encodings:
             core_encodings.append("webp")
         #we enable all the video decoders we know about,

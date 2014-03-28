@@ -9,20 +9,27 @@ from xpra.log import Logger
 log = Logger("util")
 
 
-def get_PIL_encodings(PIL):
+def do_get_PIL_codings(PIL, attr="SAVE"):
     if PIL is None:
         return []
     pi = PIL.Image
     pi.init()
-    log("PIL.Image.SAVE=%s", pi.SAVE)
+    avalue = getattr(pi, attr)
+    log("PIL.Image.%s=%s", attr, avalue)
     encodings = []
     for encoding in ["png", "png/L", "png/P", "jpeg", "webp"]:
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
-        if stripped in pi.SAVE:
-            log("PIL.Image has %s", stripped)
+        if stripped in avalue:
+            log("PIL.Image can %s %s", attr, stripped)
         encodings.append(encoding)
     return encodings
+
+def get_PIL_encodings(PIL):
+    return do_get_PIL_codings(PIL, "SAVE")
+
+def get_PIL_decodings(PIL):
+    return do_get_PIL_codings(PIL, "OPEN")
 
 
 LOSSY_PIXEL_FORMATS = ("YUV420P", "YUV422P")
@@ -191,3 +198,26 @@ class video_codec_spec(codec_spec):
         self.encoding = encoding                        #ie: "h264"
         self.output_colorspaces = output_colorspaces    #ie: ["YUV420P" : "YUV420P", ...]
         self._exported_fields += ["encoding", "output_colorspaces"]
+
+
+def main():
+    from xpra.platform import init, clean
+    try:
+        init("Codec-Constants", "Codec Constants Info")
+        import sys
+        if "-v" in sys.argv or "--verbose" in sys.argv:
+            log.enable_debug()
+
+        try:
+            from PIL import Image   #@UnresolvedImport @UnusedImport
+            import PIL              #@UnresolvedImport
+        except:
+            PIL = None
+        print("PIL encodings: %s" % ", ".join(get_PIL_encodings(PIL)))
+        print("PIL decodings: %s" % ", ".join(get_PIL_decodings(PIL)))
+    finally:
+        #this will wait for input on win32:
+        clean()
+
+if __name__ == "__main__":
+    main()

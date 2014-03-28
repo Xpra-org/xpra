@@ -13,7 +13,7 @@ from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net.protocol import has_lz4, LZ4_uncompress
 from xpra.os_util import BytesIOClass, bytestostr
-from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum, get_PIL_encodings
+from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum, get_PIL_decodings
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 try:
@@ -80,7 +80,7 @@ class WindowBackingBase(object):
         self._video_decoder = None
         self._csc_decoder = None
         self._decoder_lock = Lock()
-        self._PIL_encodings = get_PIL_encodings(PIL)
+        self._PIL_encodings = get_PIL_decodings(PIL)
         self.draw_needs_refresh = True
         self.mmap = None
         self.mmap_enabled = False

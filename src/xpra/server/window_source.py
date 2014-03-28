@@ -46,8 +46,8 @@ except Exception, e:
     log("cannot load argb module: %s", e)
     bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
-from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER
-from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
+from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
+from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
 
 
 class WindowSource(object):
@@ -161,9 +161,10 @@ class WindowSource(object):
     def init_encoders(self):
         self._encoders["rgb24"] = self.rgb_encode
         self._encoders["rgb32"] = self.rgb_encode
-        for x in ("png", "png/P", "png/L", "jpeg"):
+        for x in get_PIL_encodings(get_codec("PIL")):
             if x in self.server_core_encodings:
                 self._encoders[x] = self.PIL_encode
+        #prefer this one over PIL supplied version:
         if "webp" in self.server_core_encodings:
             self._encoders["webp"] = self.webp_encode
         if self._mmap and self._mmap_size>0:
