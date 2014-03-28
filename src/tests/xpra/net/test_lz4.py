@@ -10,13 +10,18 @@ def hl(x):
 def uhl(x):
     return binascii.unhexlify(x)
 
-def do_test_rountrip(i_data, c_data=None):
-    from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
-    c = LZ4_compress(i_data)
+def do_test_rountrip_method(compress, i_data, c_data=None):
+    from lz4 import LZ4_uncompress                      #@UnresolvedImport
+    c = compress(i_data)
     if c_data is not None:
         assert c_data==c, "expected compressed data to look like %s, but got %s" % (hl(c_data), hl(c))
     d = LZ4_uncompress(c)
     assert d==i_data, "expected decompressed data to look like original %s, but got %s" % (hl(i_data), hl(d))
+
+def do_test_rountrip(i_data, c_data=None):
+    from lz4 import compress, compressHC        #@UnresolvedImport
+    do_test_rountrip_method(compress, i_data=i_data, c_data=c_data)
+    do_test_rountrip_method(compressHC, i_data=i_data, c_data=c_data)
 
 def test_rountrip():
     do_test_rountrip(uhl("f"*1896), uhl("b40300001fff0100ffffff9e50ffffffffff"))

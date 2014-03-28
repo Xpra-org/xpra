@@ -6,7 +6,7 @@
 
 import time
 
-from lz4 import LZ4_compress        #@UnresolvedImport
+from lz4 import LZ4_compress, compressHC        #@UnresolvedImport
 from zlib import compress
 
 from xpra.net.rencode import dumps as rencode_dumps  #@UnresolvedImport
@@ -22,6 +22,7 @@ ENCODER_NAME = {
                 }
 COMPRESSOR_NAME = {
                    LZ4_compress     : "lz4",
+                   compressHC       : "lz4-HC",
                    zlib_compress    : "zlib",
                    }
 
@@ -59,7 +60,7 @@ def print_stats():
 
 def test_packet(packet):
     for encoder in (bencode, rencode_dumps):
-        for compressor in (zlib_compress, LZ4_compress):
+        for compressor in (zlib_compress, LZ4_compress, compressHC):
             test_compress(packet, encoder, compressor)
         #order makes no difference:
         #for compressor in (LZ4_compress, zlib_compress):
@@ -268,7 +269,7 @@ def test_image():
     surface.finish()
 
     reset_stats()
-    for compressor in (zlib_compress, LZ4_compress):
+    for compressor in (zlib_compress, LZ4_compress, compressHC):
         test_compress(pixels, None, compressor, N=200)
     print("image compression test complete")
     print_stats()
