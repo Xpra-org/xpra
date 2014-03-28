@@ -1031,11 +1031,11 @@ def run_remote_server(parser, opts, args, mode):
     else:
         assert mode=="start"
         params["proxy_command"] = ["_proxy_start"]
-    conn = connect_or_fail(params)
     app = make_client(parser.error, opts)
-    app.setup_connection(conn)
     app.init(opts)
     app.init_ui(opts)
+    conn = connect_or_fail(params)
+    app.setup_connection(conn)
     do_run_client(app)
 
 def find_X11_displays(max_display_no=10):
