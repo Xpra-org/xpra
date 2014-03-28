@@ -9,6 +9,22 @@ from xpra.log import Logger
 log = Logger("util")
 
 
+def get_PIL_encodings(PIL):
+    if PIL is None:
+        return []
+    pi = PIL.Image
+    pi.init()
+    log("PIL.Image.SAVE=%s", pi.SAVE)
+    encodings = []
+    for encoding in ["png", "png/L", "png/P", "jpeg", "webp"]:
+        #strip suffix (so "png/L" -> "png")
+        stripped = encoding.split("/")[0].upper()
+        if stripped in pi.SAVE:
+            log("PIL.Image has %s", stripped)
+        encodings.append(encoding)
+    return encodings
+
+
 LOSSY_PIXEL_FORMATS = ("YUV420P", "YUV422P")
 
 PIXEL_SUBSAMPLING = {

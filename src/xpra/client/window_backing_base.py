@@ -13,7 +13,7 @@ from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net.protocol import has_lz4, LZ4_uncompress
 from xpra.os_util import BytesIOClass, bytestostr
-from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
+from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum, get_PIL_encodings
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 try:
@@ -21,6 +21,7 @@ try:
 except:
     xor_str = None
 
+PIL = get_codec("PIL")
 
 #ie:
 #CSC_OPTIONS = { "YUV420P" : {"RGBX" : [opencl.spec, swscale.spec], "BGRX" : ...} }
@@ -79,6 +80,7 @@ class WindowBackingBase(object):
         self._video_decoder = None
         self._csc_decoder = None
         self._decoder_lock = Lock()
+        self._PIL_encodings = get_PIL_encodings(PIL)
         self.draw_needs_refresh = True
         self.mmap = None
         self.mmap_enabled = False
@@ -150,7 +152,6 @@ class WindowBackingBase(object):
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
-        PIL = get_codec("PIL")
         assert PIL, "PIL not found"
         buf = BytesIOClass(img_data)
         img = PIL.Image.open(buf)
@@ -410,7 +411,7 @@ class WindowBackingBase(object):
             self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)
-        elif coding[:3]=="png" or coding=="jpeg":
+        elif coding in self._PIL_encodings:
             self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
         else:
             raise Exception("invalid encoding: %s" % coding)
