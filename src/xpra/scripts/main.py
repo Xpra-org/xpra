@@ -1022,8 +1022,20 @@ def run_remote_server(parser, opts, args, mode):
     if opts.start_child:
         for c in opts.start_child:
             proxy_args.append("--start-child=%s" % c)
-    if opts.exit_with_children:
-        proxy_args.append("--exit-with-children")
+    #key=value options we forward:
+    for x in ("session-name", "encoding", "socket-dir", "dpi"):
+        v = getattr(opts, x.replace("-", "_"))
+        if v:
+            proxy_args.append("--%s=%s" % (x, v))
+    #thse options must be enabled explicitly (no disable option for most of them):
+    for e in ("exit-with-children", "mmap-group", "readonly"):
+        if getattr(opts, e.replace("-", "_")) is True:
+            proxy_args.append("--%s" % e)
+    #older versions only support disabling:
+    for e in ("pulseaudio", "mmap", "mdns",
+              "system-tray", "clipboard", "bell"):
+        if getattr(opts, e.replace("-", "_")) is False:
+            proxy_args.append("--no-%s" % e)
     params["display_as_args"] = proxy_args
     #and use _proxy_start subcommand:
     if mode=="shadow":
