@@ -81,6 +81,7 @@ class ServerBase(ServerCore):
         #control mode:
         self.control_commands = ["hello", "help",
                     "debug",
+                    "encoding",
                     "quality", "min-quality", "speed", "min-speed",
                     "compression", "encoder", "refresh",
                     "sound-output",
@@ -769,6 +770,30 @@ class ServerBase(ServerCore):
             for csource in sources:
                 csource.pointer_ungrab(-1)
             return respond(0, "ungrabbed %s clients" % len(sources))
+        elif command=="encoding":
+            if len(args)<1:
+                return argn_err(1)
+            encoding = args[0]
+            args = args[1:]
+            if len(args)>0:
+                wids = []
+                for x in args:
+                    try:
+                        wid = int(x)
+                        wids.append(wid)
+                    except:
+                        return respond(4, "invalid window id %s" % x)
+            else:
+                wids = self._id_to_window.keys()
+            for csource in sources:
+                csource.set_encoding(encoding, wids)
+            #now also do a refresh:
+            for wid in wids:
+                window = self._id_to_window.get(wid)
+                if window:
+                    for csource in sources:
+                        csource.refresh(wid, window, {})
+            return respond(0, "set encoding to %s for %s windows" % (encoding, len(wids)))
         elif command=="refresh":
             if len(args)>0:
                 widwin = []
