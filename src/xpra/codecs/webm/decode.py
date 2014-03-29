@@ -26,10 +26,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from ctypes import (c_int, c_uint, create_string_buffer, memmove, c_void_p,
-    POINTER)
+    CDLL, POINTER)
+from ctypes.util import find_library
 from xpra.codecs.webm import _LIBRARY, PIXEL_ALPHA_SZ, PIXEL_SZ
 from xpra.codecs.webm.handlers import BitmapHandler
 
+libc = CDLL(find_library("c"))
+libc.free.argtypes = (c_void_p,)
+libc.free.restype = None
 
 # -----------------------------------------------------------------------------
 # Exceptions
@@ -102,6 +106,8 @@ def _decode(data, decode_func, pixel_sz):
     bitmap = create_string_buffer(size)
 
     memmove(bitmap, bitmap_p, size)
+    #now we can free the intermediate C buffer:
+    libc.free(bitmap_p)
 
     # End
     return (bytearray(bitmap), width, height)
