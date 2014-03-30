@@ -818,10 +818,9 @@ class WindowSource(object):
         else:
             rgb_fmt = "rgb24"
         if pixel_count<=MAX_PIXELS_PREFER_RGB:
-            encs = rgb_fmt, "png", "rgb24", "rgb32"
+            encs = rgb_fmt, "png", "webp", "rgb24", "rgb32"
         else:
-            encs = "png", rgb_fmt, "rgb24", "rgb32"
-        #webp could go here if it wasn't leaking
+            encs = "png", "webp", rgb_fmt, "rgb24", "rgb32"
         return self.pick_encoding(encs, fallback)
 
     def pick_encoding(self, encodings, fallback=None):

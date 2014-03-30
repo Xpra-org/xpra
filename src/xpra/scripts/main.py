@@ -483,9 +483,6 @@ def parse_cmdline(cmdline):
         #fix old encoding names if needed:
         from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW
         options.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(options.encoding, options.encoding)
-        if options.encoding=="webp":
-            #warn that webp should not be used:
-            print("Warning: webp encoding may leak memory!")
 
     #special case for video encoders and csc, stored as lists, but command line option is a CSV string:
     if (supports_server or supports_shadow):

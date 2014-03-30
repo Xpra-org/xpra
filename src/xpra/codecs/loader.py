@@ -159,7 +159,7 @@ ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp8", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg", "h265", "vp9", "webp"]
+PREFERED_ENCODING_ORDER = ["h264", "vp8", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265", "vp9"]
 
 compressors = ["zlib"]
 try:
@@ -190,12 +190,12 @@ ENCODINGS_HELP = {
       "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
       "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
       "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
-      "webp"    : "WebP compression (lossless or lossy) - leaks memory, do not use!",
+      "webp"    : "WebP compression (lossless or lossy)",
       "jpeg"    : "JPEG lossy compression",
       "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
       }
 
-HELP_ORDER = ("h264", "h265", "vp8", "vp9", "png", "png/P", "png/L", "rgb", "jpeg", "webp")
+HELP_ORDER = ("h264", "h265", "vp8", "vp9", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
 
 def encodings_help(encodings):
     h = []
