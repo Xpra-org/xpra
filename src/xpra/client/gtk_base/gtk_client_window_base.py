@@ -180,10 +180,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
             #no change
             return
-        if desktop_workspace<0 or window_workspace<0:
-            #not sure about which workspace we are on!?
-            #maybe the property has been cleared? maybe the window is being scrubbed? do nothing.
-            return
         if not self._client.window_refresh_config:
             workspacelog("sending configure event to update workspace value")
             self.process_configure_event()
@@ -191,9 +187,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #we can tell the server using a "buffer-refresh" packet instead
         #and also take care of tweaking the batch config
         client_properties = {"workspace" : window_workspace}
-        suspend_resume = None
         options = {"refresh-now" : False}               #no need to refresh it
-        if desktop_workspace!=window_workspace:
+        suspend_resume = None
+        if desktop_workspace<0 or window_workspace<0:
+            #maybe the property has been cleared? maybe the window is being scrubbed?
+            workspacelog("not sure if the window is shown or not: %s vs %s, resuming to be safe", desktop_workspace, window_workspace)
+            suspend_resume = False
+        elif desktop_workspace!=window_workspace:
             workspacelog("window is on a different workspace, increasing its batch delay")
             suspend_resume = True
         elif self._window_workspace!=self._desktop_workspace:
