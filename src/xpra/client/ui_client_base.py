@@ -812,6 +812,7 @@ class UIXpraClient(XpraClientBase):
             #separate plane is only supported by avcodec2:
             "encoding.video_separateplane"  : get_codec("dec_avcodec") is None and get_codec("dec_avcodec2") is not None,
             "encoding.rgb_lz4"          : use_lz4 and self.compression_level==1,
+            "encoding.webp_leaks"       : False,
             "encoding.transparency"     : self.has_transparency(),
             "rgb24zlib"                 : True,
             "encoding.rgb24zlib"        : True,

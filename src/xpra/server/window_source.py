@@ -86,8 +86,6 @@ class WindowSource(object):
         self.server_encodings = server_encodings
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
-        refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg")]
-        self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", refresh_encodings)
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
@@ -95,11 +93,16 @@ class WindowSource(object):
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.boolget("rgb24zlib")
                                                         #supports rgb (both rgb24 and rgb32..) compression outside network layer (unwrapped)
-        self.rgb_zlib = encoding_options.boolget("rgb_zlib", True)  #client supports zlib pixel compression (not to be confused with 'rgb24zlib'...)
-        self.rgb_lz4 = encoding_options.boolget("rgb_lz4", False)   #client supports lz4 pixel compression
+        self.rgb_zlib = encoding_options.boolget("rgb_zlib", True)      #client supports zlib pixel compression (not to be confused with 'rgb24zlib'...)
+        self.rgb_lz4 = encoding_options.boolget("rgb_lz4", False)       #client supports lz4 pixel compression
+        self.webp_leaks = encoding_options.boolget("webp_leaks", True)  #all clients leaked memory until this flag got added
         self.generic_encodings = encoding_options.boolget("generic")
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = encoding_options.boolget("full_frames_only")
+        ropts = ["png", "webp", "rgb", "jpeg"]
+        if self.webp_leaks:
+            ropts.remove("webp")
+        self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", [x for x in self.encodings if x in ropts])
         self.supports_delta = []
         if xor_str is not None and not window.is_tray():
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
@@ -151,6 +154,8 @@ class WindowSource(object):
         #now we have the real list of encodings we can use:
         #"rgb32" and "rgb24" encodings are both aliased to "rgb"
         common_encodings = [{"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self._encoders.keys() if x in self.core_encodings]
+        if self.webp_leaks and "webp" in common_encodings:
+            common_encodings.remove("webp")
         self.common_encodings = [x for x in PREFERED_ENCODING_ORDER if x in common_encodings]
         #ensure the encoding chosen is supported by this source:
         self.encoding = self.pick_encoding([encoding]+self.common_encodings)
