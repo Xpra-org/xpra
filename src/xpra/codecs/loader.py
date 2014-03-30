@@ -32,28 +32,29 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
         log.warn("cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
     return None
 codec_versions = {}
-def add_codec_version(name, top_module, version="get_version()"):
+def add_codec_version(name, top_module, version="get_version()", alt_version=None):
     try:
-        fieldname = version
-        if version.endswith("()"):
-            fieldname = version[:-2]
-        module = __import__(top_module, {}, {}, [fieldname])
-        if not hasattr(module, fieldname):
-            log.warn("cannot find %s in %s", fieldname, module)
+        fieldnames = [x for x in (version, alt_version) if x is not None]
+        for fieldname in fieldnames:
+            if version.endswith("()"):
+                fieldname = version[:-2]
+            module = __import__(top_module, {}, {}, [fieldname])
+            if not hasattr(module, fieldname):
+                continue
+            v = getattr(module, fieldname)
+            if version.endswith("()") and v:
+                v = v()
+            global codec_versions
+            codec_versions[name] = v
+            #optional info:
+            if hasattr(module, "get_info"):
+                info = getattr(module, "get_info")
+                log("info(%s)=%s", top_module, info())
             return
-        v = getattr(module, fieldname)
-        if version.endswith("()") and v:
-            v = v()
-        global codec_versions
-        codec_versions[name] = v
-        #optional info:
-        if hasattr(module, "get_info"):
-            info = getattr(module, "get_info")
-            log("info(%s)=%s", top_module, info())
+        log.warn("cannot find %s in %s", " or ".join(fieldnames), module)
     except ImportError, e:
-        log("cannot import %s: %s", name, e)
         #not present
-        pass
+        log("cannot import %s: %s", name, e)
     except Exception, e:
         log.warn("error during codec import: %s", e)
 
@@ -66,7 +67,7 @@ def load_codecs():
     loaded = True
     log("loading codecs")
     codec_import_check("PIL", "Python Imaging Library", "PIL", "PIL", "Image")
-    add_codec_version("PIL", "PIL.Image", "VERSION")
+    add_codec_version("PIL", "PIL.Image", "PILLOW_VERSION", "VERSION")
 
     codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
     codec_import_check("dec_vpx", "vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
