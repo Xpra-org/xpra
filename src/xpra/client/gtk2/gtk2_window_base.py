@@ -142,6 +142,8 @@ class GTK2WindowBase(GTKClientWindowBase):
         if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
             return  -1              #windows and OSX do not have workspaces
         value = self.xget_u32_property(target, prop)
+        if value==(2**32-1):
+            value = -1
         if value is not None:
             log("do_get_workspace() found value=%s from %s / %s", value, target, prop)
             return value
