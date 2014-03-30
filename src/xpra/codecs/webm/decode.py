@@ -25,7 +25,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from ctypes import (c_int, c_uint, create_string_buffer, memmove, c_void_p,
+from ctypes import (c_int, c_uint, c_char_p, create_string_buffer, c_void_p, c_size_t,
     CDLL, POINTER)
 from ctypes.util import find_library
 from xpra.codecs.webm import _LIBRARY, PIXEL_ALPHA_SZ, PIXEL_SZ
@@ -34,6 +34,8 @@ from xpra.codecs.webm.handlers import BitmapHandler
 libc = CDLL(find_library("c"))
 libc.free.argtypes = (c_void_p,)
 libc.free.restype = None
+libc.memcpy.argtypes = (c_void_p, c_void_p, c_size_t)
+libc.memcpy.restype = c_char_p
 
 # -----------------------------------------------------------------------------
 # Exceptions
@@ -105,7 +107,7 @@ def _decode(data, decode_func, pixel_sz):
     size = width * height * pixel_sz
     bitmap = create_string_buffer(size)
 
-    memmove(bitmap, bitmap_p, size)
+    libc.memcpy(bitmap, bitmap_p, size)
     #now we can free the intermediate C buffer:
     libc.free(bitmap_p)
 
@@ -231,15 +233,15 @@ def DecodeYUV(data):
     size = stride * height
     bitmap = create_string_buffer(size)
 
-    memmove(bitmap, bitmap_p, size)
+    libc.memcpy(bitmap, bitmap_p, size)
 
     # Copy UV chrominace bitmap
     uv_size = uv_stride * height
     u_bitmap = create_string_buffer(uv_size)
     v_bitmap = create_string_buffer(uv_size)
 
-    memmove(u_bitmap, u, uv_size)
-    memmove(v_bitmap, v, uv_size)
+    libc.memcpy(u_bitmap, u, uv_size)
+    libc.memcpy(v_bitmap, v, uv_size)
 
     # End
     return BitmapHandler(
