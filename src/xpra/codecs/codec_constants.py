@@ -17,12 +17,18 @@ def do_get_PIL_codings(PIL, attr="SAVE"):
     avalue = getattr(pi, attr)
     log("PIL.Image.%s=%s", attr, avalue)
     encodings = []
-    for encoding in ["png", "png/L", "png/P", "jpeg", "webp"]:
+    test_options = ["png", "png/L", "png/P", "jpeg", "webp"]
+    if attr=="OPEN":
+        #don't open 'webp' images as this leaks memory in
+        #all versions of PIL and Pillow so far!
+        test_options.remove("webp")
+    for encoding in test_options:
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
         if stripped in avalue:
             log("PIL.Image can %s %s", attr, stripped)
         encodings.append(encoding)
+    log("do_get_PIL_codings(%s, %s)=%s", PIL, attr, encodings)
     return encodings
 
 def get_PIL_encodings(PIL):
