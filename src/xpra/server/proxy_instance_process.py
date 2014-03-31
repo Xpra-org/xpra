@@ -622,7 +622,7 @@ class ProxyInstanceProcess(Process):
                     passthrough()
                     return
                 log("no video encoder available: sending as jpeg")
-                coding, compressed_data, client_options, _, _, _, _ = PIL_encode("jpeg", image, quality, False)
+                coding, compressed_data, client_options, _, _, _, _ = PIL_encode("jpeg", image, quality, speed, False)
                 return send_updated(coding, compressed_data, client_options)
 
             log("creating new video encoder %s for window %s", spec, wid)

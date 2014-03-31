@@ -144,6 +144,10 @@ def get_codec(name):
     load_codecs()
     return codecs.get(name)
 
+def get_codec_version(name):
+    load_codecs()
+    return codec_versions.get(name)
+
 def has_codec(name):
     load_codecs()
     return name in codecs

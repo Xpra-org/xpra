@@ -45,7 +45,7 @@ try:
 except Exception, e:
     log("cannot load argb module: %s", e)
     bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
-from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
+from xpra.server.picture_encode import webm_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
 from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
 
@@ -1142,7 +1142,7 @@ class WindowSource(object):
 
 
     def webp_encode(self, coding, image, options):
-        return webp_encode(coding, image, self.get_current_quality())
+        return webm_encode(image, self.get_current_quality())
 
     def rgb_encode(self, coding, image, options):
         return rgb_encode(coding, image, self.rgb_formats, self.supports_transparency, self.get_current_speed(),
@@ -1152,7 +1152,7 @@ class WindowSource(object):
         #for more information on pixel formats supported by PIL / Pillow, see:
         #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
         assert coding in self.server_core_encodings
-        return PIL_encode(coding, image, self.get_current_quality(), self.supports_transparency)
+        return PIL_encode(coding, image, self.get_current_quality(), self.get_current_speed(), self.supports_transparency)
 
     def mmap_encode(self, coding, image, options):
         return mmap_encode(coding, image, options)

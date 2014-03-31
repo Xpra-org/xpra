@@ -21,7 +21,7 @@ except Exception, e:
     log("cannot load argb module: %s", e)
     bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
 from xpra.os_util import StringIOClass
-from xpra.codecs.loader import get_codec, has_codec
+from xpra.codecs.loader import get_codec, get_codec_version, has_codec
 try:
     from xpra.net.mmap_pipe import mmap_write
 except:
@@ -29,6 +29,7 @@ except:
 
 
 PIL = get_codec("PIL")
+PIL_VERSION = get_codec_version("PIL")
 enc_webp = get_codec("enc_webp")
 webp_handlers = get_codec("webp_bitmap_handlers")
 
@@ -42,7 +43,7 @@ def warn_encoding_once(key, message):
         encoding_warnings.add(key)
 
 
-def webp_encode(coding, image, quality):
+def webm_encode(image, quality):
     assert enc_webp and webp_handlers, "webp components are missing"
 
     BitmapHandler = webp_handlers.BitmapHandler
@@ -64,12 +65,12 @@ def webp_encode(coding, image, quality):
         enc = getattr(enc_webp, lossless_enc)
         kwargs = {}
         client_options = {}
-        log("webp_encode(%s, %s) using lossless encoder=%s for %s", image, enc, pixel_format)
+        log("webm_encode(%s, %s) using lossless encoder=%s for %s", image, enc, pixel_format)
     if enc is None:
         enc = getattr(enc_webp, lossy_enc)
         kwargs = {"quality" : q}
         client_options = {"quality" : q}
-        log("webp_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, enc, q, pixel_format)
+        log("webm_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, enc, q, pixel_format)
     handler = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
     bpp = 24
     if has_alpha:
@@ -137,7 +138,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     return coding, Compressed(coding, raw_data), options, image.get_width(), image.get_height(), image.get_rowstride(), bpp
 
 
-def PIL_encode(coding, image, quality, supports_transparency):
+def PIL_encode(coding, image, quality, speed, supports_transparency):
     assert PIL is not None, "Python PIL is not available"
     pixel_format = image.get_pixel_format()
     w = image.get_width()
@@ -164,10 +165,14 @@ def PIL_encode(coding, image, quality, supports_transparency):
         raise e
     buf = StringIOClass()
     client_options = {}
+    #only optimize with Pillow>=2.2 and when speed is zero
+    optimize = speed==0 and PIL_VERSION>="2.2"    
     if coding in ("jpeg", "webp"):
         q = int(min(99, max(1, quality)))
         kwargs = im.info
         kwargs["quality"] = q
+        if optimize:
+            kwargs["optimize"] = True
         im.save(buf, coding.upper(), **kwargs)
         client_options["quality"] = q
     else:
@@ -203,6 +208,8 @@ def PIL_encode(coding, image, quality, supports_transparency):
         if mask is not None:
             client_options["transparency"] = 255
             kwargs["transparency"] = 255
+        if optimize:
+            kwargs["optimize"] = True
         im.save(buf, "PNG", **kwargs)
     log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
     data = buf.getvalue()

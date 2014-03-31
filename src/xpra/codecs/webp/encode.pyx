@@ -295,6 +295,7 @@ def compress(pixels, width, height, quality=50, speed=50):
         raise Exception("failed to initialise webp config")
 
     #tune it:
+    config.lossless = quality>=100
     config.method = max(0, min(6, 6-speed/16))
     #config.sns_strength = 90
     #config.filter_sharpness = 6
