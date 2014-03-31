@@ -56,6 +56,7 @@ sound_ENABLED = True
 enc_proxy_ENABLED = True
 enc_x264_ENABLED = True
 enc_x265_ENABLED = False
+webp_ENABLED = False
 x264_static_ENABLED = False
 x265_static_ENABLED = False
 vpx_ENABLED = True
@@ -67,7 +68,7 @@ avcodec2_static_ENABLED = False
 csc_swscale_ENABLED = True
 csc_cython_ENABLED = True
 swscale_static_ENABLED = False
-webp_ENABLED = True
+webm_ENABLED = True
 nvenc_ENABLED = False
 csc_nvcuda_ENABLED = False
 csc_opencl_ENABLED = True
@@ -88,7 +89,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "csc_swscale", "swscale_static",
             "csc_nvcuda", "csc_opencl", "csc_cython",
             "vpx", "vpx_static",
-            "webp",
+            "webp", "webm",
             "rencode", "bencode", "cython_bencode",
             "clipboard",
             "server", "client", "x11",
@@ -593,6 +594,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/nvenc/constants.pxi",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
+                   "xpra/codecs/webp/encode.c",
                    "xpra/codecs/dec_avcodec/decoder.c",
                    "xpra/codecs/dec_avcodec/constants.pxi",
                    "xpra/codecs/dec_avcodec2/decoder.c",
@@ -942,7 +944,7 @@ if WIN32:
         data_files.append(('', ['%s\\libx264.dll' % x264_bin_dir]))
     html5_dir = ''
 
-    if webp_ENABLED:
+    if webm_ENABLED or webp_ENABLED:
         #Note: confusingly, the python bindings are called webm...
         #add the webp DLL to the output:
         #And since 0.2.1, you have to compile the DLL yourself..
@@ -967,7 +969,7 @@ else:
                     ("share/icons",         ["xdg/xpra.png"])
                   ]
     html5_dir = "share/xpra/www"
-    if webp_ENABLED:
+    if webm_ENABLED:
         data_files.append(('share/xpra/webm', ["xpra/codecs/webm/LICENSE"]))
 
     if OSX:
@@ -1124,7 +1126,7 @@ toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "gi")
 toggle_packages(client_ENABLED and qt4_ENABLED, "xpra.client.qt4", "PyQt4")
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(sound_ENABLED, "xpra.sound")
-toggle_packages(webp_ENABLED, "xpra.codecs.webm")
+toggle_packages(webm_ENABLED, "xpra.codecs.webm")
 toggle_packages(client_ENABLED and gtk2_ENABLED and opengl_ENABLED, "xpra.client.gl")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
@@ -1173,6 +1175,13 @@ if enc_x265_ENABLED:
     cython_add(Extension("xpra.codecs.enc_x265.encoder",
                 ["xpra/codecs/enc_x265/encoder.pyx"],
                 **x265_pkgconfig), min_version=(0, 16))
+
+toggle_packages(webp_ENABLED, "xpra.codecs.webp")
+if webp_ENABLED:
+    webp_pkgconfig = pkgconfig("webp")
+    cython_add(Extension("xpra.codecs.webp.encode",
+                ["xpra/codecs/webp/encode.pyx"],
+                **webp_pkgconfig), min_version=(0, 16))
 
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:
