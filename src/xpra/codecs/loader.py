@@ -32,7 +32,7 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
         log.warn("cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
     return None
 codec_versions = {}
-def add_codec_version(name, top_module, version="get_version()", alt_version=None):
+def add_codec_version(name, top_module, version="get_version()", alt_version=None, min_version=None):
     try:
         fieldnames = [x for x in (version, alt_version) if x is not None]
         for fieldname in fieldnames:
@@ -44,19 +44,23 @@ def add_codec_version(name, top_module, version="get_version()", alt_version=Non
             v = getattr(module, fieldname)
             if version.endswith("()") and v:
                 v = v()
+            if min_version is not None and v<min_version:
+                log.warn("Warning: %s version %s is too old, version %s or later is required", name, v, min_version)
+                return False
             global codec_versions
             codec_versions[name] = v
             #optional info:
             if hasattr(module, "get_info"):
                 info = getattr(module, "get_info")
                 log("info(%s)=%s", top_module, info())
-            return
+            return True
         log.warn("cannot find %s in %s", " or ".join(fieldnames), module)
     except ImportError, e:
         #not present
         log("cannot import %s: %s", name, e)
     except Exception, e:
         log.warn("error during codec import: %s", e)
+    return False
 
 
 loaded = False
@@ -120,7 +124,8 @@ def load_codecs():
                 #we need to check if the underlying C functions actually exist:
                 if not _enc_webp_lossless.HAS_LOSSLESS:
                     nowebp(["enc_webp_lossless"])
-            add_codec_version("webp", "xpra.codecs.webm", "__VERSION__")
+            if not add_codec_version("webp", "xpra.codecs.webm", "__VERSION__", min_version="0.2.3"):
+                raise Exception("python-webm version check failed")
             webp_handlers = codec_import_check("webp_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
             #we need the handlers to encode:
             if not webp_handlers:
