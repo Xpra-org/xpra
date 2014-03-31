@@ -106,27 +106,31 @@ def load_codecs():
     codec_import_check("dec_avcodec2", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
     add_codec_version("avcodec2", "xpra.codecs.dec_avcodec2.decoder")
 
+    #webp via cython:
+    codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
+    add_codec_version("webp", "xpra.codecs.webp.encode")
+
     import __builtin__
     if "bytearray" in __builtin__.__dict__:
-        def nowebp(remove=["enc_webp", "enc_webp_lossless"]):
+        def nowebp(remove=["enc_webm", "enc_webm_lossless"]):
             for x in remove:
                 if x in codecs:
                     del codecs[x]
         #no bytearray (python 2.6 or later), no webp
         try:
             #these symbols are all available upstream as of libwebp 0.2:
-            codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
-            codec_import_check("dec_webp", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
+            codec_import_check("enc_webm", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
+            codec_import_check("dec_webm", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
             #these symbols were added in libwebp 0.4, and we added HAS_LOSSLESS to the wrapper:
-            _enc_webp_lossless = codec_import_check("enc_webp_lossless", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "HAS_LOSSLESS", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
-            if _enc_webp_lossless:
+            _enc_webm_lossless = codec_import_check("enc_webm_lossless", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "HAS_LOSSLESS", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
+            if _enc_webm_lossless:
                 #the fact that the python functions are defined is not enough
                 #we need to check if the underlying C functions actually exist:
-                if not _enc_webp_lossless.HAS_LOSSLESS:
-                    nowebp(["enc_webp_lossless"])
-            if not add_codec_version("webp", "xpra.codecs.webm", "__VERSION__", min_version="0.2.3"):
+                if not _enc_webm_lossless.HAS_LOSSLESS:
+                    nowebp(["enc_webm_lossless"])
+            if not add_codec_version("webm", "xpra.codecs.webm", "__VERSION__", min_version="0.2.3"):
                 raise Exception("python-webm version check failed")
-            webp_handlers = codec_import_check("webp_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
+            webp_handlers = codec_import_check("webm_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
             #we need the handlers to encode:
             if not webp_handlers:
                 nowebp()
@@ -165,7 +169,9 @@ ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"
 ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
             "csc_swscale", "csc_cython", "csc_opencl", "csc_nvcuda", \
             "dec_avcodec", "dec_avcodec2", \
-            "enc_webp", "enc_webp_lossless", "webp_bitmap_handlers", "dec_webp"
+            "enc_webm", "enc_webm_lossless", "webm_bitmap_handlers", \
+            "dec_webm", \
+            "enc_webp"
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:

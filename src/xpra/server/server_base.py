@@ -166,7 +166,7 @@ class ServerBase(ServerCore):
         add_encodings(getVideoHelper().get_encodings())  #ie: ["vp8", "h264"]
 
         for module, encodings in {
-                              "enc_webp"  : ["webp"],
+                              "enc_webm"  : ["webp"],
                               "PIL"       : ["png", "png/L", "png/P", "jpeg"],
                               }.items():
             if not has_codec(module):
@@ -176,7 +176,7 @@ class ServerBase(ServerCore):
 
         self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb"))]
         self.lossless_mode_encodings = []
-        if has_codec("enc_webp_lossless"):
+        if has_codec("enc_webm_lossless"):
             self.lossless_mode_encodings.append("webp")
             self.lossless_encodings.append("webp")
 

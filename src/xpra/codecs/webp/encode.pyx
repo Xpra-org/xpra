@@ -134,7 +134,7 @@ cdef extern from "webp/encode.h":
         # compression, and YUV input (*y, *u, *v, etc.) for lossy compression
         # since these are the respective native colorspace for these formats.
         int use_argb
-        
+      
         # YUV input (mostly used for input to lossy compression)
         WebPEncCSP colorspace           #colorspace: should be YUV420 for now (=Y'CbCr).
         int width, height               #dimensions (less or equal to WEBP_MAX_DIMENSION)
@@ -145,17 +145,17 @@ cdef extern from "webp/encode.h":
         uint8_t* a                      #pointer to the alpha plane
         int a_stride                    #stride of the alpha plane
         uint32_t pad1[2]                #padding for later use
-        
+      
         # ARGB input (mostly used for input to lossless compression)
         uint32_t* argb                  #Pointer to argb (32 bit) plane.
         int argb_stride                 #This is stride in pixels units, not bytes.
         uint32_t pad2[3]                #padding for later use
-        
+      
         #   OUTPUT
         # Byte-emission hook, to store compressed bytes as they are ready.
         WebPWriterFunction writer       #can be NULL
         void* custom_ptr                #can be used by the writer.
-        
+      
         # map for extra information (only for lossy compression mode)
         int extra_info_type             #1: intra type, 2: segment, 3: quant
                                         #4: intra-16 prediction mode,
@@ -165,22 +165,22 @@ cdef extern from "webp/encode.h":
                                         # ((width + 15) / 16) * ((height + 15) / 16) that
                                         #will be filled with a macroblock map, depending
                                         #on extra_info_type.
-        
+      
         #   STATS AND REPORTS
         # Pointer to side statistics (updated only if not NULL)
         WebPAuxStats* stats
-        
+      
         # Error code for the latest error encountered during encoding
         WebPEncodingError error_code
-        
+      
         #If not NULL, report progress during encoding.
         WebPProgressHook progress_hook
-        
+      
         void* user_data                 #this field is free to be set to any value and
                                         #used during callbacks (like progress-report e.g.).
-        
+      
         uint32_t pad3[3]                #padding for later use
-        
+      
         # Unused for now: original samples (for non-YUV420 modes)
         uint8_t *u0
         uint8_t *v0
@@ -280,7 +280,7 @@ def webp_check(int ret):
     err = ERROR_TO_NAME.get(ret, ret)
     raise Exception("error: %s" % err)
 
-def compress(pixels, width, height, quality=50, speed=50):
+def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=False):
     cdef uint8_t *pic_buf
     cdef Py_ssize_t pic_buf_len = 0
     cdef WebPConfig config
@@ -288,15 +288,19 @@ def compress(pixels, width, height, quality=50, speed=50):
     cdef WebPPreset preset = WEBP_PRESET_TEXT
 
     PyObject_AsReadBuffer(pixels, <const void**> &pic_buf, &pic_buf_len)
-    log("compress(%s bytes, %s, %s) buf=%#x", len(pixels), width, height, <unsigned long> pic_buf)
+    log("webp.compress(%s bytes, %s, %s) buf=%#x", len(pixels), width, height, <unsigned long> pic_buf)
 
     ret = WebPConfigPreset(&config, preset, max(0, min(100, quality)))
     if not ret:
         raise Exception("failed to initialise webp config")
 
     #tune it:
+    config.quality = max(0, min(100, quality))
     config.lossless = quality>=100
     config.method = max(0, min(6, 6-speed/16))
+    config.alpha_compression = int(has_alpha)
+    config.alpha_filtering = max(0, min(2, speed/50)) * int(has_alpha)
+    config.alpha_quality = quality * int(has_alpha)
     #config.sns_strength = 90
     #config.filter_sharpness = 6
     #config.alpha_quality = 90
@@ -311,15 +315,15 @@ def compress(pixels, width, height, quality=50, speed=50):
 
     cdef WebPMemoryWriter memory_writer
     WebPMemoryWriterInit(&memory_writer)
-    
+
     memset(&pic, 0, sizeof(WebPPicture))
     pic.width = width
     pic.height = height
     pic.use_argb = True
     pic.argb = <uint32_t*> pic_buf
-    pic.argb_stride = width
+    pic.argb_stride = stride or width
     pic.writer = <WebPWriterFunction> WebPMemoryWrite
-    pic.custom_ptr = <void*> &memory_writer    
+    pic.custom_ptr = <void*> &memory_writer  
     ret = WebPEncode(&config, &pic)
     if not ret:
         raise Exception("WebPEncode failed: %s" % ERROR_TO_NAME.get(pic.error_code, pic.error_code))

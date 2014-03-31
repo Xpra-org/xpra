@@ -30,8 +30,8 @@ except:
 
 PIL = get_codec("PIL")
 PIL_VERSION = get_codec_version("PIL")
-enc_webp = get_codec("enc_webp")
-webp_handlers = get_codec("webp_bitmap_handlers")
+enc_webm = get_codec("enc_webm")
+webp_handlers = get_codec("webm_bitmap_handlers")
 
 
 #give warning message just once per key then ignore:
@@ -44,7 +44,7 @@ def warn_encoding_once(key, message):
 
 
 def webm_encode(image, quality):
-    assert enc_webp and webp_handlers, "webp components are missing"
+    assert enc_webm and webp_handlers, "webp components are missing"
 
     BitmapHandler = webp_handlers.BitmapHandler
     handler_encs = {
@@ -61,13 +61,13 @@ def webm_encode(image, quality):
     bh, lossy_enc, lossless_enc, has_alpha = h_e
     q = max(1, quality)
     enc = None
-    if q>=100 and has_codec("enc_webp_lossless"):
-        enc = getattr(enc_webp, lossless_enc)
+    if q>=100 and has_codec("enc_webm_lossless"):
+        enc = getattr(enc_webm, lossless_enc)
         kwargs = {}
         client_options = {}
         log("webm_encode(%s, %s) using lossless encoder=%s for %s", image, enc, pixel_format)
     if enc is None:
-        enc = getattr(enc_webp, lossy_enc)
+        enc = getattr(enc_webm, lossy_enc)
         kwargs = {"quality" : q}
         client_options = {"quality" : q}
         log("webm_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, enc, q, pixel_format)

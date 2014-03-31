@@ -46,6 +46,7 @@ except Exception, e:
     log("cannot load argb module: %s", e)
     bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
 from xpra.server.picture_encode import webm_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
+from xpra.net.protocol import Compressed
 from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
 
@@ -1142,6 +1143,22 @@ class WindowSource(object):
 
 
     def webp_encode(self, coding, image, options):
+        stride = image.get_rowstride()
+        enc_webp = get_codec("enc_webp")
+        if enc_webp and stride%4==0 and image.get_pixel_format() in ("BGRA", "BGRX"):
+            #prefer Cython module:
+            alpha = self.supports_transparency and image.get_pixel_format()=="BGRA"
+            w = image.get_width()
+            h = image.get_height()
+            q = self.get_current_quality()
+            s = self.get_current_speed()
+            cdata = enc_webp.compress(image.get_pixels(), w, h, stride=stride/4, quality=q, speed=s, has_alpha=alpha)
+            client_options = {"speed" : max(0, min(100, s))}
+            if q>=0 and q<100:
+                client_options["quality"] = q
+            if alpha:
+                client_options["has_alpha"] = True
+            return "webp", Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
         return webm_encode(image, self.get_current_quality())
 
     def rgb_encode(self, coding, image, options):

@@ -176,14 +176,14 @@ class WindowBackingBase(object):
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        dec_webp = get_codec("dec_webp")
-        assert dec_webp is not None, "webp decoder not found"
+        dec_webm = get_codec("dec_webm")
+        assert dec_webm is not None, "webp decoder not found"
         if options.get("has_alpha", False):
-            decode = dec_webp.DecodeRGBA
+            decode = dec_webm.DecodeRGBA
             rowstride = width*4
             paint_rgb = self.do_paint_rgb32
         else:
-            decode = dec_webp.DecodeRGB
+            decode = dec_webm.DecodeRGB
             rowstride = width*3
             paint_rgb = self.do_paint_rgb24
         log("paint_webp(%s) using decode=%s, paint=%s",
