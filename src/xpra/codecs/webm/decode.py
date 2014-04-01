@@ -28,8 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from ctypes import (c_int, c_uint, c_char_p, create_string_buffer, c_void_p, c_size_t,
     CDLL, POINTER)
 from ctypes.util import find_library
-from xpra.codecs.webm import _LIBRARY, PIXEL_ALPHA_SZ, PIXEL_SZ
-from xpra.codecs.webm.handlers import BitmapHandler
+from . import _LIBRARY, PIXEL_ALPHA_SZ, PIXEL_SZ
+from handlers import BitmapHandler
 
 libc = CDLL(find_library("c"))
 libc.free.argtypes = (c_void_p,)
