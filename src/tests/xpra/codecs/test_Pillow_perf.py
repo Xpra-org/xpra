@@ -48,6 +48,8 @@ def do_test_encode(rgb_data, w, h, encodings=["png", "jpeg", "webp"], N=5, Q=[0,
         S_options = S
         if encoding=="webp":
             S_options = [-1]
+        if encoding in ("png", "jpeg"):
+            S_options = [0, -1]
         for q in Q_options:
             for s in S_options:
                 #print("test_encode() quality=%s, speed=%s" % (q, s))

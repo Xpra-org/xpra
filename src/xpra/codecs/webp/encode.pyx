@@ -280,6 +280,13 @@ def webp_check(int ret):
     err = ERROR_TO_NAME.get(ret, ret)
     raise Exception("error: %s" % err)
 
+cdef int clamp100(int v):
+    if v<0:
+        return 0
+    if v>100:
+        return 100
+    return v
+
 def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=False):
     cdef uint8_t *pic_buf
     cdef Py_ssize_t pic_buf_len = 0
@@ -288,22 +295,26 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     cdef WebPPreset preset = WEBP_PRESET_TEXT
 
     PyObject_AsReadBuffer(pixels, <const void**> &pic_buf, &pic_buf_len)
-    log("webp.compress(%s bytes, %s, %s) buf=%#x", len(pixels), width, height, <unsigned long> pic_buf)
+    log("webp.compress(%s bytes, %s, %s, %s, %s, %s, %s) buf=%#x", len(pixels), width, height, stride, quality, speed, has_alpha, <unsigned long> pic_buf)
 
-    ret = WebPConfigPreset(&config, preset, max(0, min(100, quality)))
+    ret = WebPConfigPreset(&config, preset, clamp100(quality))
     if not ret:
         raise Exception("failed to initialise webp config")
 
     #tune it:
-    config.quality = max(0, min(100, quality))
     config.lossless = quality>=100
+    if config.lossless:
+        config.quality = clamp100(100-speed)
+    else:
+        config.quality = clamp100(quality)
     config.method = max(0, min(6, 6-speed/16))
     config.alpha_compression = int(has_alpha)
     config.alpha_filtering = max(0, min(2, speed/50)) * int(has_alpha)
     config.alpha_quality = quality * int(has_alpha)
+    log("webp.compress config: lossless=%s, quality=%s, method=%s, alpha=%s,%s,%s", config.lossless, config.quality, config.method,
+                    config.alpha_compression, config.alpha_filtering, config.alpha_quality)
     #config.sns_strength = 90
     #config.filter_sharpness = 6
-    #config.alpha_quality = 90
     ret = WebPValidateConfig(&config)
     if not ret:
         raise Exception("invalid webp configuration!")
