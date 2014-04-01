@@ -63,5 +63,7 @@ for name in _LIBRARY_NAMES:
         break
     except:
         pass
-if _LIBRARY is None:
-    raise ImportError("Could not find webp library from %s" % str(_LIBRARY_NAMES))
+
+def check_library():
+    if _LIBRARY is None:
+        raise ImportError("Could not find webp library from %s" % str(_LIBRARY_NAMES))

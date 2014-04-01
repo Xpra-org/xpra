@@ -28,9 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from ctypes import (c_int, c_float, c_void_p, byref, memmove,
     create_string_buffer)
-from . import _LIBRARY
+from . import _LIBRARY, check_library
 from handlers import WebPHandler
 
+check_library()
 
 # -----------------------------------------------------------------------------
 # Exceptions
