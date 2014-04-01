@@ -21,7 +21,8 @@ from xpra.util import log_screen_sizes
 from xpra.os_util import thread, get_hex_uuid
 from xpra.version_util import add_version_info
 from xpra.util import typedict
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec, get_codec
+from xpra.codecs.codec_constants import get_PIL_encodings
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, get_DEFAULT_VIDEO_ENCODERS, ALL_CSC_MODULE_OPTIONS, get_DEFAULT_CSC_MODULES
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
@@ -164,15 +165,13 @@ class ServerBase(ServerCore):
 
         #video encoders (empty when first called - see threaded_init)
         add_encodings(getVideoHelper().get_encodings())  #ie: ["vp8", "h264"]
-
-        for module, encodings in {
-                              "enc_webm"  : ["webp"],
-                              "PIL"       : ["png", "png/L", "png/P", "jpeg"],
-                              }.items():
-            if not has_codec(module):
-                log("init_encodings() codec module %s is missing, not adding: %s", module, encodings)
-                continue
-            add_encodings(encodings)
+        #Pithon Imaging Libary:
+        PIL = get_codec("PIL")
+        if PIL:
+            add_encodings(get_PIL_encodings(PIL))
+        #webp: only check for "enc_webm" because "enc_webp" needs a fallback (either "PIL" or "enc_webm")
+        if has_codec("enc_webm"):
+            add_encodings(["webp"])
 
         self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb"))]
         self.lossless_mode_encodings = []
