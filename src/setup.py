@@ -56,7 +56,7 @@ sound_ENABLED = True
 enc_proxy_ENABLED = True
 enc_x264_ENABLED = True
 enc_x265_ENABLED = False
-webp_ENABLED = False
+webp_ENABLED = True
 x264_static_ENABLED = False
 x265_static_ENABLED = False
 vpx_ENABLED = True
@@ -745,6 +745,12 @@ if WIN32:
         vpx_lib_names = ["vpxmd"]             #for libvpx 1.2.0
     else:
         vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
+    #webp:
+    webp_path = "C:\\libwebp-windows-x86"
+    webp_include_dir    = webp_path+"\\include"
+    webp_lib_dir        = webp_path+"\\lib"
+    webp_bin_dir        = webp_path+"\\bin"
+    webp_lib_names      = ["libwebp"]
 
     # Same for PyGTK:
     # http://www.pygtk.org/downloads.html
@@ -825,6 +831,13 @@ if WIN32:
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(vpx_include_dir, vpx_lib_dir)
+        elif "webp" in pkgs_options[0]:
+            add_to_PATH(webp_bin_dir)
+            add_to_keywords(kw, 'include_dirs', webp_include_dir)
+            add_to_keywords(kw, 'libraries', *webp_lib_names)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % webp_lib_dir)
+            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
+            checkdirs(webp_include_dir, webp_lib_dir, webp_bin_dir)
         elif "pygobject-2.0" in pkgs_options[0]:
             dirs = (python_include_path,
                     pygtk_include_dir, atk_include_dir, gtk2_include_dir,
@@ -951,7 +964,7 @@ if WIN32:
         #the path after installing may look like this:
         #webp_DLL = "C:\\libwebp-0.3.1-windows-x86\\bin\\libwebp.dll"
         #but we use something more generic, without the version numbers:
-        webp_DLL = "C:\\libwebp-windows-x86\\bin\\libwebp.dll"
+        webp_DLL = webp_bin_dir+"\\libwebp.dll"
         data_files.append(('', [webp_DLL]))
         #and its license:
         data_files.append(('webm', ["xpra/codecs/webm/LICENSE"]))
