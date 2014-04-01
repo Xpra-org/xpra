@@ -50,7 +50,7 @@ def do_test_encode(rgb_data, w, h, encodings=["png", "jpeg", "webp", "rgb"], N=5
                 ratio = 100.0 * len(cdata) / len(rgb_data)
                 print("%s : %s MPixels/s  %s%% compression ratio : %sx%s to: %s KBytes (quality=%s, speed=%s) %s times in %sms average" % \
                       (coding.ljust(5), ("%.1f" % mps).rjust(5), ("%.1f" % ratio).rjust(5), str(w).rjust(4), str(h).ljust(4), str(len(cdata)/1024).rjust(6), str(q).rjust(3), str(s).rjust(3),
-                       N, str((end-start)*1000.0/N).rjust(5)))
+                       N, str(int((end-start)*1000.0/N)).rjust(5)))
 
 def test_files(filenames, extensions=[".png", ".jpg"], recurse=True):
     for x in filenames:

@@ -216,6 +216,9 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
         #51-76    -> 2
         #etc
         kwargs["compress_level"] = max(1, min(5, (125-speed)/25))
+        #default is good enough, no need to override, other options:
+        #DEFAULT_STRATEGY, FILTERED, HUFFMAN_ONLY, RLE, FIXED
+        #kwargs["compress_type"] = PIL.Image.DEFAULT_STRATEGY
         im.save(buf, "PNG", **kwargs)
     log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
     data = buf.getvalue()
