@@ -79,7 +79,7 @@ def webm_encode(image, quality):
     return "webp", Compressed("webp", str(enc(handler, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0, bpp
 
 
-def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4, encoding_client_options, supports_rgb24zlib):
+def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, encoding_client_options=True, supports_rgb24zlib=True):
     pixel_format = image.get_pixel_format()
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4, encoding_client_options, supports_rgb24zlib), pixel_format, rgb_formats)
     if pixel_format not in rgb_formats:
