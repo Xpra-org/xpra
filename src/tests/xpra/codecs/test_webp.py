@@ -76,6 +76,7 @@ def test_files(filenames, extensions=[".png", ".jpg"], recurse=True):
             continue
         try:
             img = Image.open(x)
+            img.load()
             print("img.mode=%s" % img.mode)
             has_alpha = img.mode=="RGBA"
             if not has_alpha:

@@ -1152,6 +1152,10 @@ class WindowSource(object):
             h = image.get_height()
             q = self.get_current_quality()
             s = self.get_current_speed()
+            if q==100:
+                #webp lossless is unbearibly slow for only marginal compression improvements,
+                #so force max speed:
+                s = 100
             cdata = enc_webp.compress(image.get_pixels(), w, h, stride=stride/4, quality=q, speed=s, has_alpha=alpha)
             client_options = {"speed" : max(0, min(100, s))}
             if q>=0 and q<100:
