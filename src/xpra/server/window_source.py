@@ -1163,7 +1163,12 @@ class WindowSource(object):
             if alpha:
                 client_options["has_alpha"] = True
             return "webp", Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
-        return webm_encode(image, self.get_current_quality())
+        enc_webm = get_codec("enc_webm")
+        webp_handlers = get_codec("webm_bitmap_handlers")
+        if enc_webm and webp_handlers:
+            return webm_encode(image, self.get_current_quality())
+        #fallback to PIL
+        return self.PIL_encode(coding, image, options)
 
     def rgb_encode(self, coding, image, options):
         return rgb_encode(coding, image, self.rgb_formats, self.supports_transparency, self.get_current_speed(),
