@@ -26,7 +26,7 @@ def do_test_encode(rgb_data, w, h, encodings=["png", "jpeg", "webp", "rgb"], N=5
         S_options = S
         if encoding=="webp":
             S_options = [-1]
-        if encoding in ("png", "jpeg"):
+        if encoding in ("jpeg"):
             S_options = [0, -1]
         elif encoding=="rgb":
             S_options = [0, 30, 70, 90]
@@ -48,7 +48,9 @@ def do_test_encode(rgb_data, w, h, encodings=["png", "jpeg", "webp", "rgb"], N=5
                 mps = w*h*N/(end-start)/1024/1024
                 cdata = data[1]
                 ratio = 100.0 * len(cdata) / len(rgb_data)
-                print("%s : %s MPixels/s  %s%% compression ratio : %sx%s to: %s bytes (quality=%s, speed=%s) %s times in %ims average" % (coding.ljust(5), ("%.1f" % mps).rjust(5), ("%.1f" % ratio).rjust(5), w, h, len(cdata), q, s, N, (end-start)*1000.0/N))
+                print("%s : %s MPixels/s  %s%% compression ratio : %sx%s to: %s KBytes (quality=%s, speed=%s) %s times in %sms average" % \
+                      (coding.ljust(5), ("%.1f" % mps).rjust(5), ("%.1f" % ratio).rjust(5), str(w).rjust(4), str(h).ljust(4), str(len(cdata)/1024).rjust(6), str(q).rjust(3), str(s).rjust(3),
+                       N, str((end-start)*1000.0/N).rjust(5)))
 
 def test_files(filenames, extensions=[".png", ".jpg"], recurse=True):
     for x in filenames:

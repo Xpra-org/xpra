@@ -32,7 +32,7 @@ PIL = get_codec("PIL")
 PIL_VERSION = get_codec_version("PIL")
 enc_webm = get_codec("enc_webm")
 webp_handlers = get_codec("webm_bitmap_handlers")
-
+PIL_can_optimize = PIL_VERSION>="2.2"
 
 #give warning message just once per key then ignore:
 encoding_warnings = set()
@@ -166,12 +166,12 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
     buf = StringIOClass()
     client_options = {}
     #only optimize with Pillow>=2.2 and when speed is zero
-    optimize = speed==0 and PIL_VERSION>="2.2"    
     if coding in ("jpeg", "webp"):
         q = int(min(99, max(1, quality)))
         kwargs = im.info
         kwargs["quality"] = q
-        if optimize:
+        if coding=="jpeg" and PIL_can_optimize and speed<70:
+            #(optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
         im.save(buf, coding.upper(), **kwargs)
         client_options["quality"] = q
@@ -208,8 +208,14 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
         if mask is not None:
             client_options["transparency"] = 255
             kwargs["transparency"] = 255
-        if optimize:
+        if PIL_can_optimize and speed==0:
+            #optimizing png is very rarely worth doing
             kwargs["optimize"] = True
+        #level can range from 0 to 9, but anything above 5 is way too slow for small gains:
+        #76-100   -> 1
+        #51-76    -> 2
+        #etc
+        kwargs["compress_level"] = max(1, min(5, (125-speed)/25))
         im.save(buf, "PNG", **kwargs)
     log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
     data = buf.getvalue()
