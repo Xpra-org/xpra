@@ -1,7 +1,5 @@
 #!/bin/sh
 
-#by default use avcodec2 (ffmpeg2):
-BUILD_ARGS="--without-dec_avcodec --with-dec_avcodec2 --without-csc_opencl"
 IMAGE_DIR="./image/Xpra.app"
 CONTENTS_DIR="${IMAGE_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
