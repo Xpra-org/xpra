@@ -32,6 +32,8 @@ OSX = sys.platform.startswith("darwin")
 # using --with-OPTION or --without-OPTION
 # only the default values are specified here:
 #*******************************************************************************
+def pkg_config_ok(*args):
+    return commands.getstatusoutput("pkg-config %s" % (" ".join(args)))[0]==0
 
 shadow_ENABLED = SHADOW_SUPPORTED
 server_ENABLED = LOCAL_SERVERS_SUPPORTED or shadow_ENABLED
@@ -45,41 +47,43 @@ qt4_ENABLED = False
 opengl_ENABLED = client_ENABLED
 html5_ENABLED = not WIN32 and not OSX
 
-bencode_ENABLED = True
-cython_bencode_ENABLED = True
-rencode_ENABLED = True
-cymaths_ENABLED = True
-cyxor_ENABLED = True
-clipboard_ENABLED = True
-Xdummy_ENABLED = None           #none means auto-detect
-sound_ENABLED = True
+bencode_ENABLED         = True
+cython_bencode_ENABLED  = True
+rencode_ENABLED         = True
+cymaths_ENABLED         = True
+cyxor_ENABLED           = True
+clipboard_ENABLED       = True
+Xdummy_ENABLED          = None          #none means auto-detect
+sound_ENABLED           = True
 
-enc_proxy_ENABLED = True
-enc_x264_ENABLED = True
-enc_x265_ENABLED = False
-webp_ENABLED = WIN32 or OSX or commands.getstatusoutput("pkg-config --atleast-version=0.3 libwebp")[0]==0
-x264_static_ENABLED = False
-x265_static_ENABLED = False
-vpx_ENABLED = True
-vpx_static_ENABLED = False
-dec_avcodec_ENABLED = True
-dec_avcodec2_ENABLED = False
-avcodec_static_ENABLED = False
+enc_proxy_ENABLED       = True
+enc_x264_ENABLED        = True          #too important to detect
+enc_x265_ENABLED        = pkg_config_ok("--exists", "x265")
+webp_ENABLED            = WIN32 or pkg_config_ok("--atleast-version=0.3", "libwebp")
+x264_static_ENABLED     = False
+x265_static_ENABLED     = False
+vpx_ENABLED             = WIN32 or pkg_config_ok("--exists", "vpx") or pkg_config_ok("--exists", "libvpx")
+vpx_static_ENABLED      = False
+#ffmpeg 1.x and libav:
+dec_avcodec_ENABLED     = not WIN32 and pkg_config_ok("--max-version=55", "libavcodec")
+#ffmpeg 2 onwards:
+dec_avcodec2_ENABLED    = WIN32 or pkg_config_ok("--atleast-version=55", "libavcodec")
+avcodec_static_ENABLED  = False
 avcodec2_static_ENABLED = False
-csc_swscale_ENABLED = True
-csc_cython_ENABLED = True
-swscale_static_ENABLED = False
-webm_ENABLED = True
-nvenc_ENABLED = False
-csc_nvcuda_ENABLED = False
-csc_opencl_ENABLED = True
+csc_swscale_ENABLED     = WIN32 or pkg_config_ok("--exists", "libswscale")
+swscale_static_ENABLED  = False
+csc_cython_ENABLED      = True
+webm_ENABLED            = True
+nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")
+csc_nvcuda_ENABLED      = pkg_config_ok("--exists", "cuda")
+csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL")
 
-verbose_ENABLED = False
-warn_ENABLED = True
-strict_ENABLED = True
-debug_ENABLED = False
-PIC_ENABLED = True
-bundle_tests_ENABLED = False
+warn_ENABLED            = True
+strict_ENABLED          = True
+PIC_ENABLED             = True
+debug_ENABLED           = False
+verbose_ENABLED         = False
+bundle_tests_ENABLED    = False
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ("enc_x264", "x264_static",

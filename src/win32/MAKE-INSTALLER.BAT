@@ -21,25 +21,12 @@ SET BUILD_DIR=build
 
 SET SHOW_DEPENDENCIES=0
 
-REM "SET THESE TO 0 TO DISABLE VPX/RENCODE/CLIPBOARD/etc:"
-SET ENC_X264=1
-SET DEC_AVCODEC=0
-SET DEC_AVCODEC2=1
-SET CSC_NVCUDA=0
-SET NVENC=0
-SET OPENCL=0
-SET VPX=1
-SET WEBP=1
-SET RENCODE=1
-SET CYXOR=1
-SET CYMATHS=1
-SET CLIPBOARD=1
+REM "FLAGS TO DISABLE / ENABLE FEATURES"
 SET SOUND=1
-SET OPENGL=1
-SET SHADOW=1
-SET DEBUG=0
-SET BUNDLE_TESTS=0
-REM "*********CHANGE THESE BEFORE RUNNING**************"
+SET BUILD_ARGS=
+IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
+REM "IE:"
+REM SET BUILD_ARGS=%BUILD_ARGS% --with-debug
 
 REM support double-click on BAT file, so run from parent directory:
 set WORKING_DIRECTORY=%cd%
@@ -70,29 +57,6 @@ SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PY
 ECHO ****** Clearing build directory (you can ignore any errors here)
 RMDIR /S /Q %BUILD_DIR% dist Output
 DEL /Q Xpra_Setup*.exe
-
-ECHO ***************************************************************
-SET BUILD_ARGS=
-
-IF %ENC_X264% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-enc_x264
-IF %DEC_AVCODEC% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-dec_avcodec
-IF %DEC_AVCODEC2% EQU 1 SET BUILD_ARGS=%BUILD_ARGS% --with-dec_avcodec2
-IF %CSC_NVCUDA% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-csc_nvcuda
-IF %NVENC% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-nvenc
-IF %OPENCL% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-csc_opencl
-IF %VPX% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-vpx
-IF %WEBP% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-webp
-IF %RENCODE% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-rencode
-IF %CYXOR% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-cyxor
-IF %CYMATHS% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-cymaths
-IF %CLIPBOARD% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-clipboard
-IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
-IF %OPENGL% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-opengl
-IF %SHADOW% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-shadow
-IF %BUNDLE_TESTS% EQU 1 SET BUILD_ARGS=%BUILD_ARGS% --with-bundle_tests
-
-IF %DEBUG% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-debug
-IF %DEBUG% EQU 1 SET BUILD_ARGS=%BUILD_ARGS% --with-debug
 
 
 ECHO ***************************************************************
