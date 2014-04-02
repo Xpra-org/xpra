@@ -118,7 +118,7 @@ if HELP:
             default_str = str(d)
         else:
             default_str = "auto-detect"
-        print("%s or %s (default: %s)" % (with_str.ljust(25), without_str.ljust(25), default_str))
+        print("%s or %s (default: %s)" % (with_str.ljust(25), without_str.ljust(30), default_str))
     sys.exit(0)
 
 filtered_args = []
