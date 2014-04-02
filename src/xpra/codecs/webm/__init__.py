@@ -35,7 +35,7 @@ from ctypes import cdll as loader
 
 
 # Generic constants
-__VERSION__ = "0.2.3"
+__VERSION__ = "0.2.4"
 
 PIXEL_SZ = 3
 PIXEL_ALPHA_SZ = 4
@@ -49,7 +49,7 @@ elif sys.platform == "darwin":
     _LIBRARY_NAMES = ["libwebp.dylib"]
 
 elif os.name == "posix":
-    _LIBRARY_NAMES = ["libwebp.so.5", "libwebp.so.4", "libwebp.so.2"]
+    _LIBRARY_NAMES = ["libwebp.so.5", "libwebp.so.4"]
 
 else:
     raise ImportError(
