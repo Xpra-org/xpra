@@ -32,7 +32,7 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
         log.warn("cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
     return None
 codec_versions = {}
-def add_codec_version(name, top_module, version="get_version()", alt_version=None, min_version=None):
+def add_codec_version(name, top_module, version="get_version()", alt_version=None):
     try:
         fieldnames = [x for x in (version, alt_version) if x is not None]
         for fieldname in fieldnames:
@@ -44,23 +44,20 @@ def add_codec_version(name, top_module, version="get_version()", alt_version=Non
             v = getattr(module, fieldname)
             if version.endswith("()") and v:
                 v = v()
-            if min_version is not None and v<min_version:
-                log.warn("Warning: %s version %s is too old, version %s or later is required", name, v, min_version)
-                return False
             global codec_versions
             codec_versions[name] = v
             #optional info:
             if hasattr(module, "get_info"):
                 info = getattr(module, "get_info")
                 log("info(%s)=%s", top_module, info())
-            return True
+            return v
         log.warn("cannot find %s in %s", " or ".join(fieldnames), module)
     except ImportError, e:
         #not present
         log("cannot import %s: %s", name, e)
     except Exception, e:
         log.warn("error during codec import: %s", e)
-    return False
+    return None
 
 
 loaded = False
@@ -110,33 +107,23 @@ def load_codecs():
     codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
     add_codec_version("webp", "xpra.codecs.webp.encode")
 
+    #no bytearray (python 2.6 or later) or no bitmap handlers, no webm:
     import __builtin__
-    if "bytearray" in __builtin__.__dict__:
-        def nowebp(remove=["enc_webm", "enc_webm_lossless"]):
-            for x in remove:
-                if x in codecs:
-                    del codecs[x]
-        #no bytearray (python 2.6 or later), no webp
-        try:
+    webm_handlers = codec_import_check("webm_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
+    if ("bytearray" in __builtin__.__dict__) and webm_handlers:
+        codec_import_check("enc_webm", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", \
+                           "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA", \
+                           "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
+
+        v = add_codec_version("webm", "xpra.codecs.webm", "__VERSION__")
+        MIN_V = "0.2.3"
+        if v<MIN_V:
+            log.warn("python-webm error: found version %s but the minimum required is %s", v, MIN_V)
+            log.warn(" webm decoding has been disabled to prevent memory leaks")
+        else:
             #these symbols are all available upstream as of libwebp 0.2:
-            codec_import_check("enc_webm", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
             codec_import_check("dec_webm", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
-            #these symbols were added in libwebp 0.4, and we added HAS_LOSSLESS to the wrapper:
-            _enc_webm_lossless = codec_import_check("enc_webm_lossless", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "HAS_LOSSLESS", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
-            if _enc_webm_lossless:
-                #the fact that the python functions are defined is not enough
-                #we need to check if the underlying C functions actually exist:
-                if not _enc_webm_lossless.HAS_LOSSLESS:
-                    nowebp(["enc_webm_lossless"])
-            if not add_codec_version("webm", "xpra.codecs.webm", "__VERSION__", min_version="0.2.3"):
-                raise Exception("python-webm version check failed")
-            webp_handlers = codec_import_check("webm_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
-            #we need the handlers to encode:
-            if not webp_handlers:
-                nowebp()
-        except Exception, e:
-            log.warn("cannot load webp: %s", e)
-            nowebp()
+
     log("done loading codecs")
     log("found:")
     #print("codec_status=%s" % codecs)
@@ -145,6 +132,7 @@ def load_codecs():
     log("codecs versions:")
     for name, version in codec_versions.items():
         log("* %s : %s" % (name.ljust(20), version))
+
 
 def get_codec_error(name):
     return codec_errors.get(name)
@@ -169,7 +157,7 @@ ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"
 ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
             "csc_swscale", "csc_cython", "csc_opencl", "csc_nvcuda", \
             "dec_avcodec", "dec_avcodec2", \
-            "enc_webm", "enc_webm_lossless", "webm_bitmap_handlers", \
+            "enc_webm", \
             "dec_webm", \
             "enc_webp"
 
