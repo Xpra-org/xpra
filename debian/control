@@ -39,6 +39,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #if you use Ubuntu, you will "want" this mess:
 #		,python-appindicator
 Recommends:
+# webp:
+        ,libwebp4
 # audio-related:
         ,gstreamer0.10-plugins-base
 #                 ^^ vorbis ^^
