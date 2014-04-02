@@ -10,6 +10,7 @@
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.  (So
 # does the make_constants hack.)
 
+import commands
 import glob
 from distutils.core import setup
 from distutils.extension import Extension
@@ -56,7 +57,7 @@ sound_ENABLED = True
 enc_proxy_ENABLED = True
 enc_x264_ENABLED = True
 enc_x265_ENABLED = False
-webp_ENABLED = True
+webp_ENABLED = WIN32 or OSX or commands.getstatusoutput("pkg-config --atleast-version=0.3 libwebp")[0]==0
 x264_static_ENABLED = False
 x265_static_ENABLED = False
 vpx_ENABLED = True
