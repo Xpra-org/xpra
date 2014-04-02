@@ -68,6 +68,11 @@ vpx_static_ENABLED      = False
 dec_avcodec_ENABLED     = not WIN32 and pkg_config_ok("--max-version=55", "libavcodec")
 #ffmpeg 2 onwards:
 dec_avcodec2_ENABLED    = WIN32 or pkg_config_ok("--atleast-version=55", "libavcodec")
+# some version strings I found:
+# Fedora 19: 54.92.100
+# Fedora 20: 55.39.101
+# Debian sid and jessie: 54.35.0
+# Debian wheezy: 53.35
 avcodec_static_ENABLED  = False
 avcodec2_static_ENABLED = False
 csc_swscale_ENABLED     = WIN32 or pkg_config_ok("--exists", "libswscale")
