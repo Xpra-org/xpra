@@ -62,7 +62,7 @@ enc_x265_ENABLED        = pkg_config_ok("--exists", "x265")
 webp_ENABLED            = WIN32 or pkg_config_ok("--atleast-version=0.3", "libwebp")
 x264_static_ENABLED     = False
 x265_static_ENABLED     = False
-vpx_ENABLED             = WIN32 or pkg_config_ok("--exists", "vpx") or pkg_config_ok("--exists", "libvpx")
+vpx_ENABLED             = WIN32 or pkg_config_ok("--atleast-version=1.0", "vpx") or pkg_config_ok("--atleast-version=1.0", "libvpx")
 vpx_static_ENABLED      = False
 #ffmpeg 1.x and libav:
 dec_avcodec_ENABLED     = not WIN32 and pkg_config_ok("--max-version=55", "libavcodec")
