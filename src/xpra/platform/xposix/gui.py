@@ -61,6 +61,10 @@ class ClientExtras(object):
         self.client = client
         self._xsettings_watcher = None
         self._root_props_watcher = None
+        self.system_bus = None
+        self.upower_resuming_match = None
+        self.upower_sleeping_match = None
+        self.login1_match = None
         if client.xsettings_enabled:
             self.setup_xprops()
         self.setup_dbus_signals()
@@ -73,7 +77,16 @@ class ClientExtras(object):
         if self._root_props_watcher:
             self._root_props_watcher.cleanup()
             self._root_props_watcher = None
-
+        if self.system_bus:
+            bus = self.system_bus
+            log("cleanup() system bus=%s, matches: %s", bus, (self.upower_resuming_match, self.upower_sleeping_match, self.login1_match))
+            self.system_bus = None
+            if self.upower_resuming_match:
+                bus._clean_up_signal_match(self.upower_resuming_match)
+            if self.upower_sleeping_match:
+                bus._clean_up_signal_match(self.upower_sleeping_match)
+            if self.login1_match:
+                bus._clean_up_signal_match(self.login1_match)
 
     def resuming_callback(self, *args):
         self.client.resume()
@@ -86,30 +99,34 @@ class ClientExtras(object):
         try:
             from xpra.x11.dbus_common import init_system_bus
             bus = init_system_bus()
+            self.system_bus = bus
+            log("setup_dbus_signals() system bus=%s", bus)
         except Exception, e:
             log.warn("dbus setup error: %s", e)
             return
 
         #the UPower signals:
         try:
-            iface_name  = 'org.freedesktop.UPower'
             bus_name    = 'org.freedesktop.UPower'
-            bus.add_signal_receiver(self.resuming_callback, 'Resuming', iface_name, bus_name)
-            bus.add_signal_receiver(self.sleeping_callback, 'Sleeping', iface_name, bus_name)
+            log("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
+            iface_name  = 'org.freedesktop.UPower'
+            self.upower_resuming_match = bus.add_signal_receiver(self.resuming_callback, 'Resuming', iface_name, bus_name)
+            self.upower_sleeping_match = bus.add_signal_receiver(self.sleeping_callback, 'Sleeping', iface_name, bus_name)
             log("listening for 'Resuming' and 'Sleeping' signals on %s", iface_name)
         except Exception, e:
             log("failed to setup UPower event listener: %s", e)
 
         #the "logind" signals:
         try:
+            bus_name    = 'org.freedesktop.login1'
+            log("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
             def sleep_event_handler(suspend):
                 if suspend:
                     self.sleeping_callback()
                 else:
                     self.resuming_callback()
             iface_name  = 'org.freedesktop.login1.Manager'
-            bus_name    = 'org.freedesktop.login1'
-            bus.add_signal_receiver(sleep_event_handler, 'PrepareForSleep', iface_name, bus_name)
+            self.login1_match = bus.add_signal_receiver(sleep_event_handler, 'PrepareForSleep', iface_name, bus_name)
             log("listening for 'PrepareForSleep' signal on %s", iface_name)
         except Exception, e:
             log("failed to setup login1 event listener: %s", e)
