@@ -13,7 +13,7 @@ from PIL import Image           #@UnresolvedImport
 from io import BytesIO
 
 
-def do_test_encode(rgb_data, w, h, encodings=["png", "jpeg", "webp", "rgb"], N=5, Q=[0, 50, 100], S=[0, 1, 50, 90, 100], has_alpha=False):
+def do_test_encode(rgb_data, w, h, encodings=["png", "png/P", "png/L", "jpeg", "webp", "rgb"], N=5, Q=[0, 50, 100], S=[0, 1, 50, 90, 100], has_alpha=False):
     from xpra.server.picture_encode import PIL_encode, rgb_encode
     from xpra.codecs.image_wrapper import ImageWrapper
     image = ImageWrapper(0, 0, w, h, rgb_data, "BGRA", 32, w*4, planes=ImageWrapper.PACKED, thread_safe=True)
@@ -21,7 +21,7 @@ def do_test_encode(rgb_data, w, h, encodings=["png", "jpeg", "webp", "rgb"], N=5
     #buf = get_source_data(w*h*4)
     for encoding in encodings:
         Q_options = Q
-        if encoding in ("png", "rgb"):
+        if encoding in ("png", "png/P", "png/L", "rgb"):
             Q_options = [-1]
         S_options = S
         if encoding=="webp":
