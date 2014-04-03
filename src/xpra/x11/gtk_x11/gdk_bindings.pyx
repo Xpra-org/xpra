@@ -417,7 +417,7 @@ cdef Display * get_xdisplay_for(obj) except? NULL:
     return GDK_DISPLAY_XDISPLAY(get_raw_display_for(obj))
 
 
-cpdef get_xatom(str_or_xatom):
+def get_xatom(str_or_xatom):
     """Returns the X atom corresponding to the given Python string or Python
     integer (assumed to already be an X atom)."""
     if isinstance(str_or_xatom, int):
@@ -479,7 +479,7 @@ cpdef get_children(pywindow):
     (pyparent, pychildren) = _query_tree(pywindow)
     return pychildren
 
-cpdef get_parent(pywindow):
+def get_parent(pywindow):
     (pyparent, pychildren) = _query_tree(pywindow)
     return pyparent
 
@@ -494,7 +494,7 @@ cdef extern from "gtk-2.0/gdk/gdkwindow.h":
                                    unsigned int flags, int width, int height,
                                    int * new_width, int * new_height)
 
-cpdef calc_constrained_size(int width, int height, object hints):
+def calc_constrained_size(int width, int height, object hints):
     if hints is None:
         return (width, height, width, height)
 
@@ -603,7 +603,7 @@ cdef extern from "gtk-2.0/gdk/gdkevents.h":
 # clients that are selecting for that mask they are sent with.
 
 _ev_receiver_key = "xpra-route-events-to"
-cpdef add_event_receiver(window, receiver, max_receivers=3):
+def add_event_receiver(window, receiver, max_receivers=3):
     receivers = window.get_data(_ev_receiver_key)
     if receivers is None:
         receivers = set()
@@ -614,7 +614,7 @@ cpdef add_event_receiver(window, receiver, max_receivers=3):
     if receiver not in receivers:
         receivers.add(receiver)
 
-cpdef remove_event_receiver(window, receiver):
+def remove_event_receiver(window, receiver):
     receivers = window.get_data(_ev_receiver_key)
     if receivers is None:
         return
@@ -622,7 +622,7 @@ cpdef remove_event_receiver(window, receiver):
     if not receivers:
         window.set_data(_ev_receiver_key, None)
 
-cpdef cleanup_all_event_receivers():
+def cleanup_all_event_receivers():
     root = gtk.gdk.get_default_root_window()
     root.set_data(_ev_receiver_key, None)
     for window in get_children(root):
@@ -648,7 +648,7 @@ cpdef get_error_text(code):
     XGetErrorText(display, code, buffer, 128)
     return str(buffer[:128])
 
-cpdef int get_XKB_event_base():
+cdef int get_XKB_event_base():
     cdef int opcode = 0
     cdef int event_base = 0
     cdef int error_base = 0
@@ -661,7 +661,7 @@ cpdef int get_XKB_event_base():
     verbose("get_XKB_event_base(%s)=%s", display.get_name(), int(event_base))
     return event_base
 
-cpdef int get_XFixes_event_base():
+cdef int get_XFixes_event_base():
     cdef int event_base = 0                             #@DuplicatedSignature
     cdef int error_base = 0                             #@DuplicatedSignature
     cdef Display * xdisplay                             #@DuplicatedSignature
@@ -671,7 +671,7 @@ cpdef int get_XFixes_event_base():
     verbose("get_XFixes_event_base(%s)=%s", display.get_name(), int(event_base))
     return event_base
 
-cpdef int get_XDamage_event_base():
+cdef int get_XDamage_event_base():
     cdef int event_base = 0                             #@DuplicatedSignature
     cdef int error_base = 0                             #@DuplicatedSignature
     cdef Display * xdisplay                             #@DuplicatedSignature
@@ -683,7 +683,7 @@ cpdef int get_XDamage_event_base():
 
 
 
-cpdef init_x11_events():
+cdef init_x11_events():
     global _x_event_signals, event_type_names, debug_route_events, XKBNotify, CursorNotify, DamageNotify
     XKBNotify = get_XKB_event_base()
     CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
@@ -781,10 +781,10 @@ cpdef init_x11_events():
         log.warn("debugging of X11 events enabled for: %s", [event_type_names.get(x, x) for x in debug_route_events])
 
 #and change this debugging on the fly, programmatically:
-cpdef add_debug_route_event(event_type):
+def add_debug_route_event(event_type):
     global debug_route_events
     debug_route_events.append(event_type)
-cpdef remove_debug_route_event(event_type):
+def remove_debug_route_event(event_type):
     global debug_route_events
     debug_route_events.remove(event_type)
 
@@ -1037,7 +1037,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
 
 
 _INIT_X11_FILTER_DONE = False
-cpdef init_x11_filter():
+def init_x11_filter():
     """ returns True if we did initialize it, False if it was already initialized """
     global _INIT_X11_FILTER_DONE
     if _INIT_X11_FILTER_DONE:
@@ -1047,7 +1047,7 @@ cpdef init_x11_filter():
     _INIT_X11_FILTER_DONE = True
     return True
 
-cpdef cleanup_x11_filter():
+def cleanup_x11_filter():
     global _INIT_X11_FILTER_DONE
     if not _INIT_X11_FILTER_DONE:
         return False

@@ -295,7 +295,7 @@ cdef class XImageWrapper:
         assert self.pixels!=NULL
         return PyBuffer_FromReadWriteMemory(self.pixels, self.get_size())
 
-    def get_image_pixels(self):
+    cdef get_image_pixels(self):
         assert self.image!=NULL
         return PyBuffer_FromReadWriteMemory(self.image.data, self.get_size())
 
@@ -382,7 +382,7 @@ cdef class XShmWrapper(object):
         self.height = height
         self.depth = depth
 
-    cpdef setup(self):
+    def setup(self):
         #returns:
         # (init_ok, may_retry_this_window, XShm_global_failure)
         cdef size_t size
@@ -443,7 +443,7 @@ cdef class XShmWrapper(object):
     def get_size(self):                                     #@DuplicatedSignature
         return self.width, self.height
 
-    cpdef get_image(self, Pixmap xpixmap, int x, int y, int w, int h):
+    def get_image(self, Pixmap xpixmap, int x, int y, int w, int h):
         assert self.image!=NULL, "cannot retrieve image wrapper: XImage is NULL!"
         if self.closed:
             return None
@@ -492,7 +492,7 @@ cdef class XShmWrapper(object):
         if self.closed and self.ref_count==0:
             self.free()
 
-    cpdef free(self):                                     #@DuplicatedSignature
+    cdef free(self):                                     #@DuplicatedSignature
         assert self.ref_count==0, "XShmWrapper %s cannot be freed: still has a ref count of %s" % (self, self.ref_count)
         assert self.closed, "XShmWrapper %s cannot be freed: it is not closed yet" % self
         has_shm = self.shminfo.shmaddr!=<char *> -1
@@ -520,7 +520,7 @@ cdef class XShmImageWrapper(XImageWrapper):
     def __repr__(self):                              #@DuplicatedSignature
         return "XShmImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
 
-    cpdef get_image_pixels(self):                     #@DuplicatedSignature
+    cdef get_image_pixels(self):                     #@DuplicatedSignature
         cdef char *offset
         if XSHM_DEBUG:
             xshmlog("XShmImageWrapper.get_image_pixels() self=%s", self)
@@ -566,7 +566,7 @@ cdef class PixmapWrapper(object):
     def get_pixmap(self):
         return self.pixmap
 
-    cpdef get_image(self, int x, int y, int width, int height):                #@DuplicatedSignature
+    def get_image(self, int x, int y, int width, int height):                #@DuplicatedSignature
         if self.pixmap is None:
             log.warn("PixmapWrapper.get_image(%s, %s, %s, %s) pixmap=%s", x, y, width, height, self.pixmap)
             return  None
