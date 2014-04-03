@@ -1117,9 +1117,17 @@ class WindowSource(object):
         #tell client about delta/store for this pixmap:
         if delta>=0:
             client_options["delta"] = delta
+        csize = len(data)
         if store>0:
-            self.last_pixmap_data = w, h, coding, store, dpixels
-            client_options["store"] = store
+            if delta>0 and csize>=psize/3:
+                #compressed size is more than 33% of the original
+                #maybe delta is not helping us, so clear it:
+                self.last_pixmap_data = None
+                #TODO: could tell the clients they can clear it too
+                #(add a new client capability and send it a zero store value)
+            else:
+                self.last_pixmap_data = w, h, coding, store, dpixels
+                client_options["store"] = store
         encoding = coding
         if not self.generic_encodings:
             #old clients use non-generic encoding names:
@@ -1128,7 +1136,7 @@ class WindowSource(object):
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
         compresslog("compress: %5.1fms for %4ix%-4i pixels using %5s with ratio %4.1f%% (%5iKB to %5iKB), delta=%i",
-                 (end-start)*1000.0, w, h, coding, 100.0*len(data)/psize, psize/1024, len(data)/1024, delta)
+                 (end-start)*1000.0, w, h, coding, 100.0*csize/psize, psize/1024, csize/1024, delta)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
