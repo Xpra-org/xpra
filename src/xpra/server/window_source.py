@@ -1126,7 +1126,7 @@ class WindowSource(object):
         #actual network packet:
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
-        compresslog("%.1fms to compress %sx%s pixels using %s with ratio=%.1f%% (%sKB to %sKB), delta=%s",
+        compresslog("compress: %5.1fms for %4ix%-4i pixels using %5s with ratio %4.1f%% (%5iKB to %5iKB), delta=%i",
                  (end-start)*1000.0, w, h, coding, 100.0*len(data)/psize, psize/1024, len(data)/1024, delta)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
