@@ -1067,7 +1067,7 @@ class WindowVideoSource(WindowSource):
                 self.max_w = max_w
                 self.max_h = max_h
                 enc_end = time.time()
-                log.info("setup_pipeline: video encoder=%s, info: %s, setup took %.2fms",
+                log("setup_pipeline: video encoder=%s, info: %s, setup took %.2fms",
                         self._video_encoder, self._video_encoder.get_info(), (enc_end-enc_start)*1000.0)
                 return  True
             except TransientCodecException, e:
