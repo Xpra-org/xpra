@@ -153,7 +153,7 @@ class X11ServerBase(GTKServerBase):
         try:
             sizes = RandR.get_screen_sizes()
             if self.randr and len(sizes)>=0:
-                info["randr.options"] = sizes
+                info["server.randr.options"] = sizes
         except:
             pass
         info["fakeXinerama"] = self.fake_xinerama
