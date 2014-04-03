@@ -518,6 +518,7 @@ cdef class Encoder:
         cdef int new_preset = get_preset_for_speed(pct)
         if new_preset == self.preset:
             return
+        self.speed = pct
         #retrieve current parameters:
         x264_encoder_parameters(self.context, &param)
         #apply new preset:
