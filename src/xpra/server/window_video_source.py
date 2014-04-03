@@ -79,8 +79,8 @@ class WindowVideoSource(WindowSource):
                 self._encoders[x] = self.video_encode
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
-        common = [x for x in self.server_core_encodings if x in self.core_encodings]
-        self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in common and x not in self.video_encodings)]
+        nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
+        self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
 
         self._csc_encoder = None
         self._video_encoder = None
@@ -222,8 +222,8 @@ class WindowVideoSource(WindowSource):
         self.uses_swscale = properties.get("encoding.uses_swscale", self.uses_swscale)
         WindowSource.set_client_properties(self, properties)
         #encodings may have changed, so redo this:
-        common = [x for x in self.server_core_encodings if x in self.core_encodings]
-        self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in common and x not in self.video_encodings)]
+        nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
+        self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
         log("set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
 
     def unmap(self):
@@ -684,19 +684,18 @@ class WindowVideoSource(WindowSource):
         def add_scores(info, csc_spec, enc_in_format):
             #find encoders that take 'enc_in_format' as input:
             colorspace_specs = encoder_specs.get(enc_in_format)
-            scorelog("add_scores(%s, %s, %s) colorspace_specs=%s", info, csc_spec, enc_in_format, colorspace_specs)
+            scorelog("add_scores(%s, %s, %s) colorspace_specs=%r", info, csc_spec, enc_in_format, colorspace_specs)
             if not colorspace_specs:
                 return
             #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
             for encoder_spec in colorspace_specs:
                 #ensure that the output of the encoder can be processed by the client:
-                matches = [x for x in encoder_spec.output_colorspaces if x in supported_csc_modes]
+                matches = set(encoder_spec.output_colorspaces) & set(supported_csc_modes)
+                scorelog("matches(%s)=%s", encoder_spec, matches)
                 if len(matches)==0:
                     continue
-                score = self.get_score(enc_in_format,
-                                       csc_spec, encoder_spec,
-                                       width, height)
-                scorelog("add_scores: score(%s)=%s", (enc_in_format, csc_spec, encoder_spec, width, height), score)
+                score = self.get_score(enc_in_format, csc_spec, encoder_spec, width, height)
+                scorelog("add_scores: score%s=%s", (enc_in_format, csc_spec, encoder_spec, width, height), score)
                 if score>=0:
                     item = score, csc_spec, enc_in_format, encoder_spec
                     scores.append(item)
@@ -789,6 +788,8 @@ class WindowVideoSource(WindowSource):
             #client does not support video decoder reinit,
             #so we cannot swap for another encoder of the same type
             #(which would generate a new stream)
+            scorelog("encoding (%s vs %s) or type (%s vs %s) mismatch, without support for reinit",
+                     self._video_encoder.get_encoding(), encoder_spec.encoding, self._video_encoder.get_type(), encoder_spec.codec_type)
             return -1
         def clamp(v):
             return max(0, min(100, v))
@@ -833,6 +834,7 @@ class WindowVideoSource(WindowSource):
 
         if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
             #we need the encoder to scale but it cannot do it, fail it:
+            scorelog("scaling not supported (%s)", encoder_scaling)
             return -1
 
         ee_score = 100
@@ -1090,7 +1092,7 @@ class WindowVideoSource(WindowSource):
             self._lock.acquire()
             if not self.check_pipeline(encoding, w, h, src_format):
                 #find one that is not video:
-                fallback_encodings = [x for x in self._encoders.keys() if x not in self.video_encodings]
+                fallback_encodings = set(self._encoders.keys) - set(self.video_encodings)
                 log.error("BUG: failed to setup a video pipeline for %s encoding with source format %s, will fallback to: %s", encoding, src_format, fallback_encodings)
                 assert len(fallback_encodings)>0
                 fallback_encoding = fallback_encodings[0]
