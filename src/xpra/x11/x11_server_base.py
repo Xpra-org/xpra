@@ -156,12 +156,13 @@ class X11ServerBase(GTKServerBase):
                 info["server.randr.options"] = sizes
         except:
             pass
-        info["fakeXinerama"] = self.fake_xinerama
         try:
             from xpra.scripts.server import find_fakeXinerama
-            info["libfakeXinerama"] = find_fakeXinerama() or ""
+            fx = find_fakeXinerama()
         except:
-            pass
+            fx = None
+        info["server.fakeXinerama"] = self.fake_xinerama and bool(fx)
+        info["server.libfakeXinerama"] = fx or ""
         return info
 
     def get_window_info(self, window):
