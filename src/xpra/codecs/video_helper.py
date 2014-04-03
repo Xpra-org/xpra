@@ -173,7 +173,7 @@ class VideoHelper(object):
                 for cspec in l:
                     ces.setdefault(ifmt, {}).setdefault(ofmt, []).append(cspec)
         vds = {}
-        for enc, d in self._video_encoder_specs.items():
+        for enc, d in self._video_decoder_specs.items():
             for ifmt, l in d.items():
                 for dclass in l:
                     ves.setdefault(enc, {}).setdefault(ifmt, []).append(dclass)
