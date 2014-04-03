@@ -411,17 +411,15 @@ class WindowVideoSource(WindowSource):
         self.video_subregion = None
 
 
-    def send_delayed_regions(self, damage_time, window, regions, coding, options):
+    def do_send_delayed_regions(self, damage_time, window, regions, coding, options):
         """
             Overriden here so we can try to intercept the video_subregion if one exists.
         """
         #overrides the default method for finding the encoding of a region
         #so we can ensure we don't use the video encoder when we don't want to:
-        if self.is_cancelled():
-            return
 
         def nonvideo(regions=regions, encoding=coding, exclude_region=None):
-            WindowSource.send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, fallback=self.non_video_encodings)
+            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, fallback=self.non_video_encodings)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
@@ -434,7 +432,7 @@ class WindowVideoSource(WindowSource):
         vr = self.video_subregion
         if vr is None:
             sublog("no video region, we may use the video encoder for something else")
-            WindowSource.send_delayed_regions(self, damage_time, window, regions, coding, options)
+            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, coding, options)
             return
         assert not self.full_frames_only
 

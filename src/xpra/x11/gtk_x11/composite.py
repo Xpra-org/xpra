@@ -98,6 +98,8 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         self.invalidate_pixmap()
 
     def acknowledge_changes(self):
+        if self._shm_handle:
+            self._shm_handle.discard()
         if self._damage_handle is not None and self._window is not None:
             #"Synchronously modifies the regions..." so unsynced?
             if not trap.swallow_synced(X11Window.XDamageSubtract, self._damage_handle):

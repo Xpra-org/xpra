@@ -578,7 +578,12 @@ class WindowSource(object):
                 w, h = ww, wh
             self.batch_config.last_delays.append((now, delay))
             self.batch_config.last_actual_delays.append((now, delay))
-            self.idle_add(self.process_damage_region, now, window, x, y, w, h, actual_encoding, options)
+            def damage_now():
+                if self.is_cancelled():
+                    return
+                window.acknowledge_changes()
+                self.process_damage_region(now, window, x, y, w, h, actual_encoding, options)
+            self.idle_add(damage_now)
             return
 
         #create a new delayed region:
@@ -626,7 +631,7 @@ class WindowSource(object):
         now = time.time()
         actual_delay = 1000.0*(now-damage_time)
         self.batch_config.last_actual_delays.append((now, actual_delay))
-        self.do_send_delayed_region()
+        self.do_send_delayed()
         return False
 
     def delayed_region_timeout(self, delayed_region_time):
@@ -688,10 +693,10 @@ class WindowSource(object):
             self.soft_expired = 0
             log("send_delayed for wid %s, batch delay is %.1f, elapsed time is %.1f ms", self.wid, self.batch_config.delay, actual_delay)
         self.batch_config.last_actual_delays.append((now, actual_delay))
-        self.do_send_delayed_region()
+        self.do_send_delayed()
         return False
 
-    def do_send_delayed_region(self):
+    def do_send_delayed(self):
         self.cancel_timeout_timer()
         self.cancel_soft_timer()
         delayed = self._damage_delayed
@@ -700,7 +705,7 @@ class WindowSource(object):
             self.send_delayed_regions(*delayed)
         return False
 
-    def send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, fallback=None):
+    def send_delayed_regions(self, damage_time, window, regions, coding, options):
         """ Called by 'send_delayed' when we expire a delayed region,
             There may be many rectangles within this delayed region,
             so figure out if we want to send them all or if we
@@ -708,6 +713,12 @@ class WindowSource(object):
         """
         if self.is_cancelled():
             return
+        # It's important to acknowledge changes *before* we extract them,
+        # to avoid a race condition.
+        window.acknowledge_changes()
+        self.do_send_delayed_regions(damage_time, window, regions, coding, options)
+
+    def do_send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, fallback=None):
         ww,wh = window.get_dimensions()
         speed = self.get_current_speed()
         quality = self.get_current_quality()
@@ -897,10 +908,6 @@ class WindowSource(object):
         if not window.is_managed():
             log("the window %s is not composited!?", window)
             return
-        # It's important to acknowledge changes *before* we extract them,
-        # to avoid a race condition.
-        window.acknowledge_changes()
-
         sequence = self._sequence + 1
         if self.is_cancelled(sequence):
             log("get_window_pixmap: dropping damage request with sequence=%s", sequence)

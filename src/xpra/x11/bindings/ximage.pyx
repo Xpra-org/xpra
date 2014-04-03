@@ -372,6 +372,7 @@ cdef class XShmWrapper(object):
     cdef XShmSegmentInfo shminfo
     cdef XImage *image
     cdef int ref_count
+    cdef Bool got_image
     cdef Bool closed
 
     cdef init(self, Display *display, Window xwindow, Visual *visual, int width, int height, int depth):
@@ -457,9 +458,11 @@ cdef class XShmWrapper(object):
             w = self.width-x
         if y+h>self.height:
             h = self.height-y
-        if not XShmGetImage(self.display, xpixmap, self.image, 0, 0, 0xFFFFFFFF):
-            xshmlog("XShmWrapper.get_image%s XShmGetImage failed!", (xpixmap, x, y, w, h))
-            return None
+        if not self.got_image:
+            if not XShmGetImage(self.display, xpixmap, self.image, 0, 0, 0xFFFFFFFF):
+                xshmlog("XShmWrapper.get_image%s XShmGetImage failed!", (xpixmap, x, y, w, h))
+                return None
+            self.got_image = True
         self.ref_count += 1
         imageWrapper = XShmImageWrapper(x, y, w, h)
         imageWrapper.set_image(self.image)
@@ -467,6 +470,10 @@ cdef class XShmWrapper(object):
         if XSHM_DEBUG:
             xshmlog("XShmWrapper.get_image%s ref_count=%s, returning %s", (xpixmap, x, y, w, h), self.ref_count, imageWrapper)
         return imageWrapper
+
+    def discard(self):
+        #force next get_image call to get a new image from the server
+        self.got_image = False
 
     def __dealloc__(self):                              #@DuplicatedSignature
         if XSHM_DEBUG:

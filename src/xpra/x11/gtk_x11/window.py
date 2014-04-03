@@ -378,6 +378,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self.emit("client-contents-changed", event)
 
     def acknowledge_changes(self):
+        assert self._composite, "composite window destroyed outside the UI thread?"
         self._composite.acknowledge_changes()
 
     ################################
