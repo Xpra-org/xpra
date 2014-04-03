@@ -8,6 +8,7 @@
 
 import time
 import os
+from math import sqrt
 
 from xpra.log import Logger
 log = Logger("window", "encoding")
@@ -1156,6 +1157,9 @@ class WindowSource(object):
                 #webp lossless is unbearibly slow for only marginal compression improvements,
                 #so force max speed:
                 s = 100
+            else:
+                #normalize speed for webp: avoid low speeds!
+                s = int(sqrt(s) * 10)
             cdata = enc_webp.compress(image.get_pixels(), w, h, stride=stride/4, quality=q, speed=s, has_alpha=alpha)
             client_options = {"speed" : max(0, min(100, s))}
             if q>=0 and q<100:
