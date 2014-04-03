@@ -38,7 +38,10 @@ def get_PIL_decodings(PIL):
     return do_get_PIL_codings(PIL, "OPEN")
 
 
-LOSSY_PIXEL_FORMATS = ("YUV420P", "YUV422P")
+#value: how much smaller the output is
+LOSSY_PIXEL_FORMATS = {"YUV420P" : 2,
+                       "YUV422P" : 1.5
+                       }
 
 PIXEL_SUBSAMPLING = {
          "YUV420P"   : ((1, 1), (2, 2), (2, 2)),

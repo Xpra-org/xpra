@@ -819,9 +819,10 @@ class WindowVideoSource(WindowSource):
                 #csc cannot take care of scaling, so encoder will have to:
                 encoder_scaling = scaling
                 scaling = (1, 1)
-            if scaling!=(1, 1) and csc_format not in LOSSY_PIXEL_FORMATS:
+            if scaling!=(1, 1):
                 #if we are (down)scaling, we should prefer lossy pixel formats:
-                qscore /= 2
+                v = LOSSY_PIXEL_FORMATS.get(csc_format, 1)
+                qscore *= (v/2)
             enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, scaling)
         else:
             #not using csc at all!
@@ -1062,7 +1063,7 @@ class WindowVideoSource(WindowSource):
                 self.max_w = max_w
                 self.max_h = max_h
                 enc_end = time.time()
-                log("setup_pipeline: video encoder=%s, info: %s, setup took %.2fms",
+                log.info("setup_pipeline: video encoder=%s, info: %s, setup took %.2fms",
                         self._video_encoder, self._video_encoder.get_info(), (enc_end-enc_start)*1000.0)
                 return  True
             except TransientCodecException, e:
