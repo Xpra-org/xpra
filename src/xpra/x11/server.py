@@ -535,6 +535,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         focuslog("focus: giving focus to %s", window)
         #using idle_add seems to prevent some focus races:
         def give_focus():
+            if not window.is_managed():
+                return
             window.raise_window()
             window.give_client_focus()
         gobject.idle_add(give_focus)
