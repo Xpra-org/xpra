@@ -13,7 +13,7 @@ from threading import Lock
 from xpra.util import AtomicInteger
 from xpra.net.protocol import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, get_default_csc_modes, \
-                                        TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
+                                        TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
 from xpra.server.window_source import WindowSource, MAX_PIXELS_PREFER_RGB
 from xpra.gtk_common.region import rectangle, merge_all
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
@@ -819,6 +819,9 @@ class WindowVideoSource(WindowSource):
                 #csc cannot take care of scaling, so encoder will have to:
                 encoder_scaling = scaling
                 scaling = (1, 1)
+            if scaling!=(1, 1) and csc_format not in LOSSY_PIXEL_FORMATS:
+                #if we are (down)scaling, we should prefer lossy pixel formats:
+                qscore /= 2
             enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, scaling)
         else:
             #not using csc at all!
@@ -844,8 +847,8 @@ class WindowVideoSource(WindowSource):
         #edge resistance score: average of csc and encoder score:
         er_score = (ecsc_score + ee_score) / 2.0
         score = int((qscore+sscore+er_score)*runtime_score/100.0/3.0)
-        scorelog("get_score%s quality:%.1f, speed:%.1f, setup:%.1f runtime:%.1f score=%s", (csc_format, csc_spec, encoder_spec,
-                  width, height), qscore, sscore, er_score, runtime_score, score)
+        scorelog("get_score%s quality:%.1f, speed:%.1f, setup:%.1f runtime:%.1f scaling: %s / %s, score=%s", (csc_format, csc_spec, encoder_spec,
+                  width, height), qscore, sscore, er_score, runtime_score, scaling, encoder_scaling, score)
         return score
 
     def get_encoder_dimensions(self, csc_spec, encoder_spec, width, height, scaling=(1,1)):
