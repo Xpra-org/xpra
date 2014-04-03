@@ -751,8 +751,9 @@ class WindowVideoSource(WindowSource):
         #score based on speed:
         speed = encoder_spec.speed
         if csc_spec:
+            #average and add 0.25 for the extra cost
             speed += csc_spec.speed
-            speed /= 2.0
+            speed /= 2.25
         #the lower the current speed
         #the more we need a fast encoder/csc to cancel it out:
         sscore = max(0, (100.0-self.get_current_speed()) * speed/100.0)
@@ -804,7 +805,12 @@ class WindowVideoSource(WindowSource):
             height_mask = csc_spec.height_mask & encoder_spec.height_mask
             csc_width = width & width_mask
             csc_height = height & height_mask
-            if self._csc_encoder is None or self._csc_encoder.get_dst_format()!=csc_format or \
+            if csc_format=="RGB":
+                #converting to "RGB" is often a waste of CPU
+                #(can only get selected because the csc step will do scaling,
+                # but even then, the YUV subsampling are better options)
+                ecsc_score = 1
+            elif self._csc_encoder is None or self._csc_encoder.get_dst_format()!=csc_format or \
                type(self._csc_encoder)!=csc_spec.codec_class or \
                self._csc_encoder.get_src_width()!=csc_width or self._csc_encoder.get_src_height()!=csc_height:
                 #if we have to change csc, account for new csc setup cost:
