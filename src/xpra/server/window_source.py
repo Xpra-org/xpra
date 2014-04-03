@@ -22,7 +22,6 @@ AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 95))
 AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 
 MAX_PIXELS_PREFER_RGB = 4096
-AUTO_SWITCH_TO_RGB = True
 
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
@@ -116,6 +115,8 @@ class WindowSource(object):
             self.max_delta_size = -1
 
         self.is_OR = window.is_OR()
+        self.is_tray = window.is_tray()
+        self.has_alpha = window.has_alpha()
         self.window_dimensions = 0, 0
         self.fullscreen = window.get_property("fullscreen")
         self.scaling = window.get_property("scaling")
@@ -211,8 +212,11 @@ class WindowSource(object):
         self.soft_timer = None
         self.soft_expired = 0
         self.max_soft_expired = 5
+        self.min_delta_size = 512
         self.max_delta_size = MAX_DELTA_SIZE
         self.is_OR = False
+        self.is_tray = False
+        self.has_alpha = False
         self.window_dimensions = 0, 0
         self.fullscreen = False
         self.scaling = None
@@ -568,7 +572,7 @@ class WindowSource(object):
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
             actual_encoding = options.get("encoding")
             if actual_encoding is None:
-                actual_encoding = self.get_best_encoding(False, window, w*h, ww, wh, self.encoding)
+                actual_encoding = self.get_best_encoding(False, w*h, ww, wh, self.get_current_speed(), self.get_current_quality(), self.encoding)
             if self.must_encode_full_frame(window, actual_encoding):
                 x, y = 0, 0
                 w, h = ww, wh
@@ -696,7 +700,7 @@ class WindowSource(object):
             self.send_delayed_regions(*delayed)
         return False
 
-    def send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, get_region_encoding=None):
+    def send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, fallback=None):
         """ Called by 'send_delayed' when we expire a delayed region,
             There may be many rectangles within this delayed region,
             so figure out if we want to send them all or if we
@@ -705,17 +709,19 @@ class WindowSource(object):
         if self.is_cancelled():
             return
         ww,wh = window.get_dimensions()
-        if get_region_encoding is None:
-            get_region_encoding = self.get_best_encoding
+        speed = self.get_current_speed()
+        quality = self.get_current_quality()
+        def get_encoding(pixel_count):
+            return self.get_best_encoding(True, pixel_count, ww, wh, speed, quality, coding, fallback)
 
         def send_full_window_update():
-            actual_encoding = get_region_encoding(True, window, ww*wh, ww, wh, coding)
+            actual_encoding = get_encoding(ww*wh)
             log("send_delayed_regions: using full window update %sx%s with %s", ww, wh, actual_encoding)
             assert actual_encoding is not None
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
         if exclude_region is None:
-            if window.is_tray() or self.full_frames_only:
+            if self.is_tray or self.full_frames_only:
                 send_full_window_update()
                 return
 
@@ -756,85 +762,115 @@ class WindowSource(object):
                 #better, so replace with merged regions:
                 regions = merged_rects
 
-        pixel_count = sum([rect.width*rect.height for rect in regions])
-        log("send_delayed_regions: %s regions with %s pixels (coding=%s)", len(regions), pixel_count, coding)
-        actual_encoding = get_region_encoding(True, window, pixel_count, ww, wh, coding)
-        if actual_encoding and self.must_encode_full_frame(window, actual_encoding):
-            #use full screen dimensions:
-            self.process_damage_region(damage_time, window, 0, 0, ww, wh, coding, options)
-            return
+        #check to see if the total amount of pixels makes us use a fullscreen update instead:
+        if len(regions)>1:
+            pixel_count = sum([rect.width*rect.height for rect in regions])
+            log("send_delayed_regions: %s regions with %s pixels (coding=%s)", len(regions), pixel_count, coding)
+            actual_encoding = get_encoding(pixel_count)
+            if self.must_encode_full_frame(window, actual_encoding):
+                #use full screen dimensions:
+                self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
+                return
 
-        #we're processing a number of regions with a non video encoding:
+        #we're processing a number of regions separately:
         for region in regions:
-            actual_encoding = get_region_encoding(True, window, region.width*region.height, ww, wh, coding)
+            actual_encoding = get_encoding(region.width*region.height)
+            if self.must_encode_full_frame(window, actual_encoding):
+                #we may have sent regions already - which is now wasted, oh well..
+                self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
+                #we can stop here (full screen update will include the other regions)
+                return
             self.process_damage_region(damage_time, window, region.x, region.y, region.width, region.height, actual_encoding, options)
 
 
     def must_encode_full_frame(self, window, encoding):
-        if self.full_frames_only:
-            return True
-        if window.is_tray():
-            return True
-        #video encoders will override this
-        return False
+        #WindowVideoSource overrides this method
+        return self.full_frames_only or self.is_tray
 
-    def get_best_encoding(self, batching, window, pixel_count, ww, wh, current_encoding):
-        e = self.do_get_best_encoding(batching, window.has_alpha(), window.is_tray(), window.is_OR(), pixel_count, ww, wh, current_encoding)
-        if e is None:
-            e = self.get_core_encoding(window.has_alpha(), current_encoding)
-        log("get_best_encoding%s=%s", (batching, window, pixel_count, ww, wh, current_encoding), e)
+
+    def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=None):
+        #import traceback
+        #traceback.print_stack()
+        if self.is_tray or (self.has_alpha and self.supports_transparency):
+            #always use transparent encoding for tray or for transparent windows:
+            options = self.transparent_encoding_options(current_encoding, pixel_count, speed, quality)
+        else:
+            options = self.get_encoding_options(batching, pixel_count, ww, wh, speed, quality, current_encoding)
+        if current_encoding is None:
+            #add all the fallbacks so something will match
+            options += [x for x in (fallback or self.common_encodings) if x not in options]
+        e = self.pick_encoding(options, current_encoding)
+        #log("get_best_encoding%s=%s (from options=%s, common_encodings=%s)", (batching, pixel_count, ww, wh, speed, quality, current_encoding), e, options, self.common_encodings)
         return e
 
-    def do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
-        """
-            decide which encoding to use: transparent windows and trays need special treatment
-            (this is also overriden in WindowVideoSource)
-        """
-        if AUTO_SWITCH_TO_RGB and pixel_count<=MAX_PIXELS_PREFER_RGB:
-            if has_alpha and self.supports_transparency:
-                return self.pick_encoding(["rgb32"])
-            return self.pick_encoding(["rgb24"])
-        if has_alpha and self.supports_transparency:
-            return self.get_transparent_encoding(current_encoding)
-        if is_tray:
-            #tray needs a lossless encoder
-            return self.find_common_lossless_encoder(has_alpha, current_encoding, pixel_count)
-        return None
-
-    def get_transparent_encoding(self, current_encoding):
-        if current_encoding in ("png", "png/P", "png/L", "rgb32", "webp"):
-            return current_encoding
-        if current_encoding=="rgb":
-            encs = ("rgb32", "png")
-        else:
-            encs = ("png", "rgb32")
-        return self.pick_encoding(encs)
-
-    def get_core_encoding(self, has_alpha, current_encoding):
-        if current_encoding=="rgb":
-            if has_alpha and self.supports_transparency:
-                return self.pick_encoding(("rgb32", "rgb24"), current_encoding)
-            return self.pick_encoding(("rgb24", "rgb32"), current_encoding)
-        #fallback to current encoding if possible
-        #(not possible if this is a video encoding and this class is not a video source)
-        return self.pick_encoding([current_encoding]+self.common_encodings)
-
-    def find_common_lossless_encoder(self, has_alpha, fallback, pixel_count):
-        if has_alpha and self.supports_transparency:
-            rgb_fmt = "rgb32"
-        else:
-            rgb_fmt = "rgb24"
-        if pixel_count<=MAX_PIXELS_PREFER_RGB:
-            encs = rgb_fmt, "png", "webp", "rgb24", "rgb32"
-        else:
-            encs = "png", "webp", rgb_fmt, "rgb24", "rgb32"
-        return self.pick_encoding(encs, fallback)
-
     def pick_encoding(self, encodings, fallback=None):
-        for e in encodings:
-            if e is not None and e in self.common_encodings:
-                return e
+        """ choose an encoding from the list, or use the fallback """
+        matches = [e for e in encodings if e is not None and ({"rgb32" : "rgb", "rgb24" : "rgb"}.get(e, e) in self.common_encodings)]
+        if matches:
+            return matches[0]
         return {"rgb" : "rgb24"}.get(fallback, fallback)
+
+    def transparent_encoding_options(self, current_encoding, pixel_count, speed, quality):
+        current_encoding = {"rgb" : "rgb32"}.get(current_encoding, current_encoding)
+        WITH_ALPHA = ["rgb32", "png", "rgb24"]
+        #webp is shockingly bad at high res and low speed:
+        if pixel_count<1920*1080 and speed>30:
+            WITH_ALPHA.append("webp")
+        options = []
+        if current_encoding in WITH_ALPHA:
+            #current selection is valid
+            options.append(current_encoding)
+        if (speed>=75 and quality>=75) or pixel_count<=MAX_PIXELS_PREFER_RGB:
+            #rgb is the fastest, and also worth using on small regions:
+            options.append("rgb32")
+        if (not self.is_tray or quality>99) and pixel_count<1920*1080 and speed>30:
+            #see note above about webp
+            options.append("webp")
+        if speed<75:
+            #png is a bit slow!
+            options.append("png")
+        #add fallback options:
+        return options+WITH_ALPHA
+
+    def get_encoding_options(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
+        current_encoding = {"rgb" : "rgb24"}.get(current_encoding, current_encoding)
+        options = []
+        #use sliding scale for lossless threshold
+        #(high speed favours switching to lossy sooner)
+        lossless_q = 89+speed/10
+        #calculate the threshold for using rgb
+        smult = max(1, (speed-75)/5.0)
+        max_rgb = int(MAX_PIXELS_PREFER_RGB * smult * (1 + int(self.is_OR)*2))
+        #log("get_encoding_options%s lossless_q=%s, smult=%s, max_rgb=%s", (batching, pixel_count, ww, wh, speed, quality, current_encoding), lossless_q, smult, max_rgb)
+        if quality<lossless_q:
+            #add lossy options
+            ALL_OPTIONS = ["jpeg", "webp", "png/P", "png/L"]
+            if speed>75 and (quality>90 or pixel_count<max_rgb):
+                #high speed and high quality, rgb is still good
+                options.append("rgb24")
+            if speed>50:
+                #at medium to high speed, jpeg is always good
+                options.append("jpeg")
+            if speed>30 and pixel_count<1920*1080:
+                #medium speed: webp compresses well (just a bit slow)
+                options.append("webp")
+        else:
+            #lossless options:
+            ALL_OPTIONS = ["png", "webp", "rgb24"]
+            if speed>75 or pixel_count<max_rgb:
+                #high speed, rgb is very good:
+                options.append("rgb24")
+            if (quality>99 and speed>75) or speed>20:
+                #enable webp for medium speed (we normalize webp speed in webm_encode)
+                #but don't enable webp for "true" lossless (q>99) unless speed is high
+                #because webp forces speed=100 for true lossless mode
+                options.append("webp")
+            #always allow png
+            options.append("png")
+        if current_encoding in ALL_OPTIONS:
+            #current selection is valid:
+            options.insert(0, current_encoding)
+        return options+[x for x in ALL_OPTIONS if x not in options]
 
 
     def free_image_wrapper(self, image):
@@ -1082,7 +1118,7 @@ class WindowSource(object):
         #if client supports delta pre-compression for this encoding, use it if we can:
         delta = -1
         store = -1
-        if DELTA and not (self._mmap and self._mmap_size>0) and (coding in self.supports_delta) and image.get_size()<self.max_delta_size:
+        if DELTA and not (self._mmap and self._mmap_size>0) and (coding in self.supports_delta) and self.min_delta_size<image.get_size()<self.max_delta_size:
             #we need to copy the pixels because some delta encodings
             #will modify the pixel array in-place!
             dpixels = image.get_pixels()[:]

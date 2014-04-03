@@ -7,13 +7,14 @@
 import os
 import time
 import math
+import operator
 from threading import Lock
 
 from xpra.util import AtomicInteger
 from xpra.net.protocol import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, get_default_csc_modes, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
-from xpra.server.window_source import WindowSource, AUTO_SWITCH_TO_RGB, MAX_PIXELS_PREFER_RGB
+from xpra.server.window_source import WindowSource, MAX_PIXELS_PREFER_RGB
 from xpra.gtk_common.region import rectangle, merge_all
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.log import Logger
@@ -416,34 +417,19 @@ class WindowVideoSource(WindowSource):
         """
         #overrides the default method for finding the encoding of a region
         #so we can ensure we don't use the video encoder when we don't want to:
-        def get_non_video_encoding(batching, window, pixel_count, ww, wh, current_encoding):
-            def get_fallback():
-                if len(self.non_video_encodings)==0:
-                    return None
-                return self.non_video_encodings[0]
-            if window.has_alpha() and self.supports_transparency:
-                return self.get_transparent_encoding(current_encoding) or get_fallback()
-            if window.is_tray():
-                return self.find_common_lossless_encoder(window.has_alpha(), coding, ww*wh) or get_fallback()
-            if AUTO_SWITCH_TO_RGB and pixel_count<MAX_PIXELS_PREFER_RGB:
-                return self.pick_encoding(["rgb24"]) or get_fallback()
-            if pixel_count>=256*256:
-                #jpeg for large areas, we're lossy already since we use video
-                return self.pick_encoding(["jpeg"]) or get_fallback()
-            return get_fallback()
-
         if self.is_cancelled():
             return
 
-        if window.is_tray():
-            sublog("tray - don't use video region!")
-            WindowSource.send_delayed_regions(self, damage_time, window, regions, None, options, get_region_encoding=get_non_video_encoding)
-            return
+        def nonvideo(regions=regions, encoding=coding, exclude_region=None):
+            WindowSource.send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, fallback=self.non_video_encodings)
 
-        if self.encoding not in self.video_encodings:
+        if self.is_tray:
+            sublog("BUG? video for tray - don't use video region!")
+            return nonvideo(encoding=None)
+
+        if coding not in self.video_encodings:
             sublog("not a video encoding")
-            WindowSource.send_delayed_regions(self, damage_time, window, regions, coding, options)
-            return
+            return nonvideo()
 
         vr = self.video_subregion
         if vr is None:
@@ -494,8 +480,7 @@ class WindowVideoSource(WindowSource):
 
         if actual_vr is None:
             sublog("send_delayed_regions: video region %s not found in: %s (using non video encoding)", vr, regions)
-            WindowSource.send_delayed_regions(self, damage_time, window, regions, None, options, get_region_encoding=get_non_video_encoding)
-            return
+            return nonvideo(encoding=None)
 
         #found the video region:
         #send this straight away using the video encoder:
@@ -526,8 +511,7 @@ class WindowVideoSource(WindowSource):
                 delay = self.video_subregion_non_max_wait-elapsed
                 self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
                 return
-
-        WindowSource.send_delayed_regions(self, damage_time, window, trimmed, None, options, exclude_region=actual_vr, get_region_encoding=get_non_video_encoding)
+        nonvideo(regions=trimmed, encoding=None, exclude_region=actual_vr)
 
 
     def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
@@ -536,84 +520,78 @@ class WindowVideoSource(WindowSource):
         dw = w - (w & self.width_mask)
         dh = h - (h & self.height_mask)
         if coding in self.video_encodings and (dw>0 or dh>0):
+            #no point in using get_best_encoding here, rgb24 wins
+            #(as long as the mask is small - and it is)
             if dw>0:
-                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, dw*h)
-                WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, lossless, options)
+                WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, "rgb24", options)
             if dh>0:
-                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, w*dh)
-                WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, lossless, options)
+                WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, "rgb24", options)
 
 
     def must_encode_full_frame(self, window, encoding):
         return WindowSource.must_encode_full_frame(self, window, encoding) or (encoding in self.video_encodings)
 
-    def do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
+
+    def get_encoding_options(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
         """
-            decide whether we send a full window update
-            using the video encoder or if a small lossless region(s) is a better choice
+            decide whether we send a full window update using the video encoder,
+            or if a separate small region(s) is a better choice
         """
-        encoding = WindowSource.do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding)
-        if encoding is not None:
-            #superclass knows best (usually a tray or transparent window):
-            return encoding
+        def nonvideo(s=speed, q=quality):
+            s = max(0, min(100, s))
+            q = max(0, min(100, q))
+            return WindowSource.get_encoding_options(self, batching, pixel_count, ww, wh, s, q, current_encoding)
+
         if current_encoding not in self.video_encodings:
-            return None
+            #not doing video, bail out:
+            return nonvideo()
+
+        if ww*wh<=MAX_NONVIDEO_PIXELS:
+            #window is too small!
+            return nonvideo()
+
         if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
             #video encoder cannot handle this size!
             #(maybe this should be an 'assert' statement here?)
-            return None
-        if self.video_subregion and (self.video_subregion.width!=ww or self.video_subregion.height!=wh):
-            #we have a video region, and this is not it, so don't use video:
-            return None
-
-        def switch_to_fast():
-            return self.pick_encoding(["jpeg", "rgb24"])
+            return nonvideo()
 
         if time.time()-self.statistics.last_resized<0.150:
-            #window has just been resized
-            log("resized not long ago")
-            return switch_to_fast()
+            #window has just been resized, may still resize
+            return nonvideo(q=quality-30)
 
-        def switch_to_lossless(reason):
-            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, pixel_count)
-            log("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
-            return  coding
+        def lossless(reason):
+            log("get_encoding_options(..) temporarily switching to lossless mode for %s pixels: %s", pixel_count, reason)
+            return nonvideo(q=100)
+
+        #if speed is high, assume we have bandwidth to spare
+        smult = max(1, (speed-75)/5.0)
+        if pixel_count<=MAX_PIXELS_PREFER_RGB * smult:
+            return lossless("low pixel count")
+
+        if self.video_subregion and (self.video_subregion.width!=ww or self.video_subregion.height!=wh):
+            #we have a video region, and this is not it, so don't use video
+            #raise the quality as the areas around video tend to not be graphics
+            return nonvideo(q=quality+30)
 
         #calculate the threshold for using video vs small regions:
-        max_nvp = MAX_NONVIDEO_PIXELS
-        if pixel_count<=max_nvp:
-            #small window!
-            return switch_to_lossless("small window: %sx%s" % (ww, wh))
-
-        s = self.get_current_speed()
-        if s>75:
-            #if speed is high, assume we have bandwidth to spare
-            #and prefer non-video:
-            max_nvp = int(max_nvp * (1.0+(s-75.0)/5.0))
-        if is_OR:
-            #OR windows tend to be static:
-            max_nvp *= 4
-        if self._sequence<=5:
-            #discount the first frames, the window may be temporary:
-            max_nvp *= 10-self._sequence
-        if not batching:
-            #if we're not batching, allow more pixels:
-            max_nvp *= 4
-        if self._video_encoder:
-            #if we have a video encoder already, make it more likely we'll use it:
-            max_nvp /= 2
-
+        factors = (smult,                                       #speed multiplier
+                   1 + int(self.is_OR)*2,                       #OR windows tend to be static
+                   max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
+                   1 + int(batching)*2,                         #if we're not batching, allow more pixels
+                   1.0 / (int(bool(self._video_encoder)) + 1)   #if we have a video encoder already, make it more likely we'll use it:
+                   )
+        max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
         if pixel_count<=max_nvp:
             #below threshold
-            return switch_to_lossless("frame number %s: %s pixels (threshold=%s)" % (self._sequence, pixel_count, max_nvp))
+            return nonvideo()
 
         #ensure the dimensions we use for decision making are the ones actually used:
         ww = ww & self.width_mask
         wh = wh & self.height_mask
         if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
             #failsafe:
-            return switch_to_lossless("window dimensions are unsuitable for this encoder/csc")
-        return self.get_core_encoding(has_alpha, current_encoding)
+            return nonvideo()
+        return current_encoding
 
 
     def reconfigure(self, force_reload=False):
