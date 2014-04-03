@@ -684,18 +684,15 @@ class WindowVideoSource(WindowSource):
         def add_scores(info, csc_spec, enc_in_format):
             #find encoders that take 'enc_in_format' as input:
             colorspace_specs = encoder_specs.get(enc_in_format)
-            scorelog("add_scores(%s, %s, %s) colorspace_specs=%r", info, csc_spec, enc_in_format, colorspace_specs)
             if not colorspace_specs:
                 return
             #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
             for encoder_spec in colorspace_specs:
                 #ensure that the output of the encoder can be processed by the client:
                 matches = set(encoder_spec.output_colorspaces) & set(supported_csc_modes)
-                scorelog("matches(%s)=%s", encoder_spec, matches)
                 if len(matches)==0:
                     continue
                 score = self.get_score(enc_in_format, csc_spec, encoder_spec, width, height)
-                scorelog("add_scores: score%s=%s", (enc_in_format, csc_spec, encoder_spec, width, height), score)
                 if score>=0:
                     item = score, csc_spec, enc_in_format, encoder_spec
                     scores.append(item)
