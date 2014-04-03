@@ -162,21 +162,16 @@ class VideoHelper(object):
             self.init()
         #manual deep-ish copy: make new dictionaries and lists,
         #but keep the same codec specs:
-        ves = {}
-        for enc, d in self._video_encoder_specs.items():
-            for ifmt, l in d.items():
-                for cspec in l:
-                    ves.setdefault(enc, {}).setdefault(ifmt, []).append(cspec)
-        ces = {}
-        for ifmt, d in self._csc_encoder_specs.items():
-            for ofmt, l in d.items():
-                for cspec in l:
-                    ces.setdefault(ifmt, {}).setdefault(ofmt, []).append(cspec)
-        vds = {}
-        for enc, d in self._video_decoder_specs.items():
-            for ifmt, l in d.items():
-                for dclass in l:
-                    ves.setdefault(enc, {}).setdefault(ifmt, []).append(dclass)
+        def deepish_clone_dict(indict):
+            outd = {}
+            for enc, d in indict.items():
+                for ifmt, l in d.items():
+                    for v in l:
+                        outd.setdefault(enc, {}).setdefault(ifmt, []).append(v)
+            return outd
+        ves = deepish_clone_dict(self._video_encoder_specs)
+        ces = deepish_clone_dict(self._csc_encoder_specs)
+        vds = deepish_clone_dict(self._video_decoder_specs)
         return VideoHelper(ves, ces, vds, True)
 
     def get_info(self):
