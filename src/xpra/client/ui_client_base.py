@@ -8,7 +8,6 @@
 import os
 import sys
 import time
-import ctypes
 import datetime
 
 from xpra.log import Logger
@@ -1666,9 +1665,10 @@ class UIXpraClient(XpraClientBase):
             def draw_cleanup():
                 if coding=="mmap":
                     assert self.mmap_enabled
+                    from xpra.net.mmap_pipe import int_from_buffer
                     def free_mmap_area():
                         #we need to ack the data to free the space!
-                        data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
+                        data_start = int_from_buffer(self.mmap, 0)
                         offset, length = data[-1]
                         data_start.value = offset+length
                     #clear the mmap area via idle_add so any pending draw requests
