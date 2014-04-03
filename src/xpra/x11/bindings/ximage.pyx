@@ -524,10 +524,11 @@ cdef class XShmImageWrapper(XImageWrapper):
         cdef char *offset
         if XSHM_DEBUG:
             xshmlog("XShmImageWrapper.get_image_pixels() self=%s", self)
-        assert self.image!=NULL
+        assert self.image!=NULL and self.height>0
         #calculate offset (assuming 4 bytes "pixelstride"):
         offset = self.image.data + (self.y * self.rowstride) + (4 * self.x)
-        return PyBuffer_FromReadWriteMemory(offset, self.get_size())
+        cdef Py_ssize_t size = (self.height - 1) * self.rowstride + self.width*4
+        return PyBuffer_FromReadWriteMemory(offset, size)
 
     def free(self):                                 #@DuplicatedSignature
         #ensure we never try to XDestroyImage:
