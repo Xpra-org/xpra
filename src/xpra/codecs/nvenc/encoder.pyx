@@ -1126,21 +1126,21 @@ cdef raiseNVENC(NVENCSTATUS ret, msg=""):
     if ret!=0:
         raise Exception("%s - returned %s" % (msg, nvencStatusInfo(ret)))
 
-cpdef get_CUDA_CSC_function(device_id, function_name, kernel_source):
+cpdef get_CUDA_CSC_function(int device_id, function_name, kernel_source):
     return function_name, get_CUDA_function(device_id, function_name, kernel_source)
 
 
-cpdef get_BGRA2Y(device_id):
+cpdef get_BGRA2Y(int device_id):
     return get_CUDA_CSC_function(device_id, "BGRA2Y", BGRA2Y_kernel)
 
-cpdef get_BGRA2U(device_id):
+cpdef get_BGRA2U(int device_id):
     return get_CUDA_CSC_function(device_id, "BGRA2U", BGRA2U_kernel)
 
-cpdef get_BGRA2V(device_id):
+cpdef get_BGRA2V(int device_id):
     return get_CUDA_CSC_function(device_id, "BGRA2V", BGRA2V_kernel)
 
 
-cpdef get_BGRA2NV12(device_id):
+cpdef get_BGRA2NV12(int device_id):
     return get_CUDA_CSC_function(device_id, "BGRA2NV12", BGRA2NV12_kernel)
 
 
