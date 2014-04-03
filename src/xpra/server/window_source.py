@@ -851,7 +851,7 @@ class WindowSource(object):
             if speed>50:
                 #at medium to high speed, jpeg is always good
                 options.append("jpeg")
-            if speed>30 and pixel_count<1920*1080:
+            if speed>30 and 16384<pixel_count<1920*1080:
                 #medium speed: webp compresses well (just a bit slow)
                 options.append("webp")
         else:
@@ -860,10 +860,11 @@ class WindowSource(object):
             if speed>75 or pixel_count<max_rgb:
                 #high speed, rgb is very good:
                 options.append("rgb24")
-            if (quality>99 and speed>75) or speed>20:
+            if 16384<pixel_count<1920*1080 and ((quality>99 and speed>75) or speed>20):
                 #enable webp for medium speed (we normalize webp speed in webm_encode)
                 #but don't enable webp for "true" lossless (q>99) unless speed is high
                 #because webp forces speed=100 for true lossless mode
+                #also avoid very small and very large areas (both slow)
                 options.append("webp")
             #always allow png
             options.append("png")
