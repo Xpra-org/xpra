@@ -1094,10 +1094,10 @@ class WindowVideoSource(WindowSource):
             self._lock.acquire()
             if not self.check_pipeline(encoding, w, h, src_format):
                 #find one that is not video:
-                fallback_encodings = set(self._encoders.keys) - set(self.video_encodings)
+                fallback_encodings = set(self._encoders.keys) - set(self.video_encodings) - set("mmap")
                 log.error("BUG: failed to setup a video pipeline for %s encoding with source format %s, will fallback to: %s", encoding, src_format, fallback_encodings)
                 assert len(fallback_encodings)>0
-                fallback_encoding = fallback_encodings[0]
+                fallback_encoding = [x for x in PREFERED_ENCODING_ORDER if x in fallback_encodings][0]
                 return self._encoders[fallback_encoding](fallback_encoding, image, options)
 
             #dw and dh are the edges we don't handle here
