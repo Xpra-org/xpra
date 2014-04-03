@@ -560,7 +560,7 @@ class WindowVideoSource(WindowSource):
             return nonvideo(q=quality-30)
 
         def lossless(reason):
-            log("get_encoding_options(..) temporarily switching to lossless mode for %s pixels: %s", pixel_count, reason)
+            log("get_encoding_options(..) temporarily switching to lossless mode for %8i pixels: %s", pixel_count, reason)
             return nonvideo(q=100)
 
         #if speed is high, assume we have bandwidth to spare
@@ -847,8 +847,9 @@ class WindowVideoSource(WindowSource):
         #edge resistance score: average of csc and encoder score:
         er_score = (ecsc_score + ee_score) / 2.0
         score = int((qscore+sscore+er_score)*runtime_score/100.0/3.0)
-        scorelog("get_score%s quality:%.1f, speed:%.1f, setup:%.1f runtime:%.1f scaling: %s / %s, score=%s", (csc_format, csc_spec, encoder_spec,
-                  width, height), qscore, sscore, er_score, runtime_score, scaling, encoder_scaling, score)
+        scorelog("get_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %2i, speed: %2i, setup: %2i runtime: %2i scaling: %s / %s, score=%2i",
+                 csc_format, csc_spec, encoder_spec, width, height,
+                 qscore, sscore, er_score, runtime_score, scaling, encoder_scaling, score)
         return score
 
     def get_encoder_dimensions(self, csc_spec, encoder_spec, width, height, scaling=(1,1)):
