@@ -1536,13 +1536,13 @@ class ServerSource(object):
 #
 # Methods used by WindowSource:
 #
-    def queue_damage(self, encode_and_send_cb):
+    def queue_damage(self, *fn_and_args):
         """
             This is used by WindowSource to queue damage processing to be done in the 'data_to_packet' thread.
             The 'encode_and_send_cb' will then add the resulting packet to the 'damage_packet_queue' via 'queue_packet'.
         """
         self.statistics.damage_data_qsizes.append((time.time(), self.damage_data_queue.qsize()))
-        self.damage_data_queue.put(encode_and_send_cb)
+        self.damage_data_queue.put(fn_and_args)
 
     def queue_packet(self, packet, wid, pixels, start_send_cb, end_send_cb):
         """
@@ -1567,11 +1567,11 @@ class ServerSource(object):
             which are added to the 'damage_data_queue'.
         """
         while not self.is_closed():
-            encode_and_queue = self.damage_data_queue.get(True)
-            if encode_and_queue is None:
+            fn_and_args = self.damage_data_queue.get(True)
+            if fn_and_args is None:
                 return              #empty marker
             try:
-                encode_and_queue()
+                fn_and_args[0](*fn_and_args[1:])
             except Exception, e:
                 log.error("error processing damage data: %s", e, exc_info=True)
             NOYIELD or time.sleep(0)

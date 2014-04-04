@@ -900,7 +900,8 @@ class WindowSource(object):
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
             Actual damage region processing:
-            we extract the rgb data from the pixmap and place it on the damage queue.
+            we extract the rgb data from the pixmap and place it on the damage queue,
+            so the damage thread will call make_data_packet_cb which does the actual compression
             This runs in the UI thread.
         """
         if w==0 or h==0:
@@ -928,59 +929,65 @@ class WindowSource(object):
         self._sequence += 1
         log("process_damage_regions: wid=%s, adding %s pixel data to queue, elapsed time: %.1f ms, request rgb time: %.1f ms",
                 self.wid, coding, 1000.0*(now-damage_time), 1000.0*(now-rgb_request_time))
-        ww, wh = window.get_dimensions()
-        data = (damage_time, process_damage_time, self.wid, image, coding, sequence, options)
-        def make_data_packet_cb(*args):
-            #NOTE: this function is called from the damage data thread!
-            try:
-                packet = self.make_data_packet(*data)
-            finally:
-                self.free_image_wrapper(image)
-                try:
-                    del self.statistics.encoding_pending[sequence]
-                except KeyError:
-                    #may have been cancelled whilst we processed it
-                    pass
-            #NOTE: we MUST send it (even if the window is cancelled by now..)
-            #because the code may rely on the client having received this frame
-            if not packet:
-                return
-            self.queue_damage_packet(packet, damage_time, process_damage_time)
-            if coding.startswith("png") or coding.startswith("rgb") or self._mmap:
-                #primary encoding is lossless, no need for auto-refresh
-                return
-            #see if we need an auto-refresh:
-            if self._damage_delayed is not None:
-                #no: more updates coming
-                return
-            if self.auto_refresh_delay<=0 or self.is_cancelled(sequence) or len(self.auto_refresh_encodings)==0:
-                #no: auto-refresh is disabled
-                return
-            if not window.is_managed():
-                #no: window is gone
-                return
-            client_options = packet[10]     #info about this packet from the encoder
-            if client_options.get("auto_refresh", False):
-                #no: this is from an auto-refresh already!
-                return
-            #check quality:
-            actual_quality = client_options.get("quality", 0)
-            lossy_csc = client_options.get("csc") in LOSSY_PIXEL_FORMATS
-            scaled = client_options.get("scaled_size") is not None
-            if actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
-                refreshlog("auto refresh: was a lossless %s packet, ignoring", coding)
-                #lossless already: small region sent lossless or encoding is already lossless
-                if self.refresh_timer and ww*wh>=w*h*9/10:
-                    #discard pending auto-refresh since this is a fullscreen lossless update
-                    self.cancel_refresh_timer()
-                #don't change anything: if we have a timer, keep it
-                return
-            #if we're here: the window is still valid and this was a lossy update
-            #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
-            #so we need an auto-refresh:
-            self.idle_add(self.schedule_auto_refresh, window, options)
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
-        self.queue_damage(make_data_packet_cb)
+        self.queue_damage(self.make_data_packet_cb, window, damage_time, process_damage_time, self.wid, image, coding, sequence, options)
+
+    def make_data_packet_cb(self, window, damage_time, process_damage_time, wid, image, coding, sequence, options):
+        """ This function is called from the damage data thread!
+            Extra care must be taken to prevent access to X11 functions on window.
+        """
+        try:
+            packet = self.make_data_packet(damage_time, process_damage_time, wid, image, coding, sequence, options)
+        finally:
+            self.free_image_wrapper(image)
+            try:
+                del self.statistics.encoding_pending[sequence]
+            except KeyError:
+                #may have been cancelled whilst we processed it
+                pass
+        #NOTE: we MUST send it (even if the window is cancelled by now..)
+        #because the code may rely on the client having received this frame
+        if not packet:
+            return
+        self.queue_damage_packet(packet, damage_time, process_damage_time)
+        if coding.startswith("png") or coding.startswith("rgb") or self._mmap:
+            #primary encoding is lossless, no need for auto-refresh
+            return
+        #see if we need an auto-refresh:
+        if self._damage_delayed is not None:
+            #no: more updates coming
+            return
+        if self.auto_refresh_delay<=0 or self.is_cancelled(sequence) or len(self.auto_refresh_encodings)==0:
+            #no: auto-refresh is disabled
+            return
+        #safe to call is_managed(), this is not an X11 function:
+        if not window.is_managed():
+            #no: window is gone
+            return
+        client_options = packet[10]     #info about this packet from the encoder
+        if client_options.get("auto_refresh", False):
+            #no: this is from an auto-refresh already!
+            return
+        #check quality:
+        actual_quality = client_options.get("quality", 0)
+        lossy_csc = client_options.get("csc") in LOSSY_PIXEL_FORMATS
+        scaled = client_options.get("scaled_size") is not None
+        if actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
+            refreshlog("auto refresh: was a lossless %s packet, ignoring", coding)
+            #lossless already: small region sent lossless or encoding is already lossless
+            #it is safe to call this method on window because they do not call down to X11:
+            ww, wh = window.get_dimensions()
+            w = image.get_width()
+            h = image.get_height()
+            if self.refresh_timer and ww*wh>=w*h*9/10:
+                #discard pending auto-refresh since this is a fullscreen lossless update
+                self.cancel_refresh_timer()
+            #don't change anything: if we have a timer, keep it
+            return
+        #if we're here: the window is still valid and this was a lossy update
+        #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
+        #so we need an auto-refresh:
+        self.idle_add(self.schedule_auto_refresh, window, options)
 
     def schedule_auto_refresh(self, window, damage_options):
         """ Must be called from the UI thread: this makes it easier
