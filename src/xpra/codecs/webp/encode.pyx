@@ -292,7 +292,10 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     cdef Py_ssize_t pic_buf_len = 0
     cdef WebPConfig config
     cdef int ret
+    #presets: DEFAULT, PICTURE, PHOTO, DRAWING, ICON, TEXT
     cdef WebPPreset preset = WEBP_PRESET_TEXT
+    if width*height<8192:
+        preset = WEBP_PRESET_ICON
 
     PyObject_AsReadBuffer(pixels, <const void**> &pic_buf, &pic_buf_len)
     log("webp.compress(%s bytes, %s, %s, %s, %s, %s, %s) buf=%#x", len(pixels), width, height, stride, quality, speed, has_alpha, <unsigned long> pic_buf)
@@ -311,6 +314,9 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     config.alpha_compression = int(has_alpha)
     config.alpha_filtering = max(0, min(2, speed/50)) * int(has_alpha)
     config.alpha_quality = quality * int(has_alpha)
+    #hints: DEFAULT, PICTURE, PHOTO, GRAPH
+    config.image_hint = WEBP_HINT_GRAPH
+
     log("webp.compress config: lossless=%s, quality=%s, method=%s, alpha=%s,%s,%s", config.lossless, config.quality, config.method,
                     config.alpha_compression, config.alpha_filtering, config.alpha_quality)
     #config.sns_strength = 90
