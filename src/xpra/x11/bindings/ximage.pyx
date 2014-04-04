@@ -541,12 +541,12 @@ cdef class XShmImageWrapper(XImageWrapper):
         #ensure we never try to XDestroyImage:
         self.image = NULL
         self.free_pixels()
-        if self.free_callback:
-            cb = self.free_callback
+        cb = self.free_callback
+        if cb:
             self.free_callback = None
             cb()
         if XSHM_DEBUG:
-            xshmlog("XShmImageWrapper.free() done")
+            xshmlog("XShmImageWrapper.free() done, callback=%s", cb)
 
     def set_free_callback(self, callback):
         self.free_callback = callback
