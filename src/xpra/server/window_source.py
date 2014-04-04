@@ -1112,8 +1112,12 @@ class WindowSource(object):
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
         log("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
         start = time.time()
-        if self._mmap and self._mmap_size>0 and psize>256:
-            mmap_data = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
+        #copy mmap references so we can still complete the method
+        #if the window is closed and cleaned up whilst we do it
+        mmap = self._mmap
+        mmap_size = self._mmap_size
+        if mmap and mmap_size>0 and psize>256:
+            mmap_data = mmap_send(mmap, mmap_size, image, self.rgb_formats, self.supports_transparency)
             if mmap_data:
                 #success
                 data, mmap_free_size, written = mmap_data
@@ -1126,7 +1130,7 @@ class WindowSource(object):
         #if client supports delta pre-compression for this encoding, use it if we can:
         delta = -1
         store = -1
-        if DELTA and not (self._mmap and self._mmap_size>0) and (coding in self.supports_delta) and self.min_delta_size<image.get_size()<self.max_delta_size:
+        if DELTA and not (mmap and mmap_size>0) and (coding in self.supports_delta) and self.min_delta_size<image.get_size()<self.max_delta_size:
             #we need to copy the pixels because some delta encodings
             #will modify the pixel array in-place!
             dpixels = image.get_pixels()[:]
