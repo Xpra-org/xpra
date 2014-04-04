@@ -337,10 +337,13 @@ class ServerSource(object):
     def close(self):
         log("%s.close()", self)
         self.close_event.set()
-        self.damage_data_queue.put(None, block=False)
         for window_source in self.window_sources.values():
             window_source.cleanup()
         self.window_sources = {}
+        #it is now safe to add the end of queue marker:
+        #(all window sources will have stopped queuing data,
+        # they queue data using the UI thread, so we use it too)
+        self.idle_add(self.damage_data_queue.put, None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
         if self.mmap:
@@ -1553,7 +1556,6 @@ class ServerSource(object):
         self.statistics.damage_packet_qsizes.append((now, len(self.damage_packet_queue)))
         self.statistics.damage_packet_qpixels.append((now, wid, sum([x[2] for x in list(self.damage_packet_queue) if x[1]==wid])))
         self.damage_packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb))
-        #if self.protocol._write_queue.empty():
         p = self.protocol
         if p:
             p.source_has_more()
@@ -1565,8 +1567,10 @@ class ServerSource(object):
         """
             This runs in a separate thread and calls all the function callbacks
             which are added to the 'damage_data_queue'.
+            Must run until we hit the end of queue marker,
+            to ensure all the queued items get called.
         """
-        while not self.is_closed():
+        while True:
             fn_and_args = self.damage_data_queue.get(True)
             if fn_and_args is None:
                 return              #empty marker
