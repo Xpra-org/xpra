@@ -28,6 +28,7 @@ if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
 
+DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
 MAX_CONCURRENT_CONNECTIONS = 20
 
 
@@ -93,6 +94,45 @@ class ServerBase(ServerCore):
         self.init_encodings()
         self.init_packet_handlers()
         self.init_aliases()
+
+        if DETECT_LEAKS:
+            import types
+            from collections import defaultdict
+            import gc
+            global before, after
+            gc.enable()
+            gc.set_debug(gc.DEBUG_LEAK)
+            before = defaultdict(int)
+            after = defaultdict(int)
+            gc.collect()
+            for i in gc.get_objects():
+                before[type(i)] += 1
+            def print_leaks():
+                global before, after
+                gc.collect()
+                lobjs = gc.get_objects()
+                for i in lobjs:
+                    after[type(i)] += 1
+                log.info("print_leaks:")
+                leaked = {}
+                for k in after:
+                    delta = after[k]-before[k]
+                    if delta>0:
+                        leaked[delta] = k
+                ignore = (defaultdict, types.BuiltinFunctionType, types.BuiltinMethodType, types.FunctionType, types.MethodType)                        
+                for delta in reversed(sorted(leaked.keys())):
+                    ltype = leaked[delta]
+                    matches = [x for x in lobjs if type(x)==ltype and ltype not in ignore]
+                    if len(matches)<32:
+                        matches = [str(x)[:32] for x in lobjs if type(x)==ltype and ltype not in ignore]
+                    else:
+                        matches = "%s matches" % len(matches)
+                    log.info("%8i : %s : %s", delta, ltype, matches)
+                before = after
+                after = defaultdict(int)
+                return True
+            #from xpra.server.background_worker import add_work_item
+            self.timeout_add(10*1000, print_leaks)
 
     def idle_add(self, *args, **kwargs):
         raise NotImplementedError()
