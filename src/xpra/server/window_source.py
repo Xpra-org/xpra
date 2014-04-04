@@ -939,7 +939,10 @@ class WindowSource(object):
         try:
             packet = self.make_data_packet(damage_time, process_damage_time, wid, image, coding, sequence, options)
         finally:
+            w = image.get_width()
+            h = image.get_height()
             self.free_image_wrapper(image)
+            del image
             try:
                 del self.statistics.encoding_pending[sequence]
             except KeyError:
@@ -977,8 +980,6 @@ class WindowSource(object):
             #lossless already: small region sent lossless or encoding is already lossless
             #it is safe to call this method on window because they do not call down to X11:
             ww, wh = window.get_dimensions()
-            w = image.get_width()
-            h = image.get_height()
             if self.refresh_timer and ww*wh>=w*h*9/10:
                 #discard pending auto-refresh since this is a fullscreen lossless update
                 self.cancel_refresh_timer()
