@@ -105,26 +105,28 @@ class ServerBase(ServerCore):
             before = defaultdict(int)
             after = defaultdict(int)
             gc.collect()
+            ignore = (defaultdict, types.BuiltinFunctionType, types.BuiltinMethodType, types.FunctionType, types.MethodType)
             for i in gc.get_objects():
-                before[type(i)] += 1
+                if type(i) not in ignore:
+                    before[type(i)] += 1
             def print_leaks():
                 global before, after
                 gc.collect()
                 lobjs = gc.get_objects()
                 for i in lobjs:
-                    after[type(i)] += 1
+                    if type(i) not in ignore:
+                        after[type(i)] += 1
                 log.info("print_leaks:")
                 leaked = {}
                 for k in after:
                     delta = after[k]-before[k]
                     if delta>0:
                         leaked[delta] = k
-                ignore = (defaultdict, types.BuiltinFunctionType, types.BuiltinMethodType, types.FunctionType, types.MethodType)                        
                 for delta in reversed(sorted(leaked.keys())):
                     ltype = leaked[delta]
                     matches = [x for x in lobjs if type(x)==ltype and ltype not in ignore]
                     if len(matches)<32:
-                        matches = [str(x)[:32] for x in lobjs if type(x)==ltype and ltype not in ignore]
+                        matches = [str(x)[:32] for x in matches]
                     else:
                         matches = "%s matches" % len(matches)
                     log.info("%8i : %s : %s", delta, ltype, matches)
