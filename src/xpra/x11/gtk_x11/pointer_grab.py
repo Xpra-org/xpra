@@ -56,7 +56,7 @@ class PointerGrabHelper(gobject.GObject):
         self._listening = None
 
     def __repr__(self):
-        xid = None
+        xid = 0
         if self._window:
             xid = self._window.xid
         return "PointerGrabHelper(%#x)" % xid
