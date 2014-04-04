@@ -97,14 +97,23 @@ class ServerBase(ServerCore):
 
         if DETECT_LEAKS:
             import types
+            from xpra.util import dump_references
             from collections import defaultdict
             import gc
+            import inspect
             global before, after
             gc.enable()
             gc.set_debug(gc.DEBUG_LEAK)
             before = defaultdict(int)
             after = defaultdict(int)
             gc.collect()
+            detailed = []
+            #example: warning, uses ugly direct import:
+            #try:
+            #    from xpra.x11.bindings.ximage import XShmImageWrapper       #@UnresolvedImport
+            #    detailed.append(XShmImageWrapper)
+            #except:
+            #    pass
             ignore = (defaultdict, types.BuiltinFunctionType, types.BuiltinMethodType, types.FunctionType, types.MethodType)
             for i in gc.get_objects():
                 if type(i) not in ignore:
@@ -122,18 +131,20 @@ class ServerBase(ServerCore):
                     delta = after[k]-before[k]
                     if delta>0:
                         leaked[delta] = k
+                before = after
+                after = defaultdict(int)
                 for delta in reversed(sorted(leaked.keys())):
                     ltype = leaked[delta]
                     matches = [x for x in lobjs if type(x)==ltype and ltype not in ignore]
                     if len(matches)<32:
-                        matches = [str(x)[:32] for x in matches]
+                        minfo = [str(x)[:32] for x in matches]
                     else:
-                        matches = "%s matches" % len(matches)
-                    log.info("%8i : %s : %s", delta, ltype, matches)
-                before = after
-                after = defaultdict(int)
+                        minfo = "%s matches" % len(matches)
+                    log.info("%8i : %s : %s", delta, ltype, minfo)
+                    if len(matches)<32 and ltype in detailed:
+                        dump_references(log, matches, exclude=[[inspect.currentframe()], matches, lobjs])
+                lobjs = []
                 return True
-            #from xpra.server.background_worker import add_work_item
             self.timeout_add(10*1000, print_leaks)
 
     def idle_add(self, *args, **kwargs):
