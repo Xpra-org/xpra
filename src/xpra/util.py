@@ -179,23 +179,28 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             log.info("    "+" ".join(info))
 
 
-def dump_references(log, instances):
+def dump_references(log, instances, exclude=[]):
     import gc
     import inspect
     gc.collect()
     cf = inspect.currentframe()
+    exclude.append(instances)
+    exclude.append([cf])
     for instance in instances:
-        referrers = [x for x in gc.get_referrers(instance) if x not in (instances, cf)]
+        referrers = [x for x in gc.get_referrers(instance) if (x not in exclude and len([y for y in exclude if x in y])==0)]
         log.info("referrers for %s: %s", instance, len(referrers))
         for i in range(len(referrers)):
             r = referrers[i]
             log.info("[%s] in %s", i, type(r))
             if inspect.isframe(r):
-                log.info("  frame info: %s", inspect.getframeinfo(r))
+                log.info("  frame info: %s", str(inspect.getframeinfo(r))[:1024])
             elif type(r)==list:
                 listref = gc.get_referrers(r)
-                log.info("  list: %s referrers: %s", r, listref)
+                log.info("  list: %s..  %s referrers: %s", str(r[:32])[:1024], len(listref), str(listref[:32])[:1024])
             elif type(r)==dict:
+                if len(r)>64:
+                    log.info("  %s items: %s", len(r), str(r)[:1024])
+                    continue
                 for k,v in r.items():
                     if k is instance:
                         log.info("  key with value=%s", v)
