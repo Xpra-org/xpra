@@ -204,17 +204,15 @@ class ServerBase(ServerCore):
         log("threaded_init() end")
 
     def init_encodings(self):
-        #core encodings: all the specific encoding formats we can encode:
-        self.core_encodings = ["rgb24", "rgb32"]
-        #encodings: the format families we can encode (same as core, except for rgb):
-        self.encodings = ["rgb"]
-
         def add_encodings(encodings):
-            for e in encodings:
+            for ce in encodings:
+                e = {"rgb32" : "rgb", "rgb24" : "rgb"}.get(ce, ce)
                 if e not in self.encodings:
                     self.encodings.append(e)
-                if e not in self.core_encodings:
-                    self.core_encodings.append(e)
+                if ce not in self.core_encodings:
+                    self.core_encodings.append(ce)
+
+        add_encodings(["rgb24", "rgb32"])
 
         #video encoders (empty when first called - see threaded_init)
         add_encodings(getVideoHelper().get_encodings())  #ie: ["vp8", "h264"]
