@@ -18,7 +18,7 @@ function load_icon(name) {
 	image.onload = function() {
 		show(""+name+"="+image);
 		tmp_context.drawImage(image, 0, 0);
-		var image_data = tmp_context.getImageData(0, 0, image.width, image.height);				
+		var image_data = tmp_context.getImageData(0, 0, image.width, image.height);
 		window_icons[name] = image_data;
 	};
 	image.src = '/include/'+name+'.png';
@@ -454,7 +454,7 @@ XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modi
 			}
 			return;
 		}
-	}	
+	}
 };
 
 /**
@@ -525,7 +525,7 @@ XpraWindow.prototype.draw_frame = function(ctx) {
 		ctx.fillStyle = "#FFFFFF";
 		ctx.fillText(this.title, this.x+32, this.y+this.borderWidth+this.topBarHeight-size/3);
 	}
-	
+
 	// draw buttons:
 	for (var name in this.buttons) {
 		var button = this.buttons[name];

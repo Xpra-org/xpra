@@ -70,7 +70,7 @@ class AvahiPublishers:
 				except:
 					pass
 			self.publishers.append(AvahiPublisher(service_name, port, service_type, domain="", host=host, text=txt, interface=iface_index))
-	
+
 	def start(self):
 		for publisher in self.publishers:
 			try:
