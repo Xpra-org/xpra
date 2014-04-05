@@ -1006,6 +1006,9 @@ class WindowSource(object):
         if self._damage_delayed:
             #new incoming damage
             return
+        if not self.auto_refresh_encodings or self.is_cancelled():
+            #can happen during cleanup
+            return
         #ok, so we will schedule a new refresh - cancel any pending one:
         self.cancel_refresh_timer()
         delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
@@ -1020,10 +1023,13 @@ class WindowSource(object):
     def full_quality_refresh(self, window, damage_options):
         if self._damage_delayed:
             #there is already a new damage region pending
-            return  False
+            return
         if not window.is_managed():
             #this window is no longer managed
-            return  False
+            return
+        if not self.auto_refresh_encodings or self.is_cancelled():
+            #can happen during cleanup
+            return
         w, h = window.get_dimensions()
         log("full_quality_refresh() for %sx%s window", w, h)
         new_options = damage_options.copy()
