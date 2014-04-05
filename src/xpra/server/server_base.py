@@ -142,8 +142,16 @@ class ServerBase(ServerCore):
                         minfo = "%s matches" % len(matches)
                     log.info("%8i : %s : %s", delta, ltype, minfo)
                     if len(matches)<32 and ltype in detailed:
-                        dump_references(log, matches, exclude=[[inspect.currentframe()], matches, lobjs])
-                lobjs = []
+                        frame = inspect.currentframe()
+                        exclude = [frame, matches, lobjs]
+                        try:
+                            dump_references(log, matches, exclude=exclude)
+                        finally:
+                            del frame
+                            del exclude
+                    del matches
+                    del minfo
+                del lobjs
                 return True
             self.timeout_add(10*1000, print_leaks)
 
