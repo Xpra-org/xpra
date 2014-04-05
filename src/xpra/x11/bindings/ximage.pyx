@@ -347,14 +347,14 @@ cdef class XImageWrapper:
         self.free_image()
         self.free_pixels()
 
-    def free_image(self):
+    cdef free_image(self):
         if XIMAGE_DEBUG:
             log("XImageWrapper.free_image() image=%s", self.image!=NULL)
         if self.image!=NULL:
             XDestroyImage(self.image)
             self.image = NULL
 
-    def free_pixels(self):
+    cdef free_pixels(self):
         if XIMAGE_DEBUG:
             log("XImageWrapper.free_pixels() pixels=%s", self.pixels!=NULL)
         if self.pixels!=NULL:
@@ -467,7 +467,8 @@ cdef class XShmWrapper(object):
         cdef XShmImageWrapper imageWrapper
         imageWrapper = XShmImageWrapper(x, y, w, h)
         imageWrapper.set_image(self.image)
-        imageWrapper.set_free_callback(self.free_image)
+        imageWrapper.set_free_callback(self.free_image_callback)
+        imageWrapper.set_padded(y+h<self.height)
         if XSHM_DEBUG:
             xshmlog("XShmWrapper.get_image%s ref_count=%s, returning %s", (xpixmap, x, y, w, h), self.ref_count, imageWrapper)
         return imageWrapper
@@ -486,14 +487,14 @@ cdef class XShmWrapper(object):
         #we may have handed out some XShmImageWrappers
         #and they will point to our Image XShm area.
         #so we have to wait until *they* are freed,
-        #and rely on them telling us via the free_image callback.
+        #and rely on them telling us via the free_image_callback.
         if XSHM_DEBUG:
             xshmlog("XShmWrapper.cleanup() ref_count=%s", self.ref_count)
         self.closed = True
         if self.ref_count==0:
             self.free()
 
-    def free_image(self):                               #@DuplicatedSignature
+    def free_image_callback(self):                               #@DuplicatedSignature
         self.ref_count -= 1
         if XSHM_DEBUG:
             xshmlog("XShmWrapper.free_image() closed=%s, new ref_count=%s", self.closed, self.ref_count)
@@ -521,6 +522,7 @@ cdef class XShmWrapper(object):
 cdef class XShmImageWrapper(XImageWrapper):
 
     cdef object free_callback
+    cdef Bool padded
 
     def __init__(self, *args):                      #@DuplicatedSignature
         self.free_callback = None
@@ -535,7 +537,11 @@ cdef class XShmImageWrapper(XImageWrapper):
         assert self.image!=NULL and self.height>0
         #calculate offset (assuming 4 bytes "pixelstride"):
         offset = self.image.data + (self.y * self.rowstride) + (4 * self.x)
-        cdef Py_ssize_t size = (self.height - 1) * self.rowstride + self.width*4
+        cdef Py_ssize_t size = self.height * self.rowstride
+        if self.x>0 and not self.padded:
+            #reading the last line using a full rowstride
+            #would read past the end of the buffer
+            size =  size - self.rowstride + self.width*4
         return PyBuffer_FromReadWriteMemory(offset, size)
 
     def free(self):                                 #@DuplicatedSignature
@@ -549,7 +555,10 @@ cdef class XShmImageWrapper(XImageWrapper):
         if XSHM_DEBUG:
             xshmlog("XShmImageWrapper.free() done, callback=%s", cb)
 
-    def set_free_callback(self, callback):
+    cdef set_padded(self, Bool padded):
+        self.padded = padded
+
+    cdef set_free_callback(self, object callback):
         self.free_callback = callback
 
 
