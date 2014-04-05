@@ -134,6 +134,8 @@ class VideoHelper(object):
         self.video_encoders = [x for x in video_encoders if x in ALL_VIDEO_ENCODER_OPTIONS]
         self.csc_modules    = [x for x in csc_modules    if x in ALL_CSC_MODULE_OPTIONS]
         self.video_decoders = [x for x in video_decoders if x in ALL_VIDEO_DECODER_OPTIONS]
+        log("VideoHelper.set_modules(%s, %s, %s) video encoders=%s, csc=%s, video decoders=%s",
+            video_encoders, csc_modules, video_decoders, self.video_encoders, self.csc_modules, self.video_decoders)
 
     def cleanup(self):
         try:
@@ -191,10 +193,12 @@ class VideoHelper(object):
         return d
 
     def init(self):
+        log("VideoHelper.init()")
         load_codecs()
         try:
             self._lock.acquire()
             #check again with lock held (in case of race):
+            log("VideoHelper.init() initialized=%s", self._initialized)
             if self._initialized:
                 return
             self.init_video_encoders_options()
@@ -203,6 +207,7 @@ class VideoHelper(object):
             self._initialized = True
         finally:
             self._lock.release()
+        log("VideoHelper.init() done")
 
     def get_encodings(self):
         return self._video_encoder_specs.keys()

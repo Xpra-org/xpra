@@ -73,6 +73,12 @@ def disable_debug_for(cat):
                 v.disable_debug()
 
 
+default_level = logging.DEBUG
+def set_default_level(level):
+    global default_level
+    default_level = level
+
+
 KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "video",
                  "csc", "cuda", "cython", "opencl", "swscale", "dbus",
                  "decoder", "avcodec", "vpx", "nvenc", "proxy",
@@ -112,7 +118,7 @@ class Logger(object):
         if caller!="__main__":
             self.categories.insert(0, caller)
         self.logger = logging.getLogger(".".join(self.categories))
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(default_level)
         disabled = False
         enabled = False
         for cat in self.categories:

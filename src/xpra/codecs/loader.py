@@ -205,9 +205,13 @@ def encodings_help(encodings):
     h = []
     for e in HELP_ORDER:
         if e in encodings:
-            ehelp = ENCODINGS_HELP.get(e)
-            h.append(e.ljust(12) + ehelp)
+            h.append(encoding_help(e))
     return h
+
+def encoding_help(encoding):
+    ehelp = ENCODINGS_HELP.get(encoding, "")
+    return encoding.ljust(12) + ehelp
+
 
 
 def main():

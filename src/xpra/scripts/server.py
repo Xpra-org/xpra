@@ -581,9 +581,30 @@ def start_children(child_reaper, commands, fake_xinerama):
 
 def run_server(parser, opts, mode, xpra_file, extra_args):
     if opts.encoding and opts.encoding=="help":
-        from xpra.codecs.loader import encodings_help
+        #avoid errors and warnings:
+        opts.encoding = ""
+        opts.clipboard = False
+        opts.notifications = False
+        print("xpra server supports the following encodings:")
+        print("(please wait, encoder initialization may take a few seconds)")
+        #disable info logging which would be confusing here
+        from xpra.log import get_all_loggers, set_default_level
+        import logging
+        set_default_level(logging.WARN)
+        logging.root.setLevel(logging.WARN)
+        for x in get_all_loggers():
+            x.logger.setLevel(logging.WARN)
         from xpra.server.server_base import ServerBase
-        print("xpra server supports the following encodings:\n * %s" % ("\n * ".join(encodings_help(ServerBase().encodings))))
+        sb = ServerBase()
+        sb.init(opts)
+        #ensures that the threaded video helper init has completed
+        #(by running it again, which will block on the init lock)
+        from xpra.codecs.video_helper import getVideoHelper
+        getVideoHelper().init()
+        sb.init_encodings()
+        from xpra.codecs.loader import encoding_help
+        for e in sb.encodings:
+            print(" * %s" % encoding_help(e))
         return 0
 
     assert mode in ("start", "upgrade", "shadow", "proxy")
