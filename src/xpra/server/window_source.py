@@ -226,9 +226,6 @@ class WindowSource(object):
         self.max_bytes_percent = 0
         self.small_packet_cost = 0
         #
-        self._mmap = None
-        self._mmap_size = 0
-        #
         self._encoding_quality = None
         self._encoding_speed = None
         #
@@ -243,9 +240,12 @@ class WindowSource(object):
         self._last_sequence_queued = 0
         self._damage_cancelled = 0
         self._damage_packet_sequence = 1
-        #we must always have mmap as stored data
-        #must be sent to be reclaimed
-        self._encoders = {"mmap" : self.mmap_encode}
+        encoders = {}
+        if self._mmap and self._mmap_size>0:
+            #we must always be able to send mmap
+            #so we can reclaim its space
+            encoders["mmap"] = self.mmap_encode
+        self._encoders = encoders
 
     def cleanup(self):
         self.cancel_damage()
