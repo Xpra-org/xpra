@@ -75,6 +75,10 @@ class WindowSource(object):
         self.timeout_add = timeout_add
         self.source_remove = source_remove
 
+        # mmap:
+        self._mmap = mmap
+        self._mmap_size = mmap_size
+
         self.init_vars()
 
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
@@ -134,10 +138,6 @@ class WindowSource(object):
             self.max_small_regions = 10
             self.max_bytes_percent = 25
             self.small_packet_cost = 4096
-
-        # mmap:
-        self._mmap = mmap
-        self._mmap_size = mmap_size
 
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = maxdeque(100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
