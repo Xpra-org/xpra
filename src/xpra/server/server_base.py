@@ -174,6 +174,7 @@ class ServerBase(ServerCore):
         self.dpi = self.default_dpi
         self.supports_clipboard = opts.clipboard
         self.supports_dbus_proxy = opts.dbus_proxy
+        self.send_pings = opts.pings
 
         log("starting component init")
         self.init_clipboard(self.supports_clipboard, opts.clipboard_filter_file)
@@ -188,11 +189,6 @@ class ServerBase(ServerCore):
         getVideoHelper().set_modules(video_encoders=video_encoders, csc_modules=csc_modules)
 
         self.load_existing_windows(opts.system_tray)
-
-        if opts.pings:
-            self.timeout_add(1000, self.send_ping)
-        else:
-            self.timeout_add(10*1000, self.send_ping)
         thread.start_new_thread(self.threaded_init, ())
 
     def threaded_init(self):
@@ -421,6 +417,14 @@ class ServerBase(ServerCore):
         packet_types += list(self._authenticated_packet_handlers.keys())
         packet_types += list(self._authenticated_ui_packet_handlers.keys())
         self.do_init_aliases(packet_types)
+
+
+    def run(self):
+        ServerCore.run(self)
+        if self.send_pings:
+            self.timeout_add(1000, self.send_ping)
+        else:
+            self.timeout_add(10*1000, self.send_ping)
 
 
     def cleanup(self, *args):
