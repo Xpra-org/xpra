@@ -464,6 +464,7 @@ cdef class XShmWrapper(object):
                 return None
             self.got_image = True
         self.ref_count += 1
+        cdef XShmImageWrapper imageWrapper
         imageWrapper = XShmImageWrapper(x, y, w, h)
         imageWrapper.set_image(self.image)
         imageWrapper.set_free_callback(self.free_image)
