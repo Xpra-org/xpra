@@ -21,11 +21,8 @@ cdef extern from "../memalign/memalign.h":
 cdef extern from "stdlib.h":
     void free(void *ptr)
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
-    ctypedef object PyObject
-    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
+ctypedef int Py_ssize_t
+from xpra.codecs.buffers.util cimport memory_as_pybuffer, object_as_buffer
 
 cdef extern from "../inline.h":
     pass
@@ -400,6 +397,7 @@ cdef class ColorspaceConverter:
         cdef int height
         cdef int stride
         cdef int result
+        cdef Py_buffer *py_buffer
         start = time.time()
         iplanes = image.get_planes()
         assert iplanes in ImageWrapper.PLANE_OPTIONS, "invalid number of planes: %s" % iplanes
@@ -416,7 +414,7 @@ cdef class ColorspaceConverter:
         for i in xrange(4):
             if i<iplanes:
                 input_stride[i] = strides[i]
-                PyObject_AsReadBuffer(input[i], <const void**> &input_image[i], &pic_buf_len)
+                assert object_as_buffer(input[i], <const void**> &input_image[i], &pic_buf_len)==0
             else:
                 #some versions of swscale check all 4 planes
                 #even when we only pass 1! see "check_image_pointers"
@@ -441,7 +439,7 @@ cdef class ColorspaceConverter:
             for i in range(3):
                 if self.out_stride[i]>0 and output_image[i]!=NULL:
                     stride = self.out_stride[i]
-                    plane = PyBuffer_FromMemory(<void *>output_image[i], self.out_height[i] * self.out_stride[i])
+                    plane = memory_as_pybuffer(<void *>output_image[i], self.out_height[i] * self.out_stride[i], True)
                 else:
                     stride = 0
                     plane = None
@@ -452,7 +450,7 @@ cdef class ColorspaceConverter:
             #assume no planes, plain RGB packed pixels:
             oplanes = ImageWrapper.PACKED
             strides = self.out_stride[0]
-            out = PyBuffer_FromMemory(<void *>output_image[0], self.out_height[0] * self.out_stride[0])
+            out = memory_as_pybuffer(<void *>output_image[0], self.out_height[0] * self.out_stride[0], True)
             csci.set_plane(0, output_image[0])
         elapsed = time.time()-start
         log("%s took %.1fms", self, 1000.0*elapsed)

@@ -82,6 +82,8 @@ webm_ENABLED            = True
 nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")
 csc_nvcuda_ENABLED      = pkg_config_ok("--exists", "cuda")
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL")
+buffers_ENABLED         = csc_cython_ENABLED or csc_swscale_ENABLED or dec_avcodec2_ENABLED or vpx_ENABLED
+memoryview_ENABLED      = False
 
 warn_ENABLED            = True
 strict_ENABLED          = True
@@ -100,6 +102,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "csc_nvcuda", "csc_opencl", "csc_cython",
             "vpx", "vpx_static",
             "webp", "webm",
+            "buffers", "memoryview",
             "rencode", "bencode", "cython_bencode",
             "clipboard",
             "server", "client", "x11",
@@ -170,6 +173,12 @@ if "clean" not in sys.argv:
         exit(1)
     if not client_ENABLED and not server_ENABLED:
         print("Error: you must build at least the client or server!")
+        exit(1)
+    if not buffers_ENABLED and (csc_cython_ENABLED or csc_swscale_ENABLED or dec_avcodec2_ENABLED or vpx_ENABLED):
+        print("Error: you must enable 'buffers' for cython, swscale, avcodec2 or vpx to build")
+        exit(1)
+    if memoryview_ENABLED and sys.version<"2.7":
+        print("Error: memoryview support requires Python version 2.7 or greater")
         exit(1)
 
 
@@ -1169,6 +1178,17 @@ if cymaths_ENABLED:
                 ["xpra/server/stats/cymaths.pyx"],
                 **pkgconfig()))
 
+
+#build buffer bits (needed for many csc modules and decoders):
+toggle_packages(buffers_ENABLED, "xpra.codecs.buffers")
+if buffers_ENABLED:
+    #new-style buffers or old?
+    if memoryview_ENABLED:
+        bmod = "new"
+    else:
+        bmod = "old"
+    cython_add(Extension("xpra.codecs.buffers.util",
+                ["xpra/codecs/buffers/%s_buffers.pyx" % bmod]))
 
 #needed for both nvenc and csc_cuda:
 toggle_packages(csc_nvcuda_ENABLED or nvenc_ENABLED, "xpra.codecs.cuda_common")

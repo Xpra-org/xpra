@@ -26,13 +26,8 @@ cdef extern from "../memalign/memalign.h":
 cdef extern from "stdlib.h":
     void free(void *ptr)
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
-    ctypedef object PyObject
-    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
-    object PyBuffer_FromReadWriteMemory(void *ptr, Py_ssize_t size)
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
-
+ctypedef int Py_ssize_t
+from xpra.codecs.buffers.util cimport memory_as_pybuffer, object_as_buffer
 
 from libc.stdint cimport uint8_t
 
@@ -348,7 +343,7 @@ cdef class ColorspaceConverter:
         input_stride = image.get_rowstride()
         log("convert_image(%s) input=%s, strides=%s" % (image, len(input), input_stride))
 
-        PyObject_AsReadBuffer(input, <const void**> &input_image, &pic_buf_len)
+        assert object_as_buffer(input, <const void**> &input_image, &pic_buf_len)==0
         #allocate output buffer:
         output_image = <unsigned char*> xmemalign(self.buffer_size)
         Y = output_image + self.offsets[0]
@@ -402,8 +397,7 @@ cdef class ColorspaceConverter:
         strides = []
         for i in range(3):
             strides.append(self.dst_strides[i])
-            plane = PyBuffer_FromMemory(<void *> (<unsigned long> (output_image + self.offsets[i])), self.dst_sizes[i])
-            planes.append(plane)
+            planes.append(memory_as_pybuffer(<void *> (<unsigned long> (output_image + self.offsets[i])), self.dst_sizes[i], True))
         elapsed = time.time()-start
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
@@ -448,11 +442,11 @@ cdef class ColorspaceConverter:
         Ustride = input_strides[1]
         Vstride = input_strides[2]
 
-        PyObject_AsReadBuffer(planes[0], <const void**> &Ybuf, &buf_len)
+        assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0
         assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
-        PyObject_AsReadBuffer(planes[1], <const void**> &Ubuf, &buf_len)
+        assert object_as_buffer(planes[1], <const void**> &Ubuf, &buf_len)==0
         assert buf_len>=Ustride*image.get_height()/2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()/2)
-        PyObject_AsReadBuffer(planes[2], <const void**> &Vbuf, &buf_len)
+        assert object_as_buffer(planes[2], <const void**> &Vbuf, &buf_len)==0
         assert buf_len>=Vstride*image.get_height()/2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()/2)
 
         #allocate output buffer:
@@ -485,7 +479,7 @@ cdef class ColorspaceConverter:
                             output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
                             output_image[o + Xindex] = 255
 
-        rgb = PyBuffer_FromReadWriteMemory(<void *> output_image, self.dst_sizes[0])
+        rgb = memory_as_pybuffer(<void *> output_image, self.dst_sizes[0], True)
         elapsed = time.time()-start
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
@@ -532,11 +526,11 @@ cdef class ColorspaceConverter:
         Bstride = input_strides[Bsrc]
         stride = self.dst_strides[0]
 
-        PyObject_AsReadBuffer(planes[Rsrc], <const void**> &Rbuf, &buf_len)
+        assert object_as_buffer(planes[Rsrc], <const void**> &Rbuf, &buf_len)==0
         assert buf_len>=Rstride*image.get_height(), "buffer for R plane is too small: %s bytes, expected at least %s" % (buf_len, Rstride*image.get_height())
-        PyObject_AsReadBuffer(planes[Gsrc], <const void**> &Gbuf, &buf_len)
+        assert object_as_buffer(planes[Gsrc], <const void**> &Gbuf, &buf_len)==0
         assert buf_len>=Gstride*image.get_height(), "buffer for G plane is too small: %s bytes, expected at least %s" % (buf_len, Gstride*image.get_height())
-        PyObject_AsReadBuffer(planes[Bsrc], <const void**> &Bbuf, &buf_len)
+        assert object_as_buffer(planes[Bsrc], <const void**> &Bbuf, &buf_len)==0
         assert buf_len>=Bstride*image.get_height(), "buffer for B plane is too small: %s bytes, expected at least %s" % (buf_len, Bstride*image.get_height())
 
         #allocate output buffer:
@@ -558,7 +552,7 @@ cdef class ColorspaceConverter:
                     output_image[o+Xdst] = 255
                     o += 4
 
-        rgb = PyBuffer_FromReadWriteMemory(<void *> output_image, self.dst_sizes[0])
+        rgb = memory_as_pybuffer(<void *> output_image, self.dst_sizes[0], True)
         elapsed = time.time()-start
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed

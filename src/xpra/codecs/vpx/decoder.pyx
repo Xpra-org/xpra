@@ -18,7 +18,6 @@ DEF ENABLE_VP9 = False
 
 from libc.stdint cimport int64_t
 
-
 cdef extern from "string.h":
     void * memcpy(void * destination, void * source, size_t num) nogil
     void * memset(void * ptr, int value, size_t num) nogil
@@ -27,15 +26,12 @@ cdef extern from "string.h":
 cdef extern from "../memalign/memalign.h":
     void *xmemalign(size_t size)
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
-    ctypedef object PyObject
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
-    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
-
+ctypedef int Py_ssize_t
 ctypedef unsigned char uint8_t
 ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t
+
+from xpra.codecs.buffers.util cimport memory_as_pybuffer, object_as_buffer
 
 cdef extern from "vpx/vpx_codec.h":
     ctypedef const void *vpx_codec_iter_t
@@ -281,11 +277,11 @@ cdef class Decoder:
         cdef vpx_codec_err_t ret
         cdef int i = 0
         cdef object image
-        cdef object plane
         cdef void *padded_buf
         cdef Py_ssize_t plane_len = 0
         assert self.context!=NULL
-        assert PyObject_AsReadBuffer(input, <const void**> &buf, &buf_len)==0
+
+        assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
 
         with nogil:
             ret = vpx_codec_decode(self.context, buf, buf_len, NULL, 0)
@@ -318,8 +314,7 @@ cdef class Decoder:
             memcpy(padded_buf, <void *>img.planes[i], plane_len)
             memset(<void *>((<char *>padded_buf)+plane_len), 0, stride)
 
-            plane = PyBuffer_FromMemory(padded_buf, plane_len)
-            pixels.append(plane)
+            pixels.append(memory_as_pybuffer(padded_buf, plane_len, True))
 
             image.add_buffer(<unsigned long> padded_buf)
         log("vpx returning decoded %s image %s with colorspace=%s", self.encoding, image, image.get_pixel_format())

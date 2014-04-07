@@ -14,17 +14,11 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 
 
-cdef extern from *:
-    ctypedef unsigned long size_t
-    ctypedef unsigned char uint8_t
+ctypedef unsigned long size_t
+ctypedef unsigned char uint8_t
+ctypedef int Py_ssize_t
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
-    ctypedef object PyObject
-    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
-    object PyBuffer_FromReadWriteMemory(void *ptr, Py_ssize_t size)
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
-
+from xpra.codecs.buffers.util cimport memory_as_pybuffer, object_as_buffer
 
 cdef extern from "string.h":
     void * memcpy(void * destination, void * source, size_t num) nogil
@@ -483,7 +477,7 @@ cdef class Decoder:
         assert self.codec!=NULL
 
         #copy the whole input buffer into a padded C buffer:
-        PyObject_AsReadBuffer(input, <const void**> &buf, &buf_len)
+        assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
         padded_buf = <unsigned char *> xmemalign(buf_len+128)
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 128)
@@ -557,20 +551,14 @@ cdef class Decoder:
                     stride = av_frame.linesize[i]
                     size = height * stride
                     outsize += size
-                    if READ_ONLY:
-                        plane = PyBuffer_FromMemory(<void *>av_frame.data[i], size)
-                    else:
-                        plane = PyBuffer_FromReadWriteMemory(<void *>av_frame.data[i], size)
-                    out.append(plane)
+
+                    out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, READ_ONLY))
                     strides.append(stride)
             else:
                 #RGB mode: "out" is a single buffer
                 strides = av_frame.linesize[0]+av_frame.linesize[1]+av_frame.linesize[2]
                 outsize = self.codec_ctx.height * strides
-                if READ_ONLY:
-                    out = PyBuffer_FromMemory(<void *>av_frame.data[0], outsize)
-                else:
-                    out = PyBuffer_FromReadWriteMemory(<void *>av_frame.data[0], outsize)
+                out = memory_as_pybuffer(<void *>av_frame.data[0], outsize, READ_ONLY)
                 nplanes = 0
 
             #FIXME: we could lose track of framewrappers if an error occurs before the end:
