@@ -36,18 +36,8 @@ if FORCE:
     MIN_COMPUTE = 0
 
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
-    int PyObject_AsWriteBuffer(object obj,
-                               void ** buffer,
-                               Py_ssize_t * buffer_len) except -1
-    int PyObject_AsReadBuffer(object obj,
-                              void ** buffer,
-                              Py_ssize_t * buffer_len) except -1
-
 cdef extern from "string.h":
-    void * memcpy ( void * destination, void * source, size_t num )
-    void * memset ( void * ptr, int value, size_t num )
+    void* memset (void * ptr, int value, size_t num)
 
 cdef extern from "stdlib.h":
     void* malloc(size_t __size)
