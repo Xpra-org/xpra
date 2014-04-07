@@ -51,7 +51,7 @@ class GTK2WindowBacking(GTKWindowBacking):
             assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb"
             return byte_buffer_to_buffer(unpremultiply_argb(img_data))
         #assume this is a writeable buffer (ie: ctypes from mmap):
-        assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb_in_place"
+        assert unpremultiply_argb_in_place is not None, "missing argb.unpremultiply_argb_in_place"
         unpremultiply_argb_in_place(img_data)
         return img_data
 
