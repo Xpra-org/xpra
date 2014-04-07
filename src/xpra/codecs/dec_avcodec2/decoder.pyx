@@ -555,6 +555,7 @@ cdef class Decoder:
                     out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, READ_ONLY))
                     strides.append(stride)
             else:
+                assert steps==1
                 #RGB mode: "out" is a single buffer
                 strides = av_frame.linesize[0]+av_frame.linesize[1]+av_frame.linesize[2]
                 outsize = self.codec_ctx.height * strides
@@ -573,7 +574,7 @@ cdef class Decoder:
         free(padded_buf)
         assert self.codec_ctx.width>=self.width, "codec width is smaller than our width: %s<%s" % (self.codec_ctx.width, self.width)
         assert self.codec_ctx.height>=self.height, "codec height is smaller than our height: %s<%s" % (self.codec_ctx.height, self.height)
-        img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes*steps)
+        img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes*steps, thread_safe=False)
         img.av_frames = framewrappers
         self.frames += 1
         #add to weakref list after cleaning it up:

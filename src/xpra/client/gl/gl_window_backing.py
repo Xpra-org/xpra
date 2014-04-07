@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 #only works with gtk2:
+import sys
 import os
 from gtk import gdk
 assert gdk
@@ -16,12 +17,13 @@ from xpra.log import Logger
 log = Logger("opengl", "paint")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 
-
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.gl.gl_check import get_DISPLAY_MODE
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
 from xpra.client.gtk2.window_backing import GTK2WindowBacking, fire_paint_callbacks
-from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
+from OpenGL import version as OpenGL_version
+from OpenGL.GL import \
+    GL_PROJECTION, GL_MODELVIEW, \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
@@ -95,6 +97,12 @@ if OPENGL_DEBUG:
             gl_debug_callback, glInitStringMarkerGREMEDY, glStringMarkerGREMEDY,
             glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY)
 from ctypes import c_char_p
+
+
+#support for memory views requires Python 2.7 and PyOpenGL 3.1
+memoryview_type = None
+if sys.version_info[:2]>=(2,7) and OpenGL_version.__version__.split('.')[:2]>=['3','1']:
+    memoryview_type = memoryview
 
 
 # Texture number assignment
@@ -496,16 +504,33 @@ class GLPixmapBacking(GTK2WindowBacking):
         return True
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
-        #note: we clone here unconditionally because this gives us the pixels
-        #as a string object which PyOpenGL can use for upload, whereas the buffer objects
-        #we get from the avcodec and vpx decoders cannot be used.
-        #PyOpenGL version 3.1 has some support for the memory view interface
-        #but this requires memoryview support which requires python>=2.7
-        img.clone_pixel_data()
+        clone = True
+        #we can only use zero copy upload if the image is "thread_safe"
+        #(dec_avcodec2 is not safe...)
+        #and if the data is a memoryview (or if we can wrap it in one)
+        if memoryview_type is not None and img.is_thread_safe():
+            pixels = img.get_pixels()
+            assert len(pixels)==3, "invalid number of planes: %s" % len(pixels)
+            plane_types = list(set([type(plane) for plane in img.get_pixels()]))
+            if len(plane_types)==1:
+                plane_type = plane_types[0]
+                if plane_type==memoryview_type:
+                    clone = False
+                elif plane_type in (str, buffer):
+                    #wrap with a memoryview that pyopengl can use:
+                    views = []
+                    for i in range(3):
+                        views.append(memoryview_type(pixels[i]))
+                    img.set_pixels(views)
+                    clone = False
+        if clone:
+            #copy so the data will be usable (usually a str)
+            img.clone_pixel_data()
         gobject.idle_add(self.gl_paint_planar, img, x, y, enc_width, enc_height, width, height, callbacks)
 
     def gl_paint_planar(self, img, x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
+        log("gl_paint_planar%s", (img, x, y, enc_width, enc_height, width, height, callbacks))
         try:
             pixel_format = img.get_pixel_format()
             assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
@@ -516,6 +541,8 @@ class GLPixmapBacking(GTK2WindowBacking):
                 return
             try:
                 self.update_planar_textures(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
+                img.free()
+
                 # Update FBO texture
                 x_scale, y_scale = 1, 1
                 if width!=enc_width or height!=enc_height:
