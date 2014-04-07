@@ -41,6 +41,7 @@ EXIT_REMOTE_ERROR = 13
 
 DEFAULT_TIMEOUT = 20*1000
 ALLOW_UNENCRYPTED_PASSWORDS = os.environ.get("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", "0")=="1"
+DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
 
 
 class XpraClientBase(object):
@@ -104,6 +105,19 @@ class XpraClientBase(object):
         self.min_quality = opts.min_quality
         self.speed = opts.speed
         self.min_speed = opts.min_speed
+
+        if DETECT_LEAKS:
+            from xpra.util import detect_leaks
+            detailed = []
+            #example: warning, uses ugly direct import:
+            #try:
+            #    from xpra.x11.bindings.ximage import XShmImageWrapper       #@UnresolvedImport
+            #    detailed.append(XShmImageWrapper)
+            #except:
+            #    pass
+            print_leaks = detect_leaks(log, detailed)
+            self.timeout_add(10*1000, print_leaks)
+
 
     def timeout_add(self, *args):
         raise Exception("override me!")

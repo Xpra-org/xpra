@@ -96,17 +96,7 @@ class ServerBase(ServerCore):
         self.init_aliases()
 
         if DETECT_LEAKS:
-            import types
-            from xpra.util import dump_references
-            from collections import defaultdict
-            import gc
-            import inspect
-            global before, after
-            gc.enable()
-            gc.set_debug(gc.DEBUG_LEAK)
-            before = defaultdict(int)
-            after = defaultdict(int)
-            gc.collect()
+            from xpra.util import detect_leaks
             detailed = []
             #example: warning, uses ugly direct import:
             #try:
@@ -114,45 +104,7 @@ class ServerBase(ServerCore):
             #    detailed.append(XShmImageWrapper)
             #except:
             #    pass
-            ignore = (defaultdict, types.BuiltinFunctionType, types.BuiltinMethodType, types.FunctionType, types.MethodType)
-            for i in gc.get_objects():
-                if type(i) not in ignore:
-                    before[type(i)] += 1
-            def print_leaks():
-                global before, after
-                gc.collect()
-                lobjs = gc.get_objects()
-                for i in lobjs:
-                    if type(i) not in ignore:
-                        after[type(i)] += 1
-                log.info("print_leaks:")
-                leaked = {}
-                for k in after:
-                    delta = after[k]-before[k]
-                    if delta>0:
-                        leaked[delta] = k
-                before = after
-                after = defaultdict(int)
-                for delta in reversed(sorted(leaked.keys())):
-                    ltype = leaked[delta]
-                    matches = [x for x in lobjs if type(x)==ltype and ltype not in ignore]
-                    if len(matches)<32:
-                        minfo = [str(x)[:32] for x in matches]
-                    else:
-                        minfo = "%s matches" % len(matches)
-                    log.info("%8i : %s : %s", delta, ltype, minfo)
-                    if len(matches)<32 and ltype in detailed:
-                        frame = inspect.currentframe()
-                        exclude = [frame, matches, lobjs]
-                        try:
-                            dump_references(log, matches, exclude=exclude)
-                        finally:
-                            del frame
-                            del exclude
-                    del matches
-                    del minfo
-                del lobjs
-                return True
+            print_leaks = detect_leaks(log, detailed)
             self.timeout_add(10*1000, print_leaks)
 
     def idle_add(self, *args, **kwargs):
