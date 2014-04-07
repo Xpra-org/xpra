@@ -40,6 +40,8 @@ cdef extern from "Python.h":
     #fallback for non memoryviews:
     int PyObject_AsReadBuffer(object obj, const void ** buffer, Py_ssize_t * buffer_len) except -1
 
+def get_version():
+    return 1
 
 cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly):
     cdef Py_buffer pybuf

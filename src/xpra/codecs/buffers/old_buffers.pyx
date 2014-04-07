@@ -16,6 +16,9 @@ cdef extern from "Python.h":
     int PyObject_AsReadBuffer(object obj, const void ** buffer, Py_ssize_t * buffer_len) except -1
 
 
+def get_version():
+    return 0
+
 cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly):
     if readonly:
         return PyBuffer_FromMemory(ptr, buf_len)
