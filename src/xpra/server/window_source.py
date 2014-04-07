@@ -40,11 +40,6 @@ try:
 except Exception, e:
     log("cannot load xor module: %s", e)
     xor_str = None
-try:
-    from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
-except Exception, e:
-    log("cannot load argb module: %s", e)
-    bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
 from xpra.server.picture_encode import webm_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
 from xpra.net.protocol import Compressed
 from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
