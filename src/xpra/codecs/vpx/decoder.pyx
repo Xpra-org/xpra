@@ -19,8 +19,8 @@ DEF ENABLE_VP9 = False
 from libc.stdint cimport int64_t
 
 cdef extern from "string.h":
-    void * memcpy(void * destination, void * source, size_t num) nogil
-    void * memset(void * ptr, int value, size_t num) nogil
+    void *memcpy(void * destination, void * source, size_t num) nogil
+    void *memset(void * ptr, int value, size_t num) nogil
     void free(void * ptr) nogil
 
 cdef extern from "../memalign/memalign.h":
