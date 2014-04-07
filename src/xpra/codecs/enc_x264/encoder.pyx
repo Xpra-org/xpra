@@ -27,10 +27,8 @@ cdef extern from "stdint.h":
 cdef extern from "inttypes.h":
     pass
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
-    ctypedef object PyObject
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
+ctypedef int Py_ssize_t
+from xpra.codecs.buffers.util cimport object_as_buffer
 
 
 cdef extern from "x264.h":
@@ -466,7 +464,7 @@ cdef class Encoder:
         if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:
             assert len(pixels)>0
             assert istrides>0
-            PyObject_AsReadBuffer(pixels, <const void**> &pic_buf, &pic_buf_len)
+            assert object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)==0
             for i in range(3):
                 pic_in.img.plane[i] = pic_buf
                 pic_in.img.i_stride[i] = istrides
@@ -475,7 +473,7 @@ cdef class Encoder:
             assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
             assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
             for i in range(3):
-                PyObject_AsReadBuffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)
+                assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
                 pic_in.img.plane[i] = pic_buf
                 pic_in.img.i_stride[i] = istrides[i]
 

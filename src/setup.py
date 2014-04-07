@@ -82,7 +82,7 @@ webm_ENABLED            = True
 nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")
 csc_nvcuda_ENABLED      = pkg_config_ok("--exists", "cuda")
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL")
-buffers_ENABLED         = csc_cython_ENABLED or csc_swscale_ENABLED or dec_avcodec2_ENABLED or vpx_ENABLED
+buffers_ENABLED         = True
 memoryview_ENABLED      = False
 
 warn_ENABLED            = True
@@ -174,9 +174,13 @@ if "clean" not in sys.argv:
     if not client_ENABLED and not server_ENABLED:
         print("Error: you must build at least the client or server!")
         exit(1)
-    if not buffers_ENABLED and (csc_cython_ENABLED or csc_swscale_ENABLED or dec_avcodec2_ENABLED or vpx_ENABLED):
-        print("Error: you must enable 'buffers' for cython, swscale, avcodec2 or vpx to build")
-        exit(1)
+    if not buffers_ENABLED:
+        req_buffers = ("csc_cython", "csc_swscale", "dec_avcodec2", "vpx_ENABLED", "enc_x264", "enc_x265")
+        for mod in req_buffers:
+            v = vars()["%s_ENABLED" % mod]
+            if v:
+                print("Error: you must enable 'buffers' to build %s (or: %s)" % (mod, ", ".join([x for x in req_buffers if x!=mod])))
+                exit(1)
     if memoryview_ENABLED and sys.version<"2.7":
         print("Error: memoryview support requires Python version 2.7 or greater")
         exit(1)

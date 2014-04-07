@@ -20,16 +20,14 @@ from libc.stdint cimport int64_t
 
 
 cdef extern from "string.h":
-    void * memset(void * ptr, int value, size_t num) nogil
-    void free(void * ptr) nogil
+    void *memset(void *ptr, int value, size_t num) nogil
+    void free(void *ptr) nogil
 
 cdef extern from "../memalign/memalign.h":
     void *xmemalign(size_t size)
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
-    ctypedef object PyObject
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
+ctypedef int Py_ssize_t
+from xpra.codecs.buffers.util cimport object_as_buffer
 
 ctypedef unsigned char uint8_t
 ctypedef long vpx_img_fmt_t
@@ -346,7 +344,7 @@ cdef class Encoder:
         assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
         for i in range(3):
-            PyObject_AsReadBuffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)
+            assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
             pic_in[i] = pic_buf
             strides[i] = istrides[i]
         return self.do_compress_image(pic_in, strides), {"frame" : self.frames}
