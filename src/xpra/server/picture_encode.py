@@ -11,11 +11,6 @@ log = Logger("window", "encoding")
 
 from xpra.net.protocol import compressed_wrapper, Compressed, use_lz4
 try:
-    from xpra.codecs.xor import xor_str        #@UnresolvedImport
-except Exception, e:
-    log("cannot load xor module: %s", e)
-    xor_str = None
-try:
     from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
 except Exception, e:
     log("cannot load argb module: %s", e)
