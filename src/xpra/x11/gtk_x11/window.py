@@ -987,7 +987,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("owner", winner)
         if winner is not None:
             winner.take_window(self, self.corral_window)
-            self._update_client_geometry(force_notify=True)
+            self._update_client_geometry()
             self.corral_window.show_unraised()
             return
         trap.swallow_synced(X11Window.sendConfigureNotify, self.client_window.xid)
@@ -1038,7 +1038,7 @@ class WindowModel(BaseWindowModel):
                 log.warn("invalid min_size=%s / max_size=%s changed to: %s / %s",
                          mins, maxs, size_hints.min_size, size_hints.max_size)
 
-    def _update_client_geometry(self, force_notify=False):
+    def _update_client_geometry(self):
         owner = self.get_property("owner")
         if owner is not None:
             log("_update_client_geometry: owner()=%s", owner)
@@ -1046,7 +1046,7 @@ class WindowModel(BaseWindowModel):
                 return  owner.window_size(self)
             def window_position(w, h):
                 return  owner.window_position(self, w, h)
-            self._do_update_client_geometry(window_size, window_position, force_notify)
+            self._do_update_client_geometry(window_size, window_position)
         elif not self._setup_done:
             #try to honour initial size and position requests during setup:
             def window_size():
@@ -1054,9 +1054,9 @@ class WindowModel(BaseWindowModel):
             def window_position(w=0, h=0):
                 return self.get_property("requested-position")
             log("_update_client_geometry: using initial size=%s and position=%s", window_size(), window_position())
-            self._do_update_client_geometry(window_size, window_position, force_notify)
+            self._do_update_client_geometry(window_size, window_position)
 
-    def _do_update_client_geometry(self, window_size_cb, window_position_cb, force_notify=False):
+    def _do_update_client_geometry(self, window_size_cb, window_position_cb):
         allocated_w, allocated_h = window_size_cb()
         log("_do_update_client_geometry: %sx%s", allocated_w, allocated_h)
         hints = self.get_property("size-hints")
@@ -1069,11 +1069,9 @@ class WindowModel(BaseWindowModel):
         x, y = window_position_cb(w, h)
         log("_do_update_client_geometry: position=%s", (x,y))
         self.corral_window.move_resize(x, y, w, h)
-        cww, cwh = self.client_window.get_geometry()[2:4]
         self._internal_set_property("actual-size", (w, h))
         self._internal_set_property("user-friendly-size", (wvis, hvis))
-        if cww!=w or cwh!=h or force_notify:
-            trap.swallow_synced(X11Window.configureAndNotify, self.client_window.xid, 0, 0, w, h)
+        trap.swallow_synced(X11Window.configureAndNotify, self.client_window.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):
         log("WindowModel.do_xpra_configure_event(%s)", event)
@@ -1155,7 +1153,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("requested-size", (w, h))
         # As per ICCCM 4.1.5, even if we ignore the request
         # send back a synthetic ConfigureNotify telling the client that nothing has happened.
-        self._update_client_geometry(force_notify=True)
+        self._update_client_geometry()
 
         # FIXME: consider handling attempts to change stacking order here.
         # (In particular, I believe that a request to jump to the top is
