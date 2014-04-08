@@ -15,18 +15,21 @@ from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@Unr
 X11Window = X11WindowBindings()
 
 from xpra.log import Logger
-log = Logger("x11", "window", "pointer")
+log = Logger("x11", "window", "grab")
 
 
 StructureNotifyMask = constants["StructureNotifyMask"]
 
-NotifyNormal    = constants["NotifyNormal"]
-NotifyGrab      = constants["NotifyGrab"]
-NotifyUngrab    = constants["NotifyUngrab"]
+NotifyNormal        = constants["NotifyNormal"]
+NotifyGrab          = constants["NotifyGrab"]
+NotifyUngrab        = constants["NotifyUngrab"]
+NotifyWhileGrabbed  = constants["NotifyWhileGrabbed"]
+
 GRAB_CONSTANTS = {
-                  NotifyNormal  : "NotifyNormal",
-                  NotifyGrab    : "NotifyGrab",
-                  NotifyUngrab  : "NotifyUngrab"
+                  NotifyNormal          : "NotifyNormal",
+                  NotifyGrab            : "NotifyGrab",
+                  NotifyUngrab          : "NotifyUngrab",
+                  NotifyWhileGrabbed    : "NotifyWhileGrabbed",
                  }
 log("pointer grab constants: %s", GRAB_CONSTANTS)
 
@@ -59,7 +62,7 @@ class PointerGrabHelper(gobject.GObject):
         xid = 0
         if self._window:
             xid = self._window.xid
-        return "PointerGrabHelper(%#x)" % xid
+        return "PointerGrabHelper(%#x - %s)" % (xid, [hex(x.xid) for x in (self._listening or [])])
 
     def setup(self):
         self._setup_listening()
@@ -105,12 +108,12 @@ class PointerGrabHelper(gobject.GObject):
         log("grab: listening for: %s", [hex(x.xid) for x in self._listening])
 
     def do_xpra_unmap_event(self, event):
-        log("grab: unmap")
+        log("grab: unmap %s", event)
         #can windows be unmapped with a grab held?
         self.force_ungrab(event)
 
     def do_xpra_reparent_event(self, event):
-        log("grab: reparent")
+        log("grab: reparent %s", event)
         #maybe this isn't needed?
         self.force_ungrab(event)
         #setup new tree:
@@ -118,6 +121,7 @@ class PointerGrabHelper(gobject.GObject):
         self._setup_listening()
 
     def force_ungrab(self, event):
+        log("force ungrab (has_grab=%s) %s", self._has_grab, event)
         if self._has_grab:
             self._has_grab = False
             self.emit("ungrab", event)

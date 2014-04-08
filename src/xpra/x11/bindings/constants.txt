@@ -167,6 +167,8 @@ RevertToNone
 NotifyNormal
 NotifyGrab
 NotifyUngrab
+NotifyWhileGrabbed
+
 # Focus events: details
 NotifyAncestor
 NotifyVirtual
