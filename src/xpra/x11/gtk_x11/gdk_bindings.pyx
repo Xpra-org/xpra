@@ -866,7 +866,13 @@ cdef object _gw(display, Window xwin):
 # Really, just a python objects where we can stick random bags of attributes.
 class X11Event(object):
     def __repr__(self):
-        return "<X11Event %r>" % self.__dict__
+        d = {}
+        for k,v in self.__dict__.items():
+            if k.endswith("xid"):
+                d[k] = hex(v)
+            else:
+                d[k] = v
+        return "<X11Event %r>" % d
 
 
 cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
@@ -903,10 +909,12 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
             try:
                 if e.type != XKBNotify:
                     pyev.delivered_to = _gw(d, e.xany.window)
+                    pyev.delivered_to_xid = e.xany.window
 
                 if e.type == DamageNotify:
                     damage_e = <XDamageNotifyEvent*>e
                     pyev.window = _gw(d, e.xany.window)
+                    pyev.xid = e.xany.window
                     pyev.damage = damage_e.damage
                     pyev.x = damage_e.area.x
                     pyev.y = damage_e.area.y
@@ -914,8 +922,10 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.height = damage_e.area.height
                 elif e.type == MapRequest:
                     pyev.window = _gw(d, e.xmaprequest.window)
+                    pyev.xid = e.xmaprequest.window
                 elif e.type == ConfigureRequest:
                     pyev.window = _gw(d, e.xconfigurerequest.window)
+                    pyev.xid = e.xconfigurerequest.window
                     pyev.x = e.xconfigurerequest.x
                     pyev.y = e.xconfigurerequest.y
                     pyev.width = e.xconfigurerequest.width
@@ -935,10 +945,12 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.value_mask = e.xconfigurerequest.value_mask
                 elif e.type in (FocusIn, FocusOut):
                     pyev.window = _gw(d, e.xfocus.window)
+                    pyev.xid = e.xfocus.window
                     pyev.mode = e.xfocus.mode
                     pyev.detail = e.xfocus.detail
                 elif e.type == ClientMessage:
                     pyev.window = _gw(d, e.xany.window)
+                    pyev.xid = e.xany.window
                     if long(e.xclient.message_type) > (long(2) ** 32):
                         log.warn("Xlib claims that this ClientEvent's 32-bit "
                                  + "message_type is %s.  "
@@ -962,16 +974,21 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.data = tuple(pieces)
                 elif e.type == MapNotify:
                     pyev.window = _gw(d, e.xmap.window)
+                    pyev.xid = e.xmap.window
                     pyev.override_redirect = e.xmap.override_redirect
                 elif e.type == UnmapNotify:
                     pyev.window = _gw(d, e.xunmap.window)
+                    pyev.xid = e.xunmap.window
                 elif e.type == DestroyNotify:
                     pyev.window = _gw(d, e.xdestroywindow.window)
+                    pyev.xid = e.xdestroywindow.window
                 elif e.type == PropertyNotify:
                     pyev.window = _gw(d, e.xany.window)
+                    pyev.xid = e.xany.window
                     pyev.atom = trap.call_synced(get_pyatom, d, e.xproperty.atom)
                 elif e.type == ConfigureNotify:
                     pyev.window = _gw(d, e.xconfigure.window)
+                    pyev.xid = e.xconfigure.window
                     pyev.x = e.xconfigure.x
                     pyev.y = e.xconfigure.y
                     pyev.width = e.xconfigure.width
@@ -979,12 +996,15 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.border_width = e.xconfigure.border_width
                 elif e.type == ReparentNotify:
                     pyev.window = _gw(d, e.xreparent.window)
+                    pyev.xid = e.xreparent.window
                 elif e.type == KeyPress:
                     pyev.window = _gw(d, e.xany.window)
+                    pyev.xid = e.xany.window
                     pyev.hardware_keycode = e.xkey.keycode
                     pyev.state = e.xkey.state
                 elif e.type == CursorNotify:
                     pyev.window = _gw(d, e.xany.window)
+                    pyev.xid = e.xany.window
                     cursor_e = <XFixesCursorNotifyEvent*>e
                     pyev.cursor_serial = cursor_e.cursor_serial
                     pyev.cursor_name = trap.call_synced(get_pyatom, d, cursor_e.cursor_name)
@@ -1010,8 +1030,11 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     if bell_e.window!=0:
                         verbose("using bell_e.window=%s", bell_e.window)
                         pyev.window = _gw(d, bell_e.window)
+                        pyev.xid = bell_e.window
                     else:
-                        pyev.window = d.get_default_screen().get_root_window()
+                        rw = d.get_default_screen().get_root_window()
+                        pyev.window = rw
+                        pyev.xid = rw.xid
                         verbose("bell using root window=%s", pyev.window)
                     pyev.event_only = bool(bell_e.event_only)
                     pyev.delivered_to = pyev.window
