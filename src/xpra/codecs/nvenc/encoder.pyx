@@ -1519,7 +1519,7 @@ cdef class Encoder:
 
 
     cdef cuda_clean(self):
-        if self.context!=NULL:
+        if self.context!=NULL and self.frames>0:
             self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
             log("clean() unregistering CUDA output buffer input handle %#x", <unsigned long> self.inputHandle)
