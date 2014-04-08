@@ -92,8 +92,11 @@ class PointerGrabHelper(gobject.GObject):
         add_event_receiver(self._window, self, max_receivers=-1)
         self._listening = [self._window]
         #recurse parents:
+        from xpra.x11.gtk_x11.world_window import get_world_window
+        root = self._window.get_screen().get_root_window()
+        world = get_world_window().window
         win = get_parent(self._window)
-        while win is not None and win.get_parent() is not None:
+        while win not in (None, root, world) and win.get_parent() is not None:
             # We have to use a lowlevel function to manipulate the
             # event selection here, because SubstructureRedirectMask
             # does not roundtrip through the GDK event mask

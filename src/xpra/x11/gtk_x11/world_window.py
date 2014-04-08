@@ -83,9 +83,16 @@ CurrentTime = constants["CurrentTime"]
 def root_set(*args):
     prop_set(gtk.gdk.get_default_root_window(), *args)
 
+world_window = None
+def get_world_window():
+    global world_window
+    return world_window
 
 class WorldWindow(gtk.Window):
     def __init__(self):
+        global world_window
+        assert world_window is None
+        world_window = self
         super(WorldWindow, self).__init__()
         self.set_title("Xpra-WorldWindow")
 
