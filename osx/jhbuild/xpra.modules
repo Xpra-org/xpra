@@ -24,6 +24,8 @@
   <repository type="tarball" name="www.eu.apache.org" href="http://www.eu.apache.org"/>
   <repository type="tarball" name="serf.googlecode.com" href="http://serf.googlecode.com"/>
   <repository type="tarball" name="sqlite.org" href="http://sqlite.org"/>
+  <repository type="tarball" name="sourceforge.net" href="http://softlayer-dal.dl.sourceforge.net"/>
+  <repository type="tarball" name="osgeo.org" href="http://download.osgeo.org"/>
 
   <autotools id="curl" autogenargs="" autogen-sh="configure">
     <branch module="/download/curl-7.35.0.tar.gz"
@@ -197,91 +199,91 @@
   </autotools>
 
   <distutils id="setuptools">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/s/setuptools/setuptools-3.1.tar.gz"
 	     version="3.1"/>
   </distutils>
 
   <distutils id="python-netifaces">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/n/netifaces/netifaces-0.8.tar.gz"
 	     version="0.8"/>
   </distutils>
 
   <distutils id="python-pam">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/p/pam/pam-0.1.4.tar.gz"
 	     version="0.1.4"/>
   </distutils>
 
   <distutils id="python-pycrypto">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/p/pycrypto/pycrypto-2.6.1.tar.gz"
 	     version="2.6.1"/>
   </distutils>
 
   <distutils id="python-pyasn1">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/p/pyasn1/pyasn1-0.1.7.tar.gz"
 	     version="0.1.7"/>
   </distutils>
 
   <distutils id="python-pillow">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/P/Pillow/Pillow-2.3.1.zip"
 	     version="2.3.1"/>
   </distutils>
 
   <distutils id="python-py2app">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/p/py2app/py2app-0.8.tar.gz"
 	     version="0.8"/>
   </distutils>
 
   <distutils id="python-cython">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/C/Cython/Cython-0.20.1.tar.gz"
 	     version="0.20.1"/>
   </distutils>
 
   <distutils id="python-numpy">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/n/numpy/numpy-1.8.0.tar.gz"
 	     version="1.8.0"/>
   </distutils>
 
   <distutils id="python-lz4">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/l/lz4/lz4-0.6.1.tar.gz"
 	     version="0.6.1"/>
   </distutils>
 
   <distutils id="python-pyopengl">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.0.2b2.tar.gz"
 	     version="3.0.2b2"/>
   </distutils>
 
   <distutils id="python-pyopengl-accelerate">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.0.2b2.tar.gz"
 	     version="3.0.2b2"/>
   </distutils>
 
   <distutils id="python-pyobjc-core">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/p/pyobjc-core/pyobjc-core-2.5.1.tar.gz"
 	     version="2.5.1"/>
   </distutils>
 
   <distutils id="python-pyobjc-framework-cocoa">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/p/pyobjc-framework-Cocoa/pyobjc-framework-Cocoa-2.5.1.tar.gz"
 	     version="2.5.1"/>
   </distutils>
 
   <distutils id="python-pyobjc-framework-quartz">
-     <branch repo="pypi.douban.com"
+     <branch repo="pypi.python.org"
 	     module="/packages/source/p/pyobjc-framework-Quartz/pyobjc-framework-Quartz-2.5.1.tar.gz"
 	     version="2.5.1"/>
   </distutils>
@@ -320,6 +322,27 @@
     <branch module="/dist/subversion/subversion-1.8.8.tar.bz2"
 			version="1.8.8"
             repo="www.eu.apache.org"/>
+  </autotools>
+
+  <autotools id="libjpeg-turbo" autogen-sh="configure">
+    <branch module="/project/libjpeg-turbo/1.3.1/libjpeg-turbo-1.3.1.tar.gz"
+                        version="1.3.1" repo="sourceforge.net">
+    </branch>
+    <dependencies>
+      <dep package="nasm"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="libpng" autogen-sh="configure">
+    <branch module="/project/libpng/libpng16/1.6.10/libpng-1.6.10.tar.gz"
+                        version="1.6.10" repo="sourceforge.net">
+    </branch>
+  </autotools>
+
+  <autotools id="libtiff" autogen-sh="configure">
+    <branch module="/libtiff/tiff-4.0.3.tar.gz"
+                        version="4.0.3" repo="osgeo.org">
+    </branch>
   </autotools>
 
   <metamodule id="meta-osx-xpra-deps">
@@ -383,5 +406,10 @@
     </suggests>
   </metamodule>  
 
-</moduleset>
+  <metamodule id="meta-osx-image-libs">
+      <dep package="libjpeg-turbo"/>
+      <dep package="libtiff"/>
+      <dep package="libpng"/>
+  </metamodule>
 
+</moduleset>
