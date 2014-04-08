@@ -27,9 +27,11 @@ from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.client.window_border import WindowBorder
 from xpra.log import Logger
+
 log = Logger("gtk", "client")
 cursorlog = Logger("gtk", "client", "cursor")
 clipboardlog = Logger("gtk", "client", "clipboard")
+grablog = Logger("gtk", "client", "grab")
 
 from xpra.client.gtk2.border_client_window import BorderClientWindow
 from xpra.client.gtk2.client_window import ClientWindow
@@ -425,7 +427,7 @@ class XpraClient(GTKXpraClient):
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if window:
-            log("grabbing %s", window)
+            grablog("grabbing %s", window)
             mask = gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK | gtk.gdk.POINTER_MOTION_MASK  | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.ENTER_NOTIFY_MASK | gtk.gdk.LEAVE_NOTIFY_MASK
             gtk.gdk.pointer_grab(window.gdk_window(), owner_events=True, event_mask=mask)
             #also grab the keyboard so the user won't Alt-Tab away:
@@ -435,7 +437,7 @@ class XpraClient(GTKXpraClient):
     def _process_pointer_ungrab(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)
-        log("ungrabbing %s", window)
+        grablog("ungrabbing %s", window)
         gtk.gdk.pointer_ungrab()
         gtk.gdk.keyboard_ungrab()
         self.window_with_grab = None
