@@ -34,7 +34,8 @@ class DotXpra(object):
             os.mkdir(self._confdir, o0700)
         if not os.path.exists(self._sockdir):
             os.mkdir(self._sockdir, o0700)
-        self._prefix = "%s-" % (socket.gethostname(),)
+        hostname = os.environ.get("XPRA_SOCKET_HOSTNAME", socket.gethostname())
+        self._prefix = "%s-" % (hostname,)
 
     def sockdir(self):
         return self._sockdir
