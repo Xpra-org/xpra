@@ -1401,6 +1401,7 @@ class ServerBase(ServerCore):
                 keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
                 self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
                 self.keys_timedout[keycode] = now
+                del self.keys_repeat_timers[keycode]
             now = time.time()
             self.keys_repeat_timers[keycode] = self.timeout_add(delay_ms, _key_repeat_timeout, now)
 
