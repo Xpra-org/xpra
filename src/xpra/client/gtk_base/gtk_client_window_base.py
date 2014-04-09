@@ -66,6 +66,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._iconified = False
         self._resize_counter = 0
         self._window_workspace = self._client_properties.get("workspace")
+        workspacelog("init_window(..) workspace=%s", self._window_workspace)
         self._desktop_workspace = -1
         ClientWindowBase.init_window(self, metadata)
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
@@ -204,11 +205,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._desktop_workspace = desktop_workspace
 
 
+    def get_workspace_count(self):
+        if not HAS_X11_BINDINGS:
+            return 1
+        return self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
+
     def set_workspace(self):
-        if not HAS_X11_BINDINGS or not self._been_mapped:
+        if not HAS_X11_BINDINGS:
             return -1
         root = self.gdk_window().get_screen().get_root_window()
-        ndesktops = self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
+        ndesktops = self.get_workspace_count()
         workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, self._window_workspace, ndesktops)
         if ndesktops is None or ndesktops<=1:
             return  -1
@@ -318,6 +324,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         props = self._client_properties
         self._client_properties = {}
         if not self._been_mapped:
+            #this is the first time around, so set the workspace:
             workspace = self.set_workspace()
         else:
             #window has been mapped, so these attributes can be read (if present):
@@ -326,7 +333,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if workspace<0:
                 workspace = self.get_desktop_workspace()
         if self._window_workspace!=workspace:
-            workspacelog("map event: changed workspace from %s to %s", self._window_workspace, workspace)
+            workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, self._window_workspace, workspace)
             self._window_workspace = workspace
             props["workspace"] = workspace
         log("map-window for wid=%s with client props=%s", self._id, props)

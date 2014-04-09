@@ -86,7 +86,9 @@ class GTK2WindowBase(GTKClientWindowBase):
         if not self._override_redirect:
             display = gtk.gdk.display_get_default()
             screen_num = self._client_properties.get("screen", -1)
-            if screen_num>=0 and screen_num<display.get_n_screens():
+            n = display.get_n_screens()
+            log("setup_window() screen=%s, nscreens=%s", screen_num, n)
+            if screen_num>=0 and screen_num<n:
                 screen = display.get_screen(screen_num)
                 if screen:
                     self.set_screen(screen)
