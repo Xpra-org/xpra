@@ -12,6 +12,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
             get_parent)  #@UnresolvedImport
 from xpra.x11.gtk_x11.error import trap
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.gtk_x11.world_window import get_world_window
 X11Window = X11WindowBindings()
 
 from xpra.log import Logger
@@ -92,7 +93,6 @@ class PointerGrabHelper(gobject.GObject):
         add_event_receiver(self._window, self, max_receivers=-1)
         self._listening = [self._window]
         #recurse parents:
-        from xpra.x11.gtk_x11.world_window import get_world_window
         root = self._window.get_screen().get_root_window()
         world = get_world_window().window
         win = get_parent(self._window)
