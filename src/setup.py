@@ -309,7 +309,7 @@ def cython_version_check(min_version):
                  "Please upgrade to Cython %s or better"
                  % (cython_version, ".".join([str(part) for part in min_version])))
 
-def cython_add(extension, min_version=(0, 14, 0)):
+def cython_add(extension, min_version=(0, 19, 0)):
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
     #python2.7 setup.py build -b build-2.7 install --no-compile --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
@@ -1238,28 +1238,28 @@ if nvenc_ENABLED:
         libraries.remove("nvidia-encode")
     cython_add(Extension("xpra.codecs.nvenc.encoder",
                          ["xpra/codecs/nvenc/encoder.pyx"],
-                         **nvenc_pkgconfig), min_version=(0, 16))
+                         **nvenc_pkgconfig))
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
     x264_pkgconfig = pkgconfig("x264", static=x264_static_ENABLED)
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx"],
-                **x264_pkgconfig), min_version=(0, 16))
+                **x264_pkgconfig))
 
 toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
 if enc_x265_ENABLED:
     x265_pkgconfig = pkgconfig("x265", static=x265_static_ENABLED)
     cython_add(Extension("xpra.codecs.enc_x265.encoder",
                 ["xpra/codecs/enc_x265/encoder.pyx"],
-                **x265_pkgconfig), min_version=(0, 16))
+                **x265_pkgconfig))
 
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:
     webp_pkgconfig = pkgconfig("webp")
     cython_add(Extension("xpra.codecs.webp.encode",
                 ["xpra/codecs/webp/encode.pyx"],
-                **webp_pkgconfig), min_version=(0, 16))
+                **webp_pkgconfig))
 
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:
@@ -1267,14 +1267,14 @@ if dec_avcodec_ENABLED:
     avcodec_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
-                **avcodec_pkgconfig), min_version=(0, 19))
+                **avcodec_pkgconfig))
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec2_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
-                **avcodec2_pkgconfig), min_version=(0, 19))
+                **avcodec2_pkgconfig))
 
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
@@ -1283,24 +1283,24 @@ if csc_swscale_ENABLED:
     swscale_pkgconfig = pkgconfig("swscale", static=swscale_static_ENABLED)
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
-                **swscale_pkgconfig), min_version=(0, 19))
+                **swscale_pkgconfig))
 
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 if csc_cython_ENABLED:
     csc_cython_pkgconfig = pkgconfig()
     cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
                 ["xpra/codecs/csc_cython/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c"],
-                **csc_cython_pkgconfig), min_version=(0, 15))
+                **csc_cython_pkgconfig))
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     vpx_pkgconfig = pkgconfig("vpx", static=vpx_static_ENABLED)
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c", "xpra/codecs/memalign/memalign.c"],
-                **vpx_pkgconfig), min_version=(0, 16))
+                **vpx_pkgconfig))
     cython_add(Extension("xpra.codecs.vpx.decoder",
                 ["xpra/codecs/vpx/decoder.pyx", "xpra/codecs/memalign/memalign.c"],
-                **vpx_pkgconfig), min_version=(0, 16))
+                **vpx_pkgconfig))
 
 
 toggle_packages(rencode_ENABLED, "xpra.net.rencode")
