@@ -858,6 +858,7 @@ if WIN32:
             add_to_PATH(webp_bin_dir)
             add_to_keywords(kw, 'include_dirs', webp_include_dir)
             add_to_keywords(kw, 'libraries', *webp_lib_names)
+            add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % webp_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(webp_include_dir, webp_lib_dir, webp_bin_dir)
