@@ -28,6 +28,9 @@ Equipment Corporation.
 #include <stdio.h>
 #include <sys/stat.h>
 
+//FIXME: we should use the Display specified in the method call
+//rather than relying on the DISPLAY environment variable.
+
 //#define DEBUG
 
 static time_t mtime = 0;
@@ -87,10 +90,11 @@ static void initFakeXinerama()
 		sprintf(buf, "%s/.%s-fakexinerama", home, display);
 		if (stat(buf, &sb) == 0) {
 			//the file was found
-			if (sb.st_mtime<=mtime)
+			if (sb.st_mtime<=mtime) {
 				//unchanged or older than what we have loaded already
 				//don't test for the generic file below, this one takes precedence
 				return;
+			}
 			f = fopen(buf, "r");
 #ifdef DEBUG
 			fprintf(stderr, "fakexinerama: new(er) file found: %s\n", buf);
@@ -129,7 +133,7 @@ static void initFakeXinerama()
 	{
 		skipComments(f);
 		if (fscanf(f, "%d %d %d %d\n", &screen_info[i].x_org, &screen_info[i].y_org,
-			&screen_info[ i ].width, &screen_info[i].height) != 4)
+			&screen_info[i].width, &screen_info[i].height) != 4)
 		{
 			num_screens = 0;
 			fclose(f);
