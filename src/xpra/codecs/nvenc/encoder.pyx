@@ -1409,7 +1409,7 @@ cdef class Encoder:
                 free(presetConfig)
 
     def get_info(self):                     #@DuplicatedSignature
-        cdef float pps
+        cdef double pps
         info = {"width"     : self.width,
                 "height"    : self.height,
                 "frames"    : self.frames,
