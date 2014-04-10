@@ -65,7 +65,9 @@ class X11ServerBase(GTKServerBase):
     def init(self, clobber, opts):
         self.clobber = clobber
         self.fake_xinerama = opts.fake_xinerama
+        self.fake_xscreenmm = opts.fake_xscreenmm
         self.current_xinerama_config = None
+        self.current_xscreenmm_config = None
         self.x11_init()
         GTKServerBase.init(self, opts)
 
@@ -157,12 +159,16 @@ class X11ServerBase(GTKServerBase):
         except:
             pass
         try:
-            from xpra.scripts.server import find_fakeXinerama
+            from xpra.scripts.server import find_fakeXinerama, find_fakeXscreenmm
             fx = find_fakeXinerama()
+            fs = find_fakeXscreenmm()
         except:
             fx = None
+            fs = None
         info["server.fakeXinerama"] = self.fake_xinerama and bool(fx)
         info["server.libfakeXinerama"] = fx or ""
+        info["server.fakeXscreenmm"] = self.fake_xscreenmm and bool(fs)
+        info["server.libfakeXscreenmm"] = fs or ""
         return info
 
     def get_window_info(self, window):
@@ -245,7 +251,7 @@ class X11ServerBase(GTKServerBase):
 
     def set_screen_size(self, desired_w, desired_h):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
-        if desired_w==root_w and desired_h==root_h and not self.fake_xinerama:
+        if desired_w==root_w and desired_h==root_h and not self.fake_xinerama and not self.fake_xscreenmm:
             return    root_w,root_h    #unlikely: perfect match already!
         #try to find the best screen size to resize to:
         new_size = None
@@ -263,15 +269,16 @@ class X11ServerBase(GTKServerBase):
         log("best resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
         #now actually apply the new settings:
         w, h = new_size
+        xscreenmm_changed = self.save_fakexscreenmm_config()
         xinerama_changed = self.save_fakexinerama_config()
-        #we can only keep things unchanged if xinerama was also unchanged
-        #(many apps will only query xinerama again if they get a randr notification)
-        if (w==root_w and h==root_h) and not xinerama_changed:
+        #we can only keep things unchanged if xinerama and dpi were also unchanged
+        #(many apps will only query settings again if they get a randr notification)
+        if (w==root_w and h==root_h) and not xinerama_changed and not xscreenmm_changed:
             log.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
             return  root_w, root_h
         try:
-            if (w==root_w and h==root_h) and xinerama_changed:
-                #xinerama was changed, but the RandR resolution will not be...
+            if (w==root_w and h==root_h) and (xinerama_changed or xscreenmm_changed):
+                #xscreenmm or xinerama were changed, but the RandR resolution will not be...
                 #and we need a RandR change to force applications to re-query it
                 #so we temporarily switch to another resolution to force
                 #the change! (ugly! but this works)
@@ -377,6 +384,73 @@ class X11ServerBase(GTKServerBase):
         log("saved %s monitors to fake xinerama files: %s", len(monitors), xinerama_files)
         oldconf = self.current_xinerama_config
         self.current_xinerama_config = config
+        return oldconf!=config
+
+    def save_fakexscreenmm_config(self):
+        """ returns True if the fakexscreenmm config was modified """
+        xscreenmm_file = os.path.expanduser("~/.%s-fakexscreenmm" % os.environ.get("DISPLAY"))
+        def delfile(msg):
+            if msg:
+                log.warn(msg)
+            if os.path.exists(xscreenmm_file) and os.path.isfile(xscreenmm_file):
+                try:
+                    os.unlink(xscreenmm_file)
+                except Exception, e:
+                    log.warn("failed to delete fake xinerama file %s: %s", xscreenmm_file, e)
+            oldconf = self.current_xscreenmm_config
+            self.current_xscreenmm_config = None
+            return oldconf is not None
+        if not self.fake_xscreenmm:
+            return delfile(None)
+        if len(self._server_sources)!=1:
+            return delfile("fakeXdpi can only be enabled for a single client")
+        source = self._server_sources.values()[0]
+        ss = source.screen_sizes
+        if len(ss)==0:
+            return delfile("cannot save fake dpi settings: no display found")
+        if len(ss)>1:
+            return delfile("cannot save fake dpi settings: more than one display found")
+        if len(ss)==2 and type(ss[0])==int and type(ss[1])==int:
+            #just WxH, not enough display information
+            return delfile("cannot save fake dpi settings: missing display data from client %s" % source)
+        display_info = ss[0]
+        if len(display_info)<10:
+            return delfile("cannot save fake dpi settings: incomplete display data from client %s" % source)
+        #display_name, width, height, width_mm, height_mm, \
+        #monitors, work_x, work_y, work_width, work_height = s[:11]
+        monitors = display_info[5]
+        if len(monitors)>=10:
+            return delfile("cannot save fake dpi settings: too many monitors! (%s)" % len(monitors))
+        #generate the file data:
+        data = ["# %s monitors:" % len(monitors),
+                "%s" % len(monitors)]
+        #the new config (numeric values only)
+        config = [len(monitors)]
+        i = 0
+        for m in monitors:
+            if len(m)<7:
+                return delfile("cannot save fake dpi settings: incomplete monitor data for monitor: %s" % m)
+            plug_name, x, y, width, height, wmm, hmm = m[:8]
+            data.append("# %s (%s x %s at %s x %s)" % (prettify_plug_name(plug_name, "monitor %s" % i), width, height, x, y))
+            data.append("%s %s" % (wmm, hmm))
+            config.append((x, y, width, height))
+            i += 1
+        data.append("")
+        contents = "\n".join(data)
+        try:
+            f = None
+            try:
+                f = open(xscreenmm_file, 'wb')
+                f.write(contents)
+            except Exception, e:
+                log.warn("error writing fake dpi file %s: %s", xscreenmm_file, e)
+                pass
+        finally:
+            if f:
+                f.close()
+        log("saved %s monitors to fake dpi file: %s", len(monitors), xscreenmm_file)
+        oldconf = self.current_xscreenmm_config
+        self.current_xscreenmm_config = config
         return oldconf!=config
 
 

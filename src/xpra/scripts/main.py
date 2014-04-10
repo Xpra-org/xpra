@@ -166,10 +166,19 @@ def parse_cmdline(cmdline):
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
                           help="Disable fake xinerama support (default: %s)" % enabled_str(defaults.fake_xinerama))
+        group.add_option("--fake-xscreenmm", action="store_true",
+                          dest="fake_xscreenmm",
+                          default=defaults.fake_xscreenmm,
+                          help="Enable fake xscreenmm support (default: %s)" % enabled_str(defaults.fake_xscreenmm))
+        group.add_option("--no-fake-xscreenmm", action="store_false",
+                          dest="fake_xscreenmm",
+                          default=defaults.fake_xscreenmm,
+                          help="Disable fake xscreenmm support (default: %s)" % enabled_str(defaults.fake_xscreenmm))
     else:
         hidden_options["use_display"] = False
         hidden_options["xvfb"] = ''
         hidden_options["fake_xinerama"] = False
+        hidden_options["fake_xscreenmm"] = False
     if supports_server or supports_shadow:
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=defaults.bind_tcp,

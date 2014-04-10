@@ -538,8 +538,7 @@ def verify_display_ready(xvfb, display_name, shadowing):
         return  None
     return display
 
-def find_fakeXinerama():
-    #locate the fakeXinerama lib:
+def find_lib(libname):
     #it would be better to rely on dlopen to find the paths
     #but I cannot find a way of getting ctypes to tell us the path
     #it found the library in
@@ -549,12 +548,19 @@ def find_fakeXinerama():
     for libpath in libpaths:
         if not libpath or not os.path.exists(libpath):
             continue
-        libfakeXinerama_so = "%s/%s" % (libpath, "libfakeXinerama.so.1")
-        if os.path.exists(libfakeXinerama_so):
-            return libfakeXinerama_so
+        libname_so = os.path.join(libpath, libname)
+        if os.path.exists(libname_so):
+            return libname_so
     return None
 
-def start_children(child_reaper, commands, fake_xinerama):
+def find_fakeXscreenmm():
+    return find_lib("libfakeXscreenmm.so.1")
+
+def find_fakeXinerama():
+    return find_lib("libfakeXinerama.so.1")
+
+
+def start_children(child_reaper, commands, fake_xinerama, fake_xscreenmm):
     assert os.name=="posix"
     from xpra.log import Logger
     log = Logger("server")
@@ -564,6 +570,10 @@ def start_children(child_reaper, commands, fake_xinerama):
         libfakeXinerama_so = find_fakeXinerama()
         if libfakeXinerama_so:
             env["LD_PRELOAD"] = libfakeXinerama_so
+    if fake_xscreenmm:
+        libfakeXscreenmm_so = find_fakeXscreenmm()
+        if libfakeXscreenmm_so:
+            env["LD_PRELOAD"] = libfakeXscreenmm_so
     #disable ubuntu's global menu using env vars:
     env.update({
         "UBUNTU_MENUPROXY"          : "",
@@ -785,7 +795,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             assert opts.start_child, "exit-with-children was specified but start-child is missing!"
         if opts.start_child:
             assert os.name=="posix", "start-child cannot be used on %s" % os.name
-            start_children(child_reaper, opts.start_child, (opts.fake_xinerama and not shadowing))
+            start_children(child_reaper, opts.start_child, (opts.fake_xinerama and not shadowing), (opts.fake_xscreenmm and not shadowing))
 
     try:
         e = app.run()
