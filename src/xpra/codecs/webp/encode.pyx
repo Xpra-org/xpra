@@ -280,12 +280,12 @@ def webp_check(int ret):
     err = ERROR_TO_NAME.get(ret, ret)
     raise Exception("error: %s" % err)
 
-cdef int clamp100(int v):
+cdef float fclamp(int v):
     if v<0:
-        return 0
-    if v>100:
-        return 100
-    return v
+        v = 0
+    elif v>100:
+        v = 100
+    return <float> v
 
 def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=False):
     cdef uint8_t *pic_buf
@@ -300,16 +300,16 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     PyObject_AsReadBuffer(pixels, <const void**> &pic_buf, &pic_buf_len)
     log("webp.compress(%s bytes, %s, %s, %s, %s, %s, %s) buf=%#x", len(pixels), width, height, stride, quality, speed, has_alpha, <unsigned long> pic_buf)
 
-    ret = WebPConfigPreset(&config, preset, clamp100(quality))
+    ret = WebPConfigPreset(&config, preset, fclamp(quality))
     if not ret:
         raise Exception("failed to initialise webp config")
 
     #tune it:
     config.lossless = quality>=100
     if config.lossless:
-        config.quality = clamp100(100-speed)
+        config.quality = fclamp(100-speed)
     else:
-        config.quality = clamp100(quality)
+        config.quality = fclamp(quality)
     config.method = max(0, min(6, 6-speed/16))
     config.alpha_compression = int(has_alpha)
     config.alpha_filtering = max(0, min(2, speed/50)) * int(has_alpha)
