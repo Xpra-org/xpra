@@ -11,7 +11,8 @@ log = Logger("codec", "loader")
 codec_errors = {}
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, *classnames):
-    log("codec_import_check%s", (name, description, top_module, class_module, classnames))
+    log("%s:", name)
+    log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
     try:
         try:
             __import__(top_module, {}, {}, [])
@@ -29,7 +30,7 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
             log(" xpra was probably built with the option: --without-%s", name)
     except Exception, e:
         codec_errors[name] = e
-        log.warn("cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
+        log.warn(" cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
     return None
 codec_versions = {}
 def add_codec_version(name, top_module, version="get_version()", alt_version=None):
@@ -49,12 +50,12 @@ def add_codec_version(name, top_module, version="get_version()", alt_version=Non
             #optional info:
             if hasattr(module, "get_info"):
                 info = getattr(module, "get_info")
-                log("info(%s)=%s", top_module, info())
+                log(" %s info(%s)=%s", name, top_module, info())
             return v
-        log.warn("cannot find %s in %s", " or ".join(fieldnames), module)
+        log.warn(" cannot find %s in %s", " or ".join(fieldnames), module)
     except ImportError, e:
         #not present
-        log("cannot import %s: %s", name, e)
+        log(" cannot import %s: %s", name, e)
     except Exception, e:
         log.warn("error during codec import: %s", e)
     return None
