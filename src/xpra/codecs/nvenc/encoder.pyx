@@ -739,7 +739,7 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved1[259]      #[in]: Reserved and must be set to 0
         void*       reserved2[63]       #[in]: Reserved and must be set to NULL
 
-    NVENCSTATUS NvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList)
+    #NVENCSTATUS NvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList)
 
     ctypedef NVENCSTATUS (*PNVENCOPENENCODESESSION)         (void* device, uint32_t deviceType, void** encoder)
     ctypedef NVENCSTATUS (*PNVENCGETENCODEGUIDCOUNT)        (void* encoder, uint32_t* encodeGUIDCount)
@@ -879,6 +879,30 @@ CODEC_PROFILES = {
                   #NV_ENC_H264_PROFILE_STEREO_GUID
                   "stereo"      : 128,
                   }
+
+NvEncodeAPICreateInstance = None
+
+def init_nvencode_library():
+    global NvEncodeAPICreateInstance
+    import ctypes
+    from ctypes import cdll as loader
+    IF NV_WINDOWS:
+        libname = "nvencodeapi.dll"
+    ELSE:
+        #assert os.name=="posix"
+        libname = "libnvidia-encode.so"
+    log("init_nvencode_library() will try to load %s", libname)
+    try:
+        x = ctypes.cdll.LoadLibrary(libname)
+        log("init_nvencode_library() %s=%s", libname, x)
+    except:
+        raise Exception("nvenc: the required library %s cannot be loaded: %s" % (libname, e))
+    NvEncodeAPICreateInstance = x.NvEncodeAPICreateInstance
+    NvEncodeAPICreateInstance.restype = ctypes.c_int
+    NvEncodeAPICreateInstance.argtypes = [ctypes.c_void_p]
+    log("init_nvencode_library() NvEncodeAPICreateInstance=%s", NvEncodeAPICreateInstance)
+    #NVENCSTATUS NvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList)
+
 
 cdef guidstr(GUID guid):
     #really ugly! (surely there's a way using struct.unpack ?)
@@ -1400,7 +1424,10 @@ cdef class Encoder:
             createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
             #this is the uncompressed size - must be big enough for the compressed stream:
             createBitstreamBufferParams.size = self.encoder_width*self.encoder_height*3/2
-            createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED
+            IF NV_WINDOWS:
+                createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
+            ELSE:
+                createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED
             raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
             log("output bitstream buffer=%#x", <unsigned long> self.bitstreamBuffer)
@@ -1957,7 +1984,7 @@ cdef class Encoder:
         #get NVENC function pointers:
         memset(&self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
         self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
-        raiseNVENC(NvEncodeAPICreateInstance(&self.functionList), "getting API function list")
+        raiseNVENC(NvEncodeAPICreateInstance(<unsigned long> &self.functionList), "getting API function list")
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
         #get the CUDA context (C pointer):
@@ -1990,6 +2017,9 @@ def init_module():
     log("nvenc.init_module()")
     if NVENCAPI_VERSION<=0x20:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
+
+    #load the library / DLL:
+    init_nvencode_library()
 
     #check NVENC availibility by creating a context:
     colorspaces = get_input_colorspaces()

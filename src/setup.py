@@ -79,7 +79,7 @@ csc_swscale_ENABLED     = WIN32 or pkg_config_ok("--exists", "libswscale")
 swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
 webm_ENABLED            = True
-nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")
+nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3") or os.path.exists("C:\\nvenc_3.0_windows_sdk")
 csc_nvcuda_ENABLED      = pkg_config_ok("--exists", "cuda")
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL")
 buffers_ENABLED         = True
@@ -355,7 +355,7 @@ def get_gcc_version():
                     break
     return GCC_VERSION
 
-def make_constants_pxi(constants_path, pxi_path):
+def make_constants_pxi(constants_path, pxi_path, **kwargs):
     constants = []
     for line in open(constants_path):
         data = line.split("#", 1)[0].strip()
@@ -393,7 +393,13 @@ def make_constants_pxi(constants_path, pxi_path):
         out.write('    "%s": %s,\n' % (pyname, pyname))
     out.write("}\n")
 
-def make_constants(*paths):
+    if kwargs:
+        out.write("\n\n")
+        for k, v in kwargs.items():
+            out.write('DEF %s = %s\n' % (k, v))
+
+
+def make_constants(*paths, **kwargs):
     base = os.path.join(os.getcwd(), *paths)
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
@@ -407,7 +413,7 @@ def make_constants(*paths):
     if reason:
         if verbose_ENABLED:
             print("(re)generating %s (%s):" % (pxi_file, reason))
-        make_constants_pxi(constants_file, pxi_file)
+        make_constants_pxi(constants_file, pxi_file, **kwargs)
 
 
 def static_link_args(*libnames):
@@ -677,6 +683,9 @@ def glob_recurse(srcdir):
 
 #*******************************************************************************
 if WIN32:
+    import py2exe    #@UnresolvedImport
+    assert py2exe is not None
+
     # The Microsoft C library DLLs:
     # Unfortunately, these files cannot be re-distributed legally :(
     # So here is the md5sum so you can find the right version:
@@ -717,11 +726,6 @@ if WIN32:
     #first some header crap so codecs can find the inttypes.h
     #and stdint.h:
     win32_include_dir = os.path.join(os.getcwd(), "win32")
-
-    #cuda:
-    cuda_path = "C:\\NVIDIA\CUDA\CUDAToolkit"
-    cuda_include_dir   = os.path.join(cuda_path, "include")
-    cuda_bin_dir       = os.path.join(cuda_path, "bin")
 
     #ffmpeg is needed for both swscale and x264:
     libffmpeg_path = None
@@ -775,6 +779,22 @@ if WIN32:
     webp_bin_dir        = webp_path+"\\bin"
     webp_lib_names      = ["libwebp"]
 
+    #cuda:
+    cuda_path = "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v5.5"
+    cuda_include_dir    = os.path.join(cuda_path, "include")
+    cuda_lib_dir        = os.path.join(cuda_path, "lib", "Win32")
+    cuda_bin_dir        = os.path.join(cuda_path, "bin")
+
+    #nvenc:
+    nvenc_path = "C:\\nvenc_3.0_windows_sdk"
+    nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
+    nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
+    #let's not use crazy paths, just copy the dll somewhere that makes sense:
+    nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
+    #nvenc_lib_names = ["cudart", "cuda"]
+    nvenc_lib_names         = ["cuda"]
+    #d3dx9_include_dir = "C:\\"
+
     # Same for PyGTK:
     # http://www.pygtk.org/downloads.html
     gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
@@ -809,11 +829,12 @@ if WIN32:
         if len(pkgs_options)==0:
             return kw
 
-        def add_to_PATH(bindir):
-            if os.environ['PATH'].find(bindir)<0:
-                os.environ['PATH'] = bindir + ';' + os.environ['PATH']
-            if bindir not in sys.path:
-                sys.path.append(bindir)
+        def add_to_PATH(*bindirs):
+            for bindir in bindirs:
+                if os.environ['PATH'].find(bindir)<0:
+                    os.environ['PATH'] = bindir + ';' + os.environ['PATH']
+                if bindir not in sys.path:
+                    sys.path.append(bindir)
         if "avcodec" in pkgs_options[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', libffmpeg_include_dir)
@@ -862,6 +883,18 @@ if WIN32:
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % webp_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(webp_include_dir, webp_lib_dir, webp_bin_dir)
+        elif "nvenc3" in pkgs_options[0]:
+            add_to_PATH(nvenc_bin_dir, cuda_bin_dir)
+            add_to_keywords(kw, 'include_dirs', nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir)
+            add_to_keywords(kw, 'libraries', *nvenc_lib_names)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % cuda_lib_dir)
+            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
+            checkdirs(nvenc_bin_dir, nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir)
+            data_files.append(('.', ["%s/nvcc.exe" % cuda_bin_dir, "%s/nvlink.exe" % cuda_bin_dir]))
+            #prevent py2exe "seems not to be an exe file" error on this DLL and include it ourselves instead:
+            py2exe.build_exe.EXCLUDED_DLLS = tuple(list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"])
+            data_files.append(('.', ["%s/nvcuda.dll" % cuda_bin_dir] + glob.glob("%s\\cudart*.dll" % cuda_bin_dir)))
+            data_files.append(('.', ["%s/nvencodeapi.dll" % nvenc_bin_dir]))
         elif "pygobject-2.0" in pkgs_options[0]:
             dirs = (python_include_path,
                     pygtk_include_dir, atk_include_dir, gtk2_include_dir,
@@ -870,10 +903,6 @@ if WIN32:
                     cairo_include_dir, pango_include_dir)
             add_to_keywords(kw, 'include_dirs', *dirs)
             checkdirs(*dirs)
-        elif "cuda" in pkgs_options[0]:
-            add_to_keywords(kw, 'include_dirs', cuda_include_dir)
-            checkdirs(cuda_include_dir)
-            data_files.append(('.', glob.glob("%s/*32*.dll" % cuda_bin_dir)))
         else:
             sys.exit("ERROR: unknown package config: %s" % str(pkgs_options))
         if debug_ENABLED:
@@ -886,9 +915,6 @@ if WIN32:
             kw['cython_gdb'] = True
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
         return kw
-
-    import py2exe    #@UnresolvedImport
-    assert py2exe is not None
 
     #with py2exe, we don't use py_modules, we use "packages"... sigh
     #(and it is a little bit different too - see below)
@@ -1204,8 +1230,12 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 if nvenc_ENABLED:
-    make_constants("xpra", "codecs", "nvenc", "constants")
+    make_constants("xpra", "codecs", "nvenc", "constants", NV_WINDOWS=int(sys.platform.startswith("win")))
     nvenc_pkgconfig = pkgconfig("nvenc3", "cuda")
+    #don't link against libnvidia-encode, we load it dynamically:
+    libraries = nvenc_pkgconfig.get("libraries", [])
+    if "nvidia-encode" in libraries:
+        libraries.remove("nvidia-encode")
     cython_add(Extension("xpra.codecs.nvenc.encoder",
                          ["xpra/codecs/nvenc/encoder.pyx"],
                          **nvenc_pkgconfig), min_version=(0, 16))
