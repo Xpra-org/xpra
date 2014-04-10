@@ -1400,7 +1400,7 @@ cdef class Encoder:
             createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
             #this is the uncompressed size - must be big enough for the compressed stream:
             createBitstreamBufferParams.size = self.encoder_width*self.encoder_height*3/2
-            createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
+            createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED
             raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
             log("output bitstream buffer=%#x", <unsigned long> self.bitstreamBuffer)
