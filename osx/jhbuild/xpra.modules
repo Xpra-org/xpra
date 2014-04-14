@@ -260,14 +260,14 @@
 
   <distutils id="python-pyopengl">
      <branch repo="pypi.python.org"
-	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.0.2b2.tar.gz"
-	     version="3.0.2b2"/>
+	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.0b2.tar.gz"
+	     version="3.1.0b2"/>
   </distutils>
 
   <distutils id="python-pyopengl-accelerate">
      <branch repo="pypi.python.org"
-	     module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.0.2b2.tar.gz"
-	     version="3.0.2b2"/>
+	     module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.1.0b2.tar.gz"
+	     version="3.1.0b2"/>
   </distutils>
 
   <distutils id="python-pyobjc-core">
