@@ -553,14 +553,11 @@ def find_lib(libname):
             return libname_so
     return None
 
-def find_fakeXscreenmm():
-    return find_lib("libfakeXscreenmm.so.1")
-
 def find_fakeXinerama():
     return find_lib("libfakeXinerama.so.1")
 
 
-def start_children(child_reaper, commands, fake_xinerama, fake_xscreenmm):
+def start_children(child_reaper, commands, fake_xinerama):
     assert os.name=="posix"
     from xpra.log import Logger
     log = Logger("server")
@@ -570,10 +567,6 @@ def start_children(child_reaper, commands, fake_xinerama, fake_xscreenmm):
         libfakeXinerama_so = find_fakeXinerama()
         if libfakeXinerama_so:
             env["LD_PRELOAD"] = libfakeXinerama_so
-    if fake_xscreenmm:
-        libfakeXscreenmm_so = find_fakeXscreenmm()
-        if libfakeXscreenmm_so:
-            env["LD_PRELOAD"] = libfakeXscreenmm_so
     #disable ubuntu's global menu using env vars:
     env.update({
         "UBUNTU_MENUPROXY"          : "",
@@ -795,7 +788,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             assert opts.start_child, "exit-with-children was specified but start-child is missing!"
         if opts.start_child:
             assert os.name=="posix", "start-child cannot be used on %s" % os.name
-            start_children(child_reaper, opts.start_child, (opts.fake_xinerama and not shadowing), (opts.fake_xscreenmm and not shadowing))
+            start_children(child_reaper, opts.start_child, (opts.fake_xinerama and not shadowing))
 
     try:
         e = app.run()
