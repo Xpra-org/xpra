@@ -252,6 +252,12 @@
 	     version="1.8.0"/>
   </distutils>
 
+  <distutils id="python-twisted">
+     <branch repo="pypi.python.org"
+	     module="/packages/source/T/Twisted/Twisted-12.3.0.tar.bz2"
+	     version="12.3.0"/>
+  </distutils>
+
   <distutils id="python-lz4">
      <branch repo="pypi.python.org"
 	     module="/packages/source/l/lz4/lz4-0.6.1.tar.gz"
@@ -318,10 +324,17 @@
             repo="sqlite.org"/>
   </autotools>
 
-  <autotools id="subversion" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
+  <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
     <branch module="/dist/subversion/subversion-1.8.8.tar.bz2"
 			version="1.8.8"
             repo="www.eu.apache.org"/>
+     <dependencies>
+      <dep package="db"/>
+      <dep package="apr"/>
+      <dep package="apr-util"/>
+      <dep package="serf"/>
+      <dep package="sqlite"/>
+    </dependencies>
   </autotools>
 
   <autotools id="libjpeg-turbo" autogen-sh="configure">
@@ -366,8 +379,6 @@
       <dep package="libwebp"/>
       <dep package="ffmpeg"/>
       <dep package="sdl"/>
-      <dep package="gst-plugins-base"/>
-      <dep package="gst-plugins-good"/>
       <dep package="gst-plugins-bad-xpra"/>
       <dep package="gst-plugins-ugly-xpra"/>
       <dep package="gst-python"/>
@@ -382,6 +393,7 @@
       <dep package="python-py2app"/>
       <dep package="python-cython"/>
       <dep package="python-numpy"/>
+      <dep package="python-twisted"/>
       <dep package="python-lz4"/>
       <dep package="python-pyopengl"/>
       <dep package="python-pyopengl-accelerate"/>
@@ -389,21 +401,12 @@
       <dep package="python-pyobjc-framework-cocoa"/>
       <dep package="python-pyobjc-framework-quartz"/>
     </dependencies>
-    <suggests>
-    </suggests>
   </metamodule>
 
-  <metamodule id="meta-xpra-subversion">
+  <metamodule id="meta-subversion-xpra">
     <dependencies>
-      <dep package="db"/>
-      <dep package="apr"/>
-      <dep package="apr-util"/>
-      <dep package="serf"/>
-      <dep package="sqlite"/>
-      <dep package="subversion"/>
+      <dep package="xpra-svn"/>
     </dependencies>
-    <suggests>
-    </suggests>
   </metamodule>  
 
   <metamodule id="meta-osx-image-libs">
