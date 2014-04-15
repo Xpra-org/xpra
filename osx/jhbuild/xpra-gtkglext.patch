@@ -1,0 +1,57 @@
+diff --git a/Makefile.am b/Makefile.am
+index ab78753..c28a93e 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -1,7 +1,7 @@
+ ## -*- Makefile -*-
+ ## Makefile.am for gtkglext
+ 
+-SUBDIRS = gdk gtk docs examples
++SUBDIRS = gdk gtk docs
+ 
+ ACLOCAL_AMFLAGS = -I m4macros
+ DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
+diff --git a/configure.ac b/configure.ac
+index 6eeb509..37d3a7d 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -55,7 +55,7 @@ cflags_set=${CFLAGS+set}
+ AM_INIT_AUTOMAKE([1.11 no-define dist-bzip2 dist-zip dist-xz])
+ 
+ # Specify a configuration file
+-AM_CONFIG_HEADER([config.h])
++AC_CONFIG_HEADERS([config.h])
+ 
+ AC_CANONICAL_HOST
+ 
+@@ -136,7 +136,6 @@ AC_SUBST([MATH_LIB])
+ 
+ AM_CONDITIONAL([MS_LIB_AVAILABLE], [test "x$ms_librarian" = "xyes"])
+ 
+-
+ # Platform-specific compiler options
+ case "$host_os" in
+   irix5* | irix6*)
+@@ -194,6 +193,9 @@ else
+ fi
+ AC_SUBST([LIBTOOL_EXPORT_OPTIONS])
+ 
++LIBTOOLFLAGS="--tag=CC"
++AC_SUBST([LIBTOOLFLAGS])
++
+ #
+ # We need to get the value of gdktarget before we run AX_CHECK_GLU so
+ # that we can set with_x appropriately.
+diff --git a/m4macros/ax_check_gl.m4 b/m4macros/ax_check_gl.m4
+index 808e0f4..4a69b8c 100644
+--- a/m4macros/ax_check_gl.m4
++++ b/m4macros/ax_check_gl.m4
+@@ -140,7 +140,7 @@ LIBS=$ax_save_LIBS
+ AS_IF([test "X$ax_cv_check_gl_libgl" = Xno -a X$no_x = Xyes],
+       [LDFLAGS="$ax_save_LDFLAGS -framework OpenGL"
+       AC_LINK_IFELSE([AX_CHECK_GL_PROGRAM],
+-                     [ax_cv_check_gl_libgl='-framework OpenGL'])])
++                     [ax_cv_check_gl_libgl='-framework Cocoa -framework OpenGL'])])
+ 
+ LDFLAGS=$ax_save_LDFLAGS
+ CPPFLAGS=$ax_save_CPPFLAGS])
