@@ -13,7 +13,6 @@
 
 %define requires_lz4 python-lz4
 %define requires_fakexinerama libfakeXinerama
-%define requires_fakexscreenmm libfakeXscreenmm
 %define avcodec_build_args %{nil}
 %define webp_build_args --with-webp
 %define server_build_args --with-server
@@ -154,7 +153,7 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}%{dist}
 License: GPL
-Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_fakexinerama} %{requires_fakexscreenmm}
+Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_fakexinerama}
 Group: Networking
 Packager: Antoine Martin <antoine@devloop.org.uk>
 URL: http://xpra.org/
