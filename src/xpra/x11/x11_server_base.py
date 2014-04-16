@@ -301,6 +301,19 @@ class X11ServerBase(GTKServerBase):
                 if desired_w!=root_w or desired_h!=root_h:
                     msg += " (best match for %sx%s)" % (desired_w, desired_h)
                 log.info(msg)
+            def show_dpi():
+                sizes_mm = RandR.get_screen_sizes_mm()      #ie: [(1280, 1024)]
+                assert len(sizes_mm)>0
+                wmm = sum([x[0] for x in sizes_mm]) / len(sizes_mm)
+                hmm = sum([x[1] for x in sizes_mm]) / len(sizes_mm)
+                wdpi = int(root_w * 25.4 / wmm + 0.5)
+                hdpi = int(root_h * 25.4 / hmm + 0.5)
+                if wdpi==hdpi==self.dpi:
+                    log.info("DPI set to %s", self.dpi)
+                else:
+                    log.info("DPI: X11 server %s x %s, wanted %s", wdpi, hdpi, self.dpi)
+            #show dpi via idle_add so server has time to change the screen size (mm)
+            self.idle_add(show_dpi)
         except Exception, e:
             log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         return  root_w, root_h

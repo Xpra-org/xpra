@@ -66,6 +66,9 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     void XRRFreeScreenConfigInfo(XRRScreenConfiguration *)
 
+    int XScreenCount(Display *display)
+    int XDisplayWidthMM(Display *display, int screen_number)
+    int XDisplayHeightMM(Display *display, int screen_number)
 
 from core_bindings cimport X11CoreBindings
 
@@ -145,6 +148,19 @@ cdef class RandRBindings(X11CoreBindings):
             return True
         finally:
             XRRFreeScreenConfigInfo(config)
+
+    def get_screen_count(self):
+        return XScreenCount(self.display)
+
+    def get_screen_sizes_mm(self):
+        cdef int n = XScreenCount(self.display)
+        cdef int i, w, h
+        cdef object sizes = []
+        for i in range(n):
+            w = XDisplayWidthMM(self.display, i)
+            h = XDisplayHeightMM(self.display, i)
+            sizes.append((w, h))
+        return sizes
 
     def get_screen_size(self):
         return self._get_screen_size()
