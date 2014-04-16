@@ -289,7 +289,7 @@ class X11ServerBase(GTKServerBase):
                     log.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
                     RandR.set_screen_size(tw, th)
             log.debug("calling RandR.set_screen_size(%s, %s)", w, h)
-            RandR.set_screen_size(w, h)
+            trap.call_synced(RandR.set_screen_size, w, h)
             log.debug("calling RandR.get_screen_size()")
             root_w, root_h = RandR.get_screen_size()
             log.debug("RandR.get_screen_size()=%s,%s", root_w, root_h)
