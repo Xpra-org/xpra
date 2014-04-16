@@ -415,11 +415,8 @@ def parse_cmdline(cmdline):
     group.add_option("--socket-dir", action="store",
                       dest="socket_dir", default=defaults.socket_dir,
                       help="Directory to place/look for the socket files in (default: %s)" % default_socket_dir_str)
-    debug_default = ""
-    if defaults.debug:
-        debug_default = "all"
     group.add_option("-d", "--debug", action="store",
-                      dest="debug", default=debug_default, metavar="FILTER1,FILTER2,...",
+                      dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for (or \"all\", \"help\")")
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",

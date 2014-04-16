@@ -234,6 +234,7 @@ OPTION_TYPES = {
                     "window-layout"     : str,
                     "display"           : str,
                     "tcp-proxy"         : str,
+                    "debug"             : str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -246,7 +247,6 @@ OPTION_TYPES = {
                     "max-bandwidth"     : float,
                     "auto-refresh-delay": float,
                     #boolean options:
-                    "debug"             : bool,
                     "daemon"            : bool,
                     "use-display"       : bool,
                     "fake-xinerama"     : bool,
@@ -328,6 +328,7 @@ def get_defaults():
                     "window-layout"     : "",
                     "display"           : "",
                     "tcp-proxy"         : "",
+                    "debug"             : "",
                     "quality"           : -1,
                     "min-quality"       : 50,
                     "speed"             : -1,
@@ -337,7 +338,6 @@ def get_defaults():
                     "dpi"               : 96,
                     "max-bandwidth"     : 0.0,
                     "auto-refresh-delay": 0.25,
-                    "debug"             : False,
                     "daemon"            : True,
                     "use-display"       : False,
                     "fake-xinerama"     : True,
