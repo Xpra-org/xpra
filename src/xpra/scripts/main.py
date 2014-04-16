@@ -1103,7 +1103,7 @@ def run_proxy(parser, opts, script_file, args, mode):
             cmd.append("--exit-with-client")
         def setsid():
             os.setsid()
-        Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, preexec_fn=setsid)
+        proc = Popen(cmd, preexec_fn=setsid, shell=False, close_fds=True)
         dotxpra = DotXpra()
         start = time.time()
         while dotxpra.server_state(display_name, 1)!=DotXpra.LIVE:
@@ -1111,6 +1111,12 @@ def run_proxy(parser, opts, script_file, args, mode):
                 warn("server failed to start after %.1f seconds - sorry!" % (time.time()-start))
                 return
             time.sleep(0.10)
+        #start a thread just to reap server startup process (yuk)
+        #(as the server process will exit as it daemonizes)
+        def reaper():
+            proc.wait()
+        from xpra.daemon_thread import make_daemon_thread
+        make_daemon_thread(reaper, "server-startup-reaper").start()
     server_conn = connect_or_fail(pick_display(parser, opts, args))
     app = XpraProxy(TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
     signal.signal(signal.SIGINT, app.quit)
