@@ -359,6 +359,7 @@ class UIXpraClient(XpraClientBase):
         elapsed = 0
         if self._suspended_at>0:
             elapsed = time.time()-self._suspended_at
+            self._suspended_at = 0
         delta = datetime.timedelta(seconds=int(elapsed))
         log.info("system resumed, was suspended for %s", delta)
         #this will reset the refresh rate too:
@@ -625,7 +626,12 @@ class UIXpraClient(XpraClientBase):
         #trigger multiple calls to screen_size_changed, delayed by some amount
         #(sometimes up to 1s..)
         self.screen_size_change_pending = True
-        self.timeout_add(1000, update_screen_size)
+        delay = 1000
+        #if we are suspending, wait longer:
+        #(better chance that the suspend-resume cycle will have completed)
+        if self._suspended_at>0 and self._suspended_at-time.time()<5*1000:
+            delay = 5*1000
+        self.timeout_add(delay, update_screen_size)
 
     def get_screen_sizes(self):
         raise Exception("override me!")
