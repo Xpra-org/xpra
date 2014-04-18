@@ -20,7 +20,7 @@ from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.log import Logger
 
 log = Logger("video", "encoding")
-scorelog = Logger("stats")
+scorelog = Logger("score")
 sublog = Logger("subregion")
 
 
