@@ -397,7 +397,7 @@ class X11ServerBase(GTKServerBase):
         settings = packet[1]
         self.update_server_settings(settings)
 
-    def update_server_settings(self, settings):
+    def update_server_settings(self, settings, reset=False):
         #implemented in the X11 xpra server only for now
         #(does not make sense to update a shadow server)
         log("ignoring server settings update in %s", self)
