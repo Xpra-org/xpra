@@ -80,11 +80,17 @@ def set_default_level(level):
 
 
 KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "video",
-                 "csc", "cuda", "cython", "opencl", "swscale", "dbus",
+                 "score", "encoding", "subregion", "refresh", "compress", "mouse",
+                 "error", "verbose",
+                 #codecs:
+                 "csc", "cuda", "cython", "opencl", "swscale", 
                  "decoder", "avcodec", "vpx", "nvenc", "proxy",
-                 "x264", "gobject", "gtk", "main", "util",
-                 "window", "icon", "info", "launcher", "mdns",
-                 "mmap", "net", "protocol", "notify",
+                 "x264", "webp",
+                 "gobject", "gtk", "main", "util", "dbus",
+                 "window", "icon", "info", "launcher", "mdns", "cursor",
+                 "mmap", "net", "protocol", "encoder", "stats",
+                 "notify", "xsettings", "grab", "xshm", "workspace",
+                 "sound",
                  "opengl",
                  "osx", "win32",
                  "paint", "platform", "import",
@@ -129,6 +135,9 @@ class Logger(object):
         self.debug_enabled = enabled and not disabled
         #ready, keep track of it:
         add_logger(self.categories, self)
+        for x in categories:
+            if x not in KNOWN_FILTERS:
+                self.warn("unknown logging category: %s", x)
 
     def __repr__(self):
         return "Logger(%s)" % ", ".join(self.categories)
