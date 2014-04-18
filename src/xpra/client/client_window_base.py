@@ -191,6 +191,14 @@ class ClientWindowBase(ClientWidgetBase):
             xid = metadata["xid"]
             self.set_xid(xid)
 
+        if "opacity" in metadata:
+            opacity = metadata["opacity"]
+            if opacity<0:
+                opacity = 1
+            else:
+                opacity = min(1, opacity/float(0xffffffff))
+            self.set_opacity(opacity)
+
         if "has-alpha" in metadata:
             self._has_alpha = bool(metadata["has-alpha"])
             self.set_alpha()

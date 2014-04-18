@@ -220,6 +220,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 "PID of owning process", "",
                 -1, 65535, -1,
                 gobject.PARAM_READABLE),
+        "opacity": (gobject.TYPE_INT64,
+                "Opacity", "",
+                -1, 0xffffffff, -1,
+                gobject.PARAM_READABLE),
         "xid": (gobject.TYPE_INT,
                 "X11 window id", "",
                 -1, 65535, -1,
@@ -304,7 +308,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
         self._pointer_grab = PointerGrabHelper(self.client_window)
-        self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "role", "group-leader", "xid", "has-alpha"]
+        self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "role", "group-leader", "xid", "has-alpha", "opacity"]
 
     def get_property_names(self):
         return self.property_names
@@ -463,12 +467,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             window_type = self._guess_window_type(transient_for)
             window_types = [gtk.gdk.atom_intern(window_type)]
         self._internal_set_property("window-type", window_types)
-        self._handle_scaling()
         self._internal_set_property("has-alpha", self.client_window.get_depth()==32)
         self._internal_set_property("xid", self.client_window.xid)
         self._internal_set_property("pid", pget("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", pget("WM_WINDOW_ROLE", "latin1"))
-        for mutable in ["WM_NAME", "_NET_WM_NAME"]:
+        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_XPRA_SCALING"]:
             self._call_property_handler(mutable)
 
 
@@ -482,6 +485,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         else:
             self._internal_set_property("scaling", None)
     _property_handlers["_XPRA_SCALING"] = _handle_scaling
+
+    def _handle_opacity_change(self):
+        opacity = self.prop_get("_NET_WM_WINDOW_OPACITY", "u32", True) or -1
+        self._internal_set_property("opacity", opacity)
+    _property_handlers["_NET_WM_WINDOW_OPACITY"] = _handle_opacity_change
 
     def _handle_title_change(self):
         net_wm_name = self.prop_get("_NET_WM_NAME", "utf8", True)

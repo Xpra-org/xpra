@@ -59,6 +59,8 @@ class RootWindowModel(object):
             return False
         elif prop=="scaling":
             return None
+        elif prop=="opacity":
+            return None
         elif prop=="size-hints":
             size = self.window.get_size()
             return RootSizeHints(size)
