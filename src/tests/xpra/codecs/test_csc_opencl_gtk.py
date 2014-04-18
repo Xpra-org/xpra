@@ -12,7 +12,6 @@ def test_load_both():
 
 def test_load_codec():
     from xpra.codecs.csc_opencl import colorspace_converter
-    #from xpra.codecs.csc_nvcuda import colorspace_converter
     assert colorspace_converter
     import gtk.gdk
     assert gtk.gdk

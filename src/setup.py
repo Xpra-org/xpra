@@ -80,7 +80,6 @@ swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
 webm_ENABLED            = True
 nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")       #or os.path.exists("C:\\nvenc_3.0_windows_sdk")
-csc_nvcuda_ENABLED      = pkg_config_ok("--exists", "cuda")
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL")
 buffers_ENABLED         = True
 memoryview_ENABLED      = False
@@ -99,7 +98,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "dec_avcodec", "avcodec_static",
             "dec_avcodec2", "avcodec2_static",
             "csc_swscale", "swscale_static",
-            "csc_nvcuda", "csc_opencl", "csc_cython",
+            "csc_opencl", "csc_cython",
             "vpx", "vpx_static",
             "webp", "webm",
             "buffers", "memoryview",
@@ -1221,14 +1220,11 @@ if buffers_ENABLED:
     cython_add(Extension("xpra.codecs.buffers.util",
                 ["xpra/codecs/buffers/%s_buffers.pyx" % bmod]))
 
-#needed for both nvenc and csc_cuda:
-toggle_packages(csc_nvcuda_ENABLED or nvenc_ENABLED, "xpra.codecs.cuda_common")
 
 toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
-toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
-toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
+toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc", "xpra.codecs.cuda_common")
 if nvenc_ENABLED:
     make_constants("xpra", "codecs", "nvenc", "constants", NV_WINDOWS=int(sys.platform.startswith("win")))
     nvenc_pkgconfig = pkgconfig("nvenc3", "cuda")

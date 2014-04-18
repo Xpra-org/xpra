@@ -93,9 +93,6 @@ def load_codecs():
     codec_import_check("csc_opencl", "OpenCL colorspace conversion", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
     add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter")
 
-    codec_import_check("csc_nvcuda", "CUDA colorspace conversion", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
-    add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter")
-
     #ffmpeg v1:
     codec_import_check("dec_avcodec", "avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder")
     add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder")
@@ -160,7 +157,7 @@ ALL_OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8", "rgb24" : "rgb"
 ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"}
 
 ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
-            "csc_swscale", "csc_cython", "csc_opencl", "csc_nvcuda", \
+            "csc_swscale", "csc_cython", "csc_opencl", \
             "dec_avcodec", "dec_avcodec2", \
             "enc_webm", \
             "dec_webm", \
