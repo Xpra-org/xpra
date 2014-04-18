@@ -632,8 +632,8 @@ class ServerBase(ServerCore):
              "encodings"                : self.encodings,
              "encodings.core"           : self.core_encodings,
              "encodings.lossless"       : self.lossless_encodings,
-             "encodings.with_speed"     : [x for x in self.core_encodings if x in ("h264", "rgb")],
-             "encodings.with_quality"   : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264")],
+             "encodings.with_speed"     : [x for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb")],
+             "encodings.with_quality"   : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
              "encodings.with_lossless_mode" : self.lossless_mode_encodings}
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):

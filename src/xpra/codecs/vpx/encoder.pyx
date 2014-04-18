@@ -130,6 +130,9 @@ cdef extern from "vpx/vpx_encoder.h":
     ctypedef struct vpx_codec_cx_pkt_t:
         pass
     cdef int VPX_DL_REALTIME
+    cdef int VPX_DL_GOOD_QUALITY
+    cdef int VPX_DL_BEST_QUALITY
+
     cdef vpx_codec_cx_pkt_kind VPX_CODEC_CX_FRAME_PKT
     vpx_codec_err_t vpx_codec_enc_config_default(vpx_codec_iface_t *iface,
                               vpx_codec_enc_cfg_t *cfg, unsigned int usage)
@@ -141,7 +144,7 @@ cdef extern from "vpx/vpx_encoder.h":
                               vpx_enc_frame_flags_t flags, unsigned long deadline) nogil
 
     const vpx_codec_cx_pkt_t *vpx_codec_get_cx_data(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
-
+    vpx_codec_err_t vpx_codec_enc_config_set(vpx_codec_ctx_t *ctx, const vpx_codec_enc_cfg_t *cfg)    
 
 cdef extern from "vpxlib.h":
     int get_packet_kind(const vpx_codec_cx_pkt_t *pkt)
@@ -226,8 +229,11 @@ cdef class Encoder:
     cdef int width
     cdef int height
     cdef int max_threads
+    cdef double initial_bitrate_per_pixel
     cdef object encoding
     cdef char* src_format
+    cdef int speed
+    cdef int quality
 
     cdef object __weakref__
 
@@ -238,6 +244,8 @@ cdef class Encoder:
         self.encoding = encoding
         self.width = width
         self.height = height
+        self.speed = speed
+        self.quality = quality
         self.frames = 0
         assert src_format=="YUV420P" and "YUV420P" in dst_formats
         self.src_format = "YUV420P"
@@ -254,16 +262,12 @@ cdef class Encoder:
         if vpx_codec_enc_config_default(codec_iface, self.cfg, 0)!=0:
             free(self.cfg)
             raise Exception("failed to create vpx encoder config")
+        log("%s codec defaults:", self.encoding)
+        self.log_cfg()
+        self.initial_bitrate_per_pixel = float(self.cfg.rc_target_bitrate) / self.cfg.g_w / self.cfg.g_h
 
-        self.context = <vpx_codec_ctx_t *> xmemalign(sizeof(vpx_codec_ctx_t))
-        if self.context==NULL:
-            free(self.cfg)
-            raise Exception("failed to allocate memory for vpx encoder context")
-        memset(self.context, 0, sizeof(vpx_codec_ctx_t))
-
-        self.cfg.rc_target_bitrate = width * height * self.cfg.rc_target_bitrate / self.cfg.g_w / self.cfg.g_h
+        self.update_cfg()
         self.cfg.g_usage = USAGE_STREAM_FROM_SERVER
-        self.cfg.g_threads = self.max_threads
         self.cfg.g_profile = 0                      #use 1 for YUV444P and RGB support
         self.cfg.g_w = width
         self.cfg.g_h = height
@@ -276,11 +280,39 @@ cdef class Encoder:
         self.cfg.g_lag_in_frames = 0                #always give us compressed output for each frame without delay
         self.cfg.rc_resize_allowed = 1
         self.cfg.rc_end_usage = VPX_VBR
-        self.cfg.kf_mode = VPX_KF_AUTO    #VPX_KF_DISABLED
+        #we choose when to use keyframes (never):
+        self.cfg.kf_mode = VPX_KF_DISABLED
+        self.cfg.kf_min_dist = 999999
+        self.cfg.kf_max_dist = 999999
+
+        self.context = <vpx_codec_ctx_t *> xmemalign(sizeof(vpx_codec_ctx_t))
+        if self.context==NULL:
+            free(self.cfg)
+            raise Exception("failed to allocate memory for vpx encoder context")
+        memset(self.context, 0, sizeof(vpx_codec_ctx_t))
+
+        log("our configuration:")
+        self.log_cfg()
         if vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)!=0:
             free(self.context)
-            raise Exception("failed to initialized vpx encoder: %s", vpx_codec_error(self.context))
+            raise Exception("failed to initialized vpx encoder: %s" % vpx_codec_error(self.context))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
+
+    def log_cfg(self):
+        log(" target_bitrate=%s", self.cfg.rc_target_bitrate)
+        log(" min_quantizer=%s", self.cfg.rc_min_quantizer)
+        log(" max_quantizer=%s", self.cfg.rc_max_quantizer)
+        log(" undershoot_pct=%s", self.cfg.rc_undershoot_pct)
+        log(" overshoot_pct=%s", self.cfg.rc_overshoot_pct)
+
+    cdef update_cfg(self):
+        self.cfg.rc_undershoot_pct = 100
+        self.cfg.rc_overshoot_pct = 200
+        self.cfg.rc_target_bitrate = int(self.width * self.height * self.initial_bitrate_per_pixel)
+        self.cfg.g_threads = self.max_threads
+        self.cfg.rc_max_quantizer = int(max(0, min(63, self.quality * 0.63)))
+        self.cfg.rc_min_quantizer = int(max(0, min(self.cfg.rc_max_quantizer, (self.quality-20)*0.63/1.5)))
+
 
     def __repr__(self):
         return "vpx.Encoder(%s)" % self.encoding
@@ -290,6 +322,8 @@ cdef class Encoder:
         info.update({"frames"    : self.frames,
                      "width"     : self.width,
                      "height"    : self.height,
+                     "speed"     : self.speed,
+                     "quality"   : self.quality,
                      "encoding"  : self.encoding,
                      "src_format": self.src_format,
                      "max_threads": self.max_threads})
@@ -356,7 +390,7 @@ cdef class Encoder:
         cdef vpx_codec_iter_t iter = NULL
         cdef int frame_cnt = 0
         cdef int flags = 0
-        cdef int i                          #@DuplicatedSignature
+        cdef vpx_codec_err_t i                          #@DuplicatedSignature
         cdef char *cout
         cdef unsigned int coutsz
         image = <vpx_image_t *> xmemalign(sizeof(vpx_image_t))
@@ -378,15 +412,23 @@ cdef class Encoder:
         image.bps = 0
         if self.frames==0:
             flags |= VPX_EFLAG_FORCE_KF
+        #deadline based on speed (also affects quality...)
+        cdef long deadline
+        if self.speed<10 or self.quality>=90:
+            deadline = VPX_DL_BEST_QUALITY
+        elif self.speed>=100:
+            deadline = VPX_DL_REALTIME
+        else:
+            deadline = int(VPX_DL_GOOD_QUALITY * (100-self.speed) / 100.0)
         start = time.time()
         with nogil:
-            i = vpx_codec_encode(self.context, image, self.frames, 1, flags, VPX_DL_REALTIME)
-        if i!=0:
+            ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
+        if ret!=0:
             free(image)
             log.error("%s codec encoding error: %s", self.encoding, vpx_codec_destroy(self.context))
             return None
         end = time.time()
-        log("vpx_codec_encode for %s took %.1f", self.encoding, 1000.0*(end-start))
+        log("vpx_codec_encode for %s took %.1fms (deadline=%sms for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline/1000, self.speed, self.quality)
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
         end = time.time()
@@ -406,7 +448,10 @@ cdef class Encoder:
         return img
 
     def set_encoding_speed(self, int pct):
-        return
+        self.speed = pct
 
     def set_encoding_quality(self, int pct):
-        return
+        self.quality = pct
+        self.update_cfg()
+        cdef vpx_codec_err_t ret = vpx_codec_enc_config_set(self.context, self.cfg)
+        assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
