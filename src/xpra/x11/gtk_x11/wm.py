@@ -229,6 +229,7 @@ class Wm(gobject.GObject):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         self.root_set("_NET_SUPPORTED", ["atom"], self._NET_SUPPORTED)
         self.set_workarea(0, 0, root_w, root_h)
+        self.set_desktop_geometry(root_w, root_h)
         self.root_set("_NET_DESKTOP_VIEWPORT", ["u32"], [0, 0])
 
         # Load up our full-screen widget
@@ -266,6 +267,10 @@ class Wm(gobject.GObject):
 
     def set_workarea(self, x, y, width, height):
         self.root_set("_NET_WORKAREA", ["u32"], [x, y, width, height])
+
+    def set_desktop_geometry(self, width, height):
+        self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], [width, height])
+
 
     def enableCursors(self, on):
         log("enableCursors(%s)" % on)

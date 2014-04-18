@@ -263,6 +263,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def set_workarea(self, workarea):
         self._wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
 
+    def set_desktop_geometry(self, width, height):
+        self._wm.set_desktop_geometry(width, height)
+
+
     def get_transient_for(self, window):
         return self._desktop_manager.get_transient_for(window, self._window_to_id)
 

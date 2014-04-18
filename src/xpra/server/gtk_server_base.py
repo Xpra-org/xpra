@@ -111,6 +111,9 @@ class GTKServerBase(ServerBase):
     def set_workarea(self, workarea):
         pass
 
+    def set_desktop_geometry(self, width, height):
+        pass
+
 
     def _move_pointer(self, wid, pos):
         x, y = pos

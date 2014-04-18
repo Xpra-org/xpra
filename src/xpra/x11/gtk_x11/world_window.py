@@ -116,7 +116,6 @@ class WorldWindow(gtk.Window):
         log("sizing world to %sx%s", x, y)
         self.set_size_request(x, y)
         self.resize(x, y)
-        root_set("_NET_DESKTOP_GEOMETRY", ["u32"], [x, y])
 
     # We want to fake GTK out into thinking that this window always has
     # toplevel focus, no matter what happens.  There are two parts to this:
