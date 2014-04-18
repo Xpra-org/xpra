@@ -265,6 +265,12 @@ class Wm(gobject.GObject):
     def root_set(self, *args):
         prop_set(self._root, *args)
 
+    def set_dpi(self, xdpi, ydpi):
+        #this is used by some newer versions of the dummy driver (xf86-driver-dummy)
+        #(and will not be honoured by anything else..)
+        self.root_set("dummy-constant-xdpi", "u32", xdpi)
+        self.root_set("dummy-constant-ydpi", "u32", ydpi)
+
     def set_workarea(self, x, y, width, height):
         self.root_set("_NET_WORKAREA", ["u32"], [x, y, width, height])
 

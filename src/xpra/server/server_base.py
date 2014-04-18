@@ -1111,10 +1111,11 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
+        if len(packet)>=4:
+            ss.set_screen_sizes(packet[3])
         log("client requesting new size: %sx%s", width, height)
         self.set_screen_size(width, height)
         if len(packet)>=4:
-            ss.set_screen_sizes(packet[3])
             log.info("received updated display dimensions")
             log.info("client root window size is %sx%s with %s displays:", width, height, len(ss.screen_sizes))
             log_screen_sizes(width, height, ss.screen_sizes)

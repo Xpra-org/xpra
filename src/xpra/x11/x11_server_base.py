@@ -247,6 +247,28 @@ class X11ServerBase(GTKServerBase):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         if desired_w==root_w and desired_h==root_h and not self.fake_xinerama:
             return    root_w,root_h    #unlikely: perfect match already!
+        #find the "physical" screen dimensions, so we can calculate the required dpi
+        #(and do this before changing the resolution)
+        wmm, hmm = 0, 0
+        client_w, client_h = 0, 0
+        sss = self._server_sources.values()
+        for ss in sss:
+            for s in ss.screen_sizes:
+                if len(s)>=10:
+                    #display_name, width, height, width_mm, height_mm, monitors, work_x, work_y, work_width, work_height
+                    client_w = max(client_w, s[1])
+                    client_h = max(client_h, s[2])
+                    wmm = max(wmm, s[3])
+                    hmm = max(hmm, s[4])
+        xdpi = self.default_dpi or self.dpi or 96
+        ydpi = self.default_dpi or self.dpi or 96
+        if wmm>0 and hmm>0 and client_w>0 and client_h>0:
+            #calculate "real" dpi using integer calculations:
+            xdpi = client_w * 254 / wmm / 10
+            ydpi = client_h * 254 / hmm / 10
+        log("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)", xdpi, ydpi, client_w, wmm, client_h, hmm)
+        self.set_dpi(xdpi, ydpi)
+
         #try to find the best screen size to resize to:
         new_size = None
         for w,h in RandR.get_screen_sizes():
@@ -306,12 +328,12 @@ class X11ServerBase(GTKServerBase):
                 assert len(sizes_mm)>0
                 wmm = sum([x[0] for x in sizes_mm]) / len(sizes_mm)
                 hmm = sum([x[1] for x in sizes_mm]) / len(sizes_mm)
-                wdpi = int(root_w * 25.4 / wmm + 0.5)
-                hdpi = int(root_h * 25.4 / hmm + 0.5)
-                if wdpi==hdpi==self.dpi:
-                    log.info("DPI set to %s", self.dpi)
+                actual_xdpi = int(root_w * 25.4 / wmm + 0.5)
+                actual_ydpi = int(root_h * 25.4 / hmm + 0.5)
+                if actual_xdpi==xdpi and actual_ydpi==ydpi:
+                    log.info("DPI set to %s x %s", xdpi, ydpi)
                 else:
-                    log.info("DPI: X11 server %s x %s, wanted %s", wdpi, hdpi, self.dpi)
+                    log.info("DPI set to %s x %s (wanted %s x %s)", actual_xdpi, actual_ydpi, xdpi, ydpi)
             #show dpi via idle_add so server has time to change the screen size (mm)
             self.idle_add(show_dpi)
         except Exception, e:

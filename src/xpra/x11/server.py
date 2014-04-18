@@ -266,6 +266,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def set_desktop_geometry(self, width, height):
         self._wm.set_desktop_geometry(width, height)
 
+    def set_dpi(self, xdpi, ydpi):
+        self._wm.set_dpi(xdpi, ydpi)
+
 
     def get_transient_for(self, window):
         return self._desktop_manager.get_transient_for(window, self._window_to_id)

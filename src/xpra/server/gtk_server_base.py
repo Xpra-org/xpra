@@ -114,6 +114,9 @@ class GTKServerBase(ServerBase):
     def set_desktop_geometry(self, width, height):
         pass
 
+    def set_dpi(self, xdpi, ydpi):
+        pass
+
 
     def _move_pointer(self, wid, pos):
         x, y = pos
