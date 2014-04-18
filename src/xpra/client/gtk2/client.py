@@ -95,7 +95,7 @@ class XpraClient(GTKXpraClient):
             color = gtk.gdk.color_parse(color_str)
         except Exception, e:
             log.warn("invalid color specified: %s (%s)", color_str, e)
-            return
+            color = gtk.gdk.Color("red")
         alpha = 0.6
         size = 4
         if len(parts)==2:
