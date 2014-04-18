@@ -294,7 +294,7 @@ def create_tcp_socket(host, iport):
 
 def setup_tcp_socket(host, iport):
     from xpra.log import Logger
-    log = Logger("net")
+    log = Logger("network")
     tcp_socket = create_tcp_socket(host, iport)
     def cleanup_tcp_socket():
         log.info("closing tcp socket %s:%s", host, iport)
@@ -326,7 +326,7 @@ def setup_local_socket(dotxpra, display_name, clobber, mmap_group):
     if sys.platform.startswith("win"):
         return None, None
     from xpra.log import Logger
-    log = Logger("net")
+    log = Logger("network")
     #print("creating server socket %s" % sockpath)
     try:
         display_name = dotxpra.normalize_local_display_name(display_name)

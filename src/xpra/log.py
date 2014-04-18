@@ -88,7 +88,7 @@ KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "vid
                  "x264", "webp",
                  "gobject", "gtk", "main", "util", "dbus",
                  "window", "icon", "info", "launcher", "mdns", "cursor",
-                 "mmap", "net", "protocol", "encoder", "stats",
+                 "mmap", "network", "protocol", "encoder", "stats",
                  "notify", "xsettings", "grab", "xshm", "workspace",
                  "sound",
                  "opengl",
