@@ -705,6 +705,8 @@ cdef init_x11_events():
         CursorNotify        : ("xpra-cursor-event", None),
         XKBNotify           : ("xpra-xkb-event", None),
         DamageNotify        : ("xpra-damage-event", None),
+        EnterNotify         : ("xpra-enter-event", None),
+        LeaveNotify         : ("xpra-leave-event", None),
         }
     event_type_names = {
         KeyPress            : "KeyPress",
@@ -873,6 +875,8 @@ class X11Event(object):
     def __repr__(self):
         d = {}
         for k,v in self.__dict__.items():
+            if k=="name":
+                continue
             if v and type(v)==gtk.gdk.Window:
                 d[k] = "%#x" % v.xid
             elif v and type(v)==gtk.gdk.Display:
@@ -950,6 +954,12 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.window = _gw(d, e.xfocus.window)
                     pyev.mode = e.xfocus.mode
                     pyev.detail = e.xfocus.detail
+                elif e.type in (EnterNotify, LeaveNotify):
+                    pyev.window = _gw(d, e.xcrossing.window)
+                    pyev.mode = e.xcrossing.mode
+                    pyev.detail = e.xcrossing.detail
+                    pyev.subwindow = e.xcrossing.subwindow
+                    pyev.focus = e.xcrossing.focus
                 elif e.type == ClientMessage:
                     pyev.window = _gw(d, e.xany.window)
                     if long(e.xclient.message_type) > (long(2) ** 32):
