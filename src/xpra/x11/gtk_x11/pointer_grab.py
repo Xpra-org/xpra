@@ -32,7 +32,15 @@ GRAB_CONSTANTS = {
                   NotifyUngrab          : "NotifyUngrab",
                   NotifyWhileGrabbed    : "NotifyWhileGrabbed",
                  }
+
+DETAIL_CONSTANTS    = {}
+for x in ("NotifyAncestor", "NotifyVirtual", "NotifyInferior",
+          "NotifyNonlinear", "NotifyNonlinearVirtual", "NotifyPointer",
+          "NotifyPointerRoot", "NotifyDetailNone"):
+    DETAIL_CONSTANTS[constants[x]] = x
+
 log("pointer grab constants: %s", GRAB_CONSTANTS)
+log("detail constants: %s", DETAIL_CONSTANTS)
 
 
 class PointerGrabHelper(gobject.GObject):
@@ -131,11 +139,11 @@ class PointerGrabHelper(gobject.GObject):
 
 
     def do_xpra_focus_in_event(self, event):
-        log("focus_in_event(%s) mode=%s", event, GRAB_CONSTANTS.get(event.mode))
+        log("focus_in_event(%s) xid=%#x, mode=%s, detail=%s", event, self._window.xid, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
         self._focus_event(event)
 
     def do_xpra_focus_out_event(self, event):
-        log("focus_out_event(%s) mode=%s", event, GRAB_CONSTANTS.get(event.mode))
+        log("focus_out_event(%s) xid=%#x, mode=%s, detail=%s", event, self._window.xid, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
         self._focus_event(event)
 
     def _focus_event(self, event):
