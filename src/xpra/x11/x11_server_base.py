@@ -116,6 +116,11 @@ class X11ServerBase(GTKServerBase):
         clean_keyboard_state()
 
 
+    def init_packet_handlers(self):
+        GTKServerBase.init_packet_handlers(self)
+        self._authenticated_ui_packet_handlers["force-ungrab"] = self._process_force_ungrab
+
+
     def get_uuid(self):
         return get_uuid()
 
@@ -139,6 +144,7 @@ class X11ServerBase(GTKServerBase):
     def make_hello(self):
         capabilities = GTKServerBase.make_hello(self)
         capabilities["resize_screen"] = self.randr
+        capabilities["force_ungrab"] = True
         return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):
@@ -423,6 +429,14 @@ class X11ServerBase(GTKServerBase):
         #implemented in the X11 xpra server only for now
         #(does not make sense to update a shadow server)
         log("ignoring server settings update in %s", self)
+
+
+    def _process_force_ungrab(self, proto, packet):
+        #ignore the window id: wid = packet[1]
+        def X11_ungrab():
+            X11Core.UngrabKeyboard()
+            X11Core.UngrabPointer()
+        trap.call_synced(X11_ungrab)
 
 
     def fake_key(self, keycode, press):

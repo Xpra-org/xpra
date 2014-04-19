@@ -9,6 +9,7 @@
 import os
 from xpra.log import Logger
 log = Logger("win32")
+grablog = Logger("win32", "grab")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.util import AdHocStruct
@@ -80,7 +81,7 @@ class ClientExtras(object):
         if wParam==0 and self.client:
             #our app has lost focus
             wid = self.client.window_with_grab
-            log("window with grab=%s, UNGRAB_KEY=%s", wid, UNGRAB_KEY)
+            grablog("window with grab=%s, UNGRAB_KEY=%s", wid, UNGRAB_KEY)
             if wid is not None and UNGRAB_KEY:
                 self.force_ungrab(wid)
 
@@ -95,22 +96,28 @@ class ClientExtras(object):
             self.client.resume()
 
     def force_ungrab(self, wid):
+        grablog("force_ungrab(%s) server supports force ungrab: %s", wid, self.client.force_ungrab)
+        if self.client.force_ungrab:
+            #ungrab via dedicated server packet:
+            self.client.send_force_ungrab(wid)
+            return
+        #fallback: try to find a key to press:
         kh = self.client.keyboard_helper
         if not kh:
             if not self._kh_warning:
                 self._kh_warning = True
-                log.warn("no keyboard support, cannot simulate keypress to lose grab!")
+                grablog.warn("no keyboard support, cannot simulate keypress to lose grab!")
             return
         #xkbmap_keycodes is a list of: (keyval, name, keycode, group, level)
         ungrab_keys = [x for x in kh.xkbmap_keycodes if x[1]==UNGRAB_KEY]
         if len(ungrab_keys)==0:
             if not self._kh_warning:
                 self._kh_warning = True
-                log.warn("ungrab key %s not found, cannot simulate keypress to lose grab!", UNGRAB_KEY)
+                grablog.warn("ungrab key %s not found, cannot simulate keypress to lose grab!", UNGRAB_KEY)
             return
         #ungrab_keys.append((65307, "Escape", 27, 0, 0))     #ugly hardcoded default value
         ungrab_key = ungrab_keys[0]
-        log("lost focus whilst window %s has grab, simulating keypress: %s", wid, ungrab_key)
+        grablog("lost focus whilst window %s has grab, simulating keypress: %s", wid, ungrab_key)
         key_event = AdHocStruct()
         key_event.keyname = ungrab_key[1]
         key_event.pressed = True

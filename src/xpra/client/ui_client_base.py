@@ -158,6 +158,7 @@ class UIXpraClient(XpraClientBase):
         self.opengl_props = {}
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
+        self.force_ungrab = False
         self.window_unmap = False
         self.window_refresh_config = False
         self.server_generic_encodings = False
@@ -1059,6 +1060,7 @@ class UIXpraClient(XpraClientBase):
             self.session_name = c.strget("session_name", "")
         set_application_name(self.session_name or "Xpra")
         self.window_unmap = c.boolget("window_unmap")
+        self.force_ungrab = c.boolget("force_ungrab")
         self.window_refresh_config = c.boolget("window_refresh_config")
         self.suspend_resume = c.boolget("suspend-resume")
         self.server_supports_notifications = c.boolget("notifications")
@@ -1521,6 +1523,9 @@ class UIXpraClient(XpraClientBase):
         assert self.toggle_cursors_bell_notify, "cannot toggle cursors: server lacks the feature"
         self.send("set-cursors", self.cursors_enabled)
 
+    def send_force_ungrab(self, wid):
+        assert self.force_ungrab
+        self.send("force-ungrab", wid)
 
     def set_deflate_level(self, level):
         self.compression_level = level

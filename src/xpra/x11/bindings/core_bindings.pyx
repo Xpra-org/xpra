@@ -12,6 +12,8 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "core")
 
 
+include "constants.pxi"
+
 ###################################
 # Headers, python magic
 ###################################
@@ -36,6 +38,7 @@ cdef extern from "X11/Xlib.h":
     # over and over again, here are some convenience typedefs.  (Yes, CARD32
     # really is 64 bits on 64-bit systems.  Why?  I have no idea.)
     ctypedef CARD32 XID
+    ctypedef CARD32 Time
 
     ctypedef int Bool
     ctypedef int Status
@@ -46,6 +49,9 @@ cdef extern from "X11/Xlib.h":
     int XFree(void * data)
 
     void XGetErrorText(Display * display, int code, char * buffer_return, int length)
+
+    int XUngrabKeyboard(Display * display, Time time)
+    int XUngrabPointer(Display * display, Time time)
 
 
 from display_source cimport get_display
@@ -77,3 +83,9 @@ cdef class X11CoreBindings:
         cdef char[128] buffer
         XGetErrorText(self.display, code, buffer, 128)
         return str(buffer[:128])
+
+    def UngrabKeyboard(self, time=CurrentTime):
+        return XUngrabKeyboard(self.display, time)
+
+    def UngrabPointer(self, time=CurrentTime):
+        return XUngrabPointer(self.display, time)
