@@ -16,7 +16,7 @@ CurrentTime = constants["CurrentTime"]
 def send_wm_take_focus(target, timestamp):
     log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", target.xid, timestamp)
     if timestamp<0:
-        timestamp = 0    #should mean CurrentTime which is better than nothing
+        timestamp = CurrentTime    #better than nothing...
     elif timestamp>0xFFFFFFFF:
         raise OverflowError("invalid time: %#x" % timestamp)
     X11Window.sendClientMessage(target.xid, target.xid, False, 0,
