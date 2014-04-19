@@ -958,7 +958,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.window = _gw(d, e.xcrossing.window)
                     pyev.mode = e.xcrossing.mode
                     pyev.detail = e.xcrossing.detail
-                    pyev.subwindow = e.xcrossing.subwindow
+                    pyev.subwindow = _gw(d, e.xcrossing.subwindow)
                     pyev.focus = e.xcrossing.focus
                 elif e.type == ClientMessage:
                     pyev.window = _gw(d, e.xany.window)
