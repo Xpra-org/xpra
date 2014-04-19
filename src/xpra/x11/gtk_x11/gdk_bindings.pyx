@@ -193,6 +193,7 @@ cdef extern from "X11/Xlib.h":
         Window root
         Window subwindow
         int mode                # NotifyNormal, NotifyGrab, NotifyUngrab
+        int detail              # NotifyAncestor, NotifyVirtual, NotifyInferior, NotifyNonlinear,NotifyNonlinearVirtual
         Bool focus
         unsigned int state
     # Focus handling
@@ -865,6 +866,10 @@ cdef object _gw(display, Window xwin):
 # Just to make it easier to pass around and have a helpful debug logging.
 # Really, just a python objects where we can stick random bags of attributes.
 class X11Event(object):
+
+    def __init__(self, name):
+        self.name = name
+
     def __repr__(self):
         d = {}
         for k,v in self.__dict__.items():
@@ -872,7 +877,7 @@ class X11Event(object):
                 d[k] = hex(v)
             else:
                 d[k] = v
-        return "<X11Event %r>" % d
+        return "<%s %r>" % (self.name, d)
 
 
 cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
@@ -900,7 +905,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         log("x_event_filter event=%s/%s window=%#x", event_args, event_type, e.xany.window)
         if event_args is not None:
             d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
-            pyev = X11Event()
+            pyev = X11Event(event_type)
             pyev.type = e.type
             pyev.send_event = e.xany.send_event
             pyev.display = d
