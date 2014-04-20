@@ -41,7 +41,6 @@ from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
 from xpra.x11.gtk_x11.error import trap, XError
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.composite import CompositeHelper
-from xpra.x11.gtk_x11.pointer_grab import PointerGrabHelper
 
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -246,10 +245,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Does the window use transparency", "",
                        False,
                        gobject.PARAM_READABLE),
-        "has-grab": (gobject.TYPE_BOOLEAN,
-                       "Does the window own a grab", "",
-                       False,
-                       gobject.PARAM_READABLE),
         "fullscreen": (gobject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
                        False,
@@ -285,9 +280,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "raised"                : one_arg_signal,
         "unmanaged"             : one_arg_signal,
 
-        "pointer-grab"          : one_arg_signal,
-        "pointer-ungrab"        : one_arg_signal,
-
 # this signal must be defined in the subclasses to be seen by the event stuff:
 #        "xpra-configure-event": one_arg_signal,
         }
@@ -307,7 +299,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
-        self._pointer_grab = PointerGrabHelper(self.client_window)
         self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "role", "group-leader", "xid", "has-alpha", "opacity"]
 
     def get_property_names(self):
@@ -350,9 +341,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             except Exception, ex:
                 log.error("error in cleanup handler: %s", ex)
             raise Unmanageable(e)
-        self._pointer_grab.setup()
-        self._pointer_grab.connect("grab", self.pointer_grab_event)
-        self._pointer_grab.connect("ungrab", self.pointer_ungrab_event)
         self._setup_done = True
 
     def setup_failed(self, e):
@@ -451,9 +439,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 self._damage_forward_handle = None
             self._composite.destroy()
             self._composite = None
-        if self._pointer_grab:
-            self._pointer_grab.destroy()
-            self._pointer_grab = None
 
     def _read_initial_properties(self):
         def pget(key, ptype, raise_xerrors=True):
@@ -616,17 +601,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def set_active(self):
         prop_set(self.client_window.get_screen().get_root_window(), "_NET_ACTIVE_WINDOW", "u32", self.client_window.xid)
-
-    #bits to do with grabs: just re-emit the signal
-    def pointer_grab_event(self, gh, event):
-        log("pointer_grab_event(%s, %s) forwarding it", gh, event)
-        self._internal_set_property("has-grab", True)
-        self.emit("pointer-grab", event)
-
-    def pointer_ungrab_event(self, gh, event):
-        log("pointer_ungrab_event(%s, %s) forwarding it", gh, event)
-        self._internal_set_property("has-grab", False)
-        self.emit("pointer-ungrab", event)
 
 
 gobject.type_register(BaseWindowModel)

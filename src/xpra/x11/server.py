@@ -18,6 +18,7 @@ from xpra.util import AdHocStruct
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
 from xpra.x11.gtk_x11.wm import Wm
+from xpra.x11.gtk_x11.pointer_grab import PointerGrabHelper
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -27,6 +28,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                                cleanup_x11_filter,          #@UnresolvedImport
                                cleanup_all_event_receivers  #@UnresolvedImport
                                )
+from xpra.x11.gtk_x11.world_window import get_world_window
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -197,6 +199,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
 
+        #manage pointer grabs:
+        self._has_grab = None
+        self._grab_helper = PointerGrabHelper(get_world_window().window)
+        self._grab_helper.connect("grab", self._pointer_grab)
+        self._grab_helper.connect("ungrab", self._pointer_ungrab)
+
         #save default xsettings:
         self.default_xsettings = XSettingsHelper().get_settings()
         settingslog("default_xsettings=%s", self.default_xsettings)
@@ -256,7 +264,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def get_window_info(self, window):
         info = X11ServerBase.get_window_info(self, window)
-        info["focused"] = self._window_to_id.get(window, -1)==self._has_focus
+        info["focused"] = self._has_focus and self._window_to_id.get(window, -1)==self._has_focus
+        info["grabbed"] = self._has_grab and self._window_to_id.get(window, -1)==self._has_grab
         return info
 
 
@@ -283,6 +292,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         X11ServerBase.cleanup(self)
         cleanup_x11_filter()
         cleanup_all_event_receivers()
+        if self._grab_helper:
+            self._grab_helper.cleanup()
+            self._grab_helper = None
+        if self._wm:
+            self._wm.cleanup()
+            self._wm = None
 
 
     def cleanup_source(self, protocol):
@@ -374,8 +389,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
         window.managed_connect("raised", self._raised_window)
-        window.managed_connect("pointer-grab", self._pointer_grab)
-        window.managed_connect("pointer-ungrab", self._pointer_ungrab)
         return wid
 
     _window_export_properties = ("title", "size-hints", "fullscreen", "maximized", "opacity")
@@ -443,6 +456,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._send_new_or_window_packet(window)
         except Unmanageable, e:
             if window:
+                windowlog("window %s is not manageable", window)
                 #if window is set, we failed after instantiating it,
                 #so we need to fail it manually:
                 window.setup_failed(e)
@@ -523,11 +537,16 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         had_focus = self._id_to_window.get(self._has_focus)
         def reset_focus():
-            focuslog("reset_focus() %s / %s had focus", self._has_focus, had_focus)
+            toplevel = None
+            if self._wm:
+                toplevel = self._wm.get_property("toplevel")
+            focuslog("reset_focus() %s / %s had focus (toplevel=%s)", self._has_focus, had_focus, toplevel)
             self._clear_keys_pressed()
             # FIXME: kind of a hack:
             self._has_focus = 0
-            self._wm.get_property("toplevel").reset_x_focus()
+            #toplevel may be None during cleanup!
+            if toplevel:
+                toplevel.reset_x_focus()
 
         if wid == 0:
             #wid==0 means root window
@@ -595,16 +614,21 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _pointer_grab(self, window, event):
-        log("pointer_grab(%s, %s)", window, event)
-        wid = self._window_to_id[window]
+        log("pointer_grab(%s, %s) has_grab=%s, has focus=%s", window, event, self._has_grab, self._has_focus)
+        if self._has_focus is None or self._has_grab==self._has_focus:
+            return
+        self._has_grab = self._has_focus
         for ss in self._server_sources.values():
-            ss.pointer_grab(wid)
+            ss.pointer_grab(self._has_grab)
 
     def _pointer_ungrab(self, window, event):
-        log("pointer_ungrab(%s, %s)", window, event)
-        wid = self._window_to_id[window]
+        log("pointer_ungrab(%s, %s) has_grab=%s, has focus=%s", window, event, self._has_grab, self._has_focus)
+        if self._has_grab is None:
+            return
+        had_grab = self._has_grab
+        self._has_grab = None
         for ss in self._server_sources.values():
-            ss.pointer_ungrab(wid)
+            ss.pointer_ungrab(had_grab)
 
 
     def _raised_window(self, window, event):

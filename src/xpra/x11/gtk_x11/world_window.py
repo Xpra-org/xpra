@@ -147,15 +147,15 @@ class WorldWindow(gtk.Window):
             # *will* get the focus, and thus a real FocusIn event.
             send_wm_take_focus(self.window, CurrentTime)
 
-    def do_focus_in_event(self, *args):
-        focuslog("world window got focus")
+    def do_focus_in_event(self, event):
+        focuslog("world window got focus: %s", event)
         if not self.get_property("has-toplevel-focus"):
             #super(WorldWindow, self).do_focus_in_event(*args)
-            gtk.Window.do_focus_in_event(self, *args)
+            gtk.Window.do_focus_in_event(self, event)
             self.reset_x_focus()
 
-    def do_focus_out_event(self, *args):
-        focuslog("world window lost focus")
+    def do_focus_out_event(self, event):
+        focuslog("world window lost focus: %s", event)
         # Do nothing -- harder:
         self.stop_emission("focus-out-event")
         return False
