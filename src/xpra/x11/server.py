@@ -456,7 +456,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._send_new_or_window_packet(window)
         except Unmanageable, e:
             if window:
-                windowlog("window %s is not manageable", window)
+                windowlog("window %s is not manageable: %s", window, e)
                 #if window is set, we failed after instantiating it,
                 #so we need to fail it manually:
                 window.setup_failed(e)
