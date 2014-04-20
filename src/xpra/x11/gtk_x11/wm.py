@@ -365,6 +365,9 @@ class Wm(gobject.GObject):
         self.emit("quit")
 
     def do_quit(self):
+        self.cleanup()
+
+    def cleanup(self):
         for win in list(self._windows.itervalues()):
             win.unmanage(True)
 
