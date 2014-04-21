@@ -8,7 +8,7 @@ from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 from xpra.platform.paths import get_icon
 
 from xpra.log import Logger
-log = Logger("osx")
+log = Logger("osx", "events")
 
 
 exit_cb = None

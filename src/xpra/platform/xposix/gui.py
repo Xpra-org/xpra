@@ -6,6 +6,7 @@
 
 from xpra.log import Logger
 log = Logger("posix")
+eventlog = Logger("events", "posix")
 
 try:
     import gtk.gdk
@@ -90,9 +91,11 @@ class ClientExtras(object):
                 bus._clean_up_signal_match(self.login1_match)
 
     def resuming_callback(self, *args):
+        eventlog("resuming_callback%s", args)
         self.client.resume()
 
     def sleeping_callback(self, *args):
+        eventlog("sleeping_callback%s", args)
         self.client.suspend()
 
 
@@ -113,9 +116,9 @@ class ClientExtras(object):
             iface_name  = 'org.freedesktop.UPower'
             self.upower_resuming_match = bus.add_signal_receiver(self.resuming_callback, 'Resuming', iface_name, bus_name)
             self.upower_sleeping_match = bus.add_signal_receiver(self.sleeping_callback, 'Sleeping', iface_name, bus_name)
-            log("listening for 'Resuming' and 'Sleeping' signals on %s", iface_name)
+            eventlog("listening for 'Resuming' and 'Sleeping' signals on %s", iface_name)
         except Exception, e:
-            log("failed to setup UPower event listener: %s", e)
+            eventlog("failed to setup UPower event listener: %s", e)
 
         #the "logind" signals:
         try:
@@ -128,9 +131,9 @@ class ClientExtras(object):
                     self.resuming_callback()
             iface_name  = 'org.freedesktop.login1.Manager'
             self.login1_match = bus.add_signal_receiver(sleep_event_handler, 'PrepareForSleep', iface_name, bus_name)
-            log("listening for 'PrepareForSleep' signal on %s", iface_name)
+            eventlog("listening for 'PrepareForSleep' signal on %s", iface_name)
         except Exception, e:
-            log("failed to setup login1 event listener: %s", e)
+            eventlog("failed to setup login1 event listener: %s", e)
 
     def setup_xprops(self):
         #wait for handshake to complete:

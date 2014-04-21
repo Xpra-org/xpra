@@ -90,7 +90,7 @@ KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "vid
                  "window", "icon", "info", "launcher", "mdns", "cursor",
                  "mmap", "network", "protocol", "encoder", "stats",
                  "notify", "xsettings", "grab", "xshm", "workspace",
-                 "sound",
+                 "sound", "events",
                  "opengl",
                  "osx", "win32",
                  "paint", "platform", "import",
