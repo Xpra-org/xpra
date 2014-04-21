@@ -313,6 +313,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def managed_disconnect(self):
         for handler_id in self._managed_handlers:
             self.disconnect(handler_id)
+        self._managed_handlers = []
 
     def call_setup(self):
         try:
