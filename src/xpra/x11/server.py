@@ -39,6 +39,7 @@ from xpra.x11.gtk_x11.error import trap
 from xpra.log import Logger
 log = Logger("server")
 focuslog = Logger("server", "focus")
+grablog = Logger("server", "grab")
 windowlog = Logger("server", "window")
 cursorlog = Logger("server", "cursor")
 traylog = Logger("server", "tray")
@@ -298,6 +299,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self._wm:
             self._wm.cleanup()
             self._wm = None
+        if self._has_grab:
+            #normally we set this value when we receive the NotifyUngrab
+            #but at this point in the cleanup, we probably won't, so force set it:
+            self._has_grab = None
+            self.X11_ungrab()
 
 
     def cleanup_source(self, protocol):
@@ -307,6 +313,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if had_client and not has_client:
             #last client is gone:
             self.reset_settings()
+            if self._has_grab:
+                self.X11_ungrab()
 
 
     def load_existing_windows(self, system_tray):
@@ -614,7 +622,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _pointer_grab(self, window, event):
-        log("pointer_grab(%s, %s) has_grab=%s, has focus=%s", window, event, self._has_grab, self._has_focus)
+        grablog("pointer_grab(%s, %s) has_grab=%s, has focus=%s", window, event, self._has_grab, self._has_focus)
         if self._has_focus is None or self._has_grab==self._has_focus:
             return
         self._has_grab = self._has_focus
@@ -622,7 +630,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             ss.pointer_grab(self._has_grab)
 
     def _pointer_ungrab(self, window, event):
-        log("pointer_ungrab(%s, %s) has_grab=%s, has focus=%s", window, event, self._has_grab, self._has_focus)
+        grablog("pointer_ungrab(%s, %s) has_grab=%s, has focus=%s", window, event, self._has_grab, self._has_focus)
         if self._has_grab is None:
             return
         had_grab = self._has_grab

@@ -27,6 +27,7 @@ from xpra.log import Logger
 log = Logger("x11", "server")
 keylog = Logger("x11", "server", "keyboard")
 mouselog = Logger("x11", "server", "mouse")
+grablog = Logger("server", "grab")
 
 from xpra.util import prettify_plug_name
 from xpra.server.gtk_server_base import GTKServerBase
@@ -431,10 +432,15 @@ class X11ServerBase(GTKServerBase):
 
     def _process_force_ungrab(self, proto, packet):
         #ignore the window id: wid = packet[1]
-        def X11_ungrab():
+        grablog("force ungrab from %s", proto)
+        self.X11_ungrab()
+
+    def X11_ungrab(self):
+        grablog("X11_ungrab")
+        def do_X11_ungrab():
             X11Core.UngrabKeyboard()
             X11Core.UngrabPointer()
-        trap.call_synced(X11_ungrab)
+        trap.call_synced(do_X11_ungrab)
 
 
     def fake_key(self, keycode, press):
