@@ -308,11 +308,6 @@ from core_bindings cimport X11CoreBindings
 
 cdef class X11WindowBindings(X11CoreBindings):
 
-    cdef object display_data
-
-    def __init__(self):
-        self.display_data = {}
-
     ###################################
     # Extension testing
     ###################################
@@ -324,32 +319,20 @@ cdef class X11WindowBindings(X11CoreBindings):
     # to query for Xfixes support because 1) any server that can handle us at all
     # already has a sufficiently advanced version of Xfixes, and 2) GTK+ already
     # enables Xfixes for us automatically.)
-    cdef _ensure_extension_support(self, major, minor, extension,
+    cdef ensure_extension_support(self, major, minor, extension,
                                    Bool (*query_extension)(Display*, int*, int*),
                                    Status (*query_version)(Display*, int*, int*)):
-        cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
-        key = self.display_name + " / " + extension + "-support"
-        event_key = extension + "-event-base"
-        if key not in self.display_data:
-            # Haven't checked for this extension before
-            self.display_data[event_key] = False
-            if (query_extension)(self.display, &event_base, &ignored):
-                log("X11 extension %s event_base=%s", extension, event_base)
-                self.display_data[event_key] = event_base
-                cmajor = major
-                cminor = minor
-                if (query_version)(self.display, &cmajor, &cminor):
-                    # See X.org bug #14511:
-                    log("found X11 extension %s with version %s.%s", extension, major, minor)
-                    if major == cmajor and minor <= cminor:
-                        self.display_data[key] = True
-                    else:
-                        raise ValueError("%s v%s.%s not supported; required: v%s.%s"
-                                         % (extension, cmajor, cminor, major, minor))
-            else:
-                raise ValueError("X11 extension %s not available" % extension)
-        if not self.display_data.get(key):
-            raise ValueError("insufficient %s support in server" % extension)
+        cdef int event_base = 0, ignored = 0
+        if not (query_extension)(self.display, &event_base, &ignored):
+            raise ValueError("X11 extension %s not available" % extension)
+        log("X11 extension %s event_base=%s", extension, event_base)
+        cdef int cmajor = major, cminor = minor
+        if (query_version)(self.display, &cmajor, &cminor):
+            # See X.org bug #14511:
+            log("found X11 extension %s with version %s.%s", extension, major, minor)
+            if cmajor<major or (cmajor==major and cminor<minor):
+                raise ValueError("%s v%s.%s not supported; required: v%s.%s"
+                                 % (extension, cmajor, cminor, major, minor))
 
     cdef get_xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
@@ -432,7 +415,7 @@ cdef class X11WindowBindings(X11CoreBindings):
     def ensure_XComposite_support(self):
         # We need NameWindowPixmap, but we don't need the overlay window
         # (v0.3) or the special manual-redirect clipping semantics (v0.4).
-        self._ensure_extension_support(0, 2, "Composite",
+        self.ensure_extension_support(0, 2, "Composite",
                                   XCompositeQueryExtension,
                                   XCompositeQueryVersion)
 
@@ -462,7 +445,7 @@ cdef class X11WindowBindings(X11CoreBindings):
     # Xdamage
     ###################################
     def ensure_XDamage_support(self):
-        self._ensure_extension_support(1, 0, "DAMAGE",
+        self.ensure_extension_support(1, 0, "DAMAGE",
                                   XDamageQueryExtension,
                                   XDamageQueryVersion)
 

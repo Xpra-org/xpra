@@ -12,7 +12,8 @@ try:
     from xpra.x11.gtk_x11.error import trap, XError
     from xpra.x11.bindings import X11KeyboardBindings       #@UnresolvedImport
     device_bell = X11KeyboardBindings().device_bell
-except:
+except Exception, e:
+    log.warn("failed load posix keyboard device bell: %s", e)
     device_bell = None
 
 

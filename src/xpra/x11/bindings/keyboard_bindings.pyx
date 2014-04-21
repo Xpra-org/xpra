@@ -169,13 +169,16 @@ cdef class X11KeyboardBindings(X11CoreBindings):
     cdef XModifierKeymap* work_keymap
     cdef int min_keycode
     cdef int max_keycode
-    cdef int xtest_supported
 
     def __init__(self):
         self.work_keymap = NULL
         self.min_keycode = -1
         self.max_keycode = -1
-        self.xtest_supported = -1
+        self.ensure_XTest_support()
+
+    def ensure_XTest_support(self):
+        cdef int ignored = 0
+        XTestQueryExtension(self.display, &ignored, &ignored, &ignored, &ignored)
 
     cdef _get_minmax_keycodes(self):
         if self.min_keycode==-1 and self.max_keycode==-1:
@@ -642,24 +645,10 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         return XkbDeviceBell(self.display, xwindow, deviceSpec, bellClass, bellID,  percent, name_atom)
 
 
-
-
-    def _ensure_XTest_support(self):
-        cdef int ignored = 0
-        if self.xtest_supported==-1:
-            try:
-                XTestQueryExtension(self.display, &ignored, &ignored, &ignored, &ignored)
-                self.xtest_supported = 1
-            except:
-                self.xtest_supported = 0
-        assert self.xtest_supported==1
-
     def xtest_fake_key(self, keycode, is_press):
-        self._ensure_XTest_support()
         XTestFakeKeyEvent(self.display, keycode, is_press, 0)
 
     def xtest_fake_button(self, button, is_press):
-        self._ensure_XTest_support()
         XTestFakeButtonEvent(self.display, button, is_press, 0)
 
 

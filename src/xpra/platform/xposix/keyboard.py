@@ -13,8 +13,10 @@ log = Logger("keyboard", "posix")
 try:
     from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
     keyboard_bindings = X11KeyboardBindings()
-except:
+except Exception, e:
+    log.warn("failed load posix keyboard bindings: %s", e)
     keyboard_bindings = None
+
 
 class Keyboard(KeyboardBase):
 
