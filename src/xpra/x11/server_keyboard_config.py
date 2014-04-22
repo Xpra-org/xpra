@@ -278,7 +278,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 keycode = self.keycode_translation.get(keyname, client_keycode)
                 log("get_keycode(%s, %s, %s) non-native keymap, translation lookup: %s", client_keycode, keyname, modifiers, keycode)
         else:
-            log("get_keycode(%s, %s, %s) is_native_keymap=%s, found using translation: %s", client_keycode, keyname, modifiers, self.keyboard_config.is_native_keymap, keycode)
+            log("get_keycode(%s, %s, %s) is_native_keymap=%s, found using translation: %s", client_keycode, keyname, modifiers, self.is_native_keymap, keycode)
         return keycode
 
 
