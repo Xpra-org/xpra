@@ -365,7 +365,7 @@ def get_defaults():
                     "exit-with-client"  : False,
                     "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
-                    "mdns"              : True,
+                    "mdns"              : os.name=="posix" and not sys.platform.startswith("darwin"),
                     "video-encoders"    : [],
                     "csc-modules"       : [],
                     "speaker-codec"     : [],
