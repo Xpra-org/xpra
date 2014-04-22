@@ -208,8 +208,8 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             self.work_keymap = XGetModifierMapping(self.display)
         return self.work_keymap
 
-    cdef set_keymap(self, XModifierKeymap* new_keymap):
-        log.debug("setting new keymap")
+    cdef set_work_keymap(self, XModifierKeymap* new_keymap):
+        log.debug("setting new work keymap: %#x", <unsigned long> new_keymap)
         self.work_keymap = new_keymap
 
     cdef _parse_keysym(self, symbol):
@@ -447,7 +447,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                 i += 1
             mappings[modifier] = keycodes
         XFreeModifiermap(keymap)
-        self.set_keymap(NULL)
+        self.set_work_keymap(NULL)
         XFree(keyboard_map)
         return (keysyms_per_keycode, mappings)
 
@@ -513,7 +513,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                         keycode = k
                         keymap = XInsertModifiermapEntry(keymap, keycode, modifier)
                         if keymap!=NULL:
-                            self.set_keymap(keymap)
+                            self.set_work_keymap(keymap)
                             log.debug("add modifier: added keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
                         else:
                             log.error("add modifier: failed keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
@@ -553,7 +553,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
     cdef native_xmodmap(self, instructions):
         cdef XModifierKeymap* keymap                    #@DuplicatedSignature
         cdef int modifier
-        self.set_keymap(NULL)
+        self.set_work_keymap(NULL)
         unhandled = []
         map = None
         keycodes = {}
@@ -597,7 +597,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         finally:
             keymap = self.get_keymap(False)
             if keymap!=NULL:
-                self.set_keymap(NULL)
+                self.set_work_keymap(NULL)
                 log.debug("saving modified keymap")
                 if XSetModifierMapping(self.display, keymap)==MappingBusy:
                     log.error("cannot change keymap: mapping busy: %s" % self.get_keycodes_down())
