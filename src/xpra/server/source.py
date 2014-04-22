@@ -916,9 +916,13 @@ class ServerSource(object):
             if self.keyboard_config.is_native_keymap:
                 #native: assume no translation for this key
                 server_keycode = client_keycode
+                keylog("get_keycode(%s, %s, %s) native keymap, using unmodified keycode: %s", client_keycode, keyname, modifiers, server_keycode)
             else:
                 #non-native: try harder to find matching keysym
                 server_keycode = self.keyboard_config.keycode_translation.get(keyname, client_keycode)
+                keylog("get_keycode(%s, %s, %s) non-native keymap, translation lookup: %s", client_keycode, keyname, modifiers, server_keycode)
+        else:
+            keylog("get_keycode(%s, %s, %s) is_native_keymap=%s, found using translation: %s", client_keycode, keyname, modifiers, self.keyboard_config.is_native_keymap, server_keycode)
         return server_keycode
 
 
