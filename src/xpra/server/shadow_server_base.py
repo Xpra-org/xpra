@@ -149,6 +149,7 @@ class ShadowServerBase(object):
 
     def set_keymap(self, server_source, force=False):
         log.info("shadow server: not setting keymap")
+        server_source.set_keymap_is_native(False)
 
     def load_existing_windows(self, system_tray):
         log("loading existing windows")
