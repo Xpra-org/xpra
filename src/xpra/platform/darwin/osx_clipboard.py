@@ -131,6 +131,13 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
     def make_proxy(self, clipboard):
         return OSXClipboardProxy(clipboard)
 
+    def _do_munge_raw_selection_to_wire(self, target, dtype, dformat, data):
+        #override so we can catch weird OSX data:
+        if dformat == 0 and dtype=="NONE":
+            log("got 'NONE' data from clipboard")
+            return None, None
+        return GDKClipboardProtocolHelper._do_munge_raw_selection_to_wire(self, target, dtype, dformat, data)
+
     def _get_clipboard_from_remote_handler(self, proxy, selection, target):
         #cannot work on osx, the nested mainloop doesn't run :(
         #so we don't even try and rely on the "wants_targets" flag
