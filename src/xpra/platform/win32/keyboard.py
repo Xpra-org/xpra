@@ -12,6 +12,12 @@ log = Logger("keyboard", "win32")
 
 
 class Keyboard(KeyboardBase):
+    """ This is for getting keys from the keyboard on the client side.
+        Deals with GTK bugs and oddities:
+        * missing 'Num_Lock'
+        * simulate 'Alt_Gr'
+    """
+
     def __init__(self):
         KeyboardBase.__init__(self)
         self.emulate_altgr = False

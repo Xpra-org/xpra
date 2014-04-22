@@ -888,23 +888,12 @@ class ServerSource(object):
                 self.keyboard_config = current_keyboard_config
         return current_keyboard_config
 
+
     def get_keycode(self, client_keycode, keyname, modifiers):
-        if self.keyboard_config is None or not self.keyboard_config.enabled:
-            keylog.info("ignoring keycode since keyboard is turned off")
+        if self.keyboard_config is None:
+            keylog.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)
             return -1
-        server_keycode = self.keyboard_config.keycode_translation.get((client_keycode, keyname))
-        if server_keycode is None:
-            if self.keyboard_config.is_native_keymap:
-                #native: assume no translation for this key
-                server_keycode = client_keycode
-                keylog("get_keycode(%s, %s, %s) native keymap, using unmodified keycode: %s", client_keycode, keyname, modifiers, server_keycode)
-            else:
-                #non-native: try harder to find matching keysym
-                server_keycode = self.keyboard_config.keycode_translation.get(keyname, client_keycode)
-                keylog("get_keycode(%s, %s, %s) non-native keymap, translation lookup: %s", client_keycode, keyname, modifiers, server_keycode)
-        else:
-            keylog("get_keycode(%s, %s, %s) is_native_keymap=%s, found using translation: %s", client_keycode, keyname, modifiers, self.keyboard_config.is_native_keymap, server_keycode)
-        return server_keycode
+        return self.keyboard_config.get_keycode(client_keycode, keyname, modifiers)
 
 
 #

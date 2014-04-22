@@ -14,6 +14,7 @@ log = Logger("keyboard")
 
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, mask_to_names
+from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, \
                            get_modifiers_from_meanings, get_modifiers_from_keycodes, \
                            clear_modifiers, set_modifiers, \
@@ -33,8 +34,9 @@ ALL_X11_MODIFIERS = {
                     }
 
 
-class KeyboardConfig(object):
+class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
+        KeyboardConfigBase.__init__(self)
         self.xkbmap_print = None
         self.xkbmap_query = None
         self.xkbmap_mod_meanings = {}
@@ -45,7 +47,6 @@ class KeyboardConfig(object):
         self.xkbmap_layout = None
         self.xkbmap_variant = None
 
-        self.enabled = True
         #this is shared between clients!
         self.keys_pressed = {}
         #these are derived by calling set_keymap:
@@ -55,16 +56,13 @@ class KeyboardConfig(object):
         self.modifier_client_keycodes = {}
         self.compute_modifier_map()
         self.modifiers_filter = []
-        self.is_native_keymap = True
 
     def __repr__(self):
         return "KeyboardConfig(%s / %s)" % (self.xkbmap_layout, self.xkbmap_variant)
 
     def get_info(self):
-        info = {"enabled"   : self.enabled,
-                "native"    : self.is_native_keymap,
-                "modifiers.filter"          : self.modifiers_filter,
-                }
+        info = KeyboardConfigBase.get_info(self)
+        info["modifiers.filter"] = self.modifiers_filter
         #keycodes:
         if self.keycode_translation:
             for ks, keycode in self.keycode_translation.items():
@@ -111,6 +109,7 @@ class KeyboardConfig(object):
     def parse_options(self, props):
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
+        KeyboardConfigBase.parse_options(self, props)
         modded = []
         for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
                   "xkbmap_mod_managed", "xkbmap_mod_pointermissing",
@@ -132,6 +131,7 @@ class KeyboardConfig(object):
             #try python2.4 variant:
             import sha
             m = sha.new()
+        m.update(KeyboardConfigBase.get_hash(self))
         for x in (self.xkbmap_print, self.xkbmap_query, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
@@ -261,6 +261,26 @@ class KeyboardConfig(object):
         log("set_default_keymap: keynames_for_mod=%s", self.keynames_for_mod)
         log("set_default_keymap: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
         log("set_default_keymap: modifier_map=%s", self.modifier_map)
+
+
+    def get_keycode(self, client_keycode, keyname, modifiers):
+        if not self.enabled:
+            log("ignoring keycode since keyboard is turned off")
+            return -1
+        keycode = self.keycode_translation.get((client_keycode, keyname))
+        if keycode is None:
+            if self.is_native_keymap:
+                #native: assume no translation for this key
+                keycode = client_keycode
+                log("get_keycode(%s, %s, %s) native keymap, using unmodified keycode: %s", client_keycode, keyname, modifiers, keycode)
+            else:
+                #non-native: try harder to find matching keysym
+                keycode = self.keycode_translation.get(keyname, client_keycode)
+                log("get_keycode(%s, %s, %s) non-native keymap, translation lookup: %s", client_keycode, keyname, modifiers, keycode)
+        else:
+            log("get_keycode(%s, %s, %s) is_native_keymap=%s, found using translation: %s", client_keycode, keyname, modifiers, self.keyboard_config.is_native_keymap, keycode)
+        return keycode
+
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         """
