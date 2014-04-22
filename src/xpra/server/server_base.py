@@ -548,6 +548,9 @@ class ServerBase(ServerCore):
             log("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
             self._clipboard_helper.enable_selections(client_selections)
 
+        #keyboard:
+        ss.keyboard_config = self.get_keyboard_config(c)
+
         #so only activate this feature afterwards:
         self.keyboard_sync = c.boolget("keyboard_sync", True)
         key_repeat = c.intpair("key_repeat")
@@ -567,6 +570,10 @@ class ServerBase(ServerCore):
 
     def update_server_settings(self, settings, reset=False):
         log("server settings ignored: ", settings)
+
+
+    def get_keyboard_config(self, props):
+        return None
 
     def set_keyboard_repeat(self, key_repeat):
         pass
@@ -1312,12 +1319,14 @@ class ServerBase(ServerCore):
             self.set_keymap(ss, force=True)
 
     def _process_keymap(self, proto, packet):
-        props = packet[1]
+        props = typedict(packet[1])
         ss = self._server_sources.get(proto)
         if ss is None:
             return
         log("received new keymap from client")
-        if ss.assign_keymap_options(props):
+        kc = ss.keyboard_config
+        if kc and kc.enabled:
+            ss.parse_options(props)
             self.set_keymap(ss, True)
         modifiers = props.get("modifiers")
         ss.make_keymask_match(modifiers)

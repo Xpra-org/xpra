@@ -564,18 +564,8 @@ class ServerSource(object):
             if msg:
                 log.warn("Warning: proxy version may not be compatible: %s", msg)
 
-        #keyboard:
-        try:
-            from xpra.x11.server_keyboard_config import KeyboardConfig
-            self.keyboard_config = KeyboardConfig()
-            self.keyboard_config.enabled = self.send_windows and c.boolget("keyboard", True)
-            self.assign_keymap_options(c)
-            self.keyboard_config.xkbmap_layout = c.strget("xkbmap_layout")
-            self.keyboard_config.xkbmap_variant = c.strget("xkbmap_variant")
-            keylog("keyboard_config=%s", self.keyboard_config)
-        except ImportError, e:
-            keylog.error("failed to load keyboard support: %s", e)
-            self.keyboard_config = None
+        #keyboard is now injected into this class, default to undefined:
+        self.keyboard_config = None
 
         #encodings:
         def getenclist(k, default_value=[]):
@@ -864,21 +854,6 @@ class ServerSource(object):
             self.keyboard_config.xkbmap_variant = variant
             return True
         return False
-
-    def assign_keymap_options(self, props):
-        """ used by both process_hello and process_keymap
-            to set the keyboard attributes """
-        modded = []
-        for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
-                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing",
-                  "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
-            cv = getattr(self.keyboard_config, x)
-            nv = props.get(x)
-            if cv!=nv:
-                setattr(self.keyboard_config, x, nv)
-                modded.append(x)
-        keylog("assign_keymap_options(..) modified %s", modded)
-        return len(modded)>0
 
     def keys_changed(self):
         if self.keyboard_config:

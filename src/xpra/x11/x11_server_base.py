@@ -178,6 +178,21 @@ class X11ServerBase(GTKServerBase):
         return info
 
 
+    def get_keyboard_config(self, props):
+        try:
+            from xpra.x11.server_keyboard_config import KeyboardConfig
+            keyboard_config = KeyboardConfig()
+            keyboard_config.enabled = props.boolget("keyboard", True)
+            keyboard_config.parse_options(props)
+            keyboard_config.xkbmap_layout = props.strget("xkbmap_layout")
+            keyboard_config.xkbmap_variant = props.strget("xkbmap_variant")
+        except ImportError, e:
+            keylog.error("failed to load keyboard support: %s", e)
+            keyboard_config = None
+        keylog("keyboard_config=%s", keyboard_config)
+        return keyboard_config
+
+
     def set_keymap(self, server_source, force=False):
         try:
             #prevent _keys_changed() from firing:

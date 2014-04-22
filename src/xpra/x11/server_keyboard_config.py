@@ -108,6 +108,22 @@ class KeyboardConfig(object):
         return info
 
 
+    def parse_options(self, props):
+        """ used by both process_hello and process_keymap
+            to set the keyboard attributes """
+        modded = []
+        for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
+                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing",
+                  "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
+            cv = getattr(self, x)
+            nv = props.get(x)
+            if cv!=nv:
+                setattr(self, x, nv)
+                modded.append(x)
+        log("assign_keymap_options(..) modified %s", modded)
+        return len(modded)>0
+
+
     def get_hash(self):
         try:
             import hashlib
