@@ -905,7 +905,7 @@ class ServerSource(object):
             keylog("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
             if force or current_id is None or keymap_id!=current_id:
                 self.keyboard_config.keys_pressed = keys_pressed
-                self.keyboard_config.set_keymap(self.client_platform)
+                self.keyboard_config.set_keymap()
                 current_keyboard_config = self.keyboard_config
             else:
                 keylog.info("keyboard mapping already configured (skipped)")

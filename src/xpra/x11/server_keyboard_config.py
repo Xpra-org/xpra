@@ -164,7 +164,7 @@ class KeyboardConfig(object):
         log("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
 
 
-    def set_keymap(self, client_platform):
+    def set_keymap(self):
         if not self.enabled:
             return
         clean_keyboard_state()
