@@ -11,7 +11,7 @@ log = Logger("shadow")
 
 from xpra.net.protocol import Compressed
 from xpra.server.batch_config import DamageBatchConfig
-from xpra.util import AdHocStruct
+from xpra.util import AdHocStruct, prettify_plug_name
 
 DEFAULT_DELAY = 50              #50ms refresh
 
@@ -50,7 +50,7 @@ class RootWindowModel(object):
 
     def get_property(self, prop):
         if prop=="title":
-            return self.window.get_screen().get_display().get_name()
+            return prettify_plug_name(self.window.get_screen().get_display().get_name())
         elif prop=="client-machine":
             return socket.gethostname()
         elif prop=="window-type":
