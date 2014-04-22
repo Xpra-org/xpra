@@ -192,6 +192,17 @@ def do_init():
             cpos = console_info["CursorPosition"]
             #wait for input if this is a brand new console:
             _wait_for_input = cpos.X==0 and cpos.Y==0
+            if _wait_for_input:
+                #don't wait for input when running under wine
+                #(which usually does not popup a new shell window)
+                try:
+                    import win32api     #@UnresolvedImport
+                    hKey = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
+                    if hKey is not None:
+                        _wait_for_input = False
+                except Exception, e:
+                    #no wine key
+                    pass
         except Exception, e:
             print("error accessing console: %s" % e)
         return
