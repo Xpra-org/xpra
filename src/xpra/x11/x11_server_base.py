@@ -32,6 +32,7 @@ grablog = Logger("server", "grab")
 from xpra.util import prettify_plug_name
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
+from xpra.x11.server_keyboard_config import KeyboardConfig
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
@@ -179,17 +180,12 @@ class X11ServerBase(GTKServerBase):
 
 
     def get_keyboard_config(self, props):
-        try:
-            from xpra.x11.server_keyboard_config import KeyboardConfig
-            keyboard_config = KeyboardConfig()
-            keyboard_config.enabled = props.boolget("keyboard", True)
-            keyboard_config.parse_options(props)
-            keyboard_config.xkbmap_layout = props.strget("xkbmap_layout")
-            keyboard_config.xkbmap_variant = props.strget("xkbmap_variant")
-        except ImportError, e:
-            keylog.error("failed to load keyboard support: %s", e)
-            keyboard_config = None
-        keylog("keyboard_config=%s", keyboard_config)
+        keyboard_config = KeyboardConfig()
+        keyboard_config.enabled = props.boolget("keyboard", True)
+        keyboard_config.parse_options(props)
+        keyboard_config.xkbmap_layout = props.strget("xkbmap_layout")
+        keyboard_config.xkbmap_variant = props.strget("xkbmap_variant")
+        keylog("get_keyboard_config(..)=%s", keyboard_config)
         return keyboard_config
 
 
