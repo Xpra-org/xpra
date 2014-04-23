@@ -219,6 +219,7 @@ class KeyboardConfig(KeyboardConfigBase):
             #(used by non X11 clients like osx,win32 or Android)
             preserve_server_keycodes = not self.xkbmap_print and not self.xkbmap_query
             self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, preserve_server_keycodes, self.keynames_for_mod)
+            self.add_gtk_keynames()
 
             #now set the new modifier mappings:
             clean_keyboard_state()
@@ -230,6 +231,14 @@ class KeyboardConfig(KeyboardConfigBase):
             log("keyname_for_mod=%s", self.keynames_for_mod)
         except:
             log.error("error setting xmodmap", exc_info=True)
+
+    def add_gtk_keynames(self):
+        #add the keynames we find via gtk
+        #since we may rely on finding those keynames from the client
+        #(used with non native keymaps)
+        for _, keyname, keycode, _, _ in get_gtk_keymap():
+            if keyname not in self.keycode_translation:
+                self.keycode_translation[keyname] = keycode
 
     def set_default_keymap(self):
         """ assign a default keymap based on the current X11 server keymap
@@ -246,10 +255,7 @@ class KeyboardConfig(KeyboardConfigBase):
         for keycode, keynames in keycode_to_keynames.items():
             for keyname in keynames:
                 self.keycode_translation[keyname] = keycode
-        #add the ones we find via gtk, since we may rely on finding those keynames from the client:
-        for _, keyname, keycode, _, _ in get_gtk_keymap():
-            if keyname not in self.keycode_translation:
-                self.keycode_translation[keyname] = keycode
+        self.add_gtk_keynames()
         log("set_default_keymap: keycode_translation=%s", self.keycode_translation)
         #modifiers:
         self.keynames_for_mod = {}
