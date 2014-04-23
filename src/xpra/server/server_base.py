@@ -1326,7 +1326,7 @@ class ServerBase(ServerCore):
         log("received new keymap from client")
         kc = ss.keyboard_config
         if kc and kc.enabled:
-            ss.parse_options(props)
+            kc.parse_options(props)
             self.set_keymap(ss, True)
         modifiers = props.get("modifiers")
         ss.make_keymask_match(modifiers)
