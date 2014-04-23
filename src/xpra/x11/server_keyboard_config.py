@@ -65,24 +65,19 @@ class KeyboardConfig(KeyboardConfigBase):
         info["modifiers.filter"] = self.modifiers_filter
         #keycodes:
         if self.keycode_translation:
-            for ks, keycode in self.keycode_translation.items():
-                if type(ks)==tuple:
-                    client_keycode, keysym = ks
+            for kc, keycode in self.keycode_translation.items():
+                if type(kc)==tuple:
+                    client_keycode, keysym = kc
                     info["keysym." + str(keysym)+"."+str(client_keycode)] = keycode
+                    info["keycode." + str(client_keycode)+"."+keysym] = keycode
                 else:
-                    info["keysym." + str(ks)] = keycode
+                    info["keysym." + str(kc)] = keycode
+                    info["keycode." + str(kc)] = keycode
         if self.xkbmap_keycodes:
             i = 0
             for keyval, name, keycode, group, level in self.xkbmap_keycodes:
                 info["keymap.%s" % i] = (keyval, name, keycode, group, level)
                 i += 1
-        if self.keycode_translation:
-            for kc, spec in self.keycode_translation.items():
-                if type(kc)==tuple:
-                    client_keycode, keysym = kc
-                    info["keycode." + str(client_keycode)+"."+keysym] = spec
-                else:
-                    info["keycode." + str(kc)] = spec
         #modifiers:
         if self.modifier_client_keycodes:
             for mod, keys in self.modifier_client_keycodes.items():
