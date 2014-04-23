@@ -72,6 +72,11 @@ class KeyboardConfig(KeyboardConfigBase):
                 else:
                     info["keysym." + str(ks)] = keycode
         if self.xkbmap_keycodes:
+            i = 0
+            for keyval, name, keycode, group, level in self.xkbmap_keycodes:
+                info["keymap.%s" % i] = (keyval, name, keycode, group, level)
+                i += 1
+        if self.keycode_translation:
             for kc, spec in self.keycode_translation.items():
                 if type(kc)==tuple:
                     client_keycode, keysym = kc
