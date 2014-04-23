@@ -104,6 +104,9 @@ class ShadowServerBase(object):
     def get_server_mode(self):
         return "shadow"
 
+    def make_hello(self):
+        return {"shadow" : True}
+
 
     def watch_keymap_changes(self):
         pass

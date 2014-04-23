@@ -32,7 +32,7 @@ class ShadowX11Server(ShadowServerBase, X11ServerBase):
 
     def make_hello(self):
         capabilities = X11ServerBase.make_hello(self)
-        capabilities["shadow"] = True
+        capabilities.update(ShadowServerBase.make_hello(self))
         capabilities["server_type"] = "Python/gtk2/x11-shadow"
         return capabilities
 
