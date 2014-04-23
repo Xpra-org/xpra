@@ -869,6 +869,7 @@ class ServerSource(object):
         keylog("set_default_keymap() keyboard_config=%s", self.keyboard_config)
         if self.keyboard_config:
             self.keyboard_config.set_default_keymap()
+        return self.keyboard_config
 
 
     def set_keymap(self, current_keyboard_config, keys_pressed, force):

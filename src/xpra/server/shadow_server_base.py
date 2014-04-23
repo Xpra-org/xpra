@@ -152,7 +152,7 @@ class ShadowServerBase(object):
 
     def set_keymap(self, server_source, force=False):
         log.info("shadow server: setting default keymap translation")
-        server_source.set_default_keymap()
+        self.keyboard_config = server_source.set_default_keymap()
 
     def load_existing_windows(self, system_tray):
         log("loading existing windows")
