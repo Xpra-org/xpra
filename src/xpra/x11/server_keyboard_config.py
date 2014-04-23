@@ -12,6 +12,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
+from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
@@ -244,6 +245,10 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycode_translation = {}
         for keycode, keynames in keycode_to_keynames.items():
             for keyname in keynames:
+                self.keycode_translation[keyname] = keycode
+        #add the ones we find via gtk, since we may rely on finding those keynames from the client:
+        for _, keyname, keycode, _, _ in get_gtk_keymap():
+            if keyname not in self.keycode_translation:
                 self.keycode_translation[keyname] = keycode
         log("set_default_keymap: keycode_translation=%s", self.keycode_translation)
         #modifiers:
