@@ -22,6 +22,7 @@ import cairo
 import os
 from socket import gethostname
 
+from xpra.util import nonl
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
@@ -1441,7 +1442,13 @@ class WindowModel(BaseWindowModel):
         trap.swallow_synced(X11Window.XKillClient, self.client_window.xid)
 
     def __repr__(self):
-        return "WindowModel(%#x)" % self.client_window.xid
+        xid = 0
+        if self.client_window:
+            xid = self.client_window.xid
+        title = self.get_property("title")
+        if title:
+            return "WindowModel(%#x - \"%s\")" % (xid, nonl(title))            
+        return "WindowModel(%#x)" % xid
 
 
 gobject.type_register(WindowModel)

@@ -110,6 +110,12 @@ class WorldWindow(gtk.Window):
         self.move(0, 0)
         self._resize()
 
+    def __repr__(self):
+        xid = 0
+        if self.window:
+            xid = self.window.xid
+        return "WorldWindow(%#x)" % xid
+
     def _resize(self, *args):
         x = gtk.gdk.screen_width()
         y = gtk.gdk.screen_height()
