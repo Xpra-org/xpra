@@ -374,6 +374,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self.do_unmanaged(False)
 
     def setup(self):
+        # Start listening for important events.
+        self.client_window.set_events(self.client_window_saved_events
+                                      | gtk.gdk.STRUCTURE_MASK
+                                      | gtk.gdk.PROPERTY_CHANGE_MASK
+                                      | gtk.gdk.FOCUS_CHANGE_MASK)
         h = self._composite.connect("contents-changed", self._forward_contents_changed)
         self._damage_forward_handle = h
 
@@ -674,8 +679,6 @@ class OverrideRedirectWindowModel(BaseWindowModel):
 
     def setup(self):
         BaseWindowModel.setup(self)
-        self.client_window.set_events(self.client_window_saved_events
-                                      | gtk.gdk.STRUCTURE_MASK | gtk.gdk.FOCUS_CHANGE_MASK)
         # So now if the window becomes unmapped in the future then we will
         # notice... but it might be unmapped already, and any event
         # already generated, and our request for that event is too late!
@@ -858,12 +861,6 @@ class WindowModel(BaseWindowModel):
         log("setup() corral_window=%s", self.corral_window)
         X11Window.substructureRedirect(self.corral_window.xid)
         add_event_receiver(self.corral_window, self)
-
-        # Start listening for important events.
-        self.client_window.set_events(self.client_window_saved_events
-                                      | gtk.gdk.STRUCTURE_MASK
-                                      | gtk.gdk.PROPERTY_CHANGE_MASK
-                                      | gtk.gdk.FOCUS_CHANGE_MASK)
 
         # The child might already be mapped, in case we inherited it from
         # a previous window manager.  If so, we unmap it now, and save the
