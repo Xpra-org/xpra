@@ -731,7 +731,7 @@ class UIXpraClient(XpraClientBase):
                 self.window_ungrab()
                 self.do_force_ungrab(self._window_with_grab)
                 self._window_with_grab = None
-            if self._focused!=wid:
+            if self._focused!=wid and wid>0 and self._focused>0:
                 #if this window lost focus, it must have had it!
                 #(catch up - makes things like OR windows work:
                 # their parent receives the focus-out event)
@@ -739,8 +739,9 @@ class UIXpraClient(XpraClientBase):
                 self.send_focus(wid)
             if self.keyboard_helper:
                 self.keyboard_helper.clear_repeat()
-            self.send_focus(0)
-            self._focused = None
+            if self._focused>0:
+                self.send_focus(0)
+                self._focused = None
 
     def do_force_ungrab(self, wid):
         grablog("do_force_ungrab(%s) server supports force ungrab: %s", wid, self.force_ungrab)
