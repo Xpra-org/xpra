@@ -378,13 +378,16 @@ def get_xwindow(pywindow):
 cdef _get_xwindow(pywindow):
     return GDK_WINDOW_XID(<cGdkWindow*>unwrap(pywindow, gtk.gdk.Window))
 
-cpdef get_pywindow(display_source, xwindow):
+def get_pywindow(display_source, xwindow):
+    return _get_pywindow(display_source, xwindow)
+
+cdef object _get_pywindow(object display_source, Window xwindow):
     if xwindow==0:
         return None
     disp = get_display_for(display_source)
     win = gtk.gdk.window_foreign_new_for_display(disp, xwindow)
     if win is None:
-        verbose("cannot get gdk window for %s : %s", display_source, xwindow)
+        verbose("cannot get gdk window for %s : %#x", display_source.get_name(), xwindow)
         raise XError(BadWindow)
     return win
 
@@ -464,14 +467,14 @@ cdef _query_tree(pywindow):
     for i from 0 <= i < nchildren:
         #we cannot get the gdk window for wid=0
         if children[i]>0:
-            pychildren.append(get_pywindow(pywindow, children[i]))
+            pychildren.append(_get_pywindow(pywindow, children[i]))
     # Apparently XQueryTree sometimes returns garbage in the 'children'
     # pointer when 'nchildren' is 0, which then leads to a segfault when we
     # try to XFree the non-NULL garbage.
     if nchildren > 0 and children != NULL:
         XFree(children)
     if parent != XNone:
-        pyparent = get_pywindow(pywindow, parent)
+        pyparent = _get_pywindow(pywindow, parent)
     else:
         pyparent = None
     return (pyparent, pychildren)
@@ -1043,8 +1046,12 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.bell_name = get_pyatom(pyev.window, bell_e.name)
             except XError, ex:
                 if ex.msg==BadWindow:
-                    log("Some window in our event disappeared before we could " \
-                        + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type, event_args, pyev)
+                    if e.type == DestroyNotify:
+                        #happens too often, don't bother with the debug message
+                        pass
+                    else:
+                        log("Some window in our event disappeared before we could " \
+                            + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type, event_args, pyev)
                 else:
                     msg = "X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", get_error_text(ex.msg), e.type, event_type, event_args, pyev
                     log.error(*msg)
