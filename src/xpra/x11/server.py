@@ -202,7 +202,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
         #manage pointer grabs:
         self._has_grab = None
-        self._grab_helper = PointerGrabHelper(get_world_window().window)
+        self._grab_helper = PointerGrabHelper()
+        self._grab_helper.add_window(get_world_window(), get_world_window().window)
         self._grab_helper.connect("grab", self._pointer_grab)
         self._grab_helper.connect("ungrab", self._pointer_ungrab)
 
@@ -392,6 +393,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._add_new_or_window(event.window)
 
     def _add_new_window_common(self, window):
+        self._grab_helper.add_window(window, window.client_window)
         windowlog("adding window %s", window)
         wid = X11ServerBase._add_new_window_common(self, window)
         window.managed_connect("client-contents-changed", self._contents_changed)

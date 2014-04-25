@@ -5,17 +5,18 @@
 
 import gobject
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver,remove_event_receiver    #@UnresolvedImport
-from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver                #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 X11Window = X11WindowBindings()
 
 from xpra.log import Logger
 log = Logger("x11", "window", "grab")
 
 
-StructureNotifyMask = constants["StructureNotifyMask"]
-EnterWindowMask = constants["EnterWindowMask"]
-LeaveWindowMask = constants["LeaveWindowMask"]
+# other event types we may use here:
+# StructureNotifyMask | EnterWindowMask | LeaveWindowMask
+GRAB_EVENT_MASK = constants["FocusChangeMask"]
+
 
 NotifyNormal        = constants["NotifyNormal"]
 NotifyGrab          = constants["NotifyGrab"]
@@ -55,23 +56,16 @@ class PointerGrabHelper(gobject.GObject):
         "ungrab"                : one_arg_signal,
         }
 
-    def __init__(self, window):
-        super(PointerGrabHelper, self).__init__()
-        log("PointerGrabHelper.__init__(%s)", window)
-        self._window = window
-        add_event_receiver(self._window, self)
-        #do we also need enter/leave?
-        X11Window.addXSelectInput(self._window.xid, StructureNotifyMask | EnterWindowMask | LeaveWindowMask)
-
     def __repr__(self):
-        return "PointerGrabHelper(%s)" % self._window
+        return "PointerGrabHelper"
 
     def cleanup(self):
-        if self._window:
-            remove_event_receiver(self._window, self)
-            self._window = None
-        else:
-            log.warn("pointer grab helper %s already destroyed!", self)
+        pass
+
+    def add_window(self, model, win):
+        log("grab adding window %s: %#x", model, win.xid)
+        add_event_receiver(win, self)
+        X11Window.addXSelectInput(win.xid, GRAB_EVENT_MASK)
 
 
     def do_xpra_focus_in_event(self, event):
