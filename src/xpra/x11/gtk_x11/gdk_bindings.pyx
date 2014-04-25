@@ -972,8 +972,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                                  + "This makes no sense, so I'm ignoring it.",
                                  e.xclient.message_type)
                         return GDK_FILTER_CONTINUE
-                    pyev.message_type = get_pyatom(pyev.display,
-                                                   e.xclient.message_type)
+                    pyev.message_type = get_pyatom(d, e.xclient.message_type)
                     pyev.format = e.xclient.format
                     # I am lazy.  Add this later if needed for some reason.
                     if pyev.format != 32:
@@ -1043,7 +1042,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.event_only = bool(bell_e.event_only)
                     pyev.delivered_to = pyev.window
                     pyev.window_model = None
-                    pyev.bell_name = get_pyatom(pyev.window, bell_e.name)
+                    pyev.bell_name = get_pyatom(d, bell_e.name)
             except XError, ex:
                 if ex.msg==BadWindow:
                     if e.type == DestroyNotify:
