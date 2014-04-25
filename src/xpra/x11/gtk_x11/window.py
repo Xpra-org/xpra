@@ -46,6 +46,7 @@ from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.log import Logger
 log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
+grablog = Logger("x11", "window", "grab")
 
 if gtk.pygtk_version<(2,17):
     log.error("your version of PyGTK is too old - expect some bugs")
@@ -58,6 +59,25 @@ CWWidth = constants["CWWidth"]
 CWHeight = constants["CWHeight"]
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
+
+# grab stuff:
+NotifyNormal        = constants["NotifyNormal"]
+NotifyGrab          = constants["NotifyGrab"]
+NotifyUngrab        = constants["NotifyUngrab"]
+NotifyWhileGrabbed  = constants["NotifyWhileGrabbed"]
+GRAB_CONSTANTS = {
+                  NotifyNormal          : "NotifyNormal",
+                  NotifyGrab            : "NotifyGrab",
+                  NotifyUngrab          : "NotifyUngrab",
+                  NotifyWhileGrabbed    : "NotifyWhileGrabbed",
+                 }
+DETAIL_CONSTANTS    = {}
+for x in ("NotifyAncestor", "NotifyVirtual", "NotifyInferior",
+          "NotifyNonlinear", "NotifyNonlinearVirtual", "NotifyPointer",
+          "NotifyPointerRoot", "NotifyDetailNone"):
+    DETAIL_CONSTANTS[constants[x]] = x
+grablog("pointer grab constants: %s", GRAB_CONSTANTS)
+grablog("detail constants: %s", DETAIL_CONSTANTS)
 
 
 #if you want to use a virtual screen bigger than 32767x32767
@@ -281,8 +301,12 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "raised"                : one_arg_signal,
         "unmanaged"             : one_arg_signal,
 
-# this signal must be defined in the subclasses to be seen by the event stuff:
+        "grab"                  : one_arg_signal,
+        "ungrab"                : one_arg_signal,
+# these signals must be defined in the subclasses to be seen by the event stuff:
 #        "xpra-configure-event": one_arg_signal,
+#        "xpra-focus-in-event"   : one_arg_signal,
+#        "xpra-focus-out-event"  : one_arg_signal,
         }
 
     def __init__(self, client_window):
@@ -605,6 +629,25 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         prop_set(self.client_window.get_screen().get_root_window(), "_NET_ACTIVE_WINDOW", "u32", self.client_window.xid)
 
 
+    def do_xpra_focus_in_event(self, event):
+        grablog("focus_in_event(%s) mode=%s, detail=%s",
+            event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
+        self.may_emit_grab(event)
+
+    def do_xpra_focus_out_event(self, event):
+        grablog("focus_out_event(%s) mode=%s, detail=%s",
+            event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
+        self.may_emit_grab(event)
+
+    def may_emit_grab(self, event):
+        if event.mode==NotifyGrab:
+            grablog("emitting grab on %s", self)
+            self.emit("grab", event)
+        if event.mode==NotifyUngrab:
+            grablog("emitting ungrab on %s", self)
+            self.emit("ungrab", event)
+
+
 gobject.type_register(BaseWindowModel)
 
 
@@ -617,6 +660,8 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         "xpra-unmap-event": one_arg_signal,
         "xpra-client-message-event" : one_arg_signal,
         "xpra-property-notify-event": one_arg_signal,
+        "xpra-focus-in-event"   : one_arg_signal,
+        "xpra-focus-out-event"  : one_arg_signal,
         }
 
     def __init__(self, client_window):
@@ -630,7 +675,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     def setup(self):
         BaseWindowModel.setup(self)
         self.client_window.set_events(self.client_window_saved_events
-                                      | gtk.gdk.STRUCTURE_MASK)
+                                      | gtk.gdk.STRUCTURE_MASK | gtk.gdk.FOCUS_CHANGE_MASK)
         # So now if the window becomes unmapped in the future then we will
         # notice... but it might be unmapped already, and any event
         # already generated, and our request for that event is too late!
@@ -768,6 +813,8 @@ class WindowModel(BaseWindowModel):
                                non_none_list_accumulator),
         "xpra-property-notify-event": one_arg_signal,
         "xpra-configure-event": one_arg_signal,
+        "xpra-focus-in-event"   : one_arg_signal,
+        "xpra-focus-out-event"  : one_arg_signal,
 
         "child-map-request-event": one_arg_signal,
         "child-configure-request-event": one_arg_signal,
@@ -815,7 +862,8 @@ class WindowModel(BaseWindowModel):
         # Start listening for important events.
         self.client_window.set_events(self.client_window_saved_events
                                       | gtk.gdk.STRUCTURE_MASK
-                                      | gtk.gdk.PROPERTY_CHANGE_MASK)
+                                      | gtk.gdk.PROPERTY_CHANGE_MASK
+                                      | gtk.gdk.FOCUS_CHANGE_MASK)
 
         # The child might already be mapped, in case we inherited it from
         # a previous window manager.  If so, we unmap it now, and save the

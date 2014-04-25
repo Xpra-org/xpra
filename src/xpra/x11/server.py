@@ -18,7 +18,6 @@ from xpra.util import AdHocStruct
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
 from xpra.x11.gtk_x11.wm import Wm
-from xpra.x11.gtk_x11.pointer_grab import PointerGrabHelper
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -28,7 +27,6 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                                cleanup_x11_filter,          #@UnresolvedImport
                                cleanup_all_event_receivers  #@UnresolvedImport
                                )
-from xpra.x11.gtk_x11.world_window import get_world_window
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -182,6 +180,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         X11ServerBase.x11_init(self)
         assert init_x11_filter() is True
 
+        self._has_grab = 0
         self._has_focus = 0
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
@@ -199,13 +198,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
-
-        #manage pointer grabs:
-        self._has_grab = None
-        self._grab_helper = PointerGrabHelper()
-        self._grab_helper.add_window(get_world_window(), get_world_window().window)
-        self._grab_helper.connect("grab", self._pointer_grab)
-        self._grab_helper.connect("ungrab", self._pointer_ungrab)
 
         #save default xsettings:
         self.default_xsettings = XSettingsHelper().get_settings()
@@ -294,16 +286,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
         X11ServerBase.cleanup(self)
         cleanup_x11_filter()
         cleanup_all_event_receivers()
-        if self._grab_helper:
-            self._grab_helper.cleanup()
-            self._grab_helper = None
         if self._wm:
             self._wm.cleanup()
             self._wm = None
         if self._has_grab:
             #normally we set this value when we receive the NotifyUngrab
             #but at this point in the cleanup, we probably won't, so force set it:
-            self._has_grab = None
+            self._has_grab = 0
             self.X11_ungrab()
 
 
@@ -393,12 +382,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._add_new_or_window(event.window)
 
     def _add_new_window_common(self, window):
-        self._grab_helper.add_window(window, window.client_window)
         windowlog("adding window %s", window)
         wid = X11ServerBase._add_new_window_common(self, window)
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
         window.managed_connect("raised", self._raised_window)
+        window.managed_connect("grab", self._window_grab)
+        window.managed_connect("ungrab", self._window_ungrab)
         return wid
 
     _window_export_properties = ("title", "size-hints", "fullscreen", "maximized", "opacity")
@@ -623,22 +613,23 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._damage(window, event.x, event.y, event.width, event.height)
 
 
-    def _pointer_grab(self, window, event):
-        grablog("pointer_grab(%s, %s) has_grab=%s, has focus=%s", window, event, self._has_grab, self._has_focus)
-        if self._has_focus is None or self._has_grab==self._has_focus:
+    def _window_grab(self, window, event):
+        grab_id = self._window_to_id.get(window, -1)
+        grablog("window_grab(%s, %s) has_grab=%s, has focus=%s, grab window=%s", window, event, self._has_grab, self._has_focus, grab_id)
+        if grab_id<0 or self._has_grab==grab_id:
             return
-        self._has_grab = self._has_focus
+        self._has_grab = grab_id
         for ss in self._server_sources.values():
             ss.pointer_grab(self._has_grab)
 
-    def _pointer_ungrab(self, window, event):
-        grablog("pointer_ungrab(%s, %s) has_grab=%s, has focus=%s", window, event, self._has_grab, self._has_focus)
-        if self._has_grab is None:
+    def _window_ungrab(self, window, event):
+        grab_id = self._window_to_id.get(window, -1)
+        grablog("window_ungrab(%s, %s) has_grab=%s, has focus=%s, grab window=%s", window, event, self._has_grab, self._has_focus, grab_id)
+        if not self._has_grab:
             return
-        had_grab = self._has_grab
-        self._has_grab = None
+        self._has_grab = 0
         for ss in self._server_sources.values():
-            ss.pointer_ungrab(had_grab)
+            ss.pointer_ungrab(grab_id)
 
 
     def _raised_window(self, window, event):
