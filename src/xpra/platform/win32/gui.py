@@ -6,15 +6,12 @@
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
-import os
 from xpra.log import Logger
 log = Logger("win32")
 grablog = Logger("win32", "grab")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.util import AdHocStruct
-
-UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
 
 KNOWN_EVENTS = {}
@@ -80,10 +77,7 @@ class ClientExtras(object):
         log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, self.client)
         if wParam==0 and self.client:
             #our app has lost focus
-            wid = self.client.window_with_grab
-            grablog("window with grab=%s, UNGRAB_KEY=%s", wid, UNGRAB_KEY)
-            if wid is not None and UNGRAB_KEY:
-                self.force_ungrab(wid)
+            self.client.update_focus(0, False)
 
     def power_broadcast_event(self, wParam, lParam):
         log("WM_POWERBROADCAST: %s/%s client=%s", POWER_EVENTS.get(wParam, wParam), lParam, self.client)
@@ -94,47 +88,6 @@ class ClientExtras(object):
         #The system always sends a PBT_APMRESUMEAUTOMATIC message whenever the system resumes.
         elif wParam==win32con.PBT_APMRESUMEAUTOMATIC and self.client:
             self.client.resume()
-
-    def force_ungrab(self, wid):
-        grablog("force_ungrab(%s) server supports force ungrab: %s", wid, self.client.force_ungrab)
-        if self.client.force_ungrab:
-            #ungrab via dedicated server packet:
-            self.client.send_force_ungrab(wid)
-            return
-        #fallback: try to find a key to press:
-        kh = self.client.keyboard_helper
-        if not kh:
-            if not self._kh_warning:
-                self._kh_warning = True
-                grablog.warn("no keyboard support, cannot simulate keypress to lose grab!")
-            return
-        #xkbmap_keycodes is a list of: (keyval, name, keycode, group, level)
-        ungrab_keys = [x for x in kh.xkbmap_keycodes if x[1]==UNGRAB_KEY]
-        if len(ungrab_keys)==0:
-            if not self._kh_warning:
-                self._kh_warning = True
-                grablog.warn("ungrab key %s not found, cannot simulate keypress to lose grab!", UNGRAB_KEY)
-            return
-        #ungrab_keys.append((65307, "Escape", 27, 0, 0))     #ugly hardcoded default value
-        ungrab_key = ungrab_keys[0]
-        grablog("lost focus whilst window %s has grab, simulating keypress: %s", wid, ungrab_key)
-        key_event = AdHocStruct()
-        key_event.keyname = ungrab_key[1]
-        key_event.pressed = True
-        key_event.modifiers = []
-        key_event.keyval = ungrab_key[0]
-        keycode = ungrab_key[2]
-        try:
-            key_event.string = chr(keycode)
-        except:
-            key_event.string = str(keycode)
-        key_event.keycode = keycode
-        key_event.group = 0
-        #press:
-        kh.send_key_action(wid, key_event)
-        #unpress:
-        key_event.pressed = False
-        kh.send_key_action(wid, key_event)
 
     def setup_console_event_listener(self, enable=1):
         try:

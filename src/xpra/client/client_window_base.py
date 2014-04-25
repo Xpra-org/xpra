@@ -279,7 +279,7 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def _unfocus(self):
-        focuslog("_unfocus() wid=%s", self._id)
+        focuslog("_unfocus() wid=%s, focused=%s", self._id, self._client._focused)
         if self._client._focused==self._id:
             self._client.update_focus(self._id, False)
 

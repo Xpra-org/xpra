@@ -20,6 +20,7 @@ traylog = Logger("client", "tray")
 keylog = Logger("client", "keyboard")
 workspacelog = Logger("client", "workspace")
 dbuslog = Logger("client", "dbus")
+grablog = Logger("client", "grab")
 
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
@@ -36,7 +37,7 @@ from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid
-from xpra.util import nn, nonl, std, AtomicInteger, log_screen_sizes
+from xpra.util import nn, nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -44,6 +45,8 @@ except:
 
 FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
+UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
+
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
@@ -194,6 +197,7 @@ class UIXpraClient(XpraClientBase):
         #helpers and associated flags:
         self.client_extras = None
         self.keyboard_helper = None
+        self.kh_warning = False
         self.clipboard_helper = None
         self.menu_helper = None
         self.tray = None
@@ -201,6 +205,7 @@ class UIXpraClient(XpraClientBase):
 
         #state:
         self._focused = None
+        self._window_with_grab = None
         self._last_screen_settings = None
         self._suspended_at = 0
 
@@ -715,13 +720,17 @@ class UIXpraClient(XpraClientBase):
         self.send("focus", wid, self.get_current_modifiers())
 
     def update_focus(self, wid, gotit):
-        focuslog("update_focus(%s, %s) _focused=%s", wid, gotit, self._focused)
+        focuslog("update_focus(%s, %s) focused=%s, grabbed=%s", wid, gotit, self._focused, self._window_with_grab)
         if gotit and self._focused is not wid:
             if self.keyboard_helper:
                 self.keyboard_helper.clear_repeat()
             self.send_focus(wid)
             self._focused = wid
         if not gotit:
+            if self._window_with_grab:
+                self.window_ungrab()
+                self.do_force_ungrab(self._window_with_grab)
+                self._window_with_grab = None
             if self._focused!=wid:
                 #if this window lost focus, it must have had it!
                 #(catch up - makes things like OR windows work:
@@ -732,6 +741,70 @@ class UIXpraClient(XpraClientBase):
                 self.keyboard_helper.clear_repeat()
             self.send_focus(0)
             self._focused = None
+
+    def do_force_ungrab(self, wid):
+        grablog("do_force_ungrab(%s) server supports force ungrab: %s", wid, self.force_ungrab)
+        if self.force_ungrab:
+            #ungrab via dedicated server packet:
+            self.send_force_ungrab(wid)
+            return
+        #fallback for older servers: try to find a key to press:
+        kh = self.keyboard_helper
+        if not kh:
+            if not self.kh_warning:
+                self.kh_warning = True
+                grablog.warn("no keyboard support, cannot simulate keypress to lose grab!")
+            return
+        #xkbmap_keycodes is a list of: (keyval, name, keycode, group, level)
+        ungrab_keys = [x for x in kh.xkbmap_keycodes if x[1]==UNGRAB_KEY]
+        if len(ungrab_keys)==0:
+            if not self.kh_warning:
+                self.kh_warning = True
+                grablog.warn("ungrab key %s not found, cannot simulate keypress to lose grab!", UNGRAB_KEY)
+            return
+        #ungrab_keys.append((65307, "Escape", 27, 0, 0))     #ugly hardcoded default value
+        ungrab_key = ungrab_keys[0]
+        grablog("lost focus whilst window %s has grab, simulating keypress: %s", wid, ungrab_key)
+        key_event = AdHocStruct()
+        key_event.keyname = ungrab_key[1]
+        key_event.pressed = True
+        key_event.modifiers = []
+        key_event.keyval = ungrab_key[0]
+        keycode = ungrab_key[2]
+        try:
+            key_event.string = chr(keycode)
+        except:
+            key_event.string = str(keycode)
+        key_event.keycode = keycode
+        key_event.group = 0
+        #press:
+        kh.send_key_action(wid, key_event)
+        #unpress:
+        key_event.pressed = False
+        kh.send_key_action(wid, key_event)
+
+    def _process_pointer_grab(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        grablog("grabbing %s: %s", wid, window)
+        if window:
+            self.window_grab(window)
+            self._window_with_grab = wid
+
+    def window_grab(self, window):
+        #subclasses should implement this method
+        pass
+
+    def _process_pointer_ungrab(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        grablog("ungrabbing %s: %s", wid, window)
+        self.window_ungrab()
+        self._window_with_grab = None
+
+    def window_ungrab(self):
+        #subclasses should implement this method
+        pass
 
 
     def make_hello(self):
@@ -1788,6 +1861,10 @@ class UIXpraClient(XpraClientBase):
     def destroy_window(self, wid, window):
         windowlog("destroy_window(%s, %s)", wid, window)
         window.destroy()
+        if self._window_with_grab==wid:
+            log("destroying window %s which has grab, ungrabbing!", wid)
+            self.window_ungrab()
+            self._window_with_grab = None
 
     def _process_desktop_size(self, packet):
         root_w, root_h, max_w, max_h = packet[1:5]
