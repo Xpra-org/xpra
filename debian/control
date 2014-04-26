@@ -39,8 +39,22 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #if you use Ubuntu, you will "want" this mess:
 #		,python-appindicator
 Recommends:
-# webp:
-        ,libwebp4
+        libswscale2
+#version specific values (sigh), uncomment the one you need:
+#x264
+#precise:	,libx264-120
+#saucy:		,libx264-123
+#trusty:	,libx264-142
+#squeeze uses a static build instead of libx264-120
+#wheezy:	,libx264-123
+#jessie:	,libx264-142
+#sid:		,libx264-142
+#webp
+#wheezy ships the outdated and buggy libwebp2 (do not use)
+#jessie:	,libwebp5
+#sid:		,libwebp5
+#saucy:		,libwebp4
+#trusty:	,libwebp5
 # audio-related:
         ,gstreamer0.10-plugins-base
 #                 ^^ vorbis ^^
@@ -51,8 +65,6 @@ Recommends:
         ,python-gst0.10
         ,openssh-client
         ,ssh-askpass
-# not strictly needed, but gets rid of ugly warnings in PyOpenGL:
-        ,python-numeric
 # hopefully this will motivate someone to package it (trivial too):
 		,python-lz4
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
