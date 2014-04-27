@@ -79,8 +79,8 @@ client_ENABLED = True
 
 x11_ENABLED = not WIN32 and not OSX and not PYTHON3
 argb_ENABLED = True
-gtk2_ENABLED = client_ENABLED
-gtk3_ENABLED = False
+gtk2_ENABLED = client_ENABLED and not PYTHON3
+gtk3_ENABLED = PYTHON3
 qt4_ENABLED = False
 opengl_ENABLED = client_ENABLED
 html5_ENABLED = not WIN32 and not OSX
