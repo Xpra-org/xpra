@@ -44,6 +44,14 @@ ALLOW_UNENCRYPTED_PASSWORDS = os.environ.get("XPRA_ALLOW_UNENCRYPTED_PASSWORDS",
 DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
 
 
+if sys.version < '3':
+    def b(x):
+        return x
+else:
+    def b(x):
+        return bytes(x, 'UTF-8')
+
+
 class XpraClientBase(object):
     """ Base class for Xpra clients.
         Provides the glue code for:
@@ -195,7 +203,7 @@ class XpraClientBase(object):
             hello["challenge_response"] = challenge_response
             if client_salt:
                 hello["challenge_client_salt"] = client_salt
-        log.debug("send_hello(%s) packet=%s", binascii.hexlify(challenge_response or ""), hello)
+        log.debug("send_hello(%s) packet=%s", binascii.hexlify(b(challenge_response or "", 'UTF-8')), hello)
         self.send("hello", hello)
         self.timeout_add(DEFAULT_TIMEOUT, self.verify_connected)
 
