@@ -382,7 +382,7 @@ class WindowBackingBase(object):
         """ see _mmap_send() in server.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, img_data)
-        rgb_format = options.get("rgb_format", "rgb24")
+        rgb_format = options.get("rgb_format", "RGB")
         #Note: BGR(A) is only handled by gl_window_backing
         if rgb_format in ("RGB", "BGR"):
             self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
