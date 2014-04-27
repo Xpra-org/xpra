@@ -5,11 +5,15 @@
 # later version. See the file COPYING for details.
 
 import cairo
+import array
 
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
-from xpra.client.window_backing_base import fire_paint_callbacks, log
-from xpra.os_util import BytesIOClass, data_to_buffer
+from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.os_util import BytesIOClass
 from xpra.codecs.loader import get_codec
+
+from xpra.log import Logger
+log = Logger("paint", "cairo")
 
 from xpra.gtk_common.gobject_compat import is_gtk3, import_gdk, import_gobject
 gdk = import_gdk()
@@ -70,51 +74,35 @@ class CairoBacking(GTKWindowBacking):
         GTKWindowBacking.close(self)
 
 
-    def cairo_paint_pixbuf(self, coding, img_data, x, y, width, height, options, callbacks):
-        b = self._backing
-        if b is None:
+    def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
+        if coding.startswith("png") or coding=="jpeg":
+            gobject.idle_add(self.cairo_paint_image, img_data, x, y, callbacks)
             return
+        #this will end up calling do_paint_rgb24 after converting the pixels to RGB
+        GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
+
+    def cairo_paint_image(self, img_data, x, y, callbacks):
+        """ must be called from UI thread """
         #load into a pixbuf
         pbl = PixbufLoader()
         pbl.write(img_data)
         pbl.close()
         pixbuf = pbl.get_pixbuf()
-        #now use it to paint:
-        gc = cairo.Context(b)
-        gdk.cairo_set_source_pixbuf(gc, pixbuf, x, y)
-        gc.paint()
-        del pixbuf
-        fire_paint_callbacks(callbacks, True)
+        del pbl
+        self.cairo_paint_pixbuf(pixbuf, x, y, callbacks)
 
-    def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
-        if coding.startswith("png") or coding=="jpeg":
-            gobject.idle_add(self.cairo_paint_pixbuf, coding, img_data, x, y, width, height, options, callbacks)
-            return
-        GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
-
-
-    def paint_png(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def cairo_paint_pixbuf(self, pixbuf, x, y, callbacks):
         """ must be called from UI thread """
         if self._backing is None:
             fire_paint_callbacks(callbacks, False)
             return
-        buf = data_to_buffer(img_data)
-        self.do_paint_png(buf, x, y, width, height, rowstride, options, callbacks)
-
-    def do_paint_png(self, buf, x, y, width, height, rowstride, options, callbacks):
-        surf = cairo.ImageSurface.create_from_png(buf)
+        #now use it to paint:
         gc = cairo.Context(self._backing)
-        gc.set_source_surface(surf, x, y)
+        gdk.cairo_set_source_pixbuf(gc, pixbuf, x, y)
         gc.paint()
-        surf.finish()
+        del pixbuf, gc
         fire_paint_callbacks(callbacks, True)
 
-    def paint_pil_image(self, pil_image, width, height, rowstride, options, callbacks):
-        buf = BytesIOClass()
-        pil_image.save(buf, format="PNG")
-        png_data = buf.getvalue()
-        buf.close()
-        self.idle_add(self.paint_png, png_data, 0, 0, width, height, rowstride, options, callbacks)
 
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
@@ -127,12 +115,25 @@ class CairoBacking(GTKWindowBacking):
         if rowstride==0:
             rowstride = width * 3
         im = PIL.Image.frombuffer("RGB", (width, height), img_data, "raw", "RGB", rowstride)
+        if is_gtk3():
+            data = array.array('B', im.tostring())
+            pixbuf = GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
+                                          True, 8, width, height, width * 4,
+                                          None, None)
+            self.cairo_paint_pixbuf(pixbuf, x, y, callbacks)
+            return
+        #roundtrip via PNG! (crappy cairo API)
         buf = BytesIOClass()
         im.save(buf, "PNG")
         data = buf.getvalue()
         buf.close()
         img_data = BytesIOClass(data)
-        self.do_paint_png(img_data, x, y, width, height, rowstride, options, callbacks)
+        surf = cairo.ImageSurface.create_from_png(img_data)
+        gc = cairo.Context(self._backing)
+        gc.set_source_surface(surf, x, y)
+        gc.paint()
+        surf.finish()
+        fire_paint_callbacks(callbacks, True)
         return  False
 
 
