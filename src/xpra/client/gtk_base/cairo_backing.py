@@ -11,6 +11,15 @@ from xpra.client.window_backing_base import fire_paint_callbacks, log
 from xpra.os_util import BytesIOClass, data_to_buffer
 from xpra.codecs.loader import get_codec
 
+from xpra.gtk_common.gobject_compat import is_gtk3, import_gdk, import_gobject
+gdk = import_gdk()
+gobject = import_gobject()
+if is_gtk3():
+    from gi.repository import GdkPixbuf     #@UnresolvedImport
+    PixbufLoader = GdkPixbuf.PixbufLoader
+else:
+    from gtk.gdk import PixbufLoader
+
 
 """
 An area we draw onto with cairo
@@ -59,6 +68,30 @@ class CairoBacking(GTKWindowBacking):
         if self._backing:
             self._backing.finish()
         GTKWindowBacking.close(self)
+
+
+    def cairo_paint_pixbuf(self, coding, img_data, x, y, width, height, options, callbacks):
+        b = self._backing
+        if b is None:
+            return
+        #load into a pixbuf
+        pbl = PixbufLoader()
+        pbl.write(img_data)
+        pbl.close()
+        pixbuf = pbl.get_pixbuf()
+        #now use it to paint:
+        gc = cairo.Context(b)
+        gdk.cairo_set_source_pixbuf(gc, pixbuf, x, y)
+        gc.paint()
+        del pixbuf
+        fire_paint_callbacks(callbacks, True)
+
+    def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
+        if coding.startswith("png") or coding=="jpeg":
+            gobject.idle_add(self.cairo_paint_pixbuf, coding, img_data, x, y, width, height, options, callbacks)
+            return
+        GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
+
 
     def paint_png(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
