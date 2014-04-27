@@ -190,5 +190,7 @@ def parse_xkbmap_query(xkbmap_query):
     for line in xkbmap_query.splitlines():
         m = opt_re.match(line)
         if m:
-            settings[m.group(1)] = m.group(2).strip()
+            v = m.group(2).strip()
+            if v!=",":
+                settings[m.group(1)] = v
     return settings
