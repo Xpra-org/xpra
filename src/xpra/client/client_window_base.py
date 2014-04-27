@@ -333,5 +333,8 @@ class ClientWindowBase(ClientWidgetBase):
     def do_scroll_event(self, event):
         if self._client.readonly:
             return
-        self._button_action(self.SCROLL_MAP[event.direction], event, True)
-        self._button_action(self.SCROLL_MAP[event.direction], event, False)
+        button_mapping = self.SCROLL_MAP.get(event.direction, -1)
+        mouselog("do_scroll_event direction=%s, button_mapping=%s", event.direction, button_mapping)
+        if button_mapping>=0:
+            self._button_action(button_mapping, event, True)
+            self._button_action(button_mapping, event, False)

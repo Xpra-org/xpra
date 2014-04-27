@@ -21,19 +21,69 @@ paintlog = Logger("paint")
 from xpra.codecs.argb.argb import unpremultiply_argb, byte_buffer_to_buffer   #@UnresolvedImport
 
 
+GTK3_WINDOW_EVENT_MASK = Gdk.EventMask.STRUCTURE_MASK | Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.KEY_RELEASE_MASK \
+            | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK \
+            | Gdk.EventMask.PROPERTY_CHANGE_MASK | Gdk.EventMask.SCROLL_MASK
+
+GTK3_BUTTON_MASK = {Gdk.ModifierType.BUTTON1_MASK : 1,
+                    Gdk.ModifierType.BUTTON2_MASK : 2,
+                    Gdk.ModifierType.BUTTON3_MASK : 3,
+                    Gdk.ModifierType.BUTTON4_MASK : 4,
+                    Gdk.ModifierType.BUTTON5_MASK : 5}
+
+GTK3_SCROLL_MAP = {
+                   Gdk.ScrollDirection.UP   : 4,
+                   Gdk.ScrollDirection.DOWN : 5,
+                   Gdk.ScrollDirection.LEFT : 6,
+                   Gdk.ScrollDirection.RIGHT: 7,
+                   #Gdk.ScrollDirection.SMOOTH would require special handling
+                   # calling gdk_event_get_scroll_deltas()
+                  }
+
+GTK3_OR_TYPE_HINTS = [Gdk.WindowTypeHint.DIALOG,
+                      Gdk.WindowTypeHint.MENU,
+                      Gdk.WindowTypeHint.TOOLBAR,
+                      #Gdk.WindowTypeHint.SPLASHSCREEN,
+                      #Gdk.WindowTypeHint.UTILITY,
+                      #Gdk.WindowTypeHint.DOCK,
+                      #Gdk.WindowTypeHint.DESKTOP,
+                      Gdk.WindowTypeHint.DROPDOWN_MENU,
+                      Gdk.WindowTypeHint.POPUP_MENU,
+                      Gdk.WindowTypeHint.TOOLTIP,
+                      #Gdk.WindowTypeHint.NOTIFICATION,
+                      Gdk.WindowTypeHint.COMBO,
+                      Gdk.WindowTypeHint.DND]
+
+GTK3_NAME_TO_HINT = {
+                "NORMAL"        : Gdk.WindowTypeHint.NORMAL,
+                "DIALOG"        : Gdk.WindowTypeHint.DIALOG,
+                "MENU"          : Gdk.WindowTypeHint.MENU,
+                "TOOLBAR"       : Gdk.WindowTypeHint.TOOLBAR,
+                "SPLASH"        : Gdk.WindowTypeHint.SPLASHSCREEN,
+                "UTILITY"       : Gdk.WindowTypeHint.UTILITY,
+                "DOCK"          : Gdk.WindowTypeHint.DOCK,
+                "DESKTOP"       : Gdk.WindowTypeHint.DESKTOP,
+                "DROPDOWN_MENU" : Gdk.WindowTypeHint.DROPDOWN_MENU,
+                "POPUP_MENU"    : Gdk.WindowTypeHint.POPUP_MENU,
+                "TOOLTIP"       : Gdk.WindowTypeHint.TOOLTIP,
+                "NOTIFICATION"  : Gdk.WindowTypeHint.NOTIFICATION,
+                "COMBO"         : Gdk.WindowTypeHint.COMBO,
+                "DND"           : Gdk.WindowTypeHint.DND
+                }
+
+
 """
 GTK3 version of the ClientWindow class
 """
 class ClientWindow(GTKClientWindowBase):
 
-    WINDOW_POPUP = Gtk.WindowType.POPUP
-    WINDOW_TOPLEVEL = Gtk.WindowType.TOPLEVEL
-    #where have those values gone?
-    #gi/pygtk3 docs are terrible for this
-    WINDOW_EVENT_MASK = 0
-    OR_TYPE_HINTS = []
-    NAME_TO_HINT = { }
-    SCROLL_MAP = {}
+    WINDOW_POPUP        = Gtk.WindowType.POPUP
+    WINDOW_TOPLEVEL     = Gtk.WindowType.TOPLEVEL
+    WINDOW_EVENT_MASK   = GTK3_WINDOW_EVENT_MASK
+    BUTTON_MASK         = GTK3_BUTTON_MASK
+    SCROLL_MAP          = GTK3_SCROLL_MAP
+    OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
+    NAME_TO_HINT        = GTK3_NAME_TO_HINT
 
     WINDOW_STATE_FULLSCREEN = Gdk.WindowState.FULLSCREEN
     WINDOW_STATE_MAXIMIZED  = Gdk.WindowState.MAXIMIZED
@@ -49,6 +99,18 @@ class ClientWindow(GTKClientWindowBase):
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
         # does not work with gtk3? what the??
         #self.set_data(strtobytes("_kde_no_window_grab"), 1)
+        def motion(w, event):
+            self.do_motion_notify_event(event)
+        self.connect("motion-notify-event", motion)
+        def press(w, event):
+            self.do_button_press_event(event)
+        self.connect("button-press-event", press)
+        def release(w, event):
+            self.do_button_release_event(event)
+        self.connect("button-release-event", release)
+        def scroll(w, event):
+            self.do_scroll_event(event)
+        self.connect("scroll-event", scroll)
 
     def new_backing(self, w, h):
         self._backing = self.make_new_backing(CairoBacking, w, h)

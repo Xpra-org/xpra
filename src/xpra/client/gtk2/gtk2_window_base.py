@@ -50,6 +50,11 @@ GTK2_NAME_TO_HINT = {
                 "COMBO"         : gdk.WINDOW_TYPE_HINT_COMBO,
                 "DND"           : gdk.WINDOW_TYPE_HINT_DND
                 }
+GTK2_BUTTON_MASK = {gtk.gdk.BUTTON1_MASK : 1,
+                    gtk.gdk.BUTTON2_MASK : 2,
+                    gtk.gdk.BUTTON3_MASK : 3,
+                    gtk.gdk.BUTTON4_MASK : 4,
+                    gtk.gdk.BUTTON5_MASK : 5}
 # Map scroll directions back to mouse buttons.  Mapping is taken from
 # gdk/x11/gdkevents-x11.c.
 GTK2_SCROLL_MAP = {
@@ -70,6 +75,7 @@ class GTK2WindowBase(GTKClientWindowBase):
     OR_TYPE_HINTS       = GTK2_OR_TYPE_HINTS
     NAME_TO_HINT        = GTK2_NAME_TO_HINT
     SCROLL_MAP          = GTK2_SCROLL_MAP
+    BUTTON_MASK         = GTK2_BUTTON_MASK
 
     WINDOW_STATE_FULLSCREEN = gdk.WINDOW_STATE_FULLSCREEN
     WINDOW_STATE_MAXIMIZED  = gdk.WINDOW_STATE_MAXIMIZED

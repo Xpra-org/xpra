@@ -410,11 +410,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         pointer = (int(event.x_root), int(event.y_root))
         modifiers = self._client.mask_to_names(event.state)
         buttons = []
-        for mask, button in {gtk.gdk.BUTTON1_MASK : 1,
-                             gtk.gdk.BUTTON2_MASK : 2,
-                             gtk.gdk.BUTTON3_MASK : 3,
-                             gtk.gdk.BUTTON4_MASK : 4,
-                             gtk.gdk.BUTTON5_MASK : 5}.items():
+        for mask, button in self.BUTTON_MASK.items():
             if event.state & mask:
                 buttons.append(button)
         return pointer, modifiers, buttons
