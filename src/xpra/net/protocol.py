@@ -79,7 +79,9 @@ if sys.version > '3':
     long = int          #@ReservedAssignment
     unicode = str           #@ReservedAssignment
     def zcompress(packet, level):
-        return level + ZLIB_FLAG, compress(bytes(packet, 'UTF-8'), level)
+        if type(packet)!=bytes:
+            packet = bytes(packet, 'UTF-8')
+        return level + ZLIB_FLAG, compress(packet, level)
 else:
     def zcompress(packet, level):
         return level + ZLIB_FLAG, compress(str(packet), level)
