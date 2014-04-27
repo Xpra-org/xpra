@@ -499,7 +499,7 @@ def pkgconfig(*pkgs_options, **ekw):
         add_to_keywords(kw, 'extra_compile_args', '-g')
         add_to_keywords(kw, 'extra_compile_args', '-ggdb')
         kw['cython_gdb'] = True
-        if get_gcc_version()>=4.8:
+        if get_gcc_version()>=[4, 8]:
             add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
             add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     #add_to_keywords(kw, 'include_dirs', '.')
