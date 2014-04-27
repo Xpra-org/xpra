@@ -8,7 +8,7 @@ import gobject
 
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.x11.gtk_x11.error import trap
+from xpra.gtk_common.error import trap
 
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()

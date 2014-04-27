@@ -7,7 +7,7 @@
 import gobject
 import gtk
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.x11.gtk_x11.error import trap, XError
+from xpra.gtk_common.error import trap, XError
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 

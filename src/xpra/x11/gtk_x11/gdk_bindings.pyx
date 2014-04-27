@@ -13,7 +13,7 @@ import gtk
 import gtk.gdk
 
 from xpra.gtk_common.quit import gtk_main_quit_really
-from xpra.x11.gtk_x11.error import trap, XError
+from xpra.gtk_common.error import trap, XError
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")

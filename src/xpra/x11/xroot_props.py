@@ -9,7 +9,7 @@ import gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver, cleanup_all_event_receivers    #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter             #@UnresolvedImport
-from xpra.x11.gtk_x11.error import trap
+from xpra.gtk_common.error import trap
 
 from xpra.log import Logger
 log = Logger("x11", "util")

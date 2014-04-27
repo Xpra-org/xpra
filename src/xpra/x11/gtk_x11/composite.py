@@ -10,7 +10,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
             get_parent)                     #@UnresolvedImport
-from xpra.x11.gtk_x11.error import trap
+from xpra.gtk_common.error import trap
 
 from xpra.x11.gtk_x11.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport

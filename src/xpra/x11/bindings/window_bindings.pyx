@@ -8,7 +8,7 @@
 import struct
 import time
 
-from xpra.x11.gtk_x11.error import trap, XError
+from xpra.gtk_common.error import trap, XError
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "window")

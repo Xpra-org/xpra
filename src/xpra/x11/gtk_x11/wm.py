@@ -15,7 +15,7 @@ if sys.version_info < (2, 6):
 else:
     ImmutableSet = frozenset
 
-from xpra.x11.gtk_x11.error import trap
+from xpra.gtk_common.error import trap
 import xpra.x11.gtk_x11.selection
 from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get

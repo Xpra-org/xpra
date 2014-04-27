@@ -9,9 +9,8 @@ log = Logger("posix")
 eventlog = Logger("events", "posix")
 
 try:
-    import gtk.gdk
-    from xpra.x11.gtk_x11.error import trap, XError
-    from xpra.x11.bindings import X11KeyboardBindings       #@UnresolvedImport
+    from xpra.gtk_common.error import trap, XError
+    from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings       #@UnresolvedImport
     device_bell = X11KeyboardBindings().device_bell
 except Exception, e:
     log.warn("failed load posix keyboard device bell: %s", e)
@@ -173,6 +172,7 @@ class ClientExtras(object):
             if not self.client.xsettings_tuple:
                 log.warn("xsettings tuple format not supported, update ignored")
                 return
+            import gtk.gdk
             root = gtk.gdk.get_default_root_window()
             from xpra.x11.gtk_x11.prop import prop_get
             value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)

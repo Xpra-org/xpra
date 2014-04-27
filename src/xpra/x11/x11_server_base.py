@@ -20,7 +20,7 @@ from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@Unresolved
 X11Keyboard = X11KeyboardBindings()
 from xpra.x11.bindings.core_bindings import X11CoreBindings #@UnresolvedImport
 X11Core = X11CoreBindings()
-from xpra.x11.gtk_x11.error import XError, trap
+from xpra.gtk_common.error import XError, trap
 from xpra.server.server_uuid import save_uuid, get_uuid
 
 from xpra.log import Logger

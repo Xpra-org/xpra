@@ -6,7 +6,7 @@
 
 import gtk
 import gobject
-from xpra.x11.gtk_x11.error import trap
+from xpra.gtk_common.error import trap
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set

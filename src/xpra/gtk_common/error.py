@@ -34,11 +34,12 @@ import os
 #run xpra in synchronized mode to debug X11 errors:
 XPRA_SYNCHRONIZE = os.environ.get("XPRA_SYNCHRONIZE", "1")=="1"
 
-import gtk.gdk
-
 from xpra.log import Logger
 log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
+
+from xpra.gtk_common.gobject_compat import import_gdk
+gdk = import_gdk()
 
 class XError(Exception):
     def __init__(self, message):
@@ -78,16 +79,16 @@ class _ErrorManager(object):
 
     def _enter(self):
         assert self.depth >= 0
-        gtk.gdk.error_trap_push()
+        gdk.error_trap_push()
         self.depth += 1
 
     def _exit(self, need_sync):
         assert self.depth >= 0
         self.depth -= 1
         if self.depth == 0 and need_sync:
-            gtk.gdk.flush()
+            gdk.flush()
         # This is a Xlib error constant (Success == 0)
-        error = gtk.gdk.error_trap_pop()
+        error = gdk.error_trap_pop()
         if error:
             raise XError(XErrorToName(error))
 

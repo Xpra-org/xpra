@@ -13,7 +13,7 @@ import gtk
 from struct import pack, unpack, calcsize
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.x11.gtk_x11.error import trap, XError
+from xpra.gtk_common.error import trap, XError
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 

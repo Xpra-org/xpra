@@ -12,7 +12,7 @@ assert gdk_display_source
 
 from xpra.util import std
 from xpra.keyboard.layouts import parse_xkbmap_query
-from xpra.x11.gtk_x11.error import trap
+from xpra.gtk_common.error import trap
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
 

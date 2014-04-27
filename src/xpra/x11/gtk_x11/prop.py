@@ -26,7 +26,7 @@ X11Window = X11WindowBindings()
 
 from xpra.os_util import StringIOClass
 from xpra.x11.xsettings_prop import set_settings, get_settings
-from xpra.x11.gtk_x11.error import trap, XError
+from xpra.gtk_common.error import trap, XError
 from xpra.log import Logger
 log = Logger("x11", "window")
 

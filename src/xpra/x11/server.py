@@ -32,7 +32,7 @@ X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
 from xpra.x11.gtk_x11.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
-from xpra.x11.gtk_x11.error import trap
+from xpra.gtk_common.error import trap
 
 from xpra.log import Logger
 log = Logger("server")

@@ -29,7 +29,7 @@ if os.name=="posix":
     try:
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
-        from xpra.x11.gtk_x11.error import trap
+        from xpra.gtk_common.error import trap
         X11Window = X11WindowBindings()
         HAS_X11_BINDINGS = True
 

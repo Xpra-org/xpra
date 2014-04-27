@@ -39,7 +39,7 @@ from xpra.x11.gtk_x11.send_wm import (
 from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
                            one_arg_signal,
                            non_none_list_accumulator)
-from xpra.x11.gtk_x11.error import trap, XError
+from xpra.gtk_common.error import trap, XError
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.composite import CompositeHelper
 
