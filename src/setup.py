@@ -77,7 +77,8 @@ shadow_ENABLED = SHADOW_SUPPORTED
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3
 client_ENABLED = True
 
-x11_ENABLED = not WIN32 and not OSX and not PYTHON3
+x11_ENABLED = not WIN32 and not OSX
+gtk_x11_ENABLED = not WIN32 and not OSX and not PYTHON3
 argb_ENABLED = True
 gtk2_ENABLED = client_ENABLED and not PYTHON3
 gtk3_ENABLED = PYTHON3
@@ -142,7 +143,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "buffers", "memoryview",
             "rencode", "bencode", "cython_bencode",
             "clipboard",
-            "server", "client", "x11",
+            "server", "client", "x11", "gtk_x11",
             "gtk2", "gtk3", "qt4", "html5",
             "sound", "cyxor", "cymaths", "opengl", "argb",
             "warn", "strict", "shadow", "debug", "PIC", "Xdummy", "verbose", "bundle_tests")
@@ -203,6 +204,9 @@ if "clean" not in sys.argv:
         cymaths_ENABLED = False
     if x11_ENABLED and WIN32:
         print("Warning: enabling x11 on MS Windows is unlikely to work!")
+    if gtk_x11_ENABLED and not x11_ENABLED:
+        print("Error: you must enable x11 to support gtk_x11!")
+        exit(1)
     if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED and not qt4_ENABLED:
         print("Warning: client is enabled but none of the client toolkits are!?")
     if not argb_ENABLED and (x11_ENABLED or OSX):
@@ -1138,7 +1142,7 @@ toggle_packages(server_ENABLED, "xpra.server", "xpra.server.stats", "xpra.server
 toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
 
-toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.gtk_x11", "xpra.x11.bindings")
+toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
     make_constants("xpra", "x11", "bindings", "constants")
     make_constants("xpra", "x11", "gtk_x11", "constants")
@@ -1173,6 +1177,8 @@ if x11_ENABLED:
                 **pkgconfig("xcomposite", "xdamage", "xext")
                 ))
 
+toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
+if gtk_x11_ENABLED:
     #below uses gtk/gdk:
     cython_add(Extension("xpra.x11.gtk_x11.gdk_display_source",
                 ["xpra/x11/gtk_x11/gdk_display_source.pyx"],
