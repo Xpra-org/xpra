@@ -9,12 +9,16 @@
 from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 from gi.repository import Gtk                   #@UnresolvedImport @UnusedImport
 from gi.repository import Gdk                   #@UnresolvedImport @UnusedImport
+from gi.repository import GdkPixbuf             #@UnresolvedImport @UnusedImport
 
 from xpra.client.gtk_base.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.log import Logger
 log = Logger("gtk", "window")
 paintlog = Logger("paint")
+
+#required with GTK3 (too much of pain to deal with cairo)
+from xpra.codecs.argb.argb import unpremultiply_argb, byte_buffer_to_buffer   #@UnresolvedImport
 
 
 """
@@ -120,6 +124,22 @@ class ClientWindow(GTKClientWindowBase):
         paintlog("do_draw(%s)", context)
         if self.get_mapped() and self._backing:
             self._backing.cairo_draw(context)
+
+
+    def update_icon(self, width, height, coding, data):
+        log("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
+        if coding == "premult_argb32":
+            #we usually cannot do in-place and this is not performance critical
+            data = byte_buffer_to_buffer(unpremultiply_argb(data))
+            pixbuf = GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
+                                         True, 8, width, height, width*4,
+                                         None, None)
+        else:
+            pbl = GdkPixbuf.PixbufLoader()
+            pbl.write(data)
+            pbl.close()
+            pixbuf = pbl.get_pixbuf()
+        self.set_icon(pixbuf)
 
 
 GObject.type_register(ClientWindow)

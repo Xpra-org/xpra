@@ -48,12 +48,6 @@ if os.name=="posix":
         pass
 
 
-#optional module providing faster handling of premultiplied argb:
-try:
-    from xpra.codecs.argb.argb import unpremultiply_argb, byte_buffer_to_buffer   #@UnresolvedImport
-except:
-    unpremultiply_argb, byte_buffer_to_buffer  = None, None
-
 
 class GTKKeyEvent(AdHocStruct):
     pass
@@ -250,30 +244,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             log("%s.apply_transient_for(%s) window=%s", self, wid, window)
             if window:
                 self.set_transient_for(window)
-
-    def update_icon(self, width, height, coding, data):
-        log("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
-        if coding == "premult_argb32":
-            if unpremultiply_argb is not None:
-                #we usually cannot do in-place and this is not performance critical
-                data = byte_buffer_to_buffer(unpremultiply_argb(data))
-                pixbuf = gdk.pixbuf_new_from_data(data, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, width*4)
-            else:
-                # slower fallback: we round-trip through PNG.
-                # This is ridiculous, but faster than doing a bunch of alpha
-                # un-premultiplying and byte-swapping by hand in Python
-                cairo_surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-                cairo_surf.get_data()[:] = data
-                loader = gdk.PixbufLoader()
-                cairo_surf.write_to_png(loader)
-                loader.close()
-                pixbuf = loader.get_pixbuf()
-        else:
-            loader = gdk.PixbufLoader(coding)
-            loader.write(data, len(data))
-            loader.close()
-            pixbuf = loader.get_pixbuf()
-        self.set_icon(pixbuf)
 
 
     def paint_spinner(self, context, area):
