@@ -114,12 +114,17 @@ class typedict(dict):
         if v is None:
             return default_value
         assert type(v) in (list, tuple), "expected a list or tuple value for %s but got %s" % (k, type(v))
+        aslist = list(v)
         if item_type:
-            for x in v:
+            for i in range(len(aslist)):
+                x = aslist[i]
+                if sys.version > '3' and type(x)==bytes and item_type==str:
+                    x = bytestostr(x)
+                    aslist[i] = x
                 assert type(x)==item_type, "invalid item type for %s %s: expected %s but got %s" % (type(v), k, item_type, type(x))
         if max_items is not None:
             assert len(v)<=max_items, "too many items in %s %s: maximum %s allowed, but got %s" % (type(v), k, max_items, len(v))
-        return v
+        return aslist
 
 
 def log_screen_sizes(root_w, root_h, sizes):
