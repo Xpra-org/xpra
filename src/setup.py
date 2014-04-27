@@ -78,7 +78,7 @@ server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3
 client_ENABLED = True
 
 x11_ENABLED = not WIN32 and not OSX
-gtk_x11_ENABLED = not WIN32 and not OSX and not PYTHON3
+gtk_x11_ENABLED = not WIN32 and not OSX
 argb_ENABLED = True
 gtk2_ENABLED = client_ENABLED and not PYTHON3
 gtk3_ENABLED = PYTHON3
@@ -629,6 +629,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/gtk_x11/constants.pxi",
                    "xpra/x11/gtk_x11/gdk_bindings.c",
                    "xpra/x11/gtk_x11/gdk_display_source.c",
+                   "xpra/x11/gtk3_x11/gdk_display_source.c",
                    "xpra/x11/bindings/constants.pxi",
                    "xpra/x11/bindings/wait_for_x_server.c",
                    "xpra/x11/bindings/keyboard_bindings.c",
@@ -1179,16 +1180,23 @@ if x11_ENABLED:
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 if gtk_x11_ENABLED:
-    #below uses gtk/gdk:
-    cython_add(Extension("xpra.x11.gtk_x11.gdk_display_source",
-                ["xpra/x11/gtk_x11/gdk_display_source.pyx"],
-                **pkgconfig(*PYGTK_PACKAGES)
-                ))
-    GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["xfixes", "xdamage"]
-    cython_add(Extension("xpra.x11.gtk_x11.gdk_bindings",
-                ["xpra/x11/gtk_x11/gdk_bindings.pyx"],
-                **pkgconfig(*GDK_BINDINGS_PACKAGES)
-                ))
+    if PYTHON3:
+        #GTK3 display source:
+        cython_add(Extension("xpra.x11.gtk3_x11.gdk_display_source",
+                    ["xpra/x11/gtk3_x11/gdk_display_source.pyx"],
+                    **pkgconfig("gtk+-3.0")
+                    ))
+    else:
+        #below uses gtk/gdk:
+        cython_add(Extension("xpra.x11.gtk_x11.gdk_display_source",
+                    ["xpra/x11/gtk_x11/gdk_display_source.pyx"],
+                    **pkgconfig(*PYGTK_PACKAGES)
+                    ))
+        GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["xfixes", "xdamage"]
+        cython_add(Extension("xpra.x11.gtk_x11.gdk_bindings",
+                    ["xpra/x11/gtk_x11/gdk_bindings.pyx"],
+                    **pkgconfig(*GDK_BINDINGS_PACKAGES)
+                    ))
 
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
