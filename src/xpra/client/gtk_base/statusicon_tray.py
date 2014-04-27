@@ -68,7 +68,7 @@ class GTKStatusIconTray(TrayBase):
         ag = self.tray_widget.get_geometry()
         if ag is None:
             return -1
-        screen, _, _ = ag
+        screen, _, _ = ag[-3:]
         if not screen:
             return -1
         return screen.get_number()
@@ -77,7 +77,7 @@ class GTKStatusIconTray(TrayBase):
         ag = self.tray_widget.get_geometry()
         if ag is None:
             return None
-        _, _, gtk_orientation = ag
+        _, _, gtk_orientation = ag[-3:]
         return ORIENTATION.get(gtk_orientation)
 
     def get_geometry(self):
@@ -88,7 +88,8 @@ class GTKStatusIconTray(TrayBase):
             self.may_guess()
             log("GTKStatusIconTray.get_geometry() returning guess: %s", self.geometry_guess)
             return self.geometry_guess
-        _, geom, _ = ag
+        #gtk3 adds an extra argument.. at the beginning!
+        _, geom, _ = ag[-3:]
         return geom.x, geom.y, geom.width, geom.height
 
     def get_size(self):
