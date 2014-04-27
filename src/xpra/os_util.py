@@ -23,7 +23,7 @@ except ImportError:
 
 
 SIGNAMES = {}
-for x in [x for x in dir(signal) if x.startswith("SIG")]:
+for x in [x for x in dir(signal) if x.startswith("SIG") and not x.startswith("SIG_")]:
     SIGNAMES[getattr(signal, x)] = x
 
 
