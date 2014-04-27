@@ -268,8 +268,8 @@ class KeyboardHelper(object):
         for x in (self.xkbmap_print, self.xkbmap_query, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
-            h.update("/%s" % str(x))
-        self.hash = "%s".join([str(x) for x in (self.xkbmap_layout, self.xkbmap_variant, h.hexdigest()) if bool(x)])
+            h.update(("/%s" % str(x)).encode("utf8"))
+        self.hash = "/".join([str(x) for x in (self.xkbmap_layout, self.xkbmap_variant, h.hexdigest()) if bool(x)])
 
     def get_full_keymap(self):
         return []
