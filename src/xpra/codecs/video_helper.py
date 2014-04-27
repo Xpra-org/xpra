@@ -278,7 +278,7 @@ class VideoHelper(object):
         for src_format, d in sorted(self._csc_encoder_specs.items()):
             log("%s - %s options:", src_format, len(d))
             for dst_format, specs in sorted(d.items()):
-                log(" * %s via: %s", dst_format, sorted(list(specs)))
+                log(" * %s via: %s", dst_format, sorted(list(specs), key=lambda spec: spec.codec_type))
 
     def init_csc_option(self, csc_name):
         csc_module = get_codec(csc_name)
