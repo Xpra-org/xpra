@@ -203,7 +203,7 @@ class XpraClientBase(object):
             hello["challenge_response"] = challenge_response
             if client_salt:
                 hello["challenge_client_salt"] = client_salt
-        log.debug("send_hello(%s) packet=%s", binascii.hexlify(b(challenge_response or "", 'UTF-8')), hello)
+        log.debug("send_hello(%s) packet=%s", binascii.hexlify(b(challenge_response or "")), hello)
         self.send("hello", hello)
         self.timeout_add(DEFAULT_TIMEOUT, self.verify_connected)
 
