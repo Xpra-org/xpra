@@ -70,7 +70,7 @@ class CairoBacking(GTKWindowBacking):
     def do_paint_png(self, buf, x, y, width, height, rowstride, options, callbacks):
         surf = cairo.ImageSurface.create_from_png(buf)
         gc = cairo.Context(self._backing)
-        gc.set_source_surface(surf)
+        gc.set_source_surface(surf, x, y)
         gc.paint()
         surf.finish()
         fire_paint_callbacks(callbacks, True)
