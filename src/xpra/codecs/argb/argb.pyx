@@ -27,8 +27,11 @@ if numpy:
 else:
     #test for availability of bytearray
     #in a way that does not cause Cython to fail to compile:
-    import __builtin__
-    _bytearray =  __builtin__.__dict__.get("bytearray")
+    try:
+        import builtins
+    except:
+        import __builtin__ as builtins
+    _bytearray =  builtins.__dict__.get("bytearray")
     if _bytearray is not None:
         def make_byte_buffer(len):          #@DuplicatedSignature
             return _bytearray(len)
