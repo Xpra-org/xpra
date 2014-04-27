@@ -1659,6 +1659,21 @@ class UIXpraClient(XpraClientBase):
     def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties):
         client_window_classes = self.get_client_window_classes(metadata, override_redirect)
         group_leader_window = self.get_group_leader(metadata, override_redirect)
+        #workaround for "popup" OR windows without a transient-for (like: google chrome popups):
+        #prevents them from being pushed under other windows on OSX
+        #find a "transient-for" value using the pid to find a suitable window
+        #if possible, choosing the currently focused window (if there is one..)
+        pid = metadata.get("pid", 0)
+        if override_redirect and pid>0 and metadata.get("transient-for") is None and metadata.get("role")=="popup":
+            tfor = None
+            for twid, twin in self._id_to_window.items():
+                if not twin._override_redirect and twin._metadata.get("pid")==pid:
+                    tfor = twin
+                    if twid==self._focused:
+                        break
+            if tfor:
+                windowlog("forcing transient for=%s for new window %s", twid, wid)
+                metadata["transient-for"] = twid
         window = None
         windowlog("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
