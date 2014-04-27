@@ -17,14 +17,13 @@ XSHM_DEBUG = os.environ.get("XPRA_XSHM_DEBUG", "0")=="1"
 XIMAGE_DEBUG = XSHM_DEBUG or os.environ.get("XPRA_XIMAGE_DEBUG", "0")=="1"
 
 
+from xpra.codecs.buffers.util cimport memory_as_pybuffer, object_as_buffer
+
 ###################################
 # Headers, python magic
 ###################################
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
-    ctypedef object PyObject
-    object PyBuffer_FromReadWriteMemory(void *ptr, Py_ssize_t size)
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 cdef extern from "string.h":
     void * memcpy( void * destination, void * source, size_t num )
@@ -293,11 +292,11 @@ cdef class XImageWrapper:
 
     def get_char_pixels(self):
         assert self.pixels!=NULL
-        return PyBuffer_FromReadWriteMemory(self.pixels, self.get_size())
+        return memory_as_pybuffer(self.pixels, self.get_size(), False)
 
     cdef get_image_pixels(self):
         assert self.image!=NULL
-        return PyBuffer_FromReadWriteMemory(self.image.data, self.get_size())
+        return memory_as_pybuffer(self.image.data, self.get_size(), False)
 
     def is_thread_safe(self):
         return self.thread_safe
@@ -330,7 +329,7 @@ cdef class XImageWrapper:
             self.pixels = NULL
         #Note: we can't free the XImage, because it may
         #still be used somewhere else (see XShmWrapper)
-        assert PyObject_AsReadBuffer(pixels, <const void**> &buf, &buf_len)==0
+        assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
         self.pixels = <char *> malloc(buf_len)
         assert self.pixels!=NULL
         memcpy(self.pixels, buf, buf_len)
@@ -542,7 +541,7 @@ cdef class XShmImageWrapper(XImageWrapper):
             #reading the last line using a full rowstride
             #would read past the end of the buffer
             size =  size - self.rowstride + self.width*4
-        return PyBuffer_FromReadWriteMemory(offset, size)
+        return memory_as_pybuffer(offset, size, False)
 
     def free(self):                                 #@DuplicatedSignature
         #ensure we never try to XDestroyImage:
