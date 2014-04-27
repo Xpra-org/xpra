@@ -739,7 +739,7 @@ class UIXpraClient(XpraClientBase):
                 self.send_focus(wid)
             if self.keyboard_helper:
                 self.keyboard_helper.clear_repeat()
-            if self._focused>0:
+            if self._focused:
                 self.send_focus(0)
                 self._focused = None
 
