@@ -56,8 +56,9 @@ class CairoBacking(GTKWindowBacking):
         cr.fill()
 
     def close(self):
+        if self._backing:
+            self._backing.finish()
         GTKWindowBacking.close(self)
-        self._backing.finish()
 
     def paint_png(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
