@@ -731,7 +731,7 @@ class UIXpraClient(XpraClientBase):
                 self.window_ungrab()
                 self.do_force_ungrab(self._window_with_grab)
                 self._window_with_grab = None
-            if self._focused!=wid and wid>0 and self._focused>0:
+            if wid and self._focused and self._focused!=wid:
                 #if this window lost focus, it must have had it!
                 #(catch up - makes things like OR windows work:
                 # their parent receives the focus-out event)
