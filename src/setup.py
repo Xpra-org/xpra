@@ -10,7 +10,6 @@
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.  (So
 # does the make_constants hack.)
 
-import commands
 import glob
 from distutils.core import setup
 from distutils.extension import Extension
@@ -20,11 +19,44 @@ import stat
 
 print(" ".join(sys.argv))
 
+#*******************************************************************************
+# build options, these may get modified further down..
+#
 import xpra
-from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
+setup_options = {}
+setup_options["name"] = "xpra"
+setup_options["author"] = "Antoine Martin"
+setup_options["author_email"] = "antoine@devloop.org.uk"
+setup_options["version"] = xpra.__version__
+setup_options["url"] = "http://xpra.org/"
+setup_options["download_url"] = "http://xpra.org/src/"
+setup_options["description"] = "Xpra: 'screen for X' utility"
+
+xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
+setup_options["long_description"] = xpra_desc
+data_files = []
+setup_options["data_files"] = data_files
+modules = []
+setup_options["py_modules"] = modules
+packages = []       #used by py2app and py2exe
+excludes = []       #only used by py2exe on win32
+ext_modules = []
+cmdclass = {}
+scripts = []
+
 
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
+PYTHON3 = sys.version_info[0] == 3
+if PYTHON3:
+    from lib2to3 import refactor
+    from distutils.command.build_py import build_py_2to3    #@UnresolvedImport
+    #fixers = refactor.get_fixers_from_package("lib2to3.fixes")
+    fixers = [fix for fix in refactor.get_fixers_from_package("lib2to3.fixes")
+               if fix.split('fix_')[-1] not in ('next',)
+               ]
+    build_py_2to3.fixer_names = fixers
+    cmdclass['build_py'] = build_py_2to3
 
 
 #*******************************************************************************
@@ -33,13 +65,19 @@ OSX = sys.platform.startswith("darwin")
 # only the default values are specified here:
 #*******************************************************************************
 def pkg_config_ok(*args):
-    return commands.getstatusoutput("pkg-config %s" % (" ".join(args)))[0]==0
+    def get_status_output(*args, **kwargs):
+        p = subprocess.Popen(*args, **kwargs)
+        stdout, stderr = p.communicate()
+        return p.returncode, stdout, stderr
+    cmd = ["pkg-config"]  + [str(x) for x in args]
+    return get_status_output(cmd)[0]==0
 
+from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED
-server_ENABLED = LOCAL_SERVERS_SUPPORTED or shadow_ENABLED
+server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3
 client_ENABLED = True
 
-x11_ENABLED = not WIN32 and not OSX
+x11_ENABLED = not WIN32 and not OSX and not PYTHON3
 argb_ENABLED = True
 gtk2_ENABLED = client_ENABLED
 gtk3_ENABLED = False
@@ -52,8 +90,8 @@ cython_bencode_ENABLED  = True
 rencode_ENABLED         = True
 cymaths_ENABLED         = True
 cyxor_ENABLED           = True
-clipboard_ENABLED       = True
-Xdummy_ENABLED          = None          #none means auto-detect
+clipboard_ENABLED       = not PYTHON3
+Xdummy_ENABLED          = None          #None means auto-detect
 sound_ENABLED           = True
 
 enc_proxy_ENABLED       = True
@@ -82,7 +120,7 @@ webm_ENABLED            = True
 nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")       #or os.path.exists("C:\\nvenc_3.0_windows_sdk")
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL")
 buffers_ENABLED         = True
-memoryview_ENABLED      = False
+memoryview_ENABLED      = PYTHON3
 
 warn_ENABLED            = True
 strict_ENABLED          = True
@@ -186,28 +224,7 @@ if "clean" not in sys.argv:
 
 
 #*******************************************************************************
-# build options, these may get modified further down..
-#
-setup_options = {}
-setup_options["name"] = "xpra"
-setup_options["author"] = "Antoine Martin"
-setup_options["author_email"] = "antoine@devloop.org.uk"
-setup_options["version"] = xpra.__version__
-setup_options["url"] = "http://xpra.org/"
-setup_options["download_url"] = "http://xpra.org/src/"
-setup_options["description"] = "Xpra: 'screen for X' utility"
-
-xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
-setup_options["long_description"] = xpra_desc
-data_files = []
-setup_options["data_files"] = data_files
-modules = []
-setup_options["py_modules"] = modules
-packages = []       #used by py2app and py2exe
-excludes = []       #only used by py2exe on win32
-ext_modules = []
-cmdclass = {}
-scripts = []
+# default sets:
 
 external_includes = ["cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                      "Crypto", "Crypto.Cipher",
@@ -299,7 +316,8 @@ add_packages("xpra.scripts", "xpra.keyboard", "xpra.net")
 def cython_version_check(min_version):
     try:
         from Cython.Compiler.Version import version as cython_version
-    except ImportError, e:
+    except ImportError:
+        e = sys.exc_info()[1]
         sys.exit("ERROR: Cannot find Cython: %s" % e)
     from distutils.version import LooseVersion
     if LooseVersion(cython_version) < LooseVersion(".".join([str(x) for x in min_version])):
@@ -314,7 +332,6 @@ def cython_add(extension, min_version=(0, 19, 0)):
     #python2.7 setup.py build -b build-2.7 install --no-compile --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
         return
-    global ext_modules, cmdclass
     cython_version_check(min_version)
     from Cython.Distutils import build_ext
     ext_modules.append(extension)
@@ -498,7 +515,6 @@ def pkgconfig(*pkgs_options, **ekw):
     if debug_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', '-g')
         add_to_keywords(kw, 'extra_compile_args', '-ggdb')
-        kw['cython_gdb'] = True
         if get_gcc_version()>=[4, 8]:
             add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
             add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
@@ -561,7 +577,8 @@ def get_xorg_conf_and_script():
             #yet another instance of Ubuntu breaking something
             print("Warning: Ubuntu '%s' breaks Xorg/Xdummy usage - using Xvfb fallback" % release)
             return  Xvfb()
-    except Exception, e:
+    except:
+        e = sys.exc_info()[1]
         print("failed to detect OS release using %s: %s" % (" ".join(cmd), e))
 
     #do live detection
@@ -586,7 +603,8 @@ def get_xorg_conf_and_script():
             return Xvfb()
         print("found valid recent version of Xorg server: %s" % v_str)
         return Xorg_suid_check()
-    except Exception, e:
+    except:
+        e = sys.exc_info()[1]
         print("failed to detect Xorg version: %s" % e)
         print("not installing Xdummy support")
         traceback.print_exc()
@@ -978,8 +996,9 @@ if WIN32:
                     module_dir, os.path.join("dist", module_name),
                     ignore = shutil.ignore_patterns("Tk")
                 )
-            except WindowsError, error:     #@UndefinedVariable
-                if not "already exists" in str( error ):
+            except:
+                e = sys.exc_info()[1]
+                if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
     py2exe_options = {
                       "skip_archive"   : False,
@@ -1326,7 +1345,10 @@ if cython_bencode_ENABLED:
 
 
 if ext_modules:
-    setup_options["ext_modules"] = ext_modules
+    from Cython.Build import cythonize
+    #this causes Cython to fall over itself:
+    #gdb_debug=debug_ENABLED
+    setup_options["ext_modules"] = cythonize(ext_modules, gdb_debug=False)
 if cmdclass:
     setup_options["cmdclass"] = cmdclass
 if scripts:
