@@ -33,6 +33,12 @@ def _try_import(import_method_gtk3, import_method_gtk2):
         return import_method_gtk2()
 
 
+def get_xid(window):
+    if is_gtk3():
+        return window.get_xid()
+    else:
+        return window.xid
+
 
 def import_gobject2():
     import gobject                                  #@UnusedImport

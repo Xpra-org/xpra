@@ -33,6 +33,9 @@ cdef extern from "gtk-3.0/gdk/gdkx.h":
     const char *gdk_display_get_name(GdkDisplay *display)
 
 
+#this import magic will make the window.get_xid() available!
+from gi.repository import GdkX11
+
 def init_gdk_display_source():
     cdef GdkDisplay* gdk_display
     cdef Display * x11_display

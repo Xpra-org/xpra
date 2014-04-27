@@ -216,8 +216,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
 
         def send():
-            root_xid = root.xid
-            xwin = self.gdk_window().xid
+            from xpra.gtk_common.gobject_compat import get_xid
+            root_xid = get_xid(root)
+            xwin = get_xid(self.gdk_window())
             X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_DESKTOP",
                   workspace, CurrentTime, 0, 0, 0)
         trap.call_synced(send)
