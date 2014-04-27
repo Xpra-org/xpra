@@ -271,12 +271,12 @@ def detect_leaks(log, detailed=[]):
 def std(_str, extras="-,./ "):
     def f(v):
         return str.isalnum(str(v)) or v in extras
-    return filter(f, _str)
+    return "".join(filter(f, _str))
 
 def alnum(_str):
     def f(v):
         return str.isalnum(str(v))
-    return filter(f, _str)
+    return "".join(filter(f, _str))
 
 def nn(x):
     if x is None:
