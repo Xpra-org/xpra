@@ -91,7 +91,8 @@ for av_enum_name, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
     if av_enum is None:
         log("av pixel mode %s is not available", av_enum_name)
         continue
-    FORMATS[pix_fmt] = CSCPixelFormat(av_enum, av_enum_name, width_mult, height_mult, pix_fmt)
+    log("av_enum(%s)=%s", av_enum_name, av_enum)
+    FORMATS[pix_fmt] = CSCPixelFormat(av_enum, av_enum_name.encode("latin1"), width_mult, height_mult, pix_fmt.encode("latin1"))
     if pix_fmt not in COLORSPACES:
         COLORSPACES.append(pix_fmt)
 log("swscale pixel formats: %s", FORMATS)
@@ -119,15 +120,17 @@ cdef class SWSFlags:
 
 
 #keeping this array in scope ensures the strings don't go away!
+def b(x):
+    return x.encode("latin1")
 FLAGS_OPTIONS = [
-            (30, ("SWS_BICUBIC", )),
-            (40, ("SWS_BICUBLIN", )),
-            (60, ("SWS_BILINEAR", )),
-            (80, ("SWS_FAST_BILINEAR", )),
+            (30, ("SWS_BICUBIC", ), []),
+            (40, ("SWS_BICUBLIN", ), []),
+            (60, ("SWS_BILINEAR", ), []),
+            (80, ("SWS_FAST_BILINEAR", ), []),
         ]
 cdef int flags                                          #@DuplicatedSignature
 FLAGS = []
-for speed, flags_strs in FLAGS_OPTIONS:
+for speed, flags_strs, bin_flags in FLAGS_OPTIONS:
     flags = 0
     for flags_str in flags_strs:
         flag_val = constants.get(flags_str)
@@ -136,8 +139,10 @@ for speed, flags_strs in FLAGS_OPTIONS:
             continue
         log("%s=%s", flags_str, flag_val)
         flags |= flag_val
+        for flag in flags_strs:
+            bin_flags.append(b(flag))
     log("%s=%s", flags_strs, flags)
-    FLAGS.append((speed, SWSFlags(flags, flags_strs)))
+    FLAGS.append((speed, SWSFlags(flags, bin_flags)))
 log("swscale flags: %s", FLAGS)
 
 

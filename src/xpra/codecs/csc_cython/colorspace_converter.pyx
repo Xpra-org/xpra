@@ -35,21 +35,29 @@ cdef int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 #precalculate indexes in native endianness:
-tmp = str(struct.pack("=BBBB", 0, 1, 2, 3))
-cdef uint8_t BGRA_B = tmp.find('\0')
-cdef uint8_t BGRA_G = tmp.find('\1')
-cdef uint8_t BGRA_R = tmp.find('\2')
-cdef uint8_t BGRA_A = tmp.find('\3')
+BYTEORDER = struct.pack("=BBBB", 0, 1, 2, 3)
+def byteorder(v):
+    for i in range(4):
+        bv = BYTEORDER[i]
+        if type(bv)==str:
+            #old versions of python: byte value is in fact a character (str)
+            bv = ord(bv)
+        if bv==v:
+            return i
+    raise Exception("cannot find byteorder for %s" % v)
+cdef uint8_t BGRA_B = byteorder(0)
+cdef uint8_t BGRA_G = byteorder(1)
+cdef uint8_t BGRA_R = byteorder(2)
+cdef uint8_t BGRA_A = byteorder(3)
 cdef uint8_t BGRX_R = BGRA_R
 cdef uint8_t BGRX_G = BGRA_G
 cdef uint8_t BGRX_B = BGRA_B
 cdef uint8_t BGRX_X = BGRA_A
 
-tmp = str(struct.pack("=BBBB", 0, 1, 2, 3))
-cdef uint8_t RGBX_R = tmp.find('\0')
-cdef uint8_t RGBX_G = tmp.find('\1')
-cdef uint8_t RGBX_B = tmp.find('\2')
-cdef uint8_t RGBX_X = tmp.find('\3')
+cdef uint8_t RGBX_R = byteorder(0)
+cdef uint8_t RGBX_G = byteorder(1)
+cdef uint8_t RGBX_B = byteorder(2)
+cdef uint8_t RGBX_X = byteorder(3)
 
 
 COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
