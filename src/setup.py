@@ -530,6 +530,9 @@ def pkgconfig(*pkgs_options, **ekw):
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
+    if ekw.get("optimize"):
+        del ekw["optimize"]
+        add_to_keywords(kw, 'extra_compile_args', "-O3")
     return kw
 
 
@@ -761,10 +764,6 @@ if WIN32:
     #but until someone figures this out, the ugly path code below works
     #as long as you install in the same place or tweak the paths.
 
-    #first some header crap so codecs can find the inttypes.h
-    #and stdint.h:
-    win32_include_dir = os.path.join(os.getcwd(), "win32")
-
     #ffmpeg is needed for both swscale and x264:
     libffmpeg_path = None
     if dec_avcodec_ENABLED:
@@ -856,13 +855,16 @@ if WIN32:
             if not os.path.exists(d) or not os.path.isdir(d):
                 raise Exception("cannot find a directory which is required for building: %s" % d)
 
+    #hard-coded pkgconfig replacement for visual studio:
     def pkgconfig(*pkgs_options, **ekw):
         kw = dict(ekw)
         #remove static flag on win32..
         static = kw.get("static", None)
         if static is not None:
             del kw["static"]
-        #always add the win32 include dirs, everyone needs that:
+        #always add the win32 include dirs for VC,
+        #so codecs can find the inttypes.h and stdint.h:
+        win32_include_dir = os.path.join(os.getcwd(), "win32")
         add_to_keywords(kw, 'include_dirs', win32_include_dir)
         if len(pkgs_options)==0:
             return kw
@@ -951,6 +953,9 @@ if WIN32:
                 add_to_keywords(kw, 'extra_compile_args', flag)
             add_to_keywords(kw, 'extra_link_args', "/DEBUG")
             kw['cython_gdb'] = True
+        if ekw.get("optimize"):
+            del ekw["optimize"]
+            add_to_keywords(kw, 'extra_compile_args', "/Ox")
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
         return kw
 
@@ -1350,12 +1355,7 @@ if vpx_ENABLED:
 
 toggle_packages(rencode_ENABLED, "xpra.net.rencode")
 if rencode_ENABLED:
-    rencode_pkgconfig = pkgconfig()
-    if not debug_ENABLED:
-        if WIN32:
-            add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "/Ox")
-        else:
-            add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "-O3")
+    rencode_pkgconfig = pkgconfig(optimize=not debug_ENABLED)
     cython_add(Extension("xpra.net.rencode.rencode",
                 ["xpra/net/rencode/rencode.pyx"],
                 **rencode_pkgconfig))
@@ -1363,12 +1363,7 @@ if rencode_ENABLED:
 
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")
 if cython_bencode_ENABLED:
-    bencode_pkgconfig = pkgconfig()
-    if not debug_ENABLED:
-        if WIN32:
-            add_to_keywords(bencode_pkgconfig, 'extra_compile_args', "/Ox")
-        else:
-            add_to_keywords(bencode_pkgconfig, 'extra_compile_args', "-O3")
+    bencode_pkgconfig = pkgconfig(optimize=not debug_ENABLED)
     cython_add(Extension("xpra.net.bencode.cython_bencode",
                 ["xpra/net/bencode/cython_bencode.pyx"],
                 **bencode_pkgconfig))
