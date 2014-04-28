@@ -710,15 +710,26 @@ def glob_recurse(srcdir):
 
 #*******************************************************************************
 if WIN32:
-    import py2exe    #@UnresolvedImport
-    assert py2exe is not None
+    if PYTHON3:
+        #something goes here...
+        EXCLUDED_DLLS = []
+    else:
+        import py2exe    #@UnresolvedImport
+        assert py2exe is not None
+        EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"]
+        py2exe.build_exe.EXCLUDED_DLLS = EXCLUDED_DLLS
 
     # The Microsoft C library DLLs:
     # Unfortunately, these files cannot be re-distributed legally :(
     # So here is the md5sum so you can find the right version:
     # (you can find them in various packages, including Visual Studio 2008,
     # pywin32, etc...)
-    import md5
+    if PYTHON3:
+        from hashlib import md5         #@UnusedImport
+        new_md5 = md5
+    else:
+        import md5                      #@Reimport
+        new_md5 = md5.new
     md5sums = {"Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest" : "37f44d535dcc8bf7a826dfa4f5fa319b",
                "Microsoft.VC90.CRT/msvcm90.dll"                 : "4a8bc195abdc93f0db5dab7f5093c52f",
                "Microsoft.VC90.CRT/msvcp90.dll"                 : "6de5c66e434a9c1729575763d891c6c2",
@@ -740,7 +751,7 @@ if WIN32:
         f = open(filename, mode='rb')
         data = f.read()
         f.close()
-        m = md5.new()
+        m = new_md5()
         m.update(data)
         digest = m.hexdigest()
         assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (dll_file, md5sum, digest)
@@ -919,7 +930,7 @@ if WIN32:
             checkdirs(nvenc_bin_dir, nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir)
             data_files.append(('.', ["%s/nvcc.exe" % cuda_bin_dir, "%s/nvlink.exe" % cuda_bin_dir]))
             #prevent py2exe "seems not to be an exe file" error on this DLL and include it ourselves instead:
-            py2exe.build_exe.EXCLUDED_DLLS = tuple(list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"])
+            EXCLUDED_DLLS.append("nvcuda.dll")
             data_files.append(('.', ["%s/nvcuda.dll" % cuda_bin_dir] + glob.glob("%s\\cudart*.dll" % cuda_bin_dir)))
             data_files.append(('.', ["%s/nvencodeapi.dll" % nvenc_bin_dir]))
         elif "pygobject-2.0" in pkgs_options[0]:
