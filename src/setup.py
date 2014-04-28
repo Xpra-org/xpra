@@ -765,7 +765,7 @@ if WIN32:
     #as long as you install in the same place or tweak the paths.
 
     #ffmpeg is needed for both swscale and x264:
-    libffmpeg_path = None
+    libffmpeg_path = ""
     if dec_avcodec_ENABLED:
         assert not dec_avcodec2_ENABLED, "cannot enable both dec_avcodec and dec_avcodec2"
         libffmpeg_path = "C:\\ffmpeg-win32-bin"
