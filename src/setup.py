@@ -1325,7 +1325,7 @@ toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     vpx_pkgconfig = pkgconfig("vpx", static=vpx_static_ENABLED)
     cython_add(Extension("xpra.codecs.vpx.encoder",
-                ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c", "xpra/codecs/memalign/memalign.c"],
+                ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/memalign/memalign.c"],
                 **vpx_pkgconfig))
     cython_add(Extension("xpra.codecs.vpx.decoder",
                 ["xpra/codecs/vpx/decoder.pyx", "xpra/codecs/memalign/memalign.c"],

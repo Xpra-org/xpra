@@ -124,16 +124,29 @@ cdef extern from "vpx/vpx_encoder.h":
         unsigned int[5] ts_rate_decimator
         unsigned int ts_periodicity
         unsigned int[16] ts_layer_id
-    ctypedef int vpx_codec_cx_pkt_kind
     ctypedef int64_t vpx_codec_pts_t
     ctypedef long vpx_enc_frame_flags_t
+
+    cdef int VPX_CODEC_CX_FRAME_PKT
+    cdef int VPX_CODEC_STATS_PKT
+    cdef int VPX_CODEC_PSNR_PKT
+    cdef int VPX_CODEC_CUSTOM_PKT
+
+    ctypedef struct frame:
+        void    *buf
+        size_t  sz
+
+    ctypedef struct data:
+        frame frame
+
     ctypedef struct vpx_codec_cx_pkt_t:
-        pass
+        int kind
+        data data
+
     cdef int VPX_DL_REALTIME
     cdef int VPX_DL_GOOD_QUALITY
     cdef int VPX_DL_BEST_QUALITY
 
-    cdef vpx_codec_cx_pkt_kind VPX_CODEC_CX_FRAME_PKT
     vpx_codec_err_t vpx_codec_enc_config_default(vpx_codec_iface_t *iface,
                               vpx_codec_enc_cfg_t *cfg, unsigned int usage)
     vpx_codec_err_t vpx_codec_enc_init_ver(vpx_codec_ctx_t *ctx, vpx_codec_iface_t *iface,
@@ -146,10 +159,12 @@ cdef extern from "vpx/vpx_encoder.h":
     const vpx_codec_cx_pkt_t *vpx_codec_get_cx_data(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
     vpx_codec_err_t vpx_codec_enc_config_set(vpx_codec_ctx_t *ctx, const vpx_codec_enc_cfg_t *cfg)    
 
-cdef extern from "vpxlib.h":
-    int get_packet_kind(const vpx_codec_cx_pkt_t *pkt)
-    char *get_frame_buffer(const vpx_codec_cx_pkt_t *pkt)
-    size_t get_frame_size(const vpx_codec_cx_pkt_t *pkt)
+PACKET_KIND = {
+               VPX_CODEC_CX_FRAME_PKT   : "CX_FRAME_PKT",
+               VPX_CODEC_STATS_PKT      : "STATS_PKT",
+               VPX_CODEC_PSNR_PKT       : "PSNR_PKT",
+               VPX_CODEC_CUSTOM_PKT     : "CUSTOM_PKT",
+               }
 
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
@@ -391,8 +406,6 @@ cdef class Encoder:
         cdef int frame_cnt = 0
         cdef int flags = 0
         cdef vpx_codec_err_t i                          #@DuplicatedSignature
-        cdef char *cout
-        cdef unsigned int coutsz
         image = <vpx_image_t *> xmemalign(sizeof(vpx_image_t))
         memset(image, 0, sizeof(vpx_image_t))
         image.w = self.width
@@ -432,17 +445,15 @@ cdef class Encoder:
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
         end = time.time()
-        if get_packet_kind(pkt) != VPX_CODEC_CX_FRAME_PKT:
+        if pkt.kind != VPX_CODEC_CX_FRAME_PKT:
             free(image)
-            log.error("%s invalid packet type: %s", self.encoding, get_packet_kind(pkt))
+            log.error("%s invalid packet type: %s", self.encoding, PACKET_KIND.get(pkt.kind, pkt.kind))
             return None
         self.frames += 1
         #we copy the compressed data here, we could manage the buffer instead
         #using vpx_codec_set_cx_data_buf every time with a wrapper for freeing it,
         #but since this is compressed data, no big deal
-        coutsz = get_frame_size(pkt)
-        cout = get_frame_buffer(pkt)
-        img = cout[:coutsz]
+        img = (<char*> pkt.data.frame.buf)[:pkt.data.frame.sz]
         free(image)
         log("vpx returning %s image: %s bytes", self.encoding, len(img))
         return img
