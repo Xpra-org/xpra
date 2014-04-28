@@ -9,19 +9,18 @@ cdef extern from "stdlib.h":
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
-    int PyObject_AsReadBuffer(object obj,
-                              void ** buffer,
-                              Py_ssize_t * buffer_len) except -1
+
+from xpra.codecs.buffers.util cimport object_as_buffer
 
 
 def xor_str(buf, xor_string):
     assert len(buf)==len(xor_string), "cannot xor strings of different lengths (cyxor)"
     cdef const unsigned char * cbuf = <unsigned char *> 0 #@DuplicatedSignature
     cdef Py_ssize_t cbuf_len = 0                    #@DuplicatedSignature
-    assert PyObject_AsReadBuffer(buf, <const void**> &cbuf, &cbuf_len)==0
+    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0
     cdef const unsigned char * xbuf = <unsigned char *> 0 #@DuplicatedSignature
     cdef Py_ssize_t xbuf_len = 0                    #@DuplicatedSignature
-    assert PyObject_AsReadBuffer(xor_string, <const void**> &xbuf, &xbuf_len)==0
+    assert object_as_buffer(xor_string, <const void**> &xbuf, &xbuf_len)==0
     assert cbuf_len == xbuf_len
     cdef unsigned char * out = <unsigned char *> malloc(cbuf_len)
     cdef int i                                      #@DuplicatedSignature
