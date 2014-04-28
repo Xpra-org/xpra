@@ -1345,7 +1345,7 @@ if rencode_ENABLED:
             add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "/Ox")
         else:
             add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "-O3")
-    cython_add(Extension("xpra.net.rencode._rencode",
+    cython_add(Extension("xpra.net.rencode.rencode",
                 ["xpra/net/rencode/rencode.pyx"],
                 **rencode_pkgconfig))
 

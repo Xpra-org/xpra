@@ -1,6 +1,6 @@
 try:
-    from xpra.net.rencode._rencode import *
-    from xpra.net.rencode._rencode import __version__
+    from xpra.net.rencode.rencode import *
+    from xpra.net.rencode.rencode import __version__
 except ImportError:
     import xpra.net.rencode.rencode_orig
     prev_all = xpra.net.rencode.rencode_orig.__all__[:]
