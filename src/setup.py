@@ -66,7 +66,12 @@ if PYTHON3:
 #*******************************************************************************
 def pkg_config_ok(*args):
     def get_status_output(*args, **kwargs):
-        p = subprocess.Popen(*args, **kwargs)
+        try:
+            p = subprocess.Popen(*args, **kwargs)
+        except:
+            e = sys.exc_info()[1]
+            print("error running %s,%s: %s" % (args, kwargs, e))
+            return -1, "", ""
         stdout, stderr = p.communicate()
         return p.returncode, stdout, stderr
     cmd = ["pkg-config"]  + [str(x) for x in args]

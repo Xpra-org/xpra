@@ -153,7 +153,8 @@ def fix_unicode_out():
                                 if not remaining:
                                     break
                                 text = text[n.value:]
-                    except Exception as e:
+                    except:
+                        e = sys.exc_info()[1]
                         _complain("%s.write: %r" % (self.name, e))
                         raise
 
@@ -161,7 +162,8 @@ def fix_unicode_out():
                     try:
                         for line in lines:
                             self.write(line)
-                    except Exception as e:
+                    except:
+                        e = sys.exc_info()[1]
                         _complain("%s.writelines: %r" % (self.name, e))
                         raise
 
@@ -200,10 +202,11 @@ def do_init():
                     hKey = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
                     if hKey is not None:
                         _wait_for_input = False
-                except Exception, e:
-                    #no wine key
+                except:
+                    #no wine key, assume not present and wait for input
                     pass
-        except Exception, e:
+        except:
+            e = sys.exc_info()[1]
             print("error accessing console: %s" % e)
         return
     from xpra.platform import get_prgname

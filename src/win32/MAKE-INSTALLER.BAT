@@ -4,24 +4,26 @@ ECHO "ARGS=%ARGS%"
 set DIR=%CD%
 SET OLDPYTHONPATH=%PYTHONPATH%
 
+REM support double-click on BAT file, so run from parent directory:
+set WORKING_DIRECTORY=%cd%
+IF EXIST "MAKE-INSTALLER.BAT" CD ..
+
 REM "*********CHANGE THESE BEFORE RUNNING**************"
+SET PYTHON=C:\Python34
 SET PYTHON=C:\Python27
 SET PYTHON_EXE=%PYTHON%\python.exe
+SET PYTHONPATH=.;%PYTHONPATH%
 SET VC=C:\Program Files\Microsoft Visual Studio 9.0\VC
 SET INNOSETUP=C:\Program Files\Inno Setup 5\ISCC.exe
 SET TORTOISESVN=C:\Program Files\TortoiseSVN
 SET SVNVERSION_EXE=svnversion
-
-SET PYGTK=%PYTHON%\Lib\site-packages\gtk-2.0
-SET GTK=%PYGTK%\runtime
-SET GSTREAMER=C:\Program Files\OSSBuild\GStreamer\v0.10.7
-SET PYGST=%GSTREAMER%\sdk\bindings\python\v2.7\lib\site-packages\gst-0.10
-SET PYGSTDLL=%GSTREAMER%\sdk\bindings\python\v2.7\lib\gstreamer-0.10
 SET BUILD_DIR=build
 
-SET SHOW_DEPENDENCIES=0
+FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version[0])"') DO set PYTHON_VERSION=%%i
+ECHO Found Python version %PYTHON_VERSION%
 
 REM "FLAGS TO DISABLE / ENABLE FEATURES"
+SET SHOW_DEPENDENCIES=0
 SET DEBUG=0
 SET SOUND=1
 SET BUILD_ARGS=
@@ -29,19 +31,14 @@ IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
 REM "IE:"
 REM SET BUILD_ARGS=%BUILD_ARGS% --with-debug
 
-REM support double-click on BAT file, so run from parent directory:
-set WORKING_DIRECTORY=%cd%
-IF EXIST "MAKE-INSTALLER.BAT" CD ..
-
-SET PYTHONPATH=.;%PYTHONPATH%
-
+REM CLEAN
 %PYTHON_EXE% ./setup.py clean
 
 REM Record Version Info
 %PYTHON_EXE% -c "from add_build_info import record_src_info;record_src_info()"
 
 SET VERSION=ERROR
-FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print __version__"') DO set VERSION=%%i
+FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print(__version__)"') DO set VERSION=%%i
 ECHO Building Xpra Version %VERSION%
 SET SVNVERSION=ERROR
 FOR /F "delims=" %%i IN ('%SVNVERSION_EXE% -n') DO set SVNVERSION=%%i
@@ -51,8 +48,6 @@ FOR /F "tokens=2 delims=:" %%G IN ("%SVNVERSION%") DO set REVISION=%%G
 IF [%REVISION%]==[] set REVISION=%SVNVERSION%
 SET FULL_VERSION=%VERSION%-r%REVISION%
 ECHO Full version=%FULL_VERSION%
-
-SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PYTHONPATH%;%PYGST%;%PYGSTDLL%;
 
 
 ECHO ****** Clearing build directory (you can ignore any errors here)
@@ -69,9 +64,6 @@ if "%VSINSTALLDIR%"=="" (
 ECHO ***************************************************************
 ECHO ****** build cython pyd files inplace
 
-SET CYTHON_ARGS=%BUILD_ARGS%
-IF %DEBUG% EQU 1 SET CYTHON_ARGS=%BUILD_ARGS% --pyrex-gdb
-
 ECHO %PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace
 %PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace > build-xpra.log
 if %errorlevel% NEQ 0 (
@@ -79,8 +71,21 @@ if %errorlevel% NEQ 0 (
 	GOTO ERROR
 )
 
+if "%PYTHON_VERSION%"=="3" (
+	GOTO PYTHON3
+)
+
 ECHO ***************************************************************
-ECHO ****** py2exe
+ECHO ****** PYTHON2: py2exe
+
+SET PYGTK=%PYTHON%\Lib\site-packages\gtk-2.0
+SET GTK=%PYGTK%\runtime
+SET GSTREAMER=C:\Program Files\OSSBuild\GStreamer\v0.10.7
+SET PYGST=%GSTREAMER%\sdk\bindings\python\v2.7\lib\site-packages\gst-0.10
+SET PYGSTDLL=%GSTREAMER%\sdk\bindings\python\v2.7\lib\gstreamer-0.10
+SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PYTHONPATH%;%PYGST%;%PYGSTDLL%;
+
+
 SET PY2EXE_ARGS=%BUILD_ARGS%
 IF %SHOW_DEPENDENCIES% NEQ 0 SET PY2EXE_ARGS=%BUILD_ARGS% -x
 
@@ -147,7 +152,13 @@ REM "Overwrite the old version shipped with gstreamer - not sure why the PYTHONP
 ECHO ****** Fix GTK DLLs
 XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" dist\
 :NOGSTREAMER
+GOTO MAKEINSTALLER
 
+:PYTHON3
+%PYTHON_EXE% -OO setup.py cx_freeze
+
+
+:MAKEINSTALLER
 ECHO ****** Adding TortoisePlink
 ECHO "%TORTOISESVN%\bin\TortoisePlink.exe"
 ECHO "%TORTOISESVN%\Putty-License.txt"
