@@ -32,7 +32,9 @@ def save_properties(props, filename):
         s = str(value).replace("'", "\\'")
         f.write("%s='%s'\n" % (name, s))
     f.close()
-    print("updated %s with %s" % (filename, props))
+    print("updated %s with:" % filename)
+    for k in sorted(props.keys()):
+        print("* %s = %s" % (str(k).ljust(20), props[k]))
 
 def get_properties(filename):
     props = dict()
@@ -71,23 +73,27 @@ def get_cpuinfo():
     return "unknown"
 
 def get_compiler_info():
+    #FIXME: we assume we'll use GCC if it is on the path...
+    test_options = ["gcc --version"]
     if sys.platform.startswith("win"):
-        cmd = "cl"
-    else:
-        cmd = "gcc --version"
-    proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    stdout, _ = proc.communicate()
-    #print("get_compiler_info() %s returned %s" % (cmd, proc.returncode))
-    #print("get_compiler_info() stdout(%s)=%s" % (cmd, stdout))
-    #print("get_compiler_info() stderr(%s)=%s" % (cmd, stderr))
-    if proc.returncode!=0:
-        print("'%s' failed with return code %s" % (cmd, proc.returncode))
-        return  ""
-    if not stdout:
-        print("could not get GCC version information")
-        return  ""
-    out = stdout.decode('utf-8')
-    return out.splitlines()[0]
+        test_options.append("cl")
+    for cmd in test_options:
+        try:
+            proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+            stdout, _ = proc.communicate()
+            #print("get_compiler_info() %s returned %s" % (cmd, proc.returncode))
+            #print("get_compiler_info() stdout(%s)=%s" % (cmd, stdout))
+            #print("get_compiler_info() stderr(%s)=%s" % (cmd, stderr))
+            if proc.returncode!=0:
+                print("'%s' failed with return code %s" % (cmd, proc.returncode))
+                return  ""
+            if not stdout:
+                print("could not get GCC version information")
+                return  ""
+            out = stdout.decode('utf-8')
+            return out.splitlines()[0]
+        except:
+            pass
 
 def set_prop(props, key, value):
     if value!="unknown" or props.get(key) is None:
