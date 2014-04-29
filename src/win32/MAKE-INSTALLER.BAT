@@ -1,6 +1,5 @@
 ECHO OFF
 SET ARGS=%*
-ECHO "ARGS=%ARGS%"
 set DIR=%CD%
 SET OLDPYTHONPATH=%PYTHONPATH%
 SET OLDPATH=%PATH%
@@ -14,10 +13,10 @@ if "%PYTHON%"=="" (
 REM DEFAULT to Python 2.7:
 SET PYTHON=C:\Python34
 SET PYTHON=C:\Python27
+SET VC=C:\Program Files\Microsoft Visual Studio 9.0\VC
 )
 SET PYTHON_EXE=%PYTHON%\python.exe
 SET PYTHONPATH=.;%PYTHONPATH%
-SET VC=C:\Program Files\Microsoft Visual Studio 9.0\VC
 SET INNOSETUP=C:\Program Files\Inno Setup 5\ISCC.exe
 SET TORTOISESVN=C:\Program Files\TortoiseSVN
 SET SVNVERSION_EXE=svnversion
@@ -59,10 +58,12 @@ RMDIR /S /Q %BUILD_DIR% dist Output
 DEL /Q Xpra_Setup*.exe
 
 
+if NOT "%VC%"=="" (
 ECHO ***************************************************************
-ECHO ****** ensure Visual Studio env is available
+ECHO ****** load Visual Studio env
 if "%VSINSTALLDIR%"=="" (
 	call "%VC%\bin\vcvars32.bat"
+)
 )
 
 ECHO ***************************************************************
