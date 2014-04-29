@@ -19,7 +19,9 @@ from xpra.deque import maxdeque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from xpra.scripts.config import python_platform
 from xpra.log import Logger
-from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, TableBuilder, imagebutton
+from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, \
+                        TableBuilder, imagebutton, scaled_image, get_preferred_size, \
+                        RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL
 from xpra.net.protocol import get_network_caps
 log = Logger("info")
 
@@ -99,9 +101,9 @@ class SessionInfo(gtk.Window):
         #Package Table:
         tb, _ = self.table_tab("package.png", "Software", self.populate_package)
         #title row:
-        tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("Client"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("Server"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box(""), 0, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box("Client"), 1, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box("Server"), 2, xoptions=EXPAND|FILL, xpadding=0)
         tb.inc()
 
         def make_os_str(*args):
@@ -217,9 +219,9 @@ class SessionInfo(gtk.Window):
         table = tb.get_table()
         vbox.pack_start(table, expand=True, fill=True, padding=20)
         #bottom table headings:
-        tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("Client"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("Server"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box(""), 0, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box("Client"), 1, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box("Server"), 2, xoptions=EXPAND|FILL, xpadding=0)
         tb.inc()
         #bottom table contents:
         self.client_encodings_label = label()
@@ -283,12 +285,12 @@ class SessionInfo(gtk.Window):
         # Details:
         tb, stats_box = self.table_tab("browse.png", "Statistics", self.populate_statistics)
         tb.widget_xalign = 1.0
-        tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("Latest"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("Minimum"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("Average"), 3, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("90 percentile"), 4, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("Maximum"), 5, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box(""), 0, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box("Latest"), 1, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box("Minimum"), 2, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box("Average"), 3, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box("90 percentile"), 4, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box("Maximum"), 5, xoptions=EXPAND|FILL, xpadding=0)
         tb.inc()
 
         def maths_labels():
@@ -325,15 +327,15 @@ class SessionInfo(gtk.Window):
             wtb = TableBuilder()
             stats_box.add(wtb.get_table())
             #title row:
-            wtb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-            wtb.attach(title_box("Regular"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-            wtb.attach(title_box("Transient"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-            wtb.attach(title_box("Trays"), 3, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+            wtb.attach(title_box(""), 0, xoptions=EXPAND|FILL, xpadding=0)
+            wtb.attach(title_box("Regular"), 1, xoptions=EXPAND|FILL, xpadding=0)
+            wtb.attach(title_box("Transient"), 2, xoptions=EXPAND|FILL, xpadding=0)
+            wtb.attach(title_box("Trays"), 3, xoptions=EXPAND|FILL, xpadding=0)
             if self.client.client_supports_opengl:
-                wtb.attach(title_box("OpenGL"), 4, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+                wtb.attach(title_box("OpenGL"), 4, xoptions=EXPAND|FILL, xpadding=0)
             wtb.inc()
 
-            wtb.attach(label("Windows:"), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+            wtb.attach(label("Windows:"), 0, xoptions=EXPAND|FILL, xpadding=0)
             self.windows_managed_label = label()
             wtb.attach(self.windows_managed_label, 1)
             self.transient_managed_label = label()
@@ -350,13 +352,16 @@ class SessionInfo(gtk.Window):
             self.encoder_info_box = gtk.HBox(spacing=4)
             etb.new_row("Window Encoders", self.encoder_info_box)
 
-        self.graph_box = gtk.VBox(False, 10)
-        self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
-        bandwidth_label = "Bandwidth used"
-        if SHOW_PIXEL_STATS:
-            bandwidth_label += ",\nand number of pixels rendered"
-        self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
-        self.latency_graph = self.add_graph_button(None, self.save_graphs)
+        if not is_gtk3():
+            #needs porting to cairo...
+            self.graph_box = gtk.VBox(False, 10)
+            self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
+            bandwidth_label = "Bandwidth used"
+            if SHOW_PIXEL_STATS:
+                bandwidth_label += ",\nand number of pixels rendered"
+            self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
+            self.connect("realize", self.populate_graphs)
+            self.latency_graph = self.add_graph_button(None, self.save_graphs)
         self.pixel_in_data = maxdeque(N_SAMPLES+4)
         self.net_in_bytecount = maxdeque(N_SAMPLES+4)
         self.net_out_bytecount = maxdeque(N_SAMPLES+4)
@@ -375,7 +380,6 @@ class SessionInfo(gtk.Window):
         self.populate_all()
         gobject.timeout_add(1000, self.populate)
         gobject.timeout_add(100, self.populate_tab)
-        self.connect("realize", self.populate_graphs)
         add_close_accel(self, self.destroy)
 
 
@@ -400,7 +404,7 @@ class SessionInfo(gtk.Window):
             self.show_tab(contents)
         button = imagebutton(title, icon, clicked_callback=show_tab)
         button.connect("clicked", show_tab)
-        button.set_relief(gtk.RELIEF_NONE)
+        button.set_relief(RELIEF_NONE)
         self.tab_button_box.add(button)
         self.tabs.append((title, button, contents, populate_cb))
 
@@ -409,11 +413,11 @@ class SessionInfo(gtk.Window):
         for _, b, t, p_cb in self.tabs:
             if t==table:
                 button = b
-                b.set_relief(gtk.RELIEF_NORMAL)
+                b.set_relief(RELIEF_NORMAL)
                 b.grab_focus()
                 self.populate_cb = p_cb
             else:
-                b.set_relief(gtk.RELIEF_NONE)
+                b.set_relief(RELIEF_NONE)
         assert button
         for x in self.tab_box.get_children():
             if x!=self.tab_button_box:
@@ -446,7 +450,7 @@ class SessionInfo(gtk.Window):
     def scaled_image(self, pixbuf, icon_size=None):
         if not icon_size:
             icon_size = self.get_icon_size()
-        return gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size,icon_size, gdk.INTERP_BILINEAR))
+        return scaled_image(pixbuf, icon_size, icon_size)
 
     def add_graph_button(self, tooltip, click_cb):
         button = gtk.EventBox()
@@ -876,8 +880,8 @@ class SessionInfo(gtk.Window):
         if self.client.server_info_request:
             self.client.send_info_request()
         box = self.tab_box
-        _, h = box.size_request()
-        _, bh = self.tab_button_box.size_request()
+        _, h = get_preferred_size(box)
+        _, bh = get_preferred_size(self.tab_button_box)
         if h<=0:
             return True
         start_x_offset = min(1.0, (time.time()-self.last_populate_time)*0.95)

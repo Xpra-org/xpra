@@ -82,7 +82,16 @@ def import_pixbufloader2():
     from gtk.gdk import PixbufLoader
     return PixbufLoader
 def import_pixbufloader3():
-    from gi.repository import GdkPixbuf     #@UnresolvedImport
+    from gi.repository import GdkPixbuf             #@UnresolvedImport
     return GdkPixbuf.PixbufLoader
 def import_pixbufloader():
     return  _try_import(import_pixbufloader3, import_pixbufloader2)
+
+def import_pango2():
+    import pango
+    return pango
+def import_pango3():
+    from gi.repository import Pango                 #@UnresolvedImport
+    return Pango
+def import_pango():
+    return  _try_import(import_pango3, import_pango2)

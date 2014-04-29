@@ -6,9 +6,10 @@
 
 import os.path
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
+pango = import_pango()
 PixbufLoader = import_pixbufloader()
 
 from xpra.log import Logger
@@ -26,12 +27,23 @@ elif hasattr(gtk, "_version"):
 if is_gtk3():
     #where is this gone now?
     from gi.repository import GdkPixbuf     #@UnresolvedImport
-    INTERP_HYPER = GdkPixbuf.InterpType.HYPER
-    FILL = None
+    image_new_from_pixbuf = gtk.Image.new_from_pixbuf
+    INTERP_HYPER    = GdkPixbuf.InterpType.HYPER
+    INTERP_BILINEAR = GdkPixbuf.InterpType.BILINEAR
+    RELIEF_NONE     = gtk.ReliefStyle.NONE
+    RELIEF_NORMAL   = gtk.ReliefStyle.NORMAL
+    FILL            = gtk.AttachOptions.FILL
+    EXPAND          = gtk.AttachOptions.EXPAND
+    STATE_NORMAL    = gtk.StateType.NORMAL
 else:
-    FILL = gtk.FILL
-    INTERP_HYPER = gtk.gdk.INTERP_HYPER
-    
+    image_new_from_pixbuf = gtk.image_new_from_pixbuf
+    INTERP_HYPER    = gtk.gdk.INTERP_HYPER
+    INTERP_BILINEAR = gdk.INTERP_BILINEAR
+    RELIEF_NONE     = gtk.RELIEF_NONE
+    RELIEF_NORMAL   = gtk.RELIEF_NORMAL
+    FILL            = gtk.FILL
+    EXPAND          = gtk.EXPAND
+    STATE_NORMAL    = gtk.STATE_NORMAL
 
 
 def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
@@ -43,9 +55,16 @@ def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
         props[prefix+k] = v
 
 
-def scaled_image(pixbuf, icon_size):
-    return    gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size, icon_size, gdk.INTERP_BILINEAR))
+def get_preferred_size(widget):
+    if is_gtk3():
+        #ignore "min", we only care about "natural":
+        _, w = widget.get_preferred_width()
+        _, h = widget.get_preferred_height()
+        return w, h
+    return widget.size_request()
 
+def scaled_image(pixbuf, icon_size):
+    return image_new_from_pixbuf(pixbuf.scale_simple(icon_size, icon_size, INTERP_BILINEAR))
 
 
 def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
@@ -91,12 +110,15 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, 
     if clicked_callback:
         button.connect("clicked", clicked_callback)
     if default:
-        button.set_flags(gtk.CAN_DEFAULT)
+        if is_gtk3():
+            button.set_can_default(True)
+        else:
+            button.set_flags(gtk.CAN_DEFAULT)
     if label_color:
         alignment = button.get_children()[0]
         b_hbox = alignment.get_children()[0]
         label = b_hbox.get_children()[1]
-        label.modify_fg(gtk.STATE_NORMAL, label_color)
+        label.modify_fg(STATE_NORMAL, label_color)
     return button
 
 def menuitem(title, image=None, tooltip=None, cb=None):
@@ -140,7 +162,6 @@ def add_close_accel(window, callback):
 def label(text="", tooltip=None, font=None):
     l = gtk.Label(text)
     if font:
-        import pango
         fontdesc = pango.FontDescription(font)
         l.modify_font(fontdesc)
     if tooltip:
@@ -151,12 +172,12 @@ def label(text="", tooltip=None, font=None):
 def title_box(label_str):
     eb = gtk.EventBox()
     l = label(label_str)
-    l.modify_fg(gtk.STATE_NORMAL, gdk.Color(red=48*256, green=0, blue=0))
+    l.modify_fg(STATE_NORMAL, gdk.Color(red=48*256, green=0, blue=0))
     al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
     al.set_padding(0, 0, 10, 10)
     al.add(l)
     eb.add(al)
-    eb.modify_bg(gtk.STATE_NORMAL, gdk.Color(red=219*256, green=226*256, blue=242*256))
+    eb.modify_bg(STATE_NORMAL, gdk.Color(red=219*256, green=226*256, blue=242*256))
     return eb
 
 
