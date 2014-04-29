@@ -33,16 +33,9 @@ ctypedef unsigned long CARD32
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
         pass
-    # To make it easier to translate stuff in the X header files into
-    # appropriate pyrex declarations, without having to untangle the typedefs
-    # over and over again, here are some convenience typedefs.  (Yes, CARD32
-    # really is 64 bits on 64-bit systems.  Why?  I have no idea.)
-    ctypedef CARD32 XID
     ctypedef CARD32 Time
-
-    ctypedef int Bool
-    ctypedef int Status
     ctypedef CARD32 Atom
+    ctypedef int Bool
 
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
 
@@ -50,8 +43,8 @@ cdef extern from "X11/Xlib.h":
 
     void XGetErrorText(Display * display, int code, char * buffer_return, int length)
 
-    int XUngrabKeyboard(Display * display, Time time)
-    int XUngrabPointer(Display * display, Time time)
+    int XUngrabKeyboard(Display * display, Time t)
+    int XUngrabPointer(Display * display, Time t)
 
 
 from display_source cimport get_display
