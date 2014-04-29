@@ -111,7 +111,8 @@ def get_abi_version():
     return VPX_DECODER_ABI_VERSION
 
 def get_version():
-    return vpx_codec_version_str()
+    v = vpx_codec_version_str()
+    return v.decode("utf8")
 
 def get_type():
     return "vpx"
