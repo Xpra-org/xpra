@@ -468,6 +468,9 @@ def pkgconfig(*pkgs_options, **ekw):
         del ekw["static"]
         if static:
             return get_static_pkgconfig(*pkgs_options)
+    if ekw.get("optimize"):
+        del ekw["optimize"]
+        add_to_keywords(ekw, 'extra_compile_args', "-O3")
 
     kw = dict(ekw)
     if len(pkgs_options)>0:
@@ -535,9 +538,6 @@ def pkgconfig(*pkgs_options, **ekw):
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
-    if ekw.get("optimize"):
-        del ekw["optimize"]
-        add_to_keywords(kw, 'extra_compile_args', "-O3")
     return kw
 
 
@@ -879,6 +879,9 @@ if WIN32:
         static = kw.get("static", None)
         if static is not None:
             del kw["static"]
+        if kw.get("optimize"):
+            add_to_keywords(ekw, 'extra_compile_args', "/Ox")
+            del ekw["optimize"]
         #always add the win32 include dirs for VC,
         #so codecs can find the inttypes.h and stdint.h:
         win32_include_dir = os.path.join(os.getcwd(), "win32")
@@ -915,11 +918,11 @@ if WIN32:
                          [libffmpeg_lib_dir, libffmpeg_bin_dir],
                          ["swscale", "avutil"])
         elif "x264" in pkgs_options[0]:
-            add_keywords([libffmpeg_bin_dir, x264_bin_dir], [x264_include_dir],
+            add_keywords([x264_bin_dir], [x264_include_dir],
                          [x264_lib_dir],
                          ["libx264"])
         elif "x265" in pkgs_options[0]:
-            add_keywords([libffmpeg_bin_dir], [x265_include_dir],
+            add_keywords([x265_bin_dir], [x265_include_dir],
                          [x265_lib_dir],
                          ["libx265"])
         elif "vpx" in pkgs_options[0]:
@@ -956,8 +959,6 @@ if WIN32:
                 add_to_keywords(kw, 'extra_compile_args', flag)
             add_to_keywords(kw, 'extra_link_args', "/DEBUG")
             kw['cython_gdb'] = True
-        if ekw.get("optimize"):
-            del ekw["optimize"]
             add_to_keywords(kw, 'extra_compile_args', "/Ox")
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
         return kw
