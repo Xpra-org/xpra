@@ -729,7 +729,7 @@ def glob_recurse(srcdir):
 #*******************************************************************************
 if WIN32:
     if PYTHON3:
-        if "cx_freeze" in sys.argv:
+        if "build_ext" not in sys.argv:
             from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
             import site
             site_dir = site.getsitepackages()[1]
