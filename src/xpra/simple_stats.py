@@ -46,11 +46,11 @@ def values_to_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values
     #print("values_to_scaled_values(%s, %s, %s)" % (data, scale_unit, num_values))
     if data is None or len(data)==0:
         return  0, data
+    max_v = max(data)
     #pad with None values so we have at least num_values:
     if len(data)<num_values:
         for _ in range(num_values-len(data)):
             data.insert(0, None)
-    max_v = max(data)
     scale = 1
     assert scale_unit>1
     while scale*scale_unit*min_scaled_value<=max_v:

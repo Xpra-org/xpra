@@ -13,7 +13,7 @@ import sys
 import time
 import datetime
 
-from xpra.os_util import os_info
+from xpra.os_util import os_info, bytestostr
 from xpra.gtk_common.graph import make_graph_pixmap
 from xpra.deque import maxdeque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
@@ -852,6 +852,7 @@ class SessionInfo(gtk.Window):
                 #window[1].encoder=x264
                 #window[1].encoder.frames=1
                 for k,v in self.client.server_last_info.items():
+                    k = bytestostr(k)
                     pos = k.find("].encoder")
                     if k.startswith("window[") and pos>0:
                         wid_str = k[len("window["):pos]     #ie: "1"
