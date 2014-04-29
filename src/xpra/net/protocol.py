@@ -64,9 +64,9 @@ except Exception, e:
     log.error("error loading rencode", exc_info=True)
 has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
 use_rencode = has_rencode and os.environ.get("XPRA_USE_RENCODER", "1")=="1"
-log("protocol: has_rencode=%s, use_rencode=%s", has_rencode, use_rencode)
+log("protocol: has_rencode=%s, use_rencode=%s, version=%s", has_rencode, use_rencode, rencode_version)
 
-bencode, bdecode = None, None
+bencode, bdecode, bencode_version = None, None, None
 try:
     try:
         from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
@@ -76,7 +76,7 @@ except Exception, e:
     log.error("error loading bencoder", exc_info=True)
 has_bencode = bencode is not None and bdecode is not None
 use_bencode = has_bencode and os.environ.get("XPRA_USE_BENCODER", "1")=="1"
-log("protocol: has_bencode=%s, use_bencode=%s", has_bencode, use_bencode)
+log("protocol: has_bencode=%s, use_bencode=%s, version=%s", has_bencode, use_bencode, bencode_version)
 
 #stupid python version breakage:
 if sys.version > '3':
