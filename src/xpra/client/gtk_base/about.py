@@ -40,7 +40,7 @@ def load_license():
             finally:
                 if f:
                     f.close()
-    return GPL2.decode('UTF-8')
+    return GPL2.decode('latin1')
 
 
 global about_dialog
