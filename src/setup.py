@@ -356,6 +356,11 @@ def remove_from_keywords(kw, key, value):
         values.remove(value)
 
 
+def checkdirs(*dirs):
+    for d in dirs:
+        if not os.path.exists(d) or not os.path.isdir(d):
+            raise Exception("cannot find a directory which is required for building: %s" % d)
+
 PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
 
 GCC_VERSION = []
@@ -727,10 +732,10 @@ if WIN32:
     # So here is the md5sum so you can find the right version:
     # (you can find them in various packages, including Visual Studio 2008,
     # pywin32, etc...)
-    if PYTHON3:
+    try:
         from hashlib import md5         #@UnusedImport
         new_md5 = md5
-    else:
+    except:
         import md5                      #@Reimport
         new_md5 = md5.new
     md5sums = {"Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest" : "37f44d535dcc8bf7a826dfa4f5fa319b",
@@ -803,6 +808,7 @@ if WIN32:
             break
     vpx_include_dir     = os.path.join(vpx_path, "include")
     vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
+    vpx_bin_dir         = os.path.join(vpx_path, "lib", "Win32")
     if os.path.exists(os.path.join(vpx_lib_dir, "vpx.lib")):
         vpx_lib_names = ["vpx"]               #for libvpx 1.3.0
     elif os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
@@ -850,11 +856,6 @@ if WIN32:
     gdkconfig_include_dir   = os.path.join(gtk2runtime_path, "lib", "gtk-2.0", "include")
     glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
 
-    def checkdirs(*dirs):
-        for d in dirs:
-            if not os.path.exists(d) or not os.path.isdir(d):
-                raise Exception("cannot find a directory which is required for building: %s" % d)
-
     #hard-coded pkgconfig replacement for visual studio:
     def pkgconfig(*pkgs_options, **ekw):
         kw = dict(ekw)
@@ -875,64 +876,50 @@ if WIN32:
                     os.environ['PATH'] = bindir + ';' + os.environ['PATH']
                 if bindir not in sys.path:
                     sys.path.append(bindir)
-        if "avcodec" in pkgs_options[0]:
-            add_to_PATH(libffmpeg_bin_dir)
-            add_to_keywords(kw, 'include_dirs', libffmpeg_include_dir)
-            add_to_keywords(kw, 'libraries', "avcodec", "avutil")
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_bin_dir)
-            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            checkdirs(libffmpeg_include_dir, libffmpeg_lib_dir, libffmpeg_bin_dir)
+        def add_keywords(path_dirs=[], inc_dirs=[], lib_dirs=[], libs=[], noref=True, nocmt=False):
+            checkdirs(*path_dirs)
+            add_to_PATH(*path_dirs)
+            checkdirs(*inc_dirs)
+            for d in inc_dirs:
+                add_to_keywords(kw, 'include_dirs', d)
+            checkdirs(*lib_dirs)
+            for d in lib_dirs:
+                add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % d)
+            add_to_keywords(kw, 'libraries', *libs)
+            if noref:
+                add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
+            if nocmt:
+                add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
+        if "avcodec" in pkgs_options[0]:#
+            add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
+                         [libffmpeg_lib_dir, libffmpeg_bin_dir],
+                         ["avcodec", "avutil"])
         elif "swscale" in pkgs_options[0]:
-            add_to_PATH(libffmpeg_bin_dir)
-            add_to_keywords(kw, 'include_dirs', libffmpeg_include_dir)
-            add_to_keywords(kw, 'libraries', "swscale", "avutil")
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_bin_dir)
-            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            checkdirs(libffmpeg_include_dir, libffmpeg_lib_dir, libffmpeg_bin_dir)
+            add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
+                         [libffmpeg_lib_dir, libffmpeg_bin_dir],
+                         ["swscale", "avutil"])
         elif "x264" in pkgs_options[0]:
-            add_to_PATH(libffmpeg_bin_dir)
-            add_to_PATH(x264_bin_dir)
-            add_to_keywords(kw, 'include_dirs', x264_include_dir)
-            add_to_keywords(kw, 'libraries', "libx264")
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x264_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            checkdirs(x264_include_dir, x264_lib_dir)
+            add_keywords([libffmpeg_bin_dir, x264_bin_dir], [x264_include_dir],
+                         [x264_lib_dir],
+                         ["libx264"])
         elif "x265" in pkgs_options[0]:
-            add_to_PATH(libffmpeg_bin_dir)
-            add_to_PATH(x265_bin_dir)
-            add_to_keywords(kw, 'include_dirs', x265_include_dir)
-            add_to_keywords(kw, 'libraries', "libx265")
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x265_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            checkdirs(x265_include_dir, x265_lib_dir)
+            add_keywords([libffmpeg_bin_dir], [x265_include_dir],
+                         [x265_lib_dir],
+                         ["libx265"])
         elif "vpx" in pkgs_options[0]:
-            add_to_PATH(libffmpeg_bin_dir)
-            add_to_keywords(kw, 'include_dirs', vpx_include_dir)
-            add_to_keywords(kw, 'libraries', *vpx_lib_names)
-            add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            checkdirs(vpx_include_dir, vpx_lib_dir)
+            add_keywords([vpx_bin_dir], [vpx_include_dir],
+                         [vpx_lib_dir],
+                         vpx_lib_names, nocmt=True)
         elif "webp" in pkgs_options[0]:
-            add_to_PATH(webp_bin_dir)
-            add_to_keywords(kw, 'include_dirs', webp_include_dir)
-            add_to_keywords(kw, 'libraries', *webp_lib_names)
-            add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % webp_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            checkdirs(webp_include_dir, webp_lib_dir, webp_bin_dir)
+            add_keywords([webp_bin_dir], [webp_include_dir],
+                         [webp_lib_dir],
+                         webp_lib_names, nocmt=True)
         elif "nvenc3" in pkgs_options[0]:
-            add_to_PATH(nvenc_bin_dir, cuda_bin_dir)
-            add_to_keywords(kw, 'include_dirs', nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir)
-            add_to_keywords(kw, 'libraries', *nvenc_lib_names)
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % cuda_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            checkdirs(nvenc_bin_dir, nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir)
+            add_keywords([nvenc_bin_dir, cuda_bin_dir], [nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir],
+                         [cuda_lib_dir],
+                         nvenc_lib_names)
             data_files.append(('.', ["%s/nvcc.exe" % cuda_bin_dir, "%s/nvlink.exe" % cuda_bin_dir]))
             #prevent py2exe "seems not to be an exe file" error on this DLL and include it ourselves instead:
-            EXCLUDED_DLLS.append("nvcuda.dll")
             data_files.append(('.', ["%s/nvcuda.dll" % cuda_bin_dir] + glob.glob("%s\\cudart*.dll" % cuda_bin_dir)))
             data_files.append(('.', ["%s/nvencodeapi.dll" % nvenc_bin_dir]))
         elif "pygobject-2.0" in pkgs_options[0]:
