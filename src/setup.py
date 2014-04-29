@@ -719,13 +719,29 @@ def glob_recurse(srcdir):
 #*******************************************************************************
 if WIN32:
     if PYTHON3:
-        #something goes here...
-        EXCLUDED_DLLS = []
+        #something (cx_freeze?) goes here...
+        pass
     else:
         import py2exe    #@UnresolvedImport
         assert py2exe is not None
         EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"]
         py2exe.build_exe.EXCLUDED_DLLS = EXCLUDED_DLLS
+        external_includes += ["win32con", "win32gui", "win32process", "win32api"]
+        py2exe_options = {
+                          "skip_archive"   : False,
+                          "optimize"       : 0,    #WARNING: do not change - causes crashes
+                          "unbuffered"     : True,
+                          "compressed"     : True,
+                          "skip_archive"   : False,
+                          "packages"       : packages,
+                          "includes"       : external_includes,
+                          "excludes"       : excludes,
+                          "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll"],
+                         }
+        setup_options["options"] = {"py2exe" : py2exe_options}
+        #with py2exe, we don't use py_modules, we use "packages"... sigh
+        #(and it is a little bit different too - see below)
+        del setup_options["py_modules"]
 
     # The Microsoft C library DLLs:
     # Unfortunately, these files cannot be re-distributed legally :(
@@ -857,7 +873,7 @@ if WIN32:
     glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
 
     #hard-coded pkgconfig replacement for visual studio:
-    def pkgconfig(*pkgs_options, **ekw):
+    def VC_pkgconfig(*pkgs_options, **ekw):
         kw = dict(ekw)
         #remove static flag on win32..
         static = kw.get("static", None)
@@ -946,9 +962,11 @@ if WIN32:
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
         return kw
 
-    #with py2exe, we don't use py_modules, we use "packages"... sigh
-    #(and it is a little bit different too - see below)
-    del setup_options["py_modules"]
+    def pkgconfig(*pkgs_options, **ekw):
+        #default to VC for now:
+        return VC_pkgconfig(*pkgs_options, **ekw)
+
+
     add_packages("xpra.platform.win32")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
@@ -973,8 +991,6 @@ if WIN32:
         console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})
     setup_options["console"] = console
 
-    py2exe_includes = external_includes + ["win32con", "win32gui", "win32process", "win32api"]
-    dll_excludes = ["w9xpopen.exe","tcl85.dll", "tk85.dll"]
     remove_packages(*external_excludes)
     remove_packages(#not used on win32:
                     "mmap",
@@ -985,14 +1001,14 @@ if WIN32:
 
     if not cyxor_ENABLED or opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
-        py2exe_includes.append("numpy")
+        external_includes.append("numpy")
     else:
         remove_packages("numpy",
                         "unittest", "difflib",  #avoid numpy warning (not an error)
                         "pydoc")
 
     if sound_ENABLED:
-        py2exe_includes += ["pygst", "gst", "gst.extend"]
+        external_includes += ["pygst", "gst", "gst.extend"]
     else:
         remove_packages("pygst", "gst", "gst.extend")
 
@@ -1014,18 +1030,6 @@ if WIN32:
                 e = sys.exc_info()[1]
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
-    py2exe_options = {
-                      "skip_archive"   : False,
-                      "optimize"       : 0,    #WARNING: do not change - causes crashes
-                      "unbuffered"     : True,
-                      "compressed"     : True,
-                      "skip_archive"   : False,
-                      "packages"       : packages,
-                      "includes"       : py2exe_includes,
-                      "excludes"       : excludes,
-                      "dll_excludes"   : dll_excludes,
-                     }
-    setup_options["options"] = {"py2exe" : py2exe_options}
     data_files += [
                    ('', ['COPYING', 'README',
                          'win32/website.url',
