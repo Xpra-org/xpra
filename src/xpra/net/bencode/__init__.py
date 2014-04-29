@@ -14,6 +14,6 @@ if os.environ.get("USE_CYTHON_BENCODE", "1")!="0":
     except ImportError:
         pass
 if not cython_bencode_loaded:
-    from xpra.net.bencode.bencode import bencode, bdecode, __version__      #@Reimport
+    from bencode import bencode, bdecode, __version__      #@Reimport
 
 __all__ = ['bencode', 'bdecode', "__version__"]
