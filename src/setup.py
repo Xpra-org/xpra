@@ -64,17 +64,25 @@ if PYTHON3:
 # using --with-OPTION or --without-OPTION
 # only the default values are specified here:
 #*******************************************************************************
-def pkg_config_ok(*args):
-    def get_status_output(*args, **kwargs):
-        try:
-            p = subprocess.Popen(*args, **kwargs)
-        except:
-            e = sys.exc_info()[1]
-            print("error running %s,%s: %s" % (args, kwargs, e))
-            return -1, "", ""
-        stdout, stderr = p.communicate()
-        return p.returncode, stdout, stderr
-    cmd = ["pkg-config"]  + [str(x) for x in args]
+def get_status_output(*args, **kwargs):
+    try:
+        p = subprocess.Popen(*args, **kwargs)
+    except:
+        e = sys.exc_info()[1]
+        print("error running %s,%s: %s" % (args, kwargs, e))
+        return -1, "", ""
+    stdout, stderr = p.communicate()
+    return p.returncode, stdout, stderr
+PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
+has_pkg_config = False
+#we don't support building with "pkg-config" on win32 with python2:
+if PKG_CONFIG and (PYTHON3 or not WIN32):
+    has_pkg_config = get_status_output([PKG_CONFIG, "--version"])[0]==0
+
+def pkg_config_ok(*args, **kwargs):
+    if not has_pkg_config:
+        return kwargs.get("fallback", False)
+    cmd = [PKG_CONFIG]  + [str(x) for x in args]
     return get_status_output(cmd)[0]==0
 
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
@@ -103,15 +111,15 @@ sound_ENABLED           = True
 enc_proxy_ENABLED       = True
 enc_x264_ENABLED        = True          #too important to detect
 enc_x265_ENABLED        = pkg_config_ok("--exists", "x265")
-webp_ENABLED            = WIN32 or pkg_config_ok("--atleast-version=0.3", "libwebp")
+webp_ENABLED            = pkg_config_ok("--atleast-version=0.3", "libwebp", fallback=WIN32)
 x264_static_ENABLED     = False
 x265_static_ENABLED     = False
-vpx_ENABLED             = WIN32 or pkg_config_ok("--atleast-version=1.0", "vpx") or pkg_config_ok("--atleast-version=1.0", "libvpx")
+vpx_ENABLED             = pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32)
 vpx_static_ENABLED      = False
 #ffmpeg 1.x and libav:
-dec_avcodec_ENABLED     = not WIN32 and pkg_config_ok("--max-version=55", "libavcodec")
+dec_avcodec_ENABLED     = pkg_config_ok("--max-version=55", "libavcodec", fallback=not WIN32)
 #ffmpeg 2 onwards:
-dec_avcodec2_ENABLED    = WIN32 or pkg_config_ok("--atleast-version=55", "libavcodec")
+dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fallback=WIN32)
 # some version strings I found:
 # Fedora 19: 54.92.100
 # Fedora 20: 55.39.101
@@ -119,7 +127,7 @@ dec_avcodec2_ENABLED    = WIN32 or pkg_config_ok("--atleast-version=55", "libavc
 # Debian wheezy: 53.35
 avcodec_static_ENABLED  = False
 avcodec2_static_ENABLED = False
-csc_swscale_ENABLED     = WIN32 or pkg_config_ok("--exists", "libswscale")
+csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
 webm_ENABLED            = True
@@ -130,7 +138,7 @@ memoryview_ENABLED      = PYTHON3
 
 warn_ENABLED            = True
 strict_ENABLED          = True
-PIC_ENABLED             = True
+PIC_ENABLED             = not WIN32     #ming32 moans that it is always enabled already
 debug_ENABLED           = False
 verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
@@ -190,7 +198,9 @@ if "clean" not in sys.argv:
     switches_info = {}
     for x in SWITCHES:
         switches_info[x] = vars()["%s_ENABLED" % x]
-    print("build switches: %s" % switches_info)
+    print("build switches:")
+    for k in sorted(switches_info.keys()):
+        print("* %s : %s" % (str(k).ljust(32), switches_info[k]))
     if LOCAL_SERVERS_SUPPORTED:
         print("Xdummy build flag: %s" % Xdummy_ENABLED)
 
@@ -463,16 +473,16 @@ def get_static_pkgconfig(*libnames):
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*pkgs_options, **ekw):
-    static = ekw.get("static", None)
+    kw = dict(ekw)
+    static = kw.get("static", None)
     if static is not None:
-        del ekw["static"]
+        del kw["static"]
         if static:
             return get_static_pkgconfig(*pkgs_options)
-    if ekw.get("optimize"):
-        del ekw["optimize"]
-        add_to_keywords(ekw, 'extra_compile_args', "-O3")
+    if kw.get("optimize"):
+        del kw["optimize"]
+        add_to_keywords(kw, 'extra_compile_args', "-O3")
 
-    kw = dict(ekw)
     if len(pkgs_options)>0:
         package_names = []
         #find out which package name to use from potentially many options
@@ -743,6 +753,28 @@ if WIN32:
         #(and it is a little bit different too - see below)
         del setup_options["py_modules"]
 
+        #the binaries we'll create:
+        setup_options["windows"] = [
+                        {'script': 'scripts/xpra',                          'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
+                        {'script': 'scripts/xpra_launcher',                 'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
+                        {'script': 'xpra/gtk_common/gtk_view_keyboard.py',  'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
+                        {'script': 'xpra/gtk_common/gtk_view_clipboard.py', 'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
+                  ]
+        #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
+        console = [
+                        {'script': 'scripts/xpra',                          'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
+                        {'script': 'win32/python_execfile.py',              'icon_resources': [(1, "win32/python.ico")],    "dest_base": "Python_execfile",},
+                        {'script': 'xpra/platform/win32/gui.py',            'icon_resources': [(1, "win32/loop.ico")],      "dest_base": "Events_Test",},
+                        {'script': 'xpra/net/net_util.py',                  'icon_resources': [(1, "win32/network.ico")],   "dest_base": "Network_info",},
+                        {'script': 'xpra/codecs/loader.py',                 'icon_resources': [(1, "win32/encoding.ico")],  "dest_base": "Encoding_info",},
+                        {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},
+                        {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
+                        {'script': 'xpra/sound/sink.py',                    'icon_resources': [(1, "win32/speaker.ico")],   "dest_base": "Sound_Play",},
+                  ]
+        if opengl_ENABLED:
+            console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})
+        setup_options["console"] = console
+
     # The Microsoft C library DLLs:
     # Unfortunately, these files cannot be re-distributed legally :(
     # So here is the md5sum so you can find the right version:
@@ -767,11 +799,12 @@ if WIN32:
                }
     # This is where I keep them, you will obviously need to change this value:
     C_DLLs = "C:\\"
+    print("Verifying md5sums:")
     for dll_file, md5sum in md5sums.items():
         filename = os.path.join(C_DLLs, *dll_file.split("/"))
         if not os.path.exists(filename) or not os.path.isfile(filename):
             sys.exit("ERROR: DLL file %s is missing or not a file!" % filename)
-        sys.stdout.write("* verifying md5sum for %s: " % filename)
+        sys.stdout.write("* %s: " % str(filename).ljust(50))
         f = open(filename, mode='rb')
         data = f.read()
         f.close()
@@ -880,8 +913,8 @@ if WIN32:
         if static is not None:
             del kw["static"]
         if kw.get("optimize"):
-            add_to_keywords(ekw, 'extra_compile_args', "/Ox")
-            del ekw["optimize"]
+            add_to_keywords(kw, 'extra_compile_args', "/Ox")
+            del kw["optimize"]
         #always add the win32 include dirs for VC,
         #so codecs can find the inttypes.h and stdint.h:
         win32_include_dir = os.path.join(os.getcwd(), "win32")
@@ -963,34 +996,15 @@ if WIN32:
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
         return kw
 
-    def pkgconfig(*pkgs_options, **ekw):
-        #default to VC for now:
-        return VC_pkgconfig(*pkgs_options, **ekw)
+    if not has_pkg_config:
+        def pkgconfig(*pkgs_options, **ekw):
+            #default to VC for now:
+            return VC_pkgconfig(*pkgs_options, **ekw)
 
 
     add_packages("xpra.platform.win32")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
-    setup_options["windows"] = [
-                    {'script': 'scripts/xpra',                          'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
-                    {'script': 'scripts/xpra_launcher',                 'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
-                    {'script': 'xpra/gtk_common/gtk_view_keyboard.py',  'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
-                    {'script': 'xpra/gtk_common/gtk_view_clipboard.py', 'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
-              ]
-    #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
-    console = [
-                    {'script': 'scripts/xpra',                          'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
-                    {'script': 'win32/python_execfile.py',              'icon_resources': [(1, "win32/python.ico")],    "dest_base": "Python_execfile",},
-                    {'script': 'xpra/platform/win32/gui.py',            'icon_resources': [(1, "win32/loop.ico")],      "dest_base": "Events_Test",},
-                    {'script': 'xpra/net/net_util.py',                  'icon_resources': [(1, "win32/network.ico")],   "dest_base": "Network_info",},
-                    {'script': 'xpra/codecs/loader.py',                 'icon_resources': [(1, "win32/encoding.ico")],  "dest_base": "Encoding_info",},
-                    {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},
-                    {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
-                    {'script': 'xpra/sound/sink.py',                    'icon_resources': [(1, "win32/speaker.ico")],   "dest_base": "Sound_Play",},
-              ]
-    if opengl_ENABLED:
-        console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})
-    setup_options["console"] = console
 
     remove_packages(*external_excludes)
     remove_packages(#not used on win32:
@@ -1032,8 +1046,7 @@ if WIN32:
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
     data_files += [
-                   ('', ['COPYING', 'README',
-                         'win32/website.url',
+                   ('', ['COPYING', 'README', 'win32/website.url',
                          'etc/xpra/client-only/xpra.conf'] +
                          glob.glob('%s\\bin\\*.dll' % libffmpeg_path)),
                    ('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*')),
