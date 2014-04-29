@@ -142,8 +142,61 @@ if not sys.platform.startswith("win"):
 		log.error("error loading %s: %s", library, e)
 	else:
 		_libc.if_indextoname.restype = c_char_p
+		_libc.if_indextoname.argtypes = [c_uint, c_char_p]
+		_libc.if_nametoindex.restype = c_uint
+		_libc.if_nametoindex.argtypes = [c_char_p]
 		def if_nametoindex(interfaceName):
-			return _libc.if_nametoindex(interfaceName)
+			#iname = create_string_buffer()
+			return _libc.if_nametoindex(interfaceName.encode())
 		def if_indextoname(index):
 			s = create_string_buffer('\000' * 256)
 			return _libc.if_indextoname(c_uint(index), s)
+
+
+
+
+
+def main():
+	from xpra.platform import init, clean
+	try:
+		init("Loader", "Encoding Info")
+		verbose = "-v" in sys.argv or "--verbose" in sys.argv
+		if verbose:
+			log.enable_debug()
+
+		print("Network interfaces found:")
+		for iface in get_interfaces():
+			if if_nametoindex:
+				print("* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface)))
+			else:
+				print("* %s" % iface)
+
+		def pver(v):
+			if type(v) in (tuple, list):
+				s = ""
+				for i in range(len(v)):
+					if i>0:
+						#dot seperated numbers
+						if type(v[i-1])==int:
+							s += "."
+						else:
+							s += ", "
+					s += str(v[i])
+				return s
+			elif type(v)==str and v.startswith("v"):
+				return v[1:]
+			return str(v)
+
+		print("")
+		print("Protocol Capabilities:")
+		from xpra.net.protocol import get_network_caps
+		for k,v in get_network_caps(legacy=verbose).items():
+			print("* %s : %s" % (str(k).ljust(20), pver(v)))
+
+	finally:
+		#this will wait for input on win32:
+		clean()
+
+
+if __name__ == "__main__":
+	main()

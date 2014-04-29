@@ -132,17 +132,26 @@ def new_cipher_caps(proto, cipher, encryption_key):
                  "cipher.key_stretch_iterations" : iterations
                  }
 
-def get_network_caps():
+def get_network_caps(legacy=True):
+    try:
+        from xpra.net.mmap_pipe import can_use_mmap
+        mmap = can_use_mmap()
+    except:
+        mmap = False
     caps = {
-                "raw_packets"           : True,
-                #for backwards compatibility only:
-                "chunked_compression"   : True,
                 "digest"                : ("hmac", "xor"),
                 "rencode"               : use_rencode,
                 "bencode"               : use_bencode,
                 "lz4"                   : use_lz4,
-                "zlib"                  : True,
+                "mmap"                  : mmap,
                }
+    if legacy:
+        #for backwards compatibility only:
+        caps.update({
+                "raw_packets"           : True,
+                "zlib"                  : True,
+                "chunked_compression"   : True
+                })
     try:
         import Crypto
         caps["pycrypto.version"] = Crypto.__version__

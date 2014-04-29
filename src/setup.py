@@ -976,6 +976,7 @@ if WIN32:
                     {'script': 'scripts/xpra',                          'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
                     {'script': 'win32/python_execfile.py',              'icon_resources': [(1, "win32/python.ico")],    "dest_base": "Python_execfile",},
                     {'script': 'xpra/platform/win32/gui.py',            'icon_resources': [(1, "win32/loop.ico")],      "dest_base": "Events_Test",},
+                    {'script': 'xpra/net/net_util.py',                  'icon_resources': [(1, "win32/network.ico")],   "dest_base": "Network_info",},
                     {'script': 'xpra/codecs/loader.py',                 'icon_resources': [(1, "win32/encoding.ico")],  "dest_base": "Encoding_info",},
                     {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},
                     {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
