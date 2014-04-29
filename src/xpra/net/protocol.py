@@ -59,20 +59,24 @@ try:
         from xpra.net.rencode import loads as rencode_loads  #@UnresolvedImport
         from xpra.net.rencode import __version__ as rencode_version
     except ImportError, e:
-        log.warn("rencode load error: %s", e)
+        log.warn("rencode import error: %s", e)
 except Exception, e:
-    log.warn("xpra.rencode is missing: %s", e)
+    log.error("error loading rencode", exc_info=True)
 has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
 use_rencode = has_rencode and os.environ.get("XPRA_USE_RENCODER", "1")=="1"
+log("protocol: has_rencode=%s, use_rencode=%s", has_rencode, use_rencode)
 
 bencode, bdecode = None, None
 try:
-    from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
+    try:
+        from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
+    except ImportError, e:
+        log.warn("bencode import error: %s", e)
 except Exception, e:
-    log.warn("xpra.bencode is missing: %s", e)
+    log.error("error loading bencoder", exc_info=True)
 has_bencode = bencode is not None and bdecode is not None
 use_bencode = has_bencode and os.environ.get("XPRA_USE_BENCODER", "1")=="1"
-
+log("protocol: has_bencode=%s, use_bencode=%s", has_bencode, use_bencode)
 
 #stupid python version breakage:
 if sys.version > '3':
