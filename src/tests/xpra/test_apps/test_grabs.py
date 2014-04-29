@@ -3,6 +3,14 @@
 import gobject
 import gtk
 
+
+GRAB_DEFS = {
+			gtk.gdk.GRAB_SUCCESS			: "SUCCESS",
+			gtk.gdk.GRAB_ALREADY_GRABBED	: "ALREADY_GRABBED",
+			gtk.gdk.GRAB_INVALID_TIME		: "INVALID_TIME",
+			gtk.gdk.GRAB_NOT_VIEWABLE		: "NOT_VIEWABLE",
+			gtk.gdk.GRAB_FROZEN				: "FROZEN"}
+
 def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 	window.set_size_request(600, 200)
@@ -13,8 +21,17 @@ def main():
 
 	grab_pointer_btn = gtk.Button("grab pointer")
 	def grab_pointer(*args):
-		gtk.gdk.pointer_grab(window.get_window())
-		gobject.timeout_add(10*1000, gtk.gdk.pointer_ungrab)
+		print("grab_pointer%s" % str(args))
+		def do_grab():
+			v = gtk.gdk.pointer_grab(window.get_window(), owner_events=False, event_mask=gtk.gdk.BUTTON_RELEASE_MASK)
+			#gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK | gtk.gdk.KEY_PRESS_MASK \
+			#gtk.gdk.KEY_RELEASE_MASK | gtk.gdk.ENTER_NOTIFY_MASK)
+			# | gtk.gdk.ENTER_NOTIFY_MASK
+			#gtk.gdk.ALL_EVENTS_MASK
+			print("pointer_grab() returned %s" % GRAB_DEFS.get(v, v))
+			gobject.timeout_add(10*1000, gtk.gdk.pointer_ungrab)
+		print("will grab in 5 seconds!")
+		gobject.timeout_add(5*1000, do_grab)
 	grab_pointer_btn.connect('clicked', grab_pointer)
 	hbox.pack_start(grab_pointer_btn, expand=False, fill=False, padding=10)
 
