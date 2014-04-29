@@ -3,6 +3,7 @@ SET ARGS=%*
 ECHO "ARGS=%ARGS%"
 set DIR=%CD%
 SET OLDPYTHONPATH=%PYTHONPATH%
+SET OLDPATH=%PATH%
 
 REM support double-click on BAT file, so run from parent directory:
 set WORKING_DIRECTORY=%cd%
@@ -195,3 +196,4 @@ GOTO END
 pause
 :END
 SET PYTHONPATH=%OLDPYTHONPATH%
+SET PATH=%OLDPATH%
