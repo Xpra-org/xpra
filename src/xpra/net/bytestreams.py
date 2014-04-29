@@ -115,7 +115,7 @@ class TwoFileConnection(Connection):
         if self._close_cb:
             self._close_cb()
 
-    def __str__(self):
+    def __repr__(self):
         return "TwoFileConnection(%s)" % str(self.target)
 
 
@@ -138,7 +138,7 @@ class SocketConnection(Connection):
         Connection.close(self)
         self._socket.close()
 
-    def __str__(self):
+    def __repr__(self):
         if self.remote:
             return "SocketConnection(%s - %s)" % (self.local, self.remote)
         return "SocketConnection(%s)" % self.local

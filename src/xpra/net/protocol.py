@@ -184,7 +184,7 @@ class Compressed(object):
         self.data = data
     def __len__(self):
         return len(self.data)
-    def __str__(self):
+    def __repr__(self):
         return  "Compressed(%s: %s bytes)" % (self.datatype, len(self.data))
 
 class LevelCompressed(Compressed):
@@ -194,7 +194,7 @@ class LevelCompressed(Compressed):
         self.level = level
     def __len__(self):
         return len(self.data)
-    def __str__(self):
+    def __repr__(self):
         return  "LevelCompressed(%s: %s bytes as %s/%s)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
 def compressed_wrapper(datatype, data, level=5, lz4=False):
@@ -332,7 +332,7 @@ class Protocol(object):
         log("set_cipher_out%s", (ciphername, iv, password, key_salt, iterations))
         self.cipher_out, self.cipher_out_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
 
-    def __str__(self):
+    def __repr__(self):
         return "Protocol(%s)" % self._conn
 
     def get_threads(self):
