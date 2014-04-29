@@ -9,8 +9,11 @@ set WORKING_DIRECTORY=%cd%
 IF EXIST "MAKE-INSTALLER.BAT" CD ..
 
 REM "*********CHANGE THESE BEFORE RUNNING**************"
+if "%PYTHON%"=="" (
+REM DEFAULT to Python 2.7:
 SET PYTHON=C:\Python34
 SET PYTHON=C:\Python27
+)
 SET PYTHON_EXE=%PYTHON%\python.exe
 SET PYTHONPATH=.;%PYTHONPATH%
 SET VC=C:\Program Files\Microsoft Visual Studio 9.0\VC
