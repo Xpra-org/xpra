@@ -729,8 +729,41 @@ def glob_recurse(srcdir):
 #*******************************************************************************
 if WIN32:
     if PYTHON3:
-        #something (cx_freeze?) goes here...
-        pass
+        if "cx_freeze" in sys.argv:
+            from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
+            import site
+            site_dir = site.getsitepackages()[1]
+            include_dll_path = os.path.join(site_dir, "gtk")
+            missing_dll = ['libgtk-3-0.dll',
+                           'libgdk-3-0.dll',
+                           'libatk-1.0-0.dll',
+                           'libcairo-gobject-2.dll',
+                           'libgdk_pixbuf-2.0-0.dll',
+                           'libjpeg-8.dll',
+                           'libpango-1.0-0.dll',
+                           'libpangocairo-1.0-0.dll',
+                           'libpangoft2-1.0-0.dll',
+                           'libpangowin32-1.0-0.dll',
+                           'libgnutls-26.dll',
+                           'libgcrypt-11.dll',
+                           'libp11-kit-0.dll']
+            include_files = []
+            for dll in missing_dll:
+                include_files.append((os.path.join(include_dll_path, dll), dll))
+            gtk_libs = ['etc', 'lib', 'share']
+            for lib in gtk_libs:
+                include_files.append((os.path.join(include_dll_path, lib), lib))
+            executables = [
+                           Executable("main.py", base="Win32GUI")
+                           ]
+            cx_freeze_options = {
+                                "compressed"       : False,
+                                "includes"         : ["gi"],
+                                "packages"         : ["gi"],
+                                "include_files"    : include_files
+                                }
+            setup_options["options"] = {"build_exe" : cx_freeze_options}
+            setup_options["executables"] = executables
     else:
         import py2exe    #@UnresolvedImport
         assert py2exe is not None

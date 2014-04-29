@@ -160,8 +160,12 @@ XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" dist\
 GOTO MAKEINSTALLER
 
 :PYTHON3
-%PYTHON_EXE% -OO setup.py cx_freeze
-
+ECHO %PYTHON_EXE% -OO setup.py cx_freeze
+%PYTHON_EXE% -OO setup.py cx_freeze > cx_freeze-xpra.log
+if %errorlevel% NEQ 0 (
+	ECHO "cx_freeze error, see cx_freeze-xpra.log"
+	GOTO ERROR
+)
 
 :MAKEINSTALLER
 ECHO ****** Adding TortoisePlink
