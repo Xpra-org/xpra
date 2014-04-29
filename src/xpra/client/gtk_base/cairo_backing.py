@@ -15,14 +15,10 @@ from xpra.codecs.loader import get_codec
 from xpra.log import Logger
 log = Logger("paint", "cairo")
 
-from xpra.gtk_common.gobject_compat import is_gtk3, import_gdk, import_gobject
+from xpra.gtk_common.gobject_compat import is_gtk3, import_gdk, import_gobject, import_pixbufloader
 gdk = import_gdk()
 gobject = import_gobject()
-if is_gtk3():
-    from gi.repository import GdkPixbuf     #@UnresolvedImport
-    PixbufLoader = GdkPixbuf.PixbufLoader
-else:
-    from gtk.gdk import PixbufLoader
+PixbufLoader = import_pixbufloader()
 
 
 """
@@ -116,6 +112,8 @@ class CairoBacking(GTKWindowBacking):
             rowstride = width * 3
         im = PIL.Image.frombuffer("RGB", (width, height), img_data, "raw", "RGB", rowstride)
         if is_gtk3():
+            #FIXME: ugly
+            from gi.repository import GdkPixbuf     #@UnresolvedImport
             data = array.array('B', im.tostring())
             pixbuf = GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
                                           True, 8, width, height, width * 4,

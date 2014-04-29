@@ -6,9 +6,10 @@
 
 import os.path
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
+PixbufLoader = import_pixbufloader()
 
 from xpra.log import Logger
 log = Logger("gtk", "util")
@@ -24,9 +25,13 @@ elif hasattr(gtk, "_version"):
 
 if is_gtk3():
     #where is this gone now?
+    from gi.repository import GdkPixbuf     #@UnresolvedImport
+    INTERP_HYPER = GdkPixbuf.InterpType.HYPER
     FILL = None
 else:
     FILL = gtk.FILL
+    INTERP_HYPER = gtk.gdk.INTERP_HYPER
+    
 
 
 def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
@@ -42,15 +47,28 @@ def scaled_image(pixbuf, icon_size):
     return    gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size, icon_size, gdk.INTERP_BILINEAR))
 
 
+
+def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
+    if is_gtk3():
+        import array
+        data = array.array('B', rgb_data)
+        return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
+                                         True, 8, w, h, rowstride,
+                                         None, None)
+    return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+
+
 def get_icon_from_file(filename):
     try:
         if not os.path.exists(filename):
             log.warn("%s does not exist", filename)
             return    None
         f = open(filename, mode='rb')
-        data = f.read()
-        f.close()
-        loader = gdk.PixbufLoader()
+        try:
+            data = f.read()
+        finally:
+            f.close()
+        loader = PixbufLoader()
         loader.write(data)
         loader.close()
     except Exception, e:

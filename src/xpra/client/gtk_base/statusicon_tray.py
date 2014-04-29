@@ -12,7 +12,7 @@ gtk = import_gtk()
 gdk = import_gdk()
 
 from xpra.client.tray_base import TrayBase, log
-from xpra.gtk_common.gtk_util import set_tooltip_text
+from xpra.gtk_common.gtk_util import set_tooltip_text, get_icon_from_file, get_pixbuf_from_data, INTERP_HYPER
 
 ORIENTATION = {}
 if not is_gtk3():
@@ -36,6 +36,7 @@ class GTKStatusIconTray(TrayBase):
         filename = self.get_tray_icon_filename(self.default_icon_filename)
         if filename:
             self.set_icon_from_file(filename)
+        self.tray_widget.set_visible(True)
 
     def may_guess(self):
         log("may_guess() GUESS_GEOMETRY=%s, current guess=%s", GUESS_GEOMETRY, self.geometry_guess)
@@ -58,9 +59,11 @@ class GTKStatusIconTray(TrayBase):
 
 
     def hide(self, *args):
+        log("%s.set_visible(False)", self.tray_widget)
         self.tray_widget.set_visible(False)
 
     def show(self, *args):
+        log("%s.set_visible(True)", self.tray_widget)
         self.tray_widget.set_visible(True)
 
 
@@ -106,29 +109,24 @@ class GTKStatusIconTray(TrayBase):
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
-        if is_gtk3():
-            import array
-            data = array.array('B', pixels)
-            from gi.repository import GdkPixbuf     #@UnresolvedImport
-            tray_icon = GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
-                                             True, 8, w, h, rowstride,
-                                             None, None)
-            interp = GdkPixbuf.InterpType.HYPER
-        else:
-            tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
-            interp = gtk.gdk.INTERP_HYPER
-        tw, th = self.get_geometry()[2:]
-        if tw!=w or th!=h:
-            tray_icon = tray_icon.scale_simple(tw, th, interp)
-        self.tray_widget.set_from_pixbuf(tray_icon)
-
+        tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
+        self.set_icon_from_pixbuf(tray_icon)
 
     def do_set_icon_from_file(self, filename):
-        if hasattr(self.tray_widget, "set_from_file"):
-            self.tray_widget.set_from_file(filename)
-        else:
-            pixbuf = gdk.pixbuf_new_from_file(filename)
-            self.tray_widget.set_from_pixbuf(pixbuf)
+        tray_icon = get_icon_from_file(filename)
+        self.set_icon_from_pixbuf(tray_icon)
+
+    def set_icon_from_pixbuf(self, tray_icon):
+        assert self.tray_widget
+        if not tray_icon:
+            return
+        tw, th = self.get_geometry()[2:]
+        w = tray_icon.get_width()
+        h = tray_icon.get_height()
+        log("set_icon_from_pixbuf(%s) geometry=%s, icon size=%s", tray_icon, self.get_geometry(), (w, h))
+        if tw!=w or th!=h:
+            tray_icon = tray_icon.scale_simple(tw, th, INTERP_HYPER)
+        self.tray_widget.set_from_pixbuf(tray_icon)
 
 
 def main():
