@@ -12,7 +12,8 @@
 __version__ = ("Cython", 0, 11)
 
 import sys
-assert sys.version < '3', "not ported to py3k yet"
+if sys.version>='3':
+    raise ImportError("not ported to py3k yet")
 
 from types import (StringType, UnicodeType, IntType, LongType, DictType, ListType,
                    TupleType, BooleanType)
