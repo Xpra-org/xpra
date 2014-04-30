@@ -10,10 +10,10 @@ IF EXIST "MAKE-INSTALLER.BAT" CD ..
 
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 if "%PYTHON%"=="" (
-REM DEFAULT to Python 2.7:
-SET PYTHON=C:\Python34
-SET PYTHON=C:\Python27
-SET VC=C:\Program Files\Microsoft Visual Studio 9.0\VC
+	REM DEFAULT to Python 2.7:
+	SET PYTHON=C:\Python34
+	SET PYTHON=C:\Python27
+	SET VC=C:\Program Files\Microsoft Visual Studio 9.0\VC
 )
 SET PYTHON_EXE=%PYTHON%\python.exe
 SET PYTHONPATH=.;%PYTHONPATH%
@@ -22,8 +22,9 @@ SET TORTOISESVN=C:\Program Files\TortoiseSVN
 SET SVNVERSION_EXE=svnversion
 SET BUILD_DIR=build
 
-FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version[0])"') DO set PYTHON_VERSION=%%i
-ECHO Found Python version %PYTHON_VERSION%
+FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version[0])"') DO set PYTHON_MAJOR_VERSION=%%i
+FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version[0])"') DO set PYTHON_MINOR_VERSION=%%i
+ECHO Found Python version %PYTHON_MAJOR_VERSION%.%PYTHON_MINOR_VERSION%
 
 REM "FLAGS TO DISABLE / ENABLE FEATURES"
 SET SHOW_DEPENDENCIES=0
@@ -54,47 +55,44 @@ ECHO Full version=%FULL_VERSION%
 
 
 ECHO ****** Clearing build directory (you can ignore any errors here)
-RMDIR /S /Q %BUILD_DIR% dist Output
+RMDIR /S /Q %BUILD_DIR% dist Output Temp
 DEL /Q Xpra_Setup*.exe
-
+DEL /Q cx_freeze-xpra.log build-xpra.log py2exe-xpra.log innosetup.log
 
 if NOT "%VC%"=="" (
-ECHO ***************************************************************
-ECHO ****** load Visual Studio env
-if "%VSINSTALLDIR%"=="" (
-	call "%VC%\bin\vcvars32.bat"
-)
+	ECHO ***************************************************************
+	ECHO ****** load Visual Studio env
+	if "%VSINSTALLDIR%"=="" (
+		CALL "%VC%\bin\vcvars32.bat"
+	)
 )
 
 ECHO ***************************************************************
 ECHO ****** build cython pyd files inplace
-
-ECHO %PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace
+ECHO %PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace ^> build-xpra.log
 %PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace > build-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "build error, see build-xpra.log"
 	GOTO ERROR
 )
 
-if "%PYTHON_VERSION%"=="3" (
+if "%PYTHON_MAJOR_VERSION%"=="3" (
 	GOTO PYTHON3
 )
 
 ECHO ***************************************************************
-ECHO ****** PYTHON2: py2exe
-
+ECHO ****** PYTHON2: py2exe + gtk2
+ECHO ****** setting pygtk and pygst environment variables
 SET PYGTK=%PYTHON%\Lib\site-packages\gtk-2.0
 SET GTK=%PYGTK%\runtime
 SET GSTREAMER=C:\Program Files\OSSBuild\GStreamer\v0.10.7
 SET PYGST=%GSTREAMER%\sdk\bindings\python\v2.7\lib\site-packages\gst-0.10
 SET PYGSTDLL=%GSTREAMER%\sdk\bindings\python\v2.7\lib\gstreamer-0.10
 SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PYTHONPATH%;%PYGST%;%PYGSTDLL%;
-
-
+SET PATH=%PATH%;%GSTREAMER%\sdk\bin;%GSTREAMER%\bin
 SET PY2EXE_ARGS=%BUILD_ARGS%
 IF %SHOW_DEPENDENCIES% NEQ 0 SET PY2EXE_ARGS=%BUILD_ARGS% -x
-
-ECHO %PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS%
+ECHO %PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS% ^> py2exe-xpra.log
 %PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS% > py2exe-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "py2exe error, see py2exe-xpra.log"
@@ -116,7 +114,6 @@ COPY /B /Y /V "%GSTREAMER%\bin\libgstreamer*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libgstapp*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libgstriff*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libgsttag*.dll" dist\
-
 COPY /B /Y /V "%GSTREAMER%\bin\liba52*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libfaa*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libFLAC*.dll" dist\
@@ -159,13 +156,33 @@ XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" dist\
 :NOGSTREAMER
 GOTO MAKEINSTALLER
 
+
 :PYTHON3
-ECHO %PYTHON_EXE% -OO setup.py build
-%PYTHON_EXE% -OO setup.py build > cx_freeze-xpra.log
+REM cx_freeze and lib2to3 build_py overrides don't get on..
+REM so we have to run the build in a temporary directory
+REM where we can run 2to3 before cx_freeze:
+set SOURCE_DIRECTORY=%cd%
+MKDIR Temp
+ECHO ****** Copying source into Temp
+FOR %%a in (etc html5 icons scripts tests win32 xpra) DO (
+	ECHO  * %%a :
+	XCOPY /I /Y /S /Q %%a Temp\%%a\
+)
+FOR %%a in (setup.py add_build_info.py MANIFEST.in README NEWS COPYING) DO (
+	COPY %%a Temp\
+)
+cd Temp
+%PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n .
+ECHO %PYTHON_EXE% -OO setup.py build_exe ^> cx_freeze-xpra.log
+%PYTHON_EXE% -OO setup.py build_exe > cx_freeze-xpra.log
+cd %SOURCE_DIRECTORY%
 if %errorlevel% NEQ 0 (
 	ECHO "cx_freeze error, see cx_freeze-xpra.log"
 	GOTO ERROR
 )
+REM Copy build output to src/dist/
+REM XCOPY /I /Y /S /Q Temp\build\exe.win32-%PYTHON_MAJOR_VERSION%.%PYTHON_MINOR_VERSION%\*.* dist\
+
 
 :MAKEINSTALLER
 ECHO ****** Adding TortoisePlink
@@ -181,6 +198,7 @@ COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" dist\
 ECHO ***************************************************************
 ECHO ****** InnoSetup
 COPY win32\xpra.iss xpra.iss
+"%INNOSETUP%" xpra.iss ^> innosetup.log
 "%INNOSETUP%" xpra.iss > innosetup.log
 ECHO returncode: %errorlevel%
 if %errorlevel% NEQ 0 (

@@ -54,7 +54,8 @@ scripts = []
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 PYTHON3 = sys.version_info[0] == 3
-if PYTHON3:
+if PYTHON3 and not WIN32:
+    #(on win32, we do this through the BAT file because it conflicts with cx_freeze)
     from lib2to3 import refactor
     from distutils.command.build_py import build_py_2to3    #@UnresolvedImport
     #fixers = refactor.get_fixers_from_package("lib2to3.fixes")
