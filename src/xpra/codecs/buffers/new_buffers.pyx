@@ -39,6 +39,7 @@ cdef extern from "Python.h":
 
     #fallback for non memoryviews:
     int PyObject_AsReadBuffer(object obj, const void ** buffer, Py_ssize_t * buffer_len) except -1
+    int PyObject_AsWriteBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 def get_version():
     return 1
@@ -56,6 +57,12 @@ cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly):
 
 
 cdef int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
+    return _object_as_buffer(obj, buffer, buffer_len, True)
+
+cdef int    object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
+    return _object_as_buffer(obj, buffer, buffer_len, False)
+
+cdef int    _object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len, int readonly):
     cdef Py_buffer *pybuf
     if PyMemoryView_Check(obj):
         #log.info("found memory view!")
@@ -64,4 +71,6 @@ cdef int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buff
         buffer[0] = pybuf.buf
         return 0
         #log.info("using py_buffer @ %#x", <unsigned long> py_buffer.buf)
-    return PyObject_AsReadBuffer(obj, buffer, buffer_len)
+    if readonly:
+        return PyObject_AsReadBuffer(obj, buffer, buffer_len)
+    return PyObject_AsWriteBuffer(obj, buffer, buffer_len)
