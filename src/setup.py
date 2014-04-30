@@ -502,8 +502,11 @@ def pkgconfig(*pkgs_options, **ekw):
         if static:
             return get_static_pkgconfig(*pkgs_options)
     if kw.get("optimize"):
+        optimize = kw["optimize"]
         del kw["optimize"]
-        add_to_keywords(kw, 'extra_compile_args', "-O3")
+        if type(optimize)==bool:
+            optimize = int(optimize)*3
+        add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
 
     if len(pkgs_options)>0:
         package_names = []
@@ -1016,9 +1019,9 @@ if WIN32:
     def VC_pkgconfig(*pkgs_options, **ekw):
         kw = dict(ekw)
         #remove static flag on win32..
-        static = kw.get("static", None)
-        if static is not None:
-            del kw["static"]
+        for flag in ("static", ):
+            if kw.get(flag) is not None:
+                del kw[flag]
         if kw.get("optimize"):
             add_to_keywords(kw, 'extra_compile_args', "/Ox")
             del kw["optimize"]
