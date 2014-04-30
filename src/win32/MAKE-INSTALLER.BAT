@@ -181,7 +181,7 @@ if %errorlevel% NEQ 0 (
 	GOTO ERROR
 )
 REM Copy build output to src/dist/
-REM XCOPY /I /Y /S /Q Temp\build\exe.win32-%PYTHON_MAJOR_VERSION%.%PYTHON_MINOR_VERSION%\*.* dist\
+XCOPY /I /Y /S /Q Temp\build\exe.win32-%PYTHON_MAJOR_VERSION%.%PYTHON_MINOR_VERSION%\*.* dist\
 
 
 :MAKEINSTALLER
