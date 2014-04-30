@@ -57,20 +57,21 @@ cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly):
 
 
 cdef int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
-    return _object_as_buffer(obj, buffer, buffer_len, True)
-
-cdef int    object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
-    return _object_as_buffer(obj, buffer, buffer_len, False)
-
-cdef int    _object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len, int readonly):
-    cdef Py_buffer *pybuf
+    cdef Py_buffer *rpybuf
     if PyMemoryView_Check(obj):
         #log.info("found memory view!")
-        pybuf = PyMemoryView_GET_BUFFER(obj)
-        assert pybuf.buf!=NULL
-        buffer[0] = pybuf.buf
+        rpybuf = PyMemoryView_GET_BUFFER(obj)
+        assert rpybuf.buf!=NULL
+        buffer[0] = rpybuf.buf
         return 0
-        #log.info("using py_buffer @ %#x", <unsigned long> py_buffer.buf)
-    if readonly:
-        return PyObject_AsReadBuffer(obj, buffer, buffer_len)
+    return PyObject_AsReadBuffer(obj, buffer, buffer_len)
+
+cdef int    object_as_write_buffer(object obj, void ** buffer, Py_ssize_t * buffer_len):
+    cdef Py_buffer *wpybuf
+    if PyMemoryView_Check(obj):
+        #log.info("found memory view!")
+        wpybuf = PyMemoryView_GET_BUFFER(obj)
+        assert wpybuf.buf!=NULL
+        buffer[0] = wpybuf.buf
+        return 0
     return PyObject_AsWriteBuffer(obj, buffer, buffer_len)

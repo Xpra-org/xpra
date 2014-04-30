@@ -29,5 +29,5 @@ cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly):
 cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
     return PyObject_AsReadBuffer(obj, buffer, buffer_len)
 
-cdef int object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
+cdef int object_as_write_buffer(object obj, void ** buffer, Py_ssize_t * buffer_len):
     return PyObject_AsWriteBuffer(obj, buffer, buffer_len)
