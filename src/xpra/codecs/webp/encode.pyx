@@ -23,9 +23,9 @@ cdef extern from "stdlib.h":
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
-    ctypedef object PyObject
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
+cdef extern from "../buffers/buffers.h":
+    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "webp/encode.h":
 
@@ -297,7 +297,7 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     if width*height<8192:
         preset = WEBP_PRESET_ICON
 
-    PyObject_AsReadBuffer(pixels, <const void**> &pic_buf, &pic_buf_len)
+    assert object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)==0
     log("webp.compress(%s bytes, %s, %s, %s, %s, %s, %s) buf=%#x", len(pixels), width, height, stride, quality, speed, has_alpha, <unsigned long> pic_buf)
 
     ret = WebPConfigPreset(&config, preset, fclamp(quality))

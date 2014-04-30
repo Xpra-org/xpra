@@ -25,9 +25,11 @@ cdef extern from "stdint.h":
 cdef extern from "inttypes.h":
     pass
 
-ctypedef int Py_ssize_t
-from xpra.codecs.buffers.util cimport object_as_buffer
+cdef extern from "Python.h":
+    ctypedef int Py_ssize_t
 
+cdef extern from "../buffers/buffers.h":
+    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "x265.h":
 

@@ -139,7 +139,6 @@ csc_cython_ENABLED      = True
 webm_ENABLED            = True
 nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")       #or os.path.exists("C:\\nvenc_3.0_windows_sdk")
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL")
-buffers_ENABLED         = True
 memoryview_ENABLED      = PYTHON3
 
 warn_ENABLED            = True
@@ -159,7 +158,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "csc_opencl", "csc_cython",
             "vpx", "vpx_static",
             "webp", "webm",
-            "buffers", "memoryview",
+            "memoryview",
             "rencode", "bencode", "cython_bencode",
             "clipboard",
             "server", "client", "x11", "gtk_x11",
@@ -236,13 +235,6 @@ if "clean" not in sys.argv:
     if not client_ENABLED and not server_ENABLED:
         print("Error: you must build at least the client or server!")
         exit(1)
-    if not buffers_ENABLED:
-        req_buffers = ("csc_cython", "csc_swscale", "dec_avcodec2", "vpx_ENABLED", "enc_x264", "enc_x265")
-        for mod in req_buffers:
-            v = vars()["%s_ENABLED" % mod]
-            if v:
-                print("Error: you must enable 'buffers' to build %s (or: %s)" % (mod, ", ".join([x for x in req_buffers if x!=mod])))
-                exit(1)
     if memoryview_ENABLED and sys.version<"2.7":
         print("Error: memoryview support requires Python version 2.7 or greater")
         exit(1)
@@ -688,8 +680,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/bindings/ximage.c",
                    "xpra/net/rencode/rencode.c",
                    "xpra/net/bencode/cython_bencode.c",
-                   "xpra/codecs/buffers/new_buffers.c",
-                   "xpra/codecs/buffers/old_buffers.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
                    "xpra/codecs/nvenc/encoder.c",
@@ -841,7 +831,7 @@ if WIN32:
                             appendScriptToExe       = True,
                             appendScriptToLibrary   = False,
                             **kwargs))
-    
+
             def add_console_exe(script, icon, base_name):
                 add_exe(script, icon, base_name, base="Console")
             def add_gui_exe(script, icon, base_name):
@@ -868,12 +858,12 @@ if WIN32:
             #with py2exe, we don't use py_modules, we use "packages"... sigh
             #(and it is a little bit different too - see below)
             del setup_options["py_modules"]
-    
+
             windows = []
             setup_options["windows"] = windows
             console = []
             setup_options["console"] = console
-    
+
             def add_exe(tolist, script, icon, base_name):
                 tolist.append({ 'script'             : script,
                                 'icon_resources'    : [(1, "win32/%s" % icon)],
@@ -883,7 +873,7 @@ if WIN32:
             def add_gui_exe(*args):
                 add_exe(windows, *args)
 
-            # Python2.7 was compiled with Visual Studio 2008:    
+            # Python2.7 was compiled with Visual Studio 2008:
             # (you can find the DLLs in various packages, including Visual Studio 2008,
             # pywin32, etc...)
             # This is where I keep them, you will obviously need to change this value
@@ -914,6 +904,7 @@ if WIN32:
         add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
+        add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
         add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
         add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
         add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
@@ -1265,6 +1256,17 @@ if html5_ENABLED:
 
 
 #*******************************************************************************
+#which file to link against (new-style buffers or old?):
+if memoryview_ENABLED:
+    bmod = "new"
+else:
+    assert not PYTHON3
+    bmod = "old"
+buffers_c = "xpra/codecs/buffers/%s_buffers.c" % bmod
+#convenience grouping for codecs:
+membuffers_c = ["xpra/codecs/buffers/memalign.c", "xpra/codecs/inline.c", buffers_c]
+
+
 toggle_packages(server_ENABLED, "xpra.server", "xpra.server.stats", "xpra.server.auth")
 toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
@@ -1300,7 +1302,7 @@ if x11_ENABLED:
                 **pkgconfig("xtst", "xfixes", "xcomposite", "xdamage")
                 ))
     cython_add(Extension("xpra.x11.bindings.ximage",
-                ["xpra/x11/bindings/ximage.pyx"],
+                ["xpra/x11/bindings/ximage.pyx", buffers_c],
                 **pkgconfig("xcomposite", "xdamage", "xext")
                 ))
 
@@ -1328,7 +1330,7 @@ if gtk_x11_ENABLED:
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 if argb_ENABLED:
     cython_add(Extension("xpra.codecs.argb.argb",
-                ["xpra/codecs/argb/argb.pyx"]))
+                ["xpra/codecs/argb/argb.pyx", buffers_c]))
 
 
 if bundle_tests_ENABLED:
@@ -1359,25 +1361,13 @@ if clipboard_ENABLED:
 
 if cyxor_ENABLED:
     cython_add(Extension("xpra.codecs.xor.cyxor",
-                ["xpra/codecs/xor/cyxor.pyx"],
+                ["xpra/codecs/xor/cyxor.pyx", buffers_c],
                 **pkgconfig()))
 
 if cymaths_ENABLED:
     cython_add(Extension("xpra.server.stats.cymaths",
                 ["xpra/server/stats/cymaths.pyx"],
                 **pkgconfig()))
-
-
-#build buffer bits (needed for many csc modules and decoders):
-toggle_packages(buffers_ENABLED, "xpra.codecs.buffers")
-if buffers_ENABLED:
-    #new-style buffers or old?
-    if memoryview_ENABLED:
-        bmod = "new"
-    else:
-        bmod = "old"
-    cython_add(Extension("xpra.codecs.buffers.util",
-                ["xpra/codecs/buffers/%s_buffers.pyx" % bmod]))
 
 
 toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
@@ -1392,28 +1382,28 @@ if nvenc_ENABLED:
     if "nvidia-encode" in libraries:
         libraries.remove("nvidia-encode")
     cython_add(Extension("xpra.codecs.nvenc.encoder",
-                         ["xpra/codecs/nvenc/encoder.pyx"],
+                         ["xpra/codecs/nvenc/encoder.pyx", buffers_c],
                          **nvenc_pkgconfig))
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
     x264_pkgconfig = pkgconfig("x264", static=x264_static_ENABLED)
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
-                ["xpra/codecs/enc_x264/encoder.pyx"],
+                ["xpra/codecs/enc_x264/encoder.pyx", buffers_c],
                 **x264_pkgconfig))
 
 toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
 if enc_x265_ENABLED:
     x265_pkgconfig = pkgconfig("x265", static=x265_static_ENABLED)
     cython_add(Extension("xpra.codecs.enc_x265.encoder",
-                ["xpra/codecs/enc_x265/encoder.pyx"],
+                ["xpra/codecs/enc_x265/encoder.pyx", buffers_c],
                 **x265_pkgconfig))
 
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:
     webp_pkgconfig = pkgconfig("webp")
     cython_add(Extension("xpra.codecs.webp.encode",
-                ["xpra/codecs/webp/encode.pyx"],
+                ["xpra/codecs/webp/encode.pyx", buffers_c],
                 **webp_pkgconfig))
 
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
@@ -1421,14 +1411,14 @@ if dec_avcodec_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec", "constants")
     avcodec_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
-                ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
+                ["xpra/codecs/dec_avcodec/decoder.pyx"]+membuffers_c,
                 **avcodec_pkgconfig))
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec2_static_ENABLED)
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
-                ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
+                ["xpra/codecs/dec_avcodec2/decoder.pyx"]+membuffers_c,
                 **avcodec2_pkgconfig))
 
 
@@ -1437,24 +1427,24 @@ if csc_swscale_ENABLED:
     make_constants("xpra", "codecs", "csc_swscale", "constants")
     swscale_pkgconfig = pkgconfig("swscale", static=swscale_static_ENABLED)
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
-                ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c", "xpra/codecs/inline.c"],
+                ["xpra/codecs/csc_swscale/colorspace_converter.pyx"]+membuffers_c,
                 **swscale_pkgconfig))
 
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 if csc_cython_ENABLED:
     csc_cython_pkgconfig = pkgconfig()
     cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
-                ["xpra/codecs/csc_cython/colorspace_converter.pyx", "xpra/codecs/memalign/memalign.c"],
+                ["xpra/codecs/csc_cython/colorspace_converter.pyx"]+membuffers_c,
                 **csc_cython_pkgconfig))
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     vpx_pkgconfig = pkgconfig("vpx", static=vpx_static_ENABLED)
     cython_add(Extension("xpra.codecs.vpx.encoder",
-                ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/memalign/memalign.c"],
+                ["xpra/codecs/vpx/encoder.pyx"]+membuffers_c,
                 **vpx_pkgconfig))
     cython_add(Extension("xpra.codecs.vpx.decoder",
-                ["xpra/codecs/vpx/decoder.pyx", "xpra/codecs/memalign/memalign.c"],
+                ["xpra/codecs/vpx/decoder.pyx"]+membuffers_c,
                 **vpx_pkgconfig))
 
 

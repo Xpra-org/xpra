@@ -17,13 +17,15 @@ XSHM_DEBUG = os.environ.get("XPRA_XSHM_DEBUG", "0")=="1"
 XIMAGE_DEBUG = XSHM_DEBUG or os.environ.get("XPRA_XIMAGE_DEBUG", "0")=="1"
 
 
-from xpra.codecs.buffers.util cimport memory_as_pybuffer, object_as_buffer
-
 ###################################
 # Headers, python magic
 ###################################
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
+
+cdef extern from "../../codecs/buffers/buffers.h":
+    object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
+    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "string.h":
     void * memcpy( void * destination, void * source, size_t num )

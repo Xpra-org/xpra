@@ -18,16 +18,18 @@ DEF ENABLE_VP9 = False
 
 from libc.stdint cimport int64_t
 
-
 cdef extern from "string.h":
     void *memset(void *ptr, int value, size_t num) nogil
     void free(void *ptr) nogil
 
-cdef extern from "../memalign/memalign.h":
+cdef extern from "Python.h":
+    ctypedef int Py_ssize_t
+
+cdef extern from "../buffers/memalign.h":
     void *xmemalign(size_t size)
 
-ctypedef int Py_ssize_t
-from xpra.codecs.buffers.util cimport object_as_buffer
+cdef extern from "../buffers/buffers.h":
+    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 ctypedef unsigned char uint8_t
 ctypedef long vpx_img_fmt_t

@@ -44,7 +44,7 @@ cdef extern from "libavcodec/version.h":
     int LIBAVCODEC_VERSION_MINOR
     int LIBAVCODEC_VERSION_MICRO
 
-cdef extern from "../memalign/memalign.h":
+cdef extern from "../buffers/memalign.h":
     void *xmemalign(size_t size)
 
 

@@ -16,9 +16,13 @@ from xpra.codecs.image_wrapper import ImageWrapper
 
 ctypedef unsigned long size_t
 ctypedef unsigned char uint8_t
-ctypedef int Py_ssize_t
 
-from xpra.codecs.buffers.util cimport memory_as_pybuffer, object_as_buffer
+cdef extern from "Python.h":
+    ctypedef int Py_ssize_t
+
+cdef extern from "../buffers/buffers.h":
+    object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
+    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "string.h":
     void * memcpy(void * destination, void * source, size_t num) nogil
@@ -29,7 +33,7 @@ cdef extern from "string.h":
 cdef extern from "../inline.h":
     pass
 
-cdef extern from "../memalign/memalign.h":
+cdef extern from "../buffers/memalign.h":
     void *xmemalign(size_t size)
 
 
