@@ -16,6 +16,12 @@ from distutils.extension import Extension
 import subprocess, sys, traceback
 import os.path
 import stat
+try:
+    from hashlib import md5         #@UnusedImport
+    new_md5 = md5
+except:
+    import md5                      #@Reimport
+    new_md5 = md5.new
 
 print(" ".join(sys.argv))
 
@@ -329,6 +335,22 @@ add_modules("xpra",
             "xpra.codecs.xor")
 add_packages("xpra.scripts", "xpra.keyboard", "xpra.net")
 
+
+def check_md5sums(md5sums):
+    print("Verifying md5sums:")
+    for filename, md5sum in md5sums.items():
+        if not os.path.exists(filename) or not os.path.isfile(filename):
+            sys.exit("ERROR: file %s is missing or not a file!" % filename)
+        sys.stdout.write("* %s: " % str(filename).ljust(52))
+        f = open(filename, mode='rb')
+        data = f.read()
+        f.close()
+        m = new_md5()
+        m.update(data)
+        digest = m.hexdigest()
+        assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (filename, md5sum, digest)
+        sys.stdout.write("OK\n")
+        sys.stdout.flush()
 
 #*******************************************************************************
 # Utility methods for building with Cython
@@ -728,34 +750,70 @@ def glob_recurse(srcdir):
 
 #*******************************************************************************
 if WIN32:
-    if PYTHON3:
-        if "build_ext" not in sys.argv:
+    #always include those files:
+    data_files += [
+       ('',         ['COPYING', 'README', 'win32/website.url', 'etc/xpra/client-only/xpra.conf']),
+       ('icons',    glob.glob('win32\\*.ico') + glob.glob('icons\\*.*')),
+       ]
+    add_packages("xpra.platform.win32")
+    remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
+
+    #only add the py2exe / cx_freeze specific options
+    #if we aren't just building the Cython bits with "build_ext":
+    if "build_ext" not in sys.argv:
+        if PYTHON3:
             from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
             import site
+            #ie: C:\Python3.5\Lib\site-packages\
             site_dir = site.getsitepackages()[1]
-            include_dll_path = os.path.join(site_dir, "gtk")
-            missing_dll = ['libgtk-3-0.dll',
-                           'libgdk-3-0.dll',
+            #this is where the installer I have used put things:
+            include_dll_path = os.path.join(site_dir, "gnome")
+            missing_dll = [
                            'libatk-1.0-0.dll',
                            'libcairo-gobject-2.dll',
+                           'libdbus-1-3.dll',
+                           'libdbus-glib-1-2.dll',
+                           'libgdk-3-0.dll',
                            'libgdk_pixbuf-2.0-0.dll',
+                           'libgdkglext-3.0-0.dll',
+                           'libgio-2.0-0.dll',
+                           'libgirepository-1.0-1.dll',
+                           'libglib-2.0-0.dll',
+                           'libgnutls-26.dll',
+                           'libgobject-2.0-0.dll',
+                           'libgthread-2.0-0.dll',
+                           'libgtk-3-0.dll',
+                           'libgtkglext-3.0-0.dll',
                            'libjpeg-8.dll',
+                           'liborc-0.4-0.dll',
                            'libpango-1.0-0.dll',
                            'libpangocairo-1.0-0.dll',
                            'libpangoft2-1.0-0.dll',
                            'libpangowin32-1.0-0.dll',
-                           'libgnutls-26.dll',
-                           'libgcrypt-11.dll',
-                           'libp11-kit-0.dll']
+                           'libpng16-16.dll',
+                           #ie: python33
+                           'libpyglib-gi-2.0-python%s%s-0.dll' % (sys.version_info[0], sys.version_info[0]),
+                           'librsvg-2-2.dll',
+                           'libwebp-4.dll',
+                           'libwinpthread-1.dll',
+                           'libzzz.dll',
+                           ]
+            if sound_ENABLED:
+                missing_dll += [
+                           'libgstapp-1.0-0.dll',
+                           'libgstaudio-1.0-0.dll',
+                           'libgstbase-1.0-0.dll',
+                           'libgstcodecparsers-1.0-0.dll',
+                           'libgstnet-1.0-0.dll',
+                           'libgstreamer-1.0-0.dll',
+                           'libgstvideo-1.0-0.dll',
+                           ]
             include_files = []
             for dll in missing_dll:
                 include_files.append((os.path.join(include_dll_path, dll), dll))
             gtk_libs = ['etc', 'lib', 'share']
             for lib in gtk_libs:
                 include_files.append((os.path.join(include_dll_path, lib), lib))
-            executables = [
-                           Executable("main.py", base="Win32GUI")
-                           ]
             cx_freeze_options = {
                                 "compressed"       : False,
                                 "includes"         : ["gi"],
@@ -763,90 +821,105 @@ if WIN32:
                                 "include_files"    : include_files
                                 }
             setup_options["options"] = {"build_exe" : cx_freeze_options}
+            executables = []
             setup_options["executables"] = executables
-    else:
-        import py2exe    #@UnresolvedImport
-        assert py2exe is not None
-        EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"]
-        py2exe.build_exe.EXCLUDED_DLLS = EXCLUDED_DLLS
-        external_includes += ["win32con", "win32gui", "win32process", "win32api"]
-        py2exe_options = {
-                          "skip_archive"   : False,
-                          "optimize"       : 0,    #WARNING: do not change - causes crashes
-                          "unbuffered"     : True,
-                          "compressed"     : True,
-                          "skip_archive"   : False,
-                          "packages"       : packages,
-                          "includes"       : external_includes,
-                          "excludes"       : excludes,
-                          "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll"],
-                         }
-        setup_options["options"] = {"py2exe" : py2exe_options}
-        #with py2exe, we don't use py_modules, we use "packages"... sigh
-        #(and it is a little bit different too - see below)
-        del setup_options["py_modules"]
 
-        #the binaries we'll create:
-        setup_options["windows"] = [
-                        {'script': 'scripts/xpra',                          'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
-                        {'script': 'scripts/xpra_launcher',                 'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
-                        {'script': 'xpra/gtk_common/gtk_view_keyboard.py',  'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
-                        {'script': 'xpra/gtk_common/gtk_view_clipboard.py', 'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
-                  ]
+            def add_exe(script, icon, base_name, **kwargs):
+                executables.append(Executable(
+                            script                  = script,
+                            initScript              = None,
+                            targetDir               = "dist",
+                            targetName              = "%s.exe" % base_name,
+                            compress                = True,
+                            copyDependentFiles      = True,
+                            appendScriptToExe       = True,
+                            appendScriptToLibrary   = False,
+                            **kwargs))
+    
+            def add_console_exe(script, icon, base_name):
+                add_exe(script, icon, base_name, base="Console")
+            def add_gui_exe(script, icon, base_name):
+                add_exe(script, icon, base_name, base="Win32GUI")
+            #END OF cx_freeze SECTION
+        else:
+            import py2exe    #@UnresolvedImport
+            assert py2exe is not None
+            EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"]
+            py2exe.build_exe.EXCLUDED_DLLS = EXCLUDED_DLLS
+            external_includes += ["win32con", "win32gui", "win32process", "win32api"]
+            py2exe_options = {
+                              "skip_archive"   : False,
+                              "optimize"       : 0,    #WARNING: do not change - causes crashes
+                              "unbuffered"     : True,
+                              "compressed"     : True,
+                              "skip_archive"   : False,
+                              "packages"       : packages,
+                              "includes"       : external_includes,
+                              "excludes"       : excludes,
+                              "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll"],
+                             }
+            setup_options["options"] = {"py2exe" : py2exe_options}
+            #with py2exe, we don't use py_modules, we use "packages"... sigh
+            #(and it is a little bit different too - see below)
+            del setup_options["py_modules"]
+    
+            windows = []
+            setup_options["windows"] = windows
+            console = []
+            setup_options["console"] = console
+    
+            def add_exe(tolist, script, icon, base_name):
+                tolist.append({ 'script'             : script,
+                                'icon_resources'    : [(1, "win32/%s" % icon)],
+                                "dest_base"         : base_name})
+            def add_console_exe(*args):
+                add_exe(console, *args)
+            def add_gui_exe(*args):
+                add_exe(windows, *args)
+
+            # Python2.7 was compiled with Visual Studio 2008:    
+            # (you can find the DLLs in various packages, including Visual Studio 2008,
+            # pywin32, etc...)
+            # This is where I keep them, you will obviously need to change this value
+            # or make sure you also copy them there:
+            C_DLLs = "C:\\"
+            check_md5sums({
+               C_DLLs+"Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest"  : "37f44d535dcc8bf7a826dfa4f5fa319b",
+               C_DLLs+"Microsoft.VC90.CRT/msvcm90.dll"                  : "4a8bc195abdc93f0db5dab7f5093c52f",
+               C_DLLs+"Microsoft.VC90.CRT/msvcp90.dll"                  : "6de5c66e434a9c1729575763d891c6c2",
+               C_DLLs+"Microsoft.VC90.CRT/msvcr90.dll"                  : "e7d91d008fe76423962b91c43c88e4eb",
+               C_DLLs+"Microsoft.VC90.CRT/vcomp90.dll"                  : "f6a85f3b0e30c96c993c69da6da6079e",
+               C_DLLs+"Microsoft.VC90.MFC/Microsoft.VC90.MFC.manifest"  : "17683bda76942b55361049b226324be9",
+               C_DLLs+"Microsoft.VC90.MFC/mfc90.dll"                    : "462ddcc5eb88f34aed991416f8e354b2",
+               C_DLLs+"Microsoft.VC90.MFC/mfc90u.dll"                   : "b9030d821e099c79de1c9125b790e2da",
+               C_DLLs+"Microsoft.VC90.MFC/mfcm90.dll"                   : "d4e7c1546cf3131b7d84b39f8da9e321",
+               C_DLLs+"Microsoft.VC90.MFC/mfcm90u.dll"                  : "371226b8346f29011137c7aa9e93f2f6",
+               })
+            data_files += [
+               ('Microsoft.VC90.CRT', glob.glob(C_DLLs+'Microsoft.VC90.CRT\\*.*')),
+               ('Microsoft.VC90.MFC', glob.glob(C_DLLs+'Microsoft.VC90.MFC\\*.*')),
+               ]
+            #END OF py2exe SECTION
+
+        #UI applications (detached from shell: no text output if ran from cmd.exe)
+        add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
+        add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
+        add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
+        add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
-        console = [
-                        {'script': 'scripts/xpra',                          'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
-                        {'script': 'win32/python_execfile.py',              'icon_resources': [(1, "win32/python.ico")],    "dest_base": "Python_execfile",},
-                        {'script': 'xpra/platform/win32/gui.py',            'icon_resources': [(1, "win32/loop.ico")],      "dest_base": "Events_Test",},
-                        {'script': 'xpra/net/net_util.py',                  'icon_resources': [(1, "win32/network.ico")],   "dest_base": "Network_info",},
-                        {'script': 'xpra/codecs/loader.py',                 'icon_resources': [(1, "win32/encoding.ico")],  "dest_base": "Encoding_info",},
-                        {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},
-                        {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
-                        {'script': 'xpra/sound/sink.py',                    'icon_resources': [(1, "win32/speaker.ico")],   "dest_base": "Sound_Play",},
-                  ]
+        add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
+        add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
+        add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
+        add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
+        add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
+        add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
+        add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
-            console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})
-        setup_options["console"] = console
+            add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
 
-    # The Microsoft C library DLLs:
-    # Unfortunately, these files cannot be re-distributed legally :(
-    # So here is the md5sum so you can find the right version:
-    # (you can find them in various packages, including Visual Studio 2008,
-    # pywin32, etc...)
-    try:
-        from hashlib import md5         #@UnusedImport
-        new_md5 = md5
-    except:
-        import md5                      #@Reimport
-        new_md5 = md5.new
-    md5sums = {"Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest" : "37f44d535dcc8bf7a826dfa4f5fa319b",
-               "Microsoft.VC90.CRT/msvcm90.dll"                 : "4a8bc195abdc93f0db5dab7f5093c52f",
-               "Microsoft.VC90.CRT/msvcp90.dll"                 : "6de5c66e434a9c1729575763d891c6c2",
-               "Microsoft.VC90.CRT/msvcr90.dll"                 : "e7d91d008fe76423962b91c43c88e4eb",
-               "Microsoft.VC90.CRT/vcomp90.dll"                 : "f6a85f3b0e30c96c993c69da6da6079e",
-               "Microsoft.VC90.MFC/Microsoft.VC90.MFC.manifest" : "17683bda76942b55361049b226324be9",
-               "Microsoft.VC90.MFC/mfc90.dll"                   : "462ddcc5eb88f34aed991416f8e354b2",
-               "Microsoft.VC90.MFC/mfc90u.dll"                  : "b9030d821e099c79de1c9125b790e2da",
-               "Microsoft.VC90.MFC/mfcm90.dll"                  : "d4e7c1546cf3131b7d84b39f8da9e321",
-               "Microsoft.VC90.MFC/mfcm90u.dll"                 : "371226b8346f29011137c7aa9e93f2f6",
-               }
-    # This is where I keep them, you will obviously need to change this value:
-    C_DLLs = "C:\\"
-    print("Verifying md5sums:")
-    for dll_file, md5sum in md5sums.items():
-        filename = os.path.join(C_DLLs, *dll_file.split("/"))
-        if not os.path.exists(filename) or not os.path.isfile(filename):
-            sys.exit("ERROR: DLL file %s is missing or not a file!" % filename)
-        sys.stdout.write("* %s: " % str(filename).ljust(50))
-        f = open(filename, mode='rb')
-        data = f.read()
-        f.close()
-        m = new_md5()
-        m.update(data)
-        digest = m.hexdigest()
-        assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (dll_file, md5sum, digest)
-        sys.stdout.write("OK\n")
-        sys.stdout.flush()
+
+    ###########################################################
+    #START OF HARDCODED SECTION
     #this should all be done with pkgconfig...
     #but until someone figures this out, the ugly path code below works
     #as long as you install in the same place or tweak the paths.
@@ -903,22 +976,18 @@ if WIN32:
     webp_lib_dir        = webp_path+"\\lib"
     webp_bin_dir        = webp_path+"\\bin"
     webp_lib_names      = ["libwebp"]
-
     #cuda:
     cuda_path = "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v5.5"
     cuda_include_dir    = os.path.join(cuda_path, "include")
     cuda_lib_dir        = os.path.join(cuda_path, "lib", "Win32")
     cuda_bin_dir        = os.path.join(cuda_path, "bin")
-
     #nvenc:
     nvenc_path = "C:\\nvenc_3.0_windows_sdk"
     nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
     nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
     #let's not use crazy paths, just copy the dll somewhere that makes sense:
     nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
-    #nvenc_lib_names = ["cudart", "cuda"]
     nvenc_lib_names         = ["cuda"]
-    #d3dx9_include_dir = "C:\\"
 
     # Same for PyGTK:
     # http://www.pygtk.org/downloads.html
@@ -937,6 +1006,8 @@ if WIN32:
     pango_include_dir       = os.path.join(gtk2_base_include_dir, "pango-1.0")
     gdkconfig_include_dir   = os.path.join(gtk2runtime_path, "lib", "gtk-2.0", "include")
     glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
+    #END OF HARDCODED SECTION
+    ###########################################################
 
     #hard-coded pkgconfig replacement for visual studio:
     def VC_pkgconfig(*pkgs_options, **ekw):
@@ -1035,10 +1106,6 @@ if WIN32:
             return VC_pkgconfig(*pkgs_options, **ekw)
 
 
-    add_packages("xpra.platform.win32")
-    remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
-    #UI applications (detached from shell: no text output if ran from cmd.exe)
-
     remove_packages(*external_excludes)
     remove_packages(#not used on win32:
                     "mmap",
@@ -1057,10 +1124,12 @@ if WIN32:
 
     if sound_ENABLED:
         external_includes += ["pygst", "gst", "gst.extend"]
+        data_files.append(('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path)))
     else:
         remove_packages("pygst", "gst", "gst.extend")
 
-    if opengl_ENABLED:
+    #deal with opengl workaround (as long as we're not just building the extensions):
+    if opengl_ENABLED and "build_ext" not in sys.argv:
         #for this hack to work, you must add "." to the sys.path
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
@@ -1078,14 +1147,7 @@ if WIN32:
                 e = sys.exc_info()[1]
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
-    data_files += [
-                   ('', ['COPYING', 'README', 'win32/website.url',
-                         'etc/xpra/client-only/xpra.conf'] +
-                         glob.glob('%s\\bin\\*.dll' % libffmpeg_path)),
-                   ('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*')),
-                   ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
-                   ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
-                   ]
+
     if enc_x264_ENABLED:
         data_files.append(('', ['%s\\libx264.dll' % x264_bin_dir]))
     html5_dir = ''
@@ -1097,12 +1159,10 @@ if WIN32:
         #the path after installing may look like this:
         #webp_DLL = "C:\\libwebp-0.3.1-windows-x86\\bin\\libwebp.dll"
         #but we use something more generic, without the version numbers:
-        webp_DLL = webp_bin_dir+"\\libwebp.dll"
-        data_files.append(('', [webp_DLL]))
-        #and its license:
-        data_files.append(('webm', ["xpra/codecs/webm/LICENSE"]))
+        data_files.append(('',      [webp_bin_dir+"\\libwebp.dll"]))
+        data_files.append(('webm',  ["xpra/codecs/webm/LICENSE"]))
 
-
+    #END OF win32
 #*******************************************************************************
 else:
     #OSX and *nix:
