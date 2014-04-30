@@ -244,11 +244,14 @@ if "clean" not in sys.argv:
 #*******************************************************************************
 # default sets:
 
-external_includes = ["cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
-                     "Crypto", "Crypto.Cipher",
+external_includes = ["Crypto", "Crypto.Cipher",
                      "hashlib",
                      "PIL", "PIL.Image",
                      "ctypes", "platform"]
+if gtk3_ENABLED:
+    external_includes += ["gi"]
+elif gtk2_ENABLED or x11_ENABLED:
+    external_includes += "cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms"
 
 external_excludes = [
                     #Tcl/Tk
@@ -812,10 +815,13 @@ if WIN32:
             for lib in gtk_libs:
                 include_files.append((os.path.join(include_dll_path, lib), lib))
             cx_freeze_options = {
-                                "compressed"       : False,
-                                "includes"         : ["gi"],
-                                "packages"         : ["gi"],
-                                "include_files"    : include_files
+                                "compressed"        : False,
+                                "includes"          : external_includes,
+                                "packages"          : packages+["gi"],
+                                "include_files"     : include_files,
+                                "excludes"          : excludes,
+                                "include_msvcr"     : True,
+                                "create_shared_zip" : True,
                                 }
             setup_options["options"] = {"build_exe" : cx_freeze_options}
             executables = []
@@ -825,12 +831,12 @@ if WIN32:
                 executables.append(Executable(
                             script                  = script,
                             initScript              = None,
-                            targetDir               = "dist",
+                            #targetDir               = "dist",
                             targetName              = "%s.exe" % base_name,
                             compress                = True,
                             copyDependentFiles      = True,
-                            appendScriptToExe       = True,
-                            appendScriptToLibrary   = False,
+                            #appendScriptToExe       = False,
+                            #appendScriptToLibrary   = True,
                             **kwargs))
 
             def add_console_exe(script, icon, base_name):
@@ -1121,8 +1127,12 @@ if WIN32:
                         "pydoc")
 
     if sound_ENABLED:
-        external_includes += ["pygst", "gst", "gst.extend"]
-        data_files.append(('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path)))
+        if not PYTHON3:
+            external_includes += ["pygst", "gst", "gst.extend"]
+            data_files.append(('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path)))
+        else:
+            #python3: this is part of "gi"?
+            pass
     else:
         remove_packages("pygst", "gst", "gst.extend")
 
