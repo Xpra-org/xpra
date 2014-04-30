@@ -40,7 +40,7 @@ def OpenGL_safety_check():
         ur = distro[1]  #ie: "12.04"
         try:
             rnum = [int(x) for x in ur.split(".")]  #ie: [12, 4]
-            if rnum<=[12, 04]:
+            if rnum<=[12, 4]:
                 return "Ubuntu %s is too buggy" % ur
         except:
             pass
