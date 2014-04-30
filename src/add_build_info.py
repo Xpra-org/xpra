@@ -100,6 +100,42 @@ def set_prop(props, key, value):
     if value!="unknown" or props.get(key) is None:
         props[key] = value
 
+def get_platform_name():
+    #better version info than standard python platform:
+    if sys.platform.startswith("sun"):
+        #couldn't find a better way to distinguish opensolaris from solaris...
+        f = open("/etc/release")
+        data = f.read()
+        f.close()
+        if data and str(data).lower().find("opensolaris"):
+            return "OpenSolaris"
+        return "Solaris"
+    if sys.platform.find("darwin")>=0:
+        try:
+            #ie: Mac OS X 10.5.8
+            return "Mac OS X %s" % platform.mac_ver()[0]
+        except:
+            return "Mac OS X"
+    if sys.platform.find("openbsd")>=0:
+        return "OpenBSD"
+    if sys.platform.startswith("win"):
+        try:
+            import wmi            #@UnresolvedImport
+            c = wmi.WMI()
+            for os in c.Win32_OperatingSystem():
+                eq = os.Caption.find("=")
+                if eq>0:
+                    return (os.Caption[:eq]).strip()
+                return os.Caption
+        except:
+            pass
+        return "Microsoft Windows"
+    if sys.platform.find("bsd")>=0:
+        return "BSD"
+    if sys.platform.find("linux")>=0:
+        return "Linux %s" % (" ".join(platform.linux_distribution()))
+    return sys.platform
+    
 
 def record_build_info(is_build=True):
     BUILD_INFO_FILE = "./xpra/build_info.py"
@@ -111,6 +147,7 @@ def record_build_info(is_build=True):
         set_prop(props, "BUILD_DATE", date.today().isoformat())
         set_prop(props, "BUILD_CPU", get_cpuinfo())
         set_prop(props, "BUILD_BIT", platform.architecture()[0])
+        set_prop(props, "BUILD_OS", get_platform_name())
         try:
             from Cython import __version__ as cython_version
         except:
