@@ -86,14 +86,15 @@ def get_compiler_info():
             #print("get_compiler_info() stderr(%s)=%s" % (cmd, stderr))
             if proc.returncode!=0:
                 print("'%s' failed with return code %s" % (cmd, proc.returncode))
-                return  ""
+                continue
             if not stdout:
                 print("could not get GCC version information")
-                return  ""
+                continue
             out = stdout.decode('utf-8')
             return out.splitlines()[0]
         except:
             pass
+    return  ""
 
 def set_prop(props, key, value):
     if value!="unknown" or props.get(key) is None:
@@ -114,6 +115,7 @@ def record_build_info(is_build=True):
             from Cython import __version__ as cython_version
         except:
             cython_version = "unknown"
+        set_prop(props, "PYTHON_VERSION", sys.version_info[:3])
         set_prop(props, "CYTHON_VERSION", cython_version)
         set_prop(props, "COMPILER_INFO", get_compiler_info())
         set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
