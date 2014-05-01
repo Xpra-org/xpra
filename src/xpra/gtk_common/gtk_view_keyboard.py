@@ -11,7 +11,6 @@ import gobject
 
 from xpra.deque import maxdeque
 from xpra.platform.paths import get_icon
-from xpra.platform import init
 
 
 modifier_names = {
@@ -114,9 +113,13 @@ class KeyboardStateInfoWindow:
 
 
 def main():
-    init("Keyboard-Test", "Keyboard Test Tool")
-    KeyboardStateInfoWindow()
-    gtk.main()
+    from xpra.platform import init, clean
+    try:
+        init("Keyboard-Test", "Keyboard Test Tool")
+        KeyboardStateInfoWindow()
+        gtk.main()
+    finally:
+        clean()
 
 
 if __name__ == "__main__":

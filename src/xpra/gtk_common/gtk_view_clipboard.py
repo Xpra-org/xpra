@@ -12,7 +12,6 @@ import re
 from xpra.deque import maxdeque
 from xpra.gtk_common.gtk_util import TableBuilder, label
 from xpra.platform.paths import get_icon
-from xpra.platform import init
 from xpra.platform.features import CLIPBOARDS
 from xpra.gtk_common.gobject_compat import get_xid
 
@@ -224,9 +223,13 @@ class ClipboardStateInfoWindow(object):
 
 
 def main():
-    init("Clipboard-Test", "Clipboard Test Tool")
-    ClipboardStateInfoWindow()
-    gtk.main()
+    from xpra.platform import init, clean
+    try:
+        init("Clipboard-Test", "Clipboard Test Tool")
+        ClipboardStateInfoWindow()
+        gtk.main()
+    finally:
+        clean()
 
 
 if __name__ == "__main__":
