@@ -32,8 +32,13 @@ def get_default_socket_dir():
     return _get_data_dir()
 
 APP_DIR = None
-if hasattr(sys, 'frozen') and sys.frozen in ("windows_exe", "console_exe"):    #@UndefinedVariable
-    APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
+if hasattr(sys, 'frozen') and sys.frozen in (True, "windows_exe", "console_exe"):    #@UndefinedVariable
+    #cx_freeze = sys.frozen == True
+    #py2exe =  sys.frozen in ("windows_exe", "console_exe")
+    if sys.version > '3':
+        APP_DIR = os.path.dirname(sys.executable)
+    else:
+        APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
 
