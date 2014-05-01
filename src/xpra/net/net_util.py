@@ -190,8 +190,9 @@ def main():
 		print("")
 		print("Protocol Capabilities:")
 		from xpra.net.protocol import get_network_caps
-		for k,v in get_network_caps(legacy=verbose).items():
-			print("* %s : %s" % (str(k).ljust(20), pver(v)))
+		netcaps = get_network_caps(legacy=verbose)
+		for k in sorted(netcaps.keys()):
+			print("* %s : %s" % (str(k).ljust(20), pver(netcaps[k])))
 
 	finally:
 		#this will wait for input on win32:
