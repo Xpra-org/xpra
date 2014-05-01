@@ -241,7 +241,7 @@ class ClientWindow(QWidget, ClientWindowBase):
         if not scroll_event:
             return
         c = abs(event.delta())
-        for _ in xrange(c):
+        for _ in range(c):
             self._button_action(scroll_event, event, True)
             self._button_action(scroll_event, event, False)
         event.accept()

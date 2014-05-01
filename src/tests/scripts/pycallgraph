@@ -396,7 +396,7 @@ if len(cg_args)%2!=0:
     usage("invalid number of arguments")
 
 pairs = []
-for i in xrange(len(cg_args)/2):
+for i in range(len(cg_args)/2):
     pairs.append((cg_args[i*2], cg_args[i*2+1]))
 
 def get_group(v):

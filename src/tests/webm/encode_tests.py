@@ -64,7 +64,7 @@ class WebPEncodeTests(unittest.TestCase):
         size = IMAGE_WIDTH * IMAGE_HEIGHT
         bitmap = bytearray(size * 4)
 
-        for i in xrange(size):
+        for i in range(size):
             bitmap[ i * 4 ] = PNG_BITMAP_DATA[ i * 3 ]
             bitmap[ i * 4 + 1 ] = PNG_BITMAP_DATA[ i * 3 + 1 ]
             bitmap[ i * 4 + 2 ] = PNG_BITMAP_DATA[ i * 3 + 2 ]
@@ -89,7 +89,7 @@ class WebPEncodeTests(unittest.TestCase):
         size = IMAGE_WIDTH * IMAGE_HEIGHT
         bitmap = bytearray(size * 4)
 
-        for i in xrange(size):
+        for i in range(size):
             bitmap[ i * 4 ] = PNG_BITMAP_DATA[ i * 3 + 2 ]
             bitmap[ i * 4 + 1 ] = PNG_BITMAP_DATA[ i * 3 + 1 ]
             bitmap[ i * 4 + 2 ] = PNG_BITMAP_DATA[ i * 3 ]
@@ -114,7 +114,7 @@ class WebPEncodeTests(unittest.TestCase):
         size = IMAGE_WIDTH * IMAGE_HEIGHT
         bitmap = bytearray(size * 4)
 
-        for i in xrange(size):
+        for i in range(size):
             bitmap[ i * 4 ] = PNG_BITMAP_DATA[ i * 3 + 2 ]
             bitmap[ i * 4 + 1 ] = PNG_BITMAP_DATA[ i * 3 + 1 ]
             bitmap[ i * 4 + 2 ] = PNG_BITMAP_DATA[ i * 3 ]
@@ -151,7 +151,7 @@ class WebPEncodeTests(unittest.TestCase):
         size = IMAGE_WIDTH * IMAGE_HEIGHT
         bitmap = bytearray(size * 4)
 
-        for i in xrange(size):
+        for i in range(size):
             bitmap[ i * 4 ] = PNG_BITMAP_DATA[ i * 3 ]
             bitmap[ i * 4 + 1 ] = PNG_BITMAP_DATA[ i * 3 + 1 ]
             bitmap[ i * 4 + 2 ] = PNG_BITMAP_DATA[ i * 3 + 2 ]
@@ -174,7 +174,7 @@ class WebPEncodeTests(unittest.TestCase):
         size = IMAGE_WIDTH * IMAGE_HEIGHT
         bitmap = bytearray(size * 4)
 
-        for i in xrange(size):
+        for i in range(size):
             bitmap[ i * 4 ] = PNG_BITMAP_DATA[ i * 3 + 2 ]
             bitmap[ i * 4 + 1 ] = PNG_BITMAP_DATA[ i * 3 + 1 ]
             bitmap[ i * 4 + 2 ] = PNG_BITMAP_DATA[ i * 3 ]
@@ -197,7 +197,7 @@ class WebPEncodeTests(unittest.TestCase):
         size = IMAGE_WIDTH * IMAGE_HEIGHT
         bitmap = bytearray(size * 3)
 
-        for i in xrange(size):
+        for i in range(size):
             bitmap[ i * 3 ] = PNG_BITMAP_DATA[ i * 3 + 2 ]
             bitmap[ i * 3 + 1 ] = PNG_BITMAP_DATA[ i * 3 + 1 ]
             bitmap[ i * 3 + 2 ] = PNG_BITMAP_DATA[ i * 3 ]

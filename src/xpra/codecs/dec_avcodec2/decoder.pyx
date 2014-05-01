@@ -195,7 +195,7 @@ def get_output_colorspace(encoding, csc):
 
 cdef void clear_frame(AVFrame *frame):
     assert frame!=NULL, "frame is not set!"
-    for i in xrange(4):
+    for i in range(4):
         frame.data[i] = NULL
 
 

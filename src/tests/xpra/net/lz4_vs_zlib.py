@@ -73,7 +73,7 @@ def test_compress(packet, encoder, compressor, N = 10000):
         enc = encoder(packet)
         enc_info = "encoded with %s, " % ENCODER_NAME.get(encoder, encoder)
     start = time.time()
-    for _ in xrange(N):
+    for _ in range(N):
         compressor(enc)
     end = time.time()
     delta = end-start

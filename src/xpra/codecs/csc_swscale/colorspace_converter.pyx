@@ -66,10 +66,10 @@ cdef class CSCPixelFormat:
     def __init__(self, AVPixelFormat av_enum, char *av_enum_name, width_mult, height_mult, char *pix_fmt):
         self.av_enum = av_enum
         self.av_enum_name = av_enum_name
-        for i in xrange(4):
+        for i in range(4):
             self.width_mult[i] = 0.0
             self.height_mult[i] = 0.0
-        for i in xrange(4):
+        for i in range(4):
             self.width_mult[i] = width_mult[i]
             self.height_mult[i] = height_mult[i]
         self.pix_fmt = pix_fmt
@@ -113,7 +113,7 @@ cdef class SWSFlags:
     def __init__(self, int flags, flags_str):           #@DuplicatedSignature
         self.flags = flags
         cdef int i = 0
-        for i in xrange(3):
+        for i in range(3):
             if i<len(flags_str):
                 self.flags_strs[i] = flags_str[i]
             else:
@@ -236,7 +236,7 @@ cdef class CSCImage:
             if self.buf[0]==NULL:
                 raise Exception("buffer is already freed!?")
             free(self.buf[0])
-            for i in xrange(4):
+            for i in range(4):
                 self.buf[i] = NULL
 
 
@@ -420,7 +420,7 @@ cdef class ColorspaceConverter:
         #print("convert_image(%s) input=%s, strides=%s" % (image, len(input), strides))
         assert len(input)==iplanes, "expected %s planes but found %s" % (iplanes, len(input))
         assert len(strides)==iplanes, "expected %s rowstrides but found %s" % (iplanes, len(strides))
-        for i in xrange(4):
+        for i in range(4):
             if i<iplanes:
                 input_stride[i] = strides[i]
                 assert object_as_buffer(input[i], <const void**> &input_image[i], &pic_buf_len)==0
@@ -432,7 +432,7 @@ cdef class ColorspaceConverter:
                 input_image[i] = input_image[iplanes-1]
         with nogil:
             output_image[0] = <uint8_t*> xmemalign(self.buffer_size)
-            for i in xrange(3):
+            for i in range(3):
                 output_image[1+i] = output_image[i] + self.out_size[i]
             result = sws_scale(self.context, input_image, input_stride, 0, self.src_height, output_image, self.out_stride)
         assert result==self.dst_height, "invalid output height: %s, expected %s" % (result, self.dst_height)

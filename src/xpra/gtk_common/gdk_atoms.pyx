@@ -61,7 +61,7 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
     assert PyObject_AsReadBuffer(atom_string, <const void**> &array, &array_len_bytes)==0
     array_len = array_len_bytes / sizeof(GdkAtom)
     objects = []
-    for i in xrange(array_len):
+    for i in range(array_len):
         if array[i]==GDK_NONE:
             continue
         gdk_atom = PyGdkAtom_New(array[i])

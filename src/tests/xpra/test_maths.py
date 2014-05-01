@@ -23,7 +23,7 @@ def test_calculate_timesize_weighted_average():
 	sample_size = 100000
 	data = []
 	t = now - sample_size
-	for _ in xrange(sample_size):
+	for _ in range(sample_size):
 		s = random.randint(1000, 10000)
 		v = random.random()
 		data.append((t, s, v))
@@ -40,7 +40,7 @@ def test_calculate_time_weighted_average():
 	sample_size = 100000
 	data = []
 	t = now - sample_size
-	for _ in xrange(sample_size):
+	for _ in range(sample_size):
 		#v = random.randint(0, 10000)
 		v = random.random()
 		data.append((t, v))
@@ -53,7 +53,7 @@ def test_calculate_time_weighted_average():
 
 def test_logp():
 	start = time.time()
-	for _ in xrange(100000):
+	for _ in range(100000):
 		x = random.random()
 		logp(x)
 	end = time.time()

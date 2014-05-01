@@ -414,7 +414,7 @@ cdef class Encoder:
         image.w = self.width
         image.h = self.height
         image.fmt = self.pixfmt
-        for i in xrange(3):
+        for i in range(3):
             image.planes[i] = pic_in[i]
             image.stride[i] = strides[i]
         image.planes[3] = NULL

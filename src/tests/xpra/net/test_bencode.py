@@ -288,7 +288,7 @@ def test_compare_cython():
     for n,x in {"python" : use_python, "cython" : use_cython}.items():
         x()
         start = time.time()
-        for i in xrange(50):
+        for i in range(50):
             test_large_dict()
             test_random()
             test_decoding()

@@ -371,8 +371,8 @@ cdef class ColorspaceConverter:
         #from now on, we can release the gil:
         #log("work: %sx%s from %sx%s, RGB indexes: %s", workw, workh, self.dst_width, self.dst_height, (BGRA_R, BGRA_G, BGRA_B))
         with nogil:
-            for y in xrange(workh):
-                for x in xrange(workw):
+            for y in range(workh):
+                for x in range(workw):
                     R = 0
                     G = 0
                     B = 0
@@ -469,8 +469,8 @@ cdef class ColorspaceConverter:
         workh = roundup(self.dst_height/2, 2)
         #from now on, we can release the gil:
         with nogil:
-            for y in xrange(workh):
-                for x in xrange(workw):
+            for y in range(workh):
+                for x in range(workw):
                     #assert x*2<=self.src_width and y*2<=self.src_height
                     #read U and V for the next 4 pixels:
                     sx = x*self.src_width/self.dst_width
@@ -550,13 +550,13 @@ cdef class ColorspaceConverter:
 
         #from now on, we can release the gil:
         with nogil:
-            for y in xrange(self.dst_height):
+            for y in range(self.dst_height):
                 o = stride*y
                 sy = y*self.src_height/self.dst_height
                 Rptr  = Rbuf + (sy * Rstride)
                 Gptr  = Gbuf + (sy * Gstride)
                 Bptr  = Bbuf + (sy * Bstride)
-                for x in xrange(self.dst_width):
+                for x in range(self.dst_width):
                     sx = x*self.src_width/self.dst_width
                     output_image[o+Rdst] = Rptr[sx]
                     output_image[o+Gdst] = Gptr[sx]
