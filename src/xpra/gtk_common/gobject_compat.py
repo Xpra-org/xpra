@@ -4,33 +4,35 @@
 # later version. See the file COPYING for details.
 
 """
-If we have python3 then try gobject introspection first,
-otherwise import gobject/gtk/gdk version 2 (also as fallback)
-Once we have imported something, stick to that version from then on.
+If we have python3 then use gobject introspection ("gi.repository"),
+with python2, we try to import pygtk (gobject/gtk/gdk) before trying gobject introspection.
+Once we have imported something, stick to that version from then on for all other imports.
 """
 
 import sys
 
 _is_gtk3 = None
+if sys.version>='3':
+    #no other choice!
+    _is_gtk3 = True
+
 def is_gtk3():
     global _is_gtk3
     return  _is_gtk3
 
 def _try_import(import_method_gtk3, import_method_gtk2):
     global _is_gtk3
-    if sys.version>='3':
-        _is_gtk3 = True
     if _is_gtk3 is False:
         return  import_method_gtk2()
     if _is_gtk3 is True:
         return  import_method_gtk3()
     try:
-        imported = import_method_gtk3()
-        _is_gtk3 = True
-        return imported
-    except:
+        imported = import_method_gtk2()
         _is_gtk3 = False
-        return import_method_gtk2()
+    except:
+        _is_gtk3 = True
+        imported = import_method_gtk3()
+    return imported
 
 
 def get_xid(window):
