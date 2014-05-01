@@ -761,6 +761,7 @@ if WIN32:
     #only add the py2exe / cx_freeze specific options
     #if we aren't just building the Cython bits with "build_ext":
     if "build_ext" not in sys.argv:
+        external_includes += ["win32con", "win32gui", "win32process", "win32api"]
         if PYTHON3:
             from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
             import site
@@ -814,6 +815,8 @@ if WIN32:
             gtk_libs = ['etc', 'lib', 'share']
             for lib in gtk_libs:
                 include_files.append((os.path.join(include_dll_path, lib), lib))
+            #I am reluctant to add these to py2exe because it figures it out already:
+            external_includes += ["encodings", "multiprocessing", ]
             cx_freeze_options = {
                                 "compressed"        : False,
                                 "includes"          : external_includes,
@@ -827,20 +830,21 @@ if WIN32:
             executables = []
             setup_options["executables"] = executables
 
-            def add_exe(script, icon, base_name, **kwargs):
+            def add_exe(script, icon, base_name, base="Console"):
                 executables.append(Executable(
                             script                  = script,
                             initScript              = None,
                             #targetDir               = "dist",
+                            icon                    = "win32/%s" % icon,
                             targetName              = "%s.exe" % base_name,
                             compress                = True,
                             copyDependentFiles      = True,
-                            #appendScriptToExe       = False,
-                            #appendScriptToLibrary   = True,
-                            **kwargs))
+                            appendScriptToExe       = False,
+                            appendScriptToLibrary   = True,
+                            base                    = base))
 
             def add_console_exe(script, icon, base_name):
-                add_exe(script, icon, base_name, base="Console")
+                add_exe(script, icon, base_name)
             def add_gui_exe(script, icon, base_name):
                 add_exe(script, icon, base_name, base="Win32GUI")
             #END OF cx_freeze SECTION
@@ -849,7 +853,6 @@ if WIN32:
             assert py2exe is not None
             EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"]
             py2exe.build_exe.EXCLUDED_DLLS = EXCLUDED_DLLS
-            external_includes += ["win32con", "win32gui", "win32process", "win32api"]
             py2exe_options = {
                               "skip_archive"   : False,
                               "optimize"       : 0,    #WARNING: do not change - causes crashes
@@ -906,18 +909,22 @@ if WIN32:
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
-        add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
-        add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
-        add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
+        if not PYTHON3:
+            #these need porting..
+            add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
+            add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
+            add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
         add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
         add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
-        add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
         add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
         add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
-        add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
-        add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
+        if not PYTHON3:
+            #these need porting..
+            add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
+            add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
+            add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
 
