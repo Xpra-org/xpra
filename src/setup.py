@@ -348,6 +348,18 @@ def check_md5sums(md5sums):
         sys.stdout.write("OK\n")
         sys.stdout.flush()
 
+#for pretty printing of options:
+def print_option(prefix, k, v):
+    if type(v)==dict:
+        print("%s* %s:" % (prefix, k))
+        for kk,vv in v.items():
+            print_option(" "+prefix, kk, vv)
+    else:
+        print("%s* %s=%s" % (prefix, k, v))
+def print_dict(d):
+    for k,v in d.items():
+        print_option("", k, v)
+
 #*******************************************************************************
 # Utility methods for building with Cython
 def cython_version_check(min_version):
@@ -819,11 +831,12 @@ if WIN32:
             for lib in gtk_libs:
                 include_files.append((os.path.join(include_dll_path, lib), lib))
             #I am reluctant to add these to py2exe because it figures it out already:
+            packages.append("gi")
             external_includes += ["encodings", "multiprocessing", ]
             cx_freeze_options = {
                                 "compressed"        : False,
                                 "includes"          : external_includes,
-                                "packages"          : packages+["gi"],
+                                "packages"          : packages,
                                 "include_files"     : include_files,
                                 "excludes"          : excludes,
                                 "include_msvcr"     : True,
@@ -1496,19 +1509,10 @@ if scripts:
     setup_options["scripts"] = scripts
 
 
-def print_option(prefix, k, v):
-    if type(v)==dict:
-        print("%s* %s:" % (prefix, k))
-        for kk,vv in v.items():
-            print_option(" "+prefix, kk, vv)
-    else:
-        print("%s* %s=%s" % (prefix, k, v))
-
 def main():
     if OSX or WIN32 or debug_ENABLED:
         print("setup options:")
-        for k,v in setup_options.items():
-            print_option("", k, v)
+        print_dict(setup_options)
         print("")
 
     setup(**setup_options)
