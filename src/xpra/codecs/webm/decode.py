@@ -30,7 +30,12 @@ from ctypes import (c_int, c_uint, c_char_p, create_string_buffer, c_void_p, c_s
     CDLL, POINTER)
 from ctypes.util import find_library
 from . import _LIBRARY, PIXEL_ALPHA_SZ, PIXEL_SZ, check_library
-from handlers import BitmapHandler
+#this is unfortunately necessary when bundling with cx_freeze:
+try:
+    from . import handlers                  #@UnusedImport
+except:
+    import handlers                         #@Reimport
+BitmapHandler = handlers.BitmapHandler
 
 check_library()
 

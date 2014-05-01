@@ -29,7 +29,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from ctypes import (c_int, c_float, c_void_p, byref, memmove,
     create_string_buffer)
 from . import _LIBRARY, check_library
-from handlers import WebPHandler
+#this is unfortunately necessary when bundling with cx_freeze:
+try:
+    from . import handlers                  #@UnusedImport
+except:
+    import handlers                         #@Reimport
+WebPHandler = handlers.WebPHandler
 
 check_library()
 
