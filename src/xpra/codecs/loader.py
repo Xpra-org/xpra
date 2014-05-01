@@ -105,10 +105,6 @@ def load_codecs():
     codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
     add_codec_version("webp", "xpra.codecs.webp.encode")
 
-    #buffer version:
-    codec_import_check("buffers", "buffers handler", "xpra.codecs.buffers", "xpra.codecs.buffers.util", "memory_as_pybuffer", "object_as_buffer")
-    add_codec_version("buffers", "xpra.codecs.buffers.util")
-
     #no bytearray (python 2.6 or later) or no bitmap handlers, no webm:
     from xpra.os_util import builtins
     webm_handlers = codec_import_check("webm_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
@@ -161,8 +157,7 @@ ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
             "dec_avcodec", "dec_avcodec2", \
             "enc_webm", \
             "dec_webm", \
-            "enc_webp", \
-            "buffers"
+            "enc_webp"
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
