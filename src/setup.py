@@ -769,6 +769,8 @@ if WIN32:
             site_dir = site.getsitepackages()[1]
             #this is where the installer I have used put things:
             include_dll_path = os.path.join(site_dir, "gnome")
+            #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
+            sys.path.insert(0, include_dll_path)
             missing_dll = [
                            'libatk-1.0-0.dll',
                            'libcairo-gobject-2.dll',
@@ -785,6 +787,7 @@ if WIN32:
                            'libgthread-2.0-0.dll',
                            'libgtk-3-0.dll',
                            'libgtkglext-3.0-0.dll',
+                           'libintl-8.dll',
                            'libjpeg-8.dll',
                            'liborc-0.4-0.dll',
                            'libpango-1.0-0.dll',
