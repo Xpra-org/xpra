@@ -167,14 +167,17 @@ set SOURCE_DIRECTORY=%cd%
 MKDIR Temp
 ECHO ****** Copying source into Temp
 FOR %%a in (etc html5 icons scripts tests win32 xpra) DO (
-	ECHO  * %%a :
+	echo|set /p=* %%a : 
 	XCOPY /I /Y /S /Q %%a Temp\%%a\
 )
 FOR %%a in (setup.py add_build_info.py MANIFEST.in README NEWS COPYING) DO (
 	COPY %%a Temp\
 )
 cd Temp
-%PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n .
+ECHO using 2to3 to convert to py3k syntax:
+ECHO %PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n . 2^> 2to3.log
+%PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n . 2> 2to3.log
+
 ECHO %PYTHON_EXE% -OO setup.py build_exe ^> cx_freeze-xpra.log
 %PYTHON_EXE% -OO setup.py build_exe > cx_freeze-xpra.log
 cd %SOURCE_DIRECTORY%
