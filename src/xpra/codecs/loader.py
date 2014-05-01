@@ -110,9 +110,9 @@ def load_codecs():
     add_codec_version("buffers", "xpra.codecs.buffers.util")
 
     #no bytearray (python 2.6 or later) or no bitmap handlers, no webm:
-    import __builtin__
+    from xpra.os_util import builtins
     webm_handlers = codec_import_check("webm_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
-    if ("bytearray" in __builtin__.__dict__) and webm_handlers:
+    if ("bytearray" in builtins.__dict__) and webm_handlers:
         codec_import_check("enc_webm", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", \
                            "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA", \
                            "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")

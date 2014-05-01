@@ -11,6 +11,7 @@ cdef extern from "../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
     int    object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
+from xpra.os_util import builtins
 
 import struct
 try:
@@ -25,10 +26,6 @@ if numpy:
 else:
     #test for availability of bytearray
     #in a way that does not cause Cython to fail to compile:
-    try:
-        import builtins
-    except:
-        import __builtin__ as builtins
     _bytearray =  builtins.__dict__.get("bytearray")
     if _bytearray is not None:
         def make_byte_buffer(len):          #@DuplicatedSignature

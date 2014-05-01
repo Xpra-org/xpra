@@ -21,6 +21,11 @@ try:
 except ImportError:
     from Queue import Queue             #@Reimport @UnusedImport
 
+try:
+    import builtins                     #@UnresolvedImport @UnusedImport (python3)
+except:
+    import __builtin__ as builtins      #@Reimport @UnusedImport
+
 
 SIGNAMES = {}
 for x in [x for x in dir(signal) if x.startswith("SIG") and not x.startswith("SIG_")]:
