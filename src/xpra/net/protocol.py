@@ -67,13 +67,15 @@ use_rencode = has_rencode and os.environ.get("XPRA_USE_RENCODER", "1")=="1"
 log("protocol: has_rencode=%s, use_rencode=%s, version=%s", has_rencode, use_rencode, rencode_version)
 
 bencode, bdecode, bencode_version = None, None, None
-try:
+if sys.version_info[0]<3:
+    #bencode needs porting to Python3..
     try:
-        from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
-    except ImportError, e:
-        log.warn("bencode import error: %s", e)
-except Exception, e:
-    log.error("error loading bencoder", exc_info=True)
+        try:
+            from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
+        except ImportError, e:
+            log.warn("bencode import error: %s", e, exc_info=True)
+    except Exception, e:
+        log.error("error loading bencoder", exc_info=True)
 has_bencode = bencode is not None and bdecode is not None
 use_bencode = has_bencode and os.environ.get("XPRA_USE_BENCODER", "1")=="1"
 log("protocol: has_bencode=%s, use_bencode=%s, version=%s", has_bencode, use_bencode, bencode_version)
