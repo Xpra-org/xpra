@@ -198,7 +198,7 @@ COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" dist\
 ECHO ***************************************************************
 ECHO ****** InnoSetup
 COPY win32\xpra.iss xpra.iss
-"%INNOSETUP%" xpra.iss ^> innosetup.log
+ECHO "%INNOSETUP%" xpra.iss ^> innosetup.log
 "%INNOSETUP%" xpra.iss > innosetup.log
 ECHO returncode: %errorlevel%
 if %errorlevel% NEQ 0 (
