@@ -126,9 +126,9 @@ class WindowBackingBase(object):
         """
         img_data = raw_data
         if options:
-            if options.get("zlib", 0)>0:
+            if options.intget("zlib", 0)>0:
                 img_data = zlib.decompress(raw_data)
-            elif options.get("lz4", False):
+            elif options.boolget("lz4", False):
                 assert has_lz4
                 img_data = LZ4_uncompress(raw_data)
         assert len(img_data) == rowstride * height, "expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" % (rowstride * height, width, height, rowstride, len(img_data), len(raw_data))

@@ -37,7 +37,7 @@ from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid
-from xpra.util import nn, nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes
+from xpra.util import nn, nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -1779,6 +1779,7 @@ class UIXpraClient(XpraClientBase):
         options = {}
         if len(packet)>10:
             options = packet[10]
+        options = typedict(options)
         paintlog("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
         start = time.time()
         def record_decode_time(success):
