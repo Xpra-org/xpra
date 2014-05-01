@@ -70,7 +70,12 @@ class XpraClient(GTKXpraClient):
         return []
 
     def get_root_size(self):
-        return Gdk.get_default_root_window().get_geometry()[2:]
+        w, h = Gdk.get_default_root_window().get_geometry()[2:]
+        if w<=0 or h<=0 or w>32768 or h>32768:
+            log("Gdk returned invalid screen dimensions: %sx%s", w, h)
+            w = 2560
+            h = 1600
+        return w, h
 
     def set_windows_cursor(self, gtkwindows, new_cursor):
         pass
