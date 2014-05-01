@@ -255,8 +255,8 @@
 
   <distutils id="python-numpy">
      <branch repo="pypi.python.org"
-	     module="/packages/source/n/numpy/numpy-1.8.0.tar.gz"
-	     version="1.8.0"/>
+	     module="/packages/source/n/numpy/numpy-1.8.1.tar.gz"
+	     version="1.8.1"/>
   </distutils>
 
   <distutils id="python-twisted">
