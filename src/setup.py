@@ -773,6 +773,8 @@ if WIN32:
     #only add the py2exe / cx_freeze specific options
     #if we aren't just building the Cython bits with "build_ext":
     if "build_ext" not in sys.argv:
+        #with py2exe and cx_freeze, we don't use py_modules
+        del setup_options["py_modules"]
         external_includes += ["win32con", "win32gui", "win32process", "win32api"]
         if PYTHON3:
             from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
@@ -826,13 +828,10 @@ if WIN32:
                            'libgstvideo-1.0-0.dll',
                            ]
             include_files = []
-            for dll in missing_dll:
-                include_files.append((os.path.join(include_dll_path, dll), dll))
-            gtk_libs = ['etc', 'lib', 'share']
-            for lib in gtk_libs:
-                include_files.append((os.path.join(include_dll_path, lib), lib))
-            #I am reluctant to add these to py2exe because it figures it out already:
+            for f in missing_dll+['etc', 'lib', 'share']:
+                include_files.append((os.path.join(include_dll_path, f), f))
             packages.append("gi")
+            #I am reluctant to add these to py2exe because it figures it out already:
             external_includes += ["encodings", "multiprocessing", ]
             #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
             os.environ["PATH"] = include_dll_path+";"+os.environ.get("PATH", "")
@@ -884,10 +883,6 @@ if WIN32:
                               "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll"],
                              }
             setup_options["options"] = {"py2exe" : py2exe_options}
-            #with py2exe, we don't use py_modules, we use "packages"... sigh
-            #(and it is a little bit different too - see below)
-            del setup_options["py_modules"]
-
             windows = []
             setup_options["windows"] = windows
             console = []
