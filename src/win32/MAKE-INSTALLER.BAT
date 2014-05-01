@@ -20,6 +20,7 @@ SET PYTHONPATH=.;%PYTHONPATH%
 SET INNOSETUP=C:\Program Files\Inno Setup 5\ISCC.exe
 SET TORTOISESVN=C:\Program Files\TortoiseSVN
 SET SVNVERSION_EXE=svnversion
+SET EXTRA_VERSION=
 SET BUILD_DIR=build
 
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version[0])"') DO set PYTHON_MAJOR_VERSION=%%i
@@ -158,6 +159,7 @@ GOTO MAKEINSTALLER
 
 
 :PYTHON3
+SET EXTRA_VERSION=-GTK3
 REM cx_freeze and lib2to3 build_py overrides don't get on..
 REM so we have to run the build in a temporary directory
 REM where we can run 2to3 before cx_freeze:
@@ -208,11 +210,12 @@ if %errorlevel% NEQ 0 (
 
 ECHO ***************************************************************
 ECHO ****** Finished - running the new installer
-MOVE /Y Output\Xpra_Setup.exe Xpra_Setup_%FULL_VERSION%.exe
+SET INSTALLER_FILENAME=Xpra%EXTRA_VERSION%_Setup_%FULL_VERSION%.exe
+MOVE /Y Output\Xpra_Setup.exe %INSTALLER_FILENAME%
 RMDIR Output
-dir Xpra_Setup_%FULL_VERSION%.exe
+dir %INSTALLER_FILENAME%
 
-Xpra_Setup_%FULL_VERSION%.exe %ARGS%
+%INSTALLER_FILENAME% %ARGS%
 GOTO END
 
 :ERROR
