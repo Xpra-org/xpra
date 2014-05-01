@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,6 +11,20 @@ import sys
 
 #redirect output if we are launched from py2exe's gui mode:
 REDIRECT_OUTPUT = hasattr(sys, "frozen") and sys.frozen=="windows_exe"
+if getattr(sys, 'frozen', False):
+    #cx_freeze paths:
+    def jedir(relpathname):
+        return os.path.join(os.path.dirname(sys.executable), relpathname)
+    def addsyspath(relpathname):
+        v = jedir(relpathname)
+        if os.path.exists(v):
+            sys.path.append(v)
+    addsyspath('bin')
+    addsyspath('bin\\etc')
+    addsyspath('bin\\lib')
+    addsyspath('bin\\share')
+    addsyspath('bin\\library.zip')
+    os.environ['GI_TYPELIB_PATH'] = jedir('bin\\lib\girepository-1.0')
 
 
 def set_prgname(name):
@@ -183,7 +197,9 @@ _wait_for_input = False
 
 def do_init():
     if not REDIRECT_OUTPUT:
-        fix_unicode_out()
+        if sys.version_info[0]<3:
+            #don't know why this breaks with Python 3 yet...
+            fix_unicode_out()
         #figure out if we want to wait for input at the end:
         global _wait_for_input
         try:
