@@ -292,12 +292,12 @@ def main():
         init("GStreamer-Info", "GStreamer Information")
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
-        log.info("GStreamer plugins found: %s", ", ".join(get_all_plugin_names()))
-        log.info("")
+        print("GStreamer plugins found: %s" % ", ".join(get_all_plugin_names()))
+        print("")
         encs = [x for x in CODEC_ORDER if has_encoder(x)]
         decs = [x for x in CODEC_ORDER if has_decoder(x)]
-        log.info("encoders supported: %s", encs)
-        log.info("decoders supported: %s", decs)
+        print("encoders supported: %s" % str(encs))
+        print("decoders supported: %s" % str(decs))
     finally:
         clean()
 
