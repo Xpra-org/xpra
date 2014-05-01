@@ -781,8 +781,6 @@ if WIN32:
             site_dir = site.getsitepackages()[1]
             #this is where the installer I have used put things:
             include_dll_path = os.path.join(site_dir, "gnome")
-            #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
-            sys.path.insert(0, include_dll_path)
             missing_dll = [
                            'libatk-1.0-0.dll',
                            'libcairo-gobject-2.dll',
@@ -836,6 +834,8 @@ if WIN32:
             #I am reluctant to add these to py2exe because it figures it out already:
             packages.append("gi")
             external_includes += ["encodings", "multiprocessing", ]
+            #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
+            os.environ["PATH"] = include_dll_path+";"+os.environ.get("PATH", "")
             cx_freeze_options = {
                                 "compressed"        : False,
                                 "includes"          : external_includes,
