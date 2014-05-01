@@ -41,6 +41,8 @@ if hasattr(sys, 'frozen') and sys.frozen in (True, "windows_exe", "console_exe")
         APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
+    #so we can easily load DLLs with ctypes:
+    os.environ['PATH'] = APP_DIR + ';' + os.environ['PATH']
 
 def get_resources_dir():
     return get_app_dir()
