@@ -159,19 +159,20 @@ class win32NotifyIcon(object):
 
 
     def LoadImage(self, iconPathName, fallback=FALLBACK_ICON):
-        icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-        try:
-            img_type = win32con.IMAGE_ICON
-            if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
-                img_type = win32con.IMAGE_BITMAP
-                icon_flags |= win32con.LR_CREATEDIBSECTION | win32con.LR_LOADTRANSPARENT
-            log("LoadImage(%s) using image type=%s", iconPathName,
-                                        {win32con.IMAGE_ICON    : "ICON",
-                                         win32con.IMAGE_BITMAP  : "BITMAP"}.get(img_type))
-            v = win32gui.LoadImage(self.hinst, iconPathName, img_type, 0, 0, icon_flags)
-        except Exception, e:
-            log.error("Failed to load icon at %s: %s", iconPathName, e)
-            v = fallback
+        v = fallback
+        if iconPathName:
+            icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
+            try:
+                img_type = win32con.IMAGE_ICON
+                if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
+                    img_type = win32con.IMAGE_BITMAP
+                    icon_flags |= win32con.LR_CREATEDIBSECTION | win32con.LR_LOADTRANSPARENT
+                log("LoadImage(%s) using image type=%s", iconPathName,
+                                            {win32con.IMAGE_ICON    : "ICON",
+                                             win32con.IMAGE_BITMAP  : "BITMAP"}.get(img_type))
+                v = win32gui.LoadImage(self.hinst, iconPathName, img_type, 0, 0, icon_flags)
+            except:
+                log.error("Failed to load icon at %s", iconPathName, exc_info=True)
         log("LoadImage(%s)=%s", iconPathName, v)
         return v
 
