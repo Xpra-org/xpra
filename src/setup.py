@@ -332,6 +332,13 @@ add_modules("xpra",
 add_packages("xpra.scripts", "xpra.keyboard", "xpra.net")
 
 
+def add_data_files(target_dir, files):
+    #this is overriden below because cx_freeze uses the opposite structure (files first...). sigh.
+    assert type(target_dir)==str
+    assert type(files) in (list, tuple)
+    data_files.append((target_dir, files))
+
+
 def check_md5sums(md5sums):
     print("Verifying md5sums:")
     for filename, md5sum in md5sums.items():
@@ -762,11 +769,6 @@ def glob_recurse(srcdir):
 
 #*******************************************************************************
 if WIN32:
-    #always include those files:
-    data_files += [
-       ('',         ['COPYING', 'README', 'win32/website.url', 'etc/xpra/client-only/xpra.conf']),
-       ('icons',    glob.glob('win32\\*.ico') + glob.glob('icons\\*.*')),
-       ]
     add_packages("xpra.platform.win32")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
 
@@ -779,6 +781,19 @@ if WIN32:
         if PYTHON3:
             from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
             import site
+
+            #cx_freeze doesn't use "data_files"...
+            del setup_options["data_files"]
+            #it wants source files first, then where they are placed...
+            #one item at a time (no lists)
+            #all in its own structure called "include_files"
+            def add_data_files(target_dir, files):
+                assert type(target_dir)==str
+                assert type(files) in (list, tuple)
+                for f in files:
+                    target_file = os.path.join(target_dir, os.path.basename(f))
+                    data_files.append((f, target_file))
+
             #ie: C:\Python3.5\Lib\site-packages\
             site_dir = site.getsitepackages()[1]
             #this is where the installer I have used put things:
@@ -827,11 +842,11 @@ if WIN32:
                            'libgstreamer-1.0-0.dll',
                            'libgstvideo-1.0-0.dll',
                            ]
-            include_files = []
-            for f in missing_dll+['etc', 'lib', 'share']:
-                include_files.append((os.path.join(include_dll_path, f), f))
-            packages.append("gi")
+            add_data_files("", [os.path.join(include_dll_path, dll) for dll in missing_dll])
+            for lib in ['etc', 'lib', 'share']:
+                add_data_files("", [os.path.join(include_dll_path, lib)])
             #I am reluctant to add these to py2exe because it figures it out already:
+            packages.append("gi")
             external_includes += ["encodings", "multiprocessing", ]
             #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
             os.environ["PATH"] = include_dll_path+";"+os.environ.get("PATH", "")
@@ -839,7 +854,7 @@ if WIN32:
                                 "compressed"        : False,
                                 "includes"          : external_includes,
                                 "packages"          : packages,
-                                "include_files"     : include_files,
+                                "include_files"     : data_files,
                                 "excludes"          : excludes,
                                 "include_msvcr"     : True,
                                 "create_shared_zip" : True,
@@ -915,10 +930,8 @@ if WIN32:
                C_DLLs+"Microsoft.VC90.MFC/mfcm90.dll"                   : "d4e7c1546cf3131b7d84b39f8da9e321",
                C_DLLs+"Microsoft.VC90.MFC/mfcm90u.dll"                  : "371226b8346f29011137c7aa9e93f2f6",
                })
-            data_files += [
-               ('Microsoft.VC90.CRT', glob.glob(C_DLLs+'Microsoft.VC90.CRT\\*.*')),
-               ('Microsoft.VC90.MFC', glob.glob(C_DLLs+'Microsoft.VC90.MFC\\*.*')),
-               ]
+            add_data_files('Microsoft.VC90.CRT', glob.glob(C_DLLs+'Microsoft.VC90.CRT\\*.*'))
+            add_data_files('Microsoft.VC90.MFC', glob.glob(C_DLLs+'Microsoft.VC90.MFC\\*.*'))
             #END OF py2exe SECTION
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
@@ -942,6 +955,10 @@ if WIN32:
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
 
+
+    #always include those files:
+    add_data_files('',      ['COPYING', 'README', 'win32/website.url', 'etc/xpra/client-only/xpra.conf'])
+    add_data_files('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*'))
 
     ###########################################################
     #START OF HARDCODED SECTION
@@ -1099,10 +1116,10 @@ if WIN32:
             add_keywords([nvenc_bin_dir, cuda_bin_dir], [nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir],
                          [cuda_lib_dir],
                          nvenc_lib_names)
-            data_files.append(('.', ["%s/nvcc.exe" % cuda_bin_dir, "%s/nvlink.exe" % cuda_bin_dir]))
+            add_data_files('', ["%s/nvcc.exe" % cuda_bin_dir, "%s/nvlink.exe" % cuda_bin_dir])
             #prevent py2exe "seems not to be an exe file" error on this DLL and include it ourselves instead:
-            data_files.append(('.', ["%s/nvcuda.dll" % cuda_bin_dir] + glob.glob("%s\\cudart*.dll" % cuda_bin_dir)))
-            data_files.append(('.', ["%s/nvencodeapi.dll" % nvenc_bin_dir]))
+            add_data_files('', ["%s/nvcuda.dll" % cuda_bin_dir] + glob.glob("%s\\cudart*.dll" % cuda_bin_dir))
+            add_data_files('', ["%s/nvencodeapi.dll" % nvenc_bin_dir])
         elif "pygobject-2.0" in pkgs_options[0]:
             dirs = (python_include_path,
                     pygtk_include_dir, atk_include_dir, gtk2_include_dir,
@@ -1150,7 +1167,7 @@ if WIN32:
     if sound_ENABLED:
         if not PYTHON3:
             external_includes += ["pygst", "gst", "gst.extend"]
-            data_files.append(('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path)))
+            add_data_files('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path))
         else:
             #python3: this is part of "gi"?
             pass
@@ -1178,7 +1195,7 @@ if WIN32:
                     raise
 
     if enc_x264_ENABLED:
-        data_files.append(('', ['%s\\libx264.dll' % x264_bin_dir]))
+        add_data_files('', ['%s\\libx264.dll' % x264_bin_dir])
     html5_dir = ''
 
     if webm_ENABLED or webp_ENABLED:
@@ -1188,24 +1205,22 @@ if WIN32:
         #the path after installing may look like this:
         #webp_DLL = "C:\\libwebp-0.3.1-windows-x86\\bin\\libwebp.dll"
         #but we use something more generic, without the version numbers:
-        data_files.append(('',      [webp_bin_dir+"\\libwebp.dll"]))
-        data_files.append(('webm',  ["xpra/codecs/webm/LICENSE"]))
+        add_data_files('',      [webp_bin_dir+"\\libwebp.dll"])
+        add_data_files('webm',  ["xpra/codecs/webm/LICENSE"])
 
     #END OF win32
 #*******************************************************************************
 else:
     #OSX and *nix:
     scripts += ["scripts/xpra", "scripts/xpra_launcher"]
-    data_files += [
-                    ("share/man/man1",      ["man/xpra.1", "man/xpra_launcher.1"]),
-                    ("share/xpra",          ["README", "COPYING"]),
-                    ("share/xpra/icons",    glob.glob("icons/*")),
-                    ("share/applications",  ["xdg/xpra_launcher.desktop", "xdg/xpra.desktop"]),
-                    ("share/icons",         ["xdg/xpra.png"])
-                  ]
+    add_data_files("share/man/man1",      ["man/xpra.1", "man/xpra_launcher.1"])
+    add_data_files("share/xpra",          ["README", "COPYING"])
+    add_data_files("share/xpra/icons",    glob.glob("icons/*"))
+    add_data_files("share/applications",  ["xdg/xpra_launcher.desktop", "xdg/xpra.desktop"])
+    add_data_files("share/icons",         ["xdg/xpra.png"])
     html5_dir = "share/xpra/www"
     if webm_ENABLED:
-        data_files.append(('share/xpra/webm', ["xpra/codecs/webm/LICENSE"]))
+        add_data_files('share/xpra/webm', ["xpra/codecs/webm/LICENSE"])
 
     if OSX:
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
@@ -1241,7 +1256,7 @@ else:
                 #if we're not using the wrapper, don't install it
                 scripts.remove("scripts/xpra_Xdummy")
             etc_files.append(xorg_conf)
-        data_files.append((etc_prefix, etc_files))
+        add_data_files(etc_prefix, etc_files)
 
     if OSX and "py2app" in sys.argv:
         import py2app    #@UnresolvedImport
@@ -1283,7 +1298,7 @@ if html5_ENABLED:
     for k,v in glob_recurse("html5").items():
         if (k!=""):
             k = os.sep+k
-        data_files.append((html5_dir+k, v))
+        add_data_files(html5_dir+k, v)
 
 
 
@@ -1370,7 +1385,7 @@ if bundle_tests_ENABLED:
     for k,v in glob_recurse("tests").items():
         if (k!=""):
             k = os.sep+k
-        data_files.append(("tests"+k, v))
+        add_data_files("tests"+k, v)
 
 #special case for client: cannot use toggle_packages which would include gtk3, qt, etc:
 if client_ENABLED:
