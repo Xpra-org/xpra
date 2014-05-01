@@ -518,12 +518,17 @@ class ServerBase(ServerCore):
                           self.default_speed, self.default_min_speed)
         log("process_hello serversource=%s", ss)
         ss.parse_hello(c)
-        try:
-            dw, dh = ss.desktop_size
-            log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
-            log_screen_sizes(dw, dh, ss.screen_sizes)
-        except:
-            dw, dh = None, None
+        dw, dh = None, None
+        if ss.desktop_size:
+            try:
+                dw, dh = ss.desktop_size
+                if not ss.screen_sizes:
+                    log.info("client root window size is %sx%s")
+                else:
+                    log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
+                    log_screen_sizes(dw, dh, ss.screen_sizes)
+            except:
+                dw, dh = None, None
         self._server_sources[proto] = ss
         root_w, root_h = self.set_best_screen_size()
         self.calculate_workarea()

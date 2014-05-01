@@ -527,6 +527,11 @@ class ServerSource(object):
         self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
 
         self.desktop_size = c.intpair("desktop_size")
+        if self.desktop_size is not None:
+            w, h = self.desktop_size
+            if w<=0 or h<=0 or w>=32768 or h>=32768:
+                log.warn("ignoring invalid desktop dimensions: %sx%s", w, h)
+                self.desktop_size = None
         self.set_screen_sizes(c.listget("screen_sizes"))
 
         #sound stuff:
