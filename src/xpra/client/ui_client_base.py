@@ -1098,7 +1098,7 @@ class UIXpraClient(XpraClientBase):
         assert self.server_info_request
         if not self.info_request_pending:
             self.info_request_pending = True
-            self.send("info-request", [self.uuid], self._id_to_window.keys())
+            self.send("info-request", [self.uuid], list(self._id_to_window.keys()))
 
 
     def send_quality(self):
