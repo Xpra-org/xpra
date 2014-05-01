@@ -8,7 +8,8 @@ import os
 import signal
 import gobject
 gobject.threads_init()
-from multiprocessing import Queue as MQueue
+from multiprocessing import Queue as MQueue, freeze_support
+freeze_support()
 
 from xpra.log import Logger
 log = Logger("proxy")
