@@ -523,7 +523,7 @@ class ServerBase(ServerCore):
             try:
                 dw, dh = ss.desktop_size
                 if not ss.screen_sizes:
-                    log.info("client root window size is %sx%s")
+                    log.info("client root window size is %sx%s", dw, dh)
                 else:
                     log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
                     log_screen_sizes(dw, dh, ss.screen_sizes)
