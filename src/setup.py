@@ -772,6 +772,98 @@ if WIN32:
     add_packages("xpra.platform.win32")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
 
+    ###########################################################
+    #START OF HARDCODED SECTION
+    #this should all be done with pkgconfig...
+    #but until someone figures this out, the ugly path code below works
+    #as long as you install in the same place or tweak the paths.
+
+    #ffmpeg is needed for both swscale and x264:
+    libffmpeg_path = ""
+    if dec_avcodec_ENABLED:
+        assert not dec_avcodec2_ENABLED, "cannot enable both dec_avcodec and dec_avcodec2"
+        libffmpeg_path = "C:\\ffmpeg-win32-bin"
+    elif dec_avcodec2_ENABLED:
+        assert not dec_avcodec_ENABLED, "cannot enable both dec_avcodec and dec_avcodec2"
+        libffmpeg_path = "C:\\ffmpeg2-win32-bin"
+    else:
+        if csc_swscale_ENABLED:
+            for p in ("C:\\ffmpeg2-win32-bin", "C:\\ffmpeg-win32-bin"):
+                if os.path.exists(p):
+                    libffmpeg_path = p
+            assert libffmpeg_path is not None, "no ffmpeg found, cannot use csc_swscale"
+    libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
+    libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
+    libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")
+    #x265
+    x265_path ="C:\\x265"
+    x265_include_dir    = x265_path
+    x265_lib_dir        = x265_path
+    x265_bin_dir        = x265_path
+    #x264 (direct from build dir.. yuk - sorry!):
+    x264_path ="C:\\x264"
+    x264_include_dir    = x264_path
+    x264_lib_dir        = x264_path
+    x264_bin_dir        = x264_path
+    # Same for vpx:
+    # http://code.google.com/p/webm/downloads/list
+    #the path after installing may look like this:
+    #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
+    #but we use something more generic, without the version numbers:
+    vpx_path = ""
+    for p in ("C:\\vpx-1.3", "C:\\vpx-1.2", "C:\\vpx-1.1", "C:\\vpx-vp8"):
+        if os.path.exists(p) and os.path.isdir(p):
+            vpx_path = p
+            break
+    vpx_include_dir     = os.path.join(vpx_path, "include")
+    vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
+    vpx_bin_dir         = os.path.join(vpx_path, "lib", "Win32")
+    if os.path.exists(os.path.join(vpx_lib_dir, "vpx.lib")):
+        vpx_lib_names = ["vpx"]               #for libvpx 1.3.0
+    elif os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
+        vpx_lib_names = ["vpxmd"]             #for libvpx 1.2.0
+    else:
+        vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
+    #webp:
+    webp_path = "C:\\libwebp-windows-x86"
+    webp_include_dir    = webp_path+"\\include"
+    webp_lib_dir        = webp_path+"\\lib"
+    webp_bin_dir        = webp_path+"\\bin"
+    webp_lib_names      = ["libwebp"]
+    #cuda:
+    cuda_path = "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v5.5"
+    cuda_include_dir    = os.path.join(cuda_path, "include")
+    cuda_lib_dir        = os.path.join(cuda_path, "lib", "Win32")
+    cuda_bin_dir        = os.path.join(cuda_path, "bin")
+    #nvenc:
+    nvenc_path = "C:\\nvenc_3.0_windows_sdk"
+    nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
+    nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
+    #let's not use crazy paths, just copy the dll somewhere that makes sense:
+    nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
+    nvenc_lib_names         = ["cuda"]
+
+    # Same for PyGTK:
+    # http://www.pygtk.org/downloads.html
+    gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
+    python_include_path = "C:\\Python27\\include"
+    gtk2runtime_path        = os.path.join(gtk2_path, "runtime")
+    gtk2_lib_dir            = os.path.join(gtk2runtime_path, "bin")
+    gtk2_base_include_dir   = os.path.join(gtk2runtime_path, "include")
+
+    pygtk_include_dir       = os.path.join(python_include_path, "pygtk-2.0")
+    atk_include_dir         = os.path.join(gtk2_base_include_dir, "atk-1.0")
+    gtk2_include_dir        = os.path.join(gtk2_base_include_dir, "gtk-2.0")
+    gdkpixbuf_include_dir   = os.path.join(gtk2_base_include_dir, "gdk-pixbuf-2.0")
+    glib_include_dir        = os.path.join(gtk2_base_include_dir, "glib-2.0")
+    cairo_include_dir       = os.path.join(gtk2_base_include_dir, "cairo")
+    pango_include_dir       = os.path.join(gtk2_base_include_dir, "pango-1.0")
+    gdkconfig_include_dir   = os.path.join(gtk2runtime_path, "lib", "gtk-2.0", "include")
+    glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
+    #END OF HARDCODED SECTION
+    ###########################################################
+
+
     #only add the py2exe / cx_freeze specific options
     #if we aren't just building the Cython bits with "build_ext":
     if "build_ext" not in sys.argv:
@@ -932,6 +1024,15 @@ if WIN32:
                })
             add_data_files('Microsoft.VC90.CRT', glob.glob(C_DLLs+'Microsoft.VC90.CRT\\*.*'))
             add_data_files('Microsoft.VC90.MFC', glob.glob(C_DLLs+'Microsoft.VC90.MFC\\*.*'))
+            if (webm_ENABLED or webp_ENABLED):
+                #Note: confusingly, the python bindings are called webm...
+                #add the webp DLL to the output:
+                #And since 0.2.1, you have to compile the DLL yourself..
+                #the path after installing may look like this:
+                #webp_DLL = "C:\\libwebp-0.3.1-windows-x86\\bin\\libwebp.dll"
+                #but we use something more generic, without the version numbers:
+                add_data_files('',      [webp_bin_dir+"\\libwebp.dll"])
+                add_data_files('webm',  ["xpra/codecs/webm/LICENSE"])
             #END OF py2exe SECTION
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
@@ -960,98 +1061,9 @@ if WIN32:
     add_data_files('',      ['COPYING', 'README', 'win32/website.url', 'etc/xpra/client-only/xpra.conf'])
     add_data_files('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*'))
 
-    ###########################################################
-    #START OF HARDCODED SECTION
-    #this should all be done with pkgconfig...
-    #but until someone figures this out, the ugly path code below works
-    #as long as you install in the same place or tweak the paths.
-
-    #ffmpeg is needed for both swscale and x264:
-    libffmpeg_path = ""
-    if dec_avcodec_ENABLED:
-        assert not dec_avcodec2_ENABLED, "cannot enable both dec_avcodec and dec_avcodec2"
-        libffmpeg_path = "C:\\ffmpeg-win32-bin"
-    elif dec_avcodec2_ENABLED:
-        assert not dec_avcodec_ENABLED, "cannot enable both dec_avcodec and dec_avcodec2"
-        libffmpeg_path = "C:\\ffmpeg2-win32-bin"
-    else:
-        if csc_swscale_ENABLED:
-            for p in ("C:\\ffmpeg2-win32-bin", "C:\\ffmpeg-win32-bin"):
-                if os.path.exists(p):
-                    libffmpeg_path = p
-            assert libffmpeg_path is not None, "no ffmpeg found, cannot use csc_swscale"
-    libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
-    libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
-    libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")
-    #x265
-    x265_path ="C:\\x265"
-    x265_include_dir    = x265_path
-    x265_lib_dir        = x265_path
-    x265_bin_dir        = x265_path
-    #x264 (direct from build dir.. yuk - sorry!):
-    x264_path ="C:\\x264"
-    x264_include_dir    = x264_path
-    x264_lib_dir        = x264_path
-    x264_bin_dir        = x264_path
-    # Same for vpx:
-    # http://code.google.com/p/webm/downloads/list
-    #the path after installing may look like this:
-    #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
-    #but we use something more generic, without the version numbers:
-    vpx_path = ""
-    for p in ("C:\\vpx-1.3", "C:\\vpx-1.2", "C:\\vpx-1.1", "C:\\vpx-vp8"):
-        if os.path.exists(p) and os.path.isdir(p):
-            vpx_path = p
-            break
-    vpx_include_dir     = os.path.join(vpx_path, "include")
-    vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
-    vpx_bin_dir         = os.path.join(vpx_path, "lib", "Win32")
-    if os.path.exists(os.path.join(vpx_lib_dir, "vpx.lib")):
-        vpx_lib_names = ["vpx"]               #for libvpx 1.3.0
-    elif os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
-        vpx_lib_names = ["vpxmd"]             #for libvpx 1.2.0
-    else:
-        vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
-    #webp:
-    webp_path = "C:\\libwebp-windows-x86"
-    webp_include_dir    = webp_path+"\\include"
-    webp_lib_dir        = webp_path+"\\lib"
-    webp_bin_dir        = webp_path+"\\bin"
-    webp_lib_names      = ["libwebp"]
-    #cuda:
-    cuda_path = "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v5.5"
-    cuda_include_dir    = os.path.join(cuda_path, "include")
-    cuda_lib_dir        = os.path.join(cuda_path, "lib", "Win32")
-    cuda_bin_dir        = os.path.join(cuda_path, "bin")
-    #nvenc:
-    nvenc_path = "C:\\nvenc_3.0_windows_sdk"
-    nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
-    nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
-    #let's not use crazy paths, just copy the dll somewhere that makes sense:
-    nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
-    nvenc_lib_names         = ["cuda"]
-
-    # Same for PyGTK:
-    # http://www.pygtk.org/downloads.html
-    gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
-    python_include_path = "C:\\Python27\\include"
-    gtk2runtime_path        = os.path.join(gtk2_path, "runtime")
-    gtk2_lib_dir            = os.path.join(gtk2runtime_path, "bin")
-    gtk2_base_include_dir   = os.path.join(gtk2runtime_path, "include")
-
-    pygtk_include_dir       = os.path.join(python_include_path, "pygtk-2.0")
-    atk_include_dir         = os.path.join(gtk2_base_include_dir, "atk-1.0")
-    gtk2_include_dir        = os.path.join(gtk2_base_include_dir, "gtk-2.0")
-    gdkpixbuf_include_dir   = os.path.join(gtk2_base_include_dir, "gdk-pixbuf-2.0")
-    glib_include_dir        = os.path.join(gtk2_base_include_dir, "glib-2.0")
-    cairo_include_dir       = os.path.join(gtk2_base_include_dir, "cairo")
-    pango_include_dir       = os.path.join(gtk2_base_include_dir, "pango-1.0")
-    gdkconfig_include_dir   = os.path.join(gtk2runtime_path, "lib", "gtk-2.0", "include")
-    glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
-    #END OF HARDCODED SECTION
-    ###########################################################
 
     #hard-coded pkgconfig replacement for visual studio:
+    #(normally used with python2 / py2exe builds)
     def VC_pkgconfig(*pkgs_options, **ekw):
         kw = dict(ekw)
         #remove static flag on win32..
@@ -1197,16 +1209,6 @@ if WIN32:
     if enc_x264_ENABLED:
         add_data_files('', ['%s\\libx264.dll' % x264_bin_dir])
     html5_dir = ''
-
-    if webm_ENABLED or webp_ENABLED:
-        #Note: confusingly, the python bindings are called webm...
-        #add the webp DLL to the output:
-        #And since 0.2.1, you have to compile the DLL yourself..
-        #the path after installing may look like this:
-        #webp_DLL = "C:\\libwebp-0.3.1-windows-x86\\bin\\libwebp.dll"
-        #but we use something more generic, without the version numbers:
-        add_data_files('',      [webp_bin_dir+"\\libwebp.dll"])
-        add_data_files('webm',  ["xpra/codecs/webm/LICENSE"])
 
     #END OF win32
 #*******************************************************************************
