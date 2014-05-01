@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os.path
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, is_gtk3
@@ -35,6 +36,7 @@ if is_gtk3():
     FILL            = gtk.AttachOptions.FILL
     EXPAND          = gtk.AttachOptions.EXPAND
     STATE_NORMAL    = gtk.StateType.NORMAL
+    get_default_keymap  = gdk.Keymap.get_default
 else:
     image_new_from_pixbuf = gtk.image_new_from_pixbuf
     INTERP_HYPER    = gtk.gdk.INTERP_HYPER
@@ -44,6 +46,7 @@ else:
     FILL            = gtk.FILL
     EXPAND          = gtk.EXPAND
     STATE_NORMAL    = gtk.STATE_NORMAL
+    get_default_keymap  = gdk.keymap_get_default
 
 
 def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
@@ -90,7 +93,8 @@ def get_icon_from_file(filename):
         loader = PixbufLoader()
         loader.write(data)
         loader.close()
-    except Exception, e:
+    except:
+        e = sys.exc_info()[1]
         log.error("get_icon_from_file(%s) %s", filename, e)
         return    None
     pixbuf = loader.get_pixbuf()
