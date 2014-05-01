@@ -36,11 +36,11 @@ def load_license():
         if os.path.exists(gpl2_file):
             try:
                 f = open(gpl2_file, mode='rb')
-                GPL2 = f.read()
+                GPL2 = f.read().decode('latin1')
             finally:
                 if f:
                     f.close()
-    return GPL2.decode('latin1')
+    return GPL2
 
 
 global about_dialog
