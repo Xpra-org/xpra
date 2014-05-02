@@ -24,16 +24,21 @@ SPEEX = "speex"
 WAVPACK = "wavpack"
 
 #format: encoder, formatter, decoder, parser
-CODECS = {
+#we keep multiple options here for the same encoding
+#and will populate the ones that are actually available into the "CODECS" dict
+CODEC_OPTIONS = [
             #VORBIS : ("vorbisenc", "oggmux", "vorbisdec", "oggdemux"),
             #AAC     : ("faac",          "oggmux",   "faad",         "aacparse"),
-            FLAC    : ("flacenc",       "oggmux",   "flacdec",      "oggdemux"),
-            MP3     : ("lamemp3enc",    None,       "mad",          "mp3parse"),
-            WAV     : ("wavenc",        None,       None,           "wavparse"),
-            OPUS    : ("opusenc",       "oggmux",   "opusdec",      "oggdemux"),
-            SPEEX   : ("speexenc",      "oggmux",   "speexdec",     "oggdemux"),
-            WAVPACK : ("wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
-            }
+            (FLAC        , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
+            (MP3         , "lamemp3enc",    None,       "mad",          "mp3parse"),
+            (MP3         , "lamemp3enc",    None,       "mad",          "mpegaudioparse"),
+            (WAV         , "wavenc",        None,       None,           "wavparse"),
+            (OPUS        , "opusenc",       "oggmux",   "opusdec",      "oggdemux"),
+            (SPEEX       , "speexenc",      "oggmux",   "speexdec",     "oggdemux"),
+            (WAVPACK     , "wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
+            ]
+CODECS = {}
+
 CODEC_ORDER = [MP3, WAVPACK, WAV, FLAC, SPEEX]
 
 
@@ -59,19 +64,44 @@ def unredirect_stderr(oldfd):
         os.dup2(oldfd, 2)
 
 
+gst = None
+has_gst = False
+
 all_plugin_names = []
 pygst_version = ""
 gst_version = ""
 #ugly win32 hack to make it find the gstreamer plugins:
-if sys.platform.startswith("win"):
-    if hasattr(sys, "frozen"):
-        if sys.frozen in ("windows_exe", "console_exe"):
-            if sys.version > '3':
-                unicode = str           #@ReservedAssignment
-            main_dir = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
-            os.environ["GST_PLUGIN_PATH"] = os.path.join(main_dir, "gstreamer-0.10")
+if sys.platform.startswith("win") and hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True):
+    from xpra.platform.paths import get_app_dir
+    if sys.version_info[0]<3:
+        #gstreamer-0.10
+        v = (0, 10)
+    else:
+        #gstreamer-1.0
+        v = (1, 0)
+    os.environ["GST_PLUGIN_PATH"] = os.path.join(get_app_dir(), "gstreamer-%s" % (".".join([str(x) for x in v])))
 
-try:
+
+def import_gst1():
+    import gi
+    from gi.repository import Gst           #@UnresolvedImport
+    #gi.require_version('Gst', '0.10')
+    gi.require_version('Gst', '1.0')
+    Gst.init(None)
+    #make it look like pygst (gstreamer-0.10):
+    Gst.registry_get_default = Gst.Registry.get 
+    Gst.get_pygst_version = lambda: gi.version_info
+    Gst.get_gst_version = lambda: Gst.version()
+    Gst.new_buffer = Gst.Buffer.new_allocate
+    #note: we only copy the constants we actually need..
+    for x in ('NULL', 'PAUSED', 'PLAYING', 'READY', 'VOID_PENDING'):
+        setattr(Gst, "STATE_%s" % x, getattr(Gst.State, x))
+    for x in ('EOS', 'ERROR', 'TAG', 'STREAM_STATUS', 'STATE_CHANGED',
+              'LATENCY', 'WARNING', 'ASYNC_DONE', 'NEW_CLOCK', 'DURATION'):
+        setattr(Gst, "MESSAGE_%s" % x, getattr(Gst.MessageType, x))
+    return Gst
+
+def import_gst0_10():
     import pygst
     pygst.require("0.10")
     try:
@@ -80,20 +110,57 @@ try:
         #so we temporarily replace them:
         saved_args = sys.argv
         sys.argv = sys.argv[:1]
-
         #now do the import with stderr redirection
         #to avoid gobject warnings:
         oldfd = redirect_stderr()
         import gst
-        has_gst = True
         gst_version = gst.gst_version
         pygst_version = gst.pygst_version
+        gst.new_buffer = gst.Buffer
+        return gst
     finally:
         unredirect_stderr(oldfd)
         sys.argv = saved_args
-except:
-    has_gst = False
 
+try:
+    from xpra.gtk_common.gobject_compat import is_gtk3
+    if is_gtk3():
+        gst = import_gst1()
+    else:
+        gst = import_gst0_10()
+    has_gst = True
+except:
+    log("failed to import GStreamer", exc_info=True)
+
+
+def get_all_plugin_names():
+    global all_plugin_names, has_gst
+    if len(all_plugin_names)==0 and has_gst:
+        registry = gst.registry_get_default()
+        all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
+        all_plugin_names.sort()
+        log("found the following plugins: %s", all_plugin_names)
+    return all_plugin_names
+
+def has_plugins(*names):
+    allp = get_all_plugin_names()
+    missing = [name for name in names if (name is not None and name not in allp)]
+    if len(missing)>0:
+        log("missing %s from %s (all=%s)", missing, names, allp)
+    return len(missing)==0
+
+
+if has_gst:
+    #populate CODECS:
+    for elements in CODEC_OPTIONS:
+        #verify we have all the elements needed:
+        if has_plugins(*elements[1:]):
+            #ie: FLAC, "flacenc", "oggmux", "flacdec", "oggdemux" = elements
+            encoding, encoder, muxer, decoder, demuxer = elements
+            CODECS[encoding] = (encoder, muxer, decoder, demuxer)
+    log("initalized CODECS:")
+    for k in [x for x in CODEC_ORDER if x in CODECS]:
+        log("* %s : %s", k, CODECS[k])
 
 def get_sound_codecs(is_speaker, is_server):
     global has_gst
@@ -104,7 +171,8 @@ def get_sound_codecs(is_speaker, is_server):
             return can_encode()
         else:
             return can_decode()
-    except Exception, e:
+    except:
+        e = sys.exc_info()[1]
         log.warn("failed to get list of codecs: %s" % e)
         return []
 
@@ -138,43 +206,29 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     return hm or hs
 
 
-def get_all_plugin_names():
-    global all_plugin_names, has_gst
-    if len(all_plugin_names)==0 and has_gst:
-        registry = gst.registry_get_default()
-        all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
-        all_plugin_names.sort()
-        log("found the following plugins: %s", all_plugin_names)
-    return all_plugin_names
-
-def has_plugins(*names):
-    allp = get_all_plugin_names()
-    missing = [name for name in names if (name is not None and name not in allp)]
-    if len(missing)>0:
-        log("missing %s from %s (all=%s)", missing, names, allp)
-    return len(missing)==0
-
 def get_encoder_formatter(name):
-    assert name in CODECS, "invalid codec: %s" % name
+    assert name in CODECS, "invalid codec: %s (should be one of: %s)" % (name, CODECS.keys())
     encoder, formatter, _, _ = CODECS.get(name)
     assert encoder is None or has_plugins(encoder), "encoder %s not found" % encoder
     assert formatter is None or has_plugins(formatter), "formatter %s not found" % formatter
     return encoder, formatter
 
 def get_decoder_parser(name):
-    assert name in CODECS, "invalid codec: %s" % name
+    assert name in CODECS, "invalid codec: %s (should be one of: %s)" % (name, CODECS.keys())
     _, _, decoder, parser = CODECS.get(name)
     assert decoder is None or has_plugins(decoder), "decoder %s not found" % decoder
     assert parser is None or has_plugins(parser), "parser %s not found" % parser
     return decoder, parser
 
 def has_encoder(name):
-    assert name in CODECS, "invalid codec: %s" % name
+    if name not in CODECS:
+        return False
     encoder, fmt, _, _ = CODECS.get(name)
     return has_plugins(encoder, fmt)
 
 def has_decoder(name):
-    assert name in CODECS, "invalid codec: %s" % name
+    if name not in CODECS:
+        return False
     _, _, decoder, parser = CODECS.get(name)
     return has_plugins(decoder, parser)
 
@@ -281,7 +335,8 @@ def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_p
             sound_source = SoundSource("pulsesrc", {"device" : monitor_device}, codec, volume, {})
             log.info("starting sound capture using pulseaudio device: %s", monitor_device_name)
         return sound_source
-    except Exception, e:
+    except:
+        e = sys.exc_info()[1]
         log.error("error setting up sound: %s", e, exc_info=True)
         return    None
 

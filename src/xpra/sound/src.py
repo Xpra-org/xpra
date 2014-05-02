@@ -5,9 +5,9 @@
 # later version. See the file COPYING for details.
 
 import sys, os
-import gobject
 
-from xpra.sound.sound_pipeline import SoundPipeline
+from xpra.sound.sound_pipeline import SoundPipeline, gobject
+from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, MP3, CODECS
 from xpra.log import Logger
@@ -40,15 +40,15 @@ AUDIORESAMPLE = False
 
 class SoundSource(SoundPipeline):
 
-    __generic_signals__ = [
-        "new-buffer"
-        ]
+    __gsignals__ = SoundPipeline.__generic_signals__.copy()
+    __gsignals__.update({
+        "new-buffer"    : n_arg_signal(2),
+        })
 
     def __init__(self, src_type=DEFAULT_SRC, src_options={}, codec=MP3, volume=1.0, encoder_options={}):
         assert src_type in SOURCES
         encoder, fmt = get_encoder_formatter(codec)
         SoundPipeline.__init__(self, codec)
-        self.add_signals(self.__generic_signals__)
         self.src_type = src_type
         source_str = plugin_str(src_type, src_options)
         encoder_str = plugin_str(encoder, encoder_options)
@@ -111,6 +111,8 @@ class SoundSource(SoundPipeline):
         self.buffer_count += 1
         self.byte_count += len(buf.data)
         self.emit("new-buffer", buf.data, metadata)
+
+gobject.type_register(SoundSource)
 
 
 def main():

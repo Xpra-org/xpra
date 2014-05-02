@@ -5,23 +5,25 @@
 
 import time
 
-from xpra.signal_object import SignalObject
 from xpra.sound.gstreamer_util import gst
 from xpra.log import Logger
 log = Logger("sound")
 
+from xpra.gtk_common.gobject_compat import import_gobject
+from xpra.gtk_common.gobject_util import one_arg_signal
+gobject = import_gobject()
 
-class SoundPipeline(SignalObject):
 
-    __generic_signals__ = [
-        "state-changed",
-        "bitrate-changed",
-        "error"
-        ]
+class SoundPipeline(gobject.GObject):
+
+    __generic_signals__ = {
+        "state-changed"     : one_arg_signal,
+        "bitrate-changed"   : one_arg_signal,
+        "error"             : one_arg_signal,
+        }
 
     def __init__(self, codec):
-        SignalObject.__init__(self)
-        self.add_signals(SoundPipeline.__generic_signals__)
+        gobject.GObject.__init__(self)
         self.codec = codec
         self.codec_description = codec
         self.codec_mode = ""
@@ -89,7 +91,6 @@ class SoundPipeline(SignalObject):
 
     def cleanup(self):
         log("SoundPipeline.cleanup()")
-        SignalObject.cleanup(self)
         self.stop()
         if self.bus:
             self.bus.remove_signal_watch()

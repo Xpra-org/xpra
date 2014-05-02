@@ -6,7 +6,7 @@
 
 import sys, os, time
 
-from xpra.sound.sound_pipeline import SoundPipeline
+from xpra.sound.sound_pipeline import SoundPipeline, gobject, one_arg_signal
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, MP3, CODECS, gst
 from xpra.os_util import thread
@@ -52,17 +52,17 @@ def sink_has_device_attribute(sink):
 
 class SoundSink(SoundPipeline):
 
-    __generic_signals__ = [
-        "underrun",
-        "overrun",
-        "eos"
-        ]
+    __gsignals__ = SoundPipeline.__generic_signals__.copy()
+    __gsignals__.update({
+        "underrun"  : one_arg_signal,
+        "overrun"   : one_arg_signal,
+        "eos"       : one_arg_signal,
+        })
 
     def __init__(self, sink_type=DEFAULT_SINK, options={}, codec=MP3, decoder_options={}):
         assert sink_type in SINKS, "invalid sink: %s" % sink_type
         decoder, parser = get_decoder_parser(codec)
         SoundPipeline.__init__(self, codec)
-        self.add_signals(self.__generic_signals__)
         self.sink_type = sink_type
         decoder_str = plugin_str(decoder, decoder_options)
         pipeline_els = []
@@ -78,15 +78,15 @@ class SoundSink(SoundPipeline):
         pipeline_els.append(decoder_str)
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
-        queue_el =  "queue" + \
-                    " name=queue"+ \
-                    " max-size-buffers=0"+ \
-                    " max-size-bytes=0"+ \
-                    " max-size-time=%s" % QUEUE_TIME+ \
-                    " leaky=%s" % QUEUE_LEAK
+        queue_el =  ["queue",
+                    "name=queue"+ \
+                    "max-size-buffers=0"+ \
+                    "max-size-bytes=0"+ \
+                    "max-size-time=%s" % QUEUE_TIME+ \
+                    "leaky=%s" % QUEUE_LEAK]
         if QUEUE_SILENT:
-            queue_el.append(" silent=%s" % QUEUE_SILENT)
-        pipeline_els.append(queue_el)
+            queue_el.append("silent=%s" % QUEUE_SILENT)
+        pipeline_els.append(" ".join(queue_el))
         pipeline_els.append(sink_type)
         self.setup_pipeline_and_bus(pipeline_els)
         self.src = self.pipeline.get_by_name("src")
@@ -150,7 +150,7 @@ class SoundSink(SoundPipeline):
         #debug("sound sink: adding %s bytes to %s, metadata: %s, level=%s", len(data), self.src, metadata, int(self.queue.get_property("current-level-time")/MS_TO_NS))
         if not self.src:
             return
-        buf = gst.Buffer(data)
+        buf = gst.new_buffer(data)
         d = 10*MS_TO_NS
         if metadata and False:
             ts = metadata.get("timestamp")
@@ -180,6 +180,7 @@ class SoundSink(SoundPipeline):
         log("sound sink: pushed %s bytes, new buffer level: %sms", len(buf.data), ltime)
         return True
 
+gobject.type_register(SoundSink)
 
 
 def main():
@@ -187,7 +188,6 @@ def main():
     init("Sound-Record")
     try:
         import os.path
-        import gobject
         if len(sys.argv) not in (2, 3):
             print("usage: %s filename [codec]" % sys.argv[0])
             return 1
