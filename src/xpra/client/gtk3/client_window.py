@@ -134,7 +134,8 @@ class ClientWindow(GTKClientWindowBase):
         return self.get_mapped()
 
     def get_window_geometry(self):
-        x, y = self.get_position()
+        gdkwindow = self.get_window()
+        x, y = gdkwindow.get_origin()[1:]
         w, h = self.get_size()
         return (x, y, w, h)
 
