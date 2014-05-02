@@ -3,6 +3,7 @@
 # Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_gobject
+from xpra.gtk_common.gtk_util import SHIFT_MASK, LOCK_MASK, CONTROL_MASK, MOD1_MASK, MOD2_MASK, MOD3_MASK, MOD4_MASK, MOD5_MASK
 import sys
 
 gtk = import_gtk()
@@ -15,24 +16,6 @@ from xpra.platform.paths import get_icon
 from xpra.gtk_common import gtk_util
 assert gtk_util, "cannot load compat class"
 
-if is_gtk3():
-    SHIFT_MASK      = gdk.ModifierType.SHIFT_MASK
-    LOCK_MASK       = gdk.ModifierType.LOCK_MASK
-    CONTROL_MASK    = gdk.ModifierType.CONTROL_MASK
-    MOD1_MASK       = gdk.ModifierType.MOD1_MASK
-    MOD2_MASK       = gdk.ModifierType.MOD2_MASK
-    MOD3_MASK       = gdk.ModifierType.MOD3_MASK
-    MOD4_MASK       = gdk.ModifierType.MOD4_MASK
-    MOD5_MASK       = gdk.ModifierType.MOD5_MASK
-else:
-    SHIFT_MASK      = gtk.gdk.SHIFT_MASK
-    LOCK_MASK       = gtk.gdk.LOCK_MASK
-    CONTROL_MASK    = gtk.gdk.CONTROL_MASK
-    MOD1_MASK       = gtk.gdk.MOD1_MASK
-    MOD2_MASK       = gtk.gdk.MOD2_MASK
-    MOD3_MASK       = gtk.gdk.MOD3_MASK
-    MOD4_MASK       = gtk.gdk.MOD4_MASK
-    MOD5_MASK       = gtk.gdk.MOD5_MASK
     
 modifier_names = {
                   SHIFT_MASK        : "Shift",

@@ -59,6 +59,17 @@ if is_gtk3():
     FILE_CHOOSER_ACTION_SAVE    = gtk.FileChooserAction.SAVE
     FILE_CHOOSER_ACTION_OPEN    = gtk.FileChooserAction.OPEN
     PROPERTY_CHANGE_MASK = gdk.EventMask.PROPERTY_CHANGE_MASK
+    ACCEL_LOCKED = gtk.AccelFlags.LOCKED 
+    ACCEL_VISIBLE = gtk.AccelFlags.VISIBLE
+
+    SHIFT_MASK      = gdk.ModifierType.SHIFT_MASK
+    LOCK_MASK       = gdk.ModifierType.LOCK_MASK
+    CONTROL_MASK    = gdk.ModifierType.CONTROL_MASK
+    MOD1_MASK       = gdk.ModifierType.MOD1_MASK
+    MOD2_MASK       = gdk.ModifierType.MOD2_MASK
+    MOD3_MASK       = gdk.ModifierType.MOD3_MASK
+    MOD4_MASK       = gdk.ModifierType.MOD4_MASK
+    MOD5_MASK       = gdk.ModifierType.MOD5_MASK
 
     from gi.repository.Gtk import Clipboard     #@UnresolvedImport
     CLIPBOARD_SELECTION = {}
@@ -115,6 +126,17 @@ else:
     FILE_CHOOSER_ACTION_SAVE    = gtk.FILE_CHOOSER_ACTION_SAVE
     FILE_CHOOSER_ACTION_OPEN    = gtk.FILE_CHOOSER_ACTION_OPEN
     PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
+    ACCEL_LOCKED = gtk.ACCEL_LOCKED 
+    ACCEL_VISIBLE = gtk.ACCEL_VISIBLE
+
+    SHIFT_MASK      = gtk.gdk.SHIFT_MASK
+    LOCK_MASK       = gtk.gdk.LOCK_MASK
+    CONTROL_MASK    = gtk.gdk.CONTROL_MASK
+    MOD1_MASK       = gtk.gdk.MOD1_MASK
+    MOD2_MASK       = gtk.gdk.MOD2_MASK
+    MOD3_MASK       = gtk.gdk.MOD3_MASK
+    MOD4_MASK       = gtk.gdk.MOD4_MASK
+    MOD5_MASK       = gtk.gdk.MOD5_MASK
 
     OptionMenu  = gtk.OptionMenu
 
@@ -225,15 +247,20 @@ def set_tooltip_text(widget, text):
 
 def add_close_accel(window, callback):
     if is_gtk3():
-        return      #TODO: implement accel for gtk3
+        def connect(ag, *args):
+            ag.connect(*args)
+    else:
+        def connect(ag, *args):
+            ag.connect_group(*args)
     accel_group = gtk.AccelGroup()
-    accel_group.connect_group(ord('w'), gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
+    key, mod = gtk.accelerator_parse('<control>F4')
+    connect(accel_group, key, mod, ACCEL_LOCKED, callback)
     window.add_accel_group(accel_group)
     accel_group = gtk.AccelGroup()
     key, mod = gtk.accelerator_parse('<Alt>F4')
-    accel_group.connect_group(key, mod, gtk.ACCEL_LOCKED, callback)
+    connect(accel_group, key, mod, ACCEL_LOCKED, callback)
     escape_key, modifier = gtk.accelerator_parse('Escape')
-    accel_group.connect_group(escape_key, modifier, gtk.ACCEL_LOCKED |  gtk.ACCEL_VISIBLE, callback)
+    connect(accel_group, escape_key, modifier, ACCEL_LOCKED |  ACCEL_VISIBLE, callback)
     window.add_accel_group(accel_group)
 
 
