@@ -48,10 +48,6 @@ PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
 
-if sys.version > '3':
-    unicode = str           #@ReservedAssignment
-
-
 """
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.

@@ -61,7 +61,7 @@ else:
             return x
         return x.encode()
     def bytestostr(x):
-        if type(x) in (str, unicode):
+        if type(x)==str:
             return x
         return x.decode()
 
