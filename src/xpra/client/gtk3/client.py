@@ -56,9 +56,6 @@ class XpraClient(GTKXpraClient):
     def make_clipboard_helper(self):
         return None
 
-    def get_screen_sizes(self):
-        #where has this been moved to? - no docs to tell you :(
-        return []
 
     def get_root_window(self):
         return Gdk.Screen.get_default().get_root_window()

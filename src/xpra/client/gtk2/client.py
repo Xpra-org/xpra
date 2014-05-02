@@ -273,13 +273,6 @@ class XpraClient(GTKXpraClient):
 
     def process_ui_capabilities(self, capabilities):
         GTKXpraClient.process_ui_capabilities(self, capabilities)
-        if self.server_randr:
-            display = gdk.display_get_default()
-            i=0
-            while i<display.get_n_screens():
-                screen = display.get_screen(i)
-                screen.connect("size-changed", self.screen_size_changed)
-                i += 1
         global UI_watcher
         UI_watcher.start()
         #if server supports it, enable UI thread monitoring workaround when needed:
@@ -290,46 +283,6 @@ class XpraClient(GTKXpraClient):
                 self.send("suspend", True, self._id_to_window.keys())
             UI_watcher.add_resume_callback(UI_resumed)
             UI_watcher.add_fail_callback(UI_failed)
-
-
-    def get_screen_sizes(self):
-        display = gdk.display_get_default()
-        i=0
-        screen_sizes = []
-        while i<display.get_n_screens():
-            screen = display.get_screen(i)
-            j = 0
-            monitors = []
-            while j<screen.get_n_monitors():
-                geom = screen.get_monitor_geometry(j)
-                plug_name = ""
-                if hasattr(screen, "get_monitor_plug_name"):
-                    plug_name = screen.get_monitor_plug_name(j) or ""
-                wmm = -1
-                if hasattr(screen, "get_monitor_width_mm"):
-                    wmm = screen.get_monitor_width_mm(j)
-                hmm = -1
-                if hasattr(screen, "get_monitor_height_mm"):
-                    hmm = screen.get_monitor_height_mm(j)
-                monitor = plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm
-                monitors.append(monitor)
-                j += 1
-            work_x, work_y = 0, 0
-            work_width, work_height = screen.get_width(), screen.get_height()
-            if not sys.platform.startswith("win"):
-                try:
-                    p = gtk.gdk.atom_intern('_NET_WORKAREA')
-                    root = screen.get_root_window()
-                    work_x, work_y, work_width, work_height = root.property_get(p)[2][:4]
-                except:
-                    pass
-            item = (screen.make_display_name(), screen.get_width(), screen.get_height(),
-                        screen.get_width_mm(), screen.get_height_mm(),
-                        monitors,
-                        work_x, work_y, work_width, work_height)
-            screen_sizes.append(item)
-            i += 1
-        return screen_sizes
 
 
     def get_root_window(self):

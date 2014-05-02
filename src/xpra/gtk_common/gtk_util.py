@@ -44,6 +44,7 @@ if is_gtk3():
     image_new_from_pixbuf   = gtk.Image.new_from_pixbuf
     pixbuf_new_from_file    = GdkPixbuf.Pixbuf.new_from_file
     get_default_keymap      = gdk.Keymap.get_default
+    display_get_default     = gdk.Display.get_default
     INTERP_HYPER    = GdkPixbuf.InterpType.HYPER
     INTERP_BILINEAR = GdkPixbuf.InterpType.BILINEAR
     RELIEF_NONE     = gtk.ReliefStyle.NONE
@@ -99,6 +100,7 @@ else:
     image_new_from_pixbuf   = gtk.image_new_from_pixbuf
     pixbuf_new_from_file    = gdk.pixbuf_new_from_file
     get_default_keymap      = gdk.keymap_get_default
+    display_get_default     = gdk.display_get_default
     INTERP_HYPER    = gtk.gdk.INTERP_HYPER
     INTERP_BILINEAR = gdk.INTERP_BILINEAR
     RELIEF_NONE     = gtk.RELIEF_NONE

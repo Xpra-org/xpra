@@ -19,7 +19,7 @@ log = Logger("gtk", "main")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.gtk_common.cursor_names import cursor_names
-from xpra.gtk_common.gtk_util import add_gtk_version_info, scaled_image, pixbuf_new_from_file
+from xpra.gtk_common.gtk_util import add_gtk_version_info, scaled_image, pixbuf_new_from_file, display_get_default
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
@@ -162,6 +162,57 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         capabilities["named_cursors"] = len(cursor_names)>0
         add_gtk_version_info(capabilities, gtk, "", True)
         return capabilities
+
+
+    def get_screen_sizes(self):
+        display = display_get_default()
+        i=0
+        screen_sizes = []
+        while i<display.get_n_screens():
+            screen = display.get_screen(i)
+            j = 0
+            monitors = []
+            while j<screen.get_n_monitors():
+                geom = screen.get_monitor_geometry(j)
+                plug_name = ""
+                if hasattr(screen, "get_monitor_plug_name"):
+                    plug_name = screen.get_monitor_plug_name(j) or ""
+                wmm = -1
+                if hasattr(screen, "get_monitor_width_mm"):
+                    wmm = screen.get_monitor_width_mm(j)
+                hmm = -1
+                if hasattr(screen, "get_monitor_height_mm"):
+                    hmm = screen.get_monitor_height_mm(j)
+                monitor = plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm
+                monitors.append(monitor)
+                j += 1
+            work_x, work_y = 0, 0
+            work_width, work_height = screen.get_width(), screen.get_height()
+            if not sys.platform.startswith("win"):
+                try:
+                    p = gtk.gdk.atom_intern('_NET_WORKAREA')
+                    root = screen.get_root_window()
+                    work_x, work_y, work_width, work_height = root.property_get(p)[2][:4]
+                except:
+                    pass
+            item = (screen.make_display_name(), screen.get_width(), screen.get_height(),
+                        screen.get_width_mm(), screen.get_height_mm(),
+                        monitors,
+                        work_x, work_y, work_width, work_height)
+            screen_sizes.append(item)
+            i += 1
+        return screen_sizes
+
+
+    def process_ui_capabilities(self, capabilities):
+        UIXpraClient.process_ui_capabilities(self, capabilities)
+        if self.server_randr:
+            display = display_get_default()
+            i=0
+            while i<display.get_n_screens():
+                screen = display.get_screen(i)
+                screen.connect("size-changed", self.screen_size_changed)
+                i += 1
 
 
     def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
