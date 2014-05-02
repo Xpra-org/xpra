@@ -4,5 +4,5 @@ from xpra.platform import init
 init("Xpra-Launcher", "Xpra Connection Launcher")
 
 import sys
-from xpra.client.gtk2.client_launcher import main
+from xpra.client.gtk_base.client_launcher import main
 sys.exit(main())
