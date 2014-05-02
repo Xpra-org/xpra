@@ -139,17 +139,21 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #always True: we can always use gtk.StatusIcon as fallback
         return True
 
-    def get_root_size(self):
-        raise Exception("override me!")
-
     def set_windows_cursor(self, gtkwindows, new_cursor):
         raise Exception("override me!")
 
+
+    def get_root_window(self):
+        raise Exception("override me!")
+
+    def get_root_size(self):
+        raise Exception("override me!")
+
     def get_mouse_position(self):
-        return gdk.get_default_root_window().get_pointer()[:2]
+        return self.get_root_window().get_pointer()[:2]
 
     def get_current_modifiers(self):
-        modifiers_mask = gdk.get_default_root_window().get_pointer()[-1]
+        modifiers_mask = self.get_root_window().get_pointer()[-1]
         return self.mask_to_names(modifiers_mask)
 
 
@@ -165,7 +169,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if window:
             gdkwindow = window.get_window()
         if gdkwindow is None:
-            gdkwindow = gdk.get_default_root_window()
+            gdkwindow = self.get_root_window()
         log("window_bell(..) gdkwindow=%s", gdkwindow)
         if not system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name):
             #fallback to simple beep:

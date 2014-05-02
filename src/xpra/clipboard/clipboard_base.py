@@ -10,19 +10,16 @@ import struct
 import re
 import binascii
 
-from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
-if is_gtk3():
-    PROPERTY_CHANGE_MASK = gdk.EventMask.PROPERTY_CHANGE_MASK
-else:
-    PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
 
 from xpra.log import Logger
 log = Logger("clipboard")
 
 from xpra.gtk_common.gobject_util import n_arg_signal
+from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.protocol import compressed_wrapper
 
@@ -397,7 +394,7 @@ class ClipboardProxy(gtk.Invisible):
         gtk.Invisible.__init__(self)
         self.add_events(PROPERTY_CHANGE_MASK)
         self._selection = selection
-        self._clipboard = gtk.Clipboard(selection=selection)
+        self._clipboard = GetClipboard(selection)
         self._enabled = True
         self._have_token = False
         #this workaround is only needed on win32 AFAIK:

@@ -36,7 +36,7 @@ from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_DECODER_OPTIONS, 
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid
+from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
 from xpra.util import nn, nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -1946,7 +1946,8 @@ class UIXpraClient(XpraClientBase):
     def process_packet(self, proto, packet):
         packet_type = packet[0]
         self.check_server_echo(0)
-        if type(packet_type) in (unicode, str) and packet_type.startswith("clipboard-"):
+        packet_type_str = bytestostr(packet_type)
+        if packet_type_str.startswith("clipboard-"):
             if self.clipboard_enabled and self.clipboard_helper:
                 self.process_clipboard_packet(packet)
         else:

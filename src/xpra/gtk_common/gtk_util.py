@@ -57,6 +57,7 @@ if is_gtk3():
     WINDOW_TOPLEVEL = gdk.WindowType.TOPLEVEL
     FILE_CHOOSER_ACTION_SAVE    = gtk.FileChooserAction.SAVE
     FILE_CHOOSER_ACTION_OPEN    = gtk.FileChooserAction.OPEN
+    PROPERTY_CHANGE_MASK = gdk.EventMask.PROPERTY_CHANGE_MASK
 
     from gi.repository.Gtk import Clipboard     #@UnresolvedImport
     CLIPBOARD_SELECTION = {}
@@ -111,6 +112,8 @@ else:
     WINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
     FILE_CHOOSER_ACTION_SAVE    = gtk.FILE_CHOOSER_ACTION_SAVE
     FILE_CHOOSER_ACTION_OPEN    = gtk.FILE_CHOOSER_ACTION_OPEN
+    PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
+
     OptionMenu  = gtk.OptionMenu
 
     def GetClipboard(selection):

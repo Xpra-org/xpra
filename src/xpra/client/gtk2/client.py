@@ -332,6 +332,9 @@ class XpraClient(GTKXpraClient):
         return screen_sizes
 
 
+    def get_root_window(self):
+        return gdk.get_default_root_window()
+
     def get_root_size(self):
         return gdk.get_default_root_window().get_size()
 
