@@ -8,8 +8,6 @@ from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
 from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gtk                   #@UnresolvedImport
 from gi.repository import Gdk                   #@UnresolvedImport
-from gi.repository.GdkPixbuf import Pixbuf      #@UnresolvedImport
-from gi.repository.GdkPixbuf import InterpType  #@UnresolvedImport
 
 from xpra.client.gtk3.client_window import ClientWindow
 from xpra.client.gtk3.tray_menu import GTK3TrayMenu
@@ -46,15 +44,6 @@ class XpraClient(GTKXpraClient):
         except Exception, e:
             log("cannot load GTK3 notifier: %s", e)
         return ncs
-
-
-    def do_get_pixbuf(self, icon_filename):
-        return Pixbuf.new_from_file(icon_filename)
-
-    def do_get_image(self, pixbuf, size=None):
-        if size>0:
-            pixbuf = pixbuf.scale_simple(size, size, InterpType.BILINEAR)
-        return  Gtk.Image.new_from_pixbuf(pixbuf)
 
 
     def get_tray_menu_helper_classes(self):

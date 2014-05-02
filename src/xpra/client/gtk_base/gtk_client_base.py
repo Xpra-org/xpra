@@ -19,7 +19,7 @@ log = Logger("gtk", "main")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.gtk_common.cursor_names import cursor_names
-from xpra.gtk_common.gtk_util import add_gtk_version_info
+from xpra.gtk_common.gtk_util import add_gtk_version_info, scaled_image, pixbuf_new_from_file
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
@@ -98,13 +98,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             icon_filename = get_icon_filename(icon_name)
             log("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
             if icon_filename:
-                return self.do_get_pixbuf(icon_filename)
+                return pixbuf_new_from_file(icon_filename)
         except:
             log.error("get_pixbuf(%s)", icon_name, exc_info=True)
         return  None
-
-    def do_get_pixbuf(self, icon_filename):
-        raise Exception("override me!")
 
 
     def get_image(self, icon_name, size=None):
@@ -113,13 +110,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             log("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
             if not pixbuf:
                 return  None
-            return self.do_get_image(pixbuf, size)
+            return scaled_image(pixbuf, size)
         except:
             log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
             return  None
-
-    def do_get_image(self, pixbuf, size=None):
-        raise Exception("override me!")
 
 
     def make_keyboard_helper(self, keyboard_sync, key_shortcuts):

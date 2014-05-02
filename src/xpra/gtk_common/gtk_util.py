@@ -41,7 +41,8 @@ elif hasattr(gdk, "_version"):
 if is_gtk3():
     #where is this gone now?
     from gi.repository import GdkPixbuf     #@UnresolvedImport
-    image_new_from_pixbuf = gtk.Image.new_from_pixbuf
+    image_new_from_pixbuf   = gtk.Image.new_from_pixbuf
+    pixbuf_new_from_file    = GdkPixbuf.Pixbuf.new_from_file
     INTERP_HYPER    = GdkPixbuf.InterpType.HYPER
     INTERP_BILINEAR = GdkPixbuf.InterpType.BILINEAR
     RELIEF_NONE     = gtk.ReliefStyle.NONE
@@ -52,7 +53,8 @@ if is_gtk3():
     WIN_POS_CENTER  = gtk.WindowPosition.CENTER
     get_default_keymap  = gdk.Keymap.get_default
 else:
-    image_new_from_pixbuf = gtk.image_new_from_pixbuf
+    image_new_from_pixbuf   = gtk.image_new_from_pixbuf
+    pixbuf_new_from_file    = gdk.pixbuf_new_from_file
     INTERP_HYPER    = gtk.gdk.INTERP_HYPER
     INTERP_BILINEAR = gdk.INTERP_BILINEAR
     RELIEF_NONE     = gtk.RELIEF_NONE
@@ -81,8 +83,10 @@ def get_preferred_size(widget):
         return w, h
     return widget.size_request()
 
-def scaled_image(pixbuf, icon_size):
-    return image_new_from_pixbuf(pixbuf.scale_simple(icon_size, icon_size, INTERP_BILINEAR))
+def scaled_image(pixbuf, icon_size=None):
+    if icon_size:
+        pixbuf = pixbuf.scale_simple(icon_size, icon_size, INTERP_BILINEAR)
+    return image_new_from_pixbuf(pixbuf)
 
 
 def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):

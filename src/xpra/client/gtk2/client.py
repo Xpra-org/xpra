@@ -162,19 +162,6 @@ class XpraClient(GTKXpraClient):
         gtk.gdk.notify_startup_complete()
 
 
-    def do_get_pixbuf(self, icon_filename):
-        if not hasattr(gdk, "pixbuf_new_from_file"):
-            return None
-        return  gdk.pixbuf_new_from_file(icon_filename)
-
-    def do_get_image(self, pixbuf, size=None):
-        if not hasattr(gtk, "image_new_from_pixbuf"):
-            return None
-        if size:
-            pixbuf = pixbuf.scale_simple(size, size, gdk.INTERP_BILINEAR)
-        return  gtk.image_new_from_pixbuf(pixbuf)
-
-
     def get_tray_menu_helper_classes(self):
         tmhc = GTKXpraClient.get_tray_menu_helper_classes(self)
         tmhc.append(GTK2TrayMenu)
