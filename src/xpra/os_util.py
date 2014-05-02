@@ -80,7 +80,7 @@ def platform_name(sys_platform, release):
         return "unknown"
     PLATFORMS = {"win32"    : "Microsoft Windows",
                  "cygwin"   : "Windows/Cygwin",
-                 "linux2"   : "Linux",
+                 "linux.*"  : "Linux",
                  "darwin"   : "Mac OSX",
                  "freebsd.*": "FreeBSD",
                  "os2"      : "OS/2",
@@ -98,7 +98,7 @@ def platform_name(sys_platform, release):
 def os_info(sys_platform, platform_release, platform_platform, platform_linux_distribution):
     s = [platform_name(sys_platform, platform_release)]
     if platform_linux_distribution and len(platform_linux_distribution)==3 and len(platform_linux_distribution[0])>0:
-        s.append(" ".join(platform_linux_distribution))
+        s.append(" ".join([str(x) for x in platform_linux_distribution]))
     elif platform_platform:
         s.append(platform_platform)
     return s

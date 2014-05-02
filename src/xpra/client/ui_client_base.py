@@ -1144,7 +1144,7 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_bell = c.boolget("bell")          #added in 0.5, default to True!
         self.bell_enabled = self.server_supports_bell and self.client_supports_bell
         self.server_supports_clipboard = c.boolget("clipboard")
-        self.server_clipboards = c.listget("clipboards", ALL_CLIPBOARDS)
+        self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.server_dbus_proxy = c.boolget("dbus_proxy")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
@@ -1229,7 +1229,7 @@ class UIXpraClient(XpraClientBase):
             self.clipboard_enabled = self.clipboard_helper is not None
         self.set_max_packet_size()
         self.send_deflate_level()
-        server_desktop_size = c.listget("desktop_size")
+        server_desktop_size = c.intlistget("desktop_size")
         log("server desktop size=%s", server_desktop_size)
         if not c.boolget("shadow"):
             assert server_desktop_size

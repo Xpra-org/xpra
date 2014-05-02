@@ -69,7 +69,7 @@ class AtomicInteger(object):
 
 class typedict(dict):
 
-    def capsget(self, key, default):
+    def capsget(self, key, default=None):
         v = self.get(strtobytes(key), default)
         if sys.version >= '3' and type(v)==bytes:
             v = bytestostr(v)

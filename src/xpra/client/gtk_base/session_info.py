@@ -21,7 +21,7 @@ from xpra.scripts.config import python_platform
 from xpra.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, \
                         TableBuilder, imagebutton, scaled_image, get_preferred_size, \
-                        RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL
+                        RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER
 from xpra.net.protocol import get_network_caps
 log = Logger("info")
 
@@ -86,10 +86,7 @@ class SessionInfo(gtk.Window):
         self.set_decorated(True)
         if window_icon_pixbuf:
             self.set_icon(window_icon_pixbuf)
-        if is_gtk3():
-            self.set_position(gtk.WindowPosition.CENTER)
-        else:
-            self.set_position(gtk.WIN_POS_CENTER)
+        self.set_position(WIN_POS_CENTER)
 
         #tables on the left in a vbox with buttons at the top:
         self.tab_box = gtk.VBox(False, 0)
@@ -130,7 +127,7 @@ class SessionInfo(gtk.Window):
             return version or "unknown"
         def server_info(*prop_names):
             for x in prop_names:
-                v = scaps.get(x)
+                v = scaps.capsget(x)
                 if v is not None:
                     return v
                 if self.client.server_last_info:
@@ -149,9 +146,9 @@ class SessionInfo(gtk.Window):
                 info = make_version_str(getattr(gtk, prop_name))
             return info
         if is_gtk3():
-            tb.new_row("PyGobject", label(gobject._version))
-            tb.new_row("Client GDK", label(gdk._version))
-            tb.new_row("GTK", label(gtk._version), label(server_version_info("gtk_version")))
+            tb.new_row("PyGobject / PyGTK", label(gobject._version), label(server_version_info("pygtk.version", "pygtk_version")))
+            tb.new_row("GDK", label(gdk._version), label(server_version_info("gdk.version", "gdk_version")))
+            tb.new_row("GTK", label(gtk._version), label(server_version_info("gtk.version", "gtk_version")))
         else:
             tb.new_row("PyGTK", label(client_version_info("pygtk_version")), label(server_version_info("pygtk.version", "pygtk_version")))
             tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk.version", "gtk_version")))
@@ -249,8 +246,9 @@ class SessionInfo(gtk.Window):
         tb.new_row("Server Endpoint", label(self.connection.target))
         if self.client.server_display:
             tb.new_row("Server Display", label(self.client.server_display))
-        if "hostname" in scaps:
-            tb.new_row("Server Hostname", label(scaps.get("hostname")))
+        hostname = scaps.strget("hostname")
+        if hostname:
+            tb.new_row("Server Hostname", label(hostname))
         if self.client.server_platform:
             tb.new_row("Server Platform", label(self.client.server_platform))
         self.server_load_label = label()
@@ -590,10 +588,10 @@ class SessionInfo(gtk.Window):
 
         scaps = self.client.server_capabilities
         self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
-        self.bool_icon(self.server_clipboard_icon, scaps.get("clipboard", False))
-        self.bool_icon(self.server_notifications_icon, scaps.get("notifications", False))
-        self.bool_icon(self.server_bell_icon, scaps.get("bell", False))
-        self.bool_icon(self.server_cursors_icon, scaps.get("cursors", False))
+        self.bool_icon(self.server_clipboard_icon,      scaps.boolget("clipboard", False))
+        self.bool_icon(self.server_notifications_icon,  scaps.boolget("notifications", False))
+        self.bool_icon(self.server_bell_icon,           scaps.boolget("bell", False))
+        self.bool_icon(self.server_cursors_icon,        scaps.boolget("cursors", False))
         def pipeline_info(can_use, sound_pipeline):
             if not can_use:
                 return ""   #the icon shows this is not available, status is irrelevant so leave it empty
@@ -611,24 +609,24 @@ class SessionInfo(gtk.Window):
                 return "n/a"
             return ", ".join(codecs or [])
         def populate_speaker_info(*args):
-            can = scaps.get("sound.send", False) and self.client.speaker_allowed
+            can = scaps.boolget("sound.send", False) and self.client.speaker_allowed
             self.bool_icon(self.server_speaker_icon, can)
             self.speaker_codec_label.set_text(pipeline_info(can, self.client.sound_sink))
         populate_speaker_info()
         self.client.connect("speaker-changed", populate_speaker_info)
         def populate_microphone_info(*args):
-            can = scaps.get("sound.receive", False) and self.client.microphone_allowed
+            can = scaps.boolget("sound.receive", False) and self.client.microphone_allowed
             self.bool_icon(self.server_microphone_icon, can)
             self.microphone_codec_label.set_text(pipeline_info(can, self.client.sound_source))
         populate_microphone_info()
         self.client.connect("microphone-changed", populate_microphone_info)
 
         #sound/video codec table:
-        self.server_speaker_codecs_label.set_text(codec_info(scaps.get("sound.send", False), scaps.get("sound.encoders", [])))
+        self.server_speaker_codecs_label.set_text(codec_info(scaps.boolget("sound.send", False), scaps.strlistget("sound.encoders", [])))
         self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
-        self.server_microphone_codecs_label.set_text(codec_info(scaps.get("sound.receive", False), scaps.get("sound.decoders", [])))
+        self.server_microphone_codecs_label.set_text(codec_info(scaps.boolget("sound.receive", False), scaps.strlistget("sound.decoders", [])))
         self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
-        se = scaps.get("encodings.core", scaps.get("encodings", scaps.get("encodings.core", [])))
+        se = scaps.strlistget("encodings.core", scaps.strlistget("encodings"))
         self.server_encodings_label.set_text(", ".join(sorted(se)))
         self.client_encodings_label.set_text(", ".join(sorted(self.client.get_core_encodings())))
 

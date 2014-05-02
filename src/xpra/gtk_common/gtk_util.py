@@ -20,9 +20,22 @@ GTK_VERSION_INFO = {}
 if hasattr(gtk, "pygtk_version"):
     GTK_VERSION_INFO["pygtk_version"] = gtk.pygtk_version
 if hasattr(gtk, "gtk_version"):
+    #GTK2:
     GTK_VERSION_INFO["gtk_version"] = gtk.gtk_version
 elif hasattr(gtk, "_version"):
+    #GTK3:
     GTK_VERSION_INFO["gtk_version"] = gtk._version
+if hasattr(gdk, "__version__"):
+    #GTK2:
+    GTK_VERSION_INFO["gdk_version"] = gdk.__version__
+elif hasattr(gdk, "_version"):
+    #GTK3:
+    GTK_VERSION_INFO["gdk_version"] = gdk._version
+    try:
+        import gi
+        GTK_VERSION_INFO["gi_repository_version"] = gi.__version__
+    except:
+        pass
 
 
 if is_gtk3():
@@ -36,6 +49,7 @@ if is_gtk3():
     FILL            = gtk.AttachOptions.FILL
     EXPAND          = gtk.AttachOptions.EXPAND
     STATE_NORMAL    = gtk.StateType.NORMAL
+    WIN_POS_CENTER  = gtk.WindowPosition.CENTER
     get_default_keymap  = gdk.Keymap.get_default
 else:
     image_new_from_pixbuf = gtk.image_new_from_pixbuf
@@ -46,6 +60,7 @@ else:
     FILL            = gtk.FILL
     EXPAND          = gtk.EXPAND
     STATE_NORMAL    = gtk.STATE_NORMAL
+    WIN_POS_CENTER  = gtk.WIN_POS_CENTER
     get_default_keymap  = gdk.keymap_get_default
 
 

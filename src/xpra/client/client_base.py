@@ -429,11 +429,11 @@ class XpraClientBase(object):
             self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
             return
         try:
-            self.server_capabilities = packet[1]
+            self.server_capabilities = typedict(packet[1])
             log("processing hello from server: %s", self.server_capabilities)
-            c = typedict(self.server_capabilities)
-            self.parse_server_capabilities(c)
+            self.parse_server_capabilities(self.server_capabilities)
         except Exception, e:
+            log.info("error in hello packet", exc_info=True)
             self.warn_and_quit(EXIT_FAILURE, "error processing hello packet from server: %s" % e)
 
     def capsget(self, capabilities, key, default):
@@ -451,7 +451,14 @@ class XpraClientBase(object):
         self._remote_platform = c.strget("platform")
         self._remote_platform_release = c.strget("platform.release")
         self._remote_platform_platform = c.strget("platform.platform")
-        self._remote_platform_linux_distribution = c.get("platform.linux_distribution")
+        #linux distribution is a tuple of different types, ie: ('Linux Fedora' , 20, 'Heisenbug')
+        pld = c.listget("platform.linux_distribution")
+        if pld and len(pld)==3:
+            def san(v):
+                if type(v)==int:
+                    return v
+                return bytestostr(v)
+            self._remote_platform_linux_distribution = [san(x) for x in pld]
         verr = version_compat_check(self._remote_version)
         if verr is not None:
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version '%s': %s" % (self._remote_version, verr))
