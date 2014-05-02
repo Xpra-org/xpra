@@ -137,6 +137,12 @@ class SoundPipeline(gobject.GObject):
                     log("mode: %s", mode)
                     self.codec_mode = mode
             else:
+                #these we just log them:
+                for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode"):
+                    if message.structure.has_field(x):
+                        v = message.structure[x]
+                        log("tag message: %s = %s", x, v)
+                        return      #handled
                 log.info("unknown tag message: %s", message)
         elif t == gst.MESSAGE_STREAM_STATUS:
             log("stream status: %s", message)
