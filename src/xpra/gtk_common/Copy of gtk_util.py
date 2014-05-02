@@ -58,44 +58,17 @@ if is_gtk3():
     FILE_CHOOSER_ACTION_SAVE    = gtk.FileChooserAction.SAVE
     FILE_CHOOSER_ACTION_OPEN    = gtk.FileChooserAction.OPEN
 
-    from gi.repository.Gtk import Clipboard     #@UnresolvedImport
-    CLIPBOARD_SELECTION = {}
-    #gtk2: uses strings:
-    for x in ("PRIMARY", "SECONDARY", "CLIPBOARD"):
-        CLIPBOARD_SELECTION[x] = getattr(gdk, "SELECTION_%s" % x)
-    def GetClipboard(selection):
-        return Clipboard.get(CLIPBOARD_SELECTION[selection])
-
     #copied from pygtkcompat - I wished I had found this earlier..
     orig_pack_end = gtk.Box.pack_end
-    def pack_end(self, child, expand=True, fill=True, padding=0):
+    def pack_end(self, child, expand=True, fill=True, padding=0): 
         orig_pack_end(self, child, expand, fill, padding)
     gtk.Box.pack_end = pack_end
     orig_pack_start = gtk.Box.pack_start
     def pack_start(self, child, expand=True, fill=True, padding=0):
         orig_pack_start(self, child, expand, fill, padding)
     gtk.Box.pack_start = pack_start
-    def append_text(self, text):
-        model = self.get_model()
-        model.append([text])
-    gtk.ComboBox.append_text = append_text
-    def new_text():
-        combo = gtk.ComboBox()
-        model = gtk.ListStore(str)
-        combo.set_model(model)
-        combo.set_entry_text_column(0)
-        return combo
-    gtk.combo_box_new_text = new_text
 
-    class OptionMenu(gtk.MenuButton):
-        pass
-
-else:
-    #gtk2:
-    image_new_from_pixbuf   = gtk.image_new_from_pixbuf
-    pixbuf_new_from_file    = gdk.pixbuf_new_from_file
-    get_default_keymap      = gdk.keymap_get_default
-    INTERP_HYPER    = gtk.gdk.INTERP_HYPER
+    INTERP_HYPER    = gdk.INTERP_HYPER
     INTERP_BILINEAR = gdk.INTERP_BILINEAR
     RELIEF_NONE     = gtk.RELIEF_NONE
     RELIEF_NORMAL   = gtk.RELIEF_NORMAL
@@ -108,10 +81,7 @@ else:
     WINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
     FILE_CHOOSER_ACTION_SAVE    = gtk.FILE_CHOOSER_ACTION_SAVE
     FILE_CHOOSER_ACTION_OPEN    = gtk.FILE_CHOOSER_ACTION_OPEN
-    OptionMenu  = gtk.OptionMenu
 
-    def GetClipboard(selection):
-        return gtk.Clipboard(selection)
 
 def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
     #update props given:

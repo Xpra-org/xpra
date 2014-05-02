@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 
-import sys
-import pygtk
-pygtk.require('2.0')
-import gtk
-import pango
 import re
+import sys
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_gobject
+
+gtk = import_gtk()
+gdk = import_gdk()
+pango = import_pango()
+gobject = import_gobject()
 
 from xpra.deque import maxdeque
-from xpra.gtk_common.gtk_util import TableBuilder, label
+from xpra.gtk_common.gtk_util import TableBuilder, label, GetClipboard
 from xpra.platform.paths import get_icon
 from xpra.platform.features import CLIPBOARDS
 from xpra.gtk_common.gobject_compat import get_xid
@@ -18,7 +20,7 @@ from xpra.gtk_common.gobject_compat import get_xid
 
 class ClipboardInstance(object):
     def __init__(self, selection, _log):
-        self.clipboard = gtk.Clipboard(selection=selection)
+        self.clipboard = GetClipboard(selection)
         self.selection = selection
         self._log = _log
         self.owned_label = label()
@@ -31,7 +33,8 @@ class ClipboardInstance(object):
         self.set_targets.set_active(0)
         self.set_targets.connect("changed", self.set_target_changed)
         self.value_label = label()
-        self.value_entry = gtk.Entry(max=100)
+        self.value_entry = gtk.Entry()
+        self.value_entry.set_max_length(100)
         self.value_entry.set_width_chars(32)
         self.clear_label_btn = gtk.Button("X")
         self.clear_label_btn.connect("clicked", self.clear_label)
@@ -51,6 +54,9 @@ class ClipboardInstance(object):
         self.clipboard.connect("owner-change", self.owner_changed)
         self.log("ready")
 
+    def __repr__(self):
+        return "ClipboardInstance(%s)" % self.selection
+
     def log(self, msg):
         self._log(self.selection, msg)
 
@@ -61,7 +67,11 @@ class ClipboardInstance(object):
         self.value_label.set_text("")
 
     def get_targets_callback(self, c, targets, *args):
-        filtered = [x for x in targets if x not in ("MULTIPLE", "TARGETS")]
+        self.log("got targets: %s" % str(targets))
+        if hasattr(targets, "name"):
+            self.log("target is atom: %s" % targets.name())
+            targets = []
+        filtered = [x for x in (targets or []) if x not in ("MULTIPLE", "TARGETS")]
         ct = self.get_targets.get_active_text()
         if not ct:
             #choose a good default target:
@@ -80,7 +90,7 @@ class ClipboardInstance(object):
         self.get_targets.show_all()
 
     def do_get_targets(self, *args):
-        self.clipboard.request_targets(self.get_targets_callback)
+        self.clipboard.request_targets(self.get_targets_callback, None)
 
     def get_target_changed(self, cb):
         target = self.get_targets.get_active_text()
@@ -116,7 +126,7 @@ class ClipboardInstance(object):
         self.clear_label()
         target = self.get_targets.get_active_text()
         self.log("Requesting %s" % target)
-        self.clipboard.request_contents(target, self.selection_value_callback)
+        self.clipboard.request_contents(target, self.selection_value_callback, None)
 
     def selection_clear_cb(self, clipboard, data):
         #print("selection_clear_cb(%s, %s)", clipboard, data)
@@ -141,15 +151,18 @@ class ClipboardInstance(object):
         self.value_label.set_text(self.ellipsis(value))
 
     def do_get_string(self, *args):
-        self.clipboard.request_text(self.string_value_callback)
+        #self.log("do_get_string%s on %s.%s" % (args, self, self.clipboard))
+        self.clipboard.request_text(self.string_value_callback, None)
 
     def do_set_string(self, *args):
         self.clipboard.set_text(self.ellipsis(self.value_entry.get_text()))
 
     def owner_changed(self, cb, event):
-        r = {gtk.gdk.OWNER_CHANGE_CLOSE : "close",
-             gtk.gdk.OWNER_CHANGE_DESTROY : "destroy",
-             gtk.gdk.OWNER_CHANGE_NEW_OWNER : "new owner"}
+        r = {}
+        if not is_gtk3():
+            r = {gtk.gdk.OWNER_CHANGE_CLOSE : "close",
+                 gtk.gdk.OWNER_CHANGE_DESTROY : "destroy",
+                 gtk.gdk.OWNER_CHANGE_NEW_OWNER : "new owner"}
         owner = self.clipboard.get_owner()
         #print("xid=%s, owner=%s" % (self.value_entry.get_window().xid, event.owner))
         weownit = (owner is not None)
@@ -169,6 +182,7 @@ class ClipboardStateInfoWindow(object):
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(640, 300)
         self.window.set_border_width(20)
+        self.window.set_title("Clipboard Test Tool")
 
         vbox = gtk.VBox(False, 0)
         vbox.set_spacing(15)

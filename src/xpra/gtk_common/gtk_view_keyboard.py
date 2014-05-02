@@ -62,6 +62,7 @@ class KeyboardStateInfoWindow:
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(540, 800)
         self.window.set_border_width(20)
+        self.window.set_title("Keyboard State Tool")
 
         # Title
         vbox = gtk.VBox(False, 0)
