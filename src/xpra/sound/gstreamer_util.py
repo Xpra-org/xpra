@@ -103,7 +103,7 @@ def import_gst1():
         setattr(Gst, "STATE_%s" % x, getattr(Gst.State, x))
     for x in ('EOS', 'ERROR', 'TAG', 'STREAM_STATUS', 'STATE_CHANGED',
               'LATENCY', 'WARNING', 'ASYNC_DONE', 'NEW_CLOCK', 'STREAM_STATUS',
-              'BUFFERING', 'INFO', 'STREAM_START',  
+              'BUFFERING', 'INFO',  
               ):
         setattr(Gst, "MESSAGE_%s" % x, getattr(Gst.MessageType, x))
     Gst.MESSAGE_DURATION = Gst.MessageType.DURATION_CHANGED

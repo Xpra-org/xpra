@@ -152,8 +152,6 @@ class SoundPipeline(gobject.GObject):
                 log.info("unknown sound pipeline tag message: %r", structure)
         elif t == gst.MESSAGE_STREAM_STATUS:
             log("stream status: %s", message)
-        elif t == gst.MESSAGE_STREAM_START:
-            log("stream start: %s", message)
         elif t in (gst.MESSAGE_LATENCY, gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
             log("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
