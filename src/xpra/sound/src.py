@@ -154,7 +154,7 @@ def main():
         else:
             monitor_device = monitor_devices.items()[0][0]
             log.info("using pulseaudio source device: %s", monitor_device)
-            ss = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
+            ss = SoundSource("pulsesrc", {"device" : monitor_device}, codec)
         lock = Lock()
         def new_buffer(ss, data, metadata):
             log.info("new buffer: %s bytes, metadata=%s" % (len(data), metadata))
