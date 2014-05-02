@@ -73,6 +73,8 @@ if PYTHON3 and not WIN32:
 #*******************************************************************************
 def get_status_output(*args, **kwargs):
     try:
+        kwargs["stdout"] = subprocess.PIPE
+        kwargs["stderr"] = subprocess.PIPE
         p = subprocess.Popen(*args, **kwargs)
     except:
         e = sys.exc_info()[1]
