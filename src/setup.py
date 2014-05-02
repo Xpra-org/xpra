@@ -928,14 +928,26 @@ if WIN32:
                            ]
             if sound_ENABLED:
                 missing_dll += [
-                           'libgstapp-1.0-0.dll',
-                           'libgstaudio-1.0-0.dll',
-                           'libgstbase-1.0-0.dll',
-                           'libgstcodecparsers-1.0-0.dll',
-                           'libgstnet-1.0-0.dll',
-                           'libgstreamer-1.0-0.dll',
-                           'libgstvideo-1.0-0.dll',
-                           ]
+                            'libcurl-4.dll',
+                            'libsoup-2.4-1.dll',
+                            'libvisual-0.4-0.dll',
+                            'libgstreamer-1.0-0.dll',
+                            'libopenjpeg-1.dll',
+                            'libsqlite3-0.dll']
+                for p in ("app", "audio", "base", "codecparsers", "fft", "net", "video",
+                          "pbutils", "riff", "sdp", "rtp", "rtsp", "tag", "uridownloader",
+                          #I think 'coreelements' needs those (otherwise we would exclude them):
+                          "basecamerabinsrc", "mpegts", "photography",
+                          ):
+                    missing_dll.append('libgst%s-1.0-0.dll' % p)
+                #add the gstreamer plugins we need:
+                gstlibdir = os.path.join(include_dll_path, "lib", "gstreamer-1.0")
+                #optional: a52dec, opus, faac, faad, voaacenc
+                GST_PLUGINS = ("app", "audioparsers", "audiorate", "audioresample", "audiotestsrc",
+                          "coreelements", "directsoundsink", "directsoundsrc",
+                          "flac", "lame", "mad", "mpg123", "ogg", "speex",
+                          "volume", "vorbis", "wavenc", "wavpack", "wavparse")
+                add_data_files("gstreamer-1.0", [os.path.join(gstlibdir, "libgst%s.dll" % x) for x in GST_PLUGINS])
             add_data_files("", [os.path.join(include_dll_path, dll) for dll in missing_dll])
             for lib in ['etc', 'lib', 'share']:
                 add_data_files("", [os.path.join(include_dll_path, lib)])
