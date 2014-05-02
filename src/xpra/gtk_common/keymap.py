@@ -33,7 +33,8 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"]):
                 key = keys[i]
                 keyval = keyvals[i]
                 name = gdk.keyval_name(keyval)
-                keycodes.append((nn(keyval), nn(name), nn(key.keycode), nn(key.group), nn(key.level)))
+                if name not in ignore_keys:
+                    keycodes.append((nn(keyval), nn(name), nn(key.keycode), nn(key.group), nn(key.level)))
         else:
             #gtk2:
             for keyval, keycode, group, level in entries:
@@ -54,7 +55,7 @@ def main():
             log.enable_debug()
         gtk_keymap = get_gtk_keymap()
         def pkey(*entries):
-            print("".join([str(x).ljust(18) for x in entries]))
+            print(("".join([str(x).ljust(18) for x in entries])).strip())
         pkey("keyval", "name", "keycode", "group", "level")
         for x in gtk_keymap:
             pkey(*x)
