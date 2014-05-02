@@ -79,10 +79,10 @@ class SoundSink(SoundPipeline):
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
         queue_el =  ["queue",
-                    "name=queue"+ \
-                    "max-size-buffers=0"+ \
-                    "max-size-bytes=0"+ \
-                    "max-size-time=%s" % QUEUE_TIME+ \
+                    "name=queue",
+                    "max-size-buffers=0",
+                    "max-size-bytes=0",
+                    "max-size-time=%s" % QUEUE_TIME,
                     "leaky=%s" % QUEUE_LEAK]
         if QUEUE_SILENT:
             queue_el.append("silent=%s" % QUEUE_SILENT)
