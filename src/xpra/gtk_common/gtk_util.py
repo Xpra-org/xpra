@@ -90,6 +90,9 @@ if is_gtk3():
     class OptionMenu(gtk.MenuButton):
         pass
 
+    import signal
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 else:
     #gtk2:
     image_new_from_pixbuf   = gtk.image_new_from_pixbuf

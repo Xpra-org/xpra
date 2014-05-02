@@ -22,6 +22,10 @@ class XpraClient(GTKXpraClient):
     def gtk_main(self):
         Gtk.main()
 
+    def install_signal_handlers(self):
+        #doing so interferes with gtk..
+        pass
+
     def make_hello(self):
         capabilities = GTKXpraClient.make_hello(self)
         if xor_str is not None:
