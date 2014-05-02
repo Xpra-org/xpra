@@ -92,16 +92,29 @@ def import_gst1():
     Gst.registry_get_default = Gst.Registry.get 
     Gst.get_pygst_version = lambda: gi.version_info
     Gst.get_gst_version = lambda: Gst.version()
-    Gst.new_buffer = Gst.Buffer.new_allocate
+    def new_buffer(data):
+        buf = Gst.Buffer.new_allocate(None, len(data), None)
+        buf.fill(0, data)
+        return buf
+    Gst.new_buffer = new_buffer
+    Gst.element_state_get_name = Gst.Element.state_get_name
     #note: we only copy the constants we actually need..
     for x in ('NULL', 'PAUSED', 'PLAYING', 'READY', 'VOID_PENDING'):
         setattr(Gst, "STATE_%s" % x, getattr(Gst.State, x))
     for x in ('EOS', 'ERROR', 'TAG', 'STREAM_STATUS', 'STATE_CHANGED',
-              'LATENCY', 'WARNING', 'ASYNC_DONE', 'NEW_CLOCK', 'DURATION'):
+              'LATENCY', 'WARNING', 'ASYNC_DONE', 'NEW_CLOCK', 'STREAM_STATUS',
+              'BUFFERING', 'INFO', 'STREAM_START',  
+              ):
         setattr(Gst, "MESSAGE_%s" % x, getattr(Gst.MessageType, x))
+    Gst.MESSAGE_DURATION = Gst.MessageType.DURATION_CHANGED
+    Gst.FLOW_OK = Gst.FlowReturn.OK
+    global gst_version, pygst_version
+    gst_version = Gst.get_gst_version()
+    pygst_version = Gst.get_pygst_version()
     return Gst
 
 def import_gst0_10():
+    global gst_version, pygst_version
     import pygst
     pygst.require("0.10")
     try:
@@ -352,6 +365,9 @@ def main():
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
         print("GStreamer plugins found: %s" % ", ".join(get_all_plugin_names()))
+        print("")
+        print("GStreamer version: %s" % ".".join([str(x) for x in gst_version]))
+        print("PyGStreamer version: %s" % ".".join([str(x) for x in pygst_version]))
         print("")
         encs = [x for x in CODEC_ORDER if has_encoder(x)]
         decs = [x for x in CODEC_ORDER if has_decoder(x)]

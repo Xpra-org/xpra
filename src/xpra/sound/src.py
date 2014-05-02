@@ -71,8 +71,14 @@ class SoundSource(SoundPipeline):
         self.sink.set_property("drop", False)
         self.sink.set_property("sync", True)
         self.sink.set_property("qos", False)
-        self.sink.connect("new-buffer", self.on_new_buffer)
-        self.sink.connect("new-preroll", self.on_new_preroll)
+        try:
+            #Gst 1.0:
+            self.sink.connect("new-sample", self.on_new_sample)
+            self.sink.connect("new-preroll", self.on_new_preroll1)
+        except:
+            #Gst 0.10:
+            self.sink.connect("new-buffer", self.on_new_buffer)
+            self.sink.connect("new-preroll", self.on_new_preroll0)
 
     def set_volume(self, volume=1.0):
         if self.sink and self.volume:
@@ -88,16 +94,38 @@ class SoundSource(SoundPipeline):
         self.src_type = ""
         self.sink = None
 
-    def on_new_preroll(self, appsink):
+
+    def on_new_preroll1(self, appsink):
+        sample = appsink.emit('pull-preroll')
+        log('new preroll1: %s', sample)
+        self.emit_buffer1(sample)
+
+    def on_new_sample(self, bus):
+        #Gst 1.0
+        sample = self.sink.emit("pull-sample")
+        self.emit_buffer1(sample)
+
+    def emit_buffer1(self, sample):
+        buf = sample.get_buffer()
+        #info = sample.get_info()
+        size = buf.get_size()
+        data = buf.extract_dup(0, size)
+        self.do_emit_buffer(data, {"timestamp"  : buf.pts,
+                                   "duration"   : buf.duration})
+
+
+    def on_new_preroll0(self, appsink):
         buf = appsink.emit('pull-preroll')
-        log('new preroll: %s bytes', len(buf))
-        self.emit_buffer(buf)
+        log('new preroll0: %s bytes', len(buf))
+        self.emit_buffer0(buf)
 
     def on_new_buffer(self, bus):
+        #pygst 0.10
         buf = self.sink.emit("pull-buffer")
-        self.emit_buffer(buf)
+        self.emit_buffer0(buf)
 
-    def emit_buffer(self, buf):
+
+    def emit_buffer0(self, buf, metadata={}):
         """ convert pygst structure into something more generic for the wire """
         #none of the metadata is really needed at present, but it may be in the future:
         #metadata = {"caps"      : buf.get_caps().to_string(),
@@ -106,11 +134,14 @@ class SoundSource(SoundPipeline):
         #            "duration"  : buf.duration,
         #            "offset"    : buf.offset,
         #            "offset_end": buf.offset_end}
-        metadata = {"timestamp" : buf.timestamp,
-                    "duration"  : buf.duration}
+        self.do_emit_buffer(buf.data, {"timestamp" : buf.timestamp,
+                                       "duration"  : buf.duration})
+
+
+    def do_emit_buffer(self, data, metadata={}):
         self.buffer_count += 1
-        self.byte_count += len(buf.data)
-        self.emit("new-buffer", buf.data, metadata)
+        self.byte_count += len(data)
+        self.emit("new-buffer", data, metadata)
 
 gobject.type_register(SoundSource)
 

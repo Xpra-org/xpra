@@ -106,6 +106,12 @@ class SoundPipeline(gobject.GObject):
     def on_message(self, bus, message):
         #log("on_message(%s, %s)", bus, message)
         t = message.type
+        try:
+            #Gst 1.0:
+            structure = message.get_structure()
+        except:
+            #Gst 0.10:
+            structure = message.structure
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
             log.info("sound source EOS")
@@ -118,34 +124,36 @@ class SoundPipeline(gobject.GObject):
             self.state = "error"
             self.emit("state-changed", self.state)
         elif t == gst.MESSAGE_TAG:
-            if message.structure.has_field("bitrate"):
-                new_bitrate = int(message.structure["bitrate"])
+            if structure.has_field("bitrate"):
+                new_bitrate = int(structure["bitrate"])
                 self.update_bitrate(new_bitrate)
-            elif message.structure.has_field("codec"):
-                desc = message.structure["codec"]
+            elif structure.has_field("codec"):
+                desc = structure["codec"]
                 if self.codec_description!=desc:
                     log.info("codec: %s", desc)
                     self.codec_description = desc
-            elif message.structure.has_field("audio-codec"):
-                desc = message.structure["audio-codec"]
+            elif structure.has_field("audio-codec"):
+                desc = structure["audio-codec"]
                 if self.codec_description!=desc:
                     log.info("using audio codec: %s", desc)
                     self.codec_description = desc
-            elif message.structure.has_field("mode"):
-                mode = message.structure["mode"]
+            elif structure.has_field("mode"):
+                mode = structure["mode"]
                 if self.codec_mode!=mode:
                     log("mode: %s", mode)
                     self.codec_mode = mode
             else:
-                #these we just log them:
+                #these, we know about, so we just log them:
                 for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode"):
-                    if message.structure.has_field(x):
-                        v = message.structure[x]
+                    if structure.has_field(x):
+                        v = structure[x]
                         log("tag message: %s = %s", x, v)
                         return      #handled
-                log.info("unknown tag message: %s", message)
+                log.info("unknown sound pipeline tag message: %r", structure)
         elif t == gst.MESSAGE_STREAM_STATUS:
             log("stream status: %s", message)
+        elif t == gst.MESSAGE_STREAM_START:
+            log("stream start: %s", message)
         elif t in (gst.MESSAGE_LATENCY, gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
             log("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
@@ -161,9 +169,11 @@ class SoundPipeline(gobject.GObject):
             log("duration changed: %s", d)
         elif t == gst.MESSAGE_LATENCY:
             log.info("Latency message from %s: %s", message.src, message)
+        elif t == gst.MESSAGE_INFO:
+            log.info("Sound pipeline message: %s", message)
         elif t == gst.MESSAGE_WARNING:
             w = message.parse_warning()
             log.warn("pipeline warning: %s", w[0].message)
             log.info("pipeline warning: %s", w[1:])
         else:
-            log.info("unhandled bus message type %s: %s / %s", t, message, message.structure)
+            log.info("unhandled bus message type %s: %s / %s", t, message, structure)

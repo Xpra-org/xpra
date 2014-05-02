@@ -932,6 +932,7 @@ if WIN32:
                             'libsoup-2.4-1.dll',
                             'libvisual-0.4-0.dll',
                             'libgstreamer-1.0-0.dll',
+                            'liborc-test-0.4-0.dll',
                             'libopenjpeg-1.dll',
                             'libsqlite3-0.dll']
                 for p in ("app", "audio", "base", "codecparsers", "fft", "net", "video",

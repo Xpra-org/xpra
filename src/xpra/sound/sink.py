@@ -160,7 +160,11 @@ class SoundSink(SoundPipeline):
             if d is not None:
                 buf.duration = d
         log("add_data(..) queue_state=%s", self.queue_state)
-        self.push_buffer(buf)
+        if self.push_buffer(buf):
+            self.buffer_count += 1
+            self.byte_count += len(data)
+            ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
+            log("sound sink: pushed %s bytes, new buffer level: %sms", len(data), ltime)
 
     def push_buffer(self, buf):
         #buf.size = size
@@ -174,10 +178,6 @@ class SoundSink(SoundPipeline):
             log.error("push-buffer error: %s", r)
             self.emit('error', "push-buffer error: %s" % r)
             return False
-        self.buffer_count += 1
-        self.byte_count += len(buf.data)
-        ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        log("sound sink: pushed %s bytes, new buffer level: %sms", len(buf.data), ltime)
         return True
 
 gobject.type_register(SoundSink)
