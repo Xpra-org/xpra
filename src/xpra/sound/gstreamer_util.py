@@ -153,6 +153,10 @@ def has_plugins(*names):
 if has_gst:
     #populate CODECS:
     for elements in CODEC_OPTIONS:
+        encoding = elements[0]
+        if encoding in CODECS:
+            #we already have one for this encoding
+            continue
         #verify we have all the elements needed:
         if has_plugins(*elements[1:]):
             #ie: FLAC, "flacenc", "oggmux", "flacdec", "oggdemux" = elements
