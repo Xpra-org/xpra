@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,8 @@ Once we have imported something, stick to that version from then on for all othe
 """
 
 import sys
+
+__all__ = ["is_gtk3", "get_xid", "import_gobject", "import_gtk", "import_gdk", "import_pango", "import_glib", "import_pixbufloader"]
 
 _is_gtk3 = None
 if sys.version>='3':
@@ -43,16 +45,16 @@ def get_xid(window):
 
 
 def import_gobject2():
-    import gobject                                  #@UnusedImport
+    import gobject
     return gobject
 def import_gobject3():
-    from gi.repository import GObject as gobject    #@UnresolvedImport @UnusedImport (python3)
-    return gobject
+    from gi.repository import GObject               #@UnresolvedImport
+    return GObject
 def import_gobject():
     return  _try_import(import_gobject3, import_gobject2)
 
 def import_glib3():
-    from gi.repository import GLib                  #@UnresolvedImport @UnusedImport
+    from gi.repository import GLib                  #@UnresolvedImport
     return GLib
 def import_glib2():
     import glib
@@ -63,20 +65,20 @@ def import_glib():
 def import_gtk2():
     import pygtk
     pygtk.require("2.0")
-    import gtk                                      #@UnusedImport
+    import gtk
     return gtk
 def import_gtk3():
-    from gi.repository import Gtk as gtk            #@UnresolvedImport @UnusedImport (python3)
-    return gtk
+    from gi.repository import Gtk                   #@UnresolvedImport
+    return Gtk
 def import_gtk():
     return  _try_import(import_gtk3, import_gtk2)
 
 def import_gdk2():
-    from gtk import gdk                             #@UnusedImport
+    from gtk import gdk
     return gdk
 def import_gdk3():
-    from gi.repository import Gdk as gdk            #@UnresolvedImport @UnusedImport (python3)
-    return gdk
+    from gi.repository import Gdk                   #@UnresolvedImport
+    return Gdk
 def import_gdk():
     return  _try_import(import_gdk3, import_gdk2)
 

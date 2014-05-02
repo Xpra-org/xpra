@@ -17,8 +17,6 @@ log = Logger("gtk", "client")
 
 class XpraClient(GTKXpraClient):
 
-    WINDOW_TOPLEVEL = Gtk.WindowType.TOPLEVEL
-    INPUT_ONLY = None #got moved again???? Gtk.WindowWindowClass.INPUT_ONLY
     ClientWindowClass = ClientWindow
 
     def gtk_main(self):
@@ -59,6 +57,8 @@ class XpraClient(GTKXpraClient):
         return []
 
     def get_root_size(self):
+        #this works: ?
+        #Gtk.Window().get_screen().get_root_window()
         w, h = Gdk.get_default_root_window().get_geometry()[2:]
         if w<=0 or h<=0 or w>32768 or h>32768:
             log("Gdk returned invalid screen dimensions: %sx%s", w, h)

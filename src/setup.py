@@ -1039,10 +1039,10 @@ if WIN32:
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
+        add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
         if not PYTHON3:
             #these need porting..
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
-            add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
             add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")

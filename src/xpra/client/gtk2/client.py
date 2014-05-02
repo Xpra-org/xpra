@@ -49,9 +49,6 @@ missing_cursor_names = set()
 
 class XpraClient(GTKXpraClient):
 
-    WINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
-    INPUT_ONLY = gdk.INPUT_ONLY
-
     def __init__(self):
         GTKXpraClient.__init__(self)
         self.border = None
@@ -493,7 +490,7 @@ class XpraClient(GTKXpraClient):
             return group_leader_window
         #we need to create one:
         title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
-        group_leader_window = gdk.Window(None, 1, 1, self.WINDOW_TOPLEVEL, 0, self.INPUT_ONLY, title)
+        group_leader_window = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_ONLY, title)
         self._ref_to_group_leader[refkey] = group_leader_window
         #spec says window should point to itself
         group_leader_window.set_group(group_leader_window)

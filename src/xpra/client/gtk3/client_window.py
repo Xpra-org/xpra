@@ -77,8 +77,8 @@ GTK3 version of the ClientWindow class
 """
 class ClientWindow(GTKClientWindowBase):
 
-    WINDOW_POPUP        = Gtk.WindowType.POPUP
-    WINDOW_TOPLEVEL     = Gtk.WindowType.TOPLEVEL
+    #WINDOW_POPUP        = Gtk.WindowType.POPUP
+    #WINDOW_TOPLEVEL     = Gtk.WindowType.TOPLEVEL
     WINDOW_EVENT_MASK   = GTK3_WINDOW_EVENT_MASK
     BUTTON_MASK         = GTK3_BUTTON_MASK
     SCROLL_MAP          = GTK3_SCROLL_MAP

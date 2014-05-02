@@ -165,7 +165,7 @@ class ClipboardInstance(object):
 class ClipboardStateInfoWindow(object):
 
     def    __init__(self):
-        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.window = gtk.Window()
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(640, 300)
         self.window.set_border_width(20)

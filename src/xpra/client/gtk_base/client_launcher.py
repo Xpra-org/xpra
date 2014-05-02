@@ -15,22 +15,26 @@ import sys
 import shlex
 import signal
 
-import pygtk
-pygtk.require('2.0')
-import gtk
-from gtk import gdk
-import gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango
+
+gtk = import_gtk()
+gdk = import_gdk()
+gobject = import_gobject()
 gobject.threads_init()
-import pango
+pango = import_pango()
 
 
 from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
-from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image
+from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, is_gtk3, \
+                                    OptionMenu, \
+                                    WIN_POS_CENTER, STATE_NORMAL, RESPONSE_CANCEL, \
+                                    RESPONSE_OK, FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
 from xpra.os_util import thread
-from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
+from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
+                                    MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.client.gtk_base.about import about
 from xpra.client.client_base import SIGNAMES
 from xpra.scripts.main import connect_to, make_client
@@ -70,23 +74,28 @@ class ApplicationWindow:
         #what we save by default:
         self.config_keys = set(["username", "password", "host", "port", "mode", "ssh_port",
                                 "encoding", "quality", "min-quality", "speed", "min-speed"])
-        self.config.client_toolkit = "gtk2"
-        self.client = make_client(Exception, self.config)
+        if is_gtk3():
+            self.config.client_toolkit = "gtk3"
+        else:
+            self.config.client_toolkit = "gtk2"
+        def raise_exception(*args):
+            raise Exception(*args)
+        self.client = make_client(raise_exception, self.config)
         self.client.init(self.config)
         self.exit_code = None
 
     def create_window(self):
-        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.window = gtk.Window()
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(400, 300)
         self.window.set_border_width(20)
         self.window.set_title("Xpra Launcher")
-        self.window.modify_bg(gtk.STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
+        self.window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
 
         icon_pixbuf = self.get_icon("xpra.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
-        self.window.set_position(gtk.WIN_POS_CENTER)
+        self.window.set_position(WIN_POS_CENTER)
 
         vbox = gtk.VBox(False, 0)
         vbox.set_spacing(15)
@@ -125,7 +134,7 @@ class ApplicationWindow:
         hbox = gtk.HBox(False, 20)
         hbox.set_spacing(20)
         hbox.pack_start(gtk.Label("Encoding: "))
-        self.encoding_combo = gtk.OptionMenu()
+        self.encoding_combo = OptionMenu()
         def get_current_encoding():
             return self.config.encoding
         def set_new_encoding(e):
@@ -144,7 +153,7 @@ class ApplicationWindow:
         hbox.set_spacing(20)
         self.quality_label = gtk.Label("Quality: ")
         hbox.pack_start(self.quality_label)
-        self.quality_combo = gtk.OptionMenu()
+        self.quality_combo = OptionMenu()
         def set_min_quality(q):
             self.config.min_quality = q
         def set_quality(q):
@@ -165,7 +174,7 @@ class ApplicationWindow:
         hbox.set_spacing(20)
         self.speed_label = gtk.Label("Speed: ")
         hbox.pack_start(self.speed_label)
-        self.speed_combo = gtk.OptionMenu()
+        self.speed_combo = OptionMenu()
         def set_min_speed(s):
             self.config.min_speed = s
         def set_speed(s):
@@ -228,7 +237,7 @@ class ApplicationWindow:
         self.info = gtk.Label()
         self.info.set_line_wrap(True)
         self.info.set_size_request(360, -1)
-        self.info.modify_fg(gtk.STATE_NORMAL, red)
+        self.info.modify_fg(STATE_NORMAL, red)
         vbox.pack_start(self.info)
 
         # Buttons:
@@ -303,7 +312,7 @@ class ApplicationWindow:
     def get_icon(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
-            return gdk.pixbuf_new_from_file(icon_filename)
+            return pixbuf_new_from_file(icon_filename)
         return None
 
     def mode_changed(self, *args):
@@ -538,10 +547,10 @@ class ApplicationWindow:
 
 
     def password_ok(self, *args):
-        self.password_entry.modify_text(gtk.STATE_NORMAL, black)
+        self.password_entry.modify_text(STATE_NORMAL, black)
 
     def password_warning(self, *args):
-        self.password_entry.modify_text(gtk.STATE_NORMAL, red)
+        self.password_entry.modify_text(STATE_NORMAL, red)
         self.password_entry.grab_focus()
 
     def set_widget_bg_color(self, widget, is_error=False):
@@ -550,7 +559,7 @@ class ApplicationWindow:
         else:
             color_obj = white
         if color_obj:
-            gobject.idle_add(widget.modify_base, gtk.STATE_NORMAL, color_obj)
+            gobject.idle_add(widget.modify_base, STATE_NORMAL, color_obj)
 
     def set_widget_fg_color(self, widget, is_error=False):
         if is_error:
@@ -558,7 +567,7 @@ class ApplicationWindow:
         else:
             color_obj = black
         if color_obj:
-            gobject.idle_add(widget.modify_fg, gtk.STATE_NORMAL, color_obj)
+            gobject.idle_add(widget.modify_fg, STATE_NORMAL, color_obj)
 
 
     def update_options_from_gui(self):
@@ -623,7 +632,7 @@ class ApplicationWindow:
         log("choose_session_file(%s, %s)", title, callback)
         chooser = gtk.FileChooserDialog(title,
                                     parent=self.window, action=action,
-                                    buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, action_button, gtk.RESPONSE_OK))
+                                    buttons=(gtk.STOCK_CANCEL, RESPONSE_CANCEL, action_button, RESPONSE_OK))
         chooser.set_select_multiple(False)
         chooser.set_default_response(gtk.RESPONSE_OK)
         file_filter = gtk.FileFilter()
@@ -634,7 +643,7 @@ class ApplicationWindow:
         filenames = chooser.get_filenames()
         chooser.hide()
         chooser.destroy()
-        if response!=gtk.RESPONSE_OK or len(filenames)!=1:
+        if response!=RESPONSE_OK or len(filenames)!=1:
             return
         filename = filenames[0]
         callback(filename)
@@ -643,13 +652,13 @@ class ApplicationWindow:
         self.update_options_from_gui()
         def do_save(filename):
             save_config(filename, self.config, self.config_keys, extras={"ssh_port" : int})
-        self.choose_session_file("Save session settings to file", gtk.FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, do_save)
+        self.choose_session_file("Save session settings to file", FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, do_save)
 
     def load_clicked(self, *args):
         def do_load(filename):
             self.update_options_from_file(filename)
             self.update_gui_from_config()
-        self.choose_session_file("Load session settings from file", gtk.FILE_CHOOSER_ACTION_OPEN, gtk.STOCK_OPEN, do_load)
+        self.choose_session_file("Load session settings from file", FILE_CHOOSER_ACTION_OPEN, gtk.STOCK_OPEN, do_load)
 
 
 def main():
