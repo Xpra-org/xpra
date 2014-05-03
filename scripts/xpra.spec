@@ -193,8 +193,55 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Mar 27 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.0-1
-- TODO
+* Sat May 03 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.0-1
+- Python3 / GTK3 client support
+- NVENC module included in binary builds
+- support for enhanced dummy driver with DPI option
+- better build system with features auto-detection
+- removed unsupported CUDA csc module
+- improved buffer support
+- improved automatic encoding selection
+- support running MS Windows installer under wine
+- support for window opacity forwarding
+- support for webp encoding via native codec, python-webm or Pillow
+
+* Sat May 03 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.5-1
+- fix error when clients supply invalid screen dimensions
+- fix MS Windows build without ffmpeg
+- fix cairo backing alternative
+- fix keyboard and sound test tools initialization and cleanup
+- fix gcc version test used for enabling sanitizer build options
+- fix exception handling in client when called from the launcher
+- fix libav dependencies for Debian and Ubuntu builds 
+
+* Wed Apr 23 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.4-1
+- fix xpra shadow subcommand
+- fix xpra shadow keyboard mapping support for non-posix clients
+- avoid Xorg dummy warning in log
+
+* Wed Apr 09 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.3-1
+- fix mispostioned windows
+- fix quickly disappearing windows (often menus)
+- fix server errors when closing windows
+- fix NVENC server initialization crash with driver version mismatch
+- fix rare invalid memory read with XShm
+- fix webp decoder leak
+- fix memory leak on client disconnection
+- fix focus errors if windows disappear
+- fix mmap errors on window close
+- fix incorrect x264 encoder speed reported via "xpra info"
+- fix potential use of mmap as an invalid fallback for video encoding
+- fix logging errors in debug mode
+- fix timer expired warning
+
+* Sun Mar 30 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.2-1
+- fix switching to RGB encoding via client tray
+- fix remote server start via SSH
+- fix workspace change detection causing slow screen updates
+
+* Thu Mar 27 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.1-1
+- fix 32-bit server timestamps
+- fix client PNG handling on installations without PIL / Pillow
 
 * Sun Mar 23 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
 - NVENC support for YUV444 mode, support for automatic bitrate tuning
