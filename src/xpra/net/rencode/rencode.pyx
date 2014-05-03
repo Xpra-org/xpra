@@ -260,6 +260,11 @@ cdef encode_dict(char **buf, int *pos, x):
             encode(buf, pos, v)
         write_buffer_char(buf, pos, CHR_TERM)
 
+cdef object MIN_SIGNED_INT = - 2**31
+cdef object MAX_SIGNED_INT = 2**31
+cdef object MIN_SIGNED_LONGLONG = - 2**63
+cdef object MAX_SIGNED_LONGLONG = 2**63
+
 cdef encode(char **buf, int *pos, data):
     t = type(data)
     if t == int or t == long:
@@ -267,9 +272,9 @@ cdef encode(char **buf, int *pos, data):
             encode_char(buf, pos, data)
         elif -32768 <= data < 32768:
             encode_short(buf, pos, data)
-        elif -2147483648 <= data < 2147483648:
+        elif MIN_SIGNED_INT <= data < MAX_SIGNED_INT:
             encode_int(buf, pos, data)
-        elif -9223372036854775808 <= data < 9223372036854775808:
+        elif MIN_SIGNED_LONGLONG <= data < MAX_SIGNED_LONGLONG:
             encode_long_long(buf, pos, data)
         else:
             s = str(data)
