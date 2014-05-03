@@ -141,7 +141,7 @@ else:
     OptionMenu  = gtk.OptionMenu
 
     def GetClipboard(selection):
-        return gtk.Clipboard(selection)
+        return gtk.Clipboard(selection=selection)
 
 def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
     #update props given:
