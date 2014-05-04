@@ -54,9 +54,6 @@
 %define requires_x264 , x264-libs
 %define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %define requires_opengl , PyOpenGL, pygtkglext, python-numeric, numpy
-%if %(egrep -q 'release 20|release 21' /etc/redhat-release && echo 1 || echo 0)
-%define avcodec_build_args --without-dec_avcodec --with-dec_avcodec2
-%endif
 %endif
 
 %if 0%{?el7}
