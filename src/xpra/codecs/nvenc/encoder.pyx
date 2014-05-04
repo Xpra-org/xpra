@@ -1114,6 +1114,7 @@ def get_spec(encoding, colorspace):
     cs.get_runtime_factor = get_runtime_factor
     return cs
 
+PRETTY_VERSION = [x for x in format(NVENCAPI_VERSION, 'x')]
 
 def get_version():
     return NVENCAPI_VERSION
@@ -1122,7 +1123,7 @@ def get_type():
     return "nvenc"
 
 def get_info():
-    return  {"version"          : get_version()}
+    return  {"version"          : PRETTY_VERSION}
 
 def get_encodings():
     return ["h264"]
@@ -2032,6 +2033,7 @@ def init_module():
             test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
         finally:
             test_encoder.clean()
+    log.info("NVENC version %s successfully initialized", ".".join(PRETTY_VERSION))
 
 def cleanup_module():
     log("nvenc.cleanup_module()")

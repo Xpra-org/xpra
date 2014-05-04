@@ -59,9 +59,8 @@ def init_all_devices():
     driver.init()
     DEVICES = []
     log("CUDA driver version=%s", driver.get_driver_version())
-    log.info("PyCUDA version=%s", pycuda.VERSION_TEXT)
     ngpus = driver.Device.count()
-    log.info("CUDA version=%s found %s device(s):", ".".join([str(x) for x in driver.get_version()]), ngpus)
+    log.info("CUDA %s, PyCUDA %s  found %s device(s):", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus)
     da = driver.device_attribute
     cf = driver.ctx_flags
     for i in range(ngpus):
