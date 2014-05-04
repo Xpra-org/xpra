@@ -175,6 +175,16 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             glMultiTexCoord2i, \
             glVertex2i, glEnd)
 
+        glEnablei = None
+        try:
+            from OpenGL.GL import glEnablei
+        except:
+            pass
+        if not bool(glEnablei):
+            log.warn("OpenGL glEnablei is not available, disabling transparency")
+            global HAS_ALPHA
+            HAS_ALPHA = False
+
         #check for framebuffer functions we need:
         from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, \
             GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
