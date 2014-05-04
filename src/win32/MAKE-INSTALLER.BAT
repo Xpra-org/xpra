@@ -132,7 +132,7 @@ GOTO MAKEINSTALLER
 
 
 :PYTHON3
-SET EXTRA_VERSION=-GTK3
+SET EXTRA_VERSION=-GTK3-py%PYTHON_MAJOR_VERSION%%PYTHON_MINOR_VERSION%
 REM cx_freeze and lib2to3 build_py overrides don't get on..
 REM so we have to run the build in a temporary directory
 REM where we can run 2to3 before cx_freeze:
