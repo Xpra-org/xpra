@@ -44,21 +44,22 @@ REM Record Version Info
 
 SET VERSION=ERROR
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print(__version__)"') DO set VERSION=%%i
-ECHO Building Xpra Version %VERSION%
+ECHO Building Xpra Version  %VERSION%
 SET SVNVERSION=ERROR
 FOR /F "delims=" %%i IN ('%SVNVERSION_EXE% -n') DO set SVNVERSION=%%i
-ECHO Found svnversion=%SVNVERSION%
+ECHO Found svnversion       %SVNVERSION%
 SET REVISION=
 FOR /F "tokens=2 delims=:" %%G IN ("%SVNVERSION%") DO set REVISION=%%G
 IF [%REVISION%]==[] set REVISION=%SVNVERSION%
 SET FULL_VERSION=%VERSION%-r%REVISION%
-ECHO Full version=%FULL_VERSION%
+ECHO Full version           %FULL_VERSION%
 
 
-ECHO ****** Clearing build directory (you can ignore any errors here)
-RMDIR /S /Q %BUILD_DIR% dist Output Temp
-DEL /Q Xpra_Setup*.exe
-DEL /Q cx_freeze-xpra.log build-xpra.log py2exe-xpra.log innosetup.log
+ECHO ***************************************************************
+ECHO ****** Clearing build directory
+RMDIR /S /Q %BUILD_DIR% dist Output Temp 2> NUL
+DEL /Q Xpra_Setup*.exe 2> NUL
+DEL /Q cx_freeze-xpra.log build-xpra.log py2exe-xpra.log innosetup.log 2> NUL
 
 if NOT "%VC%"=="" (
 	ECHO ***************************************************************
@@ -138,13 +139,14 @@ REM so we have to run the build in a temporary directory
 REM where we can run 2to3 before cx_freeze:
 set SOURCE_DIRECTORY=%cd%
 MKDIR Temp
-ECHO ****** Copying source into Temp
+ECHO ***************************************************************
+ECHO ****** PYTHON3: copying source into Temp
 FOR %%a in (etc html5 icons scripts tests win32 xpra) DO (
 	echo|set /p=* %%a : 
 	XCOPY /I /Y /S /Q %%a Temp\%%a\
 )
 FOR %%a in (setup.py add_build_info.py MANIFEST.in README NEWS COPYING) DO (
-	COPY %%a Temp\
+	COPY /Y %%a Temp\ > NUL
 )
 cd Temp
 ECHO using 2to3 to convert to py3k syntax:
@@ -164,21 +166,18 @@ XCOPY /I /Y /S /Q Temp\build\exe.win32-%PYTHON_MAJOR_VERSION%.%PYTHON_MINOR_VERS
 
 :MAKEINSTALLER
 ECHO ****** Adding TortoisePlink
-ECHO "%TORTOISESVN%\bin\TortoisePlink.exe"
-ECHO "%TORTOISESVN%\Putty-License.txt"
 REM "These are the versions currently used by TortoisePlink.exe: VC 2012 redist.."
-COPY /B /Y /V "C:\WINDOWS\system32\msvcr110.dll" dist\
-COPY /B /Y /V "C:\WINDOWS\system32\msvcp110.dll" dist\
-COPY /B /Y /V "%TORTOISESVN%\bin\TortoisePlink.exe" dist\Plink.exe
-COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" dist\
+COPY /B /Y /V "C:\WINDOWS\system32\msvcr110.dll" dist\ > NUL
+COPY /B /Y /V "C:\WINDOWS\system32\msvcp110.dll" dist\ > NUL
+COPY /B /Y /V "%TORTOISESVN%\bin\TortoisePlink.exe" dist\Plink.exe > NUL
+COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" dist\ > NUL
 
 
 ECHO ***************************************************************
-ECHO ****** InnoSetup
-COPY win32\xpra.iss xpra.iss
+ECHO ****** Creating the installer using InnoSetup:
+COPY /Y win32\xpra.iss xpra.iss > NUL
 ECHO "%INNOSETUP%" xpra.iss ^> innosetup.log
 "%INNOSETUP%" xpra.iss > innosetup.log
-ECHO returncode: %errorlevel%
 if %errorlevel% NEQ 0 (
 	ECHO "InnoSetup error"
 	GOTO ERROR
