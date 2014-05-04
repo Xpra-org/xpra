@@ -920,7 +920,7 @@ if WIN32:
                            'libpangowin32-1.0-0.dll',
                            'libpng16-16.dll',
                            #ie: python33
-                           'libpyglib-gi-2.0-python%s%s-0.dll' % (sys.version_info[0], sys.version_info[0]),
+                           'libpyglib-gi-2.0-python%s%s-0.dll' % (sys.version_info[0], sys.version_info[1]),
                            'librsvg-2-2.dll',
                            'libwebp-4.dll',
                            'libwinpthread-1.dll',
