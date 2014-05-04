@@ -7,16 +7,14 @@ from xpra.scripts.config import python_platform
 #only imported to make sure we can get hold of a reference to the real "platform" module
 assert python_platform 
 from xpra.version_util import get_version_info, get_platform_info, get_host_info
-from xpra.util import nonl
+from xpra.util import nonl, pver
 
 
 def main():
     def print_dict(d):
         for k in sorted(d.keys()):
             v = d[k]
-            if type(v) in (list, tuple):
-                v = " ".join([str(x) for x in v])
-            print("* %s : %s" % (k.ljust(32), nonl(str(v))))
+            print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
     from xpra.platform import init, clean
     try:
         init("Version-Info", "Version Info")

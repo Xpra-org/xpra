@@ -349,6 +349,7 @@ def check_support(min_texture_size=0, force_enable=False):
 
 def main():
     from xpra.platform import init,clean
+    from xpra.util import pver
     try:
         init("OpenGL-Check")
         if "-v" in sys.argv or "--verbose" in sys.argv:
@@ -371,7 +372,7 @@ def main():
         for k,v in props.items():
             #skip not human readable:
             if k not in ("extensions", "glconfig"):
-                log.info("  %s : %s", str(k).ljust(24), v)
+                log.info("* %s : %s", str(k).ljust(24), pver(v))
         return len(errors)
     finally:
         clean()

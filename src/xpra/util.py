@@ -272,6 +272,15 @@ def detect_leaks(log, detailed=[]):
     return print_leaks
 
 
+def pver(v):
+    #print for lists with version numbers, or CSV strings
+    if type(v) in (list, tuple):
+        types = list(set([type(x) for x in v]))
+        if len(types)==1 and types[0]==int:
+            return ".".join([str(x) for x in v])
+        if len(types)==1 and types[0]==str:
+            return ", ".join(v)
+    return v
 
 def std(_str, extras="-,./ "):
     def f(v):
