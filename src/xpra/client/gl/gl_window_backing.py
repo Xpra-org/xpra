@@ -152,6 +152,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()
             if rgba:
+                log("%s.__init__() using rgba colormap %s", rgba)
                 self._backing.set_colormap(rgba)
             else:
                 log.warn("failed to enable transparency on screen %s", screen)
