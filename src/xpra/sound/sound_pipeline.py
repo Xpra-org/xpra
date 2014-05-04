@@ -106,12 +106,6 @@ class SoundPipeline(gobject.GObject):
     def on_message(self, bus, message):
         #log("on_message(%s, %s)", bus, message)
         t = message.type
-        try:
-            #Gst 1.0:
-            structure = message.get_structure()
-        except:
-            #Gst 0.10:
-            structure = message.structure
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
             log.info("sound source EOS")
@@ -124,32 +118,13 @@ class SoundPipeline(gobject.GObject):
             self.state = "error"
             self.emit("state-changed", self.state)
         elif t == gst.MESSAGE_TAG:
-            if structure.has_field("bitrate"):
-                new_bitrate = int(structure["bitrate"])
-                self.update_bitrate(new_bitrate)
-            elif structure.has_field("codec"):
-                desc = structure["codec"]
-                if self.codec_description!=desc:
-                    log.info("codec: %s", desc)
-                    self.codec_description = desc
-            elif structure.has_field("audio-codec"):
-                desc = structure["audio-codec"]
-                if self.codec_description!=desc:
-                    log.info("using audio codec: %s", desc)
-                    self.codec_description = desc
-            elif structure.has_field("mode"):
-                mode = structure["mode"]
-                if self.codec_mode!=mode:
-                    log("mode: %s", mode)
-                    self.codec_mode = mode
-            else:
-                #these, we know about, so we just log them:
-                for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode"):
-                    if structure.has_field(x):
-                        v = structure[x]
-                        log("tag message: %s = %s", x, v)
-                        return      #handled
-                log.info("unknown sound pipeline tag message: %r", structure)
+            try:
+                #Gst 0.10:
+                assert message.structure is not None, "test for pygst / 0.10"
+                self.parse_message0(message)
+            except:
+                #Gst 1.0:
+                self.parse_message1(message)
         elif t == gst.MESSAGE_STREAM_STATUS:
             log("stream status: %s", message)
         elif t == gst.MESSAGE_STREAM_START:
@@ -176,4 +151,69 @@ class SoundPipeline(gobject.GObject):
             log.warn("pipeline warning: %s", w[0].message)
             log.info("pipeline warning: %s", w[1:])
         else:
-            log.info("unhandled bus message type %s: %s / %s", t, message, structure)
+            log.info("unhandled bus message type %s: %s", t, message)
+
+    def parse_message0(self, message):
+        #message parsing code for GStreamer 0.10
+        structure = message.structure
+        found = False
+        if structure.has_field("bitrate"):
+            new_bitrate = int(structure["bitrate"])
+            self.update_bitrate(new_bitrate)
+            found = True
+        if structure.has_field("codec"):
+            desc = structure["codec"]
+            if self.codec_description!=desc:
+                log.info("codec: %s", desc)
+                self.codec_description = desc
+            found = True
+        if structure.has_field("audio-codec"):
+            desc = structure["audio-codec"]
+            if self.codec_description!=desc:
+                log.info("using audio codec: %s", desc)
+                self.codec_description = desc
+            found = True
+        if structure.has_field("mode"):
+            mode = structure["mode"]
+            if self.codec_mode!=mode:
+                log("mode: %s", mode)
+                self.codec_mode = mode
+            found = True
+        if not found:
+            #these, we know about, so we just log them:
+            for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode"):
+                if structure.has_field(x):
+                    v = structure[x]
+                    log("tag message: %s = %s", x, v)
+                    return      #handled
+            log.info("unknown sound pipeline tag message %s: %s", message, structure)
+
+    def parse_message1(self, message):
+        #message parsing code for GStreamer 1.x
+        taglist = message.parse_tag()
+        tags = [taglist.nth_tag_name(x) for x in range(taglist.n_tags())]
+        log("bus message with tags=%s", tags)
+        if "bitrate" in tags:
+            new_bitrate = taglist.get_uint("bitrate")
+            if new_bitrate[0] is True:
+                self.update_bitrate(new_bitrate[1])
+        if "codec" in tags:
+            desc = taglist.get_string("codec")
+            if desc[0] is True and self.codec_description!=desc[1]:
+                log.info("codec: %s", desc[1])
+                self.codec_description = desc[1]
+        if "audio-codec" in tags:
+            desc = taglist.get_string("audio-codec")
+            if desc[0] is True and self.codec_description!=desc[1]:
+                log.info("using audio codec: %s", desc[1])
+                self.codec_description = desc[1]
+        if "mode" in tags:
+            mode = taglist.get_string("mode")
+            if mode[0] is True and self.codec_mode!=mode[1]:
+                log("mode: %s", mode[1])
+                self.codec_mode = mode[1]
+        if len([x for x in tags if x in ("bitrate", "codec", "audio-codec", "mode")])==0:
+            #no match yet
+            if len([x for x in tags if x in ("minimum-bitrate", "maximum-bitrate", "channel-mode")])==0:
+                structure = message.get_structure()
+                log.info("unknown sound pipeline tag message: %s", structure.to_string())
