@@ -260,10 +260,12 @@ cdef encode_dict(char **buf, int *pos, x):
             encode(buf, pos, v)
         write_buffer_char(buf, pos, CHR_TERM)
 
-cdef object MIN_SIGNED_INT = - 2**31
 cdef object MAX_SIGNED_INT = 2**31
-cdef object MIN_SIGNED_LONGLONG = - 2**63
-cdef object MAX_SIGNED_LONGLONG = 2**63
+cdef object MIN_SIGNED_INT = -MAX_SIGNED_INT
+#note: negating the Python value avoids compiler problems
+#(negating the "long long" constant can make it unsigned with some compilers!) 
+cdef object MAX_SIGNED_LONGLONG = int(2**63)
+cdef object MIN_SIGNED_LONGLONG = -MAX_SIGNED_LONGLONG
 
 cdef encode(char **buf, int *pos, data):
     t = type(data)
