@@ -26,7 +26,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.platform import set_application_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
-from xpra.version_util import version_compat_check, add_version_info, get_platform_info
+from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps, repr_ellipsized
 from xpra.server.background_worker import stop_worker
 from xpra.daemon_thread import make_daemon_thread
@@ -40,21 +40,10 @@ MAX_CONCURRENT_CONNECTIONS = 20
 
 def get_server_info(prefix=""):
     #this function is for non UI thread info
-    info = {
-            prefix+"pid"                : os.getpid(),
-            prefix+"byteorder"          : sys.byteorder,
-            prefix+"hostname"           : socket.gethostname(),
-            prefix+"python.full_version": sys.version,
-            prefix+"python.version"     : sys.version_info[:3],
-            }
-    for x in ("uid", "gid"):
-        if hasattr(os, "get%s" % x):
-            try:
-                info[prefix+x] = getattr(os, "get%s" % x)()
-            except:
-                pass
-    info.update(get_platform_info(prefix))
-    add_version_info(info, prefix)
+    info = {}
+    info.update(get_host_info(prefix))
+    info.update(get_platform_info(prefix+"platform."))
+    info.update(get_version_info(prefix+"build."))
     return info
 
 def get_thread_info(prefix="", proto=None):
@@ -258,7 +247,7 @@ class ServerCore(object):
         return "server"
 
     def run(self):
-        log.info("xpra %s version %s", self.get_server_mode(), xpra.__version__)
+        log.info("xpra %s version %s", self.get_server_mode(), local_version)
         log.info("running with pid %s", os.getpid())
         signal.signal(signal.SIGTERM, self.signal_quit)
         signal.signal(signal.SIGINT, self.signal_quit)
@@ -585,6 +574,7 @@ class ServerCore(object):
         capabilities = get_network_caps()
         capabilities.update(get_server_info())
         capabilities.update({
+                        "version"               : xpra.__version__,
                         "start_time"            : int(self.start_time),
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),
@@ -599,7 +589,7 @@ class ServerCore(object):
             capabilities["session_name"] = self.session_name
         if self._reverse_aliases:
             capabilities["aliases"] = self._reverse_aliases
-        add_version_info(capabilities)
+        capabilities.update(get_version_info())
         return capabilities
 
 

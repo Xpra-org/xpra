@@ -17,7 +17,7 @@ log = Logger("client")
 
 from xpra.net.protocol import Protocol, use_lz4, use_rencode, get_network_caps
 from xpra.scripts.config import ENCRYPTION_CIPHERS
-from xpra.version_util import version_compat_check, add_version_info, get_platform_info
+from xpra.version_util import version_compat_check, get_version_info, get_platform_info, local_version
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
@@ -216,6 +216,7 @@ class XpraClientBase(object):
     def make_hello_base(self):
         capabilities = get_network_caps()
         capabilities.update({
+                "version"               : local_version,
                 "encoding.generic"      : True,
                 "namespace"             : True,
                 "hostname"              : socket.gethostname(),
@@ -228,8 +229,8 @@ class XpraClientBase(object):
                 })
         if self.display:
             capabilities["display"] = self.display
-        capabilities.update(get_platform_info())
-        add_version_info(capabilities)
+        capabilities.update(get_platform_info("platform."))
+        capabilities.update(get_version_info("build."))
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid
@@ -503,6 +504,8 @@ class XpraClientBase(object):
         try:
             handler = None
             packet_type = packet[0]
+            if packet_type!=int:
+                packet_type = bytestostr(packet_type)
             handler = self._packet_handlers.get(packet_type)
             if handler:
                 handler(packet)

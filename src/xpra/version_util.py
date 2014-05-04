@@ -3,6 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#try to ensure we can access the python "platform" module
+from __future__ import absolute_import
+
+import platform as python_platform
 import sys
 from xpra import __version__ as local_version
 from xpra.log import Logger
@@ -35,34 +39,61 @@ def version_compat_check(remote_version):
     log("local version %s should be compatible with remote version: %s", local_version, remote_version)
     return None
 
-def add_version_info(props, version_prefix=""):
-    props[version_prefix+"version"] = local_version
+def get_host_info(prefix=""):
+    #this function is for non UI thread info
+    info = {}
+    import os
+    try:
+        import socket
+        info.update({
+            prefix+"pid"                : os.getpid(),
+            prefix+"byteorder"          : sys.byteorder,
+            prefix+"hostname"           : socket.gethostname(),
+            prefix+"python.full_version": sys.version,
+            prefix+"python.version"     : sys.version_info[:3],
+            })
+    except:
+        pass
+    for x in ("uid", "gid"):
+        if hasattr(os, "get%s" % x):
+            try:
+                info[prefix+x] = getattr(os, "get%s" % x)()
+            except:
+                pass
+    return info
+
+def get_version_info(prefix=""):
+    props = {
+             prefix+"version" : local_version
+             }
     try:
         from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
         from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU
-        props[version_prefix+"build.local_modifications"] = LOCAL_MODIFICATIONS
-        props[version_prefix+"build.date"] = BUILD_DATE
-        props[version_prefix+"build.by"] = BUILT_BY
-        props[version_prefix+"build.on"] = BUILT_ON
-        props[version_prefix+"build.bit"] = BUILD_BIT
-        props[version_prefix+"build.cpu"] = BUILD_CPU
-        props[version_prefix+"build.revision"] = REVISION
+        props.update({
+            prefix+"local_modifications"  : LOCAL_MODIFICATIONS,
+            prefix+"date"                 : BUILD_DATE,
+            prefix+"by"                   : BUILT_BY,
+            prefix+"on"                   : BUILT_ON,
+            prefix+"bit"                  : BUILD_BIT,
+            prefix+"cpu"                  : BUILD_CPU,
+            prefix+"revision"             : REVISION,
+          })
     except:
         pass
+    return props
 
 def do_get_platform_info():
-    from xpra.scripts.config import python_platform
     from xpra.os_util import platform_name
     info = {
-            "platform"           : sys.platform,
-            "platform.name"      : platform_name(sys.platform, python_platform.release()),
-            "platform.release"   : python_platform.release(),
-            "platform.platform"  : python_platform.platform(),
-            "platform.machine"   : python_platform.machine(),
-            "platform.processor" : python_platform.processor(),
+            ""          : sys.platform,
+            "name"      : platform_name(sys.platform, python_platform.release()),
+            "release"   : python_platform.release(),
+            "platform"  : python_platform.platform(),
+            "machine"   : python_platform.machine(),
+            "processor" : python_platform.processor(),
             }
     if sys.platform.startswith("linux") and hasattr(python_platform, "linux_distribution"):
-        info["platform.linux_distribution"] = python_platform.linux_distribution()
+        info["linux_distribution"] = python_platform.linux_distribution()
     return info
 #cache the output:
 platform_info_cache = None
@@ -78,13 +109,3 @@ def get_platform_info(prefix=""):
     for k,v in get_platform_info_cache().items():
         info[prefix+k] = v
     return info
-
-
-def main():
-    d = {}
-    add_version_info(d)
-    print("version_info=%s" % d)
-
-
-if __name__ == "__main__":
-    main()
