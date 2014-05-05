@@ -1113,7 +1113,7 @@ def get_runtime_factor():
     return f
 
 def get_spec(encoding, colorspace):
-    assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (format, get_encodings())
+    assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     cs = video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
