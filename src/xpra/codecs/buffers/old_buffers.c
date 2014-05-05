@@ -14,6 +14,10 @@ int get_version(void) {
     return 0;
 }
 
+#if (PY_VERSION_HEX < 0x02050000)
+typedef int Py_ssize_t;
+#endif
+
 PyObject *memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
     if (readonly)
         return PyBuffer_FromMemory(ptr, buf_len);
