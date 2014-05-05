@@ -132,7 +132,7 @@ def get_platform_name():
         return "Microsoft Windows"
     if sys.platform.find("bsd")>=0:
         return "BSD"
-    if sys.platform.find("linux")>=0:
+    if sys.platform.find("linux")>=0 and hasattr(platform, "linux_distribution"):
         return "Linux %s" % (" ".join(platform.linux_distribution()))
     return sys.platform
     
