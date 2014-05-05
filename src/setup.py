@@ -208,7 +208,8 @@ if "clean" not in sys.argv:
         switches_info[x] = vars()["%s_ENABLED" % x]
     print("build switches:")
     for k in sorted(switches_info.keys()):
-        print("* %s : %s" % (str(k).ljust(32), switches_info[k]))
+        v = switches_info[k]
+        print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
     if LOCAL_SERVERS_SUPPORTED:
         print("Xdummy build flag: %s" % Xdummy_ENABLED)
 
