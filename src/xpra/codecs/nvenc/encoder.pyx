@@ -7,6 +7,7 @@ import binascii
 import time
 import os
 import numpy
+import array
 
 import pycuda
 from pycuda import driver
@@ -922,14 +923,14 @@ cdef guidstr(GUID guid):
     #is this even endian safe? do we care? (always on the same system)
     parts = []
     for v, s in ((guid.Data1, 4), (guid.Data2, 2), (guid.Data3, 2)):
-        b = bytearray(s)
+        b = array.array('B', [0 for _ in range(s)])
         for j in range(s):
             b[s-j-1] = v % 256
             v = v / 256
-        parts.append(b)
+        parts.append(b.tostring())
     parts.append(bytearray(guid.get("Data4")[:2]))
     parts.append(bytearray(guid.get("Data4")[2:8]))
-    s = "-".join([binascii.hexlify(str(b)).upper() for b in parts])
+    s = "-".join([binascii.hexlify(b).upper() for b in parts])
     #log.info("guidstr(%s)=%s", guid, s)
     return s
 
