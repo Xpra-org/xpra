@@ -60,7 +60,7 @@ def init_all_devices():
     DEVICES = []
     log("CUDA driver version=%s", driver.get_driver_version())
     ngpus = driver.Device.count()
-    log.info("CUDA %s, PyCUDA %s  found %s device(s):", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus)
+    log.info("CUDA %s / PyCUDA %s, found %s device(s):", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus)
     da = driver.device_attribute
     cf = driver.ctx_flags
     for i in range(ngpus):
@@ -90,7 +90,7 @@ def init_all_devices():
             log("   compute capability: %#x (%s.%s)", compute, SMmajor, SMminor)
             try:
                 DEVICES.append(i)
-                log.info(" + %s (memory %s%% free, compute %#x)", device_info(device), 100*free/total, compute)
+                log.info("  + %s (memory: %s%% free, compute: %s.%s)", device_info(device), 100*free/total, SMmajor, SMminor)
             finally:
                 context.pop()
         except Exception, e:
