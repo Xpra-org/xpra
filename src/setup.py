@@ -210,8 +210,6 @@ if "clean" not in sys.argv:
     for k in sorted(switches_info.keys()):
         v = switches_info[k]
         print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
-    if LOCAL_SERVERS_SUPPORTED:
-        print("Xdummy build flag: %s" % Xdummy_ENABLED)
 
     #sanity check the flags:
     if clipboard_ENABLED and not server_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
@@ -309,13 +307,16 @@ def add_modules(*mods):
     """
     global modules
     for x in mods:
-        if x not in modules:
-            modules.append(x)
         pathname = os.path.sep.join(x.split("."))
+        #is this a file module?
+        f = "%s.py" % pathname
+        if os.path.exists(f) and os.path.isfile(f):
+            if x not in modules:
+                modules.append(x)
         if os.path.exists(pathname) and os.path.isdir(pathname):
             #add all file modules found in this directory
             for f in os.listdir(pathname):
-                if f.endswith(".py") and f.find("Copy ")<0:
+                if f.endswith(".py") and f.find("Copy ")<0 and f.find("__init__")<0:
                     fname = os.path.join(pathname, f)
                     if os.path.isfile(fname):
                         modname = "%s.%s" % (x, f.replace(".py", ""))
