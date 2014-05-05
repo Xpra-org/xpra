@@ -928,8 +928,8 @@ cdef guidstr(GUID guid):
             b[s-j-1] = v % 256
             v = v / 256
         parts.append(b.tostring())
-    parts.append(bytearray(guid.get("Data4")[:2]))
-    parts.append(bytearray(guid.get("Data4")[2:8]))
+    parts.append(array.array('B', (guid.get("Data4")[:2])).tostring())
+    parts.append(array.array('B', (guid.get("Data4")[2:8])).tostring())
     s = "-".join([binascii.hexlify(b).upper() for b in parts])
     #log.info("guidstr(%s)=%s", guid, s)
     return s
@@ -952,10 +952,10 @@ cdef GUID c_parseguid(src):
     parts = src.split("-")    #ie: ["CE788D20", "AAA9", ...]
     nparts = []
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
-        b = bytearray(binascii.unhexlify(parts[i]))
+        b = array.array('B', (binascii.unhexlify(parts[i]))).tostring()
         v = 0
         for j in range(s):
-            v += b[j]<<((s-j-1)*8)
+            v += ord(b[j])<<((s-j-1)*8)
         nparts.append(v)
     cdef GUID guid
     guid.Data1 = nparts[0]
