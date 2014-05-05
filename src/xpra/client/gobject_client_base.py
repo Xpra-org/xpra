@@ -10,8 +10,10 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger("gobject", "client")
 
+import sys
 import re
 from xpra.util import nonl
+from xpra.os_util import bytestostr
 from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, \
     EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR
 
@@ -166,11 +168,22 @@ class InfoXpraClient(CommandConnectClient):
                         return int(text)
                     else:
                         return text
-                alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+                alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', bytestostr(key)) ]
                 return sorted(l, key = alphanum_key)
             for k in sorted_nicely(props.keys()):
                 v = props.get(k)
-                log.info("%s=%s", k, nonl(v))
+                if sys.version_info[0]>=3:
+                    #FIXME: this is a nasty and horrible python3 workaround (yet again)
+                    #we want to print bytes as strings without the ugly 'b' prefix..
+                    #it assumes that all the strings are raw or in (possibly nested) lists or tuples only
+                    def fixvalue(w):
+                        if type(w)==bytes:
+                            return bytestostr(w)
+                        elif type(w) in (tuple,list):
+                            return type(w)([fixvalue(x) for x in w])
+                        return w
+                    v = fixvalue(v)
+                log.info("%s=%s", bytestostr(k), nonl(v))
         self.quit(0)
 
     def make_hello(self):
