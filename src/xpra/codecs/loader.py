@@ -16,6 +16,12 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
     try:
         try:
             __import__(top_module, {}, {}, [])
+        except ImportError, e:
+            log(" cannot import %s (%s): %s", name, description, e)
+            codec_errors[name] = e
+            return None
+        #module is present
+        try:
             log(" %s found, will check for %s in %s", top_module, classnames, class_module)
             for classname in classnames:
                 ic =  __import__(class_module, {}, {}, classname)
@@ -25,9 +31,7 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                 return ic
         except ImportError, e:
             codec_errors[name] = e
-            log(" cannot import %s (%s): %s", name, description, e)
-            #the required module does not exist
-            log(" xpra was probably built with the option: --without-%s", name)
+            log.warn(" cannot import %s (%s): %s", name, description, e)
     except Exception, e:
         codec_errors[name] = e
         log.warn(" cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
@@ -52,7 +56,10 @@ def add_codec_version(name, top_module, version="get_version()", alt_version=Non
                 info = getattr(module, "get_info")
                 log(" %s info(%s)=%s", name, top_module, info())
             return v
-        log.warn(" cannot find %s in %s", " or ".join(fieldnames), module)
+        if name in codecs:
+            log.warn(" cannot find %s in %s", " or ".join(fieldnames), module)
+        else:
+            log(" no version information for missing codec %s", name)
     except ImportError, e:
         #not present
         log(" cannot import %s: %s", name, e)
