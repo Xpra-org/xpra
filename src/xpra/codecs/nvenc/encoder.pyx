@@ -1128,7 +1128,11 @@ def get_spec(encoding, colorspace):
     cs.get_runtime_factor = get_runtime_factor
     return cs
 
-PRETTY_VERSION = [x for x in format(NVENCAPI_VERSION, 'x')]
+#ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
+#(in a python2.4 compatible way... convoluted)
+def phex(v):
+    return hex(v).lstrip("0x")
+PRETTY_VERSION = [int(x, 16) for x in phex(NVENCAPI_VERSION)]
 
 def get_version():
     return NVENCAPI_VERSION
