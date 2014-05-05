@@ -24,6 +24,8 @@ from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
 
+import ctypes
+from ctypes import cdll as loader, POINTER
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
@@ -43,17 +45,15 @@ cdef extern from "stdlib.h":
     void* malloc(size_t __size)
     void free(void* mem)
 
-cdef extern from "cuda.h":
-    ctypedef int CUresult
-    ctypedef void* CUcontext
-    CUresult cuCtxGetCurrent(CUcontext *pctx)
+
+CUresult = ctypes.c_int
+CUcontext = ctypes.c_void_p
 
 cdef extern from "NvTypes.h":
     pass
 
 
 cdef extern from "nvEncodeAPI.h":
-
     ctypedef int NVENCSTATUS
     ctypedef void* NV_ENC_INPUT_PTR
     ctypedef void* NV_ENC_OUTPUT_PTR
@@ -881,22 +881,35 @@ CODEC_PROFILES = {
                   }
 
 NvEncodeAPICreateInstance = None
+cuCtxGetCurrent = None
 
 def init_nvencode_library():
-    global NvEncodeAPICreateInstance
-    import ctypes
-    from ctypes import cdll as loader
+    global NvEncodeAPICreateInstance, cuCtxGetCurrent
     IF NV_WINDOWS:
-        libname = "nvencodeapi.dll"
+        nvenc_libname = "nvencodeapi.dll"
+        cuda_libname = "libcuda.dll"
     ELSE:
         #assert os.name=="posix"
-        libname = "libnvidia-encode.so"
-    log("init_nvencode_library() will try to load %s", libname)
+        nvenc_libname = "libnvidia-encode.so"
+        cuda_libname = "libcuda.so"
+    #CUDA:
+    log("init_nvencode_library() will try to load %s", cuda_libname)
     try:
-        x = ctypes.cdll.LoadLibrary(libname)
-        log("init_nvencode_library() %s=%s", libname, x)
+        x = ctypes.cdll.LoadLibrary(cuda_libname)
+        log("init_nvencode_library() %s=%s", cuda_libname, x)
     except:
-        raise Exception("nvenc: the required library %s cannot be loaded: %s" % (libname, e))
+        raise Exception("nvenc: the required library %s cannot be loaded: %s" % (cuda_libname, e))
+    cuCtxGetCurrent = x.cuCtxGetCurrent
+    cuCtxGetCurrent.restype = ctypes.c_int          # CUresult == int
+    cuCtxGetCurrent.argtypes = [POINTER(CUcontext)] # CUcontext *pctx
+    log("init_nvencode_library() %s.cuCtxGetCurrent=%s", cuda_libname, cuCtxGetCurrent)
+    #nvidia-encode:
+    log("init_nvencode_library() will try to load %s", nvenc_libname)
+    try:
+        x = ctypes.cdll.LoadLibrary(nvenc_libname)
+        log("init_nvencode_library() %s=%s", nvenc_libname, x)
+    except:
+        raise Exception("nvenc: the required library %s cannot be loaded: %s" % (nvenc_libname, e))
     NvEncodeAPICreateInstance = x.NvEncodeAPICreateInstance
     NvEncodeAPICreateInstance.restype = ctypes.c_int
     NvEncodeAPICreateInstance.argtypes = [ctypes.c_void_p]
@@ -1989,9 +2002,11 @@ cdef class Encoder:
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
         #get the CUDA context (C pointer):
-        cdef CUcontext cuda_context
-        cdef CUresult result
-        result = cuCtxGetCurrent(&cuda_context)
+        cdef void *cuda_context
+        cdef int result
+        #a bit of magic to pass a cython pointer to ctypes:
+        context_pointer = <unsigned long> (&cuda_context)
+        result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
         assert result==0, "failed to get current cuda context"
 
         #NVENC init:

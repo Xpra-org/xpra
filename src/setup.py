@@ -524,6 +524,10 @@ def pkgconfig(*pkgs_options, **ekw):
         if type(optimize)==bool:
             optimize = int(optimize)*3
         add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
+    ignored_flags = []
+    if kw.get("ignored_flags"):
+        ignored_flags = kw.get("ignored_flags")
+        del kw["ignored_flags"]
 
     if len(pkgs_options)>0:
         package_names = []
@@ -563,7 +567,9 @@ def pkgconfig(*pkgs_options, **ekw):
         if sys.version>='3':
             output = output.decode('utf-8')
         for token in output.split():
-            if token[:2] in flag_map:
+            if token[:2] in ignored_flags:
+                pass
+            elif token[:2] in flag_map:
                 add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
             else: # throw others to extra_link_args
                 add_to_keywords(kw, 'extra_link_args', token)
@@ -843,7 +849,7 @@ if WIN32:
     nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
     #let's not use crazy paths, just copy the dll somewhere that makes sense:
     nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
-    nvenc_lib_names         = ["cuda"]
+    nvenc_lib_names         = []    #not linked against it, we use dlopen!
 
     # Same for PyGTK:
     # http://www.pygtk.org/downloads.html
@@ -1084,7 +1090,7 @@ if WIN32:
     def VC_pkgconfig(*pkgs_options, **ekw):
         kw = dict(ekw)
         #remove static flag on win32..
-        for flag in ("static", ):
+        for flag in ("static", "ignored_flags"):
             if kw.get(flag) is not None:
                 del kw[flag]
         if kw.get("optimize"):
@@ -1147,7 +1153,7 @@ if WIN32:
                          nvenc_lib_names)
             add_data_files('', ["%s/nvcc.exe" % cuda_bin_dir, "%s/nvlink.exe" % cuda_bin_dir])
             #prevent py2exe "seems not to be an exe file" error on this DLL and include it ourselves instead:
-            add_data_files('', ["%s/nvcuda.dll" % cuda_bin_dir] + glob.glob("%s\\cudart*.dll" % cuda_bin_dir))
+            add_data_files('', ["%s/nvcuda.dll" % cuda_bin_dir])
             add_data_files('', ["%s/nvencodeapi.dll" % nvenc_bin_dir])
         elif "pygobject-2.0" in pkgs_options[0]:
             dirs = (python_include_path,
@@ -1442,7 +1448,7 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc", "xpra.codecs.cuda_common")
 if nvenc_ENABLED:
     make_constants("xpra", "codecs", "nvenc", "constants", NV_WINDOWS=int(sys.platform.startswith("win")))
-    nvenc_pkgconfig = pkgconfig("nvenc3", "cuda")
+    nvenc_pkgconfig = pkgconfig("nvenc3", "cuda", ignored_flags=["-l", "-L"])
     #don't link against libnvidia-encode, we load it dynamically:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
