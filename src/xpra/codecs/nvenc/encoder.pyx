@@ -2053,7 +2053,7 @@ def init_module():
             test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
         finally:
             test_encoder.clean()
-    log.info("NVENC version %s successfully initialized", ".".join(PRETTY_VERSION))
+    log.info("NVENC version %s successfully initialized", ".".join([str(x) for x in PRETTY_VERSION]))
 
 def cleanup_module():
     log("nvenc.cleanup_module()")
