@@ -174,8 +174,6 @@ BuildRequires: libXrandr-devel
 BuildRequires: desktop-file-utils
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
-#this causes problems because our optional nvenc codec is linked against cuda:
-AutoReq: no
 
 ### Patches ###
 Patch8: old-libav.patch
