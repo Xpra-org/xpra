@@ -229,8 +229,8 @@ class XpraClientBase(object):
                 })
         if self.display:
             capabilities["display"] = self.display
-        capabilities.update(get_platform_info("platform."))
-        capabilities.update(get_version_info("build."))
+        capabilities.update(get_platform_info("platform"))
+        capabilities.update(get_version_info("build"))
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid

@@ -39,25 +39,31 @@ def version_compat_check(remote_version):
     log("local version %s should be compatible with remote version: %s", local_version, remote_version)
     return None
 
+def mk(*parts):
+    #make a prefix from a list of parts
+    #(dot seperated values)
+    return ".".join([str(x) for x in parts if x])
+
 def get_host_info(prefix=""):
     #this function is for non UI thread info
     info = {}
     import os
     try:
         import socket
-        info.update({
-            prefix+"pid"                : os.getpid(),
-            prefix+"byteorder"          : sys.byteorder,
-            prefix+"hostname"           : socket.gethostname(),
-            prefix+"python.full_version": sys.version,
-            prefix+"python.version"     : sys.version_info[:3],
-            })
+        for k,v in {
+                    "pid"                   : os.getpid(),
+                    "byteorder"             : sys.byteorder,
+                    "hostname"              : socket.gethostname(),
+                    "python.full_version"   : sys.version,
+                    "python.version"        : sys.version_info[:3],
+                    }.items():
+            info[mk(prefix, k)] = v
     except:
         pass
     for x in ("uid", "gid"):
         if hasattr(os, "get%s" % x):
             try:
-                info[prefix+x] = getattr(os, "get%s" % x)()
+                info[mk(prefix, x)] = getattr(os, "get%s" % x)()
             except:
                 pass
     return info
@@ -69,15 +75,16 @@ def get_version_info(prefix=""):
     try:
         from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
         from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU
-        props.update({
-            prefix+"local_modifications"  : LOCAL_MODIFICATIONS,
-            prefix+"date"                 : BUILD_DATE,
-            prefix+"by"                   : BUILT_BY,
-            prefix+"on"                   : BUILT_ON,
-            prefix+"bit"                  : BUILD_BIT,
-            prefix+"cpu"                  : BUILD_CPU,
-            prefix+"revision"             : REVISION,
-          })
+        for k,v in {
+                    "local_modifications"  : LOCAL_MODIFICATIONS,
+                    "date"                 : BUILD_DATE,
+                    "by"                   : BUILT_BY,
+                    "on"                   : BUILT_ON,
+                    "bit"                  : BUILD_BIT,
+                    "cpu"                  : BUILD_CPU,
+                    "revision"             : REVISION,
+                  }.items():
+            props[mk(prefix, k)] = v
     except:
         pass
     return props
@@ -107,5 +114,5 @@ def get_platform_info_cache():
 def get_platform_info(prefix=""):
     info = {}
     for k,v in get_platform_info_cache().items():
-        info[prefix+k] = v
+        info[mk(prefix, k)] = v
     return info

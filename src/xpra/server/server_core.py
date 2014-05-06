@@ -42,8 +42,8 @@ def get_server_info(prefix=""):
     #this function is for non UI thread info
     info = {}
     info.update(get_host_info(prefix))
-    info.update(get_platform_info(prefix+"platform."))
-    info.update(get_version_info(prefix+"build."))
+    info.update(get_platform_info(prefix+"platform"))
+    info.update(get_version_info(prefix+"build"))
     return info
 
 def get_thread_info(prefix="", proto=None):
