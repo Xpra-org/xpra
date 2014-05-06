@@ -132,7 +132,7 @@ class WindowBackingBase(object):
                 assert has_lz4
                 img_data = LZ4_uncompress(raw_data)
         assert len(img_data) == rowstride * height, "expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" % (rowstride * height, width, height, rowstride, len(img_data), len(raw_data))
-        delta = options.get("delta", -1)
+        delta = options.intget("delta", -1)
         rgb_data = img_data
         if delta>=0:
             if not self._last_pixmap_data:
@@ -143,7 +143,7 @@ class WindowBackingBase(object):
             assert width==lwidth and height==lheight and delta==store
             rgb_data = xor_str(img_data, ldata)
         #store new pixels for next delta:
-        store = options.get("store", -1)
+        store = options.intget("store", -1)
         if store>=0:
             self._last_pixmap_data =  width, height, store, rgb_data
         return rgb_data
@@ -382,7 +382,7 @@ class WindowBackingBase(object):
         """ see _mmap_send() in server.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, img_data)
-        rgb_format = options.get("rgb_format", "RGB")
+        rgb_format = options.strget("rgb_format", "RGB")
         #Note: BGR(A) is only handled by gl_window_backing
         if rgb_format in ("RGB", "BGR"):
             self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
