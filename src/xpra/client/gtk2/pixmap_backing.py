@@ -65,8 +65,6 @@ class PixmapBacking(GTK2WindowBacking):
             cr.fill()
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        if self._backing is None:
-            return  False
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         return True
@@ -74,8 +72,6 @@ class PixmapBacking(GTK2WindowBacking):
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
         #log.info("do_paint_rgb32(%s bytes, %s, %s, %s, %s, %s, %s, %s) backing depth=%s", len(img_data), x, y, width, height, rowstride, options, callbacks, self._backing.get_depth())
         #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
-        if self._backing is None:
-            return  False
         rgba = self.unpremultiply(img_data)
         pixbuf = gdk.pixbuf_new_from_data(rgba, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
         cr = self._backing.cairo_create()
