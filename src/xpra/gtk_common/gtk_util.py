@@ -43,8 +43,10 @@ if is_gtk3():
     from gi.repository import GdkPixbuf     #@UnresolvedImport
     image_new_from_pixbuf   = gtk.Image.new_from_pixbuf
     pixbuf_new_from_file    = GdkPixbuf.Pixbuf.new_from_file
+    pixbuf_new_from_data    = GdkPixbuf.Pixbuf.new_from_data
     get_default_keymap      = gdk.Keymap.get_default
     display_get_default     = gdk.Display.get_default
+    COLORSPACE_RGB          = GdkPixbuf.Colorspace.RGB
     INTERP_HYPER    = GdkPixbuf.InterpType.HYPER
     INTERP_BILINEAR = GdkPixbuf.InterpType.BILINEAR
     RELIEF_NONE     = gtk.ReliefStyle.NONE
@@ -110,8 +112,10 @@ else:
     #gtk2:
     image_new_from_pixbuf   = gtk.image_new_from_pixbuf
     pixbuf_new_from_file    = gdk.pixbuf_new_from_file
+    pixbuf_new_from_data    = gdk.pixbuf_new_from_data
     get_default_keymap      = gdk.keymap_get_default
     display_get_default     = gdk.display_get_default
+    COLORSPACE_RGB          = gtk.gdk.COLORSPACE_RGB
     INTERP_HYPER    = gtk.gdk.INTERP_HYPER
     INTERP_BILINEAR = gdk.INTERP_BILINEAR
     RELIEF_NONE     = gtk.RELIEF_NONE
