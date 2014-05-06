@@ -923,9 +923,6 @@ def run_client(parser, opts, extra_args, mode):
         from xpra.client.gobject_client_base import DetachXpraClient
         app = DetachXpraClient(connect(), opts)
     else:
-        if mode in ("attach"):
-            sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
-            sys.stdout.flush()
         app = make_client(parser.error, opts)
         app.init(opts)
         if opts.encoding:

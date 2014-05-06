@@ -22,6 +22,7 @@ workspacelog = Logger("client", "workspace")
 dbuslog = Logger("client", "dbus")
 grablog = Logger("client", "grab")
 
+from xpra import __version__ as XPRA_VERSION
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
@@ -67,6 +68,7 @@ class UIXpraClient(XpraClientBase):
 
     def __init__(self):
         XpraClientBase.__init__(self)
+        log.info("xpra client version %s" % XPRA_VERSION)
         gui_init()
         self.start_time = time.time()
         self._window_to_id = {}
