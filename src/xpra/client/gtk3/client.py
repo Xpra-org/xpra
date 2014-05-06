@@ -52,6 +52,13 @@ class XpraClient(GTKXpraClient):
                 log("failed to load the GTK3 notification class: %s", e)
         return ncs
 
+    def do_get_core_encodings(self):
+        cencs = GTKXpraClient.do_get_core_encodings(self)
+        for x in ("webp", ):
+            if x in cencs:
+                cencs.remove(x)
+        return cencs
+
 
     def get_tray_menu_helper_classes(self):
         tmhc = GTKXpraClient.get_tray_menu_helper_classes(self)
