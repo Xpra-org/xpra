@@ -273,7 +273,7 @@ cdef class Decoder:
     cdef AVCodecContext *codec_ctx
     cdef AVPixelFormat pix_fmt
     cdef AVPixelFormat actual_pix_fmt
-    cdef char *colorspace
+    cdef object colorspace
     cdef object framewrappers
     cdef object weakref_images
     #we usually use just one, but 3-pass decoding will use all 3
@@ -294,12 +294,12 @@ cdef class Decoder:
         self.width = width
         self.height = height
         assert colorspace in COLORSPACES, "invalid colorspace: %s" % colorspace
-        self.colorspace = NULL
+        self.colorspace = ""
         for x in COLORSPACES:
             if x==colorspace:
                 self.colorspace = x
                 break
-        if self.colorspace==NULL:
+        if not self.colorspace:
             log.error("invalid pixel format: %s", colorspace)
             return  False
         self.pix_fmt = FORMAT_TO_ENUM.get(colorspace, PIX_FMT_NONE)
