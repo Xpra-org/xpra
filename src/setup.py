@@ -115,6 +115,8 @@ cymaths_ENABLED         = True
 cyxor_ENABLED           = True
 clipboard_ENABLED       = not PYTHON3
 Xdummy_ENABLED          = None          #None means auto-detect
+if WIN32 or OSX:
+    Xdummy_ENABLED = False
 sound_ENABLED           = True
 
 enc_proxy_ENABLED       = True
@@ -883,85 +885,146 @@ if WIN32:
         if PYTHON3:
             from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
             import site
+            #ie: C:\Python3.5\Lib\site-packages\
+            site_dir = site.getsitepackages()[1]
+            #this is where the installer I have used put things:
+            include_dll_path = os.path.join(site_dir, "gnome")
 
             #cx_freeze doesn't use "data_files"...
             del setup_options["data_files"]
             #it wants source files first, then where they are placed...
             #one item at a time (no lists)
-            #all in its own structure called "include_files"
+            #all in its own structure called "include_files" instead of "data_files"...
             def add_data_files(target_dir, files):
+                print("add_data_files(%s, %s)" % (target_dir, files))
                 assert type(target_dir)==str
                 assert type(files) in (list, tuple)
                 for f in files:
                     target_file = os.path.join(target_dir, os.path.basename(f))
                     data_files.append((f, target_file))
 
-            #ie: C:\Python3.5\Lib\site-packages\
-            site_dir = site.getsitepackages()[1]
-            #this is where the installer I have used put things:
-            include_dll_path = os.path.join(site_dir, "gnome")
-            missing_dll = [
-                           'libatk-1.0-0.dll',
-                           'libcairo-gobject-2.dll',
-                           'libdbus-1-3.dll',
-                           'libdbus-glib-1-2.dll',
-                           'libgdk-3-0.dll',
-                           'libgdk_pixbuf-2.0-0.dll',
-                           'libgdkglext-3.0-0.dll',
-                           'libgio-2.0-0.dll',
-                           'libgirepository-1.0-1.dll',
-                           'libglib-2.0-0.dll',
-                           'libgnutls-26.dll',
-                           'libgobject-2.0-0.dll',
-                           'libgthread-2.0-0.dll',
-                           'libgtk-3-0.dll',
-                           'libgtkglext-3.0-0.dll',
-                           'libharfbuzz-gobject-0.dll',
-                           'libintl-8.dll',
-                           'libjpeg-8.dll',
-                           'liborc-0.4-0.dll',
-                           'libp11-kit-0.dll',
-                           'libproxy.dll',
-                           'libpango-1.0-0.dll',
-                           'libpangocairo-1.0-0.dll',
-                           'libpangoft2-1.0-0.dll',
-                           'libpangowin32-1.0-0.dll',
-                           'libpng16-16.dll',
-                           #ie: python33
-                           'libpyglib-gi-2.0-python%s%s-0.dll' % (sys.version_info[0], sys.version_info[1]),
-                           'librsvg-2-2.dll',
-                           'libwebp-4.dll',
-                           'libwinpthread-1.dll',
-                           'libzzz.dll',
-                           ]
+            #pass a potentially nested dictionary representing the tree
+            #of files and directories we do want to include
+            #relative to include_dll_path
+            def add_dir(base, defs):
+                print("add_dir(%s, %s)" % (base, defs))
+                if type(defs) in (list, tuple):
+                    for sub in defs:
+                        if type(sub)==dict:
+                            add_dir(base, sub)
+                        else:
+                            assert type(sub)==str
+                            add_data_files(base, [os.path.join(include_dll_path, base, sub)])
+                else:
+                    assert type(defs)==dict
+                    for d, sub in defs.items():
+                        assert type(sub) in (dict, list, tuple)
+                        #recurse down:
+                        add_dir(os.path.join(base, d), sub)
+
+            #convenience method for adding GI libs and "typelib" and "gir":
+            def add_gi(*libs):
+                print("add_gi(%s)" % str(libs))
+                add_dir('lib',      {"girepository-1.0":    ["%s.typelib" % x for x in libs]})
+                add_dir('share',    {"gir-1.0" :            ["%s.gir" % x for x in libs]})
+
+            def add_DLLs(*dll_names):
+                print("adding DLLs %s" % ", ".join(dll_names))
+                dll_names = list(dll_names)
+                dll_files = []
+                import re
+                version_re = re.compile("\-[0-9\.\-]+$")
+                for x in os.listdir(include_dll_path):
+                    pathname = os.path.join(include_dll_path, x)
+                    x = x.lower()
+                    if os.path.isdir(pathname) or not x.startswith("lib") or not x.endswith(".dll"):
+                        continue
+                    nameversion = x[3:-4]                       #strip "lib" and ".dll": "libatk-1.0-0.dll" -> "atk-1.0-0"
+                    m = version_re.search(nameversion)          #look for version part of filename
+                    if m:
+                        dll_version = m.group(0)                #found it, ie: "-1.0-0"
+                        dll_name = nameversion[:-len(dll_version)]  #ie: "atk"
+                        dll_version = dll_version.lstrip("-")   #ie: "1.0-0"
+                    else:
+                        dll_version = ""                        #no version
+                        dll_name = nameversion                  #ie: "libzzz.dll" -> "zzz"
+                    if dll_name in dll_names:
+                        #this DLL is on our list
+                        print("%s %s %s" % (dll_name.ljust(22), dll_version.ljust(10), x))
+                        dll_files.append(x)
+                        dll_names.remove(dll_name)
+                if len(dll_names)>0:
+                    print("some DLLs could not be found in '%s':" % include_dll_path)
+                    for x in dll_names:
+                        print(" - lib%s*.dll" % x)
+                    sys.exit(0)
+                add_data_files("", [os.path.join(include_dll_path, dll) for dll in dll_files])
+                
+
+            #list of DLLs we want to include, without the "lib" prefix, or the version and extension
+            #(ie: "libatk-1.0-0.dll" -> "atk")
+            add_DLLs('atk', 'cairo-gobject',
+                     'dbus', 'dbus-glib', 'gdk', 'gdk_pixbuf',
+                     'gdkglext', 'gio', 'girepository', 'glib',
+                     'gnutls', 'gobject', 'gthread',
+                     'gtk', 'gtkglext', 'harfbuzz-gobject',
+                     'intl', 'jpeg', 'orc',
+                     'p11-kit', 'proxy',
+                     'pango', 'pangocairo', 'pangoft2', 'pangowin32',
+                     'png16',
+                     #ie: libpyglib-gi-2.0-python33
+                     'pyglib-gi-2.0-python%s%s' % (sys.version_info[0], sys.version_info[1]),
+                     'rsvg', 'webp',
+                     'winpthread',
+                     'zzz')
+
+            add_dir('etc', ["fonts", "gtk-3.0", "pango", "pkcs11"])     #add "dbus-1"?
+            add_dir('lib', ["gdk-pixbuf-2.0", "gio", "gtk-3.0",
+                            "libvisual-0.4", "p11-kit", "pkcs11"])
+            add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
+                              "icons", "p11-kit", "themes", "xml",
+                              {"locale" : ["en"]},
+                              {"themes" : ["Default"]}
+                             ])
+            #FIXME: remove version from those filenames:
+            add_gi("Atk-1.0", "cairo-1.0", "fontconfig-2.0",
+                   "freetype2-2.0", "GDesktopEnums-3.0",
+                   "Gdk-3.0", "GdkGLExt-3.0", "GdkPixbuf-2.0",
+                   "Gio-2.0", "GIRepository-2.0",
+                   "GL-1.0", "Glib-2.0", "GModule-2.0",
+                   "GObject-2.0",
+                   "Gtk-3.0", "GtkGLExt-3.0", "HarfBuzz-0.0",
+                   "Libproxy-1.0", "libxml2-2.0",
+                   "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
+                   "Rsvg-2.0", "win32-1.0")
+
             if sound_ENABLED:
-                missing_dll += [
-                            'libcurl-4.dll',
-                            'libsoup-2.4-1.dll',
-                            'libvisual-0.4-0.dll',
-                            'libgstreamer-1.0-0.dll',
-                            'liborc-test-0.4-0.dll',
-                            'libopenjpeg-1.dll',
-                            'libsqlite3-0.dll']
+                add_dir("share", ["gst-plugins-bad", "gst-plugins-base", "gstreamer-1.0"])
+                add_gi("Gst-1.0", "GstAllocators-1.0", "GstAudio-1.0", "GstBase-1.0",
+                       "GstTag-1.0", "Soup-2.4")
+                add_DLLs('curl', 'soup', 'visual',
+                         'gstreamer', 'orc-test',
+                         'openjpeg',
+                         'sqlite3')
                 for p in ("app", "audio", "base", "codecparsers", "fft", "net", "video",
                           "pbutils", "riff", "sdp", "rtp", "rtsp", "tag", "uridownloader",
                           #I think 'coreelements' needs those (otherwise we would exclude them):
                           "basecamerabinsrc", "mpegts", "photography",
                           ):
-                    missing_dll.append('libgst%s-1.0-0.dll' % p)
+                    add_DLLs('gst%s' % p)
                 #add the gstreamer plugins we need:
-                gstlibdir = os.path.join(include_dll_path, "lib", "gstreamer-1.0")
-                #optional: a52dec, opus, faac, faad, voaacenc
-                GST_PLUGINS = ("app", "audioparsers", "audiorate", "audioresample", "audiotestsrc",
-                          "coreelements", "directsoundsink", "directsoundsrc",
-                          "flac", "lame", "mad", "mpg123", "ogg", "speex",
-                          "volume", "vorbis", "wavenc", "wavpack", "wavparse")
-                add_data_files("gstreamer-1.0", [os.path.join(gstlibdir, "libgst%s.dll" % x) for x in GST_PLUGINS])
-            add_data_files("", [os.path.join(include_dll_path, dll) for dll in missing_dll])
-            for lib in ['etc', 'lib', 'share']:
-                add_data_files("", [os.path.join(include_dll_path, lib)])
-            #I am reluctant to add these to py2exe because it figures it out already:
+                GST_PLUGINS = ("app",
+                               "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
+                               "coreelements", "directsoundsink", "directsoundsrc",
+                               "flac", "lame", "mad", "mpg123", "ogg", "speex",
+                               "volume", "vorbis", "wavenc", "wavpack", "wavparse",
+                               #a52dec, opus, faac, faad, voaacenc
+                               )
+                add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
+                #END OF SOUND
+
             packages.append("gi")
+            #I am reluctant to add these to py2exe because it figures it out already:
             external_includes += ["encodings", "multiprocessing", ]
             #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
             os.environ["PATH"] = include_dll_path+";"+os.environ.get("PATH", "")
@@ -1073,11 +1136,11 @@ if WIN32:
         add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
         add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
         add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
+        add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
+        add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if not PYTHON3:
             #these need porting..
             add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
-            add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
-            add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
 
