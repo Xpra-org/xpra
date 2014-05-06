@@ -5,6 +5,7 @@
 
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
 
+import sys
 from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gtk                   #@UnresolvedImport
 from gi.repository import Gdk                   #@UnresolvedImport
@@ -13,6 +14,8 @@ from xpra.client.gtk3.client_window import ClientWindow
 from xpra.client.gtk3.tray_menu import GTK3TrayMenu
 from xpra.log import Logger
 log = Logger("gtk", "client")
+
+WIN32 = sys.platform.startswith("win")
 
 
 class XpraClient(GTKXpraClient):
@@ -40,11 +43,13 @@ class XpraClient(GTKXpraClient):
 
     def get_notifier_classes(self):
         ncs = GTKXpraClient.get_notifier_classes(self)
-        try:
-            from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
-            ncs.append(GTK3_Notifier)
-        except Exception, e:
-            log("cannot load GTK3 notifier: %s", e)
+        if not WIN32:
+            #for some reason, not included in win32 builds?
+            try:
+                from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
+                ncs.append(GTK3_Notifier)
+            except Exception, e:
+                log("failed to load the GTK3 notification class: %s", e)
         return ncs
 
 
@@ -61,12 +66,25 @@ class XpraClient(GTKXpraClient):
         return Gdk.Screen.get_default().get_root_window()
 
     def get_root_size(self):
-        root = self.get_root_window()
-        w, h = root.get_geometry()[2:]
+        if WIN32:
+            #FIXME: hopefully, we can remove this code once GTK3 on win32 is fixed?
+            #we do it the hard way because the root window geometry is invalid on win32:
+            #and even just querying it causes this warning:
+            #"GetClientRect failed: Invalid window handle."
+            display = Gdk.Display.get_default()
+            n = display.get_n_screens()
+            w, h = 0, 0
+            for i in range(n):
+                screen = display.get_screen(i)
+                w += screen.get_width()
+                h += screen.get_height()
+        else:
+            #the easy way for platforms that work out of the box:
+            root = self.get_root_window()
+            w, h = root.get_geometry()[2:]
         if w<=0 or h<=0 or w>32768 or h>32768:
-            log("Gdk returned invalid screen dimensions: %sx%s", w, h)
-            w = 1920
-            h = 1080
+            log("Gdk returned invalid root window dimensions: %sx%s", w, h)
+            w, h = 1920, 1080
         return w, h
 
     def set_windows_cursor(self, gtkwindows, new_cursor):
