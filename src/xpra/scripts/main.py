@@ -63,11 +63,15 @@ def main(script_file, cmdline):
     from xpra.platform import init as platform_init, clean as platform_clean
     try:
         platform_init("Xpra")
-        parser, options, args = parse_cmdline(cmdline)
-        if not args:
-            parser.error("need a mode")
-        mode = args.pop(0)
-        return run_mode(script_file, parser, options, args, mode)
+        try:
+            parser, options, args = parse_cmdline(cmdline)
+            if not args:
+                print("xpra: need a mode")
+                return -1
+            mode = args.pop(0)
+            return run_mode(script_file, parser, options, args, mode)
+        except:
+            return -1
     finally:
         platform_clean()
 
