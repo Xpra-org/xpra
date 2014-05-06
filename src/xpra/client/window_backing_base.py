@@ -207,7 +207,7 @@ class WindowBackingBase(object):
             the actual paint code is in _do_paint_rgb24
         """
         try:
-            success = self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+            success = (self._backing is not None) and self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
@@ -233,7 +233,7 @@ class WindowBackingBase(object):
             the actual paint code is in _do_paint_rgb32
         """
         try:
-            success = self._do_paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
+            success = (self._backing is not None) and self._do_paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
