@@ -254,11 +254,11 @@ cdef class ColorspaceConverter:
     cdef int src_width
     cdef int src_height
     cdef AVPixelFormat src_format_enum
-    cdef char* src_format
+    cdef object src_format
     cdef int dst_width
     cdef int dst_height
     cdef AVPixelFormat dst_format_enum
-    cdef char* dst_format
+    cdef object dst_format
 
     cdef unsigned long frames
     cdef double time
@@ -281,13 +281,13 @@ cdef class ColorspaceConverter:
         src = FORMATS.get(src_format)
         log("source format=%s", src)
         assert src, "invalid source format: %s" % src_format
-        self.src_format = src.pix_fmt
+        self.src_format = src_format
         self.src_format_enum = src.av_enum
         #dst:
         dst = FORMATS.get(dst_format)
         log("destination format=%s", dst)
         assert dst, "invalid destination format: %s" % dst_format
-        self.dst_format = dst.pix_fmt
+        self.dst_format = dst_format
         self.dst_format_enum = dst.av_enum
         #pre-calculate plane heights:
         self.buffer_size = 0
@@ -341,7 +341,7 @@ cdef class ColorspaceConverter:
         return info
 
     def __repr__(self):
-        if self.src_format==NULL or self.dst_format==NULL:
+        if not self.src_format or not self.dst_format:
             return "swscale(uninitialized)"
         return "swscale(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
                                                  self.dst_format, self.dst_width, self.dst_height)
