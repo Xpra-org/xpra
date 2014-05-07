@@ -11,16 +11,12 @@ events, mucking about with properties, etc. etc.) is wrapped up in here."""
 
 # Maintain compatibility with old versions of Python, while avoiding a
 # deprecation warning on new versions:
-import sys
-if sys.version_info < (2, 6):
-    from sets import ImmutableSet
-else:
-    ImmutableSet = frozenset
+import os
+from socket import gethostname
+
 import gobject
 import gtk.gdk
 import cairo
-import os
-from socket import gethostname
 
 from xpra.util import nonl
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -42,6 +38,7 @@ from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
 from xpra.gtk_common.error import trap, XError
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.composite import CompositeHelper
+from xpra.os_util import ImmutableSet
 
 from xpra.log import Logger
 log = Logger("x11", "window")
