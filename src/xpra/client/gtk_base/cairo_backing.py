@@ -11,17 +11,15 @@ gdk = import_gdk()
 gobject = import_gobject()
 PixbufLoader = import_pixbufloader()
 
-from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB
+from xpra.gtk_common.gtk_util import pixbuf_new_from_data, cairo_set_source_pixbuf, COLORSPACE_RGB
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
-from xpra.codecs.loader import get_codec
 from xpra.os_util import builtins
 _memoryview = builtins.__dict__.get("memoryview")
 
 
 from xpra.log import Logger
 log = Logger("paint", "cairo")
-
 
 
 """
@@ -107,8 +105,8 @@ class CairoBacking(GTKWindowBacking):
         """ must be called from UI thread """
         log("cairo_paint_pixbuf(%s, %s, %s) backing=%s", pixbuf, x, y, self._backing)
         #now use it to paint:
-        gc = cairo.Context(self._backing)
-        gdk.cairo_set_source_pixbuf(gc, pixbuf, x, y)
+        gc = gdk.CairoContext(cairo.Context(self._backing))
+        cairo_set_source_pixbuf(gc, pixbuf, x, y)
         gc.paint()
         return True
 
@@ -124,20 +122,12 @@ class CairoBacking(GTKWindowBacking):
         """ must be called from UI thread """
         log("cairo._do_paint_rgb(%s, %s bytes,%s,%s,%s,%s,%s,%s,%s)", has_alpha, len(img_data), x, y, width, height, rowstride, options, callbacks)
         rgb_format = options.strget("rgb_format", "RGB")
-        if rgb_format in ("RGBX", "RGBA"):
-            rgba = self.unpremultiply(img_data)
-            pixbuf = pixbuf_new_from_data(rgba, COLORSPACE_RGB, has_alpha, 8, width, height, rowstride, None, None)
-            return self.cairo_paint_pixbuf(pixbuf, x, y)
-        PIL = get_codec("PIL")
-        assert PIL, "cannot paint without PIL!"
+        if rgb_format in ("RGBA", ):
+            img_data = self.unpremultiply(img_data)
         if _memoryview and isinstance(img_data, _memoryview):
-            #PIL can't use memory view directly
-            img_data = bytes(img_data)
-        im = PIL.Image.frombuffer("RGB", (width, height), img_data, "raw", rgb_format, rowstride)
-        im = im.convert("RGBX")
-        data = im.tostring("raw", "RGBX", 0, 1)
-        log.info("%s: %s bytes, now RGBX: %s bytes", rgb_format, len(img_data), len(data))
-        pixbuf = pixbuf_new_from_data(data, COLORSPACE_RGB, False, 8, width, height, width*4, None, None)
+            #Pixbuf cannot use the memoryview directly:
+            img_data = img_data.tobytes()
+        pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, has_alpha, 8, width, height, rowstride)
         return self.cairo_paint_pixbuf(pixbuf, x, y)
 
     def cairo_draw(self, context):
