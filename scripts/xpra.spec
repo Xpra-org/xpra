@@ -89,10 +89,8 @@
 #opengl is supported from 6.4 onwards:
 %if %(egrep -q 'release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
 %define requires_opengl , PyOpenGL, pygtkglext
-%endif
-#6.4 has dummy support, but detection fails because of console ownership issues..
+#6.4 also has Xdummy support, but detection fails because of console ownership issues..
 #so override and set it for 6.4 and later
-%if %(egrep -q 'release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
 %define dummy --with-Xdummy
 %define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %endif
