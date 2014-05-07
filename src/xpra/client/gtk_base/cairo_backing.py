@@ -134,16 +134,14 @@ class CairoBacking(GTKWindowBacking):
 
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
-        log("_do_paint_rgb24")
         return self._do_paint_rgb(cairo.FORMAT_RGB24, False, img_data, x, y, width, height, rowstride, options)
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
-        log("_do_paint_rgb32")
         return self._do_paint_rgb(cairo.FORMAT_ARGB32, True, img_data, x, y, width, height, rowstride, options)
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
         """ must be called from UI thread """
-        log("cairo._do_paint_rgb(%s, %s bytes,%s,%s,%s,%s,%s,%s)", has_alpha, len(img_data), x, y, width, height, rowstride, options)
+        log("cairo._do_paint_rgb(%s, %s, %s bytes,%s,%s,%s,%s,%s,%s)", cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, options)
         rgb_format = options.strget("rgb_format", "RGB")
         if _memoryview and isinstance(img_data, _memoryview):
             #Pixbuf cannot use the memoryview directly:
@@ -180,10 +178,10 @@ class CairoBacking(GTKWindowBacking):
             oformat = "RGBA"
         else:
             oformat = "RGB"
-        img = PIL.Image.frombuffer(oformat, (width,height), img_data, "raw", rgb_format, 0, 1)
+        img = PIL.Image.frombuffer(oformat, (width,height), img_data, "raw", rgb_format, rowstride, 1)
         #This is insane, the code below should work, but it doesn't:
         # img_data = bytearray(img.tostring('raw', oformat, 0, 1))
-        # pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, True, 8, width, height, width*4)
+        # pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, True, 8, width, height, rowstride)
         # success = self.cairo_paint_pixbuf(pixbuf, x, y)
         #So we still rountrip via PNG:
         png = BytesIOClass()
