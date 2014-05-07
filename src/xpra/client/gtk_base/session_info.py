@@ -20,7 +20,7 @@ from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_val
 from xpra.scripts.config import python_platform
 from xpra.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, \
-                        TableBuilder, imagebutton, scaled_image, get_preferred_size, \
+                        TableBuilder, imagebutton, scaled_image, get_preferred_size, get_gtk_version_info, \
                         RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER
 from xpra.net.protocol import get_network_caps
 log = Logger("info")
@@ -140,18 +140,16 @@ class SessionInfo(gtk.Window):
         tb.new_row("Revision", label(cl_rev), label(make_version_str(self.client._remote_revision)))
         tb.new_row("Local Changes", label(cl_ch), label(server_version_info("build.local_modifications", "local_modifications")))
         tb.new_row("Build date", label(cl_date), label(server_info("build_date", "build.date")))
-        def client_version_info(prop_name):
-            info = "unknown"
-            if hasattr(gtk, prop_name):
-                info = make_version_str(getattr(gtk, prop_name))
-            return info
-        if is_gtk3():
-            tb.new_row("PyGobject / PyGTK", label(gobject._version), label(server_version_info("pygtk.version", "pygtk_version")))
-            tb.new_row("GDK", label(gdk._version), label(server_version_info("gdk.version", "gdk_version")))
-            tb.new_row("GTK", label(gtk._version), label(server_version_info("gtk.version", "gtk_version")))
-        else:
-            tb.new_row("PyGTK", label(client_version_info("pygtk_version")), label(server_version_info("pygtk.version", "pygtk_version")))
-            tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk.version", "gtk_version")))
+        gtk_version_info = get_gtk_version_info()
+        def client_vinfo(prop, fallback="unknown"):
+            k = "%s.version" % prop
+            return label(gtk_version_info.get(k, fallback))
+        tb.new_row("Gobject",   client_vinfo("gobject"),    label(server_version_info("gobject.version", "pygtk_version")))
+        tb.new_row("PyGTK",     client_vinfo("pygtk", ""),  label(server_version_info("pygtk.version", "pygtk_version")))
+        tb.new_row("GTK",       client_vinfo("gtk"),        label(server_version_info("gtk.version", "gtk_version")))
+        tb.new_row("GDK",       client_vinfo("gdk"),        label(server_version_info("gdk.version", "gdk_version")))
+        tb.new_row("Cairo",     client_vinfo("cairo"),      label(server_version_info("cairo.version", "cairo_version")))
+        tb.new_row("Pango",     client_vinfo("pango"),      label(server_version_info("pango.version", "cairo_version")))
         tb.new_row("Python", label(python_platform.python_version()), label(server_version_info("server.python.version", "python_version", "python.version")))
 
         cl_gst_v, cl_pygst_v = "", ""

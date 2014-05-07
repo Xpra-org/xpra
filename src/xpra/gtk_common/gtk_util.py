@@ -7,10 +7,12 @@
 import sys
 import os.path
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, is_gtk3
-gtk = import_gtk()
-gdk = import_gdk()
-pango = import_pango()
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, import_cairo, import_gobject, is_gtk3
+gtk     = import_gtk()
+gdk     = import_gdk()
+pango   = import_pango()
+cairo   = import_cairo()
+gobject = import_gobject()
 PixbufLoader = import_pixbufloader()
 
 from xpra.log import Logger
@@ -18,24 +20,31 @@ log = Logger("gtk", "util")
 
 GTK_VERSION_INFO = {}
 if hasattr(gtk, "pygtk_version"):
-    GTK_VERSION_INFO["pygtk_version"] = gtk.pygtk_version
+    GTK_VERSION_INFO["pygtk.version"] = gtk.pygtk_version
 if hasattr(gtk, "gtk_version"):
     #GTK2:
-    GTK_VERSION_INFO["gtk_version"] = gtk.gtk_version
+    GTK_VERSION_INFO["gtk.version"] = gtk.gtk_version
 elif hasattr(gtk, "_version"):
     #GTK3:
-    GTK_VERSION_INFO["gtk_version"] = gtk._version
+    GTK_VERSION_INFO["gtk.version"] = gtk._version
 if hasattr(gdk, "__version__"):
     #GTK2:
-    GTK_VERSION_INFO["gdk_version"] = gdk.__version__
+    GTK_VERSION_INFO["gdk.version"] = gdk.__version__
 elif hasattr(gdk, "_version"):
     #GTK3:
-    GTK_VERSION_INFO["gdk_version"] = gdk._version
+    GTK_VERSION_INFO["gdk.version"] = gdk._version
+if is_gtk3():
     try:
         import gi
-        GTK_VERSION_INFO["gi_repository_version"] = gi.__version__
+        GTK_VERSION_INFO["gi.version"] = gi.__version__
     except:
         pass
+if hasattr(gobject, "_version"):
+    GTK_VERSION_INFO["gobject.version"] = gobject._version
+if hasattr(cairo, "version"):
+    GTK_VERSION_INFO["cairo.version"] = cairo.version
+if hasattr(pango, "version_string"):
+    GTK_VERSION_INFO["pango.version"] = pango.version_string()
 
 
 if is_gtk3():
@@ -156,13 +165,16 @@ else:
     def GetClipboard(selection):
         return gtk.Clipboard(selection=selection)
 
-def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
+def get_gtk_version_info(prefix="", new_namespace=True):
     #update props given:
+    from xpra.version_util import mk
     global GTK_VERSION_INFO
+    info = {}
     for k,v in GTK_VERSION_INFO.items():
-        if new_namespace:
-            k = k.replace("_", ".")
-        props[prefix+k] = v
+        if not new_namespace:
+            k = k.replace(".", "_")
+        info[mk(prefix, k)] = v
+    return info
 
 
 def get_preferred_size(widget):

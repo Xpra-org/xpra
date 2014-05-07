@@ -19,7 +19,7 @@ log = Logger("gtk", "main")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.gtk_common.cursor_names import cursor_names
-from xpra.gtk_common.gtk_util import add_gtk_version_info, scaled_image, pixbuf_new_from_file, display_get_default
+from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, pixbuf_new_from_file, display_get_default
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
@@ -160,7 +160,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def make_hello(self):
         capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = len(cursor_names)>0
-        add_gtk_version_info(capabilities, gtk, "", True)
+        capabilities.update(get_gtk_version_info())
         return capabilities
 
 

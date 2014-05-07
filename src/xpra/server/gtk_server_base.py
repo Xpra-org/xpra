@@ -16,7 +16,7 @@ log = Logger("server", "gtk")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.server.server_base import ServerBase
-from xpra.gtk_common.gtk_util import add_gtk_version_info
+from xpra.gtk_common.gtk_util import get_gtk_version_info
 from xpra.gtk_common.gtk2common import gtk2main
 
 
@@ -54,10 +54,12 @@ class GTKServerBase(ServerBase):
 
     def make_hello(self):
         capabilities = ServerBase.make_hello(self)
-        capabilities["display"] = gtk.gdk.display_get_default().get_name()
-        capabilities["cursor.default_size"] = gtk.gdk.display_get_default().get_default_cursor_size()
-        capabilities["cursor.max_size"] = gtk.gdk.display_get_default().get_maximal_cursor_size()
-        add_gtk_version_info(capabilities, gtk, "", True)
+        display = gtk.gdk.display_get_default()
+        capabilities.update({
+            "display"               : display.get_name(),
+            "cursor.default_size"   : display.get_default_cursor_size(),
+            "cursor.max_size"       : display.get_maximal_cursor_size()})
+        capabilities.update(get_gtk_version_info())
         return capabilities
 
     def get_ui_info(self, *args):
@@ -68,9 +70,10 @@ class GTKServerBase(ServerBase):
     def do_get_info(self, proto, *args):
         info = ServerBase.do_get_info(self, proto, *args)
         ss = self._server_sources.get(proto)
-        add_gtk_version_info(info, gtk, "server.", (ss is None) or ss.namespace)
-        info["server.type"] = "Python/gtk-x11"
-        info["features.randr"] = self.randr
+        info.update(get_gtk_version_info(prefix="server", new_namespace=(ss is not None) and ss.namespace))
+        info.update({
+                     "server.type"      : "Python/gtk-x11",
+                     "features.randr"   : self.randr})
         return info
 
     def get_root_window_size(self):
