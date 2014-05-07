@@ -318,7 +318,9 @@ def add_modules(*mods):
         if os.path.exists(pathname) and os.path.isdir(pathname):
             #add all file modules found in this directory
             for f in os.listdir(pathname):
-                if f.endswith(".py") and f.find("Copy ")<0 and f.find("__init__")<0:
+                #make sure we only include python files,
+                #and ignore eclipse copies
+                if f.endswith(".py") and not f.startswith("Copy ")<0:
                     fname = os.path.join(pathname, f)
                     if os.path.isfile(fname):
                         modname = "%s.%s" % (x, f.replace(".py", ""))
