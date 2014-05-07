@@ -247,7 +247,8 @@ def main():
             elif type(v)==str and v.startswith("v"):
                 return v[1:]
             return str(v)
-        for name, version in codec_versions.items():
+        for name in sorted(codec_versions.keys()):
+            version = codec_versions[name]
             print("* %s : %s" % (name.ljust(20), pver(version)))
     finally:
         #this will wait for input on win32:
