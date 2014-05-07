@@ -15,6 +15,8 @@ from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.codecs.loader import get_codec
+from xpra.os_util import builtins
+_memoryview = builtins.__dict__.get("memoryview")
 
 
 from xpra.log import Logger
@@ -29,8 +31,7 @@ This must be used with gtk3 since gtk3 no longer supports gdk pixmaps
 /RANT: ideally we would want to use pycairo's create_for_data method:
 #surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, width, height)
 but this is disabled in most cases, or does not accept our rowstride, so we cannot use it.
-Instead we have to use PIL to convert via a PNG!
-This is a complete waste of CPU! Please complain to pycairo.
+Instead we have to use PIL to convert via a PNG or Pixbuf!
 """
 class CairoBacking(GTKWindowBacking):
 
@@ -122,6 +123,9 @@ class CairoBacking(GTKWindowBacking):
             return self.cairo_paint_pixbuf(pixbuf, x, y)
         PIL = get_codec("PIL")
         assert PIL, "cannot paint without PIL!"
+        if _memoryview and isinstance(img_data, _memoryview):
+            #PIL can't use memory view directly
+            img_data = bytes(img_data)
         im = PIL.Image.frombuffer("RGB", (width, height), img_data, "raw", rgb_format, rowstride)
         im = im.convert("RGBX")
         data = im.tostring("raw", "RGBX", 0, 1)
