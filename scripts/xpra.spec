@@ -174,9 +174,6 @@ Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 
 ### Patches ###
-Patch8: old-libav.patch
-Patch9: old-libav-pixfmtconsts.patch
-Patch10: old-libav-no0RGB.patch
 Patch12: old-xdg-desktop.patch
 
 
@@ -1051,18 +1048,6 @@ cd xpra-%{version}
 (sed -e -i s'/strict_ENABLED = True/strict_ENABLED = False/g' setup.py)
 (echo "setup.py" >> %{S:ignored_changed_files.txt})
 %endif
-%if 0%{?old_libav}
-%patch8 -p1
-(echo "xpra/codecs/dec_avcodec/decoder.pyx" > %{S:ignored_changed_files.txt})
-%endif
-%if 0%{?old_libav}%{?old_pixfmt}
-%patch9 -p1
-%patch10 -p1
-(echo "xpra/codecs/csc_swscale/colorspace_converter.pyx" >> %{S:ignored_changed_files.txt})
-(echo "xpra/codecs/csc_swscale/constants.txt" >> %{S:ignored_changed_files.txt})
-(echo "xpra/codecs/dec_avcodec/decoder.pyx" >> %{S:ignored_changed_files.txt})
-(echo "xpra/codecs/dec_avcodec/constants.txt" >> %{S:ignored_changed_files.txt})
-%endif
 %if 0%{?no_pulseaudio}
 (sed -e -i s'/sound_ENABLED = True/sound_ENABLED = False/g' setup.py)
 (echo "setup.py" >> %{S:ignored_changed_files.txt})
@@ -1120,9 +1105,6 @@ mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec*
-%endif
-%if 0%{?no_webp}
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/webm
 %endif
 %if 0%{?no_sound}
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/sound
