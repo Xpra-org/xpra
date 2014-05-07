@@ -281,12 +281,12 @@ class WindowBackingBase(object):
                 log("window %s is already gone!", self.wid)
                 fire_paint_callbacks(callbacks, False)
                 return  False
-            enc_width, enc_height = options.get("scaled_size", (width, height))
-            input_colorspace = options.get("csc")
+            enc_width, enc_height = options.intpair("scaled_size", (width, height))
+            input_colorspace = options.strget("csc")
             if not input_colorspace:
                 # Backwards compatibility with pre 0.10.x clients
                 # We used to specify the colorspace as an avutil PixelFormat constant
-                old_csc_fmt = options.get("csc_pixel_format")
+                old_csc_fmt = options.intget("csc_pixel_format")
                 input_colorspace = get_colorspace_from_avutil_enum(old_csc_fmt)
                 if input_colorspace is None:
                     #completely broken and out of date servers (ie: v0.3.x):
@@ -352,7 +352,7 @@ class WindowBackingBase(object):
             #use higher quality csc to compensate for lower quality source
             #(which generally means that we downscaled via YUV422P or lower)
             #or when upscaling the video:
-            q = options.get("quality", 50)
+            q = options.intget("quality", 50)
             csc_speed = int(min(100, 100-q, 100.0 * (enc_width*enc_height) / (width*height)))
             self._csc_decoder = self.make_csc(enc_width, enc_height, pixel_format,
                                            width, height, target_rgb_formats, csc_speed)
