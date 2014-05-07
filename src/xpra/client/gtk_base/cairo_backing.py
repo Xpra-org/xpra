@@ -48,19 +48,26 @@ class CairoBacking(GTKWindowBacking):
         cr = cairo.Context(self._backing)
         if old_backing is not None:
             # Really we should respect bit-gravity here but... meh.
+            old_w, old_h = old_backing.get_size()
+            if w>old_w and h>old_h:
+                #both width and height are bigger:
+                cr.rectangle(old_w, 0, w-old_w, h)
+                cr.fill()
+                cr.new_path()
+                cr.rectangle(0, old_h, old_w, h-old_h)
+                cr.fill()
+            elif w>old_w:
+                #enlarged in width only
+                cr.rectangle(old_w, 0, w-old_w, h)
+                cr.fill()
+            if h>old_h:
+                #enlarged in height only
+                cr.rectangle(0, old_h, w, h-old_h)
+                cr.fill()
             cr.set_operator(cairo.OPERATOR_SOURCE)
-            cr.set_source_surface(old_backing, 0, 0)
+            cr.set_source_pixmap(old_backing, 0, 0)
             cr.paint()
-            old_w = old_backing.get_width()
-            old_h = old_backing.get_height()
-            cr.move_to(old_w, 0)
-            cr.line_to(w, 0)
-            cr.line_to(w, h)
-            cr.line_to(0, h)
-            cr.line_to(0, old_h)
-            cr.line_to(old_w, old_h)
-            cr.close_path()
-            old_backing.finish()
+            #old_backing.finish()
         else:
             cr.rectangle(0, 0, w, h)
         cr.set_source_rgb(1, 1, 1)
