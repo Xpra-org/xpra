@@ -8,7 +8,7 @@ from xpra.log import Logger
 log = Logger("posix")
 eventlog = Logger("events", "posix")
 
-from xpra.gtk_common.gobject_compat import get_xid
+from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 from xpra.gtk_common.error import trap, XError
 
 device_bell = None
@@ -144,7 +144,10 @@ class ClientExtras(object):
         self.client.connect("handshake-complete", self.do_setup_xprops)
 
     def do_setup_xprops(self, *args):
-        log.debug("do_setup_xprops(%s)", args)
+        log("do_setup_xprops(%s)", args)
+        if is_gtk3():
+            log("x11 root properties and XSETTINGS are not supported yet with GTK3")
+            return
         ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
         try:
             from xpra.x11.xsettings import XSettingsWatcher
