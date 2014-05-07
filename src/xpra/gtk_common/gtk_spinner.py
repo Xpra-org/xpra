@@ -7,10 +7,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
-gtk = import_gtk()
+from xpra.gtk_common.gobject_compat import import_gtk, import_gobject, import_cairo
+gtk     = import_gtk()
 gobject = import_gobject()
-import cairo
+cairo   = import_cairo()
 import math
 
 

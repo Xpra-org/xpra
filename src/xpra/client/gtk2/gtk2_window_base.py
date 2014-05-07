@@ -81,8 +81,6 @@ class GTK2WindowBase(GTKClientWindowBase):
     WINDOW_STATE_MAXIMIZED  = gdk.WINDOW_STATE_MAXIMIZED
     WINDOW_STATE_ICONIFIED  = gdk.WINDOW_STATE_ICONIFIED
 
-    #must be overriden by subclasses
-    BACKING_CLASS = None
 
     def init_window(self, metadata):
         if self._override_redirect:

@@ -207,7 +207,7 @@ class WindowBackingBase(object):
             the actual paint code is in _do_paint_rgb24
         """
         try:
-            success = (self._backing is not None) and self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+            success = (self._backing is not None) and self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
@@ -215,7 +215,7 @@ class WindowBackingBase(object):
             log.error("do_paint_rgb24 error", exc_info=True)
             fire_paint_callbacks(callbacks, False)
 
-    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
         raise Exception("override me!")
 
 
@@ -233,7 +233,7 @@ class WindowBackingBase(object):
             the actual paint code is in _do_paint_rgb32
         """
         try:
-            success = (self._backing is not None) and self._do_paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
+            success = (self._backing is not None) and self._do_paint_rgb32(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
@@ -241,7 +241,7 @@ class WindowBackingBase(object):
             log.error("do_paint_rgb32 error", exc_info=True)
             fire_paint_callbacks(callbacks, False)
 
-    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         raise Exception("override me!")
 
 

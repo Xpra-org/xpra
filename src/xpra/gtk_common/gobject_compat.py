@@ -99,3 +99,11 @@ def import_pango3():
     return Pango
 def import_pango():
     return  _try_import(import_pango3, import_pango2)
+
+def import_cairo():
+    #we cannot use cairocffi with the do_paint callbacks..
+    #import cairocffi                            #@UnresolvedImport
+    #cairocffi.install_as_pycairo()
+    #cairo = cairocffi
+    import cairo
+    return cairo

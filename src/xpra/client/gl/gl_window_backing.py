@@ -434,13 +434,13 @@ class GLPixmapBacking(GTK2WindowBacking):
         finally:
             drawable.gl_end()
 
-    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        return self._do_paint_rgb(32, img_data, x, y, width, height, rowstride, options, callbacks)
+    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
+        return self._do_paint_rgb(32, img_data, x, y, width, height, rowstride, options)
 
-    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        return self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options, callbacks)
+    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
+        return self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options)
 
-    def _do_paint_rgb(self, bpp, img_data, x, y, width, height, rowstride, options, callbacks):
+    def _do_paint_rgb(self, bpp, img_data, x, y, width, height, rowstride, options):
         log("%s._do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d)", self, bpp, len(img_data), x, y, width, height, rowstride)
         drawable = self.gl_init()
         if not drawable:

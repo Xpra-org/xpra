@@ -5,8 +5,9 @@
 # later version. See the file COPYING for details.
 
 #pygtk3 vs pygtk2 (sigh)
-from xpra.gtk_common.gobject_compat import import_gobject
+from xpra.gtk_common.gobject_compat import import_gobject, import_cairo
 gobject = import_gobject()
+cairo = import_cairo()
 
 from xpra.client.window_backing_base import WindowBackingBase
 from xpra.log import Logger
@@ -29,7 +30,6 @@ class GTKWindowBacking(WindowBackingBase):
     def cairo_draw_from_drawable(self, context, drawable):
         if drawable is None:
             return
-        import cairo
         try:
             context.set_source_pixmap(drawable, 0, 0)
             context.set_operator(cairo.OPERATOR_SOURCE)

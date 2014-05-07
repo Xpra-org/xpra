@@ -12,13 +12,13 @@ log = Logger("window")
 keylog = Logger("window", "keyboard")
 
 from xpra.util import AdHocStruct, nn
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
 from xpra.client.client_window_base import ClientWindowBase
 gtk = import_gtk()
 gdk = import_gdk()
+cairo = import_cairo()
 
 import os
-import cairo
 import time
 import math
 

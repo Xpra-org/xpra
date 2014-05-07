@@ -44,9 +44,9 @@ class ClientWindow(GTK2WindowBase):
             #plain GTK2 window needs to use CSC modules to paint video
             #so calculate the server CSC modes the server is allowed to use
             #based on the client CSC modes we can convert to RGB(A):
-            target_rgb_modes = ["RGB", "RGBX"]
-            if HAS_ALPHA:
-                target_rgb_modes.append("RGBA")
+            target_rgb_modes = BACKING_CLASS.RGB_MODES
+            if not HAS_ALPHA:
+                target_rgb_modes = [x for x in target_rgb_modes if x.find("A")<0]
             ClientWindow.full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
             log("full csc modes (%s)=%s", target_rgb_modes, ClientWindow.full_csc_modes)
         return ClientWindow.full_csc_modes

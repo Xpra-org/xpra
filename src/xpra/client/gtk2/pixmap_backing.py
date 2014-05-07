@@ -19,6 +19,8 @@ Backing using a gdk.Pixmap
 """
 class PixmapBacking(GTK2WindowBacking):
 
+    RGB_MODES = ["RGB", "RGBX", "RGBA"]
+
     def __repr__(self):
         return "PixmapBacking(%s)" % self._backing
 
