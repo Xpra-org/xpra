@@ -43,6 +43,8 @@ if is_gtk3():
     from gi.repository import GdkPixbuf     #@UnresolvedImport
     image_new_from_pixbuf   = gtk.Image.new_from_pixbuf
     pixbuf_new_from_file    = GdkPixbuf.Pixbuf.new_from_file
+    def gdk_cairo_context(cairo_context):
+        return cairo_context
     def pixbuf_new_from_data(*args):
         args = list(args)+[None, None]
         return GdkPixbuf.Pixbuf.new_from_data(*args)
@@ -118,6 +120,8 @@ else:
     pixbuf_new_from_data    = gdk.pixbuf_new_from_data
     get_default_keymap      = gdk.keymap_get_default
     display_get_default     = gdk.display_get_default
+    def gdk_cairo_context(cairo_context):
+        return gdk.CairoContext(cairo_context)
     def cairo_set_source_pixbuf(cr, pixbuf, x, y):
         cr.set_source_pixbuf(pixbuf, x, y)
     COLORSPACE_RGB          = gtk.gdk.COLORSPACE_RGB
