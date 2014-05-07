@@ -16,6 +16,8 @@ from xpra.os_util import BytesIOClass, bytestostr
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum, get_PIL_decodings
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
+from xpra.os_util import builtins
+_memoryview = builtins.__dict__.get("memoryview")
 try:
     from xpra.codecs.xor import xor_str
 except:
@@ -131,7 +133,10 @@ class WindowBackingBase(object):
             elif options.boolget("lz4", False):
                 assert has_lz4
                 img_data = LZ4_uncompress(raw_data)
-        assert len(img_data) == rowstride * height, "expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" % (rowstride * height, width, height, rowstride, len(img_data), len(raw_data))
+        if len(img_data)!=rowstride * height:
+            log.error("invalid img data %s: %s", type(img_data), str(img_data)[:256])
+            raise Exception("expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" %
+                                (rowstride * height, width, height, rowstride, len(img_data), len(raw_data)))
         delta = options.intget("delta", -1)
         rgb_data = img_data
         if delta>=0:
@@ -396,6 +401,8 @@ class WindowBackingBase(object):
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
         """ dispatches the paint to one of the paint_XXXX methods """
         log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
+        if _memoryview and isinstance(img_data, _memoryview):
+            img_data = img_data.tobytes()
         coding = bytestostr(coding)
         if coding == "mmap":
             self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)

@@ -28,6 +28,8 @@ from xpra.os_util import Queue, strtobytes, get_hex_uuid
 from xpra.daemon_thread import make_daemon_thread
 from xpra.simple_stats import std_unit, std_unit_dec
 from xpra.net.bytestreams import ABORT
+from xpra.os_util import builtins
+_memoryview = builtins.__dict__.get("memoryview")
 
 try:
     from Crypto.Cipher import AES
@@ -43,6 +45,8 @@ try:
     from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
     def lz4_compress(packet, level):
+        if _memoryview and isinstance(packet, _memoryview):
+            packet = packet.tobytes()
         return level + LZ4_FLAG, LZ4_compress(packet)
 except Exception, e:
     log("lz4 not found: %s", e)
