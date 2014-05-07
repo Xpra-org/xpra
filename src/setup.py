@@ -1121,6 +1121,14 @@ if WIN32:
                 #but we use something more generic, without the version numbers:
                 add_data_files('',      [webp_bin_dir+"\\libwebp.dll"])
                 add_data_files('webm',  ["xpra/codecs/webm/LICENSE"])
+            if enc_x264_ENABLED:
+                add_data_files('', ['%s\\libx264.dll' % x264_bin_dir])
+                #find pthread DLL...
+                for x in (["C:\\MinGW\\bin"]+os.environ.get("PATH").split(";")):
+                    f = os.path.join(x, "pthreadGC2.dll")
+                    if os.path.exists(f):
+                        add_data_files('', [f])
+                        break
             #END OF py2exe SECTION
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
@@ -1296,8 +1304,6 @@ if WIN32:
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
 
-    if enc_x264_ENABLED:
-        add_data_files('', ['%s\\libx264.dll' % x264_bin_dir])
     html5_dir = ''
 
     #END OF win32
