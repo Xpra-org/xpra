@@ -126,11 +126,10 @@ class CairoBacking(GTKWindowBacking):
         """ must be called from UI thread """
         log("cairo_paint_surface(%s, %s, %s)", img_surface, x, y)
         gc = gdk_cairo_context(cairo.Context(self._backing))
-        if self._has_alpha:
-            gc.set_operator(cairo.OPERATOR_CLEAR)
-            gc.rectangle(x, y, self._backing.get_width(), self._backing.get_height())
-            gc.fill()
-            gc.set_operator(cairo.OPERATOR_OVER)
+        gc.set_operator(cairo.OPERATOR_CLEAR)
+        gc.rectangle(x, y, img_surface.get_width(), img_surface.get_height())
+        gc.fill()
+        gc.set_operator(cairo.OPERATOR_OVER)
         gc.set_source_surface(img_surface, x, y)
         gc.paint()
         return True
