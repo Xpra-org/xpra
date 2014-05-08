@@ -74,15 +74,21 @@ def get_version_info(prefix=""):
              }
     try:
         from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
-        from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU
+        from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU, \
+                                    COMPILER_VERSION, LINKER_VERSION, BUILD_TIME, PYTHON_VERSION, CYTHON_VERSION
         for k,v in {
                     "local_modifications"  : LOCAL_MODIFICATIONS,
                     "date"                 : BUILD_DATE,
+                    "time"                 : BUILD_TIME,
                     "by"                   : BUILT_BY,
                     "on"                   : BUILT_ON,
                     "bit"                  : BUILD_BIT,
                     "cpu"                  : BUILD_CPU,
                     "revision"             : REVISION,
+                    "compiler"             : COMPILER_VERSION,
+                    "linker"               : LINKER_VERSION,
+                    "python"               : PYTHON_VERSION,
+                    "cython"               : CYTHON_VERSION,
                   }.items():
             props[mk(prefix, k)] = v
     except:

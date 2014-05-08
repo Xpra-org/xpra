@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from datetime import date
+import datetime
 import subprocess
 import getpass
 import socket
@@ -72,29 +72,39 @@ def get_cpuinfo():
         pass
     return "unknown"
 
-def get_compiler_info():
-    #FIXME: we assume we'll use GCC if it is on the path...
-    test_options = ["gcc --version"]
-    if sys.platform.startswith("win"):
-        test_options.append("cl")
-    for cmd in test_options:
+def get_first_line_output(commands):
+    for cmd, valid_exit_code in commands:
         try:
             proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
             stdout, _ = proc.communicate()
-            #print("get_compiler_info() %s returned %s" % (cmd, proc.returncode))
-            #print("get_compiler_info() stdout(%s)=%s" % (cmd, stdout))
-            #print("get_compiler_info() stderr(%s)=%s" % (cmd, stderr))
-            if proc.returncode!=0:
+            if proc.returncode!=valid_exit_code:
                 print("'%s' failed with return code %s" % (cmd, proc.returncode))
                 continue
             if not stdout:
-                print("could not get GCC version information")
+                print("could not get version information")
                 continue
             out = stdout.decode('utf-8')
             return out.splitlines()[0]
         except:
             pass
     return  ""
+
+def get_compiler_version():
+    #FIXME: we assume we'll use GCC if it is on the path...
+    test_options = [("gcc --version", 0)]
+    if sys.platform.startswith("win"):
+        test_options.append(("cl", 0))
+        test_options.append((os.path.join(os.environ.get("VCINSTALLDIR", ""), "bin", "cl"), 0))
+    return get_first_line_output(test_options)
+
+def get_linker_version():
+    #FIXME: we assume we'll use GCC if it is on the path...
+    test_options = [("ld --version", 0)]
+    if sys.platform.startswith("win"):
+        test_options.append(("link", 1100))
+        test_options.append((os.path.join(os.environ.get("VCINSTALLDIR", ""), "bin", "link"), 1100))
+    return get_first_line_output(test_options)
+
 
 def set_prop(props, key, value):
     if value!="unknown" or props.get(key) is None:
@@ -144,7 +154,8 @@ def record_build_info(is_build=True):
     if is_build:
         set_prop(props, "BUILT_BY", getpass.getuser())
         set_prop(props, "BUILT_ON", socket.gethostname())
-        set_prop(props, "BUILD_DATE", date.today().isoformat())
+        set_prop(props, "BUILD_DATE", datetime.date.today().isoformat())
+        set_prop(props, "BUILD_TIME", datetime.datetime.now().strftime("%H:%M"))
         set_prop(props, "BUILD_CPU", get_cpuinfo())
         set_prop(props, "BUILD_BIT", platform.architecture()[0])
         set_prop(props, "BUILD_OS", get_platform_name())
@@ -154,7 +165,8 @@ def record_build_info(is_build=True):
             cython_version = "unknown"
         set_prop(props, "PYTHON_VERSION", sys.version_info[:3])
         set_prop(props, "CYTHON_VERSION", cython_version)
-        set_prop(props, "COMPILER_INFO", get_compiler_info())
+        set_prop(props, "COMPILER_VERSION", get_compiler_version())
+        set_prop(props, "LINKER_VERSION", get_linker_version())
         set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
     save_properties(props, BUILD_INFO_FILE)
 
