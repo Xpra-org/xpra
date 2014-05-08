@@ -1,27 +1,26 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from xpra.log import Logger
-focuslog = Logger("focus")
-workspacelog = Logger("workspace")
-log = Logger("window")
-keylog = Logger("window", "keyboard")
-
-from xpra.util import AdHocStruct, nn
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
-from xpra.client.client_window_base import ClientWindowBase
-gtk = import_gtk()
-gdk = import_gdk()
-cairo = import_cairo()
 
 import os
 import time
 import math
 
+from xpra.log import Logger
+focuslog = Logger("focus")
+workspacelog = Logger("workspace")
+log = Logger("window")
+keylog = Logger("keyboard")
+
+from xpra.util import AdHocStruct, nn
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
+from xpra.client.client_window_base import ClientWindowBase
+gtk     = import_gtk()
+gdk     = import_gdk()
+cairo   = import_cairo()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False

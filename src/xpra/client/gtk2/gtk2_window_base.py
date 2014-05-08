@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -14,8 +14,6 @@ from xpra.log import Logger
 log = Logger("window")
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
-from xpra.client.gtk2.window_backing import HAS_ALPHA
-
 #optional module providing faster handling of premultiplied argb:
 try:
     from xpra.codecs.argb.argb import unpremultiply_argb, byte_buffer_to_buffer   #@UnresolvedImport
@@ -92,6 +90,7 @@ class GTK2WindowBase(GTKClientWindowBase):
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
         self.set_data("_kde_no_window_grab", 1)
 
+
     def setup_window(self):
         #preserve screen:
         if not self._override_redirect:
@@ -107,10 +106,10 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     def set_alpha(self):
         #by default, only RGB (no transparency):
+        #rgb_formats = list(BACKING_CLASS.RGB_MODES)
         self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
-        if not HAS_ALPHA:
+        if not self._has_alpha:
             self._client_properties["encoding.transparency"] = False
-            self._has_alpha = False
             return
         if self._has_alpha and not self.is_realized():
             screen = self.get_screen()

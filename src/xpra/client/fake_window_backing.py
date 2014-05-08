@@ -19,6 +19,9 @@ FAKE_BACKING_DELAY = int(os.environ.get("XPRA_FAKE_BACKING_DELAY", "5"))
 
 class FakeBacking(object):
 
+    RGB_MODES = ["RGBA", "RGB"]
+    HAS_ALPHA = True
+
     def __init__(self, wid, *args):
         self.wid = wid
         self.fake_delay = FAKE_BACKING_DELAY

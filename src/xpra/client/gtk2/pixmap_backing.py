@@ -11,7 +11,7 @@ import cairo
 from xpra.log import Logger
 log = Logger("paint")
 
-from xpra.client.gtk2.window_backing import GTK2WindowBacking, HAS_ALPHA
+from xpra.client.gtk2.window_backing import GTK2WindowBacking
 
 
 """
@@ -24,10 +24,14 @@ class PixmapBacking(GTK2WindowBacking):
     def __repr__(self):
         return "PixmapBacking(%s)" % self._backing
 
+    def __init__(self, wid, w, h, has_alpha):
+        self._backing = None
+        GTK2WindowBacking.__init__(self, wid, has_alpha)
+
     def init(self, w, h):
         old_backing = self._backing
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
-        if self._has_alpha and HAS_ALPHA:
+        if self._has_alpha:
             self._backing = gdk.Pixmap(None, w, h, 32)
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()
@@ -66,12 +70,13 @@ class PixmapBacking(GTK2WindowBacking):
             cr.rectangle(0, 0, w, h)
             cr.fill()
 
-    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
+        img_data = self.img_data_tobytes(img_data)
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         return True
 
-    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         #log.info("do_paint_rgb32(%s bytes, %s, %s, %s, %s, %s, %s, %s) backing depth=%s", len(img_data), x, y, width, height, rowstride, options, callbacks, self._backing.get_depth())
         #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
         rgba = self.unpremultiply(img_data)

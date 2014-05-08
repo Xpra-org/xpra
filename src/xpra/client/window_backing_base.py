@@ -12,16 +12,23 @@ log = Logger("paint")
 from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net.protocol import has_lz4, LZ4_uncompress
-from xpra.os_util import BytesIOClass, bytestostr
+from xpra.util import typedict
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum, get_PIL_decodings
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
-from xpra.os_util import builtins
+from xpra.os_util import BytesIOClass, bytestostr, builtins
 _memoryview = builtins.__dict__.get("memoryview")
 try:
     from xpra.codecs.xor import xor_str
 except:
     xor_str = None
+#for alpha unpremultiply utility function
+#(subclasses should ensure argb is present before calling it!)
+try:
+    from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
+except:
+    log.warn("argb module is missing, cannot support alpha channels")
+    unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer  = None, None, None
 
 PIL = get_codec("PIL")
 
@@ -71,12 +78,12 @@ Generic superclass for all Backing code,
 see CairoBacking and GTKWindowBacking for actual implementations
 """
 class WindowBackingBase(object):
-    def __init__(self, wid, idle_add):
+    def __init__(self, wid, has_alpha, idle_add):
         load_csc_options()
         load_video_decoders()
         self.wid = wid
         self.idle_add = idle_add
-        self._has_alpha = False
+        self._has_alpha = has_alpha
         self._backing = None
         self._last_pixmap_data = None
         self._video_decoder = None
@@ -119,6 +126,22 @@ class WindowBackingBase(object):
         if self._csc_decoder:
             self._csc_decoder.clean()
             self._csc_decoder = None
+
+
+    def img_data_tobytes(self, img_data):
+        if _memoryview and isinstance(img_data, _memoryview):
+            return img_data.tobytes()
+        return img_data
+
+    def unpremultiply(self, img_data):
+        if type(img_data)==str:
+            #cannot do in-place:
+            assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb"
+            return byte_buffer_to_buffer(unpremultiply_argb(img_data))
+        #assume this is a writeable buffer (ie: ctypes from mmap):
+        assert unpremultiply_argb_in_place is not None, "missing argb.unpremultiply_argb_in_place"
+        unpremultiply_argb_in_place(img_data)
+        return img_data
 
 
     def process_delta(self, raw_data, width, height, rowstride, options):
@@ -168,34 +191,40 @@ class WindowBackingBase(object):
             else:
                 img = img.convert("RGB")
         raw_data = img.tostring("raw", img.mode)
+        paint_options = typedict(options)
         if img.mode=="RGB":
             #PIL flattens the data to a continuous straightforward RGB format:
             rowstride = width*3
+            paint_options["rgb_format"] = "RGB" 
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
-            self.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
+            self.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, paint_options, callbacks)
         elif img.mode=="RGBA":
             rowstride = width*4
+            paint_options["rgb_format"] = "RGBA" 
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
-            self.idle_add(self.do_paint_rgb32, img_data, x, y, width, height, rowstride, options, callbacks)
+            self.idle_add(self.do_paint_rgb32, img_data, x, y, width, height, rowstride, paint_options, callbacks)
         return False
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         dec_webm = get_codec("dec_webm")
         assert dec_webm is not None, "webp decoder not found"
+        paint_options = typedict(options)
         if options.get("has_alpha", False):
             decode = dec_webm.DecodeRGBA
             rowstride = width*4
             paint_rgb = self.do_paint_rgb32
+            paint_options["rgb_format"] = "RGBA" 
         else:
             decode = dec_webm.DecodeRGB
             rowstride = width*3
             paint_rgb = self.do_paint_rgb24
-        log("paint_webp(%s) using decode=%s, paint=%s",
-             ("%s bytes" % len(img_data), x, y, width, height, options, callbacks), decode, paint_rgb)
+            paint_options["rgb_format"] = "RGB" 
+        log("paint_webp(%s) using decode=%s, paint=%s, paint_options=%s",
+             ("%s bytes" % len(img_data), x, y, width, height, options, callbacks), decode, paint_rgb, paint_options)
         rgb_data = decode(img_data)
         pixels = str(rgb_data.bitmap)
-        self.idle_add(paint_rgb, pixels, x, y, width, height, rowstride, options, callbacks)
+        self.idle_add(paint_rgb, pixels, x, y, width, height, rowstride, paint_options, callbacks)
         return  False
 
     def paint_rgb24(self, raw_data, x, y, width, height, rowstride, options, callbacks):
@@ -367,15 +396,18 @@ class WindowBackingBase(object):
         log("do_video_paint rgb using %s.convert_image(%s)=%s", self._csc_decoder, img, rgb)
         img.free()
         assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
+        #make a new options dict and set the rgb format:
+        paint_options = typedict(options)
+        paint_options["rgb_format"] = rgb_format
         #this will also take care of firing callbacks (from the UI thread):
         def paint():
             data = rgb.get_pixels()
             rowstride = rgb.get_rowstride()
-            if rgb_format=="RGB":
-                self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+            if len(rgb_format)==3:
+                self.do_paint_rgb24(data, x, y, width, height, rowstride, paint_options, callbacks)
             else:
-                #assert rgb_format=="RGBX"
-                self.do_paint_rgb32(data, x, y, width, height, rowstride, options, callbacks)
+                assert len(rgb_format)==4
+                self.do_paint_rgb32(data, x, y, width, height, rowstride, paint_options, callbacks)
             rgb.free()
         self.idle_add(paint)
 
@@ -401,8 +433,7 @@ class WindowBackingBase(object):
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
         """ dispatches the paint to one of the paint_XXXX methods """
         log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
-        if _memoryview and isinstance(img_data, _memoryview):
-            img_data = img_data.tobytes()
+        img_data = self.img_data_tobytes(img_data)
         coding = bytestostr(coding)
         if coding == "mmap":
             self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)

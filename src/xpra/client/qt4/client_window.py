@@ -58,8 +58,8 @@ class ClientWindow(QWidget, ClientWindowBase):
         QWidget.__init__(self, None)
         ClientWindowBase.init_window(self, metadata)
 
-    def new_backing(self, w, h):
-        self._backing = self.make_new_backing(QtPixmapBacking, w, h)
+    def get_backing_class(self):
+        return QtPixmapBacking
 
 
     def show_all(self):

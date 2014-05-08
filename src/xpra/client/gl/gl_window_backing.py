@@ -135,6 +135,8 @@ window image, which is critical because of backbuffer content losses upon buffer
 """
 class GLPixmapBacking(GTK2WindowBacking):
 
+    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP"]
+
     def __init__(self, wid, w, h, has_alpha):
         display_mode = get_DISPLAY_MODE()
         try:
@@ -142,9 +144,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         except gtk.gdkgl.NoMatches:
             display_mode &= ~gtk.gdkgl.MODE_DOUBLE
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
-        if not self.glconfig.has_alpha():
-            has_alpha = False
-        GTK2WindowBacking.__init__(self, wid, w, h, has_alpha)
+        GTK2WindowBacking.__init__(self, wid, has_alpha and self.glconfig.has_alpha())
         self._backing = gtk.gtkgl.DrawingArea(self.glconfig)
         #restoring missed masks:
         self._backing.set_events(self._backing.get_events() | gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK)

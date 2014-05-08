@@ -115,8 +115,8 @@ class ClientWindow(GTKClientWindowBase):
             self.do_scroll_event(event)
         self.connect("scroll-event", scroll)
 
-    def new_backing(self, w, h):
-        self._backing = self.make_new_backing(CairoBacking, w, h)
+    def get_backing_class(self):
+        return CairoBacking
 
 
     def xget_u32_property(self, target, name):

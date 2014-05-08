@@ -11,45 +11,26 @@ from gtk import gdk
 import gobject
 
 from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase
-from xpra.client.gl.gl_window_backing import GLPixmapBacking, log
-from xpra.codecs.video_helper import getVideoHelper
+from xpra.client.gl.gl_window_backing import GLPixmapBacking
 
 
 class GLClientWindow(GTK2WindowBase):
-
-    gl_pixmap_backing_class = GLPixmapBacking
-    full_csc_modes = None
-    csc_modes = None
 
     def __init__(self, *args):
         log("GLClientWindow(..)")
         GTK2WindowBase.__init__(self, *args)
         self.add(self._backing._backing)
 
+    def get_backing_class(self):
+        return GLPixmapBacking
+
     def setup_window(self):
         self._client_properties["encoding.uses_swscale"] = False
-        self._client_properties["encoding.full_csc_modes"] = self.get_full_csc_modes()
-        self._client_properties["encoding.csc_modes"] = self.get_csc_modes()
         GTK2WindowBase.setup_window(self)
 
 
     def __str__(self):
         return "GLClientWindow(%s : %s)" % (self._id, self._backing)
-
-    def get_full_csc_modes(self):
-        #initialize just once per class
-        if GLClientWindow.full_csc_modes is None:
-            GLClientWindow.full_csc_modes = getVideoHelper().get_server_full_csc_modes("YUV420P", "YUV422P", "YUV444P", "GBRP")
-        return GLClientWindow.full_csc_modes
-
-    def get_csc_modes(self):
-        #initialize just once per class
-        if GLClientWindow.csc_modes is None:
-            csc_modes = []
-            for modes in self.get_full_csc_modes().values():
-                csc_modes += modes
-            GLClientWindow.csc_modes = list(set(csc_modes))
-        return GLClientWindow.csc_modes
 
     def is_GL(self):
         return True
@@ -88,10 +69,6 @@ class GLClientWindow(GTK2WindowBase):
     def destroy(self):
         self._backing.paint_screen = False
         GTK2WindowBase.destroy(self)
-
-    def new_backing(self, w, h):
-        self._backing = self.make_new_backing(self.gl_pixmap_backing_class, w, h)
-        self._backing.border = self.border
 
     def magic_key(self, *args):
         if self.border:

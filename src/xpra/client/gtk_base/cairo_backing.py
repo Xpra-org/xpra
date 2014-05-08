@@ -5,10 +5,10 @@
 # later version. See the file COPYING for details.
 
 from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_pixbufloader, import_cairo, is_gtk3
-gdk = import_gdk()
-gobject = import_gobject()
-cairo = import_cairo()
-PixbufLoader = import_pixbufloader()
+gdk             = import_gdk()
+gobject         = import_gobject()
+cairo           = import_cairo()
+PixbufLoader    = import_pixbufloader()
 
 from xpra.os_util import BytesIOClass
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, cairo_set_source_pixbuf, gdk_cairo_context, COLORSPACE_RGB
@@ -37,7 +37,7 @@ class CairoBacking(GTKWindowBacking):
     RGB_MODES = ["ARGB", "XRGB", "RGBA", "RGBX", "RGB"]
 
     def __init__(self, wid, w, h, has_alpha):
-        GTKWindowBacking.__init__(self, wid)
+        GTKWindowBacking.__init__(self, wid, has_alpha)
 
     def __repr__(self):
         return "CairoBacking(%s)" % self._backing
@@ -47,9 +47,15 @@ class CairoBacking(GTKWindowBacking):
         #should we honour self.depth here?
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
         cr = cairo.Context(self._backing)
+        cr.set_operator(cairo.OPERATOR_CLEAR)
+        cr.set_source_rgba(1, 1, 1, 1)
+        cr.rectangle(0, 0, w, h)
+        cr.fill()
         if old_backing is not None:
             # Really we should respect bit-gravity here but... meh.
-            old_w, old_h = old_backing.get_size()
+            old_w = old_backing.get_width()
+            old_h = old_backing.get_height()
+            cr.set_operator(cairo.OPERATOR_SOURCE)
             if w>old_w and h>old_h:
                 #both width and height are bigger:
                 cr.rectangle(old_w, 0, w-old_w, h)
@@ -65,14 +71,10 @@ class CairoBacking(GTKWindowBacking):
                 #enlarged in height only
                 cr.rectangle(0, old_h, w, h-old_h)
                 cr.fill()
-            cr.set_operator(cairo.OPERATOR_SOURCE)
-            cr.set_source_pixmap(old_backing, 0, 0)
+            #cr.set_operator(cairo.OPERATOR_CLEAR)
+            cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
             #old_backing.finish()
-        else:
-            cr.rectangle(0, 0, w, h)
-        cr.set_source_rgb(1, 1, 1)
-        cr.fill()
 
     def close(self):
         if self._backing:
@@ -128,6 +130,7 @@ class CairoBacking(GTKWindowBacking):
         """ must be called from UI thread """
         log("cairo_paint_surface(%s, %s, %s)", img_surface, x, y)
         gc = gdk_cairo_context(cairo.Context(self._backing))
+        #gc.set_operator(cairo.OPERATOR_SOURCE)
         gc.set_source_surface(img_surface, x, y)
         gc.paint()
         return True
@@ -155,7 +158,7 @@ class CairoBacking(GTKWindowBacking):
         # https://mail.gnome.org/archives/python-hackers-list/2011-December/msg00004.html
         # "PyGObject just lacks the glue code that allows it to pass the statically-wrapped
         # cairo.Pattern to introspected methods"
-        
+
         if not is_gtk3() and rgb_format in ("ARGB", "XRGB"):
             #the pixel format is also what cairo expects
             #maybe we should also check that the stride is acceptable for cairo?

@@ -15,14 +15,15 @@ USE_FAKE_BACKING = os.environ.get("XPRA_USE_FAKE_BACKING", "0")=="1"
 
 
 class ClientWidgetBase(object):
-    def __init__(self, client, wid):
+
+    def __init__(self, client, wid, has_alpha):
         self._id = wid
         #gobject-like scheduler:
         self.source_remove = client.source_remove
         self.idle_add = client.idle_add
         self.timeout_add = client.timeout_add
+        self._has_alpha = has_alpha
         self._client = client
-        self._has_alpha = False
 
     def make_new_backing(self, backing_class, w, h):
         w = max(1, w)

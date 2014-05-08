@@ -22,9 +22,8 @@ class ClientTray(ClientWidgetBase):
 
     def __init__(self, client, wid, w, h, tray_widget, mmap_enabled, mmap_area):
         log("ClientTray%s", (client, wid, w, h, tray_widget, mmap_enabled, mmap_area))
-        ClientWidgetBase.__init__(self, client, wid)
+        ClientWidgetBase.__init__(self, client, wid, True)
         self.tray_widget = tray_widget
-        self._has_alpha = True
         self._geometry = None
         self.group_leader = None
 
@@ -33,6 +32,9 @@ class ClientTray(ClientWidgetBase):
         self._backing = None
         self.new_backing(w, h)
         self.idle_add(self.reconfigure)
+
+    def get_backing_class(self):
+        return TrayBacking
 
     def is_OR(self):
         return True
@@ -145,9 +147,14 @@ class TrayBacking(GTKWindowBacking):
         we can use them with the real widget.
     """
 
+    #keep it simple: only accept 32-bit RGB(X),
+    #all tray implementations support alpha
+    RGB_MODES = ["RGBA", "RGBX"]
+    HAS_ALPHA = True
+
     def __init__(self, wid, w, h, has_alpha, data=None):
         self.data = data
-        GTKWindowBacking.__init__(self, wid)
+        GTKWindowBacking.__init__(self, wid, True)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         log("TrayBacking._do_paint_rgb24%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options, callbacks))

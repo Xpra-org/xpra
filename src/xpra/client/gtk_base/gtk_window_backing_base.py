@@ -4,24 +4,36 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pygtk3 vs pygtk2 (sigh)
-from xpra.gtk_common.gobject_compat import import_gobject, import_cairo
-gobject = import_gobject()
-cairo = import_cairo()
+import os
+import sys
 
-from xpra.client.window_backing_base import WindowBackingBase
+#pygtk3 vs pygtk2 (sigh)
+from xpra.gtk_common.gobject_compat import import_gobject, import_cairo, is_gtk3
+gobject = import_gobject()
+cairo   = import_cairo()
+
+from xpra.client.window_backing_base import WindowBackingBase, unpremultiply_argb
 from xpra.log import Logger
-log = Logger("window", "paint")
+log = Logger("paint")
+
+#transparency with GTK:
+# - on MS Windows: not supported
+# - on OSX: only with gtk3
+DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and (not sys.platform.startswith("darwin") or is_gtk3())
+HAS_ALPHA = (unpremultiply_argb is not None) and os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
 
 
 """
 Generic GTK superclass for Backing code (for both GTK2 and GTK3),
-see CairoBacking and PixmapBacking for actual implementations
+see CairoBacking, PixmapBacking and TrayBacking for actual implementations.
+(some may override HAS_ALPHA, TrayBacking does)
 """
 class GTKWindowBacking(WindowBackingBase):
 
-    def __init__(self, wid):
-        WindowBackingBase.__init__(self, wid, gobject.idle_add)
+    HAS_ALPHA = HAS_ALPHA
+
+    def __init__(self, wid, has_alpha):
+        WindowBackingBase.__init__(self, wid, has_alpha and HAS_ALPHA, gobject.idle_add)
 
 
     def cairo_draw(self, context):
