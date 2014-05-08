@@ -367,17 +367,18 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         w = max(1, w)
         h = max(1, h)
         self._resize_counter = resize_counter
-        if self.get_position()==(x, y):
+        window = self.gdk_window()
+        if window.get_position()==(x, y):
             #same location, just resize:
             if self._size!=(w, h):
-                self.window.resize(w, h)
+                self.resize(w, h)
         else:
-            mw, mh = gtk.gdk.get_default_root_window().get_size()
+            mw, mh = self._client.get_root_size()
             if not self.is_realized():
                 self.realize()
             #adjust for window frame:
-            ox, oy = self.window.get_origin()
-            rx, ry = self.window.get_root_origin()
+            ox, oy = window.get_origin()[-2:]
+            rx, ry = window.get_root_origin()
             ax = x - (ox - rx)
             ay = y - (oy - ry)
             #validate against edge of screen (ensure window is shown):
@@ -390,10 +391,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             elif ay >= mh:
                 ay = mh -1
             if self._size!=(w, h):
-                self.window.move_resize(ax, ay, w, h)
+                window.move_resize(ax, ay, w, h)
             else:
                 #just move:
-                self.window.move(ax, ay)
+                window.move(ax, ay)
         if self._size!=(w, h):
             self._size = (w, h)
             self.new_backing(w, h)

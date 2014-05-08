@@ -115,6 +115,8 @@ class ClientWindow(GTKClientWindowBase):
     def get_backing_class(self):
         return CairoBacking
 
+    def gdk_window(self):
+        return  self.get_window()
 
     def xget_u32_property(self, target, name):
         try:
