@@ -83,19 +83,27 @@ class CairoBacking(GTKWindowBacking):
 
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
-        log("cairo.paint_image(%s, %s bytes,%s,%s,%s,%s,%s,%s)", coding, len(img_data), x, y, width, height, options, callbacks)
+        log("cairo.paint_image(%s, %s bytes,%s,%s,%s,%s,%s,%s) has_alpha=%s", coding, len(img_data), x, y, width, height, options, callbacks, self._has_alpha)
         #catch PNG and jpeg we can handle via cairo or pixbufloader respectively
         #(both of which need to run from the UI thread)
         if coding.startswith("png") or coding=="jpeg":
             def ui_paint_image():
+                if not self._backing:
+                    fire_paint_callbacks(callbacks, False)
+                    return
                 try:
                     if coding.startswith("png"):
                         reader = BytesIOClass(img_data)
                         img = cairo.ImageSurface.create_from_png(reader)
-                        success = self._backing is not None and self.cairo_paint_surface(img, x, y)
+                        success = self.cairo_paint_surface(img, x, y)
                     else:
                         assert coding=="jpeg"
-                        success = self._backing is not None and self.cairo_paint_image(img_data, x, y)
+                        pbl = PixbufLoader()
+                        pbl.write(img_data)
+                        pbl.close()
+                        pixbuf = pbl.get_pixbuf()
+                        del pbl
+                        success = self.cairo_paint_pixbuf(pixbuf, x, y)
                 except:
                     log.error("cairo error during paint", exc_info=True)
                     success = False
@@ -104,18 +112,6 @@ class CairoBacking(GTKWindowBacking):
             return
         #this will end up calling do_paint_rgb24 after converting the pixels to RGB
         GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
-
-    def cairo_paint_image(self, img_data, x, y):
-        """ must be called from UI thread """
-        log("cairo_paint_image(%s bytes, %s, %s) backing=%s", len(img_data), x, y, self._backing)
-        #load into a pixbuf (RGBX) which is then painted by cairo
-        #(which first converts it to XRGB internally..)
-        pbl = PixbufLoader()
-        pbl.write(img_data)
-        pbl.close()
-        pixbuf = pbl.get_pixbuf()
-        del pbl
-        return self.cairo_paint_pixbuf(pixbuf, x, y)
 
     def cairo_paint_pixbuf(self, pixbuf, x, y):
         """ must be called from UI thread """
@@ -130,7 +126,11 @@ class CairoBacking(GTKWindowBacking):
         """ must be called from UI thread """
         log("cairo_paint_surface(%s, %s, %s)", img_surface, x, y)
         gc = gdk_cairo_context(cairo.Context(self._backing))
-        #gc.set_operator(cairo.OPERATOR_SOURCE)
+        if self._has_alpha:
+            gc.set_operator(cairo.OPERATOR_CLEAR)
+            gc.rectangle(x, y, self._backing.get_width(), self._backing.get_height())
+            gc.fill()
+            gc.set_operator(cairo.OPERATOR_OVER)
         gc.set_source_surface(img_surface, x, y)
         gc.paint()
         return True
