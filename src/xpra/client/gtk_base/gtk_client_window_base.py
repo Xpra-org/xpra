@@ -367,7 +367,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         w = max(1, w)
         h = max(1, h)
         self._resize_counter = resize_counter
-        if self.window.get_position()==(x, y):
+        if self.get_position()==(x, y):
             #same location, just resize:
             if self._size!=(w, h):
                 self.window.resize(w, h)
