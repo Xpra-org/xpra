@@ -17,9 +17,6 @@ from xpra.log import Logger
 log = Logger("gtk", "window")
 paintlog = Logger("paint")
 
-#required with GTK3 (too much of pain to deal with cairo)
-from xpra.codecs.argb.argb import unpremultiply_argb, byte_buffer_to_buffer   #@UnresolvedImport
-
 
 GTK3_WINDOW_EVENT_MASK = Gdk.EventMask.STRUCTURE_MASK | Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.KEY_RELEASE_MASK \
             | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK \
@@ -190,22 +187,6 @@ class ClientWindow(GTKClientWindowBase):
         paintlog("do_draw(%s)", context)
         if self.get_mapped() and self._backing:
             self._backing.cairo_draw(context)
-
-
-    def update_icon(self, width, height, coding, data):
-        log("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
-        if coding == "premult_argb32":
-            #we usually cannot do in-place and this is not performance critical
-            data = byte_buffer_to_buffer(unpremultiply_argb(data))
-            pixbuf = GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
-                                         True, 8, width, height, width*4,
-                                         None, None)
-        else:
-            pbl = GdkPixbuf.PixbufLoader()
-            pbl.write(data)
-            pbl.close()
-            pixbuf = pbl.get_pixbuf()
-        self.set_icon(pixbuf)
 
 
 GObject.type_register(ClientWindow)

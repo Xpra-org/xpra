@@ -15,12 +15,14 @@ workspacelog = Logger("workspace")
 log = Logger("window")
 keylog = Logger("keyboard")
 
-from xpra.util import AdHocStruct, nn
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
+from xpra.util import AdHocStruct, nn, bytestostr
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
+from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB
 from xpra.client.client_window_base import ClientWindowBase
 gtk     = import_gtk()
 gdk     = import_gdk()
 cairo   = import_cairo()
+PixbufLoader = import_pixbufloader()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
@@ -45,6 +47,12 @@ if os.name=="posix":
             log.info("failed to setup workspace hooks: %s", e)
     except ImportError, e:
         pass
+
+#optional module providing faster handling of premultiplied argb:
+try:
+    from xpra.codecs.argb.argb import unpremultiply_argb, byte_buffer_to_buffer   #@UnresolvedImport
+except:
+    unpremultiply_argb, byte_buffer_to_buffer  = None, None
 
 
 
@@ -442,3 +450,23 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         focuslog("%s focus_change(%s) has-toplevel-focus=%s, _been_mapped=%s", self, args, htf, self._been_mapped)
         if self._been_mapped:
             self._client.update_focus(self._id, htf)
+
+
+    def update_icon(self, width, height, coding, data):
+        log("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
+        coding = bytestostr(coding)
+        if coding == "premult_argb32":
+            if unpremultiply_argb is None:
+                #we could use PIL here with mode 'RGBa'
+                log.warn("cannot process premult_argb32 icon without the argb module")
+                return
+            #we usually cannot do in-place and this is not performance critical
+            data = byte_buffer_to_buffer(unpremultiply_argb(data))
+            pixbuf = pixbuf_new_from_data(data, COLORSPACE_RGB, True, 8, width, height, width*4)
+        else:
+            loader = PixbufLoader()
+            loader.write(data)
+            loader.close()
+            pixbuf = loader.get_pixbuf()
+        log("%s.set_icon(%s)", self, pixbuf)
+        self.set_icon(pixbuf)
