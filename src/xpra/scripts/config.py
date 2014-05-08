@@ -78,7 +78,7 @@ def get_build_info():
     info = []
     try:
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
-        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, CYTHON_VERSION, COMPILER_INFO
+        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, CYTHON_VERSION, COMPILER_VERSION
         info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
         if BUILD_DATE:
             info.append(BUILD_DATE)
@@ -90,12 +90,12 @@ def get_build_info():
             info.append("revision %s" % REVISION)
         else:
             info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
-        if CYTHON_VERSION!="unknown" or COMPILER_INFO!="unknown":
+        if CYTHON_VERSION!="unknown" or COMPILER_VERSION!="unknown":
             info.append("")
         if CYTHON_VERSION!="unknown":
             info.append("built with Cython %s" % CYTHON_VERSION)
-        if COMPILER_INFO!="unknown":
-            info.append(COMPILER_INFO)
+        if COMPILER_VERSION!="unknown":
+            info.append(COMPILER_VERSION)
     except Exception, e:
         warn("Error: could not find the source or build information: %s" % e)
     return info
