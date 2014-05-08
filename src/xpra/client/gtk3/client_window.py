@@ -90,8 +90,11 @@ class ClientWindow(GTKClientWindowBase):
     def init_window(self, metadata):
         #TODO: no idea how to do the window-type with gtk3
         #maybe not even be possible..
+        window_type = Gtk.WindowType.TOPLEVEL
+        if self._override_redirect:
+            window_type = Gtk.WindowType.POPUP
         Gtk.Window.__init__(self,
-                            type = Gtk.WindowType.TOPLEVEL,
+                            type = window_type,
                             decorated = not self._override_redirect,
                             app_paintable = True)
         GTKClientWindowBase.init_window(self, metadata)
