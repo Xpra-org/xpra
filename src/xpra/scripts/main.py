@@ -71,7 +71,9 @@ def main(script_file, cmdline):
             mode = args.pop(0)
             return run_mode(script_file, parser, options, args, mode)
         except:
-            return -1
+            e = sys.exc_info()[1]
+            print("xpra main exception: %s" % e)
+            sys.exit(1)
     finally:
         platform_clean()
 
