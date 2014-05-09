@@ -57,9 +57,8 @@ cdef extern from "libswscale/swscale.h":
                   uint8_t *const dst[], const int dstStride[]) nogil
 
 
-MIN_SWSCALE_MAJOR_VERSION = 2
-MIN_SWSCALE_MINOR_VERSION = 2
-if LIBSWSCALE_VERSION_MAJOR<MIN_SWSCALE_MAJOR_VERSION or LIBSWSCALE_VERSION_MINOR<MIN_SWSCALE_MINOR_VERSION:
+MIN_SWSCALE_VERSION = (2, 1, 1)
+if (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)<MIN_SWSCALE_VERSION:
     log.warn("buggy swscale version detected: %s", get_version())
     if os.environ.get("XPRA_FORCE_SWSCALE", "0")!="1":
         log.warn("XPRA_FORCE_SWSCALE enabled at your own risk!")
