@@ -389,7 +389,7 @@ def parse_cmdline(cmdline):
                           help="Path to the default image which will be used for all windows (the application may override this)")
     # let the platform specific code add its own options:
     # adds "--no-tray" for platforms that support it
-    add_client_options(group)
+    add_client_options(group, defaults)
     hidden_options["tray"] =  True
     hidden_options["delay_tray"] =  False
     group.add_option("--tray-icon", action="store",

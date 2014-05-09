@@ -4,6 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-def add_client_options(parser):
+def add_client_options(parser, defaults):
     from xpra.platform.options_util import add_notray_option
     add_notray_option(parser, ", this will also disable notifications!")

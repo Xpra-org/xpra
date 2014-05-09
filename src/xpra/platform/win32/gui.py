@@ -52,7 +52,7 @@ def get_native_system_tray_classes(*args):
 
 
 class ClientExtras(object):
-    def __init__(self, client):
+    def __init__(self, client, opts):
         self.client = client
         self._kh_warning = False
         self.setup_console_event_listener()
@@ -132,7 +132,7 @@ def main():
         fake_client.suspend = suspend
         fake_client.resume = resume
         fake_client.keyboard_helper = None
-        ClientExtras(fake_client)
+        ClientExtras(fake_client, None)
 
         import gobject
         gobject.threads_init()

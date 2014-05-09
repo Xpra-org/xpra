@@ -291,7 +291,7 @@ class UIXpraClient(XpraClientBase):
                 log("failed to set pulseaudio audio tagging: %s", e)
 
         if ClientExtras is not None:
-            self.client_extras = ClientExtras(self)
+            self.client_extras = ClientExtras(self, opts)
 
         if opts.border:
             self.parse_border(opts.border)

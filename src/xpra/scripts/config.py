@@ -275,6 +275,7 @@ OPTION_TYPES = {
                     "exit-ssh"          : bool,
                     "opengl"            : bool,
                     "mdns"              : bool,
+                    "swap_keys"         : bool,
                     #arrays of strings (default value, allowed options):
                     "video-encoders"    : list,
                     "csc-modules"       : list,
@@ -366,6 +367,7 @@ def get_defaults():
                     "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : os.name=="posix" and not sys.platform.startswith("darwin"),
+                    "swap_keys"         : sys.platform.startswith("darwin"),    #only used on osx
                     "video-encoders"    : [],
                     "csc-modules"       : [],
                     "speaker-codec"     : [],
