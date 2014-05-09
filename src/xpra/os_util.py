@@ -174,6 +174,13 @@ def get_user_uuid():
     uupdate(os.environ.get("HOME", ""))
     return u.hexdigest()
 
+def is_Ubuntu():
+    try:
+        v = load_binary_file("/etc/issue")
+        return bool(v) and v.find("Ubuntu")>=0
+    except:
+        pass
+    return False
 
 def load_binary_file(filename):
     if not os.path.exists(filename):
