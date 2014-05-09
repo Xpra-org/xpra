@@ -57,6 +57,19 @@ cdef extern from "libswscale/swscale.h":
                   uint8_t *const dst[], const int dstStride[]) nogil
 
 
+MIN_SWSCALE_MAJOR_VERSION = 2
+MIN_SWSCALE_MINOR_VERSION = 2
+if LIBSWSCALE_VERSION_MAJOR<MIN_SWSCALE_MAJOR_VERSION or LIBSWSCALE_VERSION_MINOR<MIN_SWSCALE_MINOR_VERSION:
+    log.warn("buggy swscale version detected: %s", get_version())
+    if os.environ.get("XPRA_FORCE_SWSCALE", "0")!="1":
+        log.warn("XPRA_FORCE_SWSCALE enabled at your own risk!")
+    else:
+        log.warn("cowardly refusing to use it to avoid problems, set the environment variable:")
+        log.warn("XPRA_FORCE_SWSCALE=1")
+        log.warn("to use it anyway, at your own risk")
+        raise ImportError("unsupported swscale version: %s" % str(get_version()))
+
+
 cdef class CSCPixelFormat:
     cdef AVPixelFormat av_enum
     cdef char* av_enum_name
