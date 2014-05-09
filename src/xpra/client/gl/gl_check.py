@@ -290,6 +290,8 @@ def check_support(min_texture_size=0, force_enable=False):
     assert gtk.gdkgl is not None and gtk.gtkgl is not None
     log("pygdkglext version=%s", gtk.gdkgl.pygdkglext_version)
     props["pygdkglext_version"] = gtk.gdkgl.pygdkglext_version
+    log("gtkglext_version=%s", gtk.gdkgl.gdkglext_version)
+    props["gdkglext_version"] = gtk.gdkgl.gdkglext_version
     log("pygdkglext OpenGL version=%s", gtk.gdkgl.query_version())
     props["gdkgl_version"] = gtk.gdkgl.query_version()
     display_mode = get_DISPLAY_MODE()
@@ -369,7 +371,8 @@ def main():
                 log.info("  %s", e)
         log.info("")
         log.info("OpenGL properties:")
-        for k,v in props.items():
+        for k in sorted(props.keys()):
+            v = props[k]
             #skip not human readable:
             if k not in ("extensions", "glconfig"):
                 log.info("* %s : %s", str(k).ljust(24), pver(v))
