@@ -103,6 +103,7 @@ class KeyboardConfig(KeyboardConfigBase):
             v = getattr(self, "xkbmap_mod_"+x)
             if v:
                 info["modifiers."+x] = v
+        info["state.modifiers"] = self.get_current_mask()
         log("keyboard info: %s", "\n".join(["%s=%s" % (k,v) for k,v in info.items()]))
         return info
 
@@ -293,6 +294,10 @@ class KeyboardConfig(KeyboardConfigBase):
         return keycode
 
 
+    def get_current_mask(self):
+        _, _, current_mask = gtk.gdk.get_default_root_window().get_pointer()
+        return mask_to_names(current_mask, self.modifier_map)
+
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         """
             Given a list of modifiers that should be set, try to press the right keys
@@ -313,10 +318,6 @@ class KeyboardConfig(KeyboardConfigBase):
                 so we try to find the matching modifier in the currently pressed keys (keys_pressed)
                 to make sure we unpress the right one.
         """
-        def get_current_mask():
-            _, _, current_mask = gtk.gdk.get_default_root_window().get_pointer()
-            return mask_to_names(current_mask, self.modifier_map)
-
         if not self.keynames_for_mod:
             log("make_keymask_match: ignored as keynames_for_mod not assigned yet")
             return
@@ -332,7 +333,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     return True
             return False
 
-        current = set(get_current_mask())
+        current = set(self.get_current_mask())
         wanted = set(modifier_list)
         if current==wanted:
             return
@@ -378,7 +379,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         X11Keyboard.xtest_fake_key(keycode, False)
                     else:
                         X11Keyboard.xtest_fake_key(keycode, press)
-                    new_mask = get_current_mask()
+                    new_mask = self.get_current_mask()
                     success = (modifier in new_mask)==press
                     log("make_keymask_match(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
                     if success:
@@ -386,7 +387,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     elif not nuisance:
                         log("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
                         X11Keyboard.xtest_fake_key(keycode, not press)
-                        new_mask = get_current_mask()
+                        new_mask = self.get_current_mask()
                         #maybe doing the full keypress (down+up or u+down) worked:
                         if (modifier in new_mask)==press:
                             break

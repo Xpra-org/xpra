@@ -171,6 +171,8 @@ class X11ServerBase(GTKServerBase):
             fx = None
         info["server.fakeXinerama"] = self.fake_xinerama and bool(fx)
         info["server.libfakeXinerama"] = fx or ""
+        #this is added here because the server keyboard config doesn't know about "keys_pressed"..
+        info["keyboard.state.keys_pressed"] = list(self.keys_pressed.keys())
         return info
 
     def get_window_info(self, window):
