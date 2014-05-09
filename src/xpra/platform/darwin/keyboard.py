@@ -39,7 +39,7 @@ class Keyboard(KeyboardBase):
         self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R")
         self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R")
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
-        log("set_modifier_mappings(..) meta=%s, control=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.num_lock_modifier)
+        log("set_modifier_mappings(%s) meta=%s, control=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.num_lock_modifier)
         #find the keysyms and keycodes to use for each key we may translate:
         for orig_keysym in KEYS_TRANSLATION_OPTIONS.keys():
             new_def = self.find_translation(orig_keysym)
