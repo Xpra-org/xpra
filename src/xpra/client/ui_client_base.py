@@ -1564,19 +1564,20 @@ class UIXpraClient(XpraClientBase):
         if self.min_sound_sequence>0 and seq<self.min_sound_sequence:
             soundlog("ignoring sound data with old sequence number %s", seq)
             return
-        if self.sound_sink is not None and codec!=self.sound_sink.codec:
-            log.error("sound codec change not supported! (from %s to %s)", self.sound_sink.codec, codec)
-            self.sound_sink.stop()
+        ss = self.sound_sink
+        if ss is not None and codec!=self.sound_sink.codec:
+            log.error("sound codec change not supported! (from %s to %s)", ss.codec, codec)
+            ss.stop()
             return
-        if self.sound_sink is None:
+        if ss is None:
             soundlog("no sound sink to process sound data, dropping it")
             return
-        elif self.sound_sink.get_state()=="stopped":
+        elif ss.get_state()=="stopped":
             soundlog("sound data received, sound sink is stopped - starting it")
-            self.sound_sink.start()
+            ss.start()
         #(some packets (ie: sos, eos) only contain metadata)
         if len(data)>0:
-            self.sound_sink.add_data(data, metadata)
+            ss.add_data(data, metadata)
 
 
     def send_notify_enabled(self):
