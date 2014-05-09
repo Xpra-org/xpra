@@ -58,18 +58,6 @@ cdef extern from "libswscale/swscale.h":
                   uint8_t *const dst[], const int dstStride[]) nogil
 
 
-MIN_SWSCALE_VERSION = (2, 1, 1)
-if (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)<MIN_SWSCALE_VERSION:
-    log.warn("buggy swscale version detected: %s", get_version())
-    if os.environ.get("XPRA_FORCE_SWSCALE", "0")!="1":
-        log.warn("XPRA_FORCE_SWSCALE enabled at your own risk!")
-    else:
-        log.warn("cowardly refusing to use it to avoid problems, set the environment variable:")
-        log.warn("XPRA_FORCE_SWSCALE=1")
-        log.warn("to use it anyway, at your own risk")
-        raise ImportError("unsupported swscale version: %s" % str(get_version()))
-
-
 cdef class CSCPixelFormat:
     cdef AVPixelFormat av_enum
     cdef char* av_enum_name
@@ -224,6 +212,18 @@ def get_spec(in_colorspace, out_colorspace):
     #there are restrictions on dimensions (8x2 minimum!)
     #swscale can be used to scale (obviously)
     return codec_spec(ColorspaceConverter, codec_type=get_type(), setup_cost=20, min_w=8, min_h=2, can_scale=True)
+
+
+MIN_SWSCALE_VERSION = (2, 1, 1)
+if (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)<MIN_SWSCALE_VERSION:
+    log.warn("buggy swscale version detected: %s", get_version())
+    if os.environ.get("XPRA_FORCE_SWSCALE", "0")=="1":
+        log.warn("XPRA_FORCE_SWSCALE enabled at your own risk!")
+    else:
+        log.warn("cowardly refusing to use it to avoid problems, set the environment variable:")
+        log.warn("XPRA_FORCE_SWSCALE=1")
+        log.warn("to use it anyway, at your own risk")
+        raise ImportError("unsupported swscale version: %s" % str(get_version()))
 
 
 cdef class CSCImage:
