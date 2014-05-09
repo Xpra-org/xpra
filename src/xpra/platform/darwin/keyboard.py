@@ -79,6 +79,7 @@ class Keyboard(KeyboardBase):
             meta_on = bool(mask & gtk.gdk.META_MASK)
             meta_set = self.meta_modifier in names
             control_set = self.control_modifier in names
+            log("mask_to_names names=%s, meta_on=%s, meta_set=%s, control_set=%s", names, meta_on, meta_set, control_set)
             if meta_on and not control_set:
                 log("mask_to_names swapping meta for control: %s for %s", self.meta_modifier, self.control_modifier)
                 names.append(self.control_modifier)
