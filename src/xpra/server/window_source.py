@@ -99,10 +99,12 @@ class WindowSource(object):
         self.generic_encodings = encoding_options.boolget("generic")
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = encoding_options.boolget("full_frames_only")
-        ropts = ["png", "webp", "rgb", "jpeg"]
+        ropts = set(("png", "webp", "rgb", "jpeg"))     #default encodings for auto-refresh
         if self.webp_leaks:
-            ropts.remove("webp")
-        self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", [x for x in self.encodings if x in ropts])
+            ropts.remove("webp")                        #don't use webp if the client is going to leak with it!
+        ropts = ropts.intersection(set(self.server_core_encodings)) #ensure the server has support for it
+        ropts = ropts.intersection(set(self.core_encodings))        #ensure the client has support for it
+        self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", list(ropts))
         self.supports_delta = []
         if xor_str is not None and not window.is_tray():
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
