@@ -132,7 +132,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             log("swapkeys_toggled(%s) swap keys enabled=%s", args, v)
             if self.keyboard:
                 self.keyboard.swap_keys = v
-        self.swapkeys_menuitem = self.checkitem("Control/Option Key Swap", swapkeys_toggled)
+        self.swapkeys_menuitem = self.checkitem("Control/Command Key Swap", swapkeys_toggled)
         def set_swapkeys_menuitem(*args):
             if self.keyboard:
                 log("set_swapkeys_menuitem(%s) swap_keys=%s", args, self.keyboard.swap_keys)
