@@ -14,6 +14,10 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 
 BLACKLIST = {"vendor" : ["nouveau", "Humper", "VMware, Inc."]}
+if sys.platform.startswith("darwin"):
+    #crashes were reported with the Intel driver on OSX
+    BLACKLIST["vendor"].append("Intel Inc.")
+
 
 DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
