@@ -23,6 +23,34 @@ if sys.platform.startswith("win"):
     DEFAULT_DOUBLE_BUFFERED = 1
 DOUBLE_BUFFERED = os.environ.get("XPRA_OPENGL_DOUBLE_BUFFERED", str(DEFAULT_DOUBLE_BUFFERED))=="1"
 
+def get_visual_name(visual):
+    import gtk.gdk
+    if not visual:
+        return ""
+    return {
+           gtk.gdk.VISUAL_STATIC_GRAY   : "STATIC_GRAY",
+           gtk.gdk.VISUAL_GRAYSCALE     : "GRAYSCALE",
+           gtk.gdk.VISUAL_STATIC_COLOR  : "STATIC_COLOR",
+           gtk.gdk.VISUAL_PSEUDO_COLOR  : "PSEUDO_COLOR",
+           gtk.gdk.VISUAL_TRUE_COLOR    : "TRUE_COLOR",
+           gtk.gdk.VISUAL_DIRECT_COLOR  : "DIRECT_COLOR"}.get(visual.type, "unknown")
+
+def get_visual_byte_order(visual):
+    import gtk.gdk
+    if not visual:
+        return ""
+    return {
+            gtk.gdk.LSB_FIRST   : "LSB",
+            gtk.gdk.MSB_FIRST   : "MSB"}.get(visual.byte_order, "unknown")
+
+def visual_to_str(visual):
+    if not visual:
+        return ""
+    d = {"type"         : get_visual_name(visual),
+         "byte_order"   : get_visual_byte_order(visual)}
+    for k in ("bits_per_rgb", "depth"):
+        d[k] = getattr(visual, k)
+    return str(d)
 
 def get_DISPLAY_MODE():
     import gtk.gdkgl
@@ -272,7 +300,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         restore_logger(alogger)
         gldrawable.gl_end()
 
-def check_support(min_texture_size=0, force_enable=False):
+def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
     try:
         from xpra.platform.paths import get_icon_dir
         opengl_icon = os.path.join(get_icon_dir(), "opengl.png")
@@ -341,6 +369,16 @@ def check_support(min_texture_size=0, force_enable=False):
         glcontext = glarea.get_gl_context()
 
         gl_props = check_GL_support(gldrawable, glcontext, min_texture_size, force_enable)
+
+        if check_colormap:
+            rgb_visual = w.get_screen().get_rgb_visual()
+            rgba_visual = w.get_screen().get_rgba_visual()
+            gl_props["rgb_visual"] = visual_to_str(rgb_visual)
+            gl_props["rgba_visual"] = visual_to_str(rgba_visual)
+            #i = 0
+            #for v in w.get_screen().list_visuals():
+            #    gl_props["visual[%s]" % i] = visual_to_str(v)
+            #    i += 1
     finally:
         if w:
             w.destroy()
@@ -354,7 +392,8 @@ def main():
     from xpra.util import pver
     try:
         init("OpenGL-Check")
-        if "-v" in sys.argv or "--verbose" in sys.argv:
+        verbose = "-v" in sys.argv or "--verbose" in sys.argv
+        if verbose:
             log.enable_debug()
         #replace ImportError with a log message:
         global gl_check_error
@@ -363,7 +402,7 @@ def main():
             log.error("ERROR: %s", msg)
             errors.append(msg)
         gl_check_error = log_error
-        props = check_support(True)
+        props = check_support(0, True, verbose)
         log.info("")
         if len(errors)>0:
             log.info("OpenGL errors:")
