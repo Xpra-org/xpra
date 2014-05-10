@@ -469,14 +469,14 @@ def start_Xvfb(xvfb_str, display_name):
     for var,value in subs.items():
         xvfb_str = xvfb_str.replace("$%s" % var, value)
         xvfb_str = xvfb_str.replace("${%s}" % var, value)
-    xvfb_cmd = xvfb_str.split()
+    xvfb_cmd = xvfb_str.split()+[display_name]
     xvfb_executable = xvfb_cmd[0]
     xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
     def setsid():
         #run in a new session
         if os.name=="posix":
             os.setsid()
-    xvfb = subprocess.Popen(xvfb_cmd+[display_name], executable=xvfb_executable, close_fds=True,
+    xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
                                 stdin=subprocess.PIPE, preexec_fn=setsid)
     from xpra.os_util import get_hex_uuid
     xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", get_hex_uuid()]
