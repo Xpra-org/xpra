@@ -470,7 +470,6 @@ class GLPixmapBacking(GTK2WindowBacking):
                 row_length = width + (rowstride - width * bytes_per_pixel) / bytes_per_pixel
 
             rgb_format = options.get("rgb_format", None)
-            self.gl_marker("%s %sbpp update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (rgb_format, bpp, x, y, width, height, rowstride, row_length, alignment))
             #Older clients may not tell us the pixel format, so we must infer it:
             if bpp==24:
                 default_format = "RGB"
@@ -480,6 +479,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             #convert it to a GL constant:
             pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format or default_format)
             assert pformat is not None, "could not find pixel format for %s or %s (bpp=%s)" % (rgb_format, default_format, bpp)
+            self.gl_marker("%s %sbpp update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL upload format=%s" % (rgb_format, bpp, x, y, width, height, len(img_data), rowstride, row_length, alignment, CONSTANT_TO_PIXEL_FORMAT.get(pformat)))
 
             # Upload data as temporary RGB texture
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
