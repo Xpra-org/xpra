@@ -74,19 +74,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def setup_window(self):
-        ClientWindowBase.setup_window(self)
         self.set_app_paintable(True)
         self.add_events(self.WINDOW_EVENT_MASK)
 
         #try to enable alpha on this window if needed,
         #and if the backing class can support it:
-        if self._has_alpha and self.get_backing_class().HAS_ALPHA:
+        bc = self.get_backing_class()
+        log("setup_window() has_alpha=%s, %s.HAS_ALPHA=%s", self._has_alpha, bc, bc.HAS_ALPHA)
+        if self._has_alpha and bc.HAS_ALPHA:
             screen = self.get_screen()
             rgba = screen.get_rgba_colormap()
             if rgba is None:
                 log.error("cannot handle window transparency on screen %s", screen)
             else:
-                log("set_alpha() using rgba colormap for %s, realized=%s", self._id, self.is_realized())
                 self.set_colormap(rgba)
                 self._window_alpha = True
 
@@ -107,6 +107,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if self._can_set_workspace:
             self.connect("property-notify-event", self.property_changed)
         self.connect("window-state-event", self.window_state_updated)
+
+        #this will create the backing:
+        ClientWindowBase.setup_window(self)
 
         self.move(*self._pos)
         self.set_default_size(*self._size)
