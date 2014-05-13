@@ -10,6 +10,7 @@ import sys
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.codecs.video_helper import getVideoHelper
+from xpra.util import typedict
 from xpra.log import Logger
 log = Logger("window")
 plog = Logger("paint")
@@ -47,7 +48,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def init_window(self, metadata):
         self._backing = None
-        self._metadata = {}
+        self._metadata = typedict()
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
         self._override_redirect_windows = []
@@ -127,7 +128,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def update_metadata(self, metadata):
         #normalize window-type:
-        window_type = metadata.get("window-type")
+        window_type = metadata.strlistget("window-type")
         if window_type is not None:
             #normalize the window type for servers that don't do "generic_window_types"
             window_type = [x.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for x in window_type]
@@ -135,7 +136,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         self._metadata.update(metadata)
         if not self.is_realized():
-            self.set_wmclass(*self._metadata.get("class-instance",
+            self.set_wmclass(*self._metadata.strlistget("class-instance",
                                                  ("xpra", "Xpra")))
         self.set_metadata(metadata)
 
@@ -151,7 +152,7 @@ class ClientWindowBase(ClientWidgetBase):
                         atvar = match.group(0)          #ie: '@title@'
                         var = atvar[1:len(atvar)-1]     #ie: 'title'
                         default_value = default_values.get(var, u("<unknown %s>") % var)
-                        value = self._metadata.get(var, default_value)
+                        value = self._metadata.strget(var, default_value)
                         if sys.version<'3':
                             value = value.decode("utf-8")
                         return value
@@ -163,11 +164,11 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_title(utf8_title)
 
         if "icon-title" in metadata:
-            icon_title = metadata["icon-title"]
+            icon_title = metadata.strget("icon-title")
             self.set_icon_name(icon_title)
 
         if "size-constraints" in metadata:
-            size_metadata = metadata["size-constraints"]
+            size_metadata = typedict(metadata.dictget("size-constraints"))
             hints = {}
             for (a, h1, h2) in [
                 ("maximum-size", "max_width", "max_height"),
@@ -175,7 +176,7 @@ class ClientWindowBase(ClientWidgetBase):
                 ("base-size", "base_width", "base_height"),
                 ("increment", "width_inc", "height_inc"),
                 ]:
-                v = size_metadata.get(a)
+                v = size_metadata.intlistget(a)
                 if v:
                     v1, v2 = v
                     hints[h1], hints[h2] = int(v1), int(v2)
@@ -183,7 +184,7 @@ class ClientWindowBase(ClientWidgetBase):
                 ("minimum-aspect-ratio", "min_aspect"),
                 ("maximum-aspect-ratio", "max_aspect"),
                 ]:
-                v = size_metadata.get(a)
+                v = size_metadata.intlistget(a)
                 if v:
                     v1, v2 = v
                     hints[h] = float(v1)/float(v2)
@@ -195,32 +196,32 @@ class ClientWindowBase(ClientWidgetBase):
             #gravity = size_metadata.get("gravity")
 
         if "icon" in metadata:
-            width, height, coding, data = metadata["icon"]
+            width, height, coding, data = metadata.listget("icon")
             self.update_icon(width, height, coding, data)
 
         if "transient-for" in metadata:
-            wid = metadata["transient-for"]
+            wid = metadata.get("transient-for", -1)
             self.apply_transient_for(wid)
 
         if "modal" in metadata:
-            modal = bool(metadata["modal"])
+            modal = metadata.boolget("modal")
             self.set_modal(modal)
 
         #apply window-type hint if window has not been mapped yet:
         if "window-type" in metadata and not self.is_mapped():
-            window_types = metadata["window-type"]
+            window_types = metadata.strlistget("window-type")
             self.set_window_type(window_types)
 
         if "role" in metadata:
-            role = metadata["role"]
+            role = metadata.strget("role")
             self.set_role(role)
 
         if "xid" in metadata:
-            xid = metadata["xid"]
+            xid = metadata.strget("xid")
             self.set_xid(xid)
 
         if "opacity" in metadata:
-            opacity = metadata["opacity"]
+            opacity = metadata.intget("opacity")
             if opacity<0:
                 opacity = 1
             else:
@@ -228,18 +229,18 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_opacity(opacity)
 
         if "has-alpha" in metadata:
-            self._has_alpha = bool(metadata["has-alpha"])
+            self._has_alpha = metadata.boolget("has-alpha")
             self.set_alpha()
 
         if "maximized" in metadata:
-            maximized = bool(metadata["maximized"])
+            maximized = metadata.boolget("maximized")
             if maximized:
                 self.maximize()
             else:
                 self.unmaximize()
 
         if "fullscreen" in metadata:
-            fullscreen = bool(metadata["fullscreen"])
+            fullscreen = metadata.boolget("fullscreen")
             self.set_fullscreen(fullscreen)
 
 

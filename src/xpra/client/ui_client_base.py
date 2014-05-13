@@ -1658,17 +1658,18 @@ class UIXpraClient(XpraClientBase):
         self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
 
     def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties):
+        metadata = typedict(metadata)
         client_window_classes = self.get_client_window_classes(metadata, override_redirect)
         group_leader_window = self.get_group_leader(metadata, override_redirect)
         #workaround for "popup" OR windows without a transient-for (like: google chrome popups):
         #prevents them from being pushed under other windows on OSX
         #find a "transient-for" value using the pid to find a suitable window
         #if possible, choosing the currently focused window (if there is one..)
-        pid = metadata.get("pid", 0)
-        if override_redirect and pid>0 and metadata.get("transient-for") is None and metadata.get("role")=="popup":
+        pid = metadata.intget("pid", 0)
+        if override_redirect and pid>0 and metadata.intget("transient-for", 0)>0 is None and metadata.get("role")=="popup":
             tfor = None
             for twid, twin in self._id_to_window.items():
-                if not twin._override_redirect and twin._metadata.get("pid")==pid:
+                if not twin._override_redirect and twin._metadata.intget("pid", -1)==pid:
                     tfor = twin
                     if twid==self._focused:
                         break
@@ -1850,6 +1851,7 @@ class UIXpraClient(XpraClientBase):
         wid, metadata = packet[1:3]
         window = self._id_to_window.get(wid)
         if window:
+            metadata = typedict(metadata)
             window.update_metadata(metadata)
 
     def _process_window_icon(self, packet):

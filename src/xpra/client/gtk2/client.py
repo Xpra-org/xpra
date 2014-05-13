@@ -414,16 +414,16 @@ class XpraClient(GTKXpraClient):
     def get_group_leader(self, metadata, override_redirect):
         if not self.supports_group_leader:
             return None
-        wid = metadata.get("transient-for")
+        wid = metadata.intget("transient-for", -1)
         if wid>0:
             client_window = self._id_to_window.get(wid)
             if client_window:
                 gdk_window = client_window.gdk_window()
                 if gdk_window:
                     return gdk_window
-        pid = metadata.get("pid", -1)
-        leader_xid = metadata.get("group-leader-xid")
-        leader_wid = metadata.get("group-leader-wid")
+        pid = metadata.intget("pid", -1)
+        leader_xid = metadata.intget("group-leader-xid", -1)
+        leader_wid = metadata.intget("group-leader-wid", -1)
         group_leader_window = self._id_to_window.get(leader_wid)
         if group_leader_window:
             #leader is another managed window
@@ -483,9 +483,7 @@ class XpraClient(GTKXpraClient):
 
 
     def get_client_window_classes(self, metadata, override_redirect):
-        #only enable GL for normal windows:
-        window_types = metadata.get("window-type", ())
-        log("get_client_window_class(%s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, window_types=%s, encoding=%s", metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, window_types, self.encoding)
+        log("get_client_window_class(%s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s", metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, self.encoding)
         if self.GLClientWindowClass is None or not self.opengl_enabled:
             return [self.ClientWindowClass]
         return [self.GLClientWindowClass, self.ClientWindowClass]
