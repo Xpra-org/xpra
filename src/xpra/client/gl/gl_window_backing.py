@@ -135,7 +135,7 @@ window image, which is critical because of backbuffer content losses upon buffer
 """
 class GLPixmapBacking(GTK2WindowBacking):
 
-    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"]
+    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "RGBA", "RGBX", "RGB", "BGR"]
     HAS_ALPHA = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid, w, h, window_alpha):
