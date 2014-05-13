@@ -90,9 +90,6 @@ def raise_error(msg):
     raise ImportError(msg)
 gl_check_error = raise_error
 
-if sys.version > '3':
-    unicode = str           #@ReservedAssignment
-
 
 def check_functions(*functions):
     missing = []
