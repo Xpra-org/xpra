@@ -77,11 +77,25 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ClientWindowBase.setup_window(self)
         self.set_app_paintable(True)
         self.add_events(self.WINDOW_EVENT_MASK)
+
+        #try to enable alpha on this window if needed,
+        #and if the backing class can support it:
+        if self._has_alpha and self.get_backing_class().HAS_ALPHA:
+            screen = self.get_screen()
+            rgba = screen.get_rgba_colormap()
+            if rgba is None:
+                log.error("cannot handle window transparency on screen %s", screen)
+            else:
+                log("set_alpha() using rgba colormap for %s, realized=%s", self._id, self.is_realized())
+                self.set_colormap(rgba)
+                self._window_alpha = True
+
         if self._override_redirect:
             transient_for = self.get_transient_for()
             type_hint = self.get_type_hint()
             if transient_for is not None and transient_for.window is not None and type_hint in self.OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
+
         if not self._override_redirect:
             self.connect("notify::has-toplevel-focus", self._focus_change)
         def focus_in(*args):

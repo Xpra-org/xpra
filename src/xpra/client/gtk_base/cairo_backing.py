@@ -34,7 +34,13 @@ Instead we have to use PIL to convert via a PNG or Pixbuf!
 """
 class CairoBacking(GTKWindowBacking):
 
-    RGB_MODES = ["ARGB", "XRGB", "RGBA", "RGBX", "RGB"]
+    if not is_gtk3():
+        #with gtk2 we can convert these directly to a cairo image surface:
+        RGB_MODES = ["ARGB", "XRGB"]
+    else:
+        RGB_MODES = []
+    RGB_MODES += ["RGBA", "RGBX", "RGB"]
+
 
     def __init__(self, wid, w, h, has_alpha):
         GTKWindowBacking.__init__(self, wid, has_alpha)

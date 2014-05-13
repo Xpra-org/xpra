@@ -20,7 +20,7 @@ log = Logger("paint")
 # - on MS Windows: not supported
 # - on OSX: only with gtk3
 DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and (not sys.platform.startswith("darwin") or is_gtk3())
-HAS_ALPHA = (unpremultiply_argb is not None) and os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
+GTK_ALPHA_SUPPORTED = (unpremultiply_argb is not None) and os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
 
 
 """
@@ -30,10 +30,10 @@ see CairoBacking, PixmapBacking and TrayBacking for actual implementations.
 """
 class GTKWindowBacking(WindowBackingBase):
 
-    HAS_ALPHA = HAS_ALPHA
+    HAS_ALPHA = GTK_ALPHA_SUPPORTED
 
-    def __init__(self, wid, has_alpha):
-        WindowBackingBase.__init__(self, wid, has_alpha and HAS_ALPHA, gobject.idle_add)
+    def __init__(self, wid, window_alpha):
+        WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA, gobject.idle_add)
 
 
     def cairo_draw(self, context):

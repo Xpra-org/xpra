@@ -9,7 +9,6 @@ import re
 import sys
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.codecs.video_helper import getVideoHelper
 from xpra.util import typedict
 from xpra.log import Logger
 log = Logger("window")
@@ -30,8 +29,10 @@ class ClientWindowBase(ClientWidgetBase):
 
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, border):
         log("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties))
-        has_alpha = self.get_backing_class().HAS_ALPHA
-        ClientWidgetBase.__init__(self, client, wid, has_alpha)
+        ClientWidgetBase.__init__(self, client, wid, metadata.boolget("has_alpha"))
+        #remove alpha from metadata, so we can verify the flag never changes in set_metadata
+        if "has_alpha" in metadata:
+            del metadata["has_alpha"]
         self._override_redirect = override_redirect
         self.group_leader = group_leader
         self._pos = (x, y)
@@ -71,30 +72,10 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def setup_window(self):
-        rgb_modes = self.get_backing_class().RGB_MODES
-        self._client_properties["encodings.rgb_formats"] = rgb_modes
-        self._client_properties["encoding.full_csc_modes"] = self._get_full_csc_modes(rgb_modes)
-        self._client_properties["encoding.csc_modes"] = self._get_csc_modes(rgb_modes)
         self.new_backing(*self._size)
-
-    def _get_full_csc_modes(self, rgb_modes):
-        #calculate the server CSC modes the server is allowed to use
-        #based on the client CSC modes we can convert to in the backing class we use
-        #and trim the transparency if we cannot handle it
-        target_rgb_modes = list(rgb_modes)
-        if not self._has_alpha:
-            target_rgb_modes = [x for x in target_rgb_modes if x.find("A")<0]
-        full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
-        log("full csc modes (%s)=%s", target_rgb_modes, full_csc_modes)
-        return full_csc_modes
-
-    def _get_csc_modes(self, rgb_modes):
-        #as above, but for older servers: less detailed than "full" csc modes info
-        csc_modes = []
-        for modes in self._get_full_csc_modes(rgb_modes).values():
-            csc_modes += modes
-        csc_modes = list(set(csc_modes))
-        return csc_modes
+        #tell the server about the encoding capabilities of this backing instance:
+        #"rgb_formats", "full_csc_modes", "csc_modes":
+        self._client_properties.update(self._backing.get_encoding_properties())
 
 
     def send(self, *args):
@@ -229,8 +210,10 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_opacity(opacity)
 
         if "has-alpha" in metadata:
-            self._has_alpha = metadata.boolget("has-alpha")
-            self.set_alpha()
+            new_alpha = metadata.boolget("has-alpha")
+            if new_alpha!=self._has_alpha:
+                log.warn("window %s changed its alpha flag from %s to %s (unsupported)", self._id, self._has_alpha, new_alpha)
+                self._has_alpha = new_alpha
 
         if "maximized" in metadata:
             maximized = metadata.boolget("maximized")
@@ -257,9 +240,6 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_type_hint(hints)
 
     def set_fullscreen(self, fullscreen):
-        pass
-
-    def set_alpha(self):
         pass
 
     def set_xid(self, xid):

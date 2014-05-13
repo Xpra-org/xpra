@@ -25,6 +25,7 @@ class ClientTray(ClientWidgetBase):
         ClientWidgetBase.__init__(self, client, wid, True)
         self.tray_widget = tray_widget
         self._geometry = None
+        self._window_alpha = True
         self.group_leader = None
 
         self.mmap_enabled = mmap_enabled
@@ -155,6 +156,14 @@ class TrayBacking(GTKWindowBacking):
     def __init__(self, wid, w, h, has_alpha, data=None):
         self.data = data
         GTKWindowBacking.__init__(self, wid, True)
+
+    def get_encoding_properties(self):
+        #override so we skip all csc caps:
+        return {
+                "encodings.rgb_formats" : self.RGB_MODES,
+                "encoding.transparency" : True
+               }
+
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         log("TrayBacking._do_paint_rgb24%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options, callbacks))

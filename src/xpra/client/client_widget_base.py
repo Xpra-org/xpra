@@ -22,7 +22,11 @@ class ClientWidgetBase(object):
         self.source_remove = client.source_remove
         self.idle_add = client.idle_add
         self.timeout_add = client.timeout_add
+        #tells us if the server-side window has an alpha channel
+        #(whether we are capable of rendering it is down the backing)
         self._has_alpha = has_alpha
+        #tells us if this window instance can paint with alpha
+        self._window_alpha = False
         self._client = client
 
     def make_new_backing(self, backing_class, w, h):
@@ -34,8 +38,8 @@ class ClientWidgetBase(object):
             if USE_FAKE_BACKING:
                 from xpra.client.fake_window_backing import FakeBacking
                 bc = FakeBacking
-            log("make_new_backing(%s, %s, %s) effective backing class=%s, alpha=%s", backing_class, w, h, bc, self._has_alpha)
-            backing = bc(self._id, w, h, self._has_alpha)
+            log("make_new_backing(%s, %s, %s) effective backing class=%s, server alpha=%s, window alpha=%s", backing_class, w, h, bc, self._has_alpha, self._window_alpha)
+            backing = bc(self._id, w, h, self._window_alpha)
             if self._client.mmap_enabled:
                 backing.enable_mmap(self._client.mmap)
         backing.init(w, h)

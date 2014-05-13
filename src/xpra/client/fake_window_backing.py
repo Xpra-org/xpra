@@ -19,7 +19,6 @@ FAKE_BACKING_DELAY = int(os.environ.get("XPRA_FAKE_BACKING_DELAY", "5"))
 
 class FakeBacking(object):
 
-    RGB_MODES = ["RGBA", "RGB"]
     HAS_ALPHA = True
 
     def __init__(self, wid, *args):
@@ -36,3 +35,8 @@ class FakeBacking(object):
 
     def cairo_draw(self, context, x, y):
         pass
+
+    def get_encoding_properties(self):
+        return {
+                "encodings.rgb_formats"    : ["RGBA", "RGB"],
+               }

@@ -56,11 +56,11 @@ def visual_to_str(visual):
         d[k] = getattr(visual, k)
     return str(d)
 
-def get_DISPLAY_MODE():
+def get_DISPLAY_MODE(want_alpha=GL_ALPHA_SUPPORTED):
     import gtk.gdkgl
     #gtk.gdkgl.MODE_DEPTH
     mode = 0
-    if GL_ALPHA_SUPPORTED:
+    if want_alpha:
         mode = mode | gtk.gdkgl.MODE_RGBA | gtk.gdkgl.MODE_ALPHA
     else:
         mode = mode | gtk.gdkgl.MODE_RGB

@@ -135,21 +135,25 @@ window image, which is critical because of backbuffer content losses upon buffer
 """
 class GLPixmapBacking(GTK2WindowBacking):
 
-    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP"]
+    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"]
     HAS_ALPHA = GL_ALPHA_SUPPORTED
 
-    def __init__(self, wid, w, h, has_alpha):
-        display_mode = get_DISPLAY_MODE()
+    def __init__(self, wid, w, h, window_alpha):
+        alpha = GL_ALPHA_SUPPORTED and window_alpha
+        display_mode = get_DISPLAY_MODE(want_alpha=alpha)
         try:
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
         except gtk.gdkgl.NoMatches:
+            #toggle double buffering and try again:
             display_mode &= ~gtk.gdkgl.MODE_DOUBLE
+            log.warn("failed to initialize gl context: trying again %s double buffering", (bool(display_mode & gtk.gdkgl.MODE_DOUBLE) and "with") or "without")
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
-        GTK2WindowBacking.__init__(self, wid, has_alpha and self.glconfig.has_alpha())
+        GTK2WindowBacking.__init__(self, wid, alpha and self.glconfig.has_alpha())
         self._backing = gtk.gtkgl.DrawingArea(self.glconfig)
         #restoring missed masks:
         self._backing.set_events(self._backing.get_events() | gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK)
-        if self._has_alpha:
+        if self._alpha_enabled:
+            assert GL_ALPHA_SUPPORTED, "BUG: cannot enable alpha if GL backing does not support it!"
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()
             if rgba:
@@ -157,10 +161,10 @@ class GLPixmapBacking(GTK2WindowBacking):
                 self._backing.set_colormap(rgba)
             else:
                 log.warn("failed to enable transparency on screen %s", screen)
-                self._has_alpha = False
+                self._alpha_enabled = False
         #this is how many bpp we keep in the texture
         #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
-        if self._has_alpha:
+        if self._alpha_enabled:
             self.texture_pixel_format = GL_RGBA
         else:
             self.texture_pixel_format = GL_RGB
@@ -371,7 +375,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         # Change state to target screen instead of our FBO
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-        if self._has_alpha:
+        if self._alpha_enabled:
             # transparent background:
             glClearColor(0.0, 0.0, 0.0, 0.0)
         else:
@@ -383,7 +387,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         w, h = self.size
 
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-        if self._has_alpha:
+        if self._alpha_enabled:
             # support alpha channel if present:
             glEnablei(GL_BLEND, self.textures[TEX_FBO])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)

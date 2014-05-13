@@ -31,7 +31,7 @@ class PixmapBacking(GTK2WindowBacking):
     def init(self, w, h):
         old_backing = self._backing
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
-        if self._has_alpha:
+        if self._alpha_enabled:
             self._backing = gdk.Pixmap(None, w, h, 32)
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()
@@ -39,7 +39,8 @@ class PixmapBacking(GTK2WindowBacking):
                 self._backing.set_colormap(rgba)
             else:
                 #cannot use transparency
-                self._has_alpha = False
+                log.warn("cannot use transparency: no RGBA colormap!")
+                self._alpha_enabled = False
                 self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         else:
             self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)

@@ -78,12 +78,12 @@ Generic superclass for all Backing code,
 see CairoBacking and GTKWindowBacking for actual implementations
 """
 class WindowBackingBase(object):
-    def __init__(self, wid, has_alpha, idle_add):
+    def __init__(self, wid, window_alpha, idle_add):
         load_csc_options()
         load_video_decoders()
         self.wid = wid
         self.idle_add = idle_add
-        self._has_alpha = has_alpha
+        self._alpha_enabled = window_alpha
         self._backing = None
         self._last_pixmap_data = None
         self._video_decoder = None
@@ -126,6 +126,35 @@ class WindowBackingBase(object):
         if self._csc_decoder:
             self._csc_decoder.clean()
             self._csc_decoder = None
+
+
+    def get_encoding_properties(self):
+        rgb_modes = self.RGB_MODES
+        return {
+                 "encodings.rgb_formats"    : rgb_modes,
+                 "encoding.transparency"    : self._alpha_enabled,
+                 "encoding.full_csc_modes"  : self._get_full_csc_modes(rgb_modes),
+                 "encoding.csc_modes"       : self._get_csc_modes(rgb_modes)
+                 }
+
+    def _get_full_csc_modes(self, rgb_modes):
+        #calculate the server CSC modes the server is allowed to use
+        #based on the client CSC modes we can convert to in the backing class we use
+        #and trim the transparency if we cannot handle it
+        target_rgb_modes = list(rgb_modes)
+        if not self._alpha_enabled:
+            target_rgb_modes = [x for x in target_rgb_modes if x.find("A")<0]
+        full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
+        log("full csc modes (%s)=%s", target_rgb_modes, full_csc_modes)
+        return full_csc_modes
+
+    def _get_csc_modes(self, rgb_modes):
+        #as above, but for older servers: less detailed than "full" csc modes info
+        csc_modes = []
+        for modes in self._get_full_csc_modes(rgb_modes).values():
+            csc_modes += modes
+        csc_modes = list(set(csc_modes))
+        return csc_modes
 
 
     def img_data_tobytes(self, img_data):
