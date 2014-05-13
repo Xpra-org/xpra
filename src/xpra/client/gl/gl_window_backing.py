@@ -18,7 +18,7 @@ log = Logger("opengl", "paint")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.client.gl.gl_check import get_DISPLAY_MODE, HAS_ALPHA
+from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
 from xpra.client.gtk2.window_backing import GTK2WindowBacking, fire_paint_callbacks
 from OpenGL import version as OpenGL_version
@@ -136,7 +136,7 @@ window image, which is critical because of backbuffer content losses upon buffer
 class GLPixmapBacking(GTK2WindowBacking):
 
     RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP"]
-    HAS_ALPHA = HAS_ALPHA
+    HAS_ALPHA = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid, w, h, has_alpha):
         display_mode = get_DISPLAY_MODE()

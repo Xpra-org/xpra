@@ -19,8 +19,8 @@ if sys.platform.startswith("darwin"):
     BLACKLIST["vendor"].append("Intel Inc.")
 
 
-DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
-HAS_ALPHA = os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
+DEFAULT_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
+GL_ALPHA_SUPPORTED = os.environ.get("XPRA_ALPHA", DEFAULT_ALPHA) in (True, "1")
 DEFAULT_DOUBLE_BUFFERED = 0
 if sys.platform.startswith("win"):
     #needed on win32?
@@ -60,7 +60,7 @@ def get_DISPLAY_MODE():
     import gtk.gdkgl
     #gtk.gdkgl.MODE_DEPTH
     mode = 0
-    if HAS_ALPHA:
+    if GL_ALPHA_SUPPORTED:
         mode = mode | gtk.gdkgl.MODE_RGBA | gtk.gdkgl.MODE_ALPHA
     else:
         mode = mode | gtk.gdkgl.MODE_RGB
@@ -211,8 +211,8 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             pass
         if not bool(glEnablei):
             log.warn("OpenGL glEnablei is not available, disabling transparency")
-            global HAS_ALPHA
-            HAS_ALPHA = False
+            global GL_ALPHA_SUPPORTED
+            GL_ALPHA_SUPPORTED = False
 
         #check for framebuffer functions we need:
         from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, \
