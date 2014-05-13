@@ -1302,8 +1302,13 @@ class ServerBase(ServerCore):
         if ss:
             ss.set_client_properties(wid, window, typedict(new_client_properties))
             client_properties = self.client_properties.setdefault("%s|%s" % (wid, ss.uuid), {})
-            log("set_client_properties updating window %s with %s", wid, new_client_properties)
-            client_properties.update(new_client_properties)
+            #filter out encoding properties, which are expected to be set everytime:
+            ncp = {}
+            for k,v in new_client_properties.items():
+                if not k.startswith("encoding"):
+                    ncp[k] = v
+            log("set_client_properties updating window %s with %s", wid, ncp)
+            client_properties.update(ncp)
 
 
     def _process_focus(self, proto, packet):
