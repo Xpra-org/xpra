@@ -1389,7 +1389,7 @@ else:
             'frameworks'        : ['CoreFoundation', 'Foundation', 'AppKit'],
             }
         setup_options["options"] = {"py2app": py2app_options}
-        setup_options["app"]     = ["xpra/client/gtk2/client_launcher.py"]
+        setup_options["app"]     = ["xpra/client/gtk_base/client_launcher.py"]
 
 
 if html5_ENABLED:
