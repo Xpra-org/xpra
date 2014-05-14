@@ -277,7 +277,8 @@ class KeyboardHelper(object):
 
     def get_keymap_properties(self):
         props = {}
-        for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
-              "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
-            props[x] = nn(getattr(self, x))
+        for x in ("print", "query", "mod_meanings",
+                  "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes"):
+            p = "xkbmap_%s" % x
+            props[p] = nn(getattr(self, p))
         return  props
