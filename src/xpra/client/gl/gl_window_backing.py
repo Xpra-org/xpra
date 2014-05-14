@@ -457,7 +457,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
             rgb_format = options.get("rgb_format")
             if not rgb_format:
-                #Older clients may not tell us the pixel format, so we must infer it:
+                #Older servers may not tell us the pixel format, so we must infer it:
                 if bpp==24:
                     default_format = "RGB"
                 else:
