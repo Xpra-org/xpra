@@ -135,7 +135,7 @@ window image, which is critical because of backbuffer content losses upon buffer
 """
 class GLPixmapBacking(GTK2WindowBacking):
 
-    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "RGBA", "RGBX", "RGB", "BGR"]
+    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"]
     HAS_ALPHA = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid, w, h, window_alpha):
@@ -455,7 +455,19 @@ class GLPixmapBacking(GTK2WindowBacking):
         try:
             self.set_rgb_paint_state()
 
-            bytes_per_pixel = bpp/8
+            rgb_format = options.get("rgb_format")
+            if not rgb_format:
+                #Older clients may not tell us the pixel format, so we must infer it:
+                if bpp==24:
+                    default_format = "RGB"
+                else:
+                    assert bpp==32
+                    default_format = "RGBA"
+            #convert it to a GL constant:
+            pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format or default_format)
+            assert pformat is not None, "could not find pixel format for %s or %s (bpp=%s)" % (rgb_format, default_format, bpp)
+
+            bytes_per_pixel = len(rgb_format)       #ie: BGRX -> 4
             # Compute alignment and row length
             row_length = 0
             alignment = 1
@@ -469,16 +481,6 @@ class GLPixmapBacking(GTK2WindowBacking):
             if (rowstride - width * bytes_per_pixel) >= alignment:
                 row_length = width + (rowstride - width * bytes_per_pixel) / bytes_per_pixel
 
-            rgb_format = options.get("rgb_format", None)
-            #Older clients may not tell us the pixel format, so we must infer it:
-            if bpp==24:
-                default_format = "RGB"
-            else:
-                assert bpp==32
-                default_format = "RGBA"
-            #convert it to a GL constant:
-            pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format or default_format)
-            assert pformat is not None, "could not find pixel format for %s or %s (bpp=%s)" % (rgb_format, default_format, bpp)
             self.gl_marker("%s %sbpp update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL upload format=%s" % (rgb_format, bpp, x, y, width, height, len(img_data), rowstride, row_length, alignment, CONSTANT_TO_PIXEL_FORMAT.get(pformat)))
 
             # Upload data as temporary RGB texture
