@@ -846,7 +846,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 value = ''
                 for vk, vv in values.items():
                     value += "%s:\t%s\n" % (vk, vv)
-                value += '\n'
                 #record the actual value used
                 self._settings["resource-manager"] = value
                 v = value.encode("utf-8")
