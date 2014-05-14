@@ -80,6 +80,7 @@ if is_gtk3():
 
     SHIFT_MASK      = gdk.ModifierType.SHIFT_MASK
     LOCK_MASK       = gdk.ModifierType.LOCK_MASK
+    META_MASK       = gdk.ModifierType.META_MASK
     CONTROL_MASK    = gdk.ModifierType.CONTROL_MASK
     MOD1_MASK       = gdk.ModifierType.MOD1_MASK
     MOD2_MASK       = gdk.ModifierType.MOD2_MASK
@@ -153,6 +154,7 @@ else:
 
     SHIFT_MASK      = gtk.gdk.SHIFT_MASK
     LOCK_MASK       = gtk.gdk.LOCK_MASK
+    META_MASK       = gdk.META_MASK
     CONTROL_MASK    = gtk.gdk.CONTROL_MASK
     MOD1_MASK       = gtk.gdk.MOD1_MASK
     MOD2_MASK       = gtk.gdk.MOD2_MASK
