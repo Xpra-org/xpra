@@ -70,6 +70,8 @@ def main(script_file, cmdline):
                 return -1
             mode = args.pop(0)
             return run_mode(script_file, parser, options, args, mode)
+        except SystemExit:
+            raise
         except:
             e = sys.exc_info()[1]
             print("xpra main exception: %s" % e)
