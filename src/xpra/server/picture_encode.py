@@ -76,6 +76,9 @@ def webm_encode(image, quality):
     return "webp", Compressed("webp", str(enc(handler, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0, bpp
 
 
+def roundup(n, m):
+    return (n + m - 1) & ~(m - 1)
+
 def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, encoding_client_options=True, supports_rgb24zlib=True):
     pixel_format = image.get_pixel_format()
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4, encoding_client_options, supports_rgb24zlib), pixel_format, rgb_formats)
@@ -93,6 +96,27 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     options = {"rgb_format" : pixel_format}
     #compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()
+
+    #special case for when rowstride is so much bigger than the width
+    #that we would end up sending large chunks of padding with each row of pixels
+    #this happens with XShm pixel data (the default)
+    stride = image.get_rowstride()
+    width = image.get_width()
+    rstride = roundup(width*len(pixel_format), 4)   #a reasonable stride: rounded up to 4
+    height = image.get_height()
+    if stride>8 and rstride<stride:
+        al = len(pixels)                    #current buffer size
+        el = rstride*height                 #desirable size we could have
+        if al-el>1024 and el*110/100<al:    #is it worth re-striding to save space?
+            #we'll save at least 1KB and 10%, do it
+            #Note: we could also change the pixel format whilst we're at it
+            # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
+            rows = []
+            for y in range(height):
+                rows.append(pixels[stride*y:stride*y+rstride])
+            pixels = "".join(rows)
+            log("rgb_encode: %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)", pixel_format, 100-100*el/al, stride, al, rstride, el)
+            stride = rstride
 
     #compression
     #by default, wire=raw:
@@ -132,7 +156,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         return  coding, wire_data, {}, image.get_width(), image.get_height(), image.get_rowstride(), bpp
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
-    return coding, Compressed(coding, raw_data), options, image.get_width(), image.get_height(), image.get_rowstride(), bpp
+    return coding, Compressed(coding, raw_data), options, width, height, stride, bpp
 
 
 def PIL_encode(coding, image, quality, speed, supports_transparency):
