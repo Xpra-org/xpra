@@ -405,7 +405,7 @@ def parse_cmdline(cmdline):
                       + "If no shortcuts are defined, it defaults to '%s'" % (",".join(defaults.key_shortcut or [])))
     group.add_option("--keyboard-sync", action="store_true",
                       dest="keyboard_sync", default=defaults.keyboard_sync,
-                      help="Enable keyboard state synchronization (default: %)")
+                      help="Enable keyboard state synchronization (default: %default)")
     group.add_option("--no-keyboard-sync", action="store_false",
                       dest="keyboard_sync", default=defaults.keyboard_sync,
                       help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly (default: %default)")
