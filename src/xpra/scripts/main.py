@@ -405,10 +405,10 @@ def parse_cmdline(cmdline):
                       + "If no shortcuts are defined, it defaults to '%s'" % (",".join(defaults.key_shortcut or [])))
     group.add_option("--keyboard-sync", action="store_true",
                       dest="keyboard_sync", default=defaults.keyboard_sync,
-                      help="Enable keyboard state synchronization (default: %default)")
+                      help="Enable keyboard state synchronization (default: %s)" % enabled_str(defaults.keyboard_sync))
     group.add_option("--no-keyboard-sync", action="store_false",
                       dest="keyboard_sync", default=defaults.keyboard_sync,
-                      help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly (default: %default)")
+                      help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly (default: %s)" % enabled_str(defaults.keyboard_sync))
 
     group = OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
@@ -446,7 +446,7 @@ def parse_cmdline(cmdline):
                       help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
     group.add_option("--enable-pings", action="store_true",
                       dest="pings", default=defaults.pings,
-                      help="Send ping packets every second to gather latency statistics")
+                      help="Send ping packets every second to gather latency statistics (default: %s)" % enabled_str(defaults.pings))
     group.add_option("--clipboard-filter-file", action="store",
                       dest="clipboard_filter_file", default=defaults.clipboard_filter_file,
                       help="Name of a file containing regular expressions of clipboard contents that must be filtered out")
