@@ -59,7 +59,7 @@
             repo="downloads.xiph.org"/>
   </autotools>
 
-  <autotools id="libtheora" autogenargs="" autogen-sh="configure">
+  <autotools id="libtheora" autogenargs="--disable-examples" autogen-sh="configure">
     <branch module="/releases/theora/libtheora-1.1.1.tar.bz2"
 			version="1.1.1"
             repo="downloads.xiph.org"/>
@@ -206,8 +206,8 @@
 
   <distutils id="setuptools">
      <branch repo="pypi.python.org"
-	     module="/packages/source/s/setuptools/setuptools-3.6.tar.gz"
-	     version="3.6"/>
+	     module="/packages/source/s/setuptools/setuptools-3.4.tar.gz"
+	     version="3.4"/>
   </distutils>
 
   <distutils id="python-netifaces">
