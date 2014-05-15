@@ -1382,20 +1382,20 @@ class ServerBase(ServerCore):
             del self.keys_timedout[keycode]
         def press():
             keylog("handle keycode pressing %s: key %s", keycode, name)
-            if self.keyboard_sync:
-                self.keys_pressed[keycode] = name
+            self.keys_pressed[keycode] = name
             self.fake_key(keycode, True)
         def unpress():
             keylog("handle keycode unpressing %s: key %s", keycode, name)
-            if self.keyboard_sync:
+            if keycode in self.keys_pressed:
                 del self.keys_pressed[keycode]
             self.fake_key(keycode, False)
         if pressed:
             if keycode not in self.keys_pressed:
                 press()
-                if not self.keyboard_sync:
+                if not self.keyboard_sync and not self.keyboard_config.is_modifier(keycode):
                     #keyboard is not synced: client manages repeat so unpress
-                    #it immediately
+                    #it immediately unless this is a modifier key
+                    #(as modifiers are synced via many packets: key, focus and mouse events)
                     unpress()
             else:
                 keylog("handle keycode %s: key %s was already pressed, ignoring", keycode, name)
