@@ -10,7 +10,12 @@ fi
 
 export PYTHONPATH="image/Xpra.app/Contents/Resources/lib/python/"
 VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(src_info.REVISION)"`
+#prefer revision directly from svn:
+REVISION=`svnversion -n .. | awk -F: '{print $2}'`
+if [ -z "${REVISION}" ]; then
+	#fallback to using revision recorded in build info
+	REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(src_info.REVISION)"`
+fi
 DMG_NAME="Xpra-$VERSION-r$REVISION.dmg"
 echo "Creating $DMG_NAME"
 
