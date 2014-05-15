@@ -810,10 +810,16 @@ class WindowSource(object):
             options = self.get_encoding_options(batching, pixel_count, ww, wh, speed, quality, current_encoding)
         if current_encoding is None:
             #add all the fallbacks so something will match
-            options += [x for x in (fallback or self.common_encodings) if x not in options]
-        e = self.pick_encoding(options, current_encoding)
+            options += [x for x in [fallback]+self.common_encodings if x is not None and x not in options]
+        e = self.do_get_best_encoding(options, current_encoding, fallback)
         #log("get_best_encoding%s=%s (from options=%s, common_encodings=%s)", (batching, pixel_count, ww, wh, speed, quality, current_encoding), e, options, self.common_encodings)
         return e
+
+    def do_get_best_encoding(self, options, current_encoding, fallback):
+        #non-video encodings: stick to what we have if we can:
+        if current_encoding in options:
+            return current_encoding
+        return self.pick_encoding(options, fallback)
 
     def pick_encoding(self, encodings, fallback=None):
         """ choose an encoding from the list, or use the fallback """

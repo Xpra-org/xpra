@@ -591,6 +591,11 @@ class WindowVideoSource(WindowSource):
             return nonvideo()
         return [current_encoding]
 
+    def do_get_best_encoding(self, options, current_encoding, fallback):
+        #video encodings: always pick from the ordered list of options
+        #rather than sticking with the current encoding:
+        return self.pick_encoding(options, fallback)
+
 
     def reconfigure(self, force_reload=False):
         """
