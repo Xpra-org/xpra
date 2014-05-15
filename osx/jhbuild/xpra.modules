@@ -40,8 +40,8 @@
   </autotools>
 
   <autotools id="nasm" autogenargs="" autogen-sh="configure">
-    <branch module="/pub/nasm/releasebuilds/2.11.02/nasm-2.11.02.tar.bz2"
-			version="2.11.02"
+    <branch module="/pub/nasm/releasebuilds/2.11.04/nasm-2.11.04.tar.bz2"
+			version="2.11.04"
             repo="www.nasm.us">
     <patch file="nasm-makefile-destdir.patch" strip="0" />
     </branch>
@@ -206,8 +206,8 @@
 
   <distutils id="setuptools">
      <branch repo="pypi.python.org"
-	     module="/packages/source/s/setuptools/setuptools-3.1.tar.gz"
-	     version="3.1"/>
+	     module="/packages/source/s/setuptools/setuptools-3.6.tar.gz"
+	     version="3.6"/>
   </distutils>
 
   <distutils id="python-netifaces">
@@ -326,8 +326,8 @@
   </autotools>
 
   <autotools id="apr" autogenargs="" autogen-sh="configure">
-    <branch module="/dist/apr/apr-1.5.0.tar.bz2"
-			version="1.5.0"
+    <branch module="/dist/apr/apr-1.5.1.tar.bz2"
+			version="1.5.1"
             repo="www.eu.apache.org"/>
   </autotools>
 
@@ -350,8 +350,8 @@
   </autotools>
 
   <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
-    <branch module="/dist/subversion/subversion-1.8.8.tar.bz2"
-			version="1.8.8"
+    <branch module="/dist/subversion/subversion-1.8.9.tar.bz2"
+			version="1.8.9"
             repo="www.eu.apache.org"/>
      <dependencies>
       <dep package="db"/>
