@@ -589,7 +589,7 @@ class WindowVideoSource(WindowSource):
         if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
             #failsafe:
             return nonvideo()
-        return current_encoding
+        return [current_encoding]
 
 
     def reconfigure(self, force_reload=False):
