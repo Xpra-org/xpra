@@ -21,6 +21,7 @@ class KeyboardHelper(object):
         self.keyboard_sync = keyboard_sync
         self.key_shortcuts = self.parse_shortcuts(key_shortcuts)
         self.keyboard = Keyboard()
+        log("KeyboardHelper.__init__(%s, %s, %s) keyboard=%s", net_send, keyboard_sync, key_shortcuts, self.keyboard)
 
     def mask_to_names(self, mask):
         return self.keyboard.mask_to_names(mask)
@@ -177,11 +178,13 @@ class KeyboardHelper(object):
             return
         self.keyboard.process_key_event(self.send_key_action, wid, key_event)
 
-    def send_key_action(self, wid, key_event):
+    def send_key_action(self, wid, key_event, keyboard_event=False):
         log("send_key_action(%s, %s)", wid, key_event)
         packet = ["key-action", wid]
         for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
             packet.append(getattr(key_event, x))
+        #we should check the client "modignore" flag here..
+        packet.append(self.keyboard.get_modifiers_ignore(keyboard_event=keyboard_event))
         self.send(*packet)
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(key_event)
@@ -213,7 +216,8 @@ class KeyboardHelper(object):
             log("scheduling key repeat for %s: delay=%s, interval=%s (from %s and %s)", keyname, delay, interval, self.key_repeat_delay, self.key_repeat_interval)
             def send_key_repeat():
                 modifiers = self.get_current_modifiers()
-                self.send_now("key-repeat", wid, keyname, keyval, keycode, modifiers)
+                modignore = self.keyboard.get_modifiers_ignore(keyboard_event=False)
+                self.send_now("key-repeat", wid, keyname, keyval, keycode, modifiers, modignore)
             def continue_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and continue, otherwise stop

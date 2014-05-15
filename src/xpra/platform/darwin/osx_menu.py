@@ -146,7 +146,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def make_numlockmenuitem(self):
         def numlock_toggled(*args):
             v = self.numlock_menuitem.get_active()
-            log("numlock_toggled(%s) %s", args, v)
+            log("numlock_toggled(%s) menu active=%s", args, v)
             if self.keyboard:
                 self.keyboard.num_lock_state = v
         self.numlock_menuitem = self.checkitem("Num Lock", cb=numlock_toggled)
