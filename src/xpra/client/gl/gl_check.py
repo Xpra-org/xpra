@@ -126,6 +126,8 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         fhlogger = redirect_log('OpenGL.formathandler')
         elogger = redirect_log('OpenGL.extensions')
         alogger = redirect_log('OpenGL.acceleratesupport')
+        arlogger = redirect_log('OpenGL.arrays')
+        clogger = redirect_log('OpenGL.converters')
 
         import OpenGL
         props["pyopengl"] = OpenGL.__version__
@@ -266,7 +268,9 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             msg = x.getMessage().replace("No OpenGL_accelerate module loaded: ", "")
             if msg=="No module named OpenGL_accelerate":
                 msg = "missing accelerate module"
-            log.info("PyOpenGL warning: %s" % msg)
+            if msg!="OpenGL_accelerate module loaded":
+                msg = "PyOpenGL warning: %s" % msg 
+            log.info(msg)
 
         #format handler messages:
         STRIP_LOG_MESSAGE = "Unable to load registered array format handler "
@@ -293,12 +297,28 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             if not p:
                 log.info(msg)
 
+        missing_accelerators = []
+        STRIP_AR_HEAD = "Unable to load"
+        STRIP_AR_TAIL = "from OpenGL_accelerate"
+        for x in arlogger.handlers[0].records+clogger.handlers[0].records:
+            msg = x.getMessage()
+            if msg.startswith(STRIP_AR_HEAD) and msg.endswith(STRIP_AR_TAIL):
+                m = msg[len(STRIP_AR_HEAD):-len(STRIP_AR_TAIL)].strip()
+                m = m.replace("accelerators", "").replace("accelerator", "").strip()
+                missing_accelerators.append(m)
+                continue
+            log.info(msg)
+        if missing_accelerators:
+            log.info("OpenGL accelerate missing: %s", ", ".join(missing_accelerators))
+
         def restore_logger(logger):
             logger.handlers = logger.saved_handlers
             logger.propagate = logger.saved_propagate
         restore_logger(fhlogger)
         restore_logger(elogger)
         restore_logger(alogger)
+        restore_logger(arlogger)
+        restore_logger(clogger)
         gldrawable.gl_end()
 
 def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
