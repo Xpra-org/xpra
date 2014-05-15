@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-import gtk.gdk
+from xpra.gtk_common.gtk_util import META_MASK
 from xpra.platform.keyboard_base import KeyboardBase, log
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 
@@ -76,7 +76,7 @@ class Keyboard(KeyboardBase):
     def mask_to_names(self, mask):
         names = KeyboardBase.mask_to_names(self, mask)
         if self.swap_keys and self.meta_modifier is not None and self.control_modifier is not None:
-            meta_on = bool(mask & gtk.gdk.META_MASK)
+            meta_on = bool(mask & META_MASK)
             meta_set = self.meta_modifier in names
             control_set = self.control_modifier in names
             log("mask_to_names names=%s, meta_on=%s, meta_set=%s, control_set=%s", names, meta_on, meta_set, control_set)
