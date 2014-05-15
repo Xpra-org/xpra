@@ -459,13 +459,13 @@ class GLPixmapBacking(GTK2WindowBacking):
             if not rgb_format:
                 #Older servers may not tell us the pixel format, so we must infer it:
                 if bpp==24:
-                    default_format = "RGB"
+                    rgb_format = "RGB"
                 else:
                     assert bpp==32
-                    default_format = "RGBA"
+                    rgb_format = "RGBA"
             #convert it to a GL constant:
-            pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format or default_format)
-            assert pformat is not None, "could not find pixel format for %s or %s (bpp=%s)" % (rgb_format, default_format, bpp)
+            pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)
+            assert pformat is not None, "could not find pixel format for %s (bpp=%s)" % (rgb_format, bpp)
 
             bytes_per_pixel = len(rgb_format)       #ie: BGRX -> 4
             # Compute alignment and row length
