@@ -425,7 +425,7 @@ def parse_cmdline(cmdline):
                       help="Directory to place/look for the socket files in (default: %s)" % default_socket_dir_str)
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
-                      help="List of categories to enable debugging for (or \"all\", \"help\")")
+                      help="List of categories to enable debugging for (you can also use \"all\" or \"help\", default: '%default')")
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",
                       help="How to run ssh (default: '%default')")
@@ -478,11 +478,16 @@ def parse_cmdline(cmdline):
     #process "help" arguments early:
     from xpra.log import KNOWN_FILTERS
     if options.debug:
-        categories = options.debug.split(",")
-        for cat in categories:
-            if cat=="help":
-                print("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
-                sys.exit(1)
+        if options.debug.strip().lower() in ("no", "yes", "true", "false", "on", "off", "0", "1"):
+            #older versions used a boolean, change it to a CSV string:
+            print("invalid value for debug option: '%s' (see command help for details)" % options.debug)
+            options.debug = ""
+        else:
+            categories = options.debug.split(",")
+            for cat in categories:
+                if cat=="help":
+                    print("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
+                    sys.exit(1)
 
     if options.encoding:
         #fix old encoding names if needed:
