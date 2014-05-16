@@ -495,7 +495,10 @@ class ApplicationWindow:
 
         if self.config.password:
             #pass the password to the class directly:
-            self.client.password = self.config.password
+            def load_password():
+                return self.config.password
+            self.client.password_file = "FAKE-PASSWORD-FILE-FOR-LAUNCHER"
+            self.client.load_password = load_password
         #override exit code:
         warn_and_quit_save = self.client.warn_and_quit
         quit_save = self.client.quit
@@ -508,8 +511,6 @@ class ApplicationWindow:
             log("warn_and_quit_override(%s, %s)", exit_code, warning)
             if self.exit_code == None:
                 self.exit_code = exit_code
-            self.client.cleanup()
-            self.client = None
             password_warning = warning.find("invalid password")>=0
             if password_warning:
                 self.password_warning()
@@ -519,8 +520,10 @@ class ApplicationWindow:
             if err:
                 def ignore_further_quit_events(*args):
                     pass
-                self.client.warn_and_quit = ignore_further_quit_events
-                self.client.quit = ignore_further_quit_events
+                if self.client:
+                    self.client.cleanup()
+                    self.client.warn_and_quit = ignore_further_quit_events
+                    self.client.quit = ignore_further_quit_events
                 self.set_sensitive(True)
                 self.reset_client()
                 gobject.idle_add(self.window.show)
