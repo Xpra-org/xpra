@@ -247,7 +247,12 @@ class ServerCore(object):
         return "server"
 
     def run(self):
-        log.info("xpra %s version %s", self.get_server_mode(), local_version)
+        try:
+            from xpra.src_info import REVISION
+            rev_info = " (r%s)" % REVISION
+        except:
+            rev_info = ""
+        log.info("xpra %s version %s%s", self.get_server_mode(), local_version, rev_info)
         log.info("running with pid %s", os.getpid())
         signal.signal(signal.SIGTERM, self.signal_quit)
         signal.signal(signal.SIGINT, self.signal_quit)
