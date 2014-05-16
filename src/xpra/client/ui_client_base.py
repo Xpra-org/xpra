@@ -1239,7 +1239,7 @@ class UIXpraClient(XpraClientBase):
                          "(server: %sx%s vs. client: %sx%s)\n"
                          "You may see strange behavior.\n"
                          "Please see "
-                         "https://www.xpra.org/trac/ticket/10"
+                         "http://xpra.org/trac/wiki/Xdummy#Configuration"
                          % (avail_w, avail_h, root_w, root_h))
         if self.keyboard_helper:
             modifier_keycodes = c.dictget("modifier_keycodes")
