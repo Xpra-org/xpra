@@ -26,7 +26,7 @@ def do_get_PIL_codings(PIL, attr="SAVE"):
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
         if stripped in avalue:
-            log("PIL.Image can %s %s", attr, stripped)
+            log("PIL.Image can %s %s", attr, encoding)
             encodings.append(encoding)
     log("do_get_PIL_codings(%s, %s)=%s", PIL, attr, encodings)
     return encodings
