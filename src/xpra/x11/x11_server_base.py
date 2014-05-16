@@ -161,7 +161,7 @@ class X11ServerBase(GTKServerBase):
         try:
             sizes = RandR.get_screen_sizes()
             if self.randr and len(sizes)>=0:
-                info["server.randr.options"] = sizes
+                info["server.randr.options"] = reversed(sorted(sizes))
         except:
             pass
         try:
