@@ -200,6 +200,7 @@ cdef extern from "webp/encode.h":
     int WebPConfigPreset(WebPConfig* config, WebPPreset preset, float quality)
     int WebPValidateConfig(const WebPConfig* config)
     int WebPPictureInit(WebPPicture* picture)
+    void WebPPictureFree(WebPPicture* picture)
 
     # Colorspace conversion function to import RGB samples.
     # Previous buffer will be free'd, if any.
@@ -347,4 +348,5 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
 
     cdata = memory_writer.mem[:memory_writer.size]
     free(memory_writer.mem)
+    WebPPictureFree(&pic)
     return cdata
