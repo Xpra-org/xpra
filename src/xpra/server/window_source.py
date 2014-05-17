@@ -800,7 +800,7 @@ class WindowSource(object):
         return self.full_frames_only or self.is_tray
 
 
-    def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=None):
+    def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=[]):
         #import traceback
         #traceback.print_stack()
         if self.is_tray or (self.has_alpha and self.supports_transparency):
@@ -810,9 +810,8 @@ class WindowSource(object):
             options = self.get_encoding_options(batching, pixel_count, ww, wh, speed, quality, current_encoding)
         if current_encoding is None:
             #add all the fallbacks so something will match
-            options += [x for x in [fallback]+self.common_encodings if x is not None and x not in options]
+            options += [x for x in fallback+self.common_encodings if x is not None and x not in options]
         e = self.do_get_best_encoding(options, current_encoding, fallback)
-        #log("get_best_encoding%s=%s (from options=%s, common_encodings=%s)", (batching, pixel_count, ww, wh, speed, quality, current_encoding), e, options, self.common_encodings)
         return e
 
     def do_get_best_encoding(self, options, current_encoding, fallback):
@@ -823,6 +822,7 @@ class WindowSource(object):
 
     def pick_encoding(self, encodings, fallback=None):
         """ choose an encoding from the list, or use the fallback """
+        log.info("pick_encoding(%s, fallback=%s)", encodings, fallback)
         matches = [e for e in encodings if e is not None and ({"rgb32" : "rgb", "rgb24" : "rgb"}.get(e, e) in self.common_encodings)]
         if matches:
             return matches[0]
