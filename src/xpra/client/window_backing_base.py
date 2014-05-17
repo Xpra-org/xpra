@@ -452,7 +452,7 @@ class WindowBackingBase(object):
         #Note: BGR(A) is only handled by gl_window_backing
         if rgb_format in ("RGB", "BGR"):
             self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
-        elif rgb_format in ("RGBA", "BGRA", "BGRX"):
+        elif rgb_format in ("RGBA", "BGRA", "BGRX", "RGBX"):
             self.do_paint_rgb32(data, x, y, width, height, rowstride, options, callbacks)
         else:
             raise Exception("invalid rgb format: %s" % rgb_format)
