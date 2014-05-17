@@ -822,7 +822,6 @@ class WindowSource(object):
 
     def pick_encoding(self, encodings, fallback=None):
         """ choose an encoding from the list, or use the fallback """
-        log.info("pick_encoding(%s, fallback=%s)", encodings, fallback)
         matches = [e for e in encodings if e is not None and ({"rgb32" : "rgb", "rgb24" : "rgb"}.get(e, e) in self.common_encodings)]
         if matches:
             return matches[0]
