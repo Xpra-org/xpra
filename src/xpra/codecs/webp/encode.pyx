@@ -293,6 +293,7 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     cdef Py_ssize_t pic_buf_len = 0
     cdef WebPConfig config
     cdef int ret
+    cdef int i, c
     #presets: DEFAULT, PICTURE, PHOTO, DRAWING, ICON, TEXT
     cdef WebPPreset preset = WEBP_PRESET_TEXT
     if width*height<8192:
@@ -300,6 +301,15 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
 
     assert object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)==0
     log("webp.compress(%s bytes, %s, %s, %s, %s, %s, %s) buf=%#x", len(pixels), width, height, stride, quality, speed, has_alpha, <unsigned long> pic_buf)
+
+    if not has_alpha:
+        #ensure webp will not decide to encode the alpha channel
+        #(this is stupid: we should be able to pass a flag instead)
+        i = 0
+        c = (stride or width) * height
+        while i<c:
+            pic_buf[i*4+3] = 0xff
+            i += 1
 
     ret = WebPConfigPreset(&config, preset, fclamp(quality))
     if not ret:
@@ -312,7 +322,7 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     else:
         config.quality = fclamp(quality)
     config.method = max(0, min(6, 6-speed/16))
-    config.alpha_compression = int(has_alpha)
+    config.alpha_compression = int(quality>=90)
     config.alpha_filtering = max(0, min(2, speed/50)) * int(has_alpha)
     config.alpha_quality = quality * int(has_alpha)
     #hints: DEFAULT, PICTURE, PHOTO, GRAPH
