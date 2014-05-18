@@ -89,7 +89,7 @@ class CairoBacking(GTKWindowBacking):
 
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
-        log("cairo.paint_image(%s, %s bytes,%s,%s,%s,%s,%s,%s) has_alpha=%s", coding, len(img_data), x, y, width, height, options, callbacks, self._has_alpha)
+        log("cairo.paint_image(%s, %s bytes,%s,%s,%s,%s,%s,%s) alpha_enabled=%s", coding, len(img_data), x, y, width, height, options, callbacks, self._alpha_enabled)
         #catch PNG and jpeg we can handle via cairo or pixbufloader respectively
         #(both of which need to run from the UI thread)
         if coding.startswith("png") or coding=="jpeg":
