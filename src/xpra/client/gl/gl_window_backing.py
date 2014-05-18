@@ -452,6 +452,13 @@ class GLPixmapBacking(GTK2WindowBacking):
             log("%s._do_paint_rgb(..) drawable is not set!", self)
             return False
 
+        #deal with buffers uploads by wrapping them if we can, or copy to a string:
+        if type(img_data)==buffer:
+            if memoryview_type is not None:
+                img_data = memoryview_type(img_data)
+            else:
+                img_data = str(img_data)
+
         try:
             self.set_rgb_paint_state()
 
