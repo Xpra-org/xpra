@@ -831,7 +831,8 @@ class WindowSource(object):
         current_encoding = {"rgb" : "rgb32"}.get(current_encoding, current_encoding)
         WITH_ALPHA = ["rgb32", "png", "rgb24"]
         #webp is shockingly bad at high res and low speed:
-        if pixel_count<1920*1080 and speed>30:
+        can_webp = pixel_count<1920*1080 and speed>30
+        if can_webp:
             WITH_ALPHA.append("webp")
         options = []
         if current_encoding in WITH_ALPHA:
@@ -840,7 +841,7 @@ class WindowSource(object):
         if (speed>=75 and quality>=75) or pixel_count<=MAX_PIXELS_PREFER_RGB:
             #rgb is the fastest, and also worth using on small regions:
             options.append("rgb32")
-        if (not self.is_tray or quality>99) and pixel_count<1920*1080 and speed>30:
+        if not self.is_tray and can_webp:
             #see note above about webp
             options.append("webp")
         if speed<75:
