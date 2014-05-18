@@ -235,6 +235,26 @@ class WindowBackingBase(object):
         return False
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
+        dec_webp = get_codec("dec_webp")
+        if dec_webp:
+            return self.paint_webp_using_cwebp(img_data, x, y, width, height, options, callbacks)
+        return self.paint_webp_using_webm(img_data, x, y, width, height, options, callbacks)
+
+    def paint_webp_using_cwebp(self, img_data, x, y, width, height, options, callbacks):
+        dec_webp = get_codec("dec_webp")
+        has_alpha = options.get("has_alpha", False)
+        buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha)
+        options["rgb_format"] = rgb_format
+        def free_buffer(*args):
+            buffer_wrapper.free()
+        callbacks.append(free_buffer)
+        data = buffer_wrapper.get_pixels()
+        if has_alpha:
+            return self.paint_rgb32(data, x, y, width, height, stride, options, callbacks)
+        else:
+            return self.paint_rgb24(data, x, y, width, height, stride, options, callbacks)
+
+    def paint_webp_using_webm(self, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         dec_webm = get_codec("dec_webm")
         assert dec_webm is not None, "webp decoder not found"
