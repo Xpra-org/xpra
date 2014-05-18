@@ -241,7 +241,7 @@ class AVImageWrapper(ImageWrapper):
         when the image is freed, or once we have made a copy of the pixels.
     """
 
-    def __str__(self):                          #@DuplicatedSignature
+    def __repr__(self):                          #@DuplicatedSignature
         return ImageWrapper.__str__(self)+"-(%s)" % self.av_frames
 
     def free(self):                             #@DuplicatedSignature
