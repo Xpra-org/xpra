@@ -93,7 +93,7 @@ cdef extern from "webp/encode.h":
                                         #if filter_strength > 0 or autofilter > 0)
         int autofilter                  #Auto adjust filter's strength [0 = off, 1 = on]
         int alpha_compression           #Algorithm for encoding the alpha plane (0 = none,
-                                        #compressed with WebP lossless). Default is 1.
+                                        #1 compressed with WebP lossless). Default is 1.
         int alpha_filtering             #Predictive filtering method for alpha plane.
                                         #0: none, 1: fast, 2: best. Default if 1.
         int alpha_quality               #Between 0 (smallest size) and 100 (lossless).
