@@ -34,6 +34,13 @@ class Keyboard(KeyboardBase):
         self.num_lock_keycode = NUM_LOCK_KEYCODE
         self.key_translations = {}
 
+    def get_keymap_modifiers(self):
+        """
+            Override superclass so we can tell the server
+            that 'control' will also be missing from non key events modifiers
+        """
+        return  {}, [], ["lock", "control"]
+
     def set_modifier_mappings(self, mappings):
         KeyboardBase.set_modifier_mappings(self, mappings)
         self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R")
