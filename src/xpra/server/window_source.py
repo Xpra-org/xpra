@@ -721,8 +721,8 @@ class WindowSource(object):
 
     def do_send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, fallback=None):
         ww,wh = window.get_dimensions()
-        speed = self.get_current_speed()
-        quality = self.get_current_quality()
+        speed = options.get("speed") or self.get_current_speed()
+        quality = options.get("quality") or self.get_current_quality()
         def get_encoding(pixel_count):
             return self.get_best_encoding(True, pixel_count, ww, wh, speed, quality, coding, fallback)
 
