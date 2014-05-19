@@ -557,6 +557,10 @@ class WindowVideoSource(WindowSource):
             #window has just been resized, may still resize
             return nonvideo(q=quality-30)
 
+        if self.get_current_quality()!=quality or self.get_current_speed()!=speed:
+            #quality or speed override, best not to force video encoder re-init
+            return nonvideo()
+
         def lossless(reason):
             log("get_encoding_options(..) temporarily switching to lossless mode for %8i pixels: %s", pixel_count, reason)
             return nonvideo(q=100)
