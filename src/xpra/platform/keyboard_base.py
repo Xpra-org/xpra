@@ -45,7 +45,7 @@ class KeyboardBase(object):
 
     def get_keymap_modifiers(self):
         """
-            ask the server to manage numlock, and lock can be missing from mouse events
+            ask the server to manage capslock ('lock') which can be missing from mouse events
             (or maybe this is virtualbox causing it?)
         """
         return  {}, [], ["lock"]
