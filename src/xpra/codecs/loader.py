@@ -8,6 +8,10 @@ import os.path
 from xpra.log import Logger
 log = Logger("codec", "loader")
 
+#these codecs may well not load because we
+#do not require the libraries to be installed
+NOWARN = ["nvenc", "opencl"]
+
 codec_errors = {}
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, *classnames):
@@ -31,7 +35,10 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                 return ic
         except ImportError, e:
             codec_errors[name] = e
-            log.warn(" cannot import %s (%s): %s", name, description, e)
+            l = log.warn
+            if name in NOWARN:
+                l = log.debug
+            l(" cannot import %s (%s): %s", name, description, e)
     except Exception, e:
         codec_errors[name] = e
         log.warn(" cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
