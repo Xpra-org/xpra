@@ -802,9 +802,6 @@ class WindowSource(object):
 
 
     def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=[]):
-        #import traceback
-        #traceback.print_stack()
-        log.info("get_best_encoding(..) STRICT_MODE=%s, current_encoding=%s", STRICT_MODE, current_encoding)
         if STRICT_MODE and current_encoding:
             return current_encoding
         if self.is_tray or (self.has_alpha and self.supports_transparency):
