@@ -14,7 +14,7 @@ from xpra.util import AtomicInteger
 from xpra.net.protocol import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, get_default_csc_modes, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
-from xpra.server.window_source import WindowSource, MAX_PIXELS_PREFER_RGB
+from xpra.server.window_source import WindowSource, MAX_PIXELS_PREFER_RGB, STRICT_MODE
 from xpra.gtk_common.region import rectangle, merge_all
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.log import Logger
@@ -252,7 +252,7 @@ class WindowVideoSource(WindowSource):
             sublog("identify video: not using a video mode! (%s)", self.encoding)
             self.video_subregion = None
             return
-        if self.full_frames_only:
+        if self.full_frames_only or STRICT_MODE:
             sublog("identify video: full frames only!")
             self.video_subregion = None
             return

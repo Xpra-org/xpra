@@ -27,6 +27,7 @@ DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
 FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
+STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
 
 
 from xpra.deque import maxdeque
@@ -803,6 +804,9 @@ class WindowSource(object):
     def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=[]):
         #import traceback
         #traceback.print_stack()
+        log.info("get_best_encoding(..) STRICT_MODE=%s, current_encoding=%s", STRICT_MODE, current_encoding)
+        if STRICT_MODE and current_encoding:
+            return current_encoding
         if self.is_tray or (self.has_alpha and self.supports_transparency):
             #always use transparent encoding for tray or for transparent windows:
             options = self.transparent_encoding_options(current_encoding, pixel_count, speed, quality)
