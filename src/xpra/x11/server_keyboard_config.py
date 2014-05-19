@@ -113,19 +113,23 @@ class KeyboardConfig(KeyboardConfigBase):
             to set the keyboard attributes """
         KeyboardConfigBase.parse_options(self, props)
         modded = []
-        for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
-                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing",
-                  "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
-            cv = getattr(self, x)
-            nv = props.get(x)
+        for x in ("print", "query", "mod_meanings",
+                  "mod_managed", "mod_pointermissing",
+                  "keycodes", "x11_keycodes"):
+            prop = "xkbmap_%s" % x
+            cv = getattr(self, prop)
+            nv = props.get(prop)
             if cv!=nv:
-                setattr(self, x, nv)
-                modded.append(x)
+                setattr(self, prop, nv)
+                modded.append(prop)
         log("assign_keymap_options(..) modified %s", modded)
         return len(modded)>0
 
 
     def get_hash(self):
+        """
+            This hash will be different whenever the keyboard configuration changes.
+        """
         try:
             import hashlib
             m = hashlib.sha1()
@@ -309,9 +313,10 @@ class KeyboardConfig(KeyboardConfigBase):
                 ie: "num" on win32, which is toggled by the "Num_Lock" key presses.
             * when called from '_handle_key', we ignore the modifier key which may be pressed
                 or released as it should be set by that key press event.
-            * when called from mouse position/click events we ignore 'xkbmap_mod_pointermissing'
+            * when called from mouse position/click/focus events we ignore 'xkbmap_mod_pointermissing'
                 which is set by the client to indicate modifiers which are missing from mouse events.
                 ie: on win32, "lock" is missing.
+                (we know this is not a keyboard event because ignored_modifier_keynames is None..)
             * if the modifier is a "nuisance" one ("lock", "num", "scroll") then we must
                 simulate a full keypress (down then up).
             * some modifiers can be set by multiple keys ("shift" by both "Shift_L" and "Shift_R" for example)
