@@ -905,19 +905,25 @@ class WindowVideoSource(WindowSource):
                 pixels = sum(w*h for _,_,_,w,h in lde)
                 ffps = int(pixels/(width*height)/(time.time() - otime))
 
+            #edge resistance:
+            er = 0
+            if self.actual_scaling!=(1, 1):
+                #if we are currently downscaling, stick with a bit longer:
+                er = 1
+
             if width>max_w or height>max_h:
                 #most encoders can't deal with that!
                 d = 2
                 while width/d>max_w or height/d>max_h:
                     d += 1
                 actual_scaling = 1,d
-            elif self.fullscreen and (qs or ffps>=10):
+            elif self.fullscreen and (qs or ffps>=(10-er*3)):
                 actual_scaling = 1,3
-            elif self.maximized and (qs or ffps>=10):
+            elif self.maximized and (qs or ffps>=(10-er*3)):
                 actual_scaling = 1,2
-            elif width*height>=2048*1200 and (q<80 or ffps>=25):
+            elif width*height>=(2048-er*768)*1200 and (q<(80-er*10) or ffps>=(25-er*5)):
                 actual_scaling = 1,3
-            elif width*height>=1024*1024 and (q<80 or ffps>=30):
+            elif width*height>=(1024-er*384)*1024 and (q<(80-er*10) or ffps>=(30-er*10)):
                 actual_scaling = 2,3
         if actual_scaling is None:
             actual_scaling = 1, 1
