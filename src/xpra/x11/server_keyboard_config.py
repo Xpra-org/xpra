@@ -186,6 +186,15 @@ class KeyboardConfig(KeyboardConfigBase):
         log("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
 
 
+    def is_modifier(self, keycode):
+        for mod, keys in self.keycodes_for_modifier_keynames.items():
+            if keycode in keys:
+                log("is_modifier(%s) found modifier: %s", keycode, mod)
+                return True
+        log("is_modifier(%s) not found", keycode)
+        return False
+
+
     def set_keymap(self):
         if not self.enabled:
             return
