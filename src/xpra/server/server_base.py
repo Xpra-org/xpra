@@ -912,6 +912,8 @@ class ServerBase(ServerCore):
             (ie: things that query the display)
         """
         info = {"server.max_desktop_size" : self.get_max_screen_size()}
+        if self.keyboard_config:
+            info["state.modifiers"] = self.keyboard_config.get_current_mask()
         #window info:
         self.add_windows_info(info, wids)
         return info

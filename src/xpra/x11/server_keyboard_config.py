@@ -103,7 +103,6 @@ class KeyboardConfig(KeyboardConfigBase):
             v = getattr(self, "xkbmap_mod_"+x)
             if v:
                 info["modifiers."+x] = v
-        info["state.modifiers"] = self.get_current_mask()
         log("keyboard info: %s", "\n".join(["%s=%s" % (k,v) for k,v in info.items()]))
         return info
 
