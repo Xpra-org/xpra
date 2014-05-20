@@ -149,7 +149,7 @@ class codec_spec(object):
 
 
     def get_instance_count(self):
-        return len(self.instances.keys())
+        return len(list(self.instances.keys()))
 
     def to_dict(self):
         d = {}
