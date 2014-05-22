@@ -17,7 +17,7 @@ compresslog = Logger("window", "compress")
 
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 95))
-AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 100))
+AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 99))
 AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 
 MAX_PIXELS_PREFER_RGB = 4096
@@ -830,7 +830,8 @@ class WindowSource(object):
         current_encoding = {"rgb" : "rgb32"}.get(current_encoding, current_encoding)
         WITH_ALPHA = ["rgb32", "png", "rgb24"]
         #webp is shockingly bad at high res and low speed:
-        can_webp = pixel_count<1920*1080 and speed>30
+        max_webp = 1024*1024*(200-quality)/100*speed/100
+        can_webp = 16384<pixel_count<max_webp
         if can_webp:
             WITH_ALPHA.append("webp")
         options = []
@@ -847,7 +848,9 @@ class WindowSource(object):
             #png is a bit slow!
             options.append("png")
         #add fallback options:
-        return options+WITH_ALPHA
+        v = options+WITH_ALPHA
+        #log.info("transparent_encoding_options%s=%s", (current_encoding, pixel_count, speed, quality), v)
+        return v
 
     def get_encoding_options(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
         current_encoding = {"rgb" : "rgb24"}.get(current_encoding, current_encoding)
@@ -858,7 +861,9 @@ class WindowSource(object):
         #calculate the threshold for using rgb
         smult = max(1, (speed-75)/5.0)
         max_rgb = int(MAX_PIXELS_PREFER_RGB * smult * (1 + int(self.is_OR)*2))
-        #log("get_encoding_options%s lossless_q=%s, smult=%s, max_rgb=%s", (batching, pixel_count, ww, wh, speed, quality, current_encoding), lossless_q, smult, max_rgb)
+        #avoid large areas (too slow), especially at low speed and high quality:
+        max_webp = 1024*1024 * (200-quality)/100 * speed/100
+        #log.info("get_encoding_options%s lossless_q=%s, smult=%s, max_rgb=%s, max_webp=%s", (batching, pixel_count, ww, wh, speed, quality, current_encoding), lossless_q, smult, max_rgb, max_webp)
         if quality<lossless_q:
             #add lossy options
             ALL_OPTIONS = ["jpeg", "png/P", "png/L"]
@@ -868,7 +873,7 @@ class WindowSource(object):
             if speed>50:
                 #at medium to high speed, jpeg is always good
                 options.append("jpeg")
-            if speed>30 and 16384<pixel_count<1920*1080:
+            if speed>30 and 16384<pixel_count<max_webp:
                 #medium speed: webp compresses well (just a bit slow)
                 options.append("webp")
         else:
@@ -877,9 +882,8 @@ class WindowSource(object):
             if speed>75 or pixel_count<max_rgb:
                 #high speed, rgb is very good:
                 options.append("rgb24")
-            if 16384<pixel_count<1920*1080 and ((quality>99 and speed>75) or speed>20):
-                #enable webp for medium speed (we normalize webp speed in webm_encode)
-                #but don't enable webp for "true" lossless (q>99) unless speed is high
+            if 16384<pixel_count<max_webp:
+                #don't enable webp for "true" lossless (q>99) unless speed is high
                 #because webp forces speed=100 for true lossless mode
                 #also avoid very small and very large areas (both slow)
                 options.append("webp")
