@@ -78,7 +78,7 @@ def test_files(filenames=[], d="", extensions=[".png", ".jpg"], recurse=True):
         p = os.path.join(d, x)
         if os.path.isdir(p):
             if recurse:
-                test_files(os.listdir(x), x, extensions, recurse)
+                test_files(os.listdir(p), p, extensions, recurse)
             continue
         try:
             img = PIL.Image.open(p)
