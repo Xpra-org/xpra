@@ -16,7 +16,7 @@ from xpra.platform.paths import get_icon
 from xpra.gtk_common import gtk_util
 assert gtk_util, "cannot load compat class"
 
-    
+
 modifier_names = {
                   SHIFT_MASK        : "Shift",
                   LOCK_MASK         : "Lock",

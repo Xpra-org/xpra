@@ -962,7 +962,7 @@ if WIN32:
                         print(" - lib%s*.dll" % x)
                     sys.exit(0)
                 add_data_files("", [os.path.join(include_dll_path, dll) for dll in dll_files])
-                
+
 
             #list of DLLs we want to include, without the "lib" prefix, or the version and extension
             #(ie: "libatk-1.0-0.dll" -> "atk")

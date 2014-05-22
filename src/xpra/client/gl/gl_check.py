@@ -269,7 +269,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             if msg=="No module named OpenGL_accelerate":
                 msg = "missing accelerate module"
             if msg!="OpenGL_accelerate module loaded":
-                msg = "PyOpenGL warning: %s" % msg 
+                msg = "PyOpenGL warning: %s" % msg
             log.info(msg)
 
         #format handler messages:

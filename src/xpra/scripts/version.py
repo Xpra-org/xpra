@@ -5,7 +5,7 @@
 
 from xpra.scripts.config import python_platform
 #only imported to make sure we can get hold of a reference to the real "platform" module
-assert python_platform 
+assert python_platform
 from xpra.version_util import get_version_info, get_platform_info, get_host_info
 from xpra.util import nonl, pver
 

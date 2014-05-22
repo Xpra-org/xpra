@@ -187,10 +187,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.do_workspace_changed(event)
 
     def workspace_changed(self):
-        #on X11 clients, this fires from the root window property watcher 
+        #on X11 clients, this fires from the root window property watcher
         ClientWindowBase.workspace_changed(self)
         self.do_workspace_changed("desktop workspace changed")
-    
+
     def do_workspace_changed(self, info):
         #call this method whenever something workspace related may have changed
         window_workspace = self.get_window_workspace()

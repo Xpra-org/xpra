@@ -1489,7 +1489,7 @@ class WindowModel(BaseWindowModel):
             xid = self.client_window.xid
         title = self.get_property("title")
         if title:
-            return "WindowModel(%#x - \"%s\")" % (xid, nonl(title))            
+            return "WindowModel(%#x - \"%s\")" % (xid, nonl(title))
         return "WindowModel(%#x)" % xid
 
 

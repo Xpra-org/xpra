@@ -83,7 +83,7 @@ KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "vid
                  "score", "encoding", "subregion", "refresh", "compress", "mouse",
                  "error", "verbose",
                  #codecs:
-                 "csc", "cuda", "cython", "opencl", "swscale", 
+                 "csc", "cuda", "cython", "opencl", "swscale",
                  "decoder", "avcodec", "vpx", "nvenc", "proxy",
                  "x264", "webp",
                  "gobject", "gtk", "main", "util", "dbus",

@@ -278,7 +278,7 @@ class KeyboardConfig(KeyboardConfigBase):
         for modifier, mappings in mod_mappings.items():
             keynames = []
             for m in mappings:      #ie: (37, 'Control_L'), (105, 'Control_R')
-                if len(m)==2: 
+                if len(m)==2:
                     keynames.append(m[1])   #ie: 'Control_L'
             self.keynames_for_mod[modifier] = set(keynames)
         self.compute_modifier_keynames()

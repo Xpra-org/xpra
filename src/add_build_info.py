@@ -145,7 +145,7 @@ def get_platform_name():
     if sys.platform.find("linux")>=0 and hasattr(platform, "linux_distribution"):
         return "Linux %s" % (" ".join(platform.linux_distribution()))
     return sys.platform
-    
+
 
 def record_build_info(is_build=True):
     BUILD_INFO_FILE = "./xpra/build_info.py"

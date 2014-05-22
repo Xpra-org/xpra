@@ -159,7 +159,7 @@ cdef extern from "vpx/vpx_encoder.h":
                               vpx_enc_frame_flags_t flags, unsigned long deadline) nogil
 
     const vpx_codec_cx_pkt_t *vpx_codec_get_cx_data(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
-    vpx_codec_err_t vpx_codec_enc_config_set(vpx_codec_ctx_t *ctx, const vpx_codec_enc_cfg_t *cfg)    
+    vpx_codec_err_t vpx_codec_enc_config_set(vpx_codec_ctx_t *ctx, const vpx_codec_enc_cfg_t *cfg)
 
 PACKET_KIND = {
                VPX_CODEC_CX_FRAME_PKT   : "CX_FRAME_PKT",

@@ -281,14 +281,14 @@
      <branch repo="pypi.python.org"
 	     module="/packages/source/m/modulegraph/modulegraph-0.11.tar.gz"
 	     version="0.11"/>
-  </distutils>  
+  </distutils>
 
   <distutils id="python-altgraph">
      <branch repo="pypi.python.org"
 	     module="/packages/source/a/altgraph/altgraph-0.11.tar.gz"
 	     version="0.11"/>
-  </distutils>  
-  
+  </distutils>
+
   <distutils id="python-pyopengl">
      <branch repo="pypi.python.org"
 	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.0b2.tar.gz"
@@ -435,7 +435,7 @@
     <dependencies>
       <dep package="xpra-svn"/>
     </dependencies>
-  </metamodule>  
+  </metamodule>
 
   <metamodule id="meta-osx-image-libs">
       <dep package="libjpeg-turbo"/>

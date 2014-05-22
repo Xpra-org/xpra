@@ -89,7 +89,7 @@ def import_gst1():
     gi.require_version('Gst', '1.0')
     Gst.init(None)
     #make it look like pygst (gstreamer-0.10):
-    Gst.registry_get_default = Gst.Registry.get 
+    Gst.registry_get_default = Gst.Registry.get
     Gst.get_pygst_version = lambda: gi.version_info
     Gst.get_gst_version = lambda: Gst.version()
     def new_buffer(data):

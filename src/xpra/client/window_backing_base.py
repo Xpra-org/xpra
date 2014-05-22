@@ -224,12 +224,12 @@ class WindowBackingBase(object):
         if img.mode=="RGB":
             #PIL flattens the data to a continuous straightforward RGB format:
             rowstride = width*3
-            paint_options["rgb_format"] = "RGB" 
+            paint_options["rgb_format"] = "RGB"
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
             self.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, paint_options, callbacks)
         elif img.mode=="RGBA":
             rowstride = width*4
-            paint_options["rgb_format"] = "RGBA" 
+            paint_options["rgb_format"] = "RGBA"
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
             self.idle_add(self.do_paint_rgb32, img_data, x, y, width, height, rowstride, paint_options, callbacks)
         return False
@@ -263,12 +263,12 @@ class WindowBackingBase(object):
             decode = dec_webm.DecodeRGBA
             rowstride = width*4
             paint_rgb = self.do_paint_rgb32
-            paint_options["rgb_format"] = "RGBA" 
+            paint_options["rgb_format"] = "RGBA"
         else:
             decode = dec_webm.DecodeRGB
             rowstride = width*3
             paint_rgb = self.do_paint_rgb24
-            paint_options["rgb_format"] = "RGB" 
+            paint_options["rgb_format"] = "RGB"
         log("paint_webp(%s) using decode=%s, paint=%s, paint_options=%s",
              ("%s bytes" % len(img_data), x, y, width, height, options, callbacks), decode, paint_rgb, paint_options)
         rgb_data = decode(img_data)
