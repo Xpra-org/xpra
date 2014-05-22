@@ -44,9 +44,9 @@ def warn_encoding_once(key, message):
 def webp_encode(coding, image, supports_transparency, quality, speed, options):
     stride = image.get_rowstride()
     enc_webp = get_codec("enc_webp")
-    if enc_webp and stride%4==0 and image.get_pixel_format() in ("BGRA", "BGRX"):
+    if enc_webp and stride>0 and stride%4==0 and image.get_pixel_format() in ("BGRA", "BGRX"):
         #prefer Cython module:
-        alpha = supports_transparency and image.get_pixel_format()=="BGRA"
+        alpha = supports_transparency and image.get_pixel_format().find("A")>=0
         w = image.get_width()
         h = image.get_height()
         if quality==100:
