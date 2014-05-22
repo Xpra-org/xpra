@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import time
+from math import sqrt
 
 from xpra.log import Logger
 log = Logger("window", "encoding")
@@ -39,6 +40,36 @@ def warn_encoding_once(key, message):
         log.warn("Warning: "+message)
         encoding_warnings.add(key)
 
+
+def webp_encode(coding, image, supports_transparency, quality, speed, options):
+    stride = image.get_rowstride()
+    enc_webp = get_codec("enc_webp")
+    if enc_webp and stride%4==0 and image.get_pixel_format() in ("BGRA", "BGRX"):
+        #prefer Cython module:
+        alpha = supports_transparency and image.get_pixel_format()=="BGRA"
+        w = image.get_width()
+        h = image.get_height()
+        if quality==100:
+            #webp lossless is unbearibly slow for only marginal compression improvements,
+            #so force max speed:
+            speed = 100
+        else:
+            #normalize speed for webp: avoid low speeds!
+            speed = int(sqrt(speed) * 10)
+        speed = max(0, min(100, speed))
+        cdata = enc_webp.compress(image.get_pixels(), w, h, stride=stride/4, quality=quality, speed=speed, has_alpha=alpha)
+        client_options = {"speed" : speed}
+        if quality>=0 and quality<100:
+            client_options["quality"] = quality
+        if alpha:
+            client_options["has_alpha"] = True
+        return "webp", Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
+    enc_webm = get_codec("enc_webm")
+    webp_handlers = get_codec("webm_bitmap_handlers")
+    if enc_webm and webp_handlers:
+        return webm_encode(image, quality)
+    #fallback to PIL
+    return PIL_encode(coding, image, options)
 
 def webm_encode(image, quality):
     assert enc_webm and webp_handlers, "webp components are missing"

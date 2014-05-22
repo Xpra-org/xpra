@@ -8,7 +8,6 @@
 
 import time
 import os
-from math import sqrt
 
 from xpra.log import Logger
 log = Logger("window", "encoding")
@@ -41,8 +40,7 @@ try:
 except Exception, e:
     log("cannot load xor module: %s", e)
     xor_str = None
-from xpra.server.picture_encode import webm_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
-from xpra.net.protocol import Compressed
+from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
 from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
 
@@ -1222,35 +1220,9 @@ class WindowSource(object):
 
 
     def webp_encode(self, coding, image, options):
-        stride = image.get_rowstride()
-        enc_webp = get_codec("enc_webp")
-        if enc_webp and stride%4==0 and image.get_pixel_format() in ("BGRA", "BGRX"):
-            #prefer Cython module:
-            alpha = self.supports_transparency and image.get_pixel_format()=="BGRA"
-            w = image.get_width()
-            h = image.get_height()
-            q = options.get("quality") or self.get_current_quality()
-            s = options.get("speed") or self.get_current_speed()
-            if q==100:
-                #webp lossless is unbearibly slow for only marginal compression improvements,
-                #so force max speed:
-                s = 100
-            else:
-                #normalize speed for webp: avoid low speeds!
-                s = int(sqrt(s) * 10)
-            cdata = enc_webp.compress(image.get_pixels(), w, h, stride=stride/4, quality=q, speed=s, has_alpha=alpha)
-            client_options = {"speed" : max(0, min(100, s))}
-            if q>=0 and q<100:
-                client_options["quality"] = q
-            if alpha:
-                client_options["has_alpha"] = True
-            return "webp", Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
-        enc_webm = get_codec("enc_webm")
-        webp_handlers = get_codec("webm_bitmap_handlers")
-        if enc_webm and webp_handlers:
-            return webm_encode(image, self.get_current_quality())
-        #fallback to PIL
-        return self.PIL_encode(coding, image, options)
+        q = options.get("quality") or self.get_current_quality()
+        s = options.get("speed") or self.get_current_speed()
+        return webp_encode(coding, image, self.supports_transparency, q, s, options)
 
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self.get_current_speed()
