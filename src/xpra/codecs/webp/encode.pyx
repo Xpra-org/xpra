@@ -305,11 +305,11 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     if not has_alpha:
         #ensure webp will not decide to encode the alpha channel
         #(this is stupid: we should be able to pass a flag instead)
-        i = 0
-        c = (stride or width) * height
+        i = 3
+        c = (stride or width) * height * 4
         while i<c:
-            pic_buf[i*4+3] = 0xff
-            i += 1
+            pic_buf[i] = 0xff
+            i += 4
 
     ret = WebPConfigPreset(&config, preset, fclamp(quality))
     if not ret:
