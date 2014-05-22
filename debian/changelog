@@ -5,12 +5,29 @@ xpra (0.13.0-1) UNRELEASED; urgency=low
   * better build system with features auto-detection
   * removed unsupported CUDA csc module
   * improved buffer support
+  * faster webp encoder
   * improved automatic encoding selection
   * support running MS Windows installer under wine
   * support for window opacity forwarding
-  * support for webp encoding via native codec, python-webm or Pillow
+  * fix password mode in launcher
+  * edge resistance for automatic image downscaling
+  * increased default memory allocation of the dummy driver
+  * more detailed version information and tools
+  * stricter handling of server supplied values
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 27 Mar 2014 11:37:51 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 22 May 2014 21:33:03 +0700
+
+xpra (0.12.6-1) UNRELEASED; urgency=low
+  * fix invalid pixel buffer size causing encoding failures
+  * fix auto-refresh infinite loop, and honour refresh quality
+  * fix sound sink with older versions of GStreamer plugins
+  * fix Qt applications crashes caused by a newline in xsettings..
+  * fix error with graphics drivers only supporting OpenGL 2.x only
+  * fix error in cairo backing cleanup
+  * fix RGB pixel data buffer size (re-stride as needed)
+  * avoid buggy swscale 2.1.0 on Ubuntu
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 16 May 2014 12:37:44 +0700
 
 xpra (0.12.5-1) UNRELEASED; urgency=low
   * fix error when clients supply invalid screen dimensions
@@ -19,7 +36,7 @@ xpra (0.12.5-1) UNRELEASED; urgency=low
   * fix keyboard and sound test tools initialization and cleanup
   * fix gcc version test used for enabling sanitizer build options
   * fix exception handling in client when called from the launcher
-  * fix libav dependencies for Debian and Ubuntu builds 
+  * fix libav dependencies for Debian and Ubuntu builds
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 03 May 2014 15:23:02 +0700
 
