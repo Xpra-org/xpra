@@ -69,7 +69,8 @@ def webp_encode(coding, image, supports_transparency, quality, speed, options):
     if enc_webm and webp_handlers:
         return webm_encode(image, quality)
     #fallback to PIL
-    return PIL_encode(coding, image, options)
+    return PIL_encode(coding, image, quality, speed, supports_transparency)
+
 
 def webm_encode(image, quality):
     assert enc_webm and webp_handlers, "webp components are missing"
