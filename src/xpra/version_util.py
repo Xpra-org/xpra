@@ -70,7 +70,7 @@ def get_host_info(prefix=""):
 
 def get_version_info(prefix=""):
     props = {
-             prefix+"version" : local_version
+             mk(prefix, "version") : local_version
              }
     try:
         from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
