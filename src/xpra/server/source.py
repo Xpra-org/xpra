@@ -560,6 +560,7 @@ class ServerSource(object):
             proxy_platform = c.strget("proxy.platform")
             proxy_release = c.strget("proxy.platform.release")
             proxy_version = c.strget("proxy.version")
+            proxy_version = c.strget("proxy.build.version", proxy_version)
             msg = "via %s proxy version %s" % (platform_name(proxy_platform, proxy_release), std(proxy_version))
             if proxy_hostname:
                 msg += " on '%s'" % std(proxy_hostname)
