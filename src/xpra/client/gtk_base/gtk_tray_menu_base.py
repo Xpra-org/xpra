@@ -6,7 +6,7 @@
 
 import sys
 import os
-from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gobject, is_gtk3
 gtk = import_gtk()
 gobject = import_gobject()
 
@@ -845,7 +845,7 @@ class GTKTrayMenuBase(object):
 
     def popup_menu_workaround(self, menu):
         #win32 workaround:
-        if sys.platform.startswith("win"):
+        if sys.platform.startswith("win") and not is_gtk3():
             self.add_popup_menu_workaround(menu)
 
     def add_popup_menu_workaround(self, menu):
