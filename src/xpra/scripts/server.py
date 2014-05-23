@@ -646,6 +646,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     # Daemonize:
     if opts.daemon:
+        #daemonize will chdir to "/", so try to use an absolute path:
+        if opts.password_file:
+            opts.password_file = os.path.abspath(opts.password_file)
+
         logfd = open_log_file(dotxpra, opts.log_file, display_name)
         assert logfd > 2
         daemonize(logfd)
