@@ -19,7 +19,6 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
 from xpra.util import log_screen_sizes
 from xpra.os_util import thread, get_hex_uuid
-from xpra.version_util import get_version_info
 from xpra.util import typedict
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec, get_codec
 from xpra.codecs.codec_constants import get_PIL_encodings
@@ -629,7 +628,6 @@ class ServerBase(ServerCore):
              "sound.server_driven"          : True,
              "server_type"                  : "base",
              })
-        capabilities.update(get_version_info("build."))
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
         return capabilities

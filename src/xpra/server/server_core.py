@@ -594,7 +594,6 @@ class ServerCore(object):
             capabilities["session_name"] = self.session_name
         if self._reverse_aliases:
             capabilities["aliases"] = self._reverse_aliases
-        capabilities.update(get_version_info())
         return capabilities
 
 
