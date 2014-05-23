@@ -23,6 +23,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES
 from xpra.util import typedict
+from xpra.version_util import local_version
 from xpra.daemon_thread import make_daemon_thread
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.scripts.server import create_unix_domain_socket
@@ -315,7 +316,7 @@ class ProxyInstanceProcess(Process):
 
 
     def get_proxy_info(self, proto):
-        info = {}
+        info = {"proxy.version" : local_version}
         info.update(get_server_info("proxy."))
         info.update(get_thread_info("proxy.", proto))
         info.update(self.get_encoder_info())
