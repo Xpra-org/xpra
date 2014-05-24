@@ -335,16 +335,18 @@ class KeyboardConfig(KeyboardConfigBase):
             log("make_keymask_match: ignored as keynames_for_mod not assigned yet")
             return
         if ignored_modifier_keynames is None:
-            ignored_modifier_keynames = self.xkbmap_mod_pointermissing
-
-        def is_ignored(modifier_keynames):
-            if not ignored_modifier_keynames:
-                return False
-            for imk in ignored_modifier_keynames:
-                if imk in modifier_keynames:
-                    log("modifier ignored (ignored keyname=%s)", imk)
-                    return True
-            return False
+            #this is not a keyboard event, ignore modifiers in "mod_pointermissing"
+            def is_ignored(modifier, modifier_keynames):
+                m = modifier in self.xkbmap_mod_pointermissing
+                log("is_ignored(%s, %s)=%s", modifier, modifier_keynames, m)
+                return m
+        else:
+            #keyboard event: ignore the keynames specified
+            #(usually the modifier key being pressed/unpressed)
+            def is_ignored(modifier, modifier_keynames):
+                m = set(modifier_keynames) & set(ignored_modifier_keynames)
+                log("is_ignored(%s, %s)=%s", modifier, modifier_keynames, m)
+                return bool(m)
 
         current = set(self.get_current_mask())
         wanted = set(modifier_list)
@@ -361,7 +363,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 if not keynames:
                     log.error("unknown modifier: %s", modifier)
                     continue
-                if is_ignored(keynames):
+                if is_ignored(modifier, keynames):
                     log("modifier %s ignored (in ignored keynames=%s)", modifier, keynames)
                     continue
                 #find the keycodes that match the keynames for this modifier
