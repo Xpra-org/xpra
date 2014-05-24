@@ -383,7 +383,13 @@ if err:
         VNCVIEWER_VERSION = "TigerVNC Viewer %s" % (v_lines[0].split()[5])
 print ("VNCVIEWER_VERSION=%s" % VNCVIEWER_VERSION)
 
-SVN_VERSION = getoutput(["svnversion", "-n"])
+#get svnversion, prefer directly from svn:
+try:
+    SVN_VERSION = getoutput(["svnversion", "-n"]).split(":")[-1]
+except:
+    SVN_VERSION = ""
+if not SVN_VERSION:
+    SVN_VERSION = getoutput(["python", "-c", "from xpra.src_info import REVISION,LOCAL_MODIFICATIONS;print(('r%s%s' % (REVISION, ' M'[int(bool(LOCAL_MODIFICATIONS))])).strip())"])
 
 WINDOW_MANAGER = os.environ.get("DESKTOP_SESSION", "unknown")
 
