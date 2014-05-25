@@ -891,14 +891,14 @@ class WindowVideoSource(WindowSource):
         elif SCALING_HARDCODED:
             actual_scaling = tuple(SCALING_HARDCODED)
             log("using hardcoded scaling: %s", actual_scaling)
-        elif actual_scaling is None:
+        elif actual_scaling is None and self.statistics.damage_events_count>50 and self.statistics.last_resized>0.5:
             #no scaling window attribute defined, so use heuristics to enable:
             q = self.get_current_quality()
             s = self.get_current_speed()
-            qs = s>q and q<80
-            #full frames per second:
+            #full frames per second (measured in pixels vs window size):
             ffps = 0
-            lde = list(self.statistics.last_damage_events)
+            stime = time.time()-5           #only look at the last 5 seconds max
+            lde = [x for x in list(self.statistics.last_damage_events) if x[0]>stime]
             if len(lde)>10:
                 #the first event's first element is the oldest event time:
                 otime = lde[0][0]
@@ -908,8 +908,9 @@ class WindowVideoSource(WindowSource):
             #edge resistance:
             er = 0
             if self.actual_scaling!=(1, 1):
-                #if we are currently downscaling, stick with a bit longer:
+                #if we are currently downscaling, stick with it a bit longer:
                 er = 1
+            qs = s>(q-er*10) and q<(70+er*15)
 
             if width>max_w or height>max_h:
                 #most encoders can't deal with that!
@@ -921,9 +922,9 @@ class WindowVideoSource(WindowSource):
                 actual_scaling = 1,3
             elif self.maximized and (qs or ffps>=(10-er*3)):
                 actual_scaling = 1,2
-            elif width*height>=(2048-er*768)*1200 and (q<(80-er*10) or ffps>=(25-er*5)):
+            elif width*height>=(2048-er*768)*1200 and (qs or ffps>=(25-er*5)):
                 actual_scaling = 1,3
-            elif width*height>=(1024-er*384)*1024 and (q<(80-er*10) or ffps>=(30-er*10)):
+            elif width*height>=(1024-er*384)*1024 and (qs or ffps>=(30-er*10)):
                 actual_scaling = 2,3
         if actual_scaling is None:
             actual_scaling = 1, 1
