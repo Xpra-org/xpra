@@ -64,6 +64,7 @@ class GTKServerBase(ServerBase):
 
     def get_ui_info(self, *args):
         info = ServerBase.get_ui_info(self, *args)
+        info["server.display"] = gtk.gdk.display_get_default().get_name()
         info["server.root_window_size"] = self.get_root_window_size()
         return info
 
