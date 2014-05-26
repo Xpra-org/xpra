@@ -128,14 +128,18 @@ x265_static_ENABLED     = False
 vpx_ENABLED             = pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32)
 vpx_static_ENABLED      = False
 #ffmpeg 1.x and libav:
-dec_avcodec_ENABLED     = pkg_config_ok("--max-version=55.38", "libavcodec", fallback=not WIN32)
+dec_avcodec_ENABLED     = pkg_config_ok("--max-version=55", "libavcodec", fallback=not WIN32)
 #ffmpeg 2 onwards:
-dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55.38", "libavcodec", fallback=WIN32)
+dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fallback=WIN32)
 # some version strings I found:
-# Fedora 19: 54.92.100
-# Fedora 20: 55.39.101
-# Debian jessie and sid: (last updated 2014-05-26): 55.34.1
-# Debian wheezy: 53.35
+# Fedora:
+# * 19: 54.92.100
+# * 20: 55.39.101
+# * 21: 55.52.102
+# Debian:
+# * jessie and sid: (last updated 2014-05-26): 55.34.1
+#   (moved to ffmpeg2 style buffer API sometime in early 2014)
+# * wheezy: 53.35
 avcodec_static_ENABLED  = False
 avcodec2_static_ENABLED = False
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
