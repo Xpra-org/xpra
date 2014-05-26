@@ -457,6 +457,10 @@ class WindowSource(object):
     def update_quality(self):
         if self.suspended or self._mmap:
             return
+        if self.encoding in ("rgb", "png", "png/P", "png/L"):
+            #the user has selected an encoding which does not use quality
+            #so skip the calculations!
+            return
         quality = self._fixed_quality
         if quality<0:
             min_quality = self.get_min_quality()
@@ -800,7 +804,11 @@ class WindowSource(object):
 
 
     def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=[]):
-        if STRICT_MODE and current_encoding:
+        if (STRICT_MODE and current_encoding) or (current_encoding=="png/L" and "png/L" in self.common_encodings):
+            #1) STRICT_MODE: always use what is selected
+            #2) png/L: is a grayscale encoding,
+            #   allowing other encodings may well include colours
+            #   which would look horribly messy
             return current_encoding
         if self.is_tray or (self.has_alpha and self.supports_transparency):
             #always use transparent encoding for tray or for transparent windows:
@@ -854,6 +862,9 @@ class WindowSource(object):
 
     def get_encoding_options(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
         current_encoding = {"rgb" : "rgb24"}.get(current_encoding, current_encoding)
+        if current_encoding in ("rgb24", "rgb32", "png"):
+            #the user has selected a lossless encoding:
+            quality = 100
         options = []
         #use sliding scale for lossless threshold
         #(high speed favours switching to lossy sooner)
