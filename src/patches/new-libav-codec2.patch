@@ -1,7 +1,7 @@
 Index: xpra/codecs/dec_avcodec2/decoder.pyx
 ===================================================================
---- xpra/codecs/dec_avcodec2/decoder.pyx	(revision 6508)
-+++ xpra/codecs/dec_avcodec2/decoder.pyx	(working copy)
+--- a/xpra/codecs/dec_avcodec2/decoder.pyx	(revision 6508)
++++ b/xpra/codecs/dec_avcodec2/decoder.pyx	(working copy)
 @@ -57,8 +57,8 @@
      int AV_PIX_FMT_YUV422P
      int AV_PIX_FMT_YUV444P
