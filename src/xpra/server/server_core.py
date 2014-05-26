@@ -26,7 +26,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.platform import set_application_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
-from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
+from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version, mk
 from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps, repr_ellipsized
 from xpra.server.background_worker import stop_worker
 from xpra.daemon_thread import make_daemon_thread
@@ -42,8 +42,8 @@ def get_server_info(prefix=""):
     #this function is for non UI thread info
     info = {}
     info.update(get_host_info(prefix))
-    info.update(get_platform_info(prefix+"platform"))
-    info.update(get_version_info(prefix+"build"))
+    info.update(get_platform_info(mk(prefix, "platform")))
+    info.update(get_version_info(mk(prefix, "build")))
     return info
 
 def get_thread_info(prefix="", proto=None):
@@ -632,7 +632,7 @@ class ServerCore(object):
 
     def get_info(self, proto, *args):
         #this function is for non UI thread info
-        info = get_server_info("server.")
+        info = get_server_info("server")
         info.update({
                 "server.mode"               : self.get_server_mode(),
                 "server.type"               : "Python",
