@@ -17,7 +17,7 @@ except Exception, e:
     log("cannot load argb module: %s", e)
     bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
 from xpra.os_util import StringIOClass
-from xpra.codecs.loader import get_codec, get_codec_version, has_codec
+from xpra.codecs.loader import get_codec, get_codec_version
 from xpra.os_util import builtins
 _memoryview = builtins.__dict__.get("memoryview")
 try:
@@ -28,8 +28,6 @@ except:
 
 PIL = get_codec("PIL")
 PIL_VERSION = get_codec_version("PIL")
-enc_webm = get_codec("enc_webm")
-webp_handlers = get_codec("webm_bitmap_handlers")
 PIL_can_optimize = PIL_VERSION>="2.2"
 
 #give warning message just once per key then ignore:
@@ -64,48 +62,8 @@ def webp_encode(coding, image, supports_transparency, quality, speed, options):
         if alpha:
             client_options["has_alpha"] = True
         return "webp", Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
-    enc_webm = get_codec("enc_webm")
-    webp_handlers = get_codec("webm_bitmap_handlers")
-    if enc_webm and webp_handlers:
-        return webm_encode(image, quality)
     #fallback to PIL
     return PIL_encode(coding, image, quality, speed, supports_transparency)
-
-
-def webm_encode(image, quality):
-    assert enc_webm and webp_handlers, "webp components are missing"
-
-    BitmapHandler = webp_handlers.BitmapHandler
-    handler_encs = {
-                "RGB" : (BitmapHandler.RGB,     "EncodeRGB",  "EncodeLosslessRGB",  False),
-                "BGR" : (BitmapHandler.BGR,     "EncodeBGR",  "EncodeLosslessBGR",  False),
-                "RGBA": (BitmapHandler.RGBA,    "EncodeRGBA", "EncodeLosslessRGBA", True),
-                "RGBX": (BitmapHandler.RGBA,    "EncodeRGBA", "EncodeLosslessRGBA", False),
-                "BGRA": (BitmapHandler.BGRA,    "EncodeBGRA", "EncodeLosslessBGRA", True),
-                "BGRX": (BitmapHandler.BGRA,    "EncodeBGRA", "EncodeLosslessBGRA", False),
-                }
-    pixel_format = image.get_pixel_format()
-    h_e = handler_encs.get(pixel_format)
-    assert h_e is not None, "cannot handle rgb format %s with webp!" % pixel_format
-    bh, lossy_enc, lossless_enc, has_alpha = h_e
-    q = max(1, quality)
-    enc = None
-    if q>=100 and has_codec("enc_webm_lossless"):
-        enc = getattr(enc_webm, lossless_enc)
-        kwargs = {}
-        client_options = {}
-        log("webm_encode(%s, %s) using lossless encoder=%s for %s", image, enc, pixel_format)
-    if enc is None:
-        enc = getattr(enc_webm, lossy_enc)
-        kwargs = {"quality" : q}
-        client_options = {"quality" : q}
-        log("webm_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, enc, q, pixel_format)
-    handler = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
-    bpp = 24
-    if has_alpha:
-        client_options["has_alpha"] = True
-        bpp = 32
-    return "webp", Compressed("webp", str(enc(handler, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0, bpp
 
 
 def roundup(n, m):

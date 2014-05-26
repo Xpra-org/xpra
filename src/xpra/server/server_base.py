@@ -175,13 +175,12 @@ class ServerBase(ServerCore):
         PIL = get_codec("PIL")
         if PIL:
             add_encodings(get_PIL_encodings(PIL))
-        #webp: only check for "enc_webm" because "enc_webp" needs a fallback (either "PIL" or "enc_webm")
-        if has_codec("enc_webm"):
-            add_encodings(["webp"])
-
+        #Note: webp will only be enabled if PIL supports it,
+        #that's because "enc_webp" needs a fallback for odd strides and pixel formats
+        #(probably never gets used but difficult to predict for sure)
         self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb"))]
         self.lossless_mode_encodings = []
-        if has_codec("enc_webm_lossless"):
+        if has_codec("enc_webp"):
             self.lossless_mode_encodings.append("webp")
             self.lossless_encodings.append("webp")
 

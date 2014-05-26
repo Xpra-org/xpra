@@ -442,7 +442,7 @@ class UIXpraClient(XpraClientBase):
         core_encodings = ["rgb24"]
         #PIL:
         core_encodings += get_PIL_decodings(get_codec("PIL"))
-        if (has_codec("dec_webm") or has_codec("dec_webp")) and "webp" not in core_encodings:
+        if (has_codec("dec_webp")) and "webp" not in core_encodings:
             core_encodings.append("webp")
         #we enable all the video decoders we know about,
         #what will actually get used by the server will still depend on the csc modes supported

@@ -141,7 +141,6 @@ avcodec2_static_ENABLED = False
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
-webm_ENABLED            = sys.version_info>=(2,6)       #needs absolute imports
 nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")       #or os.path.exists("C:\\nvenc_3.0_windows_sdk")
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL")
 memoryview_ENABLED      = PYTHON3
@@ -162,7 +161,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "csc_swscale", "swscale_static",
             "csc_opencl", "csc_cython",
             "vpx", "vpx_static",
-            "webp", "webm",
+            "webp",
             "memoryview",
             "rencode", "bencode", "cython_bencode",
             "clipboard",
@@ -1113,15 +1112,13 @@ if WIN32:
                })
             add_data_files('Microsoft.VC90.CRT', glob.glob(C_DLLs+'Microsoft.VC90.CRT\\*.*'))
             add_data_files('Microsoft.VC90.MFC', glob.glob(C_DLLs+'Microsoft.VC90.MFC\\*.*'))
-            if (webm_ENABLED or webp_ENABLED):
-                #Note: confusingly, the python bindings are called webm...
+            if webp_ENABLED:
                 #add the webp DLL to the output:
                 #And since 0.2.1, you have to compile the DLL yourself..
                 #the path after installing may look like this:
                 #webp_DLL = "C:\\libwebp-0.3.1-windows-x86\\bin\\libwebp.dll"
                 #but we use something more generic, without the version numbers:
                 add_data_files('',      [webp_bin_dir+"\\libwebp.dll"])
-                add_data_files('webm',  ["xpra/codecs/webm/LICENSE"])
             if enc_x264_ENABLED:
                 add_data_files('', ['%s\\libx264.dll' % x264_bin_dir])
                 #find pthread DLL...
@@ -1318,8 +1315,6 @@ else:
     add_data_files("share/applications",  ["xdg/xpra_launcher.desktop", "xdg/xpra.desktop"])
     add_data_files("share/icons",         ["xdg/xpra.png"])
     html5_dir = "share/xpra/www"
-    if webm_ENABLED:
-        add_data_files('share/xpra/webm', ["xpra/codecs/webm/LICENSE"])
 
     if OSX:
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
@@ -1495,7 +1490,6 @@ toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "gi")
 toggle_packages(client_ENABLED and qt4_ENABLED, "xpra.client.qt4", "PyQt4")
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(sound_ENABLED, "xpra.sound")
-toggle_packages(webm_ENABLED, "xpra.codecs.webm")
 toggle_packages(client_ENABLED and gtk2_ENABLED and opengl_ENABLED, "xpra.client.gl")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")

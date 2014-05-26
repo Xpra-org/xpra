@@ -122,23 +122,6 @@ def load_codecs():
     codec_import_check("dec_webp", "webp decoder", "xpra.codecs.webp", "xpra.codecs.webp.decode", "decompress")
     add_codec_version("dec_webp", "xpra.codecs.webp.decode")
 
-    #no bytearray (python 2.6 or later) or no bitmap handlers, no webm:
-    from xpra.os_util import builtins
-    webm_handlers = codec_import_check("webm_bitmap_handlers", "webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
-    if ("bytearray" in builtins.__dict__) and webm_handlers:
-        codec_import_check("enc_webm", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", \
-                           "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA", \
-                           "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
-
-        v = add_codec_version("webm", "xpra.codecs.webm", "__VERSION__")
-        MIN_V = "0.2.3"
-        if v<MIN_V:
-            log.warn("python-webm error: found version %s but the minimum required is %s", v, MIN_V)
-            log.warn(" webm decoding has been disabled to prevent memory leaks")
-        else:
-            #these symbols are all available upstream as of libwebp 0.2:
-            codec_import_check("dec_webm", "webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
-
     log("done loading codecs")
     log("found:")
     #print("codec_status=%s" % codecs)
@@ -172,8 +155,6 @@ ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"
 ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
             "csc_swscale", "csc_cython", "csc_opencl", \
             "dec_avcodec", "dec_avcodec2", \
-            "enc_webm", \
-            "dec_webm", \
             "enc_webp", \
             "dec_webp"
 

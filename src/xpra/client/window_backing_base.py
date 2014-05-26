@@ -236,12 +236,6 @@ class WindowBackingBase(object):
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         dec_webp = get_codec("dec_webp")
-        if dec_webp:
-            return self.paint_webp_using_cwebp(img_data, x, y, width, height, options, callbacks)
-        return self.paint_webp_using_webm(img_data, x, y, width, height, options, callbacks)
-
-    def paint_webp_using_cwebp(self, img_data, x, y, width, height, options, callbacks):
-        dec_webp = get_codec("dec_webp")
         has_alpha = options.get("has_alpha", False)
         buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha)
         options["rgb_format"] = rgb_format
@@ -253,28 +247,6 @@ class WindowBackingBase(object):
             return self.paint_rgb32(data, x, y, width, height, stride, options, callbacks)
         else:
             return self.paint_rgb24(data, x, y, width, height, stride, options, callbacks)
-
-    def paint_webp_using_webm(self, img_data, x, y, width, height, options, callbacks):
-        """ can be called from any thread """
-        dec_webm = get_codec("dec_webm")
-        assert dec_webm is not None, "webp decoder not found"
-        paint_options = typedict(options)
-        if options.get("has_alpha", False):
-            decode = dec_webm.DecodeRGBA
-            rowstride = width*4
-            paint_rgb = self.do_paint_rgb32
-            paint_options["rgb_format"] = "RGBA"
-        else:
-            decode = dec_webm.DecodeRGB
-            rowstride = width*3
-            paint_rgb = self.do_paint_rgb24
-            paint_options["rgb_format"] = "RGB"
-        log("paint_webp(%s) using decode=%s, paint=%s, paint_options=%s",
-             ("%s bytes" % len(img_data), x, y, width, height, options, callbacks), decode, paint_rgb, paint_options)
-        rgb_data = decode(img_data)
-        pixels = str(rgb_data.bitmap)
-        self.idle_add(paint_rgb, pixels, x, y, width, height, rowstride, paint_options, callbacks)
-        return  False
 
     def paint_rgb24(self, raw_data, x, y, width, height, rowstride, options, callbacks):
         """ called from non-UI thread
