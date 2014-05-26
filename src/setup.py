@@ -128,9 +128,9 @@ x265_static_ENABLED     = False
 vpx_ENABLED             = pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32)
 vpx_static_ENABLED      = False
 #ffmpeg 1.x and libav:
-dec_avcodec_ENABLED     = pkg_config_ok("--max-version=55", "libavcodec", fallback=not WIN32)
+dec_avcodec_ENABLED     = pkg_config_ok("--max-version=55.38", "libavcodec", fallback=not WIN32)
 #ffmpeg 2 onwards:
-dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fallback=WIN32)
+dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55.38", "libavcodec", fallback=WIN32)
 # some version strings I found:
 # Fedora 19: 54.92.100
 # Fedora 20: 55.39.101
