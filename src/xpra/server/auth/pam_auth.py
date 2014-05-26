@@ -8,6 +8,9 @@ import sys
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 
+def init(opts):
+    pass
+
 check = None
 #choice of two pam modules we can use
 try:
