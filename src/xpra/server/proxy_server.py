@@ -154,7 +154,7 @@ class ProxyServer(ServerCore):
             disconnect("no displays found")
             return
         display = c.strget("display")
-        proxy_virtual_display = os.environ["DISPLAY"]
+        proxy_virtual_display = os.environ.get("DISPLAY")
         #ensure we don't loop back to the proxy:
         if proxy_virtual_display in displays:
             displays.remove(proxy_virtual_display)
