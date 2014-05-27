@@ -641,7 +641,7 @@ class ServerBase(ServerCore):
              "encodings"                : self.encodings,
              "encodings.core"           : self.core_encodings,
              "encodings.lossless"       : self.lossless_encodings,
-             "encodings.with_speed"     : [x for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb")],
+             "encodings.with_speed"     : [x for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb", "png", "png/P", "png/L")],
              "encodings.with_quality"   : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
              "encodings.with_lossless_mode" : self.lossless_mode_encodings}
 
