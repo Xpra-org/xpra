@@ -213,12 +213,32 @@ class WindowBackingBase(object):
         buf = BytesIOClass(img_data)
         img = PIL.Image.open(buf)
         assert img.mode in ("L", "P", "RGB", "RGBA"), "invalid image mode: %s" % img.mode
-        if img.mode in ("P", "L"):
-            transparency = options.get("transparency", -1)
+        transparency = options.get("transparency", -1)
+        if img.mode=="P":
             if transparency>=0:
+                #this deals with alpha without any extra work
                 img = img.convert("RGBA")
             else:
                 img = img.convert("RGB")
+        elif img.mode=="L":
+            if transparency>=0:
+                #why do we have to deal with alpha ourselves??
+                def mask_value(a):
+                    if a!=transparency:
+                        return 255
+                    return 0
+                mask = PIL.Image.eval(img, mask_value)
+                mask = mask.convert("L")
+                def nomask_value(a):
+                    if a!=transparency:
+                        return a
+                    return 0
+                img = PIL.Image.eval(img, nomask_value)
+                img = img.convert("RGBA")
+                img.putalpha(mask)
+            else:
+                img = img.convert("RGB")
+
         raw_data = img.tostring("raw", img.mode)
         paint_options = typedict(options)
         if img.mode=="RGB":
