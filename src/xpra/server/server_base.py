@@ -471,14 +471,21 @@ class ServerBase(ServerCore):
             self.send_hello_info(proto)
             return
 
-        #"normal" connection, so log welcome message:
-        log.info("Handshake complete; enabling connection")
+        detach_request  = c.boolget("detach_request", False)
+        stop_request    = c.boolget("stop_request", False)
+        exit_request    = c.boolget("exit_request", False)
+        is_request = detach_request or stop_request or exit_request
+        if not is_request:
+            #"normal" connection, so log welcome message:
+            log.info("Handshake complete; enabling connection")
 
         # Things are okay, we accept this connection, and may disconnect previous one(s)
         share_count = 0
         for p,ss in self._server_sources.items():
             #check existing sessions are willing to share:
-            if not self.sharing:
+            if detach_request:
+                self.disconnect_client(p, "detach requested")
+            elif not self.sharing:
                 self.disconnect_client(p, "new valid connection received, this session does not allow sharing")
             elif not c.boolget("share"):
                 self.disconnect_client(p, "new valid connection received, the new client does not wish to share")
@@ -486,13 +493,15 @@ class ServerBase(ServerCore):
                 self.disconnect_client(p, "new valid connection received, this client had not enabled sharing ")
             else:
                 share_count += 1
-        if share_count>0:
-            log.info("sharing with %s other client(s)", share_count)
-        self.dpi = c.intget("dpi", self.default_dpi)
-        if self.dpi>0:
-            #some non-posix clients never send us 'resource-manager' settings
-            #so just use a fake one to ensure the dpi gets applied:
-            self.update_server_settings({'resource-manager' : ""}, reset=(share_count==0))
+
+        if not is_request:
+            if share_count>0:
+                log.info("sharing with %s other client(s)", share_count)
+            self.dpi = c.intget("dpi", self.default_dpi)
+            if self.dpi>0:
+                #some non-posix clients never send us 'resource-manager' settings
+                #so just use a fake one to ensure the dpi gets applied:
+                self.update_server_settings({'resource-manager' : ""}, reset=(share_count==0))
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.send_aliases = c.dictget("aliases")
@@ -517,7 +526,7 @@ class ServerBase(ServerCore):
         log("process_hello serversource=%s", ss)
         ss.parse_hello(c)
         dw, dh = None, None
-        if ss.desktop_size:
+        if ss.desktop_size and not is_request:
             try:
                 dw, dh = ss.desktop_size
                 if not ss.screen_sizes:
@@ -528,46 +537,51 @@ class ServerBase(ServerCore):
             except:
                 dw, dh = None, None
         self._server_sources[proto] = ss
-        root_w, root_h = self.set_best_screen_size()
-        self.calculate_workarea()
-        self.set_desktop_geometry(dw or root_w, dh or root_h)
-        #take the clipboard if no-one else has yet:
-        if ss.clipboard_enabled and self._clipboard_helper is not None and \
-            (self._clipboard_client is None or self._clipboard_client.is_closed()):
-            self._clipboard_client = ss
-            #deal with buggy win32 clipboards:
-            if "clipboard.greedy" not in c:
-                #old clients without the flag: take a guess based on platform:
-                client_platform = c.strget("platform", "")
-                greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
-            else:
-                greedy = c.boolget("clipboard.greedy")
-            self._clipboard_helper.set_greedy_client(greedy)
-            want_targets = c.boolget("clipboard.want_targets")
-            self._clipboard_helper.set_want_targets_client(want_targets)
-            #the selections the client supports (default to all):
-            from xpra.platform.features import CLIPBOARDS
-            client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
-            log("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
-            self._clipboard_helper.enable_selections(client_selections)
-
-        #keyboard:
-        ss.keyboard_config = self.get_keyboard_config(c)
-
-        #so only activate this feature afterwards:
-        self.keyboard_sync = c.boolget("keyboard_sync", True)
-        key_repeat = c.intpair("key_repeat")
-        self.set_keyboard_repeat(key_repeat)
-
-        #always clear modifiers before setting a new keymap
-        ss.make_keymask_match(c.strlistget("modifiers", []))
-        self.set_keymap(ss)
+        if is_request:
+            root_w, root_h = self.get_root_window_size()
+            key_repeat = (0, 0)
+        else:
+            root_w, root_h = self.set_best_screen_size()
+            self.calculate_workarea()
+            self.set_desktop_geometry(dw or root_w, dh or root_h)
+            #take the clipboard if no-one else has yet:
+            if ss.clipboard_enabled and self._clipboard_helper is not None and \
+                (self._clipboard_client is None or self._clipboard_client.is_closed()):
+                self._clipboard_client = ss
+                #deal with buggy win32 clipboards:
+                if "clipboard.greedy" not in c:
+                    #old clients without the flag: take a guess based on platform:
+                    client_platform = c.strget("platform", "")
+                    greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
+                else:
+                    greedy = c.boolget("clipboard.greedy")
+                self._clipboard_helper.set_greedy_client(greedy)
+                want_targets = c.boolget("clipboard.want_targets")
+                self._clipboard_helper.set_want_targets_client(want_targets)
+                #the selections the client supports (default to all):
+                from xpra.platform.features import CLIPBOARDS
+                client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
+                log("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
+                self._clipboard_helper.enable_selections(client_selections)
+    
+            #keyboard:
+            ss.keyboard_config = self.get_keyboard_config(c)
+    
+            #so only activate this feature afterwards:
+            self.keyboard_sync = c.boolget("keyboard_sync", True)
+            key_repeat = c.intpair("key_repeat")
+            self.set_keyboard_repeat(key_repeat)
+    
+            #always clear modifiers before setting a new keymap
+            ss.make_keymask_match(c.strlistget("modifiers", []))
+            self.set_keymap(ss)
 
         #send_hello will take care of sending the current and max screen resolutions
         self.send_hello(ss, root_w, root_h, key_repeat, auth_caps)
 
-        # now we can set the modifiers to match the client
-        self.send_windows_and_cursors(ss)
+        if not is_request:
+            # now we can set the modifiers to match the client
+            self.send_windows_and_cursors(ss)
 
         ss.startup_complete()
 

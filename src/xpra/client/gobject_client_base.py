@@ -252,6 +252,11 @@ class ExitXpraClient(CommandConnectClient):
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
+    def make_hello(self):
+        capabilities = CommandConnectClient.make_hello(self)
+        capabilities["exit_request"] = True
+        return capabilities
+
     def _process_hello(self, packet):
         props = packet[1]
         if not props.get("exit_server"):
@@ -279,6 +284,14 @@ class StopXpraClient(CommandConnectClient):
 
 class DetachXpraClient(CommandConnectClient):
     """ run the detach subcommand """
+
+    def make_hello(self):
+        #used for telling the proxy server we want "detach"
+        #(older versions ignore this flag and detach because this is a new valid connection
+        # but this breaks if sharing is enabled!)
+        capabilities = CommandConnectClient.make_hello(self)
+        capabilities["detach_request"] = True
+        return capabilities
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
