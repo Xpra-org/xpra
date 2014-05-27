@@ -30,7 +30,6 @@ class ClientWindowBase(ClientWidgetBase):
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, border):
         log("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties))
         ClientWidgetBase.__init__(self, client, wid, metadata.boolget("has-alpha"))
-        #remove alpha from metadata, so we can verify the flag never changes in set_metadata
         self._override_redirect = override_redirect
         self.group_leader = group_leader
         self._pos = (x, y)
