@@ -156,7 +156,11 @@ class GLPixmapBacking(GTK2WindowBacking):
             assert GL_ALPHA_SUPPORTED, "BUG: cannot enable alpha if GL backing does not support it!"
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()
-            if rgba:
+            display = screen.get_display()
+            if not display.supports_composite():
+                log.warn("display %s does not support compositing, transparency disabled", display.get_name())
+                self._alpha_enabled = False
+            elif rgba:
                 log("%s.__init__() using rgba colormap %s", rgba)
                 self._backing.set_colormap(rgba)
             else:

@@ -58,8 +58,13 @@ def screen_changed(widget, old_screen=None):
     # To check if the display supports alpha channels, get the colormap
     screen = widget.get_screen()
     colormap = screen.get_rgba_colormap()
-    if colormap == None:
-        print 'Your screen does not support alpha channels!'
+    display = screen.get_display()
+    if not display.supports_composite():
+        print 'Your display does not support compositing!'
+        colormap = screen.get_rgb_colormap()
+        supports_alpha = False
+    elif colormap == None:
+        print 'Your screen does not support alpha channels! (no rgba colormap)'
         colormap = screen.get_rgb_colormap()
         supports_alpha = False
     else:
