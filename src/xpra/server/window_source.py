@@ -837,6 +837,10 @@ class WindowSource(object):
     def transparent_encoding_options(self, current_encoding, pixel_count, speed, quality):
         current_encoding = {"rgb" : "rgb32"}.get(current_encoding, current_encoding)
         WITH_ALPHA = ["rgb32", "png", "rgb24"]
+        if current_encoding in ("png/P", "png/L"):
+            #only allow the use of those encodings for transparency
+            #if they are already selected as current encoding
+            WITH_ALPHA.append(current_encoding)
         #webp is shockingly bad at high res and low speed:
         max_webp = 1024*1024*(200-quality)/100*speed/100
         can_webp = 16384<pixel_count<max_webp
@@ -857,6 +861,9 @@ class WindowSource(object):
             options.append("png")
         #add fallback options:
         v = options+WITH_ALPHA
+        if current_encoding in WITH_ALPHA:
+            #current selection is valid:
+            options.insert(0, current_encoding)
         #log.info("transparent_encoding_options%s=%s", (current_encoding, pixel_count, speed, quality), v)
         return v
 
