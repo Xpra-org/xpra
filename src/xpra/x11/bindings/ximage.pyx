@@ -292,7 +292,7 @@ cdef class XImageWrapper:
             return self.get_char_pixels()
         return self.get_image_pixels()
 
-    def get_char_pixels(self):
+    cdef get_char_pixels(self):
         assert self.pixels!=NULL
         return memory_as_pybuffer(self.pixels, self.get_size(), False)
 
@@ -397,9 +397,9 @@ cdef class XShmWrapper(object):
                           ZPixmap, NULL, &self.shminfo,
                           self.width, self.height)
         if XSHM_DEBUG:
-            xshmlog("XShmWrapper.XShmCreateImage(%sx%s-%s) %s", self.width, self.height, self.depth, self.image!=NULL)
+            xshmlog("XShmWrapper.setup() XShmCreateImage(%sx%s-%s) %s", self.width, self.height, self.depth, self.image!=NULL)
         if self.image==NULL:
-            xshmlog.error("XShmWrapper.XShmCreateImage(%sx%s-%s) failed!", self.width, self.height, self.depth)
+            xshmlog.error("XShmWrapper.setup() XShmCreateImage(%sx%s-%s) failed!", self.width, self.height, self.depth)
             self.cleanup()
             #if we cannot create an XShm XImage, we may try again
             #(it could be dimensions are too big?)
@@ -410,9 +410,9 @@ cdef class XShmWrapper(object):
         size = self.image.bytes_per_line * (self.image.height + 1)
         self.shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777)
         if XSHM_DEBUG:
-            xshmlog("XShmWrapper.shmget(PRIVATE, %s bytes, %s) shmid=%s", size, IPC_CREAT | 0777, self.shminfo.shmid)
+            xshmlog("XShmWrapper.setup() shmget(PRIVATE, %s bytes, %s) shmid=%s", size, IPC_CREAT | 0777, self.shminfo.shmid)
         if self.shminfo.shmid < 0:
-            xshmlog.error("XShmWrapper.shmget(PRIVATE, %s bytes, %s) failed, bytes_per_line=%s, width=%s, height=%s", size, IPC_CREAT | 0777, self.image.bytes_per_line, self.width, self.height)
+            xshmlog.error("XShmWrapper.setup() shmget(PRIVATE, %s bytes, %s) failed, bytes_per_line=%s, width=%s, height=%s", size, IPC_CREAT | 0777, self.image.bytes_per_line, self.width, self.height)
             self.cleanup()
             #only try again if we get EINVAL,
             #the other error codes probably mean this is never going to work..
@@ -421,9 +421,9 @@ cdef class XShmWrapper(object):
         self.image.data = <char *> shmat(self.shminfo.shmid, NULL, 0)
         self.shminfo.shmaddr = self.image.data
         if XSHM_DEBUG:
-            xshmlog("XShmWrapper.shmat(%s, NULL, 0) %s", self.shminfo.shmid, self.shminfo.shmaddr != <char *> -1)
+            xshmlog("XShmWrapper.setup() shmat(%s, NULL, 0) %s", self.shminfo.shmid, self.shminfo.shmaddr != <char *> -1)
         if self.shminfo.shmaddr == <char *> -1:
-            xshmlog.error("XShmWrapper.shmat(%s, NULL, 0) failed!", self.shminfo.shmid)
+            xshmlog.error("XShmWrapper.setup() shmat(%s, NULL, 0) failed!", self.shminfo.shmid)
             self.cleanup()
             #we may try again with this window, or any other window:
             #(as this really shouldn't happen at all)
@@ -433,9 +433,9 @@ cdef class XShmWrapper(object):
         self.shminfo.readOnly = False
         a = XShmAttach(self.display, &self.shminfo)
         if XSHM_DEBUG:
-            xshmlog("XShmWrapper.XShmAttach(..) %s", bool(a))
+            xshmlog("XShmWrapper.setup() XShmAttach(..) %s", bool(a))
         if not a:
-            xshmlog.error("XShmWrapper.XShmAttach(..) failed!")
+            xshmlog.error("XShmWrapper.setup() XShmAttach(..) failed!")
             self.cleanup()
             #we may try again with this window, or any other window:
             #(as this really shouldn't happen at all)
@@ -452,7 +452,7 @@ cdef class XShmWrapper(object):
         if XSHM_DEBUG:
             xshmlog("XShmWrapper.get_image%s", (xpixmap, x, y, w, h))
         if x>=self.width or y>=self.height:
-            xshmlog("XShmWrapper.get_pixels(%s, %s, %s, %s) position outside image dimensions %sx%s", x, y, w, h, self.width, self.height)
+            xshmlog("XShmWrapper.get_image%s position outside image dimensions %sx%s", (xpixmap, x, y, w, h), self.width, self.height)
             return None
         #clamp size to image size:
         if x+w>self.width:
@@ -479,7 +479,7 @@ cdef class XShmWrapper(object):
 
     def __dealloc__(self):                              #@DuplicatedSignature
         if XSHM_DEBUG:
-            xshmlog("XShmWrapper.cleanup() ref_count=%s", self.ref_count)
+            xshmlog("XShmWrapper.__dealloc__() ref_count=%s", self.ref_count)
         self.cleanup()
 
     def cleanup(self):
@@ -497,7 +497,7 @@ cdef class XShmWrapper(object):
     def free_image_callback(self):                               #@DuplicatedSignature
         self.ref_count -= 1
         if XSHM_DEBUG:
-            xshmlog("XShmWrapper.free_image() closed=%s, new ref_count=%s", self.closed, self.ref_count)
+            xshmlog("XShmWrapper.free_image_callback() closed=%s, new ref_count=%s", self.closed, self.ref_count)
         if self.closed and self.ref_count==0:
             self.free()
 
@@ -578,12 +578,12 @@ cdef class PixmapWrapper(object):
 
     def get_image(self, int x, int y, int width, int height):                #@DuplicatedSignature
         if self.pixmap is None:
-            log.warn("PixmapWrapper.get_image(%s, %s, %s, %s) pixmap=%s", x, y, width, height, self.pixmap)
+            log.warn("PixmapWrapper.get_image%s pixmap=%s", (x, y, width, height), self.pixmap)
             return  None
         if XIMAGE_DEBUG:
-            log("PixmapWrapper.get_image(%s, %s, %s, %s) pixmap=%s, width=%s, height=%s", x, y, width, height, self.pixmap, self.width, self.height)
+            log("PixmapWrapper.get_image%s pixmap=%s, width=%s, height=%s", (x, y, width, height), self.pixmap, self.width, self.height)
         if x>=self.width or y>=self.height:
-            log("PixmapWrapper.get_image(%s, %s, %s, %s) position outside image dimensions %sx%s", x, y, width, height, self.width, self.height)
+            log("PixmapWrapper.get_image%s position outside image dimensions %sx%s", (x, y, width, height), self.width, self.height)
             return None
         #clamp size to image size:
         if x+width>self.width:
@@ -606,7 +606,7 @@ cdef get_image(Display * display, Pixmap pixmap, int x, int y, int width, int he
     ximage = XGetImage(display, pixmap, x, y, width, height, AllPlanes, ZPixmap)
     #log.info("get_pixels(..) ximage==NULL : %s", ximage==NULL)
     if ximage==NULL:
-        log("get_pixels(..) failed to get XImage for xpixmap %s", pixmap)
+        log("get_image(..) failed to get XImage for X11 pixmap %#x", pixmap)
         return None
     xi = XImageWrapper(x, y, width, height)
     xi.set_image(ximage)
@@ -626,7 +626,7 @@ cdef xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
     status = XGetGeometry(xdisplay, xpixmap, &root_window,
                         &x, &y, &width, &height, &border, &depth)
     if status==0:
-        log("failed to get pixmap dimensions for %s" % xpixmap)
+        log("failed to get pixmap dimensions for %#x", xpixmap)
         XFreePixmap(xdisplay, xpixmap)
         return None
     pw = PixmapWrapper()
