@@ -386,12 +386,22 @@ print ("VNCVIEWER_VERSION=%s" % VNCVIEWER_VERSION)
 
 #get svnversion, prefer directly from svn:
 try:
-    SVN_VERSION = getoutput(["svnversion", "-n"]).split(":")[-1]
+    SVN_VERSION = getoutput(["svnversion", "-n"]).split(":")[-1].strip()
 except:
     SVN_VERSION = ""
 if not SVN_VERSION:
+    #fallback to getting it from xpra's src_info:
+    try:
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
+        SVN_VERSION = 'r%s' % REVISION
+        if LOCAL_MODIFICATIONS:
+            SVN_VERSION += "M"
+    except:
+        pass
+if not SVN_VERSION:
+    #fallback to running python:
     SVN_VERSION = getoutput(["python", "-c", "from xpra.src_info import REVISION,LOCAL_MODIFICATIONS;print(('r%s%s' % (REVISION, ' M'[int(bool(LOCAL_MODIFICATIONS))])).strip())"])
-print("Found xpra revision: %s" % str(SVN_VERSION))
+print("Found xpra revision: '%s'" % str(SVN_VERSION))
 
 WINDOW_MANAGER = os.environ.get("DESKTOP_SESSION", "unknown")
 
