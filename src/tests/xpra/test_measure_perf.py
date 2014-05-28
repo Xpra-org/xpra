@@ -225,6 +225,7 @@ XPRA_OPENGL_OPTIONS = {"x264" : [True, False],
                        "vpx" : [True, False] }
 #only test default opengl setting:
 XPRA_OPENGL_OPTIONS = {}
+XPRA_MDNS = False
 
 
 XPRA_SPEAKER_OPTIONS = [None]
@@ -875,6 +876,11 @@ def test_xpra():
                                                 cmd.append("--no-bell")
                                                 cmd.append("--no-cursors")
                                                 cmd.append("--no-notifications")
+                                            if XPRA_VERSION_NO>=[0, 12]:
+                                                if XPRA_MDNS:
+                                                    cmd.append("--mdns")
+                                                else:
+                                                    cmd.append("--no-mdns")
                                             if XPRA_VERSION_NO>=[0, 8] and encryption:
                                                 cmd.append("--encryption=%s" % encryption)
                                             if speed>=0:
