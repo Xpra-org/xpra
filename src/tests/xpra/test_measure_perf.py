@@ -704,7 +704,7 @@ def get_command_name(command_arg):
 def xpra_get_stats(initial_stats=None, all_stats=[]):
     if XPRA_VERSION_NO<[0, 3]:
         return  {}
-    info_cmd = XPRA_INFO_COMMAND
+    info_cmd = XPRA_INFO_COMMAND[:]
     if XPRA_USE_PASSWORD and password_filename:
         info_cmd.append("--password-file=%s" % password_filename)
     out = getoutput(info_cmd)
