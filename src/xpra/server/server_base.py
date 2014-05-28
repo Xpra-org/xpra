@@ -1430,17 +1430,18 @@ class ServerBase(ServerCore):
         """ Schedules/cancels the key repeat timeouts """
         timer = self.keys_repeat_timers.get(keycode, None)
         if timer:
+            del self.keys_repeat_timers[keycode]
             keylog("cancelling key repeat timer: %s for %s / %s", timer, keyname, keycode)
             self.source_remove(timer)
         if pressed:
             delay_ms = min(1500, max(250, delay_ms))
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             def _key_repeat_timeout(when):
+                del self.keys_repeat_timers[keycode]
                 now = time.time()
                 keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
                 self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
                 self.keys_timedout[keycode] = now
-                del self.keys_repeat_timers[keycode]
             now = time.time()
             self.keys_repeat_timers[keycode] = self.timeout_add(delay_ms, _key_repeat_timeout, now)
 
