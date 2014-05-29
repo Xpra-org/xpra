@@ -28,6 +28,17 @@ if getattr(sys, 'frozen', False):
     os.environ['GI_TYPELIB_PATH'] = jedir('bin\\lib\girepository-1.0')
 
 
+def is_wine():
+    try:
+        import win32con, win32api     #@UnresolvedImport
+        hKey = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
+        return hKey is not None
+    except:
+        #no wine key, assume not present and wait for input
+        pass
+    return False
+
+
 def set_prgname(name):
     try:
         import win32api                     #@UnresolvedImport
@@ -195,6 +206,36 @@ def fix_unicode_out():
         _complain("exception %r while fixing up sys.stdout and sys.stderr" % (e,))
 
 _wait_for_input = False
+def set_wait_for_input():
+    global _wait_for_input
+    if is_wine():
+        #don't wait for input when running under wine
+        #(which usually does not popup a new shell window)
+        _wait_for_input = False
+        return
+    try:
+        import win32console, win32con       #@UnresolvedImport
+        handle = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+        #handle.SetConsoleTextAttribute(win32console.FOREGROUND_BLUE)
+        console_info = handle.GetConsoleScreenBufferInfo()
+        cpos = console_info["CursorPosition"]
+        #wait for input if this is a brand new console:
+        _wait_for_input = cpos.X==0 and cpos.Y==0
+    except:
+        e = sys.exc_info()[1]
+        code = -1
+        try:
+            code = e.winerror
+        except:
+            pass
+        if code==errno.ENXIO:
+            #ignore "no device" errors silently
+            #(ie: happens if you redirect the command to a file)
+            #we could also re-use the code above from "not_a_console()"
+            pass
+        else:
+            print("error accessing console %s: %s" % (errno.errorcode.get(e.errno, e.errno), e))
+
 
 def do_init():
     if not REDIRECT_OUTPUT:
@@ -202,40 +243,7 @@ def do_init():
             #don't know why this breaks with Python 3 yet...
             fix_unicode_out()
         #figure out if we want to wait for input at the end:
-        global _wait_for_input
-        try:
-            import win32console, win32con       #@UnresolvedImport
-            handle = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
-            #handle.SetConsoleTextAttribute(win32console.FOREGROUND_BLUE)
-            console_info = handle.GetConsoleScreenBufferInfo()
-            cpos = console_info["CursorPosition"]
-            #wait for input if this is a brand new console:
-            _wait_for_input = cpos.X==0 and cpos.Y==0
-        except:
-            e = sys.exc_info()[1]
-            code = -1
-            try:
-                code = e.winerror
-            except:
-                pass
-            if code==errno.ENXIO:
-                #ignore "no device" errors silently
-                #(ie: happens if you redirect the command to a file)
-                #we could also re-use the code above from "not_a_console()"
-                pass
-            else:
-                print("error accessing console %s: %s" % (errno.errorcode.get(e.errno, e.errno), e))
-        if _wait_for_input:
-            #don't wait for input when running under wine
-            #(which usually does not popup a new shell window)
-            try:
-                import win32api     #@UnresolvedImport
-                hKey = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
-                if hKey is not None:
-                    _wait_for_input = False
-            except:
-                #no wine key, assume not present and wait for input
-                pass
+        set_wait_for_input()
         return
     from xpra.platform import get_prgname
     LOG_FILENAME = get_prgname()+".log"

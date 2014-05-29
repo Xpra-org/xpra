@@ -327,11 +327,11 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
         opengl_icon = os.path.join(get_icon_dir(), "opengl.png")
     except:
         opengl_icon = None
-    #tricks to get py2exe to include what we need / load it from its unusual path:
-    if sys.platform.startswith("win"):
-        #This is supposed to help py2exe
-        #(must be done after we setup the sys.path in platform.win32.paths):
-        from OpenGL.platform import win32   #@UnusedImport
+    #platform checks:
+    from xpra.platform.gui import gl_check
+    warning = gl_check()
+    if warning:
+        gl_check_error(warning)
 
     props = {}
     import gtk.gdk

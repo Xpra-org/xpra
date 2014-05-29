@@ -45,12 +45,16 @@ def system_bell(*args):
 def get_native_notifier_classes():
     return []
 
+def gl_check():
+    return None     #no problem
+
 ClientExtras = None
 
 from xpra.platform import platform_import
 platform_import(globals(), "gui", False,
                 "do_ready",
                 "do_init",
+                "gl_check",
                 "ClientExtras",
                 "get_native_tray_menu_helper_classes",
                 "get_native_tray_classes",

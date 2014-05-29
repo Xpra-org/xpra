@@ -50,6 +50,15 @@ def get_native_system_tray_classes(*args):
     #so it cannot be used for application trays
     return get_native_tray_classes()
 
+def gl_check():
+    #This is supposed to help py2exe
+    #(must be done after we setup the sys.path in platform.win32.paths):
+    from OpenGL.platform import win32   #@UnusedImport
+    from xpra.platform.win32 import is_wine
+    if is_wine():
+        return "disabled when running under wine"
+    return None
+
 
 class ClientExtras(object):
     def __init__(self, client, opts):
