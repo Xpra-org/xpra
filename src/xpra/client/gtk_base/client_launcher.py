@@ -39,7 +39,7 @@ from xpra.client.gtk_base.about import about
 from xpra.client.client_base import SIGNAMES
 from xpra.scripts.main import connect_to, make_client
 from xpra.platform.paths import get_icon_dir
-from xpra.log import Logger
+from xpra.log import Logger, enable_debug_for
 log = Logger("launcher")
 
 
@@ -671,11 +671,12 @@ def main():
     gui_init()
 
     #logging init:
-    from xpra.scripts.main import parse_cmdline
+    from xpra.scripts.main import parse_cmdline, fixup_debug_option
     _, options, args = parse_cmdline(sys.argv)
-    if options.debug:
-        from xpra.log import enable_debug_for
-        enable_debug_for("all")
+    debug = fixup_debug_option(options.debug)
+    if debug:
+        for x in debug.split(","):
+            enable_debug_for(x)
 
     app = ApplicationWindow()
     def app_signal(signum, frame):
@@ -693,8 +694,10 @@ def main():
     has_file = len(args) == 1
     if has_file:
         app.update_options_from_file(args[0])
-    if app.config.debug:
-        enable_debug_for("all")
+    debug = fixup_debug_option(app.config.debug)
+    if debug:
+        for x in debug.split(","):
+            enable_debug_for(x)
     app.create_window()
     try:
         app.update_gui_from_config()

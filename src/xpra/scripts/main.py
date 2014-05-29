@@ -80,6 +80,19 @@ def main(script_file, cmdline):
         platform_clean()
 
 
+def fixup_debug_option(value):
+    """ backwards compatible parsing of the debug option, which used to be a boolean """
+    if not value:
+        return ""
+    value = str(value)
+    if value.strip().lower() in ("yes", "true", "on", "1"):
+        return "all"
+    if value.strip().lower() in ("no", "false", "off", "0"):
+        return ""
+    #if we're here, the value should be a CSV list of categories
+    return value
+
+
 def parse_cmdline(cmdline):
     #################################################################
     ## NOTE NOTE NOTE
@@ -477,17 +490,13 @@ def parse_cmdline(cmdline):
 
     #process "help" arguments early:
     from xpra.log import KNOWN_FILTERS
+    options.debug = fixup_debug_option(options.debug)
     if options.debug:
-        if options.debug.strip().lower() in ("no", "yes", "true", "false", "on", "off", "0", "1"):
-            #older versions used a boolean, change it to a CSV string:
-            print("invalid value for debug option: '%s' (see command help for details)" % options.debug)
-            options.debug = ""
-        else:
-            categories = options.debug.split(",")
-            for cat in categories:
-                if cat=="help":
-                    print("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
-                    sys.exit(1)
+        categories = options.debug.split(",")
+        for cat in categories:
+            if cat=="help":
+                print("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
+                sys.exit(0)
 
     if options.encoding:
         #fix old encoding names if needed:
