@@ -406,24 +406,52 @@ may be overridden on the client.
 \fB\-\-encoding\fP=\fIENCODING\fP
 This specifies the image encoding to use,
 there are a number of encodings supported:
-\fBjpeg\fP, \fBpng\fP, \fBwebp\fP, \fBrgb\fP, \fBvp8\fP and \fBh264\fP
+\fBjpeg\fP, \fBpng\fP, \fBpng/P\fP, \fBpng/L\fP, \fBwebp\fP, \fBrgb\fP, \fBvp8\fP, \fBvp9\fP, \fBh264\fP and \fBh265\fP
 (some may not be available in your environment).
-\fBpng\fP is compressed and lossless.
-\fBrgb\fP is a raw pixel format compressed with zlib,
-the compression ratio is poor, but it is fast.
-\fBwebp\fP can be useful for graphical applications, and is
-generally better than jpeg. Support for this encoding is currently
-broken due to memory leaks - do not use!
-\fBjpeg\fP can be useful for graphical applications.
-\fBvp8\fP and \fBh264\fP are both lossy and are
-very efficient with graphics or high framerate applications,
-\fBh264\fP is also very usable with text.
-The default encoding will depend on what options are available on both
-the server and the client.
 
-\fBrgb\fP is always available (builtin).
-\fBjpeg\fP and \fBpng\fP require the Python Imaging Library.
-\fBvp8\fP, \fBwebp\fP and \fBh264\fP require their respective shared libraries.
+.RS
+.IP \fBpng\fP
+compressed and lossless, can be quite slow.
+.IP \fBpng/P\fP
+compressed and lossy: it uses a colour palette, which means better compression but still slow.
+.IP \fBpng/L\fP
+compressed and lossy: grayscale only using a palette.
+.IP \fBrgb\fP
+a raw pixel format (lossless) compressed with zlib or lz4,
+the compression ratio is lower, but it is by far the fastest encoding available.
+.IP \fBwebp\fP
+can be used in lossy or lossless mode,
+useful for graphical applications,
+it compresses better than jpeg and is reasonably fast except at high resolutions.
+.IP \fBjpeg\fP
+can be useful for graphical applications,
+it is lossy and usually very fast.
+.IP \fBvp8\fP
+lossy video encoding which always uses colour subsampling.
+Fast at encoding and decoding.
+.IP \fBvp9\fP
+Far too slow at encoding, avoid.
+.IP \fBh264\fP
+Currently the best encoding available: it is fast, efficient
+and tunable via the quality and speed options.
+.IP \fBh265\fP
+Far too slow at encoding, avoid.
+.RE
+
+The default encoding which is automatically selected
+if you do not specify one
+will depend on what options are available on both
+the server and the client:
+\fBrgb\fP is always available (builtin),
+\fBjpeg\fP and \fBpng\fP require the Python Imaging Library,
+\fBvp8\fP, \fBvp9\fP, \fBwebp\fP, \fBh264\fP and \fBh265\fP
+all require their respective shared libraries,
+as well as the xpra codec that uses them.
+
+Note: when selecting a video encoding (usually \fBh264\fP or \fBvp8\fP),
+some of the smaller screen updates will be sent using
+one of the other non-video encodings.
+
 .TP
 \fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Use OpenGL accelerated rendering on the client.
@@ -639,11 +667,11 @@ This compression is not used on pixel data (except
 when using the \fBrgb\fP encoding).
 .TP
 \fB\-\-quality\fP=\fIVALUE\fP
-This option sets a fixed image compression quality lossy encodings
-(\fBjpeg\fP, \fBwebp\fP or \fBh264\fP).
+This option sets a fixed image compression quality for lossy encodings
+(\fBjpeg\fP, \fBwebp\fP, \fBh264\fP/\fBh265\fP and \fBvp8\fP/\fBvp9\fP).
 First, one of those lossy encodings must be enabled with \fB\-\-encoding\fP.
 Values range from 1 (lowest quality, high compression - generally unusable)
-to 100 (highest quality, low compression - not particularly useful).
+to 100 (highest quality, low compression).
 Specify a value of zero to let the system tune the quality dynamically
 to achieve the best bandwidth usage possible.
 .TP
@@ -667,8 +695,7 @@ refreshed using a lossless frame.
 The delay is a floating-point number and is in seconds.
 This option is enabled by default with a delay of 1 second.
 This option is only relevant when using a lossy encoding
-(\fBjpeg\fP, \fBwebp\fP, \fBh264\fP or \fBvp8\fP) with a quality
-lower than 95%.
+with a quality lower than 95%.
 .TP
 \fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP
 Can be specified multiple times to add multiple key shortcuts.
