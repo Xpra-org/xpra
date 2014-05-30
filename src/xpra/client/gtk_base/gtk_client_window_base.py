@@ -234,7 +234,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         root = self.gdk_window().get_screen().get_root_window()
         ndesktops = self.get_workspace_count()
         workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, self._window_workspace, ndesktops)
-        if ndesktops is None or ndesktops<=1:
+        if ndesktops is None or ndesktops<=1 or self._window_workspace is None:
             return  -1
         workspace = max(0, min(ndesktops-1, self._window_workspace))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
