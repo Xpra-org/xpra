@@ -26,7 +26,7 @@ PixbufLoader = import_pixbufloader()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
-if os.name=="posix":
+if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
     try:
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
