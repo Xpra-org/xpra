@@ -530,7 +530,7 @@ cdef class ColorspaceConverter:
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         planes = image.get_pixels()
         input_strides = image.get_rowstride()
-        log("convert_image(%s) strides=%s" % (image, input_strides))
+        log("convert_image(%s) strides=%s", image, input_strides)
 
         #copy to local variables:
         Rstride = input_strides[Rsrc]
