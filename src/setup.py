@@ -13,7 +13,7 @@
 import glob
 from distutils.core import setup
 from distutils.extension import Extension
-import subprocess, sys, traceback
+import subprocess, sys
 import os.path
 import stat
 try:
@@ -609,6 +609,29 @@ def pkgconfig(*pkgs_options, **ekw):
 
 
 #*******************************************************************************
+xorg_version = None
+def get_xorg_version():
+    global xorg_version
+    if xorg_version:
+        return xorg_version
+    cmd = ["Xorg", "-version"]
+    if verbose_ENABLED:
+        print("detecting Xorg version using: %s" % str(cmd))
+    try:
+        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, _ = proc.communicate()
+        V_LINE = "X.Org X Server "
+        for line in out.decode("utf8").splitlines():
+            if line.startswith(V_LINE):
+                v_str = line[len(V_LINE):]
+                xorg_version = [int(x) for x in v_str.split(".")[:2]]
+                break
+    except:
+        e = sys.exc_info()[1]
+        print("failed to detect Xorg version: %s" % e)
+        xorg_version = None
+    return xorg_version
+
 def get_xorg_conf_and_script():
     if not server_ENABLED:
         return "etc/xpra/client-only/xpra.conf", False
@@ -666,33 +689,15 @@ def get_xorg_conf_and_script():
         print("failed to detect OS release using %s: %s" % (" ".join(cmd), e))
 
     #do live detection
-    cmd = ["Xorg", "-version"]
-    if verbose_ENABLED:
-        print("detecting Xorg version using: %s" % str(cmd))
-    try:
-        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out, _ = proc.communicate()
-        V_LINE = "X.Org X Server "
-        xorg_version = None
-        for line in out.decode("utf8").splitlines():
-            if line.startswith(V_LINE):
-                v_str = line[len(V_LINE):]
-                xorg_version = [int(x) for x in v_str.split(".")[:2]]
-                break
-        if not xorg_version:
-            print("Xorg version could not be detected, Xdummy support unavailable")
-            return Xvfb()
-        if xorg_version<[1, 12]:
-            print("Xorg version %s is too old (1.12 or later required), Xdummy support not available" % v_str)
-            return Xvfb()
-        print("found valid recent version of Xorg server: %s" % v_str)
-        return Xorg_suid_check()
-    except:
-        e = sys.exc_info()[1]
-        print("failed to detect Xorg version: %s" % e)
-        print("not installing Xdummy support")
-        traceback.print_exc()
-        return  Xvfb()
+    xorg_version = get_xorg_version()
+    if not xorg_version:
+        print("Xorg version could not be detected, Xdummy support disabled (using Xvfb as safe default)")
+        return Xvfb()
+    if xorg_version<[1, 12]:
+        print("Xorg version %s is too old (1.12 or later required), Xdummy support not available" % str(xorg_version))
+        return Xvfb()
+    print("found valid recent version of Xorg server: %s" % str(xorg_version))
+    return Xorg_suid_check()
 
 
 #*******************************************************************************
