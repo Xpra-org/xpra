@@ -242,7 +242,7 @@ class AVImageWrapper(ImageWrapper):
     """
 
     def __repr__(self):                          #@DuplicatedSignature
-        return ImageWrapper.__str__(self)+"-(%s)" % self.av_frames
+        return ImageWrapper.__repr__(self)+"-(%s)" % self.av_frames
 
     def free(self):                             #@DuplicatedSignature
         log("AVImageWrapper.free()")
