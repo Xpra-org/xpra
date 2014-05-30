@@ -239,7 +239,7 @@ def get_spec(encoding, colorspace):
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
-                      Encoder, codec_type=get_type(),
+                      codec_class=Encoder, codec_type=get_type(),
                       min_w=64, min_h=64,
                       setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
 
