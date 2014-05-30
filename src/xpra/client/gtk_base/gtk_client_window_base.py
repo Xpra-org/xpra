@@ -229,7 +229,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
 
     def set_workspace(self):
-        if not HAS_X11_BINDINGS:
+        if not self._can_set_workspace:
             return -1
         root = self.gdk_window().get_screen().get_root_window()
         ndesktops = self.get_workspace_count()
@@ -327,7 +327,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspace = self.get_window_workspace()
             if workspace<0:
                 workspace = self.get_desktop_workspace()
-        if self._window_workspace!=workspace:
+        if self._window_workspace!=workspace and (self._window_workspace is not None or workspace>=0):
             workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, self._window_workspace, workspace)
             self._window_workspace = workspace
             props["workspace"] = workspace
