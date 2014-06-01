@@ -914,7 +914,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         e = 0
     except Exception, e:
         log.error("server error", exc_info=True)
-        e = 128
+        e = -128
     if e>0:
         # Upgrading/exiting, so leave X server running
         if kill_xvfb in _cleanups:
@@ -927,4 +927,5 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             # don't delete the new socket (not ours)
             _cleanups.remove(cleanup_socket)
         log.info("cleanups=%s", _cleanups)
-    return 0
+        e = 0
+    return e
