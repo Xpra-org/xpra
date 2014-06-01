@@ -518,8 +518,22 @@ def start_Xvfb(xvfb_str, display_name):
         r_pipe, w_pipe = os.pipe()
         xvfb_cmd += ["-displayfd", str(w_pipe)]
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
+        def preexec():
+            setsid()
+            #duplicate python's _close_fds() function
+            #(taking care to exclude the pipe)
+            try:
+                MAXFD = os.sysconf("SC_OPEN_MAX")
+            except:
+                MAXFD = 256
+            for i in xrange(3, MAXFD):
+                if i not in (r_pipe, w_pipe):
+                    try:
+                        os.close(i)
+                    except:
+                        pass
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
-                                stdin=subprocess.PIPE, preexec_fn=setsid)
+                                stdin=subprocess.PIPE, preexec_fn=preexec)
         # Read the display number from the pipe we gave to Xvfb
         # waiting up to 10 seconds for it to show up
         limit = time.time()+10
@@ -530,6 +544,8 @@ def start_Xvfb(xvfb_str, display_name):
                 buf += os.read(r_pipe, 8)
                 if buf[-1] == '\n':
                     break
+        os.close(r_pipe)
+        os.close(w_pipe)
         if len(buf) == 0:
             raise OSError("%s did not provide a display number using -displayfd" % xvfb_executable)
         if buf[-1] != '\n':
