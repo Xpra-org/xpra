@@ -213,10 +213,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspacelog("not sure if the window is shown or not: %s vs %s, resuming to be safe", desktop_workspace, window_workspace)
             suspend_resume = False
         elif desktop_workspace!=window_workspace:
-            workspacelog("window is on a different workspace, increasing its batch delay")
+            workspacelog("window is on a different workspace, increasing its batch delay (desktop: %s, window: %s)", desktop_workspace, window_workspace)
             suspend_resume = True
         elif self._window_workspace!=self._desktop_workspace:
-            workspacelog("window was on a different workspace, resetting its batch delay")
+            assert desktop_workspace==window_workspace
+            workspacelog("window was on a different workspace, resetting its batch delay (was desktop: %s, window: %s, now both on %s)", self._window_workspace, self._desktop_workspace, desktop_workspace)
             suspend_resume = False
         self._client.control_refresh(self._id, suspend_resume, refresh=False, options=options, client_properties=client_properties)
         self._window_workspace = window_workspace
