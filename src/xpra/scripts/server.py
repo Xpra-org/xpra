@@ -17,6 +17,8 @@ import atexit
 import signal
 import socket
 import getpass
+import select
+import time
 
 from xpra.scripts.main import TCP_NODELAY
 from xpra.dotxpra import DotXpra, ServerSockInUse
@@ -225,20 +227,20 @@ def write_runner_shell_script(dotxpra, contents):
 
 
 def display_name_check(display_name):
-    if display_name.startswith(":"):
-        n = display_name[1:]
-        p = n.find(".")
-        if p>0:
-            n = n[:p]
-        try:
-            dno = int(n)
-            if dno>=0 and dno<10:
-                sys.stderr.write("WARNING: low display number: %s\n" % dno)
-                sys.stderr.write("You are attempting to run the xpra server against what seems to be a default X11 display '%s'.\n" % display_name)
-                sys.stderr.write("This is generally not what you want.\n")
-                sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).\n")
-        except:
-            pass
+    """ displays a warning
+        when a low display number is specified """
+    if not display_name.startswith(":"):
+        return
+    n = display_name[1:].split(".")[0]    #ie: ":0.0" -> "0"
+    try:
+        dno = int(n)
+        if dno>=0 and dno<10:
+            sys.stderr.write("WARNING: low display number: %s\n" % dno)
+            sys.stderr.write("You are attempting to run the xpra server against what seems to be a default X11 display '%s'.\n" % display_name)
+            sys.stderr.write("This is generally not what you want.\n")
+            sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).\n")
+    except:
+        pass
 
 
 def get_ssh_port():
@@ -363,22 +365,37 @@ def close_all_fds(exceptions=[]):
             return
     print("Uh-oh, can't close fds, please port me to your system...")
 
-def open_log_file(dotxpra, log_file, display_name):
-    if log_file:
+def shellsub(s, subs={}):
+    """ shell style string substitution using the dictionary given """
+    for var,value in subs.items():
+        s = s.replace("$%s" % var, value)
+        s = s.replace("${%s}" % var, value)
+    return s
+
+def open_log_file(logpath):
+    """ renames the existing log file if it exists,
+        then opens it for writing.
+    """
+    if os.path.exists(logpath):
+        os.rename(logpath, logpath + ".old")
+    return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, o0666)
+
+def select_log_file(dotxpra, log_file, display_name):
+    """ returns the log file path we should be using given the parameters,
+        this may return a temporary logpath if display_name is not available.
+    """
+    if log_file and display_name:
         if os.path.isabs(log_file):
             logpath = log_file
         else:
             logpath = os.path.join(dotxpra.sockdir(), log_file)
-        logpath = logpath.replace("$DISPLAY", display_name)
-    else:
+        logpath = shellsub(logpath, {"DISPLAY" : display_name})
+    elif display_name:
         logpath = dotxpra.log_path(display_name) + ".log"
-    sys.stderr.write("Entering daemon mode; "
-                     + "any further errors will be reported to:\n"
-                     + ("  %s\n" % logpath))
-    # Do some work up front, so any errors don't get lost.
-    if os.path.exists(logpath):
-        os.rename(logpath, logpath + ".old")
-    return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, o0666)
+    else:
+        logpath = os.path.join(dotxpra.sockdir(), "tmp_%d.log" % os.getpid())
+    return logpath
+
 
 def daemonize(logfd):
     os.chdir("/")
@@ -387,17 +404,27 @@ def daemonize(logfd):
     os.setsid()
     if os.fork():
         os._exit(0)
-    close_all_fds(exceptions=[logfd])
+    # save current stdout/stderr to be able to print info
+    # before exiting the non-deamon process
+    # and closing those file descriptors definitively
+    old_fd_stdout = os.dup(1)
+    old_fd_stderr = os.dup(2)
+    close_all_fds(exceptions=[logfd,old_fd_stdout,old_fd_stderr])
     fd0 = os.open("/dev/null", os.O_RDONLY)
     if fd0 != 0:
         os.dup2(fd0, 0)
         os.close(fd0)
+    # reopen STDIO files
+    old_stdout = os.fdopen(old_fd_stdout, "w", 1)
+    old_stderr = os.fdopen(old_fd_stderr, "w", 1)
+    # replace standard stdout/stderr by the log file
     os.dup2(logfd, 1)
     os.dup2(logfd, 2)
     os.close(logfd)
     # Make these line-buffered:
     sys.stdout = os.fdopen(1, "w", 1)
     sys.stderr = os.fdopen(2, "w", 1)
+    return (old_stdout, old_stderr)
 
 
 def sanitize_env():
@@ -452,7 +479,6 @@ def start_pulseaudio(child_reaper, pulseaudio_command):
                 log.warn("error trying to stop pulseaudio", exc_info=True)
     _cleanups.append(cleanup_pa)
 
-
 def start_Xvfb(xvfb_str, display_name):
     # We need to set up a new server environment
     xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
@@ -462,22 +488,76 @@ def start_Xvfb(xvfb_str, display_name):
         except Exception, e:
             #trying to continue anyway!
             sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
+
+    #identify logfile argument if it exists and if we may have to rename it:
+    xvfb_cmd = xvfb_str.split()
+    if '-logfile' in xvfb_cmd and display_name[0]=='S':
+        xvfb_cmd = xvfb_str.split()
+        logfile_argindex = xvfb_cmd.index('-logfile') + 1
+        assert logfile_argindex<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last"
+        xorg_log_file = xvfb_cmd[logfile_argindex]
+    else:
+        xorg_log_file = None
+
+    #apply string substitutions: 
     subs = {"XAUTHORITY"    : xauthority,
             "USER"          : os.environ.get("USER", "unknown-user"),
             "HOME"          : os.environ.get("HOME", os.getcwd()),
             "DISPLAY"       : display_name}
-    for var,value in subs.items():
-        xvfb_str = xvfb_str.replace("$%s" % var, value)
-        xvfb_str = xvfb_str.replace("${%s}" % var, value)
-    xvfb_cmd = xvfb_str.split()+[display_name]
-    xvfb_executable = xvfb_cmd[0]
-    xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
+    xvfb_str = shellsub(xvfb_str, subs)
+
     def setsid():
         #run in a new session
         if os.name=="posix":
             os.setsid()
-    xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
+
+    xvfb_cmd = xvfb_str.split()
+    xvfb_executable = xvfb_cmd[0]
+    if display_name[0]=='S':
+        # 'S' means that we allocate the display automatically
+        r_pipe, w_pipe = os.pipe()
+        xvfb_cmd += ["-displayfd", str(w_pipe)]
+        xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
+        xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
                                 stdin=subprocess.PIPE, preexec_fn=setsid)
+        # Read the display number from the pipe we gave to Xvfb
+        # waiting up to 10 seconds for it to show up
+        limit = time.time()+10
+        buf = ""
+        while time.time()<limit and len(buf)<8:
+            r, _, _ = select.select([r_pipe], [], [], max(0, limit-time.time()))
+            if r_pipe in r:
+                buf += os.read(r_pipe, 8)
+                if buf[-1] == '\n':
+                    break
+        if len(buf) == 0:
+            raise OSError("%s did not provide a display number using -displayfd" % xvfb_executable)
+        if buf[-1] != '\n':
+            raise OSError("%s output not terminated by newline: %s" % (xvfb_executable, buf))
+        try:
+            n = int(buf[:-1])
+        except:
+            raise OSError("%s display number is not a valid number: %s" % (xvfb_executable, buf[:-1]))
+        if n<0 or n>=2**16:
+            raise OSError("%s provided an invalid display number: %s" % (xvfb_executable, n))
+        new_display_name = ":%s" % n
+        sys.stdout.write("Using display number provided by %s: %s\n" % (xvfb_executable, new_display_name))
+        if xorg_log_file != None:
+            #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.S14700.log
+            f0 = shellsub(xorg_log_file, subs)
+            subs["DISPLAY"] = new_display_name
+            #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.:1.log
+            f1 = shellsub(xorg_log_file, subs)
+            if f0 != f1:
+                os.rename(f0, f1)
+        display_name = new_display_name
+    else:
+        # use display specified
+        xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
+        xvfb_cmd.append(display_name)
+        xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
+                                stdin=subprocess.PIPE, preexec_fn=setsid)
+
     from xpra.os_util import get_hex_uuid
     xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", get_hex_uuid()]
     try:
@@ -487,7 +567,7 @@ def start_Xvfb(xvfb_str, display_name):
     except OSError, e:
         #trying to continue anyway!
         sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
-    return xvfb
+    return xvfb, display_name
 
 def check_xvfb_process(xvfb=None):
     if xvfb is None:
@@ -622,12 +702,17 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         from xpra.scripts.main import guess_X11_display
         display_name = guess_X11_display()
     else:
-        if len(extra_args) != 1:
-            parser.error("need exactly 1 extra argument")
-        display_name = extra_args.pop(0)
-
-    if not shadowing and not proxying:
-        display_name_check(display_name)
+        if len(extra_args) > 1:
+            parser.error("too many extra arguments: only expected a display number")
+        if len(extra_args) == 1:
+            display_name = extra_args[0]
+            display_name_check(display_name)
+        else:
+            if not opts.displayfd:
+                parser.error("displayfd support is not enabled on this system, you must specify the display to use")
+            # We will try to find one automaticaly
+            # Use the temporary magic value 'S' as marker:
+            display_name = 'S' + str(os.getpid())
 
     if not shadowing and not proxying and opts.exit_with_children and not opts.start_child:
         sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
@@ -644,15 +729,22 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # change if/when we daemonize:
     script = xpra_runner_shell_script(xpra_file, os.getcwd(), opts.socket_dir)
 
+    stdout = sys.stdout
+    stderr = sys.stderr
     # Daemonize:
     if opts.daemon:
         #daemonize will chdir to "/", so try to use an absolute path:
         if opts.password_file:
             opts.password_file = os.path.abspath(opts.password_file)
-
-        logfd = open_log_file(dotxpra, opts.log_file, display_name)
+        # At this point we may not know the display name,
+        # so log_filename0 may point to a temporary file which we will rename later
+        log_filename0 = select_log_file(dotxpra, opts.log_file, display_name)
+        logfd = open_log_file(log_filename0)
         assert logfd > 2
-        daemonize(logfd)
+        stdout, stderr = daemonize(logfd)
+        stderr.write("Entering daemon mode; "
+                 + "any further errors will be reported to:\n"
+                 + ("  %s\n" % log_filename0))
 
     # Write out a shell-script so that we can start our proxy in a clean
     # environment:
@@ -661,48 +753,70 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     from xpra.log import Logger
     log = Logger("server")
 
+    mdns_recs = []
+    sockets = []
     try:
-        # Initialize the sockets before the display,
+        # Initialize the TCP sockets before the display,
         # That way, errors won't make us kill the Xvfb
         # (which may not be ours to kill at that point)
         bind_tcp = parse_bind_tcp(opts.bind_tcp)
-
-        sockets = []
-        mdns_info = {"display" : display_name,
-                     "username": getpass.getuser()}
-        if opts.session_name:
-            mdns_info["session"] = opts.session_name
-        #tcp:
         for host, iport in bind_tcp:
             socket = setup_tcp_socket(host, iport)
             sockets.append(socket)
-        #unix:
-        socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group)
-        if socket:      #win32 returns None!
-            sockets.append(socket)
-            if opts.mdns:
-                ssh_port = get_ssh_port()
-                if ssh_port:
-                    mdns_publish(display_name, "ssh", [("", ssh_port)], mdns_info)
         if opts.mdns:
-            mdns_publish(display_name, "tcp", bind_tcp, mdns_info)
+            mdns_recs.append(("tcp", bind_tcp))
     except Exception, e:
         log.error("cannot start server: failed to setup sockets: %s", e)
         return 1
 
     # Do this after writing out the shell script:
-    os.environ["DISPLAY"] = display_name
+    if display_name[0] != 'S':
+        os.environ["DISPLAY"] = display_name
     sanitize_env()
 
+    # Start the Xvfb server first to get the display_name if needed
     xvfb = None
     xvfb_pid = None
     if not shadowing and not proxying and not clobber:
         try:
-            xvfb = start_Xvfb(opts.xvfb, display_name)
+            xvfb, display_name = start_Xvfb(opts.xvfb, display_name)
         except OSError, e:
             log.error("Error starting Xvfb: %s\n", e)
             return  1
         xvfb_pid = xvfb.pid
+        #always update as we may now have the "real" display name:
+        os.environ["DISPLAY"] = display_name
+
+    if opts.daemon:
+        log_filename1 = select_log_file(dotxpra, opts.log_file, display_name)
+        if log_filename0 != log_filename1:
+            # we now have the correct log filename, so use it:
+            os.rename(log_filename0, log_filename1)
+            stderr.write("Actual log file name is now: %s" % log_filename1)
+        stdout.close()
+        stderr.close()
+
+    if not check_xvfb_process(xvfb):
+        #xvfb problem: exit now
+        return  1
+
+    #setup unix domain socket:
+    socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group)
+    if socket:      #win32 returns None!
+        sockets.append(socket)
+        if opts.mdns:
+            ssh_port = get_ssh_port()
+            if ssh_port:
+                mdns_recs.append(("ssh", [("", ssh_port)]))
+
+    #publish mdns records:
+    if opts.mdns:
+        mdns_info = {"display" : display_name,
+                     "username": getpass.getuser()}
+        if opts.session_name:
+            mdns_info["session"] = opts.session_name
+        for mode, listen_on in mdns_recs:
+            mdns_publish(display_name, mode, listen_on, mdns_info)
 
     if not check_xvfb_process(xvfb):
         #xvfb problem: exit now
@@ -813,4 +927,4 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             # don't delete the new socket (not ours)
             _cleanups.remove(cleanup_socket)
         log.info("cleanups=%s", _cleanups)
-    return  0
+    return 0

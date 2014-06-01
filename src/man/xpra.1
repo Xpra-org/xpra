@@ -14,7 +14,7 @@ xpra \- viewer for remote, persistent X applications
 .SH SYNOPSIS
 .PD 0
 .HP \w'xpra\ 'u
-\fBxpra\fP \fBstart\fP \fI:DISPLAY\fP | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP
+\fBxpra\fP \fBstart\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
 [\fB\-\-use\-display\fP]
@@ -262,10 +262,19 @@ display (for when xpra is talking to X applications) and as an
 identifier by which xpra clients (like \fBxpra attach\fP) can locate
 the xpra server.
 
-When starting an xpra server, you must specify the name of the display
-to use.  To do this, simply pick any number you like and stick a colon
-in front of it.  For instance :7, :12, and :3117 are all valid display
-names.  Just keep in mind that:
+If your \fBxvfb\fP command supports the \fB-displayfd\fP argument,
+you may set the \fBdisplayfd\fP option to \fBtrue\fP in your
+\fB/etc/xpra/xpra.conf\fP file (or your user's \fB~/.xpra/xpra.conf\fP)
+and then you may omit the display number when using \fBxpra start\fP:
+a display will be chosen for you automatically.
+The display number chosen will be shown in the log output, you should
+also be able to see it with \fBxpra list\fP.
+
+Otherwise, when starting an xpra server, you must specify the name of
+the display to use.  To do this, simply pick any number you like and
+stick a colon in front of it.  
+For instance :7, :12, and :3117 are all valid display names.
+Just keep in mind that:
 .IP \(bu
 Every X or xpra server that is running on a single machine must use a
 different display name.  If you pick a number that is already in use

@@ -110,16 +110,22 @@ def parse_cmdline(cmdline):
                         "\t%prog control DISPLAY command [arg1] [arg2]..\n",
                         "\t%prog version [DISPLAY]\n"
                       ]
+    defaults = make_defaults_struct()
     server_modes = []
     if supports_server:
         server_modes.append("start")
         server_modes.append("upgrade")
-        command_options = ["\t%prog start DISPLAY\n",
-                           "\t%prog stop [DISPLAY]\n",
-                           "\t%prog exit [DISPLAY]\n",
-                           "\t%prog list\n",
-                           "\t%prog upgrade DISPLAY\n",
-                           ] + command_options
+        if defaults.displayfd:
+            #display argument is optional (we can use "-displayfd")
+            command_options = ["\t%prog start [DISPLAY]\n"]
+        else:
+            #display is required:
+            command_options = ["\t%prog start DISPLAY\n"]
+        command_options += ["\t%prog stop [DISPLAY]\n",
+                            "\t%prog exit [DISPLAY]\n",
+                            "\t%prog list\n",
+                            "\t%prog upgrade DISPLAY\n",
+                            ] + command_options
     if supports_shadow:
         server_modes.append("shadow")
         command_options.append("\t%prog shadow [DISPLAY]\n")
@@ -128,8 +134,8 @@ def parse_cmdline(cmdline):
 
     parser = OptionParser(version="xpra v%s" % XPRA_VERSION,
                           usage="\n" + "".join(command_options))
-    defaults = make_defaults_struct()
-    hidden_options = {"display" : defaults.display}
+    hidden_options = {"display" : defaults.display,
+                      "displayfd" : defaults.displayfd}
     if len(server_modes):
         group = OptionGroup(parser, "Server Options",
                     "These options are only relevant on the server when using the %s mode." %

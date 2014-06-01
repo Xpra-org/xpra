@@ -249,6 +249,7 @@ OPTION_TYPES = {
                     #boolean options:
                     "daemon"            : bool,
                     "use-display"       : bool,
+                    "displayfd"         : bool,
                     "fake-xinerama"     : bool,
                     "tray"              : bool,
                     "clipboard"         : bool,
@@ -341,6 +342,7 @@ def get_defaults():
                     "auto-refresh-delay": 0.25,
                     "daemon"            : True,
                     "use-display"       : False,
+                    "displayfd"         : False,
                     "fake-xinerama"     : True,
                     "tray"              : True,
                     "clipboard"         : True,
