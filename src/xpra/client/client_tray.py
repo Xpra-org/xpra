@@ -156,6 +156,7 @@ class TrayBacking(GTKWindowBacking):
     def __init__(self, wid, w, h, has_alpha, data=None):
         self.data = data
         GTKWindowBacking.__init__(self, wid, True)
+        self._backing = object()    #pretend we have a backing structure
 
     def get_encoding_properties(self):
         #override so we skip all csc caps:
@@ -165,12 +166,12 @@ class TrayBacking(GTKWindowBacking):
                }
 
 
-    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        log("TrayBacking._do_paint_rgb24%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options, callbacks))
+    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
+        log("TrayBacking._do_paint_rgb24%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
         self.data = ["rgb24", width, height, rowstride, img_data[:]]
         return True
 
-    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        log("TrayBacking._do_paint_rgb32%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options, callbacks))
+    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
+        log("TrayBacking._do_paint_rgb32%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
         self.data = ["rgb32", width, height, rowstride, img_data[:]]
         return True
