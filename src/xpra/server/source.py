@@ -17,6 +17,7 @@ log = Logger("server")
 elog = Logger("encoding")
 soundlog = Logger("sound")
 keylog = Logger("keyboard")
+cursorlog = Logger("cursor")
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_source import WindowSource, HAS_ALPHA
@@ -1162,6 +1163,7 @@ class ServerSource(object):
         if not self.send_cursor_pending:
             self.send_cursor_pending = True
             delay = max(10, int(self.global_batch_config.delay*4))
+            cursorlog("send_cursor(..) using delay=%s", delay)
             self.timeout_add(delay, self.do_send_cursor)
 
     def do_send_cursor(self):
