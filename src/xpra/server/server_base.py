@@ -378,11 +378,11 @@ class ServerBase(ServerCore):
 
 
     def run(self):
-        ServerCore.run(self)
         if self.send_pings:
             self.timeout_add(1000, self.send_ping)
         else:
             self.timeout_add(10*1000, self.send_ping)
+        return ServerCore.run(self)
 
 
     def cleanup(self, *args):
