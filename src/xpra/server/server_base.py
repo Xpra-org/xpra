@@ -841,9 +841,9 @@ class ServerBase(ServerCore):
             encoding = args[0]
             strict = None       #means no change
             args = args[1:]
-            if len(args)>0 and args[0]=="strict":
+            if len(args)>0 and args[0] in ("strict", "nostrict"):
                 #remove "strict" marker
-                strict = True
+                strict = args[0]=="strict"
                 args = args[1:]
             if len(args)>0:
                 wids = []
