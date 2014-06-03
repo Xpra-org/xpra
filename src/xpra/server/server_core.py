@@ -18,6 +18,7 @@ import thread
 
 from xpra.log import Logger
 log = Logger("server")
+commandlog = Logger("command")
 
 import xpra
 from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
@@ -542,7 +543,7 @@ class ServerCore(object):
 
 
     def control_command_response(self, proto, command, error=0, response=""):
-        log("control_command_response(%s)=%s", command, response)
+        commandlog("control_command_response(%s)=%s", command, response)
         hello = {"command_response"  : (error, response)}
         proto.send_now(("hello", hello))
 
@@ -551,15 +552,15 @@ class ServerCore(object):
             assert len(args)>0
             command = args[0]
             if command not in self.control_commands:
-                log.warn("invalid command: %s (must be one of: %s)", command, self.control_commands)
+                commandlog.warn("invalid command: %s (must be one of: %s)", command, self.control_commands)
                 return self.control_command_response(proto, command, 6, "invalid command")
             self.do_handle_command_request(proto, command, args[1:])
         except Exception, e:
-            log.error("error processing command %s", args, exc_info=True)
+            commandlog.error("error processing command %s", args, exc_info=True)
             proto.send_now(("hello", {"command_response"  : (127, "error processing command: %s" % e)}))
 
     def do_handle_command_request(self, proto, command, args):
-        log("handle_command_request(%s, %s, %s)", proto, command, args)
+        commandlog("handle_command_request(%s, %s, %s)", proto, command, args)
         if command=="hello":
             return self.control_command_response(proto, command, 0, "hello")
         assert command=="help"

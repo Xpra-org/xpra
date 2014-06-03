@@ -14,6 +14,7 @@ from xpra.log import Logger
 log = Logger("server")
 keylog = Logger("keyboard")
 focuslog = Logger("focus")
+commandlog = Logger("command")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
@@ -690,9 +691,9 @@ class ServerBase(ServerCore):
 
 
     def do_handle_command_request(self, proto, command, args):
-        log("handle_command_request(%s, %s, %s)", proto, command, args)
+        commandlog("handle_command_request(%s, %s, %s)", proto, command, args)
         def respond(error=0, response=""):
-            log("command request response(%s)=%s", command, response)
+            commandlog("command request response(%s)=%s", command, response)
             hello = {"command_response"  : (error, response)}
             proto.send_now(("hello", hello))
         def argn_err(argn):
@@ -709,7 +710,7 @@ class ServerBase(ServerCore):
             for source in sources:
                 """ forwards to *the* client, if there is *one* """
                 if client_command[0] not in source.control_commands:
-                    log.info("client command '%s' not forwarded to client %s (not supported)", client_command, source)
+                    commandlog.info("client command '%s' not forwarded to client %s (not supported)", client_command, source)
                     return  False
                 source.send_client_command(*client_command)
 
@@ -766,7 +767,7 @@ class ServerBase(ServerCore):
             if len(args)!=1:
                 return argn_err(1)
             self.session_name = args[0]
-            log.info("changed session name: %s", self.session_name)
+            commandlog.info("changed session name: %s", self.session_name)
             forward_all_clients(["name"])
             return respond(0, "session name set")
         elif command=="compression":
@@ -906,7 +907,7 @@ class ServerBase(ServerCore):
                     count += 1
                     source.send_client_command(*client_command)
                 else:
-                    log.warn("client %s does not support client command %s", source, client_command[0])
+                    commandlog.warn("client %s does not support client command %s", source, client_command[0])
             csource.send_client_command(*client_command)
             return respond(0, "client control command '%s' forwarded to %s clients" % (client_command[0], count))
         else:
