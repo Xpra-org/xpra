@@ -804,11 +804,18 @@ class WindowSource(object):
 
 
     def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=[]):
+        want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         if (STRICT_MODE and current_encoding) or (current_encoding=="png/L" and "png/L" in self.common_encodings):
-            #1) STRICT_MODE: always use what is selected
+            #1) strict mode: always use what is selected
+            #    (just choose between rgb24 and rgb32 if needed)
             #2) png/L: is a grayscale encoding,
             #   allowing other encodings may well include colours
             #   which would look horribly messy
+            if current_encoding=="rgb":
+                if want_alpha:
+                    return self.pick_encoding(["rgb32", "rgb24"])
+                else:
+                    return self.pick_encoding(["rgb24", "rgb32"])
             return current_encoding
         if self.is_tray or (self.has_alpha and self.supports_transparency):
             #always use transparent encoding for tray or for transparent windows:
