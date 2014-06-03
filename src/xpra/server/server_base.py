@@ -328,6 +328,7 @@ class ServerBase(ServerCore):
             "set-cursors":                          self._process_set_cursors,
             "set-notify":                           self._process_set_notify,
             "set-bell":                             self._process_set_bell,
+            "command_request":                      self._process_command_request,
                                           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -481,10 +482,14 @@ class ServerBase(ServerCore):
             log.info("Handshake complete; enabling connection")
 
         # Things are okay, we accept this connection, and may disconnect previous one(s)
+        # (but only if this is going to be a UI session - control sessions can co-exist)
+        ui_client = c.boolget("ui_client", True)
         share_count = 0
         for p,ss in self._server_sources.items():
             #check existing sessions are willing to share:
-            if detach_request:
+            if not ui_client:
+                pass
+            elif detach_request:
                 self.disconnect_client(p, "detach requested")
             elif not self.sharing:
                 self.disconnect_client(p, "new valid connection received, this session does not allow sharing")
@@ -492,10 +497,9 @@ class ServerBase(ServerCore):
                 self.disconnect_client(p, "new valid connection received, the new client does not wish to share")
             elif not ss.share:
                 self.disconnect_client(p, "new valid connection received, this client had not enabled sharing ")
-            else:
-                share_count += 1
+            share_count += 1
 
-        if not is_request:
+        if not is_request and ui_client:
             if share_count>0:
                 log.info("sharing with %s other client(s)", share_count)
             self.dpi = c.intget("dpi", self.default_dpi)
@@ -527,7 +531,7 @@ class ServerBase(ServerCore):
         log("process_hello serversource=%s", ss)
         ss.parse_hello(c)
         dw, dh = None, None
-        if ss.desktop_size and not is_request:
+        if ui_client and ss.desktop_size and not is_request:
             try:
                 dw, dh = ss.desktop_size
                 if not ss.screen_sizes:
@@ -538,7 +542,7 @@ class ServerBase(ServerCore):
             except:
                 dw, dh = None, None
         self._server_sources[proto] = ss
-        if is_request:
+        if is_request or not ui_client:
             root_w, root_h = self.get_root_window_size()
             key_repeat = (0, 0)
         else:
@@ -647,6 +651,7 @@ class ServerBase(ServerCore):
              "encoding.generic"             : True,
              "exit_server"                  : True,
              "sound.server_driven"          : True,
+             "command_request"              : True,
              })
         if source.wants_encodings:
             for k,v in codec_versions.items():
@@ -690,18 +695,26 @@ class ServerBase(ServerCore):
         server_source.hello(capabilities)
 
 
-    def do_handle_command_request(self, proto, command, args):
-        commandlog("handle_command_request(%s, %s, %s)", proto, command, args)
-        def respond(error=0, response=""):
-            commandlog("command request response(%s)=%s", command, response)
-            hello = {"command_response"  : (error, response)}
-            proto.send_now(("hello", hello))
+    def _process_command_request(self, proto, packet):
+        """ client sent a command request through its normal channel """
+        assert len(packet)>=2, "invalid command request packet (too small!)"
+        command = packet[1]
+        args = packet[2:]
+        try:
+            code, msg = self.do_handle_command_request(command, args)
+            commandlog.info("command request %s returned: %s (%s)", command, code, msg)
+        except:
+            commandlog.error("error processing command %s", command, exc_info=True)
+
+    def do_handle_command_request(self, command, args):
+        #note: this may get called from handle_command_request or from _process_command_request
+        commandlog("handle_command_request(%s, %s)", command, args)
         def argn_err(argn):
-            respond(4, "invalid number of arguments, '%s' expects: %s" % (command, argn))
+            return 4, "invalid number of arguments, '%s' expects: %s" % (command, argn)
         def arg_err(msg):
-            respond(5, "invalid argument for '%s': %s" % (command, msg))
+            return 5, "invalid argument for '%s': %s" % (command, msg)
         def success():
-            respond(0, "%s success" % command)
+            return 0, "%s success" % command
 
         sources = list(self._server_sources.values())
         protos = list(self._server_sources.keys())
@@ -741,13 +754,13 @@ class ServerBase(ServerCore):
         #or can work on more than one connected client:
         if command in ("help", "hello"):
             #generic case:
-            return ServerCore.do_handle_command_request(self, proto, command, args)
+            return ServerCore.do_handle_command_request(self, command, args)
         elif command=="debug":
             def debug_usage():
                 return arg_err("usage: 'debug enable|disable category' or 'debug status'")
             if len(args)==1 and args[0]=="status":
                 from xpra.log import get_all_loggers
-                return respond(0, "logging is enabled for: %s" % str(list([str(x) for x in get_all_loggers() if x.is_debug_enabled()])))
+                return 0, "logging is enabled for: %s" % str(list([str(x) for x in get_all_loggers() if x.is_debug_enabled()]))
             if len(args)<2:
                 return debug_usage()
             log_cmd = args[0]
@@ -762,14 +775,14 @@ class ServerBase(ServerCore):
                 assert log_cmd=="disable"
                 add_disabled_category(category)
                 disable_debug_for(category)
-            return respond(0, "logging %sd for %s" % (log_cmd, category))
+            return 0, "logging %sd for %s" % (log_cmd, category)
         elif command=="name":
             if len(args)!=1:
                 return argn_err(1)
             self.session_name = args[0]
             commandlog.info("changed session name: %s", self.session_name)
             forward_all_clients(["name"])
-            return respond(0, "session name set")
+            return 0, "session name set"
         elif command=="compression":
             if len(args)!=1:
                 return argn_err(1)
@@ -808,19 +821,19 @@ class ServerBase(ServerCore):
             msg = []
             for csource in sources:
                 msg.append("%s : %s" % (csource, csource.sound_control(*args[1:])))
-            return respond(0, ", ".join(msg))
+            return 0, ", ".join(msg)
         elif command=="suspend":
             for csource in sources:
                 csource.suspend(True, self._id_to_window)
-            return respond(0, "suspended %s clients" % len(sources))
+            return 0, "suspended %s clients" % len(sources)
         elif command=="resume":
             for csource in sources:
                 csource.resume(True, self._id_to_window)
-            return respond(0, "resumed %s clients" % len(sources))
+            return 0, "resumed %s clients" % len(sources)
         elif command=="ungrab":
             for csource in sources:
                 csource.pointer_ungrab(-1)
-            return respond(0, "ungrabbed %s clients" % len(sources))
+            return 0, "ungrabbed %s clients" % len(sources)
         elif command=="encoding":
             if len(args)<1:
                 return argn_err(1)
@@ -833,7 +846,7 @@ class ServerBase(ServerCore):
                         wid = int(x)
                         wids.append(wid)
                     except:
-                        return respond(4, "invalid window id %s" % x)
+                        return 4, "invalid window id %s" % x
             else:
                 wids = self._id_to_window.keys()
             for csource in sources:
@@ -844,7 +857,7 @@ class ServerBase(ServerCore):
                 if window:
                     for csource in sources:
                         csource.refresh(wid, window, {})
-            return respond(0, "set encoding to %s for %s windows" % (encoding, len(wids)))
+            return 0, "set encoding to %s for %s windows" % (encoding, len(wids))
         elif command=="refresh":
             if len(args)>0:
                 widwin = []
@@ -853,13 +866,13 @@ class ServerBase(ServerCore):
                         wid = int(x)
                         widwin.append((wid, self._id_to_window[wid]))
                     except:
-                        return respond(4, "invalid window id %s" % x)
+                        return 4, "invalid window id %s" % x
             else:
                 widwin = list(self._id_to_window.items())
             for wid, window in widwin:
                 for csource in sources:
                     csource.full_quality_refresh(wid, window, {})
-            return respond(0, "refreshed %s window for %s clients" % (len(widwin), len(sources)))
+            return 0, "refreshed %s window for %s clients" % (len(widwin), len(sources))
         elif command=="scaling":
             if len(args)!=2:
                 return argn_err("2: window ID (or '*') and scaling value")
@@ -867,13 +880,13 @@ class ServerBase(ServerCore):
             try:
                 scaling = parse_scaling_value(args[1])
             except:
-                return respond(11, "invalid scaling value %s" % args[1])
+                return 11, "invalid scaling value %s" % args[1]
             def set_scaling(ws, wid, window):
                 ws.set_scaling(scaling)
                 ws.refresh(window)
             wid_str = args[0]
             for_all_window_sources(wid_str, set_scaling)
-            return respond(0, "scaling set to %s on window %s for %s clients" % (str(scaling), wid_str, len(sources)))
+            return 0, "scaling set to %s on window %s for %s clients" % (str(scaling), wid_str, len(sources))
         elif command in ("quality", "min-quality", "speed", "min-speed"):
             if len(args)!=2:
                 return argn_err(2)
@@ -882,7 +895,7 @@ class ServerBase(ServerCore):
             except:
                 v = -9999999
             if v!=-1 and (v<0 or v>100):
-                return respond(11, "invalid quality value (must be a number between 0 and 100, or -1 to disable) %s" % args[1])
+                return 11, "invalid quality value (must be a number between 0 and 100, or -1 to disable) %s" % args[1]
             def set_value(ws, wid, window):
                 if command=="quality":
                     ws.set_quality(v)
@@ -896,7 +909,7 @@ class ServerBase(ServerCore):
                     assert False, "invalid command: %s" % command
             wid_str = args[0]
             for_all_window_sources(wid_str, set_value)
-            return respond(0, "%s set to %s on window %s for %s clients" % (command, v, wid_str, len(sources)))
+            return 0, "%s set to %s on window %s for %s clients" % (command, v, wid_str, len(sources))
         elif command=="client":
             if len(args)==0:
                 return argn_err("at least 1")
@@ -909,9 +922,9 @@ class ServerBase(ServerCore):
                 else:
                     commandlog.warn("client %s does not support client command %s", source, client_command[0])
             csource.send_client_command(*client_command)
-            return respond(0, "client control command '%s' forwarded to %s clients" % (client_command[0], count))
+            return 0, "client control command '%s' forwarded to %s clients" % (client_command[0], count)
         else:
-            return respond(9, "internal state error: invalid command '%s'" % command)
+            ServerCore.do_handle_command_request(self, command, args)
 
 
     def send_screenshot(self, proto):

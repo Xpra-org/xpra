@@ -542,30 +542,36 @@ class ServerCore(object):
         pass
 
 
-    def control_command_response(self, proto, command, error=0, response=""):
-        commandlog("control_command_response(%s)=%s", command, response)
-        hello = {"command_response"  : (error, response)}
-        proto.send_now(("hello", hello))
-
     def handle_command_request(self, proto, args):
+        """ client sent a command request as part of the hello packet """
         try:
             assert len(args)>0
             command = args[0]
+            error = 0
             if command not in self.control_commands:
                 commandlog.warn("invalid command: %s (must be one of: %s)", command, self.control_commands)
-                return self.control_command_response(proto, command, 6, "invalid command")
-            self.do_handle_command_request(proto, command, args[1:])
+                error = 6
+                response = "invalid command"
+            else:
+                error, response = self.do_handle_command_request(command, args[1:])
         except Exception, e:
-            commandlog.error("error processing command %s", args, exc_info=True)
-            proto.send_now(("hello", {"command_response"  : (127, "error processing command: %s" % e)}))
+            commandlog.error("error processing command %s", command, exc_info=True)
+            error = 127
+            response = "error processing command: %s" % e
+        hello = {"command_response"  : (error, response)}
+        proto.send_now(("hello", hello))
 
-    def do_handle_command_request(self, proto, command, args):
-        commandlog("handle_command_request(%s, %s, %s)", proto, command, args)
+    def do_handle_command_request(self, command, args):
+        """ this may get called by:
+            * handle_command_request from a hello packet
+            * _process_command_request from a dedicated packet
+            it is overriden in subclasses.
+        """
         if command=="hello":
-            return self.control_command_response(proto, command, 0, "hello")
-        assert command=="help"
-        return self.control_command_response(proto, command, 0,
-                    "control supports: %s" % (", ".join(self.control_commands)))
+            return 0, "hello"
+        elif command=="help":
+            return 0, "control supports: %s" % (", ".join(self.control_commands))
+        return 9, "invalid command '%s'" % command
 
 
     def accept_client(self, proto, c):

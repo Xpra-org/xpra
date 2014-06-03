@@ -77,12 +77,10 @@ class ProxyServer(ServerCore):
         self.main_loop = gobject.MainLoop()
         self.main_loop.run()
 
-    def do_handle_command_request(self, proto, command, args):
-        if command in ("help", "hello"):
-            return ServerCore.do_handle_command_request(self, proto, command, args)
+    def do_handle_command_request(self, command, args):
         assert command=="stop"
         if len(args)!=1:
-            return ServerCore.control_command_response(self, proto, command, 4, "invalid number of arguments, usage: 'xpra control stop DISPLAY'")
+            return 4, "invalid number of arguments, usage: 'xpra control stop DISPLAY'"
         display = args[0]
         log("stop command: will try to find proxy process for display %s", display)
         for process, v in list(self.processes.items()):
@@ -91,8 +89,8 @@ class ProxyServer(ServerCore):
                 pid = process.pid
                 log.info("stop command: found process %s with pid %s for display %s, sending it 'stop' request", process, pid, display)
                 mq.put("stop")
-                return self.control_command_response(proto, command, 0, "stopped proxy process with pid %s" % pid)
-        return self.control_command_response(proto, command, 14, "no proxy found for display %s" % display)
+                return 0, "stopped proxy process with pid %s" % pid
+        return 14, "no proxy found for display %s" % display
 
 
     def stop_all_proxies(self):

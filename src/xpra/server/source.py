@@ -321,6 +321,7 @@ class ServerSource(object):
         self.control_commands = []
         self.supports_transparency = False
         #what we send back in hello packet:
+        self.ui_client = True
         self.wants_aliases = True
         self.wants_encodings = True
         self.wants_versions = True
@@ -488,6 +489,14 @@ class ServerSource(object):
                 v = min(maxv, v)
             assert v is not None
             return v
+        self.ui_client = c.boolget("ui_client", True)
+        self.wants_encodings = c.boolget("wants_encodings", self.ui_client)
+        self.wants_display = c.boolget("wants_display", self.ui_client)
+        self.wants_sound = c.boolget("wants_sound", True)
+        self.wants_aliases = c.boolget("wants_aliases", True)
+        self.wants_versions = c.boolget("wants_versions", True)
+        self.wants_features = c.boolget("wants_features", True)
+
         self.default_batch_config.always = bool(batch_value("always", DamageBatchConfig.ALWAYS))
         self.default_batch_config.min_delay = batch_value("min_delay", DamageBatchConfig.MIN_DELAY, 0, 1000)
         self.default_batch_config.max_delay = batch_value("max_delay", DamageBatchConfig.MAX_DELAY, 1, 15000)
@@ -533,12 +542,6 @@ class ServerSource(object):
         self.namespace = c.boolget("namespace")
         self.control_commands = c.strlistget("control_commands")
         self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
-        self.wants_aliases = c.boolget("wants_aliases", True)
-        self.wants_encodings = c.boolget("wants_encodings", True)
-        self.wants_versions = c.boolget("wants_versions", True)
-        self.wants_features = c.boolget("wants_features", True)
-        self.wants_display = c.boolget("wants_display", True)
-        self.wants_sound = c.boolget("wants_sound", True)
 
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
@@ -946,6 +949,8 @@ class ServerSource(object):
         """ Changes the encoder for the given 'window_ids',
             or for all windows if 'window_ids' is None.
         """
+        if not self.ui_client:
+            return
         encoding = OLD_ENCODING_NAMES_TO_NEW.get(encoding, encoding)
         if encoding:
             if encoding not in self.encodings:
