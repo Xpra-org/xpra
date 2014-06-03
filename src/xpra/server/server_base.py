@@ -83,7 +83,7 @@ class ServerBase(ServerCore):
         #control mode:
         self.control_commands = ["hello", "help",
                     "debug",
-                    "encoding",
+                    "encoding", "auto-refresh",
                     "quality", "min-quality", "speed", "min-speed",
                     "compression", "encoder", "refresh",
                     "sound-output",
@@ -649,6 +649,7 @@ class ServerBase(ServerCore):
              "notify-startup-complete"      : True,
              "suspend-resume"               : True,
              "encoding.generic"             : True,
+             "encoding.strict_control"      : True,
              "exit_server"                  : True,
              "sound.server_driven"          : True,
              "command_request"              : True,
@@ -702,7 +703,7 @@ class ServerBase(ServerCore):
         args = packet[2:]
         try:
             code, msg = self.do_handle_command_request(command, args)
-            commandlog.info("command request %s returned: %s (%s)", command, code, msg)
+            commandlog("command request %s returned: %s (%s)", command, code, msg)
         except:
             commandlog.error("error processing command %s", command, exc_info=True)
 
@@ -838,6 +839,35 @@ class ServerBase(ServerCore):
             if len(args)<1:
                 return argn_err(1)
             encoding = args[0]
+            strict = None       #means no change
+            args = args[1:]
+            if len(args)>0 and args[0]=="strict":
+                #remove "strict" marker
+                strict = True
+                args = args[1:]
+            if len(args)>0:
+                wids = []
+                for x in args:
+                    try:
+                        wid = int(x)
+                        wids.append(wid)
+                    except:
+                        return 4, "invalid window id %s" % x
+            else:
+                wids = self._id_to_window.keys()
+            for csource in sources:
+                csource.set_encoding(encoding, wids, strict)
+            #now also do a refresh:
+            for wid in wids:
+                window = self._id_to_window.get(wid)
+                if window:
+                    for csource in sources:
+                        csource.refresh(wid, window, {})
+            return 0, "set encoding to %s%s for %s windows" % (encoding, ["", " (strict)"][int(strict)], len(wids))
+        elif command=="auto-refresh":
+            if len(args)<1:
+                return argn_err(1)
+            delay = int(float(args[0])*1000.0)      # ie: 0.5 -> 500 (milliseconds)
             args = args[1:]
             if len(args)>0:
                 wids = []
@@ -850,14 +880,8 @@ class ServerBase(ServerCore):
             else:
                 wids = self._id_to_window.keys()
             for csource in sources:
-                csource.set_encoding(encoding, wids)
-            #now also do a refresh:
-            for wid in wids:
-                window = self._id_to_window.get(wid)
-                if window:
-                    for csource in sources:
-                        csource.refresh(wid, window, {})
-            return 0, "set encoding to %s for %s windows" % (encoding, len(wids))
+                csource.set_auto_refresh_delay(delay, wids)
+            return 0, "set auto-refresh delay to %sms for %s windows" % (delay, len(wids))
         elif command=="refresh":
             if len(args)>0:
                 widwin = []

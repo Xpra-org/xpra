@@ -44,9 +44,10 @@ class TestChangeSettings(CommandConnectClient):
         log.info("got hello back: %s", hello)
         self._packet_handlers["ping"] = self._process_ping
         self.queue = []
-        for _ in range(10):
+        for i in range(10):
+            self.queue.append(("command_request", "auto-refresh", "%.4f" % (i/100)))
             for encoding in ("rgb", "png", "jpeg", "h264", "vp8", "webp"):
-                self.queue.append(("command_request", "encoding", encoding))
+                self.queue.append(("command_request", "encoding", encoding, "strict"))
                 self.queue.append(("command_request", "quality", "*", 1))
                 self.queue.append(("command_request", "quality", "*", 100))
         #send one command every 2 seconds:

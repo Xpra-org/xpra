@@ -199,6 +199,7 @@ class WindowSource(object):
         self.supports_delta = []
         self.last_pixmap_data = None
         self.suspended = False
+        self.strict = STRICT_MODE
         #
         self.auto_refresh_delay = 0
         self.video_helper = None
@@ -266,10 +267,15 @@ class WindowSource(object):
         self.damage(window, 0, 0, w, h, options)
 
 
-    def set_new_encoding(self, encoding):
+    def set_auto_refresh_delay(self, d):
+        self.auto_refresh_delay = d
+
+    def set_new_encoding(self, encoding, strict):
         """ Changes the encoder for the given 'window_ids',
             or for all windows if 'window_ids' is None.
         """
+        if strict is not None:
+            self.strict = strict or STRICT_MODE
         if self.encoding==encoding:
             return
         self.statistics.reset()
@@ -805,7 +811,7 @@ class WindowSource(object):
 
     def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=[]):
         want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
-        if (STRICT_MODE and current_encoding) or (current_encoding=="png/L" and "png/L" in self.common_encodings):
+        if (self.strict and current_encoding) or (current_encoding=="png/L" and "png/L" in self.common_encodings):
             #1) strict mode: always use what is selected
             #    (just choose between rgb24 and rgb32 if needed)
             #2) png/L: is a grayscale encoding,

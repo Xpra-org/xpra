@@ -208,11 +208,11 @@ class WindowVideoSource(WindowSource):
         self._video_encoder.clean()
         self._video_encoder = None
 
-    def set_new_encoding(self, encoding):
+    def set_new_encoding(self, encoding, strict=None):
         if self.encoding!=encoding:
             #ensure we re-init the codecs asap:
             self.cleanup_codecs()
-        WindowSource.set_new_encoding(self, encoding)
+        WindowSource.set_new_encoding(self, encoding, strict)
 
     def set_client_properties(self, properties):
         #client may restrict csc modes for specific windows

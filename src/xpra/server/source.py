@@ -945,7 +945,16 @@ class ServerSource(object):
 # Functions used by the server to request something
 # (window events, stats, user requests, etc)
 #
-    def set_encoding(self, encoding, window_ids):
+    def set_auto_refresh_delay(self, delay, window_ids):
+        if window_ids is not None:
+            wss = [self.window_sources.get(wid) for wid in window_ids]
+        else:
+            wss = self.window_sources.values()
+        for ws in wss:
+            if ws is not None:
+                ws.set_auto_refresh_delay(delay)
+
+    def set_encoding(self, encoding, window_ids, strict=False):
         """ Changes the encoder for the given 'window_ids',
             or for all windows if 'window_ids' is None.
         """
@@ -987,7 +996,7 @@ class ServerSource(object):
             self.global_batch_config = self.default_batch_config.clone()
         for ws in wss:
             if ws is not None:
-                ws.set_new_encoding(encoding)
+                ws.set_new_encoding(encoding, strict)
         if not window_ids or self.encoding is None:
             self.encoding = encoding
 
