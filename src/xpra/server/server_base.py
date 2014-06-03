@@ -898,7 +898,7 @@ class ServerBase(ServerCore):
             csource.send_client_command(*client_command)
             return respond(0, "client control command '%s' forwarded to %s clients" % (client_command[0], count))
         else:
-            return respond(9, "internal state error: invalid command '%s'", command)
+            return respond(9, "internal state error: invalid command '%s'" % command)
 
 
     def send_screenshot(self, proto):
