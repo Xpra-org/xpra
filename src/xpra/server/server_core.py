@@ -592,8 +592,6 @@ class ServerCore(object):
             capabilities["machine_id"] = mid
         if self.session_name:
             capabilities["session_name"] = self.session_name
-        if self._reverse_aliases:
-            capabilities["aliases"] = self._reverse_aliases
         return capabilities
 
 

@@ -672,6 +672,8 @@ class ServerBase(ServerCore):
                      "key_repeat"           : key_repeat,
                      "key_repeat_modifiers" : True})
         capabilities["clipboard"] = self._clipboard_helper is not None and self._clipboard_client == server_source
+        if self._reverse_aliases and server_source.wants_aliases:
+            capabilities["aliases"] = self._reverse_aliases
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.hello(capabilities)

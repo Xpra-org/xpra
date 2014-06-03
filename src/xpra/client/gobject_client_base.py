@@ -109,6 +109,12 @@ class CommandConnectClient(GObjectXpraClient):
         self.connect_with_timeout(conn)
         self._protocol._log_stats  = False
 
+    def make_hello(self):
+        capabilities = GObjectXpraClient.make_hello(self)
+        #don't bother with aliases for one-off clients
+        capabilities["wants_aliases"] = False
+        return capabilities
+
     def _process_connection_lost(self, packet):
         #override so we don't log a warning
         #"command clients" are meant to exit quickly by losing the connection

@@ -320,6 +320,7 @@ class ServerSource(object):
         self.notify_startup_complete = False
         self.control_commands = []
         self.supports_transparency = False
+        self.wants_aliases = True
         #sound props:
         self.pulseaudio_id = None
         self.pulseaudio_server = None
@@ -526,6 +527,7 @@ class ServerSource(object):
         self.namespace = c.boolget("namespace")
         self.control_commands = c.strlistget("control_commands")
         self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
+        self.wants_aliases = c.boolget("wants_aliases", True)
 
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
