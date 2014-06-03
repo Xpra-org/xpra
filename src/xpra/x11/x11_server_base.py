@@ -145,6 +145,7 @@ class X11ServerBase(GTKServerBase):
 
     def make_hello(self):
         capabilities = GTKServerBase.make_hello(self)
+        capabilities["server_type"] = "Python/gtk/x11"
         capabilities["resize_screen"] = self.randr
         capabilities["force_ungrab"] = True
         return capabilities
