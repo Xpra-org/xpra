@@ -320,7 +320,13 @@ class ServerSource(object):
         self.notify_startup_complete = False
         self.control_commands = []
         self.supports_transparency = False
+        #what we send back in hello packet:
         self.wants_aliases = True
+        self.wants_encodings = True
+        self.wants_versions = True
+        self.wants_features = True
+        self.wants_display = True
+        self.wants_sound = True
         #sound props:
         self.pulseaudio_id = None
         self.pulseaudio_server = None
@@ -528,6 +534,11 @@ class ServerSource(object):
         self.control_commands = c.strlistget("control_commands")
         self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
         self.wants_aliases = c.boolget("wants_aliases", True)
+        self.wants_encodings = c.boolget("wants_encodings", True)
+        self.wants_versions = c.boolget("wants_versions", True)
+        self.wants_features = c.boolget("wants_features", True)
+        self.wants_display = c.boolget("wants_display", True)
+        self.wants_sound = c.boolget("wants_sound", True)
 
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
@@ -977,32 +988,34 @@ class ServerSource(object):
 
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
-        try:
-            from xpra.sound.gstreamer_util import has_gst, add_gst_capabilities
-        except:
-            has_gst = False
-        if has_gst:
+        if self.wants_sound:
             try:
-                from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
-                add_pulseaudio_capabilities(capabilities)
-                add_gst_capabilities(capabilities,
-                                     receive=self.supports_microphone, send=self.supports_speaker,
-                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs,
-                                     new_namespace=self.namespace)
-                log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
-            except Exception, e:
-                log.error("failed to setup sound: %s", e)
-        if self.send_windows:
+                from xpra.sound.gstreamer_util import has_gst, add_gst_capabilities
+            except:
+                has_gst = False
+            if has_gst:
+                try:
+                    from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
+                    add_pulseaudio_capabilities(capabilities)
+                    add_gst_capabilities(capabilities,
+                                         receive=self.supports_microphone, send=self.supports_speaker,
+                                         receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs,
+                                         new_namespace=self.namespace)
+                    log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
+                except Exception, e:
+                    log.error("failed to setup sound: %s", e)
+        if self.wants_encodings or self.send_windows:
             assert self.encoding
             encoding = self.encoding
             if not self.generic_encodings:
                 #translate back into the legacy names:
                 encoding = NEW_ENCODING_NAMES_TO_OLD.get(encoding, encoding)
             capabilities["encoding"] = encoding
-        capabilities.update({
-                     "mmap_enabled"         : self.mmap_size>0,
-                     "auto_refresh_delay"   : self.auto_refresh_delay,
-                     })
+        if self.wants_features:
+            capabilities.update({
+                         "mmap_enabled"         : self.mmap_size>0,
+                         "auto_refresh_delay"   : self.auto_refresh_delay,
+                         })
         if self.mmap_client_token:
             capabilities["mmap_token"] = self.mmap_client_token
         if self.keyboard_config:

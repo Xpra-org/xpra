@@ -574,22 +574,25 @@ class ServerCore(object):
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
 
-    def make_hello(self):
+    def make_hello(self, source):
         now = time.time()
         capabilities = get_network_caps()
-        capabilities.update(get_server_info())
+        if source.wants_versions:
+            capabilities.update(get_server_info())
         capabilities.update({
                         "version"               : xpra.__version__,
                         "start_time"            : int(self.start_time),
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),
                         "server_type"           : "core",
-                        "info-request"          : True,
-                        "uuid"                  : get_user_uuid(),
                         })
-        mid = get_machine_id()
-        if mid:
-            capabilities["machine_id"] = mid
+        if source.wants_features:
+            capabilities["info-request"] = True
+        if source.wants_versions:
+            capabilities["uuid"] = get_user_uuid()
+            mid = get_machine_id()
+            if mid:
+                capabilities["machine_id"] = mid
         if self.session_name:
             capabilities["session_name"] = self.session_name
         return capabilities

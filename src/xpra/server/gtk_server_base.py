@@ -52,14 +52,16 @@ class GTKServerBase(ServerBase):
         gobject.io_add_watch(sock, gobject.IO_IN, self._new_connection, sock)
         self.socket_types[sock] = socktype
 
-    def make_hello(self):
-        capabilities = ServerBase.make_hello(self)
-        display = gtk.gdk.display_get_default()
-        capabilities.update({
-            "display"               : display.get_name(),
-            "cursor.default_size"   : display.get_default_cursor_size(),
-            "cursor.max_size"       : display.get_maximal_cursor_size()})
-        capabilities.update(get_gtk_version_info())
+    def make_hello(self, source):
+        capabilities = ServerBase.make_hello(self, source)
+        if source.wants_display:
+            display = gtk.gdk.display_get_default()
+            capabilities.update({
+                "display"               : display.get_name(),
+                "cursor.default_size"   : display.get_default_cursor_size(),
+                "cursor.max_size"       : display.get_maximal_cursor_size()})
+        if source.wants_versions:
+            capabilities.update(get_gtk_version_info())
         return capabilities
 
     def get_ui_info(self, *args):

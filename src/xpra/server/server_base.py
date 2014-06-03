@@ -613,15 +613,22 @@ class ServerBase(ServerCore):
             log.warn("This client is running within the Xpra server %s", server_uuid)
         return True
 
-    def make_hello(self):
-        capabilities = ServerCore.make_hello(self)
-        capabilities.update({
-             "max_desktop_size"             : self.get_max_screen_size(),
-             "clipboards"                   : self._clipboards,
-             "notifications"                : self.notifications_forwarder is not None,
-             "bell"                         : self.bell,
-             "cursors"                      : self.cursors,
-             "dbus_proxy"                   : self.supports_dbus_proxy,
+    def make_hello(self, source):
+        capabilities = ServerCore.make_hello(self, source)
+        capabilities["server_type"] = "base"
+        if source.wants_display:
+            capabilities.update({
+                 "max_desktop_size"             : self.get_max_screen_size(),
+                 })
+        if source.wants_features:
+            capabilities.update({
+                 "clipboards"                   : self._clipboards,
+                 "notifications"                : self.notifications_forwarder is not None,
+                 "bell"                         : self.bell,
+                 "cursors"                      : self.cursors,
+                 "dbus_proxy"                   : self.supports_dbus_proxy,
+                 })
+            capabilities.update({
              "toggle_cursors_bell_notify"   : True,
              "toggle_keyboard_sync"         : True,
              "window_configure"             : True,
@@ -639,10 +646,10 @@ class ServerBase(ServerCore):
              "encoding.generic"             : True,
              "exit_server"                  : True,
              "sound.server_driven"          : True,
-             "server_type"                  : "base",
              })
-        for k,v in codec_versions.items():
-            capabilities["encoding.%s.version" % k] = v
+        if source.wants_encodings:
+            for k,v in codec_versions.items():
+                capabilities["encoding.%s.version" % k] = v
         return capabilities
 
     def get_encoding_info(self):
@@ -660,18 +667,21 @@ class ServerBase(ServerCore):
              "encodings.with_lossless_mode" : self.lossless_mode_encodings}
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
-        capabilities = self.make_hello()
-        capabilities.update(self.get_encoding_info())
-        capabilities.update({
-                     "actual_desktop_size"  : (root_w, root_h),
-                     "root_window_size"     : (root_w, root_h),
-                     "desktop_size"         : self._get_desktop_size_capability(server_source, root_w, root_h),
-                     })
+        capabilities = self.make_hello(server_source)
+        if server_source.wants_encodings:
+            capabilities.update(self.get_encoding_info())
+        if server_source.wants_display:
+            capabilities.update({
+                         "actual_desktop_size"  : (root_w, root_h),
+                         "root_window_size"     : (root_w, root_h),
+                         "desktop_size"         : self._get_desktop_size_capability(server_source, root_w, root_h),
+                         })
         if key_repeat:
             capabilities.update({
                      "key_repeat"           : key_repeat,
                      "key_repeat_modifiers" : True})
-        capabilities["clipboard"] = self._clipboard_helper is not None and self._clipboard_client == server_source
+        if server_source.wants_features:
+            capabilities["clipboard"] = self._clipboard_helper is not None and self._clipboard_client == server_source
         if self._reverse_aliases and server_source.wants_aliases:
             capabilities["aliases"] = self._reverse_aliases
         if server_cipher:

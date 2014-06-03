@@ -30,9 +30,9 @@ class ShadowX11Server(ShadowServerBase, X11ServerBase):
         pointer = x-wx, y-wy
         X11ServerBase._process_mouse_common(self, proto, wid, pointer, modifiers)
 
-    def make_hello(self):
-        capabilities = X11ServerBase.make_hello(self)
-        capabilities.update(ShadowServerBase.make_hello(self))
+    def make_hello(self, source):
+        capabilities = X11ServerBase.make_hello(self, source)
+        capabilities.update(ShadowServerBase.make_hello(self, source))
         capabilities["server_type"] = "Python/gtk2/x11-shadow"
         return capabilities
 

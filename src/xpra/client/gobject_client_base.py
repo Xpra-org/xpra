@@ -111,8 +111,13 @@ class CommandConnectClient(GObjectXpraClient):
 
     def make_hello(self):
         capabilities = GObjectXpraClient.make_hello(self)
-        #don't bother with aliases for one-off clients
+        #don't bother with many of these things for one-off caommands:
         capabilities["wants_aliases"] = False
+        capabilities["wants_encodings"] = False
+        capabilities["wants_versions"] = False
+        capabilities["wants_features"] = False
+        capabilities["wants_display"] = False
+        capabilities["wants_sound"] = False
         return capabilities
 
     def _process_connection_lost(self, packet):

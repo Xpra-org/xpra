@@ -143,11 +143,12 @@ class X11ServerBase(GTKServerBase):
             X11Keyboard.set_key_repeat_rate(500, 30)
             keylog("keyboard repeat disabled")
 
-    def make_hello(self):
-        capabilities = GTKServerBase.make_hello(self)
+    def make_hello(self, source):
+        capabilities = GTKServerBase.make_hello(self, source)
         capabilities["server_type"] = "Python/gtk/x11"
-        capabilities["resize_screen"] = self.randr
-        capabilities["force_ungrab"] = True
+        if source.wants_features:
+            capabilities["resize_screen"] = self.randr
+            capabilities["force_ungrab"] = True
         return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):

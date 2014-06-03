@@ -218,11 +218,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.enableCursors(True)
 
 
-    def make_hello(self):
-        capabilities = X11ServerBase.make_hello(self)
-        capabilities["window.raise"] = True
-        capabilities["window.resize-counter"] = True
-        capabilities["pointer.grabs"] = True
+    def make_hello(self, source):
+        capabilities = X11ServerBase.make_hello(self, source)
+        if source.wants_features:
+            capabilities["window.raise"] = True
+            capabilities["window.resize-counter"] = True
+            capabilities["pointer.grabs"] = True
         return capabilities
 
 

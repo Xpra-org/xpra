@@ -104,7 +104,7 @@ class ShadowServerBase(object):
     def get_server_mode(self):
         return "shadow"
 
-    def make_hello(self):
+    def make_hello(self, source):
         return {"shadow" : True}
 
 
