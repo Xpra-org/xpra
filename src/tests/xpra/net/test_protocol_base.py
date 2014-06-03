@@ -24,7 +24,9 @@ def makeSocketConnection(sock, name):
         peername = sock.getpeername()
     except:
         peername = str(sock)
-    return SocketConnection(sock, sock.getsockname(), peername, "test-client-socket")
+    sockname = sock.getsockname()
+    target = peername or sockname
+    return SocketConnection(sock, sockname, peername, target, "test-client-socket")
 
 
 class SimpleServer(object):
