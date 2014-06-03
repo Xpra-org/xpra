@@ -1346,7 +1346,9 @@ else:
             return {}
     if "install" in sys.argv:
         #prepare default [/usr/local]/etc configuration files:
-        if sys.prefix == '/usr':
+        if '--user' in sys.argv:
+            etc_prefix = 'etc/xpra'
+        elif sys.prefix == '/usr':
             etc_prefix = '/etc/xpra'
         else:
             etc_prefix = sys.prefix + '/etc/xpra'
