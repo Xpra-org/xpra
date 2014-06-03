@@ -23,13 +23,6 @@ class TestChangeSettings(CommandConnectClient):
     def timeout(self, *args):
         log.info("ignoring timeout")
 
-    def make_hello(self):
-        capabilities = CommandConnectClient.make_hello(self)
-        #KISS:
-        capabilities["keyboard"] = False
-        capabilities["wants_aliases"] = False
-        return capabilities
-
     def send_from_queue(self):
         x = self.queue[0]
         self.queue = self.queue[1:]
