@@ -40,9 +40,6 @@ class TestChangeSettings(CommandConnectClient):
             return True
         self.quit(0)    #all done!
 
-    def _command_response(self, packet):
-        log.info("command_response(%s)", packet)
-
     def _process_ping(self, packet):
         time_to_echo = packet[1]
         #skip load average and latency:
@@ -52,7 +49,6 @@ class TestChangeSettings(CommandConnectClient):
     def _process_hello(self, packet):
         hello = packet[1]
         log.info("got hello back: %s", hello)
-        self._packet_handlers["command_response"] = self._command_response
         self._packet_handlers["ping"] = self._process_ping
         self.queue = []
         for _ in range(10):
