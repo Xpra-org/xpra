@@ -115,17 +115,17 @@ def parse_cmdline(cmdline):
     if supports_server:
         server_modes.append("start")
         server_modes.append("upgrade")
+        #display: default to required
+        dstr = " DISPLAY"
         if defaults.displayfd:
             #display argument is optional (we can use "-displayfd")
-            command_options = ["\t%prog start [DISPLAY]\n"]
-        else:
-            #display is required:
-            command_options = ["\t%prog start DISPLAY\n"]
-        command_options += ["\t%prog stop [DISPLAY]\n",
-                            "\t%prog exit [DISPLAY]\n",
-                            "\t%prog list\n",
-                            "\t%prog upgrade DISPLAY\n",
-                            ] + command_options
+            dstr = " [DISPLAY]"
+        command_options = ["\t%prog start"+dstr+"\n",
+                           "\t%prog stop [DISPLAY]\n",
+                           "\t%prog exit [DISPLAY]\n",
+                           "\t%prog list\n",
+                           "\t%prog upgrade DISPLAY\n",
+                           ] + command_options
     if supports_shadow:
         server_modes.append("shadow")
         command_options.append("\t%prog shadow [DISPLAY]\n")
