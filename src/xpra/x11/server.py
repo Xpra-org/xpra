@@ -331,13 +331,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if X11Window.is_override_redirect(window.xid) and X11Window.is_mapped(window.xid):
                 self._add_new_or_window(window)
 
-    def send_windows_and_cursors(self, ss):
+    def send_windows_and_cursors(self, ss, sharing=False):
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
         # that the earliest override-redirect windows will be on the bottom,
         # which is usually how things work.  (I don't know that anyone cares
         # about this kind of correctness at all, but hey, doesn't hurt.)
-        windowlog("send_windows_and_cursors(%s) will send: %s", ss, self._id_to_window)
+        windowlog("send_windows_and_cursors(%s, %s) will send: %s", ss, sharing, self._id_to_window)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
             if not window.is_managed():
@@ -352,7 +352,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 if ss.system_tray:
                     ss.new_tray(wid, window, w, h)
                     ss.damage(wid, window, 0, 0, w, h)
-                else:
+                elif not sharing:
                     #park it outside the visible area
                     window.move_resize(-200, -200, w, h)
             elif window.is_OR():
@@ -363,7 +363,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 ss.damage(wid, window, 0, 0, w, h)
             else:
                 #code more or less duplicated from send_new_window_packet:
-                self._desktop_manager.hide_window(window)
+                if not sharing:
+                    self._desktop_manager.hide_window(window)
                 x, y, w, h = self._desktop_manager.window_geometry(window)
                 wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)

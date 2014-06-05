@@ -584,9 +584,9 @@ class ServerBase(ServerCore):
         #send_hello will take care of sending the current and max screen resolutions
         self.send_hello(ss, root_w, root_h, key_repeat, auth_caps)
 
-        if not is_request:
+        if not is_request and ui_client:
             # now we can set the modifiers to match the client
-            self.send_windows_and_cursors(ss)
+            self.send_windows_and_cursors(ss, share_count>0)
 
         ss.startup_complete()
 
@@ -606,7 +606,7 @@ class ServerBase(ServerCore):
     def get_transient_for(self, window):
         return  None
 
-    def send_windows_and_cursors(self, ss):
+    def send_windows_and_cursors(self, ss, sharing=False):
         pass
 
     def sanity_checks(self, proto, c):

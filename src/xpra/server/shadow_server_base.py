@@ -162,8 +162,8 @@ class ShadowServerBase(object):
     def makeRootWindowModel(self):
         return RootWindowModel(self.root)
 
-    def send_windows_and_cursors(self, ss):
-        log("send_windows_and_cursors(%s) will send: %s", ss, self._id_to_window)
+    def send_windows_and_cursors(self, ss, sharing=False):
+        log("send_windows_and_cursors(%s, %s) will send: %s", ss, sharing, self._id_to_window)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
             assert window == self.root_window_model

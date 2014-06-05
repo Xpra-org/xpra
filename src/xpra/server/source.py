@@ -1472,6 +1472,7 @@ class ServerSource(object):
             log("batch config updated for window %s: %s", wid, ws.batch_config)
 
     def set_client_properties(self, wid, window, new_client_properties):
+        assert self.send_windows
         ws = self.make_window_source(wid, window)
         ws.set_client_properties(new_client_properties)
 
