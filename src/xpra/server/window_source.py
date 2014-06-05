@@ -503,8 +503,11 @@ class WindowSource(object):
         return max(mq, eq[-1][-1])
 
     def reconfigure(self, force_reload=False):
+        if self.batch_config.locked:
+            return False
         self.update_quality()
         self.update_speed()
+        return True
 
 
     def damage(self, window, x, y, w, h, options={}):

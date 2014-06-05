@@ -612,7 +612,8 @@ class WindowVideoSource(WindowSource):
             options with a score for each.
         """
         log("reconfigure(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
-        WindowSource.reconfigure(self, force_reload)
+        if not WindowSource.reconfigure(self, force_reload):
+            return
         if self.supports_video_subregion:
             self.identify_video_subregion()
         if not self._video_encoder:
