@@ -690,7 +690,7 @@ class WindowSource(object):
                 delay = int(min(self.batch_config.max_delay, max(10, delay)))
                 self.timeout_add(delay, self.may_send_delayed)
                 return False
-            if self.batch_config.locked:
+            if self.batch_config.locked and self.batch_config.delay>actual_delay:
                 #ensure we honour the fixed delay
                 #(as we may get called from a damage ack before we expire)
                 return check_again(self.batch_config.delay-actual_delay)
