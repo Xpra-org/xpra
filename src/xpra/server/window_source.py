@@ -572,6 +572,7 @@ class WindowSource(object):
         delay = options.get("delay", self.batch_config.delay)
         delay = max(delay, options.get("min_delay", 0))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
+        delay = int(delay)
         packets_backlog = self.statistics.get_packets_backlog()
         pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
         #only send without batching when things are going well:
@@ -642,7 +643,7 @@ class WindowSource(object):
             return
         damage_time = self._damage_delayed[0]
         now = time.time()
-        actual_delay = 1000.0*(now-damage_time)
+        actual_delay = int(1000.0*(now-damage_time))
         self.batch_config.last_actual_delays.append((now, actual_delay))
         self.do_send_delayed()
         return False
@@ -658,7 +659,8 @@ class WindowSource(object):
         #ouch: same region!
         window      = self._damage_delayed[1]
         options     = self._damage_delayed[4]
-        log.warn("delayed_region_timeout: something is wrong, is the connection dead?")
+        elapsed = int(1000.0 * (time.time() - region_time))
+        log.warn("delayed_region_timeout: region is %ims old, bad connection?", elapsed)
         #re-try:
         self._damage_delayed = None
         self.full_quality_refresh(window, options)
@@ -672,7 +674,7 @@ class WindowSource(object):
         damage_time = self._damage_delayed[0]
         packets_backlog = self.statistics.get_packets_backlog()
         now = time.time()
-        actual_delay = 1000.0*(now-damage_time)
+        actual_delay = int(1000.0 * (now-damage_time))
         if packets_backlog>0:
             if actual_delay<self.batch_config.max_delay:
                 log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
