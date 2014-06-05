@@ -1124,7 +1124,7 @@ class WindowVideoSource(WindowSource):
             #dw and dh are the edges we don't handle here
             width = w & self.width_mask
             height = h & self.height_mask
-            log("video_encode%s wxh=%s-%s, widthxheight=%sx%s", (encoding, image, options), w, h, width, height)
+            log("video_encode%s image size: %sx%s, encoder/csc size: %sx%s", (encoding, image, options), w, h, width, height)
 
             csc_image, csc, enc_width, enc_height = self.csc_image(image, width, height)
 
