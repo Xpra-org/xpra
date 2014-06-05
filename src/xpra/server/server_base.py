@@ -487,7 +487,7 @@ class ServerBase(ServerCore):
         share_count = 0
         for p,ss in self._server_sources.items():
             #check existing sessions are willing to share:
-            if not ui_client:
+            if not ui_client or not ss.ui_client:
                 pass
             elif detach_request:
                 self.disconnect_client(p, "detach requested")

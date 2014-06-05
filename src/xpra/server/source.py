@@ -520,7 +520,7 @@ class ServerSource(object):
         self.client_proxy = c.boolget("proxy")
         #general features:
         self.lz4 = c.boolget("lz4", False)
-        self.send_windows = c.boolget("windows", True)
+        self.send_windows = self.ui_client and c.boolget("windows", True)
         self.window_raise = c.boolget("window.raise")
         self.pointer_grabs = c.boolget("pointer.grabs")
         self.server_window_moveresize = c.boolget("server-window-move-resize")
