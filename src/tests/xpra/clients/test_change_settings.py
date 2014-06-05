@@ -14,7 +14,7 @@ from xpra.client.gobject_client_base import CommandConnectClient
 
 class TestChangeSettings(CommandConnectClient):
     """
-        Sending an illegal command should get us kicked out
+        Change encoding settings using "control" packets
     """
 
     def verify_connected(self):
