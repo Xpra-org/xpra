@@ -611,9 +611,9 @@ class WindowVideoSource(WindowSource):
             This uses get_video_pipeline_options() to get a list of pipeline
             options with a score for each.
         """
-        log("reconfigure(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
         if not WindowSource.reconfigure(self, force_reload):
             return
+        log("reconfigure(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
         if self.supports_video_subregion:
             self.identify_video_subregion()
         if not self._video_encoder:

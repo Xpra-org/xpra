@@ -503,7 +503,7 @@ class WindowSource(object):
         return max(mq, eq[-1][-1])
 
     def reconfigure(self, force_reload=False):
-        if self.batch_config.locked:
+        if self.batch_config.locked and not force_reload:
             return False
         self.update_quality()
         self.update_speed()
