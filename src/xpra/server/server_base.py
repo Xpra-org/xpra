@@ -732,10 +732,8 @@ class ServerBase(ServerCore):
             for csource in sources:
                 for wid in wids:
                     window = self._id_to_window.get(wid)
-                    if not window:
-                        continue
                     ws = csource.window_sources.get(wid)
-                    if ws:
+                    if window and ws:
                         callback(ws, wid, window)
 
         def get_wids_from_args(args):
