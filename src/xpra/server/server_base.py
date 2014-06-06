@@ -910,6 +910,10 @@ class ServerBase(ServerCore):
                     assert False, "invalid command: %s" % command
             wids = get_wids_from_args(args[1:])
             for_all_window_sources(wids, set_value)
+            #update the default encoding options
+            #so new windows will also inherit those settings:
+            for csource in sources:
+                csource.default_encoding_options[command] = v
             return 0, "%s set to %s on windows %s for %s clients" % (command, v, wids, len(sources))
         elif command=="client":
             if len(args)==0:
