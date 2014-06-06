@@ -728,20 +728,7 @@ class ServerBase(ServerCore):
                     return  False
                 source.send_client_command(*client_command)
 
-        def for_all_window_sources(wid_str, callback):
-            if wid_str=="*":
-                wids = list(self._id_to_window.keys())
-            else:
-                window = None
-                try:
-                    wid = int(wid_str)
-                    window = self._id_to_window[wid]
-                    wids = [wid]
-                except:
-                    pass
-                if window is None:
-                    raise Exception("cannot find window id %s" % wid_str)
-
+        def for_all_window_sources(wids, callback):
             for csource in sources:
                 for wid in wids:
                     window = self._id_to_window.get(wid)
@@ -750,6 +737,23 @@ class ServerBase(ServerCore):
                     ws = csource.window_sources.get(wid)
                     if ws:
                         callback(ws, wid, window)
+
+        def get_wids_from_args(args):
+            #converts all the remaining args to window ids
+            if len(args)==0 or len(args)==1 and args[0]=="*":
+                #default to all if unspecified:
+                return self._id_to_window.keys()
+            wids = []
+            for x in args:
+                try:
+                    wid = int(x)
+                    if wid in self._id_to_window:
+                        wids.append(wid)
+                    else:
+                        commandlog("window id %s does not exist", wid)
+                except:
+                    raise Exception("invalid window id: %s" % x)
+            return wids
 
         #handle commands that either don't require a client,
         #or can work on more than one connected client:
@@ -845,81 +849,56 @@ class ServerBase(ServerCore):
                 #remove "strict" marker
                 strict = args[0]=="strict"
                 args = args[1:]
-            if len(args)>0:
-                wids = []
-                for x in args:
-                    try:
-                        wid = int(x)
-                        wids.append(wid)
-                    except:
-                        return 4, "invalid window id %s" % x
-            else:
-                wids = self._id_to_window.keys()
-            for csource in sources:
-                csource.set_encoding(encoding, wids, strict)
+            wids = get_wids_from_args(args)
+            def set_new_encoding(ws, wid, window):
+                ws.set_new_encoding(encoding, strict)
+            for_all_window_sources(wids, set_new_encoding)
             #now also do a refresh:
-            for wid in wids:
-                window = self._id_to_window.get(wid)
-                if window:
-                    for csource in sources:
-                        csource.refresh(wid, window, {})
+            def refresh(ws, wid, window):
+                ws.refresh(window, {})
+            for_all_window_sources(wids, refresh)
             return 0, "set encoding to %s%s for %s windows" % (encoding, ["", " (strict)"][int(strict)], len(wids))
         elif command=="auto-refresh":
             if len(args)<1:
                 return argn_err(1)
-            delay = int(float(args[0])*1000.0)      # ie: 0.5 -> 500 (milliseconds)
-            args = args[1:]
-            if len(args)>0:
-                wids = []
-                for x in args:
-                    try:
-                        wid = int(x)
-                        wids.append(wid)
-                    except:
-                        return 4, "invalid window id %s" % x
-            else:
-                wids = self._id_to_window.keys()
-            for csource in sources:
-                csource.set_auto_refresh_delay(delay, wids)
+            try:
+                delay = int(float(args[0])*1000.0)      # ie: 0.5 -> 500 (milliseconds)
+            except:
+                raise Exception("failed to parse delay string '%s' as a number" % args[0])
+            wids = get_wids_from_args(args[1:])
+            def set_auto_refresh_delay(ws, wid, window):
+                ws.set_auto_refresh_delay(delay)
+            for_all_window_sources(wids, set_auto_refresh_delay)
             return 0, "set auto-refresh delay to %sms for %s windows" % (delay, len(wids))
         elif command=="refresh":
-            if len(args)>0:
-                widwin = []
-                for x in args:
-                    try:
-                        wid = int(x)
-                        widwin.append((wid, self._id_to_window[wid]))
-                    except:
-                        return 4, "invalid window id %s" % x
-            else:
-                widwin = list(self._id_to_window.items())
-            for wid, window in widwin:
-                for csource in sources:
-                    csource.full_quality_refresh(wid, window, {})
-            return 0, "refreshed %s window for %s clients" % (len(widwin), len(sources))
+            wids = get_wids_from_args(args)
+            def full_quality_refresh(ws, wid, window):
+                ws.full_quality_refresh(window, {})
+            for_all_window_sources(wids, full_quality_refresh)
+            return 0, "refreshed %s window for %s clients" % (len(wids), len(sources))
         elif command=="scaling":
-            if len(args)!=2:
-                return argn_err("2: window ID (or '*') and scaling value")
+            if len(args)==0:
+                return argn_err("2: scaling value and window ids (or '*')")
             from xpra.server.window_video_source import parse_scaling_value
             try:
-                scaling = parse_scaling_value(args[1])
+                scaling = parse_scaling_value(args[0])
             except:
                 return 11, "invalid scaling value %s" % args[1]
+            wids = get_wids_from_args(args[1:])
             def set_scaling(ws, wid, window):
                 ws.set_scaling(scaling)
                 ws.refresh(window)
-            wid_str = args[0]
-            for_all_window_sources(wid_str, set_scaling)
-            return 0, "scaling set to %s on window %s for %s clients" % (str(scaling), wid_str, len(sources))
+            for_all_window_sources(wids, set_scaling)
+            return 0, "scaling set to %s on window %s for %s clients" % (str(scaling), wids, len(sources))
         elif command in ("quality", "min-quality", "speed", "min-speed"):
-            if len(args)!=2:
-                return argn_err(2)
+            if len(args)==0:
+                return argn_err(1)
             try:
-                v = int(args[1])
+                v = int(args[0])
             except:
                 v = -9999999
             if v!=-1 and (v<0 or v>100):
-                return 11, "invalid quality value (must be a number between 0 and 100, or -1 to disable) %s" % args[1]
+                return 11, "invalid quality or speed value (must be a number between 0 and 100, or -1 for automatic) %s" % args[1]
             def set_value(ws, wid, window):
                 if command=="quality":
                     ws.set_quality(v)
@@ -931,9 +910,9 @@ class ServerBase(ServerCore):
                     ws.set_min_speed(v)
                 else:
                     assert False, "invalid command: %s" % command
-            wid_str = args[0]
-            for_all_window_sources(wid_str, set_value)
-            return 0, "%s set to %s on window %s for %s clients" % (command, v, wid_str, len(sources))
+            wids = get_wids_from_args(args[1:])
+            for_all_window_sources(wids, set_value)
+            return 0, "%s set to %s on windows %s for %s clients" % (command, v, wids, len(sources))
         elif command=="client":
             if len(args)==0:
                 return argn_err("at least 1")
