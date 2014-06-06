@@ -7,6 +7,7 @@
 
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
+from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.log import Logger
 log = Logger("keyboard", "win32")
 
@@ -23,6 +24,9 @@ class Keyboard(KeyboardBase):
         self.emulate_altgr = False
         self.num_lock_modifier = None
         self.last_key_event_sent = None
+        #workaround for "period" vs "KP_Decimal" with gtk2 (see ticket #586):
+        #translate "period" with keyval=46 and keycode=110 to KP_Decimal:
+        KEY_TRANSLATIONS[("period", 46, 110)] = "KP_Decimal"
 
     def set_modifier_mappings(self, mappings):
         KeyboardBase.set_modifier_mappings(self, mappings)

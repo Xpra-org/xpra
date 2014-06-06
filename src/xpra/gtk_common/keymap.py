@@ -9,6 +9,11 @@ from xpra.util import nn
 from xpra.log import Logger
 log = Logger("keyboard")
 
+#this allows platforms to inject keyname workarounds
+# the key is a tuple (keyname, keyval, keycode)
+# the value is the keyname override
+KEY_TRANSLATIONS = {}
+
 
 def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"]):
     """
@@ -32,14 +37,17 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"]):
             for i in range(len(keys)):
                 key = keys[i]
                 keyval = keyvals[i]
+                keycode = key.keycode
                 name = gdk.keyval_name(keyval)
+                name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
                 if name not in ignore_keys:
-                    keycodes.append((nn(keyval), nn(name), nn(key.keycode), nn(key.group), nn(key.level)))
+                    keycodes.append((nn(keyval), nn(name), nn(keycode), nn(key.group), nn(key.level)))
         else:
             #gtk2:
             for keyval, keycode, group, level in entries:
                 #assert keycode==i
                 name = gdk.keyval_name(keyval)
+                name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
                 if name not in ignore_keys:
                     keycodes.append((nn(keyval), nn(name), nn(keycode), nn(group), nn(level)))
     log("get_gtk_keymap(%s)=%s (keymap=%s)", ignore_keys, keycodes, keymap)

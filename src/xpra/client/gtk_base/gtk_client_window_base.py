@@ -18,6 +18,7 @@ keylog = Logger("keyboard")
 from xpra.util import AdHocStruct, nn, bytestostr
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB
+from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -443,11 +444,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return pointer, modifiers, buttons
 
     def parse_key_event(self, event, pressed):
+        keyval = event.keyval
+        keycode = event.hardware_keycode
+        keyname = gdk.keyval_name(keyval)
+        keyname = KEY_TRANSLATIONS.get((keyname, keyval, keycode), keyname)
         key_event = GTKKeyEvent()
         key_event.modifiers = self._client.mask_to_names(event.state)
-        key_event.keyname = nn(gdk.keyval_name(event.keyval))
-        key_event.keyval = nn(event.keyval)
-        key_event.keycode = event.hardware_keycode
+        key_event.keyname = nn(keyname)
+        key_event.keyval = nn(keyval)
+        key_event.keycode = keycode
         key_event.group = event.group
         key_event.string = nn(event.string)
         key_event.pressed = pressed
