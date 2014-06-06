@@ -927,7 +927,7 @@ class ServerBase(ServerCore):
             csource.send_client_command(*client_command)
             return 0, "client control command '%s' forwarded to %s clients" % (client_command[0], count)
         else:
-            ServerCore.do_handle_command_request(self, command, args)
+            return ServerCore.do_handle_command_request(self, command, args)
 
 
     def send_screenshot(self, proto):
