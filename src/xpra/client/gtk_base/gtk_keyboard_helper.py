@@ -51,12 +51,3 @@ class GTKKeyboardHelper(KeyboardHelper):
 
     def get_full_keymap(self):
         return  get_gtk_keymap()
-
-    def parse_key_event(self, wid, event, pressed):
-        modifiers = self.mask_to_names(event.state)
-        keyname = nn(gdk.keyval_name(event.keyval))
-        keyval = nn(event.keyval)
-        keycode = event.hardware_keycode
-        group = event.group
-        string = nn(event.string)
-        return wid, keyname, pressed, modifiers, keyval, string, keycode, group
