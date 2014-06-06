@@ -1243,8 +1243,8 @@ class WindowSource(object):
         #actual network packet:
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
-        compresslog("compress: %5.1fms for %4ix%-4i pixels using %5s with ratio %4.1f%% (%5iKB to %5iKB), delta=%i",
-                 (end-start)*1000.0, w, h, coding, 100.0*csize/psize, psize/1024, csize/1024, delta)
+        compresslog("compress: %5.1fms for %4ix%-4i pixels using %5s with ratio %4.1f%% (%5iKB to %5iKB), delta=%i, client_options=%s",
+                 (end-start)*1000.0, w, h, coding, 100.0*csize/psize, psize/1024, csize/1024, delta, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1

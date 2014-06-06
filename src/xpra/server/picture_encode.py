@@ -185,11 +185,12 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
         q = int(min(99, max(1, quality)))
         kwargs = im.info
         kwargs["quality"] = q
+        client_options["quality"] = q
         if coding=="jpeg" and PIL_can_optimize and speed<70:
             #(optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
+            client_options["optimize"] = True
         im.save(buf, coding.upper(), **kwargs)
-        client_options["quality"] = q
     else:
         assert coding in ("png", "png/P", "png/L"), "unsupported png encoding: %s" % coding
         if coding in ("png/L", "png/P") and supports_transparency and rgb=="RGBA":
@@ -226,11 +227,14 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
         if PIL_can_optimize and speed==0:
             #optimizing png is very rarely worth doing
             kwargs["optimize"] = True
+            client_options["optimize"] = True
         #level can range from 0 to 9, but anything above 5 is way too slow for small gains:
         #76-100   -> 1
         #51-76    -> 2
         #etc
-        kwargs["compress_level"] = max(1, min(5, (125-speed)/25))
+        level = max(1, min(5, (125-speed)/25))
+        kwargs["compress_level"] = level
+        client_options["compress_level"] = level
         #default is good enough, no need to override, other options:
         #DEFAULT_STRATEGY, FILTERED, HUFFMAN_ONLY, RLE, FIXED
         #kwargs["compress_type"] = PIL.Image.DEFAULT_STRATEGY
