@@ -125,8 +125,8 @@ def main():
                 #last event was less than a second ago
                 print("lowering quality to jpeg @ 1%!")
                 app.send("command_request", "encoding", "jpeg", "strict")
-                app.send("command_request", "quality", "*", 1)
-                app.send("command_request", "speed", "*", 100)
+                app.send("command_request", "quality", 1, "*")
+                app.send("command_request", "speed", 100, "*")
                 needs_reset = True
         vscroll_events.append((now, value))
         if needs_reset:
@@ -136,8 +136,8 @@ def main():
                 if now==t:
                     print("resetting quality to h264")
                     app.send("command_request", "encoding", "h264", "nostrict")
-                    app.send("command_request", "quality", "*", -1)     #means auto
-                    app.send("command_request", "speed", "*", -1)     #means auto
+                    app.send("command_request", "quality", -1, "*")     #means auto
+                    app.send("command_request", "speed", -1, "*")       #means auto
             gobject.timeout_add(1000, may_reset_quality)
     def hscroll(scrollbar, scrolltype, value):
         print("hscroll(%s)" % (scrollbar, scrolltype, value))
