@@ -898,7 +898,7 @@ class ServerBase(ServerCore):
             except:
                 v = -9999999
             if v!=-1 and (v<0 or v>100):
-                return 11, "invalid quality or speed value (must be a number between 0 and 100, or -1 for automatic) %s" % args[1]
+                return 11, "invalid quality or speed value (must be a number between 0 and 100, or -1 for automatic): %s" % args[0]
             def set_value(ws, wid, window):
                 if command=="quality":
                     ws.set_quality(v)
