@@ -477,10 +477,6 @@ class XpraClientBase(object):
             if not self.set_server_encryption(c, key):
                 return False
         self._protocol.send_aliases = c.dictget("aliases", {})
-        if self.pings:
-            self.timeout_add(1000, self.send_ping)
-        else:
-            self.timeout_add(10*1000, self.send_ping)
         return True
 
     def _process_set_deflate(self, packet):

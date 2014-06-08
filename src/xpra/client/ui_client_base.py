@@ -1273,6 +1273,10 @@ class UIXpraClient(XpraClientBase):
         if self.toggle_keyboard_sync:
             self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
+        if self.pings:
+            self.timeout_add(1000, self.send_ping)
+        else:
+            self.timeout_add(10*1000, self.send_ping)
         if not c.boolget("notify-startup-complete"):
             #we won't get notified, so assume it is now:
             self._startup_complete()
