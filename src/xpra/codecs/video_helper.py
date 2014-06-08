@@ -249,7 +249,8 @@ class VideoHelper(object):
             encoder_module.init_module()
             self._cleanup_modules.append(encoder_module)
         except Exception, e:
-            log.warn("cannot use %s module %s: %s", encoder_type, encoder_module, e, exc_info=True)
+            log("exception in %s module initialization %s: %s", encoder_type, encoder_module.init_module, e, exc_info=True)
+            log.warn("Warning: %s video encoder failed: %s", encoder_type, e)
             return
         colorspaces = encoder_module.get_input_colorspaces()
         log("init_video_encoder_option(%s) %s input colorspaces=%s", encoder_module, encoder_type, colorspaces)

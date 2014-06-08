@@ -868,7 +868,6 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_RESOURCE_NOT_REGISTERED : "This indicates that the client is attempting to unregister a resource that has not been successfuly registered.",
     NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfuly mapped.",
       }
-log("NV_ENC_STATUS=%s", NV_ENC_STATUS_TXT)
 
 CODEC_PROFILES = {
                   #NV_ENC_H264_PROFILE_BASELINE_GUID
@@ -1155,9 +1154,16 @@ cdef nvencStatusInfo(NVENCSTATUS ret):
         return "%s: %s" % (ret, NV_ENC_STATUS_TXT[ret])
     return str(ret)
 
-cdef raiseNVENC(NVENCSTATUS ret, msg=""):
+class NVENCException(Exception):
+    def __init__(self, code, fn):
+        self.function = fn
+        self.code = code
+        msg = "%s - returned %s" % (fn, nvencStatusInfo(code))
+        Exception.__init__(self, msg)
+
+cdef raiseNVENC(NVENCSTATUS ret, msg):
     if ret!=0:
-        raise Exception("%s - returned %s" % (msg, nvencStatusInfo(ret)))
+        raise NVENCException(ret, msg)
 
 cpdef get_CUDA_CSC_function(int device_id, function_name, kernel_source):
     return function_name, get_CUDA_function(device_id, function_name, kernel_source)
@@ -1867,10 +1873,11 @@ cdef class Encoder:
         try:
             raiseNVENC(self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount), "getting encode presets")
             assert presetsRetCount==presetCount
+            unknowns = []
             for x in range(presetCount):
                 preset_GUID = preset_GUIDs[x]
                 preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset_GUID))
-                log("* %s : %s", guidstr(preset_GUID), preset_name)
+                log("* %s : %s", guidstr(preset_GUID), preset_name or "unknown!")
                 presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID)
                 if presetConfig!=NULL:
                     try:
@@ -1880,9 +1887,11 @@ cdef class Encoder:
                     finally:
                         free(presetConfig)
                 if preset_name is None:
-                    log.warn("unknown preset found: %s", guidstr(preset_GUID))
+                    unknowns.append(guidstr(preset_GUID))
                 else:
                     presets[preset_name] = guidstr(preset_GUID)
+            if len(unknowns)>0:
+                log.warn("nvenc: found some unknown presets: %s", ", ".join(unknowns))
         finally:
             free(preset_GUIDs)
         log("query_presets(%s)=%s", guidstr(encode_GUID), presets)
@@ -2050,7 +2059,19 @@ def init_module():
         src_format = colorspaces[0]
         dst_formats = get_output_colorspaces(src_format)
         try:
-            test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
+            try:
+                test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
+            except NVENCException, e:
+                #special handling for license key issues:
+                if e.code==NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY:
+                    if CLIENT_KEY:
+                        raise Exception("invalid license key specified")
+                    else:
+                        raise Exception("you must provide a license key")
+                elif e.code==NV_ENC_ERR_INVALID_VERSION:
+                    raise Exception("version mismatch, you need a newer/older codec build or newer/older drivers")
+                else:
+                    raise e
         finally:
             test_encoder.clean()
     log.info("NVENC version %s successfully initialized", ".".join([str(x) for x in PRETTY_VERSION]))
