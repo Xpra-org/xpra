@@ -39,9 +39,7 @@ class TestChangeSettings(CommandConnectClient):
         self.send("ping_echo", time_to_echo, 0, 0, 0, -1)
         log.info("sending ping echo")
 
-    def _process_hello(self, packet):
-        hello = packet[1]
-        log.info("got hello back: %s", hello)
+    def do_command(self, props):
         self._packet_handlers["ping"] = self._process_ping
         self.queue = []
         for i in range(10):

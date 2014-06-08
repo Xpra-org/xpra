@@ -124,6 +124,18 @@ class CommandConnectClient(GObjectXpraClient):
         #"command clients" are meant to exit quickly by losing the connection
         self.quit(EXIT_OK)
 
+    def parse_server_capabilities(self, props):
+        #don't parse all the server caps, just the network (so we can use rencode, auth, etc):
+        if not XpraClientBase.parse_network_capabilities(self, props):
+            self.quit(1)
+            return
+        log("server_capabilities: %s", props)
+        log("protocol state: %s", self._protocol.save_state())
+        self.do_command(props)
+
+    def do_command(self, props):
+        raise NotImplementedError()
+
 
 class ScreenshotXpraClient(CommandConnectClient):
     """ This client does one thing only:
@@ -167,9 +179,7 @@ class InfoXpraClient(CommandConnectClient):
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
 
-    def _process_hello(self, packet):
-        log.debug("process_hello: %s", packet)
-        props = packet[1]
+    def do_command(self, props):
         if props:
             def sorted_nicely(l):
                 """ Sort the given iterable in the way that humans expect."""
@@ -211,9 +221,7 @@ class VersionXpraClient(CommandConnectClient):
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the version")
 
-    def _process_hello(self, packet):
-        log.debug("process_hello: %s", packet)
-        props = packet[1]
+    def do_command(self, props):
         self.warn_and_quit(EXIT_OK, str(props.get("version")))
 
     def make_hello(self):
@@ -232,9 +240,7 @@ class ControlXpraClient(CommandConnectClient):
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not respond")
 
-    def _process_hello(self, packet):
-        log.debug("process_hello: %s", packet)
-        props = packet[1]
+    def do_command(self, props):
         cr = props.get("command_response")
         if cr is None:
             self.warn_and_quit(EXIT_UNSUPPORTED, "server does not support control command")
@@ -267,8 +273,7 @@ class ExitXpraClient(CommandConnectClient):
         capabilities["exit_request"] = True
         return capabilities
 
-    def _process_hello(self, packet):
-        props = packet[1]
+    def do_command(self, props):
         if not props.get("exit_server"):
             self.warn_and_quit(EXIT_UNSUPPORTED, "server does not support exit command")
             return
@@ -288,7 +293,7 @@ class StopXpraClient(CommandConnectClient):
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
-    def _process_hello(self, packet):
+    def do_command(self, props):
         gobject.idle_add(self.send, "shutdown-server")
 
 
@@ -306,6 +311,6 @@ class DetachXpraClient(CommandConnectClient):
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
-    def _process_hello(self, packet):
+    def do_command(self, props):
         gobject.idle_add(self.send, "disconnect", "detaching")
         gobject.idle_add(self.quit, 0)

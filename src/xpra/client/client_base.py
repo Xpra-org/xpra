@@ -465,7 +465,9 @@ class XpraClientBase(object):
         if verr is not None:
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version '%s': %s" % (self._remote_version, verr))
             return False
+        return self.parse_network_capabilities(c)
 
+    def parse_network_capabilities(self, c):
         if use_rencode and c.boolget("rencode"):
             self._protocol.enable_rencode()
         if use_lz4 and c.boolget("lz4") and self.compression_level==1:
