@@ -13,6 +13,7 @@ from xpra.log import Logger
 log = Logger("window", "encoding")
 refreshlog = Logger("window", "refresh")
 compresslog = Logger("window", "compress")
+scalinglog = Logger("scaling")
 
 
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
@@ -284,10 +285,11 @@ class WindowSource(object):
 
     def _scaling_changed(self, window, *args):
         self.scaling = window.get_property("scaling")
-        log("window recommended scaling changed: %s", self.scaling)
+        scalinglog("window recommended scaling changed: %s", self.scaling)
         self.reconfigure(False)
 
     def set_scaling(self, scaling):
+        scalinglog("set_scaling(%s)", scaling)
         self.scaling = scaling
         self.reconfigure(True)
 

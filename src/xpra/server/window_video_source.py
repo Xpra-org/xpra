@@ -21,6 +21,7 @@ from xpra.log import Logger
 
 log = Logger("video", "encoding")
 scorelog = Logger("score")
+scalinglog = Logger("scaling")
 sublog = Logger("subregion")
 
 
@@ -39,6 +40,7 @@ if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not i
 FORCE_CSC = bool(FORCE_CSC_MODE) or  os.environ.get("XPRA_FORCE_CSC", "0")=="1"
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
 def parse_scaling_value(v):
+    scalinglog("parse_scaling_value(%s)", v)
     if not v:
         return None
     values = v.split(":", 1)
@@ -46,9 +48,11 @@ def parse_scaling_value(v):
     for x in values:
         assert x>0, "invalid scaling value %s" % x
     if len(values)==1:
-        return 1, values[0]
-    assert values[0]<=values[1], "cannot upscale"
-    return values[0], values[1]
+        ret = 1, values[0]
+    else:
+        assert values[0]<=values[1], "cannot upscale"
+        ret = values[0], values[1]
+    scalinglog("parse_scaling_value(%s)=%s", v, ret)
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 
 
@@ -891,7 +895,7 @@ class WindowVideoSource(WindowSource):
             actual_scaling = 1, 1
         elif SCALING_HARDCODED:
             actual_scaling = tuple(SCALING_HARDCODED)
-            log("using hardcoded scaling: %s", actual_scaling)
+            scalinglog("using hardcoded scaling: %s", actual_scaling)
         elif actual_scaling is None and self.statistics.damage_events_count>50 and (time.time()-self.statistics.last_resized)>0.5:
             #no scaling window attribute defined, so use heuristics to enable:
             q = self.get_current_quality()
@@ -927,6 +931,8 @@ class WindowVideoSource(WindowSource):
                 actual_scaling = 1,3
             elif width*height>=(1024-er*384)*1024 and (qs or ffps>=(30-er*10)):
                 actual_scaling = 2,3
+            if actual_scaling:
+                scalinglog("calculate_scaling enabled by heuristics er=%s, qs=%s, ffps=%s", er, qs, ffps)
         if actual_scaling is None:
             actual_scaling = 1, 1
         v, u = actual_scaling
@@ -936,6 +942,7 @@ class WindowVideoSource(WindowSource):
         elif float(v)/float(u)<0.1:
             #don't downscale more than 10 times! (for each dimension - that's 100 times!)
             actual_scaling = 1, 10
+        scalinglog("calculate_scaling%s=%s", (width, height, max_w, max_h), actual_scaling)
         return actual_scaling
 
 
@@ -1086,6 +1093,7 @@ class WindowVideoSource(WindowSource):
                 enc_end = time.time()
                 log("setup_pipeline: video encoder=%s, info: %s, setup took %.2fms",
                         self._video_encoder, self._video_encoder.get_info(), (enc_end-enc_start)*1000.0)
+                scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
                 return  True
             except TransientCodecException, e:
                 log.warn("setup_pipeline failed for %s: %s", option, e)
