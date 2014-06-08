@@ -892,7 +892,7 @@ class WindowVideoSource(WindowSource):
         elif SCALING_HARDCODED:
             actual_scaling = tuple(SCALING_HARDCODED)
             log("using hardcoded scaling: %s", actual_scaling)
-        elif actual_scaling is None and self.statistics.damage_events_count>50 and self.statistics.last_resized>0.5:
+        elif actual_scaling is None and self.statistics.damage_events_count>50 and (time.time()-self.statistics.last_resized)>0.5:
             #no scaling window attribute defined, so use heuristics to enable:
             q = self.get_current_quality()
             s = self.get_current_speed()
