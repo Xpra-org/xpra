@@ -855,7 +855,7 @@ class WindowModel(BaseWindowModel):
                                             wclass=gtk.gdk.INPUT_OUTPUT,
                                             event_mask=gtk.gdk.PROPERTY_CHANGE_MASK,
                                             title = "CorralWindow-%#x" % self.client_window.xid)
-        log("setup() corral_window=%s", self.corral_window)
+        log("setup() corral_window=%#x", self.corral_window.xid)
         X11Window.substructureRedirect(self.corral_window.xid)
         add_event_receiver(self.corral_window, self)
 
@@ -946,7 +946,7 @@ class WindowModel(BaseWindowModel):
         # Also, if we receive a *synthetic* UnmapNotify event, that always
         # means that the client has withdrawn the window (even if it was not
         # mapped in the first place) -- ICCCM section 4.1.4.
-        log("Client window unmapped")
+        log("do_xpra_unmap_event(%s) client window unmapped", event)
         if event.send_event or event.serial != self.startup_unmap_serial:
             self.unmanage()
 

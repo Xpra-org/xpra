@@ -52,10 +52,13 @@ from xpra.net.protocol import compressed_wrapper, Compressed
 
 class DesktopManager(gtk.Widget):
     def __init__(self):
+        self._models = {}
         gtk.Widget.__init__(self)
         self.set_property("can-focus", True)
         self.set_flags(gtk.NO_WINDOW)
-        self._models = {}
+
+    def __repr__(self):
+        return "DesktopManager(%s)" % len(self._models)
 
     ## For communicating with the main WM:
 
