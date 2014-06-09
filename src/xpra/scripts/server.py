@@ -202,7 +202,7 @@ fi
 """)
     return "".join(script)
 
-def write_runner_shell_script(dotxpra, contents):
+def write_runner_shell_script(dotxpra, contents, overwrite=True):
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
     # will clobber the rest.  This isn't great, but the tradeoff is that it
@@ -212,6 +212,8 @@ def write_runner_shell_script(dotxpra, contents):
     # people run into problems or autodiscovery turns out to be less useful
     # than expected.
     scriptpath = os.path.join(dotxpra.confdir(), "run-xpra")
+    if os.path.exists(scriptpath) and not overwrite:
+        return
     # Write out a shell-script so that we can start our proxy in a clean
     # environment:
     scriptfile = open(scriptpath, "w")

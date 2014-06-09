@@ -643,6 +643,12 @@ def run_mode(script_file, parser, options, args, mode):
         elif mode in ("_proxy", "_proxy_start", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(parser, options, script_file, args, mode)
+        elif mode == "initenv":
+            from xpra.scripts.server import xpra_runner_shell_script, write_runner_shell_script
+            script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
+            dotxpra = DotXpra(options.socket_dir)
+            write_runner_shell_script(dotxpra, script, False)
+            return 0
         else:
             parser.error("invalid mode '%s'" % mode)
             return 1
@@ -826,7 +832,8 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     conn = None
     if dtype == "ssh":
         cmd = display_desc["full_ssh"]
-        cmd += display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
+        proxy_cmd = display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
+        cmd += ["xpra initenv;"+(" ".join(proxy_cmd))]
         try:
             kwargs = {}
             kwargs["stderr"] = sys.stderr
