@@ -738,7 +738,13 @@ class UIXpraClient(XpraClientBase):
             if self.keyboard_helper:
                 self.keyboard_helper.clear_repeat()
             if self._focused:
-                self.send_focus(0)
+                #send the lost-focus via a timer and re-check it
+                #(this allows a new window to gain focus without having to do a reset_focus)
+                def send_lost_focus():
+                    #check that a new window has not gained focus since:
+                    if self._focused is None:
+                        self.send_focus(0)
+                self.timeout_add(20, send_lost_focus)
                 self._focused = None
 
     def do_force_ungrab(self, wid):
