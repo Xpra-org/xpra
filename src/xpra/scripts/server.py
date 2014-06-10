@@ -724,7 +724,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             parser.error("too many extra arguments: only expected a display number")
         if len(extra_args) == 1:
             display_name = extra_args[0]
-            display_name_check(display_name)
+            if not shadowing and not proxying:
+                display_name_check(display_name)
         else:
             if not opts.displayfd:
                 parser.error("displayfd support is not enabled on this system, you must specify the display to use")
