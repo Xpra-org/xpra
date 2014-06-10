@@ -386,9 +386,6 @@ class WindowSource(object):
         info[prefix+"property.fullscreen"+suffix] = self.fullscreen or False
         self.statistics.add_stats(info, prefix, suffix)
 
-        #batch delay stats:
-        self.batch_config.add_stats(info, "", suffix)
-
         #speed / quality properties (not necessarily the same as the video encoder settings..):
         info[prefix+"property.min_speed"+suffix] = self._fixed_min_speed
         info[prefix+"property.speed"+suffix] = self._fixed_speed
