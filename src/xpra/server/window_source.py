@@ -572,6 +572,9 @@ class WindowSource(object):
         delay = max(delay, options.get("min_delay", 0))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
+        if now-self.statistics.last_resized<0.250:
+            #recently resized, batch more
+            delay = min(50, delay+25)
         packets_backlog = self.statistics.get_packets_backlog()
         pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
         #only send without batching when things are going well:
@@ -606,7 +609,7 @@ class WindowSource(object):
         self._damage_delayed = now, window, regions, actual_encoding, options or {}
         log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
-        self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
+        self.expire_timer = self.timeout_add(delay, self.expire_delayed_region, delay)
 
     def must_batch(self, delay):
         return FORCE_BATCH or self.batch_config.always or delay>self.batch_config.min_delay
