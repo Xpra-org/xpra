@@ -609,7 +609,7 @@ class WindowSource(object):
         self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
 
     def must_batch(self, delay):
-        return FORCE_BATCH or self.batch_config.always or delay<self.batch_config.min_delay
+        return FORCE_BATCH or self.batch_config.always or delay>self.batch_config.min_delay
 
 
     def expire_delayed_region(self, delay):
