@@ -1121,7 +1121,9 @@ def run_proxy(parser, opts, script_file, args, mode):
                 #display_name was provided:
                 display_name = args[0]
             else:
-                display_name = guess_X11_display()
+                display_name = guess_X11_display(opts.socket_dir)
+                #we now know the display name, so add it:
+                args = [display_name]
         cmd += args
         if opts.start_child and len(opts.start_child)>0:
             for x in opts.start_child:
