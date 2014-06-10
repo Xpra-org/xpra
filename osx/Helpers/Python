@@ -11,33 +11,34 @@ bundle_bin="$bundle_res"/bin
 bundle_data="$bundle_res"/share
 bundle_etc="$bundle_res"/etc
 
-DYLD_LIBRARY_PATH="$bundle_lib"
-XDG_CONFIG_DIRS="$bundle_etc"/xdg
-XDG_DATA_DIRS="$bundle_data"
-GTK_DATA_PREFIX="$bundle_res"
-GTK_EXE_PREFIX="$bundle_res"
-GTK_PATH="$bundle_res"
+export DYLD_LIBRARY_PATH="$bundle_lib"
+export XDG_CONFIG_DIRS="$bundle_etc"/xdg
+export XDG_DATA_DIRS="$bundle_data"
+export GTK_DATA_PREFIX="$bundle_res"
+export GTK_EXE_PREFIX="$bundle_res"
+export GTK_PATH="$bundle_res"
 
-GTK2_RC_FILES="$bundle_etc/gtk-2.0/gtkrc"
-GTK_IM_MODULE_FILE="$bundle_etc/gtk-2.0/gtk.immodules"
-GDK_PIXBUF_MODULE_FILE="$bundle_etc/gtk-2.0/gdk-pixbuf.loaders"
-PANGO_RC_FILE="$bundle_etc/pango/pangorc"
-PANGO_LIBDIR="$bundle_lib"
-PANGO_SYSCONFDIR="$bundle_etc"
+export GTK2_RC_FILES="$bundle_etc/gtk-2.0/gtkrc"
+export GTK_IM_MODULE_FILE="$bundle_etc/gtk-2.0/gtk.immodules"
+export GDK_PIXBUF_MODULE_FILE="$bundle_etc/gtk-2.0/gdk-pixbuf.loaders"
+export PANGO_RC_FILE="$bundle_etc/pango/pangorc"
+export PANGO_LIBDIR="$bundle_lib"
+export PANGO_SYSCONFDIR="$bundle_etc"
 
-GST_PLUGIN_PATH="$bundle_lib/gstreamer-0.10"
-GST_PLUGIN_SCANNER="$bundle_contents/Helpers/gst-plugin-scanner"
+export GST_PLUGIN_PATH="$bundle_lib/gstreamer-0.10"
+export GST_PLUGIN_SCANNER="$bundle_contents/Helpers/gst-plugin-scanner"
 
 #Set $PYTHON to point inside the bundle
 #This is not the real "python" but a copy of it named "xpra"
 #This is hacked together in make-app.sh
-PYTHON="$bundle_bin/python"
-PYTHONHOME="$bundle_res"
+export PYTHON="$bundle_bin/python"
+export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules
 PYTHONPATH="$bundle_lib:$PYTHONPATH"
 PYTHONPATH="$bundle_lib/python/lib-dynload/:$PYTHONPATH"
 PYTHONPATH="$bundle_lib/python/:$PYTHONPATH"
 PYTHONPATH="$bundle_lib/pygtk/2.0:$PYTHONPATH"
+export PYTHONPATH
 
 # We need a UTF-8 locale.
 lang=`defaults read .GlobalPreferences AppleLocale 2>/dev/null`
@@ -50,13 +51,13 @@ if test "$lang" != ""; then
 		tail -n1 | sed 's/\./ /' | awk '{print $2}'`"
 fi
 if test "$LANG" == ""; then
-	LANG="C"
+	export LANG="C"
 else
-	LANG="$LANG.utf8"
+	export LANG="$LANG.utf8"
 fi
 
 if test -f "$bundle_lib/charset.alias"; then
-    CHARSETALIASDIR="$bundle_lib"
+    export CHARSETALIASDIR="$bundle_lib"
 fi
 
 # Extra arguments can be added in environment.sh.
