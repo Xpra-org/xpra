@@ -58,7 +58,7 @@ class WindowSource(object):
     _encoding_warnings = set()
 
     def __init__(self, idle_add, timeout_add, source_remove,
-                    queue_damage, queue_packet, statistics,
+                    queue_size, queue_damage, queue_packet, statistics,
                     wid, window, batch_config, auto_refresh_delay,
                     video_helper,
                     server_core_encodings, server_encodings,
@@ -76,6 +76,7 @@ class WindowSource(object):
 
         self.init_vars()
 
+        self.queue_size   = queue_size                  #callback to get the size of the damage queue
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
         self.wid = wid
@@ -569,12 +570,16 @@ class WindowSource(object):
                 self.batch_config.delay = self.batch_config.min_delay * max(eratio, pratio)
 
         delay = options.get("delay", self.batch_config.delay)
-        delay = max(delay, options.get("min_delay", 0))
-        delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
-        delay = int(delay)
         if now-self.statistics.last_resized<0.250:
             #recently resized, batch more
             delay = min(50, delay+25)
+        qsize = self.queue_size()
+        if qsize>4:
+            #the queue is getting big, try to slow down progressively:
+            delay = min(10, delay) * (qsize/4.0)
+        delay = max(delay, options.get("min_delay", 0))
+        delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
+        delay = int(delay)
         packets_backlog = self.statistics.get_packets_backlog()
         pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
         #only send without batching when things are going well:

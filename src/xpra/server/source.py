@@ -1503,7 +1503,7 @@ class ServerSource(object):
                     wclass = WindowVideoSource
 
             ws = wclass(self.idle_add, self.timeout_add, self.source_remove,
-                              self.queue_damage, self.queue_packet,
+                              self.queue_size, self.queue_damage, self.queue_packet,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               self.video_helper,
@@ -1552,6 +1552,9 @@ class ServerSource(object):
 #
 # Methods used by WindowSource:
 #
+    def queue_size(self):
+        return self.damage_data_queue.qsize()
+    
     def queue_damage(self, *fn_and_args):
         """
             This is used by WindowSource to queue damage processing to be done in the 'data_to_packet' thread.
