@@ -30,7 +30,7 @@ from ctypes import cdll as loader, POINTER
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
-CLIENT_KEY = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
+CLIENT_KEYS_STR = [x.strip() for x in os.environ.get("XPRA_NVENC_CLIENT_KEY", "").split(",")]
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 
 #NVENC requires compute capability value 0x30 or above:
@@ -933,7 +933,7 @@ cdef guidstr(GUID guid):
     #log.info("guidstr(%s)=%s", guid, s)
     return s
 
-cdef GUID c_parseguid(src):
+cdef GUID c_parseguid(src) except *:
     #just as ugly as above - shoot me now
     #only this format is allowed:
     sample_key = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
@@ -978,12 +978,17 @@ test_parse()
 
 cdef GUID CLIENT_KEY_GUID
 memset(&CLIENT_KEY_GUID, 0, sizeof(GUID))
-if CLIENT_KEY:
-    try:
-        CLIENT_KEY_GUID = c_parseguid(CLIENT_KEY)
-    except Exception, e:
-        log.error("invalid client key specified: %s", e)
-
+if CLIENT_KEYS_STR:
+    #if we have client keys, parse them and keep the ones that look valid
+    validated = []
+    for x in CLIENT_KEYS_STR:
+        if x:
+            try:
+                CLIENT_KEY_GUID = c_parseguid(x)
+                validated.append(x)
+            except Exception, e:
+                log.error("invalid nvenc client key specified: '%s' (%s)", x, e)
+    CLIENT_KEYS_STR = validated
 
 CODEC_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID)     : "H264",
@@ -2044,6 +2049,7 @@ cdef class Encoder:
 
 
 def init_module():
+    global CLIENT_KEY_GUID
     log("nvenc.init_module()")
     if NVENCAPI_VERSION<=0x20:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
@@ -2051,29 +2057,60 @@ def init_module():
     #load the library / DLL:
     init_nvencode_library()
 
-    #check NVENC availibility by creating a context:
     colorspaces = get_input_colorspaces()
     assert colorspaces, "cannot use NVENC: no colorspaces available"
-    test_encoder = Encoder()
-    for encoding in get_encodings():
-        src_format = colorspaces[0]
-        dst_formats = get_output_colorspaces(src_format)
-        try:
+
+    success = False
+    valid_keys = []
+    failed_keys = []
+    try_keys = CLIENT_KEYS_STR or [None]
+    #check NVENC availibility by creating a context:
+    for client_key in try_keys:
+        if client_key:
+            #this will set the global key object used by all encoder contexts:
+            log("init_module() testing with key '%s'", client_key)
+            CLIENT_KEY_GUID = c_parseguid(client_key)
+
+        test_encoder = Encoder()
+        for encoding in get_encodings():
+            src_format = colorspaces[0]
+            dst_formats = get_output_colorspaces(src_format)
             try:
-                test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
-            except NVENCException, e:
-                #special handling for license key issues:
-                if e.code==NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY:
-                    if CLIENT_KEY:
-                        raise Exception("invalid license key specified")
+                try:
+                    test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
+                    success = True
+                    if client_key:
+                        log("the license key '%s' is valid", client_key)
+                        valid_keys.append(client_key)
+                except NVENCException, e:
+                    #special handling for license key issues:
+                    if e.code==NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY:
+                        if client_key:
+                            log("invalid license key '%s' (skipped)", client_key)
+                            failed_keys.append(client_key)
+                        else:
+                            log("a license key is required")
+                    elif e.code==NV_ENC_ERR_INVALID_VERSION:
+                        #we can bail out already:
+                        raise Exception("version mismatch, you need a newer/older codec build or newer/older drivers")
                     else:
-                        raise Exception("you must provide a license key")
-                elif e.code==NV_ENC_ERR_INVALID_VERSION:
-                    raise Exception("version mismatch, you need a newer/older codec build or newer/older drivers")
-                else:
-                    raise e
-        finally:
-            test_encoder.clean()
+                        raise e
+            finally:
+                test_encoder.clean()
+    if success:
+        #pick the first valid license key:
+        if len(valid_keys)>0:
+            x = valid_keys[0]
+            log("using the license key '%s'", x)
+            CLIENT_KEY_GUID = c_parseguid(x)
+        else:
+            log("no license keys are required")
+    else:
+        #we got license key error(s)
+        if len(failed_keys)>0:
+            raise Exception("invalid license keys specified")
+        else:
+            raise Exception("you must provide a license key")
     log.info("NVENC version %s successfully initialized", ".".join([str(x) for x in PRETTY_VERSION]))
 
 def cleanup_module():
