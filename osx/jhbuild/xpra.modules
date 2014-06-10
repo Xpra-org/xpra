@@ -291,8 +291,8 @@
 
   <distutils id="python-pyopengl">
      <branch repo="pypi.python.org"
-	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.0b2.tar.gz"
-	     version="3.1.0b2"/>
+	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.0b3.tar.gz"
+	     version="3.1.0b3"/>
   </distutils>
 
   <distutils id="python-pyopengl-accelerate">
