@@ -1053,7 +1053,7 @@ def run_remote_server(parser, opts, args, mode):
         v = getattr(opts, x.replace("-", "_"))
         if v:
             proxy_args.append("--%s=%s" % (x, v))
-    #thse options must be enabled explicitly (no disable option for most of them):
+    #these options must be enabled explicitly (no disable option for most of them):
     for e in ("exit-with-children", "mmap-group", "readonly"):
         if getattr(opts, e.replace("-", "_")) is True:
             proxy_args.append("--%s" % e)
@@ -1112,7 +1112,7 @@ def run_proxy(parser, opts, script_file, args, mode):
         cmd = [script_file]
         if mode=="_proxy_start":
             cmd.append("start")
-            assert len(args)==1, "proxy/shadow-start: expected 1 argument but got %s" % len(args)
+            assert len(args)==1, "_proxy_start: expected 1 argument but got %s: %s" % (len(args), args)
             display_name = args[0]
         else:
             assert mode=="_shadow_start"
@@ -1121,6 +1121,7 @@ def run_proxy(parser, opts, script_file, args, mode):
                 #display_name was provided:
                 display_name = args[0]
             else:
+                assert len(args)==0, "_shadow_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
                 display_name = guess_X11_display(opts.socket_dir)
                 #we now know the display name, so add it:
                 args = [display_name]
