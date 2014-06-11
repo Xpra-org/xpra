@@ -902,15 +902,16 @@ class WindowSource(object):
         #(high speed favours switching to lossy sooner)
         lossless_q = 89+speed/10
         #calculate the threshold for using rgb
-        smult = max(0.5, (speed-50)/5.0)
-        max_rgb = int(MAX_PIXELS_PREFER_RGB * smult * (1 + int(self.is_OR)*2))
+        smult = max(0.25, (speed-50)/5.0)
+        qmult = max(0, quality/20.0)
+        max_rgb = int(MAX_PIXELS_PREFER_RGB * smult * qmult * (1 + int(self.is_OR)*2))
         #avoid large areas (too slow), especially at low speed and high quality:
         max_webp = 1024*1024 * (200-quality)/100 * speed/100
         #log.info("get_encoding_options%s lossless_q=%s, smult=%s, max_rgb=%s, max_webp=%s", (batching, pixel_count, ww, wh, speed, quality, current_encoding), lossless_q, smult, max_rgb, max_webp)
         if quality<lossless_q:
             #add lossy options
             ALL_OPTIONS = ["jpeg", "png/P", "png/L"]
-            if speed>50 and pixel_count<max_rgb:
+            if pixel_count<max_rgb:
                 #high speed and high quality, rgb is still good
                 options.append("rgb24")
             if speed>20:
