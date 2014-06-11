@@ -1015,26 +1015,31 @@ class WindowSource(object):
         if not window.is_managed():
             #no: window is gone
             return
+        encoding = packet[6]
         if options.get("auto_refresh", False):
-            #no: this is from an auto-refresh already!
+            refreshlog("auto-refresh %s packet sent", encoding)
+            #don't trigger a loop:
             return
         #the actual encoding used may be different from the global one we specify
-        encoding = packet[6]
         client_options = packet[10]     #info about this packet from the encoder
         actual_quality = client_options.get("quality", 0)
         if encoding.startswith("png") or encoding.startswith("rgb"):
             actual_quality = 100
         lossy_csc = client_options.get("csc") in LOSSY_PIXEL_FORMATS
         scaled = client_options.get("scaled_size") is not None
+        #it is safe to call this method on window because it does not call down to X11:
         ww, wh = window.get_dimensions()
-        if actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
-            refreshlog("auto refresh: was a high quality %s screen update, ignoring", encoding)
-            #lossless already: small region sent lossless or encoding is already lossless
-            #it is safe to call this method on window because it does not call down to X11:
-            if self.refresh_timer and w*h>=ww*wh*90/100:
+        if self.refresh_timer and actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
+            #refresh timer is pending and this screen update is lossless or high quality
+            if w*h>=ww*wh*90/100:
                 #discard pending auto-refresh since this update covered more than 90% of the window
+                #(ideally, we would request the rest to be sent - but it may be queue up already..)
+                action = "cancelling auto-refresh"
                 self.cancel_refresh_timer()
-            #don't change anything: if we have a timer, keep it
+            else:
+                #don't change anything: if we have a timer, keep it
+                action = "ignoring it"
+            refreshlog("auto refresh: high quality %s screen update (quality=%s) covering %i%% of window, %s", encoding, actual_quality, 100*ww*wh/w*h, action)
             return
         if self.refresh_timer and w*h<ww*wh*20/100:
             #a refresh is already due, and this update is small (20%), don't change anything
