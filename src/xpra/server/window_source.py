@@ -426,7 +426,7 @@ class WindowSource(object):
             speed_data = [(event_time, speed) for event_time, _, speed in list(self._encoding_speed)]
             info, target_speed = get_target_speed(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_speed, speed_data)
             speed_data.append((time.time(), target_speed))
-            speed = max(min_speed, time_weighted_average(speed_data, min_offset=0.1, rpow=1.2))
+            speed = max(min_speed, time_weighted_average(speed_data, min_offset=1, rpow=1.1))
             speed = min(99, speed)
         else:
             info = {}
