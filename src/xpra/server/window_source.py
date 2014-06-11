@@ -1050,8 +1050,8 @@ class WindowSource(object):
         self.idle_add(self.schedule_auto_refresh, window, options)
 
     def schedule_auto_refresh(self, window, damage_options):
-        """ Must be called from the UI thread: this makes it easier
-            to prevent races, and we can call window.get_dimensions() safely
+        """ Must be called from the UI thread:
+            this makes it easier to prevent races
         """
         #NOTE: there is a small potential race here:
         #if the damage packet queue is congested, new damage requests could come in,
