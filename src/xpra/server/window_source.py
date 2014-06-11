@@ -1029,7 +1029,7 @@ class WindowSource(object):
         scaled = client_options.get("scaled_size") is not None
         #it is safe to call this method on window because it does not call down to X11:
         ww, wh = window.get_dimensions()
-        if self.refresh_timer and actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
+        if actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
             #refresh timer is pending and this screen update is lossless or high quality
             if w*h>=ww*wh*90/100:
                 #discard pending auto-refresh since this update covered more than 90% of the window
