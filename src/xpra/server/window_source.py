@@ -1020,6 +1020,10 @@ class WindowSource(object):
             refreshlog("auto-refresh %s packet sent", encoding)
             #don't trigger a loop:
             return
+        sor = options.get("skip_auto_refresh")
+        if sor:
+            refreshlog("skipping auto-refresh: %s", sor)
+            return
         #the actual encoding used may be different from the global one we specify
         client_options = packet[10]     #info about this packet from the encoder
         actual_quality = client_options.get("quality", 0)

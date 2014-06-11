@@ -495,7 +495,9 @@ class WindowVideoSource(WindowSource):
 
         #found the video region:
         #send this straight away using the video encoder:
-        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, options)
+        vr_options = options.copy()
+        vr_options["skip_auto_refresh"] = "ignoring video region"
+        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, vr_options)
 
         #now substract this region from the rest:
         trimmed = []
