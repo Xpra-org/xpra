@@ -50,7 +50,7 @@ def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen
     factors.append(("maximized", {"other_is_maximized" : other_is_maximized}, 4*int(other_is_maximized), int(other_is_maximized)))
     #soft expired regions is a strong indicator of problems:
     #(0 for none, up to max_soft_expired which is 5)
-    factors.append(("soft-expired", {"soft_expired" : soft_expired}, soft_expired, int(bool(soft_expired))))
+    factors.append(("soft-expired", {"count" : soft_expired}, soft_expired, int(bool(soft_expired))))
     #now use those factors to drive the delay change:
     update_batch_delay(batch, factors)
 
