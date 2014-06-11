@@ -109,12 +109,9 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
 
     #megapixels per second:
     mpixels = low_limit/1024.0/1024.0
-    if mpixels>1:
-        #for larger window sizes, we should be downscaling,
-        #and don't want to wait too long for those anyway:
-        ref_damage_latency = 0.010 + 0.030 * (1+mathlog(mpixels))
-    else:
-        ref_damage_latency = 0.010 + 0.030 * mpixels
+    #for larger window sizes, we should be downscaling,
+    #and don't want to wait too long for those anyway:
+    ref_damage_latency = 0.010 + 0.030 * (1+mathlog(max(1, mpixels)))
 
     #abs: try to never go higher than 5 times reference latency:
     dam_lat_abs = max(0, ((statistics.avg_damage_in_latency or 0)-ref_damage_latency) / (ref_damage_latency * 4.0))
