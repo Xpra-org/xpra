@@ -26,6 +26,7 @@
   <repository type="tarball" name="sqlite.org" href="http://sqlite.org"/>
   <repository type="tarball" name="sourceforge.net" href="http://softlayer-dal.dl.sourceforge.net"/>
   <repository type="tarball" name="osgeo.org" href="http://download.osgeo.org"/>
+  <repository type="tarball" name="xpra.org" href="http://xpra.org"/>
 
   <autotools id="curl" autogenargs="" autogen-sh="configure">
     <branch module="/download/curl-7.35.0.tar.gz"
@@ -184,6 +185,13 @@
     <branch module="/src/gst-python/gst-python-0.10.22.tar.bz2"
 			version="0.10.22"
             repo="gstreamer.freedesktop.org"/>
+  </autotools>
+
+  <autotools id="gtkglext" autogenargs="--enable-gtk-doc" autogen-sh="configure">
+    <branch module="/src/gtkglext-1.2.0.osx-hack.tar.gz"
+			version="1.2.0"
+                        checkoutdir="gtkglext-1.2.0"
+            repo="xpra.org"/>
   </autotools>
 
   <autotools id="gmplib" autogenargs="--build=i386-darwin" autogen-sh="configure">
@@ -428,6 +436,7 @@
       <dep package="python-pyobjc-core"/>
       <dep package="python-pyobjc-framework-cocoa"/>
       <dep package="python-pyobjc-framework-quartz"/>
+      <dep package="gtkglext"/>
     </dependencies>
   </metamodule>
 
