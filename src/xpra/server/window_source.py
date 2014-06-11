@@ -1031,15 +1031,12 @@ class WindowSource(object):
             refreshlog("auto refresh: was a high quality %s screen update, ignoring", encoding)
             #lossless already: small region sent lossless or encoding is already lossless
             #it is safe to call this method on window because it does not call down to X11:
-            if self.refresh_timer and ww*wh>=w*h*9/10:
+            if self.refresh_timer and w*h>=ww*wh*90/100:
                 #discard pending auto-refresh since this update covered more than 90% of the window
                 self.cancel_refresh_timer()
             #don't change anything: if we have a timer, keep it
             return
-        if self._damage_delayed is not None:
-            #more updates coming already
-            return
-        if self.refresh_timer and w*h<ww*wh/20:
+        if self.refresh_timer and w*h<ww*wh*20/100:
             #a refresh is already due, and this update is small (20%), don't change anything
             return
         #if we're here: the window is still valid and this was a lossy update,
@@ -1059,9 +1056,6 @@ class WindowSource(object):
         #re-do some checks that may have changed:
         if not window.is_managed():
             #window is gone
-            return
-        if self._damage_delayed:
-            #new incoming damage
             return
         if not self.auto_refresh_encodings or self.is_cancelled():
             #can happen during cleanup
