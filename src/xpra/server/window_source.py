@@ -902,7 +902,7 @@ class WindowSource(object):
         #(high speed favours switching to lossy sooner)
         lossless_q = 89+speed/10
         #calculate the threshold for using rgb
-        smult = max(1, (speed-75)/5.0)
+        smult = max(0.5, (speed-50)/5.0)
         max_rgb = int(MAX_PIXELS_PREFER_RGB * smult * (1 + int(self.is_OR)*2))
         #avoid large areas (too slow), especially at low speed and high quality:
         max_webp = 1024*1024 * (200-quality)/100 * speed/100
@@ -910,10 +910,10 @@ class WindowSource(object):
         if quality<lossless_q:
             #add lossy options
             ALL_OPTIONS = ["jpeg", "png/P", "png/L"]
-            if speed>75 and (quality>80 or pixel_count<max_rgb):
+            if speed>50 and pixel_count<max_rgb:
                 #high speed and high quality, rgb is still good
                 options.append("rgb24")
-            if speed>50:
+            if speed>20:
                 #at medium to high speed, jpeg is always good
                 options.append("jpeg")
             if speed>30 and 16384<pixel_count<max_webp:
