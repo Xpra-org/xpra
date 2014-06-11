@@ -1008,7 +1008,7 @@ class WindowSource(object):
         #queue packet for sending:
         self.queue_damage_packet(packet, damage_time, process_damage_time)
         #now deal with auto refresh:
-        if self.auto_refresh_delay<=0 or self.is_cancelled(sequence) or len(self.auto_refresh_encodings)==0 or self._mmap:
+        if self.auto_refresh_delay<=0 or len(self.auto_refresh_encodings)==0 or self._mmap:
             #no: auto-refresh is disabled or not needed
             return
         #safe to call is_managed(), this is not an X11 function:
