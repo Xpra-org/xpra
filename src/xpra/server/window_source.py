@@ -1039,7 +1039,7 @@ class WindowSource(object):
             else:
                 #don't change anything: if we have a timer, keep it
                 action = "ignoring it"
-            refreshlog("auto refresh: high quality %s screen update (quality=%s) covering %i%% of window, %s", encoding, actual_quality, 100*ww*wh/w*h, action)
+            refreshlog("auto refresh: high quality %s screen update (quality=%s) covering %.1f%% of window, %s", encoding, actual_quality, 100*w*h/(ww*wh), action)
             return
         if self.refresh_timer and w*h<ww*wh*20/100:
             #a refresh is already due, and this update is small (20%), don't change anything
