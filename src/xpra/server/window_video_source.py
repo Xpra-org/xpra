@@ -648,8 +648,7 @@ class WindowVideoSource(WindowSource):
                 pixel_format = self._csc_encoder.get_src_format()
             else:
                 pixel_format = ve.get_src_format()
-            width = ve.get_width()
-            height = ve.get_height()
+            width, height = self.window_dimensions
             quality = self.get_current_quality()
             speed = self.get_current_speed()
 
