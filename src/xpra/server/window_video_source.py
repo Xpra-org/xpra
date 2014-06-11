@@ -869,7 +869,7 @@ class WindowVideoSource(WindowSource):
 
         if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
             #we need the encoder to scale but it cannot do it, fail it:
-            scorelog("scaling not supported (%s)", encoder_scaling)
+            scorelog("scaling (%s) not supported by %s", encoder_scaling, encoder_spec)
             return None
 
         ee_score = 100
