@@ -1150,7 +1150,11 @@ class WindowSource(object):
         if decode_time:
             start_send_at, start_bytes, end_send_at, end_bytes, pixels = pending
             bytecount = end_bytes-start_bytes
-            self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
+            #it is possible, though very unlikely,
+            #that we get the ack before we've had a chance to call
+            #damage_packet_sent, so we must validate the data:
+            if bytecount>0 and end_send_at>0:
+                self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
         else:
             #something failed client-side, so we can't rely on the delta being available
             self.last_pixmap_data = None
