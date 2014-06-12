@@ -475,7 +475,6 @@ cdef class Decoder:
         cdef int step, steps
         cdef int nplanes
         cdef int got_picture
-        cdef int av_index
         cdef AVPacket avpkt
         cdef unsigned long frame_key                #@DuplicatedSignature
         cdef AVFrameWrapper framewrapper
@@ -516,17 +515,15 @@ cdef class Decoder:
         strides = []
         outsize = 0
         framewrappers = []
-        av_index = 0
         for step in range(steps):
             offset = plane_offsets[step]
             size = plane_sizes[step]
 
-            assert av_index<3
-            av_frame = self.av_frames[av_index]
-            av_index += 1
+            av_frame = self.av_frames[step]
             #ensure we can detect if the frame buffer got allocated:
             clear_frame(av_frame)
             #now safe to run without gil:
+            log("decompress_image() step %s/%s using offset=%s and size=%s", step, steps, offset, size)
             with nogil:
                 av_init_packet(&avpkt)
                 avpkt.data = <uint8_t *> (padded_buf+offset)
@@ -563,6 +560,7 @@ cdef class Decoder:
 
                     out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, READ_ONLY))
                     strides.append(stride)
+                    log("decompress_image() read back yuv plane %s: %s bytes", i, size)
             else:
                 assert steps==1
                 #RGB mode: "out" is a single buffer
@@ -570,6 +568,7 @@ cdef class Decoder:
                 outsize = self.codec_ctx.height * strides
                 out = memory_as_pybuffer(<void *>av_frame.data[0], outsize, READ_ONLY)
                 nplanes = 0
+                log("decompress_image() read back rgb buffer: %s bytes", outsize)
 
             #FIXME: we could lose track of framewrappers if an error occurs before the end:
             framewrapper = AVFrameWrapper()
