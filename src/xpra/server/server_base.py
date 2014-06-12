@@ -650,10 +650,13 @@ class ServerBase(ServerCore):
              "suspend-resume"               : True,
              "encoding.generic"             : True,
              "encoding.strict_control"      : True,
-             "exit_server"                  : True,
              "sound.server_driven"          : True,
              "command_request"              : True,
              })
+        #this is a feature, but we would need the hello request
+        #to know if it is really needed.. so always include it:
+        capabilities["exit_server"] = True
+
         if source.wants_encodings:
             for k,v in codec_versions.items():
                 capabilities["encoding.%s.version" % k] = v
