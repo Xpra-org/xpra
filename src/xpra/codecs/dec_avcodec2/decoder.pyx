@@ -427,13 +427,14 @@ cdef class Decoder:
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
     def get_info(self):                      #@DuplicatedSignature
-        info = get_info()
-        info.update({
+        info = {"version"   : get_version(),
+                "encoding"  : self.encoding,
+                "formats"   : get_input_colorspaces(self.encoding),
                 "type"      : self.get_type(),
                 "frames"    : self.frames,
                 "width"     : self.width,
                 "height"    : self.height,
-                })
+                }
         if self.framewrappers is not None:
             info["buffers"] = len(self.framewrappers)
         if self.colorspace:
