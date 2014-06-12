@@ -1580,7 +1580,7 @@ if dec_avcodec2_ENABLED:
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     make_constants("xpra", "codecs", "csc_swscale", "constants")
-    swscale_pkgconfig = pkgconfig("swscale", static=swscale_static_ENABLED)
+    swscale_pkgconfig = pkgconfig("swscale", "avutil", static=swscale_static_ENABLED)
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"]+membuffers_c,
                 **swscale_pkgconfig))
