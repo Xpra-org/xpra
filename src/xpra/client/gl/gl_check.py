@@ -247,9 +247,16 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         check_functions(glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
 
         try:
-            from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE, GL_MAX_TEXTURE_SIZE
+            from OpenGL.GL import GL_MAX_TEXTURE_SIZE
             texture_size = glGetInteger(GL_MAX_TEXTURE_SIZE)
-            rect_texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE)
+            #this one may be missing?
+            rect_texture_size = texture_size
+            try:
+                from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE
+                rect_texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE)
+            except ImportError, e:
+                log("OpenGL: %s", e)
+                log("using GL_MAX_TEXTURE_SIZE=%s as default", texture_size)
         except Exception, e:
             emsg = str(e)
             if hasattr(e, "description"):
