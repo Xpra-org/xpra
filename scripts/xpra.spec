@@ -81,9 +81,9 @@
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
 %if 0%{?static_video_libs}
-%define webp_build_args --without-webp
-%else
 %define webp_build_args --with-webp --with-webp_static
+%else
+%define webp_build_args --without-webp
 %endif
 %define requires_sound %{nil}
 #do not disable sound support, but do not declare deps for it either
@@ -106,9 +106,9 @@
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
 %if 0%{?static_video_libs}
-%define webp_build_args --without-webp
-%else
 %define webp_build_args --with-webp --with-webp_static
+%else
+%define webp_build_args --without-webp
 %endif
 %define opencl_build_args --without-csc_opencl
 %define requires_sound %{nil}
