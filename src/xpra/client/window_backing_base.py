@@ -393,8 +393,10 @@ class WindowBackingBase(object):
 
             img = self._video_decoder.decompress_image(img_data, options)
             if not img:
-                raise Exception("paint_with_video_decoder: wid=%s, %s decompression error on %s bytes of picture data for %sx%s pixels using %s, options=%s" % (
-                      self.wid, coding, len(img_data), width, height, self._video_decoder, options))
+                fire_paint_callbacks(callbacks, False)
+                log.error("paint_with_video_decoder: wid=%s, %s decompression error on %s bytes of picture data for %sx%s pixels using %s, options=%s",
+                      self.wid, coding, len(img_data), width, height, self._video_decoder, options)
+                return False
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         finally:
             self._decoder_lock.release()
