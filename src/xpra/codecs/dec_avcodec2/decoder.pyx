@@ -416,7 +416,11 @@ cdef class Decoder:
     cdef av_error_str(self, errnum):
         cdef char[128] err_str
         if av_strerror(errnum, err_str, 128)==0:
-            return str(err_str[:128])
+            e = str(err_str[:128])
+            p = e.find("\0")
+            if p>=0:
+                e = e[:p]
+            return e
         return str(errnum)
 
     def __repr__(self):                      #@DuplicatedSignature
