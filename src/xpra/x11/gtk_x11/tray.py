@@ -100,15 +100,14 @@ class SystemTray(gobject.GObject):
         root = gtk.gdk.get_default_root_window()
         owner = X11Window.XGetSelectionOwner(SELECTION)
         if owner==self.tray_window.xid:
-            X11Window.XSetSelectionOwner(root.xid, SELECTION)
+            X11Window.XSetSelectionOwner(0, SELECTION)
         else:
             log.warn("SystemTray.cleanup() we were no longer the selection owner")
         remove_event_receiver(self.tray_window, self)
         def undock(window):
             log("undocking %s", window)
-            X11Window.Withdraw(window.xid)
+            X11Window.Unmap(window.xid)
             X11Window.Reparent(window.xid, root.xid, 0, 0)
-            X11Window.MapRaised(window.xid)
         for window, tray_window in self.tray_windows.items():
             trap.swallow_synced(undock, window)
             tray_window.destroy()
