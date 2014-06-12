@@ -1431,6 +1431,8 @@ cdef class Encoder:
             params.enableEncodeAsync = 0            #not supported on Linux
             params.enablePTD = 0                    #not supported in sync mode!?
 
+            presetConfig.presetCfg.gopLength = NVENC_INFINITE_GOPLENGTH
+            presetConfig.presetCfg.frameIntervalP = 1
             presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
             presetConfig.presetCfg.encodeCodecConfig.h264Config.idrPeriod = NVENC_INFINITE_GOPLENGTH
             if self.pixel_format=="YUV444P":
