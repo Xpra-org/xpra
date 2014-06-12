@@ -32,6 +32,7 @@ from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEYS_STR = [x.strip() for x in os.environ.get("XPRA_NVENC_CLIENT_KEY", "").split(",")]
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
+YUV444P_ENABLED = os.environ.get("XPRA_NVENC_YUV444P", "1")=="1"
 
 #NVENC requires compute capability value 0x30 or above:
 MIN_COMPUTE = 0x30
@@ -1079,7 +1080,10 @@ BUFFER_FORMAT = {
         }
 
 
-COLORSPACES = {"BGRX" : ("YUV420P", "YUV444P")}
+if YUV444P_ENABLED:
+    COLORSPACES = {"BGRX" : ("YUV420P", "YUV444P")}
+else:
+    COLORSPACES = {"BGRX" : ("YUV420P",)}
 
 def get_input_colorspaces():
     return COLORSPACES.keys()
@@ -1297,7 +1301,7 @@ cdef class Encoder:
         self.update_bitrate()
         start = time.time()
 
-        if "YUV444P" in dst_formats and ((self.separate_plane and quality>=50 and v==1 and u==1) or ("YUV420P" not in dst_formats)):
+        if YUV444P_ENABLED and "YUV444P" in dst_formats and ((self.separate_plane and quality>=50 and v==1 and u==1) or ("YUV420P" not in dst_formats)):
             dst_format = "YUV444P"
         else:
             assert "YUV420P" in dst_formats
