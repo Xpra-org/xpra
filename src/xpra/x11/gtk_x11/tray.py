@@ -101,6 +101,7 @@ class SystemTray(gobject.GObject):
         owner = X11Window.XGetSelectionOwner(SELECTION)
         if owner==self.tray_window.xid:
             X11Window.XSetSelectionOwner(0, SELECTION)
+            log("SystemTray.cleanup() reset %s selection owner to %#x", SELECTION, X11Window.XGetSelectionOwner(SELECTION))
         else:
             log.warn("SystemTray.cleanup() we were no longer the selection owner")
         remove_event_receiver(self.tray_window, self)
@@ -126,7 +127,7 @@ class SystemTray(gobject.GObject):
             colormap, visual = screen.get_rgb_colormap(), screen.get_rgb_visual()
         assert colormap is not None and visual is not None, "failed to obtain visual or colormap"
         owner = X11Window.XGetSelectionOwner(SELECTION)
-        log("setup tray: current selection owner=%s", owner)
+        log("setup tray: current selection owner=%#x", owner)
         if owner!=XNone:
             raise Exception("%s already owned by %s" % (SELECTION, owner))
         self.tray_window = gtk.gdk.Window(root, width=1, height=1,
@@ -142,8 +143,9 @@ class SystemTray(gobject.GObject):
         log("setup tray: tray window %#x", xtray)
         display.request_selection_notification(SELECTION)
         setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
-        log("setup tray: set selection owner returned %s", setsel)
+        log("setup tray: set selection owner returned %s, owner=%#x", setsel, X11Window.XGetSelectionOwner(SELECTION))
         event_mask = StructureNotifyMask
+        log("setup tray: sending client message")
         X11Window.sendClientMessage(root.xid, root.xid, False, event_mask, "MANAGER",
                           CurrentTime, SELECTION,
                           xtray, 0, 0)
@@ -194,7 +196,7 @@ class SystemTray(gobject.GObject):
             title = prop_get(window, "WM_NAME", "latin1", ignore_errors=True)
         if title is None:
             title = ""
-        log("dock_tray(%#x) window=%s, geometry=%s, title=%s, visual.depth=%s", xid, window, window.get_geometry(), title, window.get_visual().depth)
+        log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s, visual.depth=%s", xid, window.xid, window.get_geometry(), title, window.get_visual().depth)
         event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
         tray_window = gtk.gdk.Window(root, width=w, height=h,
                                            window_type=gtk.gdk.WINDOW_TOPLEVEL,
