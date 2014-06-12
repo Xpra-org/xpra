@@ -49,6 +49,7 @@ from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
 
+from ctypes import c_uint
 
 PIXEL_FORMAT_TO_CONSTANT = {
                        "BGR"    : GL_BGR,
@@ -244,7 +245,8 @@ class GLPixmapBacking(GTK2WindowBacking):
         assert self.offscreen_fbo is None
         assert self.shaders is None
         self.textures = glGenTextures(5)
-        self.offscreen_fbo = glGenFramebuffers(1)
+        self.offscreen_fbo = c_uint(1)
+        glGenFramebuffers(1, self.offscreen_fbo)
         log("%s.gl_init_textures() textures: %s, offscreen fbo: %s", self, self.textures, self.offscreen_fbo)
 
     def gl_init_shaders(self):
