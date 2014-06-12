@@ -125,6 +125,7 @@ enc_x265_ENABLED        = pkg_config_ok("--exists", "x265")
 webp_ENABLED            = pkg_config_ok("--atleast-version=0.3", "libwebp", fallback=WIN32)
 x264_static_ENABLED     = False
 x265_static_ENABLED     = False
+webp_static_ENABLED     = False
 vpx_ENABLED             = pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32)
 vpx_static_ENABLED      = False
 #ffmpeg 1.x and libav:
@@ -165,7 +166,7 @@ SWITCHES = ("enc_x264", "x264_static",
             "csc_swscale", "swscale_static",
             "csc_opencl", "csc_cython",
             "vpx", "vpx_static",
-            "webp",
+            "webp", "webp_static",
             "memoryview",
             "rencode", "bencode", "cython_bencode",
             "clipboard",
@@ -1553,7 +1554,7 @@ if enc_x265_ENABLED:
 
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:
-    webp_pkgconfig = pkgconfig("webp")
+    webp_pkgconfig = pkgconfig("webp", static=webp_static_ENABLED)
     cython_add(Extension("xpra.codecs.webp.encode",
                 ["xpra/codecs/webp/encode.pyx", buffers_c],
                 **webp_pkgconfig))
