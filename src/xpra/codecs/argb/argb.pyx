@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#cython: boundscheck=False, wraparound=False, cdivision=True
+
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
 

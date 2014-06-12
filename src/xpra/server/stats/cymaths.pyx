@@ -4,6 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#!python
+#cython: boundscheck=False, wraparound=False, cdivision=True
+
 import time
 
 cdef extern from "math.h":
