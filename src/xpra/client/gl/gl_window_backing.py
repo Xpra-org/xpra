@@ -245,8 +245,12 @@ class GLPixmapBacking(GTK2WindowBacking):
         assert self.offscreen_fbo is None
         assert self.shaders is None
         self.textures = glGenTextures(5)
-        self.offscreen_fbo = c_uint(1)
-        glGenFramebuffers(1, self.offscreen_fbo)
+        if len(glGenFramebuffers.pyConverters)==1:
+            #single argument syntax:
+            self.offscreen_fbo = glGenFramebuffers(1)
+        else:
+            self.offscreen_fbo = c_uint(1)
+            glGenFramebuffers(1, self.offscreen_fbo)
         log("%s.gl_init_textures() textures: %s, offscreen fbo: %s", self, self.textures, self.offscreen_fbo)
 
     def gl_init_shaders(self):
