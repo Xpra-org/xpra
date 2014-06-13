@@ -124,7 +124,7 @@ def parse_cmdline(cmdline):
                            "\t%prog stop [DISPLAY]\n",
                            "\t%prog exit [DISPLAY]\n",
                            "\t%prog list\n",
-                           "\t%prog upgrade DISPLAY\n",
+                           "\t%prog upgrade [DISPLAY]\n",
                            ] + command_options
     if supports_shadow:
         server_modes.append("shadow")
@@ -1097,6 +1097,14 @@ def find_X11_displays(max_display_no=10):
             except:
                 pass
     return displays
+
+def guess_xpra_display(socket_dir):
+    sockdir = DotXpra(socket_dir)
+    results = sockdir.sockets()
+    live = [display for state, display in results if state==DotXpra.LIVE]
+    assert len(live)>0, "no existing xpra servers found"
+    assert len(live)<=1, "too many existing xpra servers found, cannot guess which one to use"
+    return live[0]
 
 def guess_X11_display(socket_dir):
     displays = [":%s" % x for x in find_X11_displays()]

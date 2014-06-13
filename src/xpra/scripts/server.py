@@ -719,6 +719,9 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if shadowing and len(extra_args)==0:
         from xpra.scripts.main import guess_X11_display
         display_name = guess_X11_display(opts.socket_dir)
+    elif upgrading and len(extra_args)==0:
+        from xpra.scripts.main import guess_xpra_display
+        display_name = guess_xpra_display(opts.socket_dir)
     else:
         if len(extra_args) > 1:
             parser.error("too many extra arguments: only expected a display number")
