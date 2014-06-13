@@ -242,7 +242,8 @@ class VideoHelper(object):
         encoder_module = get_codec(encoder_name)
         log("init_video_encoder_option(%s) module=%s", encoder_name, encoder_module)
         if not encoder_module:
-            log.warn("video encoder %s could not be loaded: %s", encoder_name, get_codec_error(encoder_name))
+            log.warn("video encoder '%s' could not be loaded:", encoder_name)
+            log.warn(" %s", get_codec_error(encoder_name))
             return
         encoder_type = encoder_module.get_type()
         try:
