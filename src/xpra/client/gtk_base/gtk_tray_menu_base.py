@@ -738,10 +738,11 @@ class GTKTrayMenuBase(object):
                 item = ensure_item_selected(self.layout_submenu, item)
                 layout = item.keyboard_layout
                 variant = item.keyboard_variant
-                if layout!=self.client.xkbmap_layout or variant!=self.client.xkbmap_variant:
+                kh = self.client.keyboard_helper
+                if layout!=kh.xkbmap_layout or variant!=kh.xkbmap_variant:
                     log("keyboard layout selected: %s / %s", layout, variant)
-                    self.client.xkbmap_layout = layout
-                    self.client.xkbmap_variant = variant
+                    kh.xkbmap_layout = layout
+                    kh.xkbmap_variant = variant
                     self.client.send_layout()
             l = self.checkitem(title, set_layout)
             l.set_draw_as_radio(True)
