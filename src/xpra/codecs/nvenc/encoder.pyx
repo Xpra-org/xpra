@@ -881,6 +881,33 @@ CODEC_PROFILES = {
                   "stereo"      : 128,
                   }
 
+def identify_nvidia_module_version():
+    from xpra.os_util import load_binary_file
+    v = load_binary_file("/proc/driver/nvidia/version")
+    if not v:
+        log.warn("nvidia kernel module not installed?")
+        return []
+    KSTR = "Kernel Module"
+    p = v.find(KSTR)
+    if not p:
+        log.warn("unknown nvidia kernel module version")
+        return []
+    v = v[p+len(KSTR):].strip().split(" ")[0]
+    try:
+        numver = [int(x) for x in v.split(".")]
+        log.info("nvenc: found nvidia kernel module version %s", v)
+        return numver
+    except Exception, e:
+        log.warn("failed to parse nvidia kernel module version '%s': %s", v, e)
+    return []
+
+nvidia_module_version = None
+def get_nvidia_module_version(probe=True):
+    global nvidia_module_version
+    if nvidia_module_version is None and probe:
+        nvidia_module_version = identify_nvidia_module_version()
+    return nvidia_module_version
+
 NvEncodeAPICreateInstance = None
 cuCtxGetCurrent = None
 
@@ -1149,7 +1176,13 @@ def get_type():
     return "nvenc"
 
 def get_info():
-    return  {"version"          : PRETTY_VERSION}
+    info = {"version"          : PRETTY_VERSION}
+    #only show the version if we have it already (don't probe now)
+    v = get_nvidia_module_version(False)
+    if v:
+        info["kernel_module_version"] = v
+    return v
+
 
 def get_encodings():
     return ["h264"]
@@ -1480,7 +1513,8 @@ cdef class Encoder:
                 "encoder_width"     : self.encoder_width,
                 "encoder_height"    : self.encoder_height,
                 "bitrate"   : self.target_bitrate,
-                "version"   : get_version()}
+                "version"   : get_version(),
+                "kernel_module_version"    : get_nvidia_module_version()}
         if self.scaling!=(1,1):
             info.update({
                 "input_width"       : self.input_width,
@@ -2059,6 +2093,9 @@ def init_module():
     log("nvenc.init_module()")
     if NVENCAPI_VERSION<=0x20:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
+
+    #this should log the kernel module version
+    get_nvidia_module_version()
 
     #load the library / DLL:
     init_nvencode_library()
