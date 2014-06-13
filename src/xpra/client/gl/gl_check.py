@@ -170,7 +170,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
                 if fatal:
                     gl_check_error("OpenGL property '%s' is missing" % d)
                 else:
-                    log.warn("OpenGL property '%s' is missing" % d)
+                    log("OpenGL property '%s' is missing", d)
                 v = ""
             props[d] = v
 
