@@ -258,6 +258,16 @@ class KeyboardHelper(object):
         log("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
         log("hash=%s", self.hash)
 
+
+    def send_layout(self):
+        log("send_layout()")
+        self.send("layout-changed", nn(self.xkbmap_layout), nn(self.xkbmap_variant))
+
+    def send_keymap(self):
+        log("send_keymap()")
+        self.send("keymap-changed", self.get_keymap_properties())
+
+
     def update_hash(self):
         try:
             import hashlib

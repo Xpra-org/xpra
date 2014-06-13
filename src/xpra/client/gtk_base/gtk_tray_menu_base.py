@@ -743,7 +743,7 @@ class GTKTrayMenuBase(object):
                     log("keyboard layout selected: %s / %s", layout, variant)
                     kh.xkbmap_layout = layout
                     kh.xkbmap_variant = variant
-                    self.client.send_layout()
+                    kh.send_layout()
             l = self.checkitem(title, set_layout)
             l.set_draw_as_radio(True)
             l.keyboard_layout = layout
@@ -753,7 +753,7 @@ class GTKTrayMenuBase(object):
             c,l = key
             return c.lower()+l.lower()
         layout,variant,variants = self.client.keyboard_helper.keyboard.get_layout_spec()
-        if layout and len(variants)>1:
+        if layout and variants and len(variants)>1:
             #just show all the variants to choose from this layout
             self.layout_submenu.append(kbitem("%s - Default" % layout, layout, None))
             for v in variants:

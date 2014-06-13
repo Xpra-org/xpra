@@ -13,10 +13,5 @@ from xpra.client.keyboard_helper import KeyboardHelper
 
 class QtKeyboardHelper(KeyboardHelper):
 
-    def __init__(self, net_send, keyboard_sync, key_shortcuts, send_layout, send_keymap):
-        self.send_layout = send_layout
-        self.send_keymap = send_keymap
-        KeyboardHelper.__init__(self, net_send, keyboard_sync, key_shortcuts)
-
     def get_full_keymap(self):
         return  []

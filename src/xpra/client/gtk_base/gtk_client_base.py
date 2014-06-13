@@ -117,7 +117,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
-        return GTKKeyboardHelper(self.send, keyboard_sync, key_shortcuts, self.send_layout, self.send_keymap)
+        return GTKKeyboardHelper(self.send, keyboard_sync, key_shortcuts)
+
 
     def _add_statusicon_tray(self, tray_list):
         #add gtk.StatusIcon tray:

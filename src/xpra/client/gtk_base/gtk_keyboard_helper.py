@@ -14,9 +14,7 @@ gobject = import_gobject()
 
 class GTKKeyboardHelper(KeyboardHelper):
 
-    def __init__(self, net_send, keyboard_sync, key_shortcuts, send_layout, send_keymap):
-        self.send_layout = send_layout
-        self.send_keymap = send_keymap
+    def __init__(self, net_send, keyboard_sync, key_shortcuts):
         KeyboardHelper.__init__(self, net_send, keyboard_sync, key_shortcuts)
         #used for delaying the sending of keymap changes
         #(as we may be getting dozens of such events at a time)

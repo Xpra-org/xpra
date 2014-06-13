@@ -62,7 +62,7 @@ class XpraClient(UIXpraClient):
         return None
 
     def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
-        return QtKeyboardHelper(self.send, keyboard_sync, key_shortcuts, self.send_layout, self.send_keymap)
+        return QtKeyboardHelper(self.send, keyboard_sync, key_shortcuts)
 
     def get_screen_sizes(self):
         return  [1280, 1024]

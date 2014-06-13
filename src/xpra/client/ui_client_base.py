@@ -677,14 +677,6 @@ class UIXpraClient(XpraClientBase):
         self.opengl_props = {"info" : "not supported"}
 
 
-    def send_layout(self):
-        keylog("send_layout()")
-        self.send("layout-changed", nn(self.keyboard_helper.xkbmap_layout), nn(self.keyboard_helper.xkbmap_variant))
-
-    def send_keymap(self):
-        keylog("send_keymap()")
-        self.send("keymap-changed", self.get_keymap_properties())
-
     def get_keymap_properties(self):
         props = self.keyboard_helper.get_keymap_properties()
         props["modifiers"] = self.get_current_modifiers()
