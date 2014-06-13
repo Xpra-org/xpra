@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.keyboard_helper import KeyboardHelper, nn, log
+from xpra.client.keyboard_helper import KeyboardHelper, log
 from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
 from xpra.gtk_common.keymap import get_gtk_keymap
 gdk = import_gdk()
