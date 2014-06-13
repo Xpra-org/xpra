@@ -41,17 +41,17 @@ def OpenGL_safety_check():
         try:
             rnum = [int(x) for x in ur.split(".")]  #ie: [12, 4]
             if rnum<=[12, 4]:
-                return "Ubuntu %s is too buggy" % ur
+                return False, "Ubuntu %s is too buggy" % ur
         except:
             pass
     #try to detect VirtualBox:
     #based on the code found here:
     #http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
-    #because it causes hard VM crashes when we probe the GL driver!
+    #because it used to cause hard VM crashes when we probe the GL driver!
     try:
         from ctypes import cdll
         if cdll.LoadLibrary("VBoxHook.dll"):
-            return "VirtualBox is present (VBoxHook.dll)"
+            return True, "VirtualBox is present (VBoxHook.dll)"
     except:
         pass
     try:
@@ -61,14 +61,14 @@ def OpenGL_safety_check():
         finally:
             if f:
                 f.close()
-                return "VirtualBox is present (VBoxMiniRdrDN)"
+                return True, "VirtualBox is present (VBoxMiniRdrDN)"
     except Exception, e:
         import errno
         if e.args[0]==errno.EACCES:
-            return "VirtualBox is present (VBoxMiniRdrDN)"
-    return None
+            return True, "VirtualBox is present (VBoxMiniRdrDN)"
+    return True, None
 OPENGL_DEFAULT = None       #will auto-detect by probing
-if OpenGL_safety_check() is not None:
+if not OpenGL_safety_check()[0]:
     OPENGL_DEFAULT = False
 
 

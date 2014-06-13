@@ -380,13 +380,16 @@ class XpraClient(GTKXpraClient):
         self.GLClientWindowClass = None
         self.opengl_props = {}
         from xpra.scripts.config import OpenGL_safety_check
-        check = OpenGL_safety_check()
-        if check:
+        use_gl, warning = OpenGL_safety_check()
+        if not use_gl:
+            log.warn("OpenGL disabled: %s", warning)
+            return
+        elif warning:
             if enable_opengl is True:
-                log.warn("OpenGL loading despite: %s", check)
+                log.warn("OpenGL loading despite: %s", warning)
             else:
-                self.opengl_props["info"] = "disabled: %s" % check
-                log.warn("OpenGL disabled: %s", check)
+                self.opengl_props["info"] = "disabled: %s" % warning
+                log.warn("OpenGL disabled: %s", warning)
                 return
         if enable_opengl is False:
             self.opengl_props["info"] = "disabled by configuration"
@@ -405,10 +408,12 @@ class XpraClient(GTKXpraClient):
             self.client_supports_opengl = True
             self.opengl_enabled = True
         except ImportError, e:
-            log.info("OpenGL support not enabled: %s", e)
+            log.warn("OpenGL support could not be enabled:")
+            log.warn(" %s", e)
             self.opengl_props["info"] = str(e)
         except Exception, e:
-            log.error("Error loading OpenGL support: %s", e, exc_info=True)
+            log.error("Error loading OpenGL support:")
+            log.error(" %s", e, exc_info=True)
             self.opengl_props["info"] = str(e)
 
     def get_group_leader(self, metadata, override_redirect):
