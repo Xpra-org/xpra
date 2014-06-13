@@ -18,36 +18,45 @@ class GTKKeyboardHelper(KeyboardHelper):
         self.send_layout = send_layout
         self.send_keymap = send_keymap
         KeyboardHelper.__init__(self, net_send, keyboard_sync, key_shortcuts)
+        #used for delaying the sending of keymap changes
+        #(as we may be getting dozens of such events at a time)
         self._keymap_changing = False
+        self._keymap_change_handler_id = None
         try:
             self._keymap = gdk.keymap_get_default()
         except:
             self._keymap = None
-        self._do_keys_changed()
+        self.update()
         if self._keymap:
-            self._keymap.connect("keys-changed", self._keys_changed)
+            self._keymap_change_handler_id = self._keymap.connect("keys-changed", self._keys_changed)
 
     def _keys_changed(self, *args):
         log("keys_changed")
+        self._keymap.disconnect(self._keymap_change_handler_id)
         self._keymap = gdk.keymap_get_default()
-        if not self._keymap_changing:
-            self._keymap_changing = True
-            gobject.timeout_add(500, self._do_keys_changed, True)
+        self._keymap_change_handler_id = self._keymap.connect("keys-changed", self._keys_changed)
+        if self._keymap_changing:
+            #timer due already
+            return
+        self._keymap_changing = True
+        def do_keys_changed():
+            self._keymap_changing = False
+            if self.update():
+                log.info("keymap has changed, sending updated mappings to the server")
+                if self.xkbmap_layout:
+                    self.send_layout()
+                self.send_keymap()
+        gobject.timeout_add(500, do_keys_changed)
 
-    def _do_keys_changed(self, send_if_changed=False):
-        self._keymap_changing = False
+    def update(self):
         old_hash = self.hash
         self.query_xkbmap()
         try:
             self.keyboard.update_modifier_map(gdk.display_get_default(), self.xkbmap_mod_meanings)
         except:
-            pass
+            log.error("error querying modifier map", exc_info=True)
         log("do_keys_changed() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
-        if send_if_changed and old_hash!=self.hash:
-            log.info("keymap has changed, sending updated mappings to the server")
-            if self.xkbmap_layout:
-                self.send_layout()
-            self.send_keymap()
+        return old_hash!=self.hash
 
     def get_full_keymap(self):
         return  get_gtk_keymap()
