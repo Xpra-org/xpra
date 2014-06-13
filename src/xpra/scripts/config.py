@@ -306,7 +306,7 @@ def get_defaults():
                     "host"              : "",
                     "username"          : username,
                     "auth"              : "",
-                    "remote-xpra"       : ".xpra/run-xpra",
+                    "remote-xpra"       : "~/.xpra/run-xpra",
                     "session-name"      : "",
                     "client-toolkit"    : "",
                     "dock-icon"         : "",
