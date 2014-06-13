@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
@@ -85,6 +86,25 @@ class Keyboard(KeyboardBase):
             log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
             log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
         return xkbmap_print, xkbmap_query
+
+
+    def get_layout_spec(self):
+        #FIXME: a bit ugly to call gtk here...
+        #but otherwise we have to call XGetWindowProperty and deal with X11 errors..
+        layout = ""
+        layouts = []
+        if "gtk" in sys.modules:
+            import gtk.gdk
+            prop = gtk.gdk.get_default_root_window().property_get("_XKB_RULES_NAMES", "STRING")
+            #ie:('STRING', 8, 'evdev\x00pc104\x00gb,us\x00,\x00\x00')
+            if prop and len(prop)==3:
+                xkb_rules_names = prop[2].split("\0")
+                #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
+                layouts = xkb_rules_names[2].split(",")
+                if len(layouts)>0:
+                    layout = layouts[0]                
+        return layout, layouts, "", None
+
 
     def get_keyboard_repeat(self):
         if keyboard_bindings:

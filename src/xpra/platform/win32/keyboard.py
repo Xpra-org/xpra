@@ -78,6 +78,7 @@ class Keyboard(KeyboardBase):
 
     def get_layout_spec(self):
         layout = None
+        layouts = []
         variant = None
         variants = None
         try:
@@ -88,9 +89,11 @@ class Keyboard(KeyboardBase):
                 log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%s", layout, variants, code, kbid)
             if not layout:
                 log("unknown keyboard layout for kbid: %s", kbid)
+            else:
+                layouts.append(layout)
         except Exception, e:
             log.error("failed to detect keyboard layout: %s", e)
-        return layout,variant,variants
+        return layout,layouts,variant,variants
 
     def get_keyboard_repeat(self):
         try:

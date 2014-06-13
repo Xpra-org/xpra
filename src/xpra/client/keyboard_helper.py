@@ -245,7 +245,7 @@ class KeyboardHelper(object):
 
 
     def query_xkbmap(self):
-        self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self.keyboard.get_layout_spec()
+        self.xkbmap_layout, _, self.xkbmap_variant, self.xkbmap_variants = self.keyboard.get_layout_spec()
         self.xkbmap_print, self.xkbmap_query = self.keyboard.get_keymap_spec()
         self.xkbmap_keycodes = self.get_full_keymap()
         self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()

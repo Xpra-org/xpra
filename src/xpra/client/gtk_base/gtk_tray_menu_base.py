@@ -752,7 +752,7 @@ class GTKTrayMenuBase(object):
         def keysort(key):
             c,l = key
             return c.lower()+l.lower()
-        layout,variant,variants = self.client.keyboard_helper.keyboard.get_layout_spec()
+        layout,_,variant,variants = self.client.keyboard_helper.keyboard.get_layout_spec()
         if layout and variants and len(variants)>1:
             #just show all the variants to choose from this layout
             self.layout_submenu.append(kbitem("%s - Default" % layout, layout, None))
