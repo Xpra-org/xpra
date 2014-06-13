@@ -354,20 +354,6 @@ def ensure_item_selected(submenu, item):
     item.set_active(True)
     return item
 
-def set_checkeditems(submenu, is_match_func):
-    """ recursively descends a submenu and any of its sub menus
-        and set any "CheckMenuItem" to active if is_match_func(item) """
-    if submenu is None:
-        return
-    for x in submenu.get_children():
-        if isinstance(x, gtk.MenuItem):
-            set_checkeditems(x.get_submenu(), is_match_func)
-        if isinstance(x, gtk.CheckMenuItem):
-            a = x.get_active()
-            v = is_match_func(x)
-            if a!=v:
-                x.set_active(v)
-
 
 def CheckMenuItem(label, tooltip=None):
     """ adds a get_label() method for older versions of gtk which do not have it

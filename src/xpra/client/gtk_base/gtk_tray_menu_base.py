@@ -10,7 +10,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gobject, is_gtk3
 gtk = import_gtk()
 gobject = import_gobject()
 
-from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, set_checkeditems, menuitem
+from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, menuitem
 from xpra.client.gtk_base.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
 from xpra.log import Logger
@@ -284,9 +284,10 @@ class GTKTrayMenuBase(object):
             image = self.get_image(icon_name, 24)
         return menuitem(title, image, tooltip, cb)
 
-    def checkitem(self, title, cb=None):
+    def checkitem(self, title, cb=None, active=False):
         """ Utility method for easily creating a CheckMenuItem """
         check_item = CheckMenuItem(title)
+        check_item.set_active(active)
         if cb:
             check_item.connect("toggled", cb)
         check_item.show()
@@ -732,19 +733,28 @@ class GTKTrayMenuBase(object):
         self.layout_submenu = gtk.Menu()
         keyboard.set_submenu(self.layout_submenu)
         self.popup_menu_workaround(self.layout_submenu)
-        def kbitem(title, layout, variant):
+        def kbitem(title, layout, variant, active=False):
             def set_layout(item):
                 """ this callback updates the client (and server) if needed """
                 item = ensure_item_selected(self.layout_submenu, item)
                 layout = item.keyboard_layout
                 variant = item.keyboard_variant
                 kh = self.client.keyboard_helper
+                kh.locked = layout!="Auto"
                 if layout!=kh.xkbmap_layout or variant!=kh.xkbmap_variant:
-                    log("keyboard layout selected: %s / %s", layout, variant)
-                    kh.xkbmap_layout = layout
-                    kh.xkbmap_variant = variant
-                    kh.send_layout()
-            l = self.checkitem(title, set_layout)
+                    if layout=="Auto":
+                        #re-detect everything:
+                        kh.update()
+                        log.info("keyboard automatic mode: %s", kh.layout_str())
+                        kh.send_layout()
+                        kh.send_keymap()
+                    else:
+                        #use layout specified and send it:
+                        kh.xkbmap_layout = layout
+                        kh.xkbmap_variant = variant
+                        log.info("new keyboard layout selected: %s", kh.layout_str())
+                        kh.send_layout()
+            l = self.checkitem(title, set_layout, active)
             l.set_draw_as_radio(True)
             l.keyboard_layout = layout
             l.keyboard_variant = variant
@@ -752,13 +762,28 @@ class GTKTrayMenuBase(object):
         def keysort(key):
             c,l = key
             return c.lower()+l.lower()
-        layout,_,variant,variants = self.client.keyboard_helper.keyboard.get_layout_spec()
-        if layout and variants and len(variants)>1:
+        layout,layouts,variant,variants = self.client.keyboard_helper.keyboard.get_layout_spec()
+        full_layout_list = False
+        if len(layouts)>1:
+            log.info("layouts=%s", layouts)
+            auto = kbitem("Auto", "Auto", "", True)
+            self.layout_submenu.append(auto)
+            if layout:
+                self.layout_submenu.append(kbitem("%s" % layout, layout, ""))
+            if variants:
+                for v in variants:
+                    self.layout_submenu.append(kbitem("%s - %s" % (layout, v), layout, v))
+            for l in layouts:
+                if l!=layout:
+                    self.layout_submenu.append(kbitem("%s" % l, l, ""))
+        elif layout and variants and len(variants)>1:
             #just show all the variants to choose from this layout
-            self.layout_submenu.append(kbitem("%s - Default" % layout, layout, None))
+            default = kbitem("%s - Default" % layout, layout, "", True)
+            self.layout_submenu.append(default)
             for v in variants:
                 self.layout_submenu.append(kbitem("%s - %s" % (layout, v), layout, v))
         else:
+            full_layout_list = True
             from xpra.keyboard.layouts import X11_LAYOUTS
             #show all options to choose from:
             sorted_keys = list(X11_LAYOUTS.keys())
@@ -781,19 +806,14 @@ class GTKTrayMenuBase(object):
                     #no variants:
                     self.layout_submenu.append(kbitem(name, layout, None))
         keyboard_helper = self.client.keyboard_helper
-        def set_selected_layout(*args):
-            if keyboard_helper.xkbmap_layout or keyboard_helper.xkbmap_print or keyboard_helper.xkbmap_query:
+        def set_layout_enabled(*args):
+            if full_layout_list and (keyboard_helper.xkbmap_layout or keyboard_helper.xkbmap_print or keyboard_helper.xkbmap_query):
                 #we have detected a layout
-                #so no need to let the user override it
+                #so no need to show the user the huge layout list
                 keyboard.hide()
                 return
             keyboard.set_sensitive(True)
-            layout = keyboard_helper.xkbmap_layout
-            variant = keyboard_helper.xkbmap_variant
-            def is_match(checkitem):
-                return checkitem.keyboard_layout==layout and checkitem.keyboard_variant==variant
-            set_checkeditems(self.layout_submenu, is_match)
-        self.client.connect("handshake-complete", set_selected_layout)
+        self.client.connect("handshake-complete", set_layout_enabled)
         return keyboard
 
     def make_compressionmenu(self):

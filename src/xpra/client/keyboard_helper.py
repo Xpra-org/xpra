@@ -18,6 +18,7 @@ class KeyboardHelper(object):
     def __init__(self, net_send, keyboard_sync, key_shortcuts):
         self.reset_state()
         self.send = net_send
+        self.locked = False
         self.keyboard_sync = keyboard_sync
         self.key_shortcuts = self.parse_shortcuts(key_shortcuts)
         self.keyboard = Keyboard()
@@ -257,6 +258,13 @@ class KeyboardHelper(object):
         log("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
         log("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
         log("hash=%s", self.hash)
+
+    def update(self):
+        if not self.locked:
+            self.query_xkbmap()
+
+    def layout_str(self):
+        return " / ".join([x for x in (self.xkbmap_layout, self.xkbmap_variant) if bool(x)])
 
 
     def send_layout(self):
