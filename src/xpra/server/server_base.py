@@ -220,7 +220,7 @@ class ServerBase(ServerCore):
             except Exception, e:
                 log.error("error loading or registering our dbus notifications forwarder:")
                 log.error("  %s", e)
-                log.info("if you do not have a dedicated dbus session for this xpra instance,")
+                log.info("  if you do not have a dedicated dbus session for this xpra instance,")
                 log.info("  you should use the '--no-notifications' flag")
                 log.info("")
 
