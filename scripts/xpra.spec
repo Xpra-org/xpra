@@ -191,6 +191,138 @@ Xpra gives you "persistent remote applications" for X. That is, unlike normal X 
 So basically it's screen for remote X apps.
 
 
+%prep
+rm -rf $RPM_BUILD_DIR/xpra-%{version}
+zcat $RPM_SOURCE_DIR/xpra-%{version}.tar.gz | tar -xvf -
+cd xpra-%{version}
+%if 0%{?no_strict}
+(sed -e -i s'/strict_ENABLED = True/strict_ENABLED = False/g' setup.py)
+(echo "setup.py" >> %{S:ignored_changed_files.txt})
+%endif
+%if 0%{?no_pulseaudio}
+(sed -e -i s'/sound_ENABLED = True/sound_ENABLED = False/g' setup.py)
+(echo "setup.py" >> %{S:ignored_changed_files.txt})
+(echo "etc/*/xpra.conf" >> %{S:ignored_changed_files.txt})
+%endif
+%if 0%{?old_xdg}
+%patch12 -p1
+(echo "xdg/*.desktop" >> %{S:ignored_changed_files.txt})
+%endif
+
+%debug_package
+
+%build
+cd xpra-%{version}
+rm -rf build install
+CFLAGS=-O2 python setup.py build %{ffmpeg_build_args} %{vpx_build_args} %{x264_build_args} %{opencl_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
+
+%install
+rm -rf $RPM_BUILD_ROOT
+cd xpra-%{version}
+%{__python} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
+
+#we should pass arguments to setup.py but rpm macros make this too difficult
+#so we delete after installation (ugly but this works)
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/win32
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/darwin
+
+%if 0%{?opengl}
+#included by default
+%else
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/client/gl
+%endif
+
+%if 0%{?generic}
+# remove anything relying on dynamic libraries (not suitable for a generic RPM):
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/gtk_common/gdk_atoms.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/gtk_x11/*.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/bindings/*.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode/_rencode.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/*/*.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/server/stats/cymaths.so
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/argb
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/buffers
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/csc_cython
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/csc_swscale
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/cuda_common
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec*
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x265
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/nvenc
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/webp
+%else
+#not a generic RPM
+%ifarch x86_64
+mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
+%endif
+#exclude list for non-generic RPMs:
+%if 0%{?no_video}
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec*
+%endif
+%if 0%{?no_sound}
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/sound
+%endif
+%endif
+
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root)
+%{_bindir}/xpra*
+%{python_sitelib}/xpra
+%if %{include_egg}
+%{python_sitelib}/xpra-*.egg-info
+%endif
+/usr/share/xpra
+/usr/share/man/man1/xpra*
+/usr/share/applications/xpra_launcher.desktop
+/usr/share/applications/xpra.desktop
+/usr/share/icons/xpra.png
+%dir %{_sysconfdir}/xpra
+%config(noreplace) %{_sysconfdir}/xpra/xorg.conf
+%config(noreplace) %{_sysconfdir}/xpra/xpra.conf
+
+%check
+desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
+desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
+
+
+%post
+%if 0%{?static_ffmpeg}
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/csc_swscale/colorspace_converter.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/dec_avcodec*/decoder.so
+%endif
+%if 0%{?static_vpx}
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/encoder.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/decoder.so
+%endif
+%if 0%{?static_x264}
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
+%endif
+%if %{defined Fedora}
+update-desktop-database &> /dev/null || :
+touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+%endif
+
+
+%postun
+%if %{defined Fedora}
+update-desktop-database &> /dev/null || :
+if [ $1 -eq 0 ] ; then
+    /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
+    /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
+fi
+%endif
+
+
+%posttrans
+/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
+
 
 %changelog
 * Mon May 26 2014 Antoine Martin <antoine@devloop.org.uk> 0.14.0-1
@@ -1067,139 +1199,6 @@ So basically it's screen for remote X apps.
 
 * Mon Jan 11 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.11-1
 - first rpm spec file
-
-%prep
-rm -rf $RPM_BUILD_DIR/xpra-%{version}
-zcat $RPM_SOURCE_DIR/xpra-%{version}.tar.gz | tar -xvf -
-cd xpra-%{version}
-%if 0%{?no_strict}
-(sed -e -i s'/strict_ENABLED = True/strict_ENABLED = False/g' setup.py)
-(echo "setup.py" >> %{S:ignored_changed_files.txt})
-%endif
-%if 0%{?no_pulseaudio}
-(sed -e -i s'/sound_ENABLED = True/sound_ENABLED = False/g' setup.py)
-(echo "setup.py" >> %{S:ignored_changed_files.txt})
-(echo "etc/*/xpra.conf" >> %{S:ignored_changed_files.txt})
-%endif
-%if 0%{?old_xdg}
-%patch12 -p1
-(echo "xdg/*.desktop" >> %{S:ignored_changed_files.txt})
-%endif
-
-%debug_package
-
-%build
-cd xpra-%{version}
-rm -rf build install
-CFLAGS=-O2 python setup.py build %{ffmpeg_build_args} %{vpx_build_args} %{x264_build_args} %{opencl_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
-
-%install
-rm -rf $RPM_BUILD_ROOT
-cd xpra-%{version}
-%{__python} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
-
-#we should pass arguments to setup.py but rpm macros make this too difficult
-#so we delete after installation (ugly but this works)
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/win32
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/darwin
-
-%if 0%{?opengl}
-#included by default
-%else
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/client/gl
-%endif
-
-%if 0%{?generic}
-# remove anything relying on dynamic libraries (not suitable for a generic RPM):
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/gtk_common/gdk_atoms.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/gtk_x11/*.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/bindings/*.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode/_rencode.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/*/*.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/server/stats/cymaths.so
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/argb
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/buffers
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/csc_cython
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/csc_swscale
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/cuda_common
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec*
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x265
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/nvenc
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/webp
-%else
-#not a generic RPM
-%ifarch x86_64
-mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
-%endif
-#exclude list for non-generic RPMs:
-%if 0%{?no_video}
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec*
-%endif
-%if 0%{?no_sound}
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/sound
-%endif
-%endif
-
-
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-%files
-%defattr(-,root,root)
-%{_bindir}/xpra*
-%{python_sitelib}/xpra
-%if %{include_egg}
-%{python_sitelib}/xpra-*.egg-info
-%endif
-/usr/share/xpra
-/usr/share/man/man1/xpra*
-/usr/share/applications/xpra_launcher.desktop
-/usr/share/applications/xpra.desktop
-/usr/share/icons/xpra.png
-%dir %{_sysconfdir}/xpra
-%config(noreplace) %{_sysconfdir}/xpra/xorg.conf
-%config(noreplace) %{_sysconfdir}/xpra/xpra.conf
-
-%check
-desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
-desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
-
-
-%post
-%if 0%{?static_ffmpeg}
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/csc_swscale/colorspace_converter.so
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/dec_avcodec*/decoder.so
-%endif
-%if 0%{?static_vpx}
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/encoder.so
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/decoder.so
-%endif
-%if 0%{?static_x264}
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
-%endif
-%if %{defined Fedora}
-update-desktop-database &> /dev/null || :
-touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
-%endif
-
-
-%postun
-%if %{defined Fedora}
-update-desktop-database &> /dev/null || :
-if [ $1 -eq 0 ] ; then
-    /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
-    /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
-fi
-%endif
-
-
-%posttrans
-/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
-
 
 ###
 ### eof
