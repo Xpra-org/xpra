@@ -377,7 +377,7 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
         w.set_decorated(False)
         vbox = gtk.VBox()
         width, height = 32, 32
-        if opengl_icon and os.path.exists(opengl_icon):
+        if opengl_icon and os.path.exists(opengl_icon) and hasattr(gtk, "image_new_from_pixbuf"):
             pixbuf = gtk.gdk.pixbuf_new_from_file(opengl_icon)
             image = gtk.image_new_from_pixbuf(pixbuf)
             vbox.add(image)
