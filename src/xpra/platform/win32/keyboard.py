@@ -135,13 +135,12 @@ class Keyboard(KeyboardBase):
                 self.emulate_altgr = key_event.pressed
                 if key_event.pressed and self.last_key_event_sent:
                     #check for spurious control and undo it
-                    last_wid, last_keyname, last_pressed = self.last_key_event_sent[:3]
-                    if last_wid==wid and last_keyname=="Control_L" and last_pressed==True:
+                    last_wid, last_key_event = self.last_key_event_sent[:3]
+                    if last_wid==wid and last_key_event.keyname=="Control_L" and last_key_event.pressed==True:
                         #undo it:
-                        undo = self.last_key_event_sent[:]
-                        undo[2] = False
-                        send_key_action_cb(*undo)
+                        last_key_event.pressed = False
+                        KeyboardBase.process_key_event(self, send_key_action_cb, last_wid, last_key_event)
                 self.AltGr_modifiers(key_event.modifiers, not key_event.pressed)
-        self.last_key_event_sent = key_event
+        self.last_key_event_sent = (wid, key_event)
         #now fallback to default behaviour:
         KeyboardBase.process_key_event(self, send_key_action_cb, wid, key_event)
