@@ -125,7 +125,14 @@ if is_gtk3():
 
 else:
     #gtk2:
-    image_new_from_pixbuf   = gtk.image_new_from_pixbuf
+    if hasattr(gtk, "image_new_from_pixbuf"):
+        #not available in centos5
+        image_new_from_pixbuf   = gtk.image_new_from_pixbuf
+    else:
+        def image_new_from_pixbuf(pixbuf):
+            i = gtk.Image()
+            i.set_from_pixbuf(pixbuf)
+            return i
     pixbuf_new_from_file    = gdk.pixbuf_new_from_file
     pixbuf_new_from_data    = gdk.pixbuf_new_from_data
     get_default_keymap      = gdk.keymap_get_default
