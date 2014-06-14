@@ -329,11 +329,6 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         gldrawable.gl_end()
 
 def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
-    try:
-        from xpra.platform.paths import get_icon_dir
-        opengl_icon = os.path.join(get_icon_dir(), "opengl.png")
-    except:
-        opengl_icon = None
     #platform checks:
     from xpra.platform.gui import gl_check
     warning = gl_check()
@@ -376,14 +371,6 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
         w = gtk.Window()
         w.set_decorated(False)
         vbox = gtk.VBox()
-        width, height = 32, 32
-        if opengl_icon and os.path.exists(opengl_icon) and hasattr(gtk, "image_new_from_pixbuf"):
-            pixbuf = gtk.gdk.pixbuf_new_from_file(opengl_icon)
-            image = gtk.image_new_from_pixbuf(pixbuf)
-            vbox.add(image)
-            width, height = pixbuf.get_width(), pixbuf.get_height()
-            w.set_default_size(width, height)
-            w.set_resizable(False)
         glarea = gtk.gtkgl.DrawingArea(glconfig)
         glarea.set_size_request(32, 32)
         vbox.add(glarea)
