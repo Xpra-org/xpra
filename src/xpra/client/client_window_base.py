@@ -204,7 +204,9 @@ class ClientWindowBase(ClientWidgetBase):
                 opacity = 1
             else:
                 opacity = min(1, opacity/float(0xffffffff))
-            self.set_opacity(opacity)
+            #requires gtk>=2.12!
+            if hasattr(self, "set_opacity"):
+                self.set_opacity(opacity)
 
         if "has-alpha" in metadata:
             new_alpha = metadata.boolget("has-alpha")
