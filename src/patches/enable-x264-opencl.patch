@@ -1,5 +1,10 @@
-Index: xpra/codecs/enc_x264/encoder.pyx
-===================================================================
+Last-Update: 2014-06-14
+Forwarded: not-needed
+Author: Antoine Martin <antoine@nagafix.co.uk>
+Description: enables OpenCL support in x264, this could potentially
+ improve performance if your CPU is particularly slow and your GPU is much faster,
+ but generally it will only slow things down.
+
 --- a/xpra/codecs/enc_x264/encoder.pyx	(revision 4222)
 +++ b/xpra/codecs/enc_x264/encoder.pyx	(working copy)
 @@ -70,6 +70,9 @@
