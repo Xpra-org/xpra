@@ -3,10 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#try to ensure we can access the python "platform" module
-from __future__ import absolute_import
-
-import platform as python_platform
+#tricky: use xpra.scripts.config to get to the python "platform" module
+from xpra.scripts.config import python_platform
 import sys
 from xpra import __version__ as local_version
 from xpra.log import Logger
