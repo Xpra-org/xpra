@@ -26,7 +26,10 @@ class Keyboard(KeyboardBase):
         self.last_key_event_sent = None
         #workaround for "period" vs "KP_Decimal" with gtk2 (see ticket #586):
         #translate "period" with keyval=46 and keycode=110 to KP_Decimal:
-        KEY_TRANSLATIONS[("period", 46, 110)] = "KP_Decimal"
+        KEY_TRANSLATIONS[("period",     46,     110)]   = "KP_Decimal"
+        #workaround for "fr" keyboards, which use a different key name under X11:
+        KEY_TRANSLATIONS[("dead_tilde", 65107,  50)]    = "asciitilde"
+        KEY_TRANSLATIONS[("dead_grave", 65104,  55)]    = "grave"
 
     def set_modifier_mappings(self, mappings):
         KeyboardBase.set_modifier_mappings(self, mappings)
