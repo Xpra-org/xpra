@@ -925,7 +925,7 @@ def init_nvencode_library():
     try:
         x = ctypes.cdll.LoadLibrary(cuda_libname)
         log("init_nvencode_library() %s=%s", cuda_libname, x)
-    except:
+    except Exception, e:
         raise Exception("nvenc: the required library %s cannot be loaded: %s" % (cuda_libname, e))
     cuCtxGetCurrent = x.cuCtxGetCurrent
     cuCtxGetCurrent.restype = ctypes.c_int          # CUresult == int
@@ -936,7 +936,7 @@ def init_nvencode_library():
     try:
         x = ctypes.cdll.LoadLibrary(nvenc_libname)
         log("init_nvencode_library() %s=%s", nvenc_libname, x)
-    except:
+    except Exception, e:
         raise Exception("nvenc: the required library %s cannot be loaded: %s" % (nvenc_libname, e))
     NvEncodeAPICreateInstance = x.NvEncodeAPICreateInstance
     NvEncodeAPICreateInstance.restype = ctypes.c_int
