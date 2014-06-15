@@ -89,6 +89,7 @@ class ServerBase(ServerCore):
                     "sound-output",
                     "scaling",
                     "suspend", "resume", "name", "ungrab",
+                    "key", "focus",
                     "client"]
 
         self.init_encodings()
@@ -823,7 +824,7 @@ class ServerBase(ServerCore):
             return arg_err("must be one of: %s" % (", ".join(opts)))
         elif command=="sound-output":
             if len(args)<1:
-                return argn_err("more than 1")
+                return arg_err("more than 1")
             msg = []
             for csource in sources:
                 msg.append("%s : %s" % (csource, csource.sound_control(*args[1:])))
@@ -918,6 +919,34 @@ class ServerBase(ServerCore):
             for csource in sources:
                 csource.default_encoding_options[command] = v
             return 0, "%s set to %s on windows %s for %s clients" % (command, v, wids, len(sources))
+        elif command=="key":
+            if len(args) not in (1, 2):
+                return argn_err("1 or 2")
+            key = args[0]
+            try:
+                if key.startswith("0x"):
+                    keycode = int(key, 16)
+                else:
+                    keycode = int(key)
+                assert keycode>0 and keycode<=255
+            except:
+                raise Exception("invalid keycode specified: '%s' (must be a number between 1 and 255)" % key)
+            press = True
+            if len(args)==2:
+                if args[1] in ("1", "press"):
+                    press = True
+                elif args[1] in ("0", "unpress"):
+                    press = False
+                else:
+                    return arg_err("if present, the second argument must be one of: %s", ("1", "press", "0", "unpress"))
+            self.fake_key(keycode, press)
+            return 0, "%spressed key %s" % (["un", ""][int(press)], keycode)
+        elif command=="focus":
+            if len(args)!=1:
+                return argn_err(1)
+            wid = int(args[0])
+            self._focus(None, wid, None)
+            return 0, "gave focus to window %s" % wid
         elif command=="client":
             if len(args)==0:
                 return argn_err("at least 1")
