@@ -48,7 +48,7 @@ def argb_to_rgba(buf):
     # buf is a Python buffer object
     cdef const unsigned char * cbuf = <unsigned char *> 0
     cdef Py_ssize_t cbuf_len = 0
-    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0
+    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return argbdata_to_rgba(cbuf, cbuf_len)
 
 cdef argbdata_to_rgba(const unsigned char* argb, int argb_len):
@@ -71,7 +71,7 @@ def argb_to_rgb(buf):
     # buf is a Python buffer object
     cdef unsigned char * cbuf = <unsigned char *> 0     #@DuplicateSignature
     cdef Py_ssize_t cbuf_len = 0                        #@DuplicateSignature
-    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0
+    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return argbdata_to_rgb(cbuf, cbuf_len)
 
 cdef argbdata_to_rgb(const unsigned char *argb, int argb_len):
@@ -97,7 +97,7 @@ def bgra_to_rgb(buf):
     # buf is a Python buffer object
     cdef unsigned char * bgra_buf           #@DuplicateSignature
     cdef Py_ssize_t bgra_buf_len            #@DuplicateSignature
-    assert object_as_buffer(buf, <const void**> &bgra_buf, &bgra_buf_len)==0
+    assert object_as_buffer(buf, <const void**> &bgra_buf, &bgra_buf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return bgradata_to_rgb(bgra_buf, bgra_buf_len)
 
 cdef bgradata_to_rgb(const unsigned char* bgra, int bgra_len):
@@ -124,7 +124,7 @@ def bgra_to_rgba(buf):
     # buf is a Python buffer object
     cdef unsigned char * bgra_buf2
     cdef Py_ssize_t bgra_buf_len2
-    assert object_as_buffer(buf, <const void**> &bgra_buf2, &bgra_buf_len2)==0
+    assert object_as_buffer(buf, <const void**> &bgra_buf2, &bgra_buf_len2)==0, "cannot convert %s to a readable buffer" % type(buf)
     return bgradata_to_rgba(bgra_buf2, bgra_buf_len2)
 
 cdef bgradata_to_rgba(const unsigned char* bgra, int bgra_len):
@@ -177,7 +177,7 @@ def unpremultiply_argb_in_place(buf):
     cdef Py_ssize_t cbuf_len = 0                    #@DuplicateSignature
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    assert object_as_write_buffer(buf, <void **>&cbuf, &cbuf_len)==0
+    assert object_as_write_buffer(buf, <void **>&cbuf, &cbuf_len)==0, "cannot convert %s to a writable buffer" % type(buf)
     do_unpremultiply_argb_in_place(cbuf, cbuf_len)
 
 cdef do_unpremultiply_argb_in_place(unsigned int * buf, Py_ssize_t buf_len):
