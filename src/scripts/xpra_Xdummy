@@ -25,7 +25,12 @@ XORG_BIN=$(which Xorg)
 if [[ -u $XORG_BIN ]]; then
     # setuid is set, we need to do magic
     find_ld_linux
-    exec "${LD_LINUX}" "${XORG_BIN}" "$@"
+    if [[ -n "$BASH" ]]; then
+    	#running in bash, can show a more helpful command name:
+        exec -a "Xorg-nosuid" "${LD_LINUX}" "${XORG_BIN}" "$@"
+    else
+        exec "${LD_LINUX}" "${XORG_BIN}" "$@"
+    fi
 else
     # setuid is not set on xorg_bin
     exec "${XORG_BIN}" "$@"
