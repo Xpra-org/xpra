@@ -32,7 +32,7 @@ from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEYS_STR = [x.strip() for x in os.environ.get("XPRA_NVENC_CLIENT_KEY", "").split(",")]
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
-YUV444P_ENABLED = os.environ.get("XPRA_NVENC_YUV444P", "1")=="1"
+YUV444P_USER_OVERRIDE = os.environ.get("XPRA_NVENC_YUV444P", "")
 
 #NVENC requires compute capability value 0x30 or above:
 MIN_COMPUTE = 0x30
@@ -1107,20 +1107,51 @@ BUFFER_FORMAT = {
         }
 
 
-if YUV444P_ENABLED:
-    COLORSPACES = {"BGRX" : ("YUV420P", "YUV444P")}
-else:
-    COLORSPACES = {"BGRX" : ("YUV420P",)}
+YUV444P_ENABLED = None
+def is_YUV444P_ENABLED():
+    global YUV444P_ENABLED
+    if YUV444P_ENABLED is None:
+        #check version:
+        version = get_nvidia_module_version(True)
+        if not version:
+            msg = "unknown version, disabling YUV444 support"
+            YUV444P_ENABLED = False
+        elif version<[337, 0]:
+            msg = "supported version, enabling YUV444 support"
+            YUV444P_ENABLED = True
+        else:
+            msg = "unsupported driver version %s, disabling YUV444 support" % version[0]
+            YUV444P_ENABLED = False
+        #env override and logging:
+        if YUV444P_USER_OVERRIDE=="0" and YUV444P_ENABLED:
+            msg = "YUV444 disabled using environment override"
+            YUV444P_ENABLED = False
+        elif YUV444P_USER_OVERRIDE=="1" and not YUV444P_ENABLED:
+            msg = "YUV444 enabled using environment override"
+            YUV444P_ENABLED = True
+        #log the result:
+        if not YUV444P_ENABLED:
+            log.warn(msg)
+        else:
+            log(msg)
+    return YUV444P_ENABLED
+
+def get_COLORSPACES():
+    if is_YUV444P_ENABLED():
+        COLORSPACES = {"BGRX" : ("YUV420P", "YUV444P")}
+    else:
+        COLORSPACES = {"BGRX" : ("YUV420P",)}
+    return COLORSPACES
 
 def get_input_colorspaces():
-    return COLORSPACES.keys()
+    return get_COLORSPACES().keys()
 
 def get_output_colorspaces(input_colorspace):
-    assert input_colorspace in COLORSPACES
+    assert input_colorspace in get_COLORSPACES()
     #the output will actually be in one of those two formats once decoded
     #because internally that's what we convert to before encoding
     #(well, NV12... which is equivallent to YUV420P here...)
-    return COLORSPACES[input_colorspace]
+    return get_COLORSPACES()[input_colorspace]
 
 
 WIDTH_MASK = 0xFFFE
@@ -1150,9 +1181,9 @@ def get_runtime_factor():
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
+    assert colorspace in get_COLORSPACES(), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES())
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
-    cs = video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
+    cs = video_codec_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace],
                       codec_class=Encoder, codec_type=get_type(),
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
@@ -1334,7 +1365,7 @@ cdef class Encoder:
         self.update_bitrate()
         start = time.time()
 
-        if YUV444P_ENABLED and "YUV444P" in dst_formats and ((self.separate_plane and quality>=50 and v==1 and u==1) or ("YUV420P" not in dst_formats)):
+        if is_YUV444P_ENABLED() and "YUV444P" in dst_formats and ((self.separate_plane and quality>=50 and v==1 and u==1) or ("YUV420P" not in dst_formats)):
             dst_format = "YUV444P"
         else:
             assert "YUV420P" in dst_formats
