@@ -16,6 +16,10 @@ from distutils.extension import Extension
 import subprocess, sys
 import os.path
 import stat
+from distutils.command.build import build
+from distutils.command.install_data import install_data
+import shutil
+
 try:
     from hashlib import md5         #@UnusedImport
     new_md5 = md5
@@ -633,12 +637,22 @@ def get_xorg_version():
         xorg_version = None
     return xorg_version
 
-def get_xorg_conf_and_script():
+def detect_xorg_setup():
     if not server_ENABLED:
-        return "etc/xpra/client-only/xpra.conf", False
+        return ("", False, False)
+    #do live detection
+    xorg_version = get_xorg_version()
+
+    # detect displayfd
+    if not xorg_version:
+        has_displayfd = False
+    elif xorg_version >= [1, 12]:
+        has_displayfd = True
+    else:
+        has_displayfd = False
 
     def Xvfb():
-        return "etc/xpra/Xvfb/xpra.conf", False
+        return ("Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY", has_displayfd, False)
 
     if sys.platform.find("bsd")>=0:
         print("Warning: sorry, no support for Xdummy on %s" % sys.platform)
@@ -662,10 +676,10 @@ def get_xorg_conf_and_script():
                 print("Xorg is suid and not readable, Xdummy support unavailable")
                 return Xvfb()
             print("%s is suid and readable, using the xpra_Xdummy wrapper" % XORG_BIN)
-            return "etc/xpra/xpra_Xdummy/xpra.conf", True
+            return ("xpra_Xdummy -dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf", has_displayfd, True)
         else:
             print("using Xdummy config file")
-            return "etc/xpra/Xdummy/xpra.conf", False
+            return ("Xorg -dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf", has_displayfd, False)
 
     if Xdummy_ENABLED is False:
         return Xvfb()
@@ -689,8 +703,6 @@ def get_xorg_conf_and_script():
         e = sys.exc_info()[1]
         print("failed to detect OS release using %s: %s" % (" ".join(cmd), e))
 
-    #do live detection
-    xorg_version = get_xorg_version()
     if not xorg_version:
         print("Xorg version could not be detected, Xdummy support disabled (using Xvfb as safe default)")
         return Xvfb()
@@ -699,6 +711,17 @@ def get_xorg_conf_and_script():
         return Xvfb()
     print("found valid recent version of Xorg server: %s" % str(xorg_version))
     return Xorg_suid_check()
+
+def build_xpra_conf(build_base):
+    #generates an actual config file from the template
+    xvfb_command, has_displayfd, _ = detect_xorg_setup()
+    f_in = open("etc/xpra/xpra.conf.in", "r")
+    template  = f_in.read()
+    f_in.close()
+    f_out = open(build_base + "/xpra.conf", "w")
+    f_out.write(template % {'xvfb_command'  : xvfb_command,
+                            'has_displayfd' : ["no", "yes"][int(has_displayfd)]})
+    f_out.close()
 
 
 #*******************************************************************************
@@ -1299,7 +1322,6 @@ if WIN32:
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
         import OpenGL, OpenGL_accelerate        #@UnresolvedImport
-        import shutil
         print("*** copy PyOpenGL modules ***")
         for module_name, module in {"OpenGL" : OpenGL, "OpenGL_accelerate" : OpenGL_accelerate}.items():
             module_dir = os.path.dirname(module.__file__ )
@@ -1326,6 +1348,34 @@ else:
     add_data_files("share/applications",  ["xdg/xpra_launcher.desktop", "xdg/xpra.desktop"])
     add_data_files("share/icons",         ["xdg/xpra.png"])
     html5_dir = "share/xpra/www"
+
+    #here, we override build and install so we can
+    #generate our /etc/xpra/xpra.conf
+    class build_override(build):
+        def run(self):
+            build.run(self)
+            self.run_command("build_conf")
+
+    class build_conf(build):
+        def run(self):
+            build_xpra_conf(self.build_base)
+
+    class install_data_override(install_data):
+        def run(self):
+            # Call parent
+            install_data.run(self)
+
+            # install xpra.conf we have generated in build_conf:
+            dst_xpra_conf = os.path.join(self.install_dir, "/etc/xpra/xpra.conf")
+            src_xpra_conf = os.path.join(self.distribution.command_obj['build'].build_base, "xpra.conf")
+
+            assert os.path.exists(src_xpra_conf), "cannot find '%s' from build step" % src_xpra_conf
+            shutil.copyfile(src_xpra_conf, dst_xpra_conf)
+
+    # add build_conf to build step
+    cmdclass['build'] = build_override
+    cmdclass['build_conf'] = build_conf
+    cmdclass['install_data'] = install_data_override
 
     if OSX:
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
@@ -1355,14 +1405,14 @@ else:
             etc_prefix = sys.prefix + '/etc/xpra'
 
         etc_files = []
+        #note: xpra.conf is handled above using build overrides
         if server_ENABLED and x11_ENABLED:
             etc_files = ["etc/xpra/xorg.conf"]
             #figure out the version of the Xorg server:
-            xorg_conf, use_Xdummy_wrapper = get_xorg_conf_and_script()
+            _, _, use_Xdummy_wrapper = detect_xorg_setup()
             if not use_Xdummy_wrapper and "scripts/xpra_Xdummy" in scripts:
                 #if we're not using the wrapper, don't install it
                 scripts.remove("scripts/xpra_Xdummy")
-            etc_files.append(xorg_conf)
         add_data_files(etc_prefix, etc_files)
 
     if OSX and "py2app" in sys.argv:

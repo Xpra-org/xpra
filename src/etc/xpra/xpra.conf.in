@@ -3,17 +3,19 @@
 #
 # You can provide default values for most command line
 # options here.
-# All options can be overriden on the xpra command line.
-# See the man page for details.
-# Options which can be turned on or off will accept
-# the following values: 1, 0, true, false, yes, no
+# Each user can also define its own options in the file
+# ~/xpra/xpra.conf which will take precedence over this file.
+# Most options can be overriden on the xpra command line.
+# See "xpra -h" or the man page for details.
+#
+# Syntax:
+# - Options which can be turned on or off will accept
+#   the following values: 1, 0, true, false, yes, no
+# - Options which can accept multiple values
+#   may just be specified multiple times.
+# - You may break a long line into multiple lines
+#   by ending each line with a backslash '\'.
 
-# Commands to start by default (may be specified more than once):
-#start-child = /usr/bin/xterm
-#start-child = /usr/bin/xeyes
-#Xsession can take care of initializing dbus, keyring-daemon,
-#gpg-agent or whatever else might be usually started together with X
-#start-child = /etc/X11/Xsession true
 
 # Enable clipboard forwarding:
 clipboard = yes
@@ -23,15 +25,6 @@ notifications = yes
 
 # Enable forwarding of system tray icons:
 system-tray = yes
-
-# Start a pulseaudio server with each session:
-pulseaudio = yes
-
-# pulseaudio server start command:
-pulseaudio-command = pulseaudio --start --daemonize=false --system=false \
-                --exit-idle-time=-1 -n --load=module-suspend-on-idle \
-                --load=module-null-sink --load=module-native-protocol-unix \
-                --log-level=2 --log-target=stderr
 
 # Forward sound output to clients:
 speaker = yes
@@ -71,15 +64,6 @@ compression_level = 1
 #socket-dir = /tmp
 #socket-dir = ~/.xpra
 
-# Where to send non xpra clients:
-#tcp-proxy = 127.0.0.1:80
-
-# Log file:
-log-file = $DISPLAY.log
-
-# Publish sessions:
-mdns = yes
-
 # Debugging:
 #debug =
 #debug = keyboard,clipboard,tray
@@ -89,7 +73,8 @@ mdns = yes
 #opengl = no
 opengl = auto
 
-# Default encoding (not all encodings may be available in your environment):
+# Default encoding
+# (not all encodings may be available in your environment):
 #encoding = h264
 #encoding = vp8
 #encoding = png
@@ -97,28 +82,20 @@ opengl = auto
 #encoding = rgb
 #encoding = webp
 
-# Video encoders loaded by the server (all of them unless specified)
-# examples:
-#video-encoders=x264,vpx,nvenc
-#video-encoders=x264
-
-# Colourspace conversion modules loaded by the server (all of them unless specified)
-# examples:
-#csc-modules=swscale,cython,opencl
-#csc-modules=swscale
-
-# Use fixed quality:
+# Use fixed quality
+# (value is a percentage or "auto"):
 #quality = 80
 quality = auto
 
-# For auto quality, do not go below this value:
+# For auto quality only:
 min-quality = 50
 
-# Use fixed speed:
-#speed = 20
+# Use fixed speed
+# (value is a percentage or "auto"):
+#speed = 90
 speed = auto
 
-# For auto speed, do not go below this value:
+# For auto speed only:
 #min-speed = 20
 min-speed = 0
 
@@ -143,15 +120,59 @@ pings = no
 # Client ssh command:
 #ssh = /usr/bin/ssh
 
+
+########################################################################
+# Server Options:
+#
+
+# Commands to start by default
+#  (may be specified more than once):
+# examples:
+#start-child = /usr/bin/xterm
+#start-child = /usr/bin/xeyes
+# Xsession can take care of initializing dbus, keyring-daemon,
+# gpg-agent or whatever else might be usually started together with X
+#start-child = /etc/X11/Xsession true
+
+# Video encoders loaded by the server
+# (all of them unless specified)
+# examples:
+#video-encoders=x264,vpx,nvenc
+#video-encoders=x264
+
+# Colourspace conversion modules loaded by the server
+# (all of them unless specified)
+# examples:
+#csc-modules=swscale,cython,opencl
+#csc-modules=swscale
+
+# Where to send non xpra clients:
+# (can be used to share the port with a web server)
+#tcp-proxy = 127.0.0.1:80
+
+# Log file:
+log-file = $DISPLAY.log
+
+# Publish sessions:
+mdns = yes
+
+# Start a pulseaudio server with each session:
+pulseaudio = yes
+
+# pulseaudio server start command:
+pulseaudio-command = pulseaudio --start --daemonize=false --system=false \
+                --exit-idle-time=-1 -n --load=module-suspend-on-idle \
+                --load=module-null-sink --load=module-native-protocol-unix \
+                --log-level=2 --log-target=stderr
+
 # Virtual display command:
 # - Old Xvfb option:
 # xvfb=Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY
 # - With Xorg 1.12 or newer and the dummy driver:
 # xvfb=/usr/bin/Xorg -dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf
 #
-# Using Xvfb:
-xvfb=Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY
+# Selecting virtual X server:
+xvfb=%(xvfb_command)s
 
 # Does the xvfb command support the "-displayfd" argument?
-# (which versions do support this flag is very unclear)
-#displayfd = no
+displayfd = %(has_displayfd)s
