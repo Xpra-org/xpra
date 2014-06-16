@@ -1,12 +1,32 @@
 #!/bin/sh
 #@PydevCodeAnalysisIgnore
 
-DOTXPRA_DIR="${HOME}/.xpra"
-NOSUID_XORG="${DOTXPRA_DIR}/Xorg"
-if [ ! -d "${DOTXPRA_DIR}" ]; then
-    mkdir "${DOTXPRA_DIR}"
-    chmod 700 "${DOTXPRA_DIR}"
+function find_ld_linux {
+    arch=$(uname -m)
+
+    if [[ $arch == "x86_64" ]]; then
+        if [[ -f /lib64/ld-linux-x86-64.so.2 ]]; then
+            LD_LINUX='/lib64/ld-linux-x86-64.so.2'
+        fi
+    elif [[ $arch = "i686" ]]; then
+        if [[ -f /lib/ld-linux.so.2 ]]; then
+            LD_LINUX='/lib/ld-linux.so.2'
+        fi
+    fi
+
+    if [[ ! $LD_LINUX ]]; then
+        echo "could not determine ld_linux path, please file an xpra bug"
+        exit 1
+    fi
+}
+
+XORG_BIN=$(which Xorg)
+
+if [[ -u $XORG_BIN ]]; then
+    # setuid is set, we need to do magic
+    find_ld_linux
+    exec "${LD_LINUX}" "${XORG_BIN}" "$@"
+else
+    # setuid is not set on xorg_bin
+    exec "${XORG_BIN}" "$@"
 fi
-XORG_BIN=`which Xorg`
-cp -f "${XORG_BIN}" "${NOSUID_XORG}"
-exec "${NOSUID_XORG}" "$@"
