@@ -2,36 +2,44 @@
 #@PydevCodeAnalysisIgnore
 
 function find_ld_linux {
-    arch=$(uname -m)
+	arch=$(uname -m)
 
-    if [[ $arch == "x86_64" ]]; then
-        if [[ -f /lib64/ld-linux-x86-64.so.2 ]]; then
-            LD_LINUX='/lib64/ld-linux-x86-64.so.2'
-        fi
-    elif [[ $arch = "i686" ]]; then
-        if [[ -f /lib/ld-linux.so.2 ]]; then
-            LD_LINUX='/lib/ld-linux.so.2'
-        fi
-    fi
+	if [[ $arch == "x86_64" ]]; then
+		LD_LINUX='/lib64/ld-linux-x86-64.so.2'
+	else
+		LD_LINUX='/lib/ld-linux.so.2'
+	fi
 
-    if [[ ! $LD_LINUX ]]; then
-        echo "could not determine ld_linux path, please file an xpra bug"
-        exit 1
-    fi
+	if [[ ! -x $LD_LINUX ]]; then
+		LD_LINUX=''
+		echo "could not determine ld_linux path for $arch, please file an xpra bug"
+	fi
 }
 
 XORG_BIN=$(which Xorg)
 
 if [[ -u $XORG_BIN ]]; then
-    # setuid is set, we need to do magic
-    find_ld_linux
-    if [[ -n "$BASH" ]]; then
-    	#running in bash, can show a more helpful command name:
-        exec -a "Xorg-nosuid" "${LD_LINUX}" "${XORG_BIN}" "$@"
-    else
-        exec "${LD_LINUX}" "${XORG_BIN}" "$@"
-    fi
+	# setuid is set, we need to do magic
+	find_ld_linux
+	if [[ -n $LD_LINUX ]]; then
+		if [[ -n $BASH ]]; then
+			#running in bash, can show a more helpful command name:
+			exec -a "Xorg-nosuid" "${LD_LINUX}" "${XORG_BIN}" "$@"
+		else
+			exec "${LD_LINUX}" "${XORG_BIN}" "$@"
+		fi
+	else
+		#fallback to making a copy of the binary:
+		DOTXPRA_DIR="${HOME}/.xpra"
+		if [[ ! -d "${DOTXPRA_DIR}" ]]; then
+	 		mkdir "${DOTXPRA_DIR}"
+	 		chmod 700 "${DOTXPRA_DIR}"
+	 	fi
+		NOSUID_XORG="${DOTXPRA_DIR}/Xorg"
+	 	cp -f "${XORG_BIN}" "${NOSUID_XORG}"
+	 	exec "${NOSUID_XORG}" "$@"
+	 fi
 else
-    # setuid is not set on xorg_bin
-    exec "${XORG_BIN}" "$@"
+	# setuid is not set on xorg_bin
+	exec "${XORG_BIN}" "$@"
 fi
