@@ -1366,7 +1366,7 @@ else:
             install_data.run(self)
 
             # install xpra.conf we have generated in build_conf:
-            dst_xpra_conf = os.path.join(self.install_dir, "/etc/xpra/xpra.conf")
+            dst_xpra_conf = os.path.join(self.install_dir, "etc/xpra/xpra.conf")
             src_xpra_conf = os.path.join(self.distribution.command_obj['build'].build_base, "xpra.conf")
 
             assert os.path.exists(src_xpra_conf), "cannot find '%s' from build step" % src_xpra_conf
