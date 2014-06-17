@@ -257,8 +257,8 @@
 
   <distutils id="python-cython">
      <branch repo="pypi.python.org"
-	     module="/packages/source/C/Cython/Cython-0.20.1.tar.gz"
-	     version="0.20.1"/>
+	     module="/packages/source/C/Cython/Cython-0.20.2.tar.gz"
+	     version="0.20.2"/>
   </distutils>
 
   <distutils id="python-numpy">
