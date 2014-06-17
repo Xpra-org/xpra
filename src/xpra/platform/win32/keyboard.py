@@ -138,7 +138,7 @@ class Keyboard(KeyboardBase):
                 self.emulate_altgr = key_event.pressed
                 if key_event.pressed and self.last_key_event_sent:
                     #check for spurious control and undo it
-                    last_wid, last_key_event = self.last_key_event_sent[:3]
+                    last_wid, last_key_event = self.last_key_event_sent
                     if last_wid==wid and last_key_event.keyname=="Control_L" and last_key_event.pressed==True:
                         #undo it:
                         last_key_event.pressed = False
