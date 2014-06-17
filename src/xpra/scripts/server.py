@@ -9,7 +9,6 @@
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
 # (also do not import anything that imports gtk)
 import gobject
-import glib
 import subprocess
 import sys
 import os.path
@@ -616,6 +615,7 @@ def verify_display_ready(xvfb, display_name, shadowing):
     assert "gtk" not in sys.modules
     import gtk.gdk          #@Reimport
     try:
+        import glib
         glib.threads_init()
     except:
         #old versions do not have this method
