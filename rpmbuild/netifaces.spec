@@ -7,8 +7,8 @@
 Summary: Getting network addresses from Python
 Vendor: http://alastairs-place.net/netifaces/
 Name: netifaces
-Version: 0.8
-Release: 2%{?dist}
+Version: 0.10.4
+Release: 1%{?dist}
 License: GPL3
 Requires: python
 Group: Networking
