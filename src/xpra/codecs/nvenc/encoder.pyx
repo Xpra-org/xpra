@@ -1116,7 +1116,7 @@ def is_YUV444P_ENABLED():
         if not version:
             msg = "unknown version, disabling YUV444 support"
             YUV444P_ENABLED = False
-        elif version<[337, 0]:
+        elif version<[337, 0] and (version[0]!=331 or version[1]<79) and (version[0]!=334 or version[1]<21):
             msg = "supported version, enabling YUV444 support"
             YUV444P_ENABLED = True
         else:
