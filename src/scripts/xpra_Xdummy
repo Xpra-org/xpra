@@ -6,14 +6,20 @@ find_ld_linux() {
 
 	if [ $arch = "x86_64" ]; then
 		LD_LINUX='/lib64/ld-linux-x86-64.so.2'
+	elif [ $arch = "i386" ]; then
+		LD_LINUX='/lib/ld-linux.so.2'
+	elif [ $arch = "i486" ]; then
+		LD_LINUX='/lib/ld-linux.so.2'
+	elif [ $arch = "i586" ]; then
+		LD_LINUX='/lib/ld-linux.so.2'
+	elif [ $arch = "i686" ]; then
+		LD_LINUX='/lib/ld-linux.so.2'
 	elif [ $arch = "armel" ]; then
 		LD_LINUX='/lib/ld-linux.so.3'
 	elif [ $arch = "armhfp" ]; then
 		LD_LINUX='/lib/ld-linux.so.3'
 	elif [ $arch = "armhf" ]; then
 		LD_LINUX='/lib/ld-linux-armhf.so.3'
-	elif [ $arch = "i386" ]; then
-		LD_LINUX='/lib/ld-linux.so.2'
 	elif [ $arch = "ppc64" ]; then
 		LD_LINUX='/lib64/ld64.so.1'
 	elif [ $arch = "s390x" ]; then
