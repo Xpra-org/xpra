@@ -1,45 +1,62 @@
 #!/bin/sh
 #@PydevCodeAnalysisIgnore
 
-function find_ld_linux {
+find_ld_linux() {
 	arch=$(uname -m)
 
-	if [[ $arch == "x86_64" ]]; then
+	if [ $arch = "x86_64" ]; then
 		LD_LINUX='/lib64/ld-linux-x86-64.so.2'
-	else
+	elif [ $arch = "armel" ]; then
+		LD_LINUX='/lib/ld-linux.so.3'
+	elif [ $arch = "armhfp" ]; then
+		LD_LINUX='/lib/ld-linux.so.3'
+	elif [ $arch = "armhf" ]; then
+		LD_LINUX='/lib/ld-linux-armhf.so.3'
+	elif [ $arch = "i386" ]; then
 		LD_LINUX='/lib/ld-linux.so.2'
+	elif [ $arch = "ppc64" ]; then
+		LD_LINUX='/lib64/ld64.so.1'
+	elif [ $arch = "s390x" ]; then
+		LD_LINUX='/lib64/ld64.so.1'
+	else
+		#suitable for: powerpc/ppc, mips/mipsel, s390 and others:
+		LD_LINUX='/lib/ld.so.1'
 	fi
 
-	if [[ ! -x $LD_LINUX ]]; then
+	if [ ! -x "$LD_LINUX" ]; then
 		LD_LINUX=''
-		echo "could not determine ld_linux path for $arch, please file an xpra bug"
+		echo "could not determine ld path for $arch, please file an xpra bug"
 	fi
 }
 
 XORG_BIN=$(which Xorg)
+if [ ! -x "$XORG_BIN" ]; then
+	echo "failed to locate Xorg binary to run"
+	exit 1
+fi
 
-if [[ -u $XORG_BIN ]]; then
+if [ -u "$XORG_BIN" ]; then
 	# setuid is set, we need to do magic
 	find_ld_linux
-	if [[ -n $LD_LINUX ]]; then
-		if [[ -n $BASH ]]; then
+	if [ -n "$LD_LINUX" ]; then
+		if [ -n "$BASH" ]; then
 			#running in bash, can show a more helpful command name:
-			exec -a "Xorg-nosuid" "${LD_LINUX}" "${XORG_BIN}" "$@"
+			exec -a "Xorg-nosuid" "$LD_LINUX" "$XORG_BIN" "$@"
 		else
-			exec "${LD_LINUX}" "${XORG_BIN}" "$@"
+			exec "$LD_LINUX" "$XORG_BIN" "$@"
 		fi
 	else
 		#fallback to making a copy of the binary:
-		DOTXPRA_DIR="${HOME}/.xpra"
-		if [[ ! -d "${DOTXPRA_DIR}" ]]; then
-	 		mkdir "${DOTXPRA_DIR}"
-	 		chmod 700 "${DOTXPRA_DIR}"
+		DOTXPRA_DIR="$HOME/.xpra"
+		if [ ! -d "$DOTXPRA_DIR" ]; then
+	 		mkdir "$DOTXPRA_DIR"
+	 		chmod 700 "$DOTXPRA_DIR"
 	 	fi
-		NOSUID_XORG="${DOTXPRA_DIR}/Xorg"
-	 	cp -f "${XORG_BIN}" "${NOSUID_XORG}"
-	 	exec "${NOSUID_XORG}" "$@"
+		NOSUID_XORG="$DOTXPRA_DIR/Xorg-nosuid"
+	 	cp -f "$XORG_BIN" "$NOSUID_XORG"
+	 	exec "$NOSUID_XORG" "$@"
 	 fi
 else
 	# setuid is not set on xorg_bin
-	exec "${XORG_BIN}" "$@"
+	exec "$XORG_BIN" "$@"
 fi
