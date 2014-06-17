@@ -1192,7 +1192,11 @@ class ServerSource(object):
         if not self.send_cursor_pending:
             self.send_cursor_pending = True
             delay = max(10, int(self.global_batch_config.delay/4))
-            cursorlog("send_cursor(..) using delay=%s", delay)
+            if cursor_data:
+                w, h, _xhot, _yhot, serial, pixels = cursor_data[2:8]
+                cursorlog("send_cursor(..) sending %s bytes for %sx%s cursor %s with delay=%s", len(pixels), w, h, serial, delay)
+            else:
+                cursorlog("send_cursor(..) sending empty cursor with delay=%s", delay)
             self.timeout_add(delay, self.do_send_cursor)
 
     def do_send_cursor(self):
