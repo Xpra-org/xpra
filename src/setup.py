@@ -619,7 +619,11 @@ def get_xorg_version():
     global xorg_version
     if xorg_version:
         return xorg_version
-    cmd = ["Xorg", "-version"]
+    #fedora rawhide binary:
+    if os.path.exists("/usr/libexec/Xorg.bin"):
+        cmd = ["/usr/libexec/Xorg.bin", "-version"]
+    else:
+        cmd = ["Xorg", "-version"]
     if verbose_ENABLED:
         print("detecting Xorg version using: %s" % str(cmd))
     try:
@@ -1366,7 +1370,7 @@ else:
             install_data.run(self)
 
             # install xpra.conf we have generated in build_conf:
-            dst_xpra_conf = os.path.join(self.install_dir, "etc/xpra/xpra.conf")
+            dst_xpra_conf = os.path.join(self.install_dir.rstrip("/usr"), "etc/xpra/xpra.conf")
             src_xpra_conf = os.path.join(self.distribution.command_obj['build'].build_base, "xpra.conf")
 
             assert os.path.exists(src_xpra_conf), "cannot find '%s' from build step" % src_xpra_conf
