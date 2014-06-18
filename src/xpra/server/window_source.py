@@ -1031,6 +1031,7 @@ class WindowSource(object):
             actual_quality = 100
         lossy_csc = client_options.get("csc") in LOSSY_PIXEL_FORMATS
         scaled = client_options.get("scaled_size") is not None
+        region = rectangle(x, y, w, h)
         if actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
             #this screen update is lossless or high quality
             if not self.refresh_regions:
@@ -1038,7 +1039,7 @@ class WindowSource(object):
                 msg = "nothing to do"
             else:
                 #refresh already due: substract this region from the list of regions:
-                self.refresh_regions = remove_rectangle(self.refresh_regions, x, y, w, h)
+                remove_rectangle(self.refresh_regions, region)
                 if len(self.refresh_regions)==0:
                     msg = "covered all regions that needed a refresh, cancelling refresh"
                     self.cancel_refresh_timer()
@@ -1046,7 +1047,6 @@ class WindowSource(object):
                     msg = "removed rectangle from regions"
         else:
             #try to add the rectangle to the refresh list:
-            region = rectangle(x, y, w, h)
             if not self.add_refresh_region(region):
                 msg = "list of refresh regions unchanged"
             else:
@@ -1058,12 +1058,13 @@ class WindowSource(object):
                 else:
                     msg = "scheduling refresh"
                     self.refresh_event_time = time.time()
-                    sched_delay = max(50, self.auto_refresh_delay, self.batch_config.delay*4)
+                    sched_delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
                     self.refresh_timer = self.timeout_add(sched_delay, self.schedule_auto_refresh, window, options)
-        refreshlog("auto refresh: %s screen update (quality=%s), %s (regions=%s)", encoding, actual_quality, msg, self.refresh_regions)
+        refreshlog("auto refresh: %s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
 
     def add_refresh_region(self, region):
         #adds the given region to the refresh list:
+        #(overriden in window video source to exclude the video region)
         if contains(self.refresh_regions, region.x, region.y, region.width, region.height):
             return False
         return add_rectangle(self.refresh_regions, region)
@@ -1092,34 +1093,49 @@ class WindowSource(object):
         if ret==0:
             return
 
-        def timer_full_refresh():
-            ret = self.refresh_event_time
-            self.refresh_timer = None
-            self.refresh_event_time = 0
-            if self.can_refresh(window):
-                refreshlog("timer_full_refresh() after %ims", time.time()-ret)
-                self.full_quality_refresh(window, damage_options)
-            return False
-
         #decide if now is the right time, or if we delay some more
         #(the more pixels we have to refresh, the longer we wait)
         pixels = sum([r.width*r.height for r in self.refresh_regions])
         ww, wh = window.get_dimensions()
+        pct = 100*pixels/(ww*wh)
         #target auto_refresh_delay, but double that if we have a full screen update:
-        target_delay = max(50, self.auto_refresh_delay*2 * pixels/(ww*wh))
-        elapsed = time.time()-ret
+        target_delay = max(50, self.auto_refresh_delay * pct / 50)
+        elapsed = int(1000.0*(time.time()-ret))
         if elapsed>=(target_delay-20):
             #close enough to target, do it now:
             refreshlog("schedule_auto_refresh: elapsed time %i with target=%i, refreshing now", elapsed, target_delay)
-            timer_full_refresh()
+            self.timer_full_refresh(window)
         else:
             #delay a bit more:
-            delay = max(self.auto_refresh_delay, target_delay - elapsed)
-            refreshlog("schedule_auto_refresh: rescheduling auto refresh timer with delay %s", delay)
-            self.refresh_timer = self.timeout_add(delay, timer_full_refresh)
+            delay = int(max(20, self.auto_refresh_delay, target_delay - elapsed))
+            refreshlog("schedule_auto_refresh: rescheduling auto refresh timer with extra delay %i (%i%% of window, refresh delay=%i, target=%i, elapsed=%i)", delay, pct, self.auto_refresh_delay, target_delay, elapsed)
+            self.refresh_timer = self.timeout_add(delay, self.timer_full_refresh, window)
         return False
 
+    def timer_full_refresh(self, window):
+        ret = self.refresh_event_time
+        self.refresh_timer = None
+        self.refresh_event_time = 0
+        regions = self.refresh_regions
+        self.refresh_regions = []
+        if self.can_refresh(window) and regions:
+            now = time.time()
+            refreshlog("timer_full_refresh() after %ims, regions=%s", time.time()-ret, regions)
+            encoding = self.auto_refresh_encodings[0]
+            options = {"optimize"       : False,
+                       "auto_refresh"   : True,
+                       "quality"        : AUTO_REFRESH_QUALITY,
+                       "speed"          : AUTO_REFRESH_SPEED}
+            WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options, exclude_region=self.get_refresh_exclude())
+        return False
+
+    def get_refresh_exclude(self):
+        #overriden in window video source to exclude the video subregion
+        return None
+
     def full_quality_refresh(self, window, damage_options):
+        #called on use request via xpra control,
+        #or when we need to resend the window after a send timeout
         if self._damage_delayed:
             #there is already a new damage region pending
             return
@@ -1135,10 +1151,10 @@ class WindowSource(object):
         log("full_quality_refresh() for %sx%s window with regions: %s", w, h, self.refresh_regions)
         new_options = damage_options.copy()
         encoding = self.auto_refresh_encodings[0]
-        new_options["optimize"] = False
-        new_options["auto_refresh"] = True
-        new_options["quality"] = AUTO_REFRESH_QUALITY
-        new_options["speed"] = AUTO_REFRESH_SPEED
+        new_options.update({"optimize"      : False,
+                            "auto_refresh"  : True,     #not strictly an auto-refresh, just makes sure we won't trigger one
+                            "quality"       : AUTO_REFRESH_QUALITY,
+                            "speed"         : AUTO_REFRESH_SPEED})
         log("full_quality_refresh() using %s with options=%s", encoding, new_options)
         damage_time = time.time()
         self.send_delayed_regions(damage_time, window, refresh_regions, encoding, new_options)
