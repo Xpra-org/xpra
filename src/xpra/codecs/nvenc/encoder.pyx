@@ -1371,9 +1371,20 @@ cdef class Encoder:
             assert "YUV420P" in dst_formats
             dst_format = "YUV420P"
 
-        self.cuda_device_id = -1
+        self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
+        #if supported (separate plane flag), use YUV444P:
+        if dst_format=="YUV444P":
+            self.pixel_format = "YUV444P"
+            #3 full planes:
+            plane_size_div = 1
+        elif dst_format=="YUV420P":
+            self.pixel_format = "NV12"
+            #1 full Y plane and 2 U+V planes subsampled by 4:
+            plane_size_div = 2
+        else:
+            raise Exception("BUG: invalid dst format: %s" % dst_format)
         try:
-            self.init_cuda(options.get("cuda_device", -1), quality, dst_format)
+            self.init_cuda()
             record_device_success(self.cuda_device_id)
         except Exception, e:
             log("init_cuda failed", exc_info=True)
@@ -1383,16 +1394,15 @@ cdef class Encoder:
         end = time.time()
         log("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
 
-    cdef init_cuda(self, int preferred_device_id=-1, int quality=80, dst_format="YUV420P"):
+    cdef init_cuda(self):
         cdef int plane_size_div
         cdef int max_input_stride
 
-        self.cuda_device_id, self.cuda_device = select_device(preferred_device_id, min_compute=MIN_COMPUTE)
         assert self.cuda_device_id>=0 and self.cuda_device, "no NVENC device found!"
         global context_counter, last_context_failure
         d = self.cuda_device
         cf = driver.ctx_flags
-        log("init_cuda(%s, %s, %s) device_id=%s", preferred_device_id, quality, self.cuda_device_id, dst_format)
+        log("init_cuda() pixel format=%s, device_id=%s", self.pixel_format, self.cuda_device_id)
         try:
             log("init_cuda cuda_device=%s (%s)", d, device_info(d))
             self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
@@ -1410,20 +1420,18 @@ cdef class Encoder:
         da = driver.device_attribute
         try:
             #if supported (separate plane flag), use YUV444P:
-            if dst_format=="YUV444P":
+            if self.pixel_format=="YUV444P":
                 kernel_gen = (get_BGRA2Y, get_BGRA2U, get_BGRA2V)
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_PL
-                self.pixel_format = "YUV444P"
                 #3 full planes:
                 plane_size_div = 1
-            elif dst_format=="YUV420P":
+            elif self.pixel_format=="NV12":
                 kernel_gen = (get_BGRA2NV12,)
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
-                self.pixel_format = "NV12"
                 #1 full Y plane and 2 U+V planes subsampled by 4:
                 plane_size_div = 2
             else:
-                raise Exception("BUG: invalid dst format: %s" % dst_format)
+                raise Exception("BUG: invalid dst format: %s" % self.pixel_format)
 
             #generate and compile the kernels:
             self.kernel_names = []
