@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.region import rectangle
+from xpra.server.region import rectangle
 
 R1 = rectangle(0, 0, 20, 20)
 R2 = rectangle(0, 0, 20, 20)
