@@ -795,7 +795,7 @@ if "clean" not in sys.argv:
 if "sdist" in sys.argv:
     record_src_info()
 
-if "install" in sys.argv:
+if "install" in sys.argv or "build" in sys.argv:
     #if installing from source tree rather than
     #from a source snapshot, we may not have a "src_info" file
     #so create one:
