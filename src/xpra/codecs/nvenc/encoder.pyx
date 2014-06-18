@@ -1366,23 +1366,16 @@ cdef class Encoder:
         start = time.time()
 
         if is_YUV444P_ENABLED() and "YUV444P" in dst_formats and ((self.separate_plane and quality>=50 and v==1 and u==1) or ("YUV420P" not in dst_formats)):
-            dst_format = "YUV444P"
-        else:
-            assert "YUV420P" in dst_formats
-            dst_format = "YUV420P"
-
-        self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
-        #if supported (separate plane flag), use YUV444P:
-        if dst_format=="YUV444P":
             self.pixel_format = "YUV444P"
             #3 full planes:
             plane_size_div = 1
-        elif dst_format=="YUV420P":
+        else:
+            assert "YUV420P" in dst_formats
             self.pixel_format = "NV12"
             #1 full Y plane and 2 U+V planes subsampled by 4:
             plane_size_div = 2
-        else:
-            raise Exception("BUG: invalid dst format: %s" % dst_format)
+
+        self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
         try:
             self.init_cuda()
             record_device_success(self.cuda_device_id)
