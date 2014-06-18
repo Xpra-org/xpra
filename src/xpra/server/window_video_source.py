@@ -257,6 +257,13 @@ class WindowVideoSource(WindowSource):
         return (self.video_subregion is not None) or WindowSource.must_batch(self, delay)
 
 
+    def get_lossless_threshold(self, pixel_count, ww, wh, speed):
+        if self.video_subregion:
+            #when we have a video region, lower the lossless threshold
+            #especially for small regions
+            return min(80, 10+speed/5+(100*pixel_count/(ww*wh)))
+        return WindowSource.get_lossless_threshold(self, pixel_count, ww, wh, speed)
+
     def get_refresh_exclude(self):
         #exclude video region from lossless refresh:
         return self.video_subregion

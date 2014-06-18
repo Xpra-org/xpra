@@ -897,6 +897,9 @@ class WindowSource(object):
         #log.info("transparent_encoding_options%s=%s", (current_encoding, pixel_count, speed, quality), v)
         return v
 
+    def get_lossless_threshold(self, pixel_count, ww, wh, speed):
+        return min(95, 75+speed/10+(20*pixel_count/(ww*wh)))
+
     def get_encoding_options(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
         current_encoding = {"rgb" : "rgb24"}.get(current_encoding, current_encoding)
         if current_encoding in ("rgb24", "rgb32", "png"):
@@ -905,7 +908,7 @@ class WindowSource(object):
         options = []
         #use sliding scale for lossless threshold
         #(high speed favours switching to lossy sooner)
-        lossless_q = 89+speed/10
+        lossless_q = self.get_lossless_threshold(pixel_count, ww, wh, speed)
         #calculate the threshold for using rgb
         smult = max(0.25, (speed-50)/5.0)
         qmult = max(0, quality/20.0)
