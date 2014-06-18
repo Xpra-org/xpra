@@ -1902,6 +1902,7 @@ cdef class Encoder:
         client_options = {
                     "frame" : self.frames,
                     "pts"   : image.get_timestamp()-self.first_frame_timestamp,
+                    "quality" : self.quality,
                     }
         if self.scaling!=(1,1):
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
