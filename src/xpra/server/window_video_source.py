@@ -257,6 +257,25 @@ class WindowVideoSource(WindowSource):
         return (self.video_subregion is not None) or WindowSource.must_batch(self, delay)
 
 
+    def get_refresh_exclude(self):
+        #exclude video region from lossless refresh:
+        return self.video_subregion
+
+    def add_refresh_region(self, region):
+        #don't refresh the video region:
+        vr = self.video_subregion
+        if vr:
+            if vr.contains_rect(region):
+                #in video region, ignore all of it
+                return False
+            #add any rectangles not in the video region
+            #(if any: keep track if we actually add anything)
+            mod = False
+            for r in region.substract_rect(vr):
+                mod |= WindowSource.add_refresh_region(self, r)
+            return mod
+        return WindowSource.add_refresh_region(self, region)
+
     def identify_video_subregion(self):
         def novideoregion():
             self.video_subregion_set_at = 0

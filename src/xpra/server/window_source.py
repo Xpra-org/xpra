@@ -18,7 +18,7 @@ scalinglog = Logger("scaling")
 
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 95))
-AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 99))
+AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 100))
 AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 
 MAX_PIXELS_PREFER_RGB = 4096
@@ -35,7 +35,7 @@ from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.stats.maths import time_weighted_average
-from xpra.server.region import rectangle, add_rectangle
+from xpra.server.region import rectangle, add_rectangle, remove_rectangle, contains
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except Exception, e:
@@ -205,7 +205,9 @@ class WindowSource(object):
         #
         self.auto_refresh_delay = 0
         self.video_helper = None
+        self.refresh_event_time = 0
         self.refresh_timer = None
+        self.refresh_regions = []
         self.timeout_timer = None
         self.expire_timer = None
         self.soft_timer = None
@@ -333,6 +335,7 @@ class WindowSource(object):
         self.cancel_refresh_timer()
         self.cancel_timeout_timer()
         #if a region was delayed, we can just drop it now:
+        self.refresh_regions = []
         self._damage_delayed = None
         self._damage_delayed_expired = False
         self.last_pixmap_data = None
@@ -360,6 +363,7 @@ class WindowSource(object):
         if self.refresh_timer:
             self.source_remove(self.refresh_timer)
             self.refresh_timer = None
+            self.refresh_event_time = 0
 
     def cancel_timeout_timer(self):
         if self.timeout_timer:
@@ -547,7 +551,8 @@ class WindowSource(object):
             #use existing delayed region:
             if not self.full_frames_only:
                 regions = self._damage_delayed[2]
-                add_rectangle(regions, x, y, w, h)
+                region = rectangle(x, y, w, h)
+                add_rectangle(regions, region)
             #merge/override options
             if options is not None:
                 override = options.get("override_options", False)
@@ -993,8 +998,6 @@ class WindowSource(object):
         try:
             packet = self.make_data_packet(damage_time, process_damage_time, wid, image, coding, sequence, options)
         finally:
-            w = image.get_width()
-            h = image.get_height()
             self.free_image_wrapper(image)
             del image
             try:
@@ -1008,13 +1011,8 @@ class WindowSource(object):
             return
         #queue packet for sending:
         self.queue_damage_packet(packet, damage_time, process_damage_time)
-        #now deal with auto refresh:
-        if self.auto_refresh_delay<=0 or len(self.auto_refresh_encodings)==0 or self._mmap:
-            #no: auto-refresh is disabled or not needed
-            return
-        #safe to call is_managed(), this is not an X11 function:
-        if not window.is_managed():
-            #no: window is gone
+
+        if not self.can_refresh(window):
             return
         encoding = packet[6]
         if options.get("auto_refresh", False):
@@ -1026,60 +1024,100 @@ class WindowSource(object):
             refreshlog("skipping auto-refresh: %s", sor)
             return
         #the actual encoding used may be different from the global one we specify
+        x, y, w, h = packet[2:6]
         client_options = packet[10]     #info about this packet from the encoder
         actual_quality = client_options.get("quality", 0)
         if encoding.startswith("png") or encoding.startswith("rgb"):
             actual_quality = 100
         lossy_csc = client_options.get("csc") in LOSSY_PIXEL_FORMATS
         scaled = client_options.get("scaled_size") is not None
-        #it is safe to call this method on window because it does not call down to X11:
-        ww, wh = window.get_dimensions()
         if actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
-            #refresh timer is pending and this screen update is lossless or high quality
-            if w*h>=ww*wh*90/100:
-                #discard pending auto-refresh since this update covered more than 90% of the window
-                #(ideally, we would request the rest to be sent - but it may be queue up already..)
-                action = "cancelling auto-refresh"
-                self.cancel_refresh_timer()
+            #this screen update is lossless or high quality
+            if not self.refresh_regions:
+                #nothing due for refresh, still nothing to do
+                msg = "nothing to do"
             else:
-                #don't change anything: if we have a timer, keep it
-                action = "ignoring it"
-            refreshlog("auto refresh: high quality %s screen update (quality=%s) covering %.1f%% of window, %s", encoding, actual_quality, 100*w*h/(ww*wh), action)
-            return
-        if self.refresh_timer and w*h<ww*wh*20/100:
-            #a refresh is already due, and this update is small (20%), don't change anything
-            return
-        #if we're here: the window is still valid and this was a lossy update,
-        #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
-        #so we need an auto-refresh (re-schedule it if one was due already):
-        self.idle_add(self.schedule_auto_refresh, window, options)
+                #refresh already due: substract this region from the list of regions:
+                self.refresh_regions = remove_rectangle(self.refresh_regions, x, y, w, h)
+                if len(self.refresh_regions)==0:
+                    msg = "covered all regions that needed a refresh, cancelling refresh"
+                    self.cancel_refresh_timer()
+                else:
+                    msg = "removed rectangle from regions"
+        else:
+            #try to add the rectangle to the refresh list:
+            region = rectangle(x, y, w, h)
+            if not self.add_refresh_region(region):
+                msg = "list of refresh regions unchanged"
+            else:
+                #if we're here: the window is still valid and this was a lossy update,
+                #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
+                #so we need an auto-refresh (re-schedule it if one was due already)
+                if self.refresh_event_time>0:
+                    msg = "keeping existing timer"
+                else:
+                    msg = "scheduling refresh"
+                    self.refresh_event_time = time.time()
+                    sched_delay = max(50, self.auto_refresh_delay, self.batch_config.delay*4)
+                    self.refresh_timer = self.timeout_add(sched_delay, self.schedule_auto_refresh, window, options)
+        refreshlog("auto refresh: %s screen update (quality=%s), %s (regions=%s)", encoding, actual_quality, msg, self.refresh_regions)
+
+    def add_refresh_region(self, region):
+        #adds the given region to the refresh list:
+        if contains(self.refresh_regions, region.x, region.y, region.width, region.height):
+            return False
+        return add_rectangle(self.refresh_regions, region)
+
+    def can_refresh(self, window):
+        #safe to call from any thread (does not call X11):
+        if not window.is_managed():
+            #window is gone
+            return False
+        if self.auto_refresh_delay<=0 or self.is_cancelled() or len(self.auto_refresh_encodings)==0 or self._mmap:
+            #can happen during cleanup
+            return False
+        return True
 
     def schedule_auto_refresh(self, window, damage_options):
         """ Must be called from the UI thread:
             this makes it easier to prevent races
         """
-        #NOTE: there is a small potential race here:
-        #if the damage packet queue is congested, new damage requests could come in,
-        #in between the time we schedule the new refresh timer and the time it fires,
-        #and if not batching,
-        #we would then do a full_quality_refresh when we should not...
+        #timer is running now, clear so we don't try to cancel it somewhere else:
+        self.refresh_timer = None
         #re-do some checks that may have changed:
-        if not window.is_managed():
-            #window is gone
+        if not self.can_refresh(window):
+            self.refresh_event_time = 0
             return
-        if not self.auto_refresh_encodings or self.is_cancelled():
-            #can happen during cleanup
+        ret = self.refresh_event_time
+        if ret==0:
             return
-        #ok, so we will schedule a new refresh - cancel any pending one:
-        self.cancel_refresh_timer()
-        delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
-        refreshlog("schedule_auto_refresh: (re)scheduling auto refresh timer with delay %s", delay)
+
         def timer_full_refresh():
-            refreshlog("timer_full_refresh()")
+            ret = self.refresh_event_time
             self.refresh_timer = None
-            self.full_quality_refresh(window, damage_options)
+            self.refresh_event_time = 0
+            if self.can_refresh(window):
+                refreshlog("timer_full_refresh() after %ims", time.time()-ret)
+                self.full_quality_refresh(window, damage_options)
             return False
-        self.refresh_timer = self.timeout_add(delay, timer_full_refresh)
+
+        #decide if now is the right time, or if we delay some more
+        #(the more pixels we have to refresh, the longer we wait)
+        pixels = sum([r.width*r.height for r in self.refresh_regions])
+        ww, wh = window.get_dimensions()
+        #target auto_refresh_delay, but double that if we have a full screen update:
+        target_delay = max(50, self.auto_refresh_delay*2 * pixels/(ww*wh))
+        elapsed = time.time()-ret
+        if elapsed>=(target_delay-20):
+            #close enough to target, do it now:
+            refreshlog("schedule_auto_refresh: elapsed time %i with target=%i, refreshing now", elapsed, target_delay)
+            timer_full_refresh()
+        else:
+            #delay a bit more:
+            delay = max(self.auto_refresh_delay, target_delay - elapsed)
+            refreshlog("schedule_auto_refresh: rescheduling auto refresh timer with delay %s", delay)
+            self.refresh_timer = self.timeout_add(delay, timer_full_refresh)
+        return False
 
     def full_quality_refresh(self, window, damage_options):
         if self._damage_delayed:
@@ -1091,16 +1129,19 @@ class WindowSource(object):
         if not self.auto_refresh_encodings or self.is_cancelled():
             #can happen during cleanup
             return
+        refresh_regions = self.refresh_regions
+        self.refresh_regions = []
         w, h = window.get_dimensions()
-        log("full_quality_refresh() for %sx%s window", w, h)
+        log("full_quality_refresh() for %sx%s window with regions: %s", w, h, self.refresh_regions)
         new_options = damage_options.copy()
         encoding = self.auto_refresh_encodings[0]
-        new_options["encoding"] = encoding
         new_options["optimize"] = False
         new_options["auto_refresh"] = True
         new_options["quality"] = AUTO_REFRESH_QUALITY
         new_options["speed"] = AUTO_REFRESH_SPEED
-        log("full_quality_refresh() with options=%s", new_options)
+        log("full_quality_refresh() using %s with options=%s", encoding, new_options)
+        damage_time = time.time()
+        self.send_delayed_regions(damage_time, window, refresh_regions, encoding, new_options)
         self.damage(window, 0, 0, w, h, options=new_options)
 
     def queue_damage_packet(self, packet, damage_time, process_damage_time):
@@ -1258,7 +1299,7 @@ class WindowSource(object):
         #actual network packet:
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
-        compresslog("compress: %5.1fms for %4ix%-4i pixels using %5s with ratio %4.1f%% (%5iKB to %5iKB), delta=%i, client_options=%s",
+        compresslog("compress: %5.1fms for %4ix%-4i pixels using %5s with ratio %5.1f%% (%5iKB to %5iKB), delta=%i, client_options=%s",
                  (end-start)*1000.0, w, h, coding, 100.0*csize/psize, psize/1024, csize/1024, delta, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
