@@ -258,31 +258,37 @@ class WindowVideoSource(WindowSource):
 
 
     def identify_video_subregion(self):
+        def novideoregion():
+            self.video_subregion_set_at = 0
+            self.video_subregion_counter = 0
+            self.video_subregion = None
+        def setnewregion(rect):
+            self.video_subregion_set_at = self.statistics.damage_events_count
+            self.video_subregion_counter = self.statistics.damage_events_count
+            self.video_subregion = rect
+
         if self.statistics.damage_events_count < self.video_subregion_set_at:
             #stats got reset
             self.video_subregion_set_at = 0
         if self.encoding not in self.video_encodings:
             sublog("identify video: not using a video mode! (%s)", self.encoding)
-            self.video_subregion = None
-            return
+            return novideoregion()
         if self.full_frames_only or STRICT_MODE:
             sublog("identify video: full frames only!")
-            self.video_subregion = None
-            return
+            return novideoregion()
         ww, wh = self.window_dimensions
         #validate against window dimensions:
         if self.video_subregion and (self.video_subregion.width>ww or self.video_subregion.height>wh):
             #region is now bigger than the window!
-            self.video_subregion = None
-
+            sublog("identify video: window is now smaller than current region!")
+            return novideoregion()
         #arbitrary minimum size for regions we will look at:
         #(we don't want video regions smaller than this - too much effort for little gain)
         min_w = max(256, ww/4)
         min_h = max(192, wh/4)
         if ww<min_w or wh<min_h:
             sublog("identify video: window is too small")
-            self.video_subregion = None
-            return
+            return novideoregion()
 
         def update_markers():
             self.video_subregion_counter = self.statistics.damage_events_count
@@ -297,13 +303,11 @@ class WindowVideoSource(WindowSource):
             if self.video_subregion is not None and elapsed>=slow_region_timeout:
                 sublog("identify video: too much time has passed (%is for %s %s events), clearing region", elapsed, event_types, event_count)
                 update_markers()
-                self.video_subregion_set_at = 0
-                self.video_subregion = None
-                return
+                return novideoregion()
             sublog("identify video: waiting for more damage events (%s)", self.statistics.damage_events_count)
 
         if self.video_subregion_counter+10>self.statistics.damage_events_count:
-            #less than 20 events since last time we called update_markers:
+            #less than 10 events since last time we called update_markers:
             event_count = self.statistics.damage_events_count-self.video_subregion_counter
             few_damage_events("total", event_count)
             return
@@ -314,9 +318,7 @@ class WindowVideoSource(WindowSource):
         dc = len(lde)
         if dc<20:
             sublog("identify video: not enough damage events yet (%s)", dc)
-            self.video_subregion_set_at = 0
-            self.video_subregion = None
-            return
+            return novideoregion()
         #count how many times we see each area, and keep track of those we ignore:
         damage_count = {}
         ignored_count = {}
@@ -346,11 +348,9 @@ class WindowVideoSource(WindowSource):
             rect = rectangle(*most_damaged_regions[0])
             if rect.width>=ww or rect.height>=wh:
                 sublog("most damaged region is the whole window!")
-                self.video_subregion = None
-                return
-            self.video_subregion = rect
-            self.video_subregion_set_at = self.statistics.damage_events_count
+                return novideoregion()
             sublog("identified video region (%s%% of large damage requests): %s", most_pct, self.video_subregion)
+            setnewregion(rect)
 
         #ignore current subregion, 80% is high enough:
         if most_damaged>c*80/100:
@@ -399,9 +399,8 @@ class WindowVideoSource(WindowSource):
                     continue
                 if w==mcw and h==mch:
                     #recent and matching size, assume this is the one
-                    self.video_subregion_set_at = self.statistics.damage_events_count
-                    self.video_subregion = rectangle(x, y, w, h)
                     sublog("identified video region by size (%sx%s), using recent match: %s", mcw, mch, self.video_subregion)
+                    setnewregion(rectangle(x, y, w, h))
                     return
 
         #try harder: try combining all the regions we haven't discarded
@@ -415,13 +414,12 @@ class WindowVideoSource(WindowSource):
             merged_pixels = merged.width*merged.height
             unmerged_pixels = sum((int(w*h) for _,_,w,h in damage_count.keys()))
             if merged_pixels<ww*wh*70/100 and unmerged_pixels*140/100<merged_pixels and (merged.width<ww or merged.height<wh):
-                self.video_subregion_set_at = self.statistics.damage_events_count
-                self.video_subregion = merged
-                sublog("identified merged video region: %s", self.video_subregion)
+                sublog("identified merged video region: %s", merged)
+                setnewregion(merged)
                 return
 
         sublog("failed to identify a video region")
-        self.video_subregion = None
+        novideoregion()
 
 
     def do_send_delayed_regions(self, damage_time, window, regions, coding, options):
