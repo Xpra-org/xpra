@@ -264,6 +264,8 @@ def has_src_info():
     return os.path.exists(SRC_INFO_FILE) and os.path.isfile(SRC_INFO_FILE)
 
 def main():
+    if not has_src_info():
+        record_src_info()
     record_build_info(True)
 
 
