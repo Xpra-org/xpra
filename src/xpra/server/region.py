@@ -118,7 +118,7 @@ class rectangle(AdHocStruct):
         return rectangle(self.x, self.y, self.width, self.height)
 
 
-def _contains(regions, x, y, w, h):
+def contains(regions, x, y, w, h):
     x2 = x+w
     y2 = y+h
     for r in regions:
@@ -126,9 +126,26 @@ def _contains(regions, x, y, w, h):
             return True
     return False
 
-def add_rectangle(regions, x, y, w, h):
-    if not _contains(regions, x, y, w, h):
-        regions.append(rectangle(x, y, w, h))
+def contains_rect(regions, region):
+    return contains(regions, region.x, region.y, region.width, region.height)
+
+def add_rectangle(regions, region):
+    if contains(regions, region.x, region.y, region.width, region.height):
+        return False
+    for r in list(regions):
+        if r.intersects_rect(region):
+            #only keep the parts
+            #that do not intersect with the new region we add:
+            regions.remove(r)
+            regions += r.substract_rect(region)
+    regions.append(region)
+    return True
+
+def remove_rectangle(regions, region):
+    copy = regions[:]
+    regions[:] = []
+    for r in copy:
+        regions += r.substract_rect(region)
 
 def merge_all(rectangles):
     rx = min((x for x,_,_,_ in rectangles))

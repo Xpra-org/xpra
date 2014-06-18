@@ -15,7 +15,7 @@ from xpra.net.protocol import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, get_default_csc_modes, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
 from xpra.server.window_source import WindowSource, MAX_PIXELS_PREFER_RGB, STRICT_MODE
-from xpra.gtk_common.region import rectangle, merge_all
+from xpra.server.region import rectangle, merge_all
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.log import Logger
 
