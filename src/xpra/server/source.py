@@ -1448,12 +1448,6 @@ class ServerSource(object):
         for ws in list(self.window_sources.values()):
             ws.set_speed(speed)
 
-    def full_quality_refresh(self, wid, window, damage_options):
-        if not self.can_send_window(window):
-            return
-        ws = self.window_sources.get(wid)
-        if ws:
-            ws.full_quality_refresh(window, damage_options)
 
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):
