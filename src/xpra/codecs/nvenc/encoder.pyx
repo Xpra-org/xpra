@@ -1388,7 +1388,7 @@ cdef class Encoder:
         cdef int max_input_stride
 
         self.cuda_device_id, self.cuda_device = select_device(preferred_device_id, min_compute=MIN_COMPUTE)
-        assert self.cuda_device, "no NVENC device found!"
+        assert self.cuda_device_id>=0 and self.cuda_device, "no NVENC device found!"
         global context_counter, last_context_failure
         d = self.cuda_device
         cf = driver.ctx_flags

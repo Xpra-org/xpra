@@ -146,7 +146,7 @@ def select_device(preferred_device_id=DEFAULT_CUDA_DEVICE_ID, min_compute=0):
         if selected_device_id>=0 and selected_device:
             log("select device: %s / %s", device_id, device)
             return selected_device_id, selected_device
-    return None, None
+    return -1, None
 
 
 #cache pre-compiled kernel cubins per device:
