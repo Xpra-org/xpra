@@ -141,10 +141,10 @@ class WindowSource(object):
         self._encoding_quality = maxdeque(100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
         self._encoding_speed = maxdeque(100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
         # they may have fixed values:
-        self._fixed_quality = default_encoding_options.get("quality", -1)
-        self._fixed_min_quality = default_encoding_options.get("min-quality", -1)
-        self._fixed_speed = default_encoding_options.get("speed", -1)
-        self._fixed_min_speed = default_encoding_options.get("min-speed", -1)
+        self._fixed_quality = default_encoding_options.get("quality", 0)
+        self._fixed_min_quality = default_encoding_options.get("min-quality", 0)
+        self._fixed_speed = default_encoding_options.get("speed", 0)
+        self._fixed_min_speed = default_encoding_options.get("min-speed", 0)
 
         self.init_encoders()
         self.update_encoding_selection(encoding)
@@ -230,10 +230,10 @@ class WindowSource(object):
         self._encoding_quality = []
         self._encoding_speed = []
         #
-        self._fixed_quality = -1
-        self._fixed_min_quality = -1
-        self._fixed_speed = -1
-        self._fixed_min_speed = -1
+        self._fixed_quality = 0
+        self._fixed_min_quality = 0
+        self._fixed_speed = 0
+        self._fixed_min_speed = 0
         #
         self._damage_delayed = None
         self._damage_delayed_expired = False
@@ -424,7 +424,7 @@ class WindowSource(object):
         if self.suspended or self._mmap:
             return
         speed = self._fixed_speed
-        if speed<0:
+        if speed<=0:
             min_speed = self.get_min_speed()
             #make a copy to work on (and discard "info")
             speed_data = [(event_time, speed) for event_time, _, speed in list(self._encoding_speed)]
@@ -457,7 +457,7 @@ class WindowSource(object):
     def get_current_speed(self):
         ms = self.get_min_speed()
         s = min(100, self._fixed_speed)
-        if s>=0:
+        if s>0:
             return max(ms, s)
         es = self._encoding_speed
         if not es:
@@ -476,7 +476,7 @@ class WindowSource(object):
             #so skip the calculations!
             return
         quality = self._fixed_quality
-        if quality<0:
+        if quality<=0:
             min_quality = self.get_min_quality()
             info, quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_quality)
             #make a copy to work on (and discard "info")
@@ -503,7 +503,7 @@ class WindowSource(object):
     def get_current_quality(self):
         mq = self.get_min_quality()
         q = min(100, self._fixed_quality)
-        if q>=0:
+        if q>0:
             return max(mq, q)
         eq = self._encoding_quality
         if not eq:
