@@ -464,6 +464,10 @@ class WindowSource(object):
             return max(ms, 80)
         return max(ms, es[-1][-1])
 
+    def get_speed(self, coding):
+        return self.get_current_speed()
+
+
     def update_quality(self):
         if self.suspended or self._mmap:
             return
@@ -505,6 +509,10 @@ class WindowSource(object):
         if not eq:
             return max(mq, 90)
         return max(mq, eq[-1][-1])
+
+    def get_quality(self, encoding):
+        return self.get_current_quality()
+
 
     def reconfigure(self, force_reload=False):
         if self.batch_config.locked and not force_reload:
@@ -1337,8 +1345,8 @@ class WindowSource(object):
 
 
     def webp_encode(self, coding, image, options):
-        q = options.get("quality") or self.get_current_quality()
-        s = options.get("speed") or self.get_current_speed()
+        q = options.get("quality") or self.get_quality(coding)
+        s = options.get("speed") or self.get_speed(coding)
         return webp_encode(coding, image, self.supports_transparency, q, s, options)
 
     def rgb_encode(self, coding, image, options):
@@ -1350,8 +1358,8 @@ class WindowSource(object):
         #for more information on pixel formats supported by PIL / Pillow, see:
         #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
         assert coding in self.server_core_encodings
-        q = options.get("quality") or self.get_current_quality()
-        s = options.get("speed") or self.get_current_speed()
+        q = options.get("quality") or self.get_quality(coding)
+        s = options.get("speed") or self.get_speed(coding)
         return PIL_encode(coding, image, q, s, self.supports_transparency)
 
     def mmap_encode(self, coding, image, options):

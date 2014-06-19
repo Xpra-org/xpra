@@ -275,6 +275,21 @@ class WindowVideoSource(WindowSource):
         return WindowSource.get_lossless_threshold(self, pixel_count, ww, wh, speed)
 
 
+    def get_speed(self, encoding):
+        s = WindowSource.get_speed(self, encoding)
+        #give a boost if we have a video region and this is not video: 
+        if self.video_subregion and encoding not in self.video_encodings:
+            s += 25
+        return min(100, s)
+
+    def get_quality(self, encoding):
+        q = WindowSource.get_quality(self, encoding)
+        #give a boost if we have a video region and this is not video: 
+        if self.video_subregion and encoding not in self.video_encodings:
+            q += 40
+        return q
+
+
     def get_refresh_exclude(self):
         #exclude video region from lossless refresh:
         return self.video_subregion
