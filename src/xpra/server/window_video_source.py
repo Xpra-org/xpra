@@ -15,7 +15,7 @@ from xpra.net.protocol import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, get_default_csc_modes, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
 from xpra.server.window_source import WindowSource, MAX_PIXELS_PREFER_RGB, STRICT_MODE
-from xpra.server.region import rectangle, merge_all
+from xpra.server.region import rectangle, add_rectangle, remove_rectangle, merge_all
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.log import Logger
 
@@ -99,6 +99,8 @@ class WindowVideoSource(WindowSource):
         self.video_subregion_counter = 0
         self.video_subregion_set_at = 0
         self.video_subregion_time = 0
+        self.video_subregion_refresh_timer = 0
+        self.video_subregion_refresh_regions = []
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.video_subregion_non_waited = 0
         self.video_subregion_non_max_wait = 150
@@ -244,12 +246,20 @@ class WindowVideoSource(WindowSource):
         self.cleanup_codecs()
 
     def cancel_damage(self):
+        self.cancel_video_subregion_refresh_timer()
         WindowSource.cancel_damage(self)
         if self._last_sequence_queued<self._sequence:
             #we must clean the video encoder to ensure
             #we will resend a key frame because it looks like we will
             #drop a frame which is being processed
             self.cleanup_codecs()
+
+    def cancel_video_subregion_refresh_timer(self):
+        if self.video_subregion_refresh_timer:
+            self.source_remove(self.video_subregion_refresh_timer)
+            self.video_subregion_refresh_timer = None
+            self.video_subregion_refresh_regions = []
+
 
     def must_batch(self, delay):
         #force batching when using video region
@@ -264,24 +274,80 @@ class WindowVideoSource(WindowSource):
             return min(80, 10+speed/5+(100*pixel_count/(ww*wh)))
         return WindowSource.get_lossless_threshold(self, pixel_count, ww, wh, speed)
 
+
     def get_refresh_exclude(self):
         #exclude video region from lossless refresh:
         return self.video_subregion
 
-    def add_refresh_region(self, region):
-        #don't refresh the video region:
+    def subregion_refresh(self, window):
+        #runs via timeout_add, safe to call UI!
+        self.video_subregion_refresh_timer = 0
+        regions = self.video_subregion_refresh_regions
+        self.video_subregion_refresh_regions = []
+        self.do_subregion_refresh(window, regions)
+    
+    def do_subregion_refresh(self, window, regions):
+        sublog("do_subregion_refresh(%s, %s)", window, regions)
+        if not regions or not self.can_refresh(window):
+            return
+        now = time.time()
+        encoding = self.auto_refresh_encodings[0]
+        options = self.get_refresh_options()
+        WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options)
+
+    def remove_refresh_region(self, region):
+        WindowSource.remove_refresh_region(self, region)
+        remove_rectangle(self.video_subregion_refresh_regions, region)
+
+    def add_video_refresh(self, vr, window, region):
+        #Note: this does not run in the UI thread!
+        sublog("add_video_refresh(%s, %s, %s)", vr, window, region)
+        #something in the video region is still refreshing,
+        #so we re-schedule the subregion refresh:
+        self.cancel_video_subregion_refresh_timer()
+        #add the new region to what we already have:
+        add_rectangle(self.video_subregion_refresh_regions, region)
+        #do refresh any regions which are now outside the current video region:
+        #(this can happen when the region moves or changes size)
+        refresh_now = []
+        for r in self.video_subregion_refresh_regions:
+            if not vr.contains_rect(r):
+                refresh_now += r.substract_rect(vr)
+        if refresh_now:
+            #refresh via timeout_add so this runs in UI thread:
+            self.timeout_add(self.do_subregion_refresh, window, refresh_now)
+            #only keep the regions still in the video region:
+            inrect = [vr.intersection_rect(r) for r in self.video_subregion_refresh_regions]
+            self.video_subregion_refresh_regions = [r for r in inrect if r is not None]
+        #re-schedule the video region refresh (if we have regions to fresh):
+        if self.video_subregion_refresh_regions:
+            delay = max(150, self.auto_refresh_delay)
+            self.video_subregion_refresh_timer = self.timeout_add(delay, self.subregion_refresh, window)
+
+    def add_refresh_region(self, window, region):
+        #Note: this does not run in the UI thread!
+        #don't refresh the video region as part of normal refresh,
+        #use subregion refresh for that
         vr = self.video_subregion
-        if vr:
-            if vr.contains_rect(region):
-                #in video region, ignore all of it
-                return False
-            #add any rectangles not in the video region
-            #(if any: keep track if we actually add anything)
-            mod = False
-            for r in region.substract_rect(vr):
-                mod |= WindowSource.add_refresh_region(self, r)
-            return mod
-        return WindowSource.add_refresh_region(self, region)
+        if vr is None:
+            #no video region, normal code path:
+            return WindowSource.add_refresh_region(self, window, region)
+        if vr.contains_rect(region):
+            #all of it is in the video region:
+            self.add_video_refresh(vr, window, region)
+            return False
+        ir = vr.intersection_rect(region)
+        if ir is None:
+            #region is outside video region, normal code path:
+            return WindowSource.add_refresh_region(self, window, region)
+        #add intersection (rectangle in video region) to video refresh:
+        self.add_video_refresh(vr, window, ir)
+        #add any rectangles not in the video region
+        #(if any: keep track if we actually added anything)
+        mod = False
+        for r in region.substract_rect(vr):
+            mod |= WindowSource.add_refresh_region(self, window, r)
+        return mod
 
     def identify_video_subregion(self):
         def novideoregion():
@@ -519,9 +585,7 @@ class WindowVideoSource(WindowSource):
 
         #found the video region:
         #send this straight away using the video encoder:
-        vr_options = options.copy()
-        vr_options["skip_auto_refresh"] = "ignoring video region"
-        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, vr_options)
+        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, options)
 
         #now substract this region from the rest:
         trimmed = []

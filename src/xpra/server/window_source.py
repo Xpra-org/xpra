@@ -1022,10 +1022,6 @@ class WindowSource(object):
             refreshlog("auto-refresh %s packet sent", encoding)
             #don't trigger a loop:
             return
-        sor = options.get("skip_auto_refresh")
-        if sor:
-            refreshlog("skipping auto-refresh: %s", sor)
-            return
         #the actual encoding used may be different from the global one we specify
         x, y, w, h = packet[2:6]
         client_options = packet[10]     #info about this packet from the encoder
@@ -1042,7 +1038,7 @@ class WindowSource(object):
                 msg = "nothing to do"
             else:
                 #refresh already due: substract this region from the list of regions:
-                remove_rectangle(self.refresh_regions, region)
+                self.remove_refresh_region(region)
                 if len(self.refresh_regions)==0:
                     msg = "covered all regions that needed a refresh, cancelling refresh"
                     self.cancel_refresh_timer()
@@ -1050,7 +1046,7 @@ class WindowSource(object):
                     msg = "removed rectangle from regions"
         else:
             #try to add the rectangle to the refresh list:
-            if not self.add_refresh_region(region):
+            if not self.add_refresh_region(window, region):
                 msg = "list of refresh regions unchanged"
             else:
                 #if we're here: the window is still valid and this was a lossy update,
@@ -1065,9 +1061,15 @@ class WindowSource(object):
                     self.refresh_timer = self.timeout_add(sched_delay, self.schedule_auto_refresh, window, options)
         refreshlog("auto refresh: %s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
 
-    def add_refresh_region(self, region):
+    def remove_refresh_region(self, region):
+        #removes the given region from the refresh list
+        #(also overriden in window video source)
+        remove_rectangle(self.refresh_regions, region)
+
+    def add_refresh_region(self, window, region):
         #adds the given region to the refresh list:
         #(overriden in window video source to exclude the video region)
+        #Note: this does not run in the UI thread!
         if contains(self.refresh_regions, region.x, region.y, region.width, region.height):
             return False
         return add_rectangle(self.refresh_regions, region)
@@ -1125,10 +1127,7 @@ class WindowSource(object):
             now = time.time()
             refreshlog("timer_full_refresh() after %ims, regions=%s", time.time()-ret, regions)
             encoding = self.auto_refresh_encodings[0]
-            options = {"optimize"       : False,
-                       "auto_refresh"   : True,
-                       "quality"        : AUTO_REFRESH_QUALITY,
-                       "speed"          : AUTO_REFRESH_SPEED}
+            options = self.get_refresh_options()
             WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options, exclude_region=self.get_refresh_exclude())
         return False
 
@@ -1154,14 +1153,17 @@ class WindowSource(object):
         log("full_quality_refresh() for %sx%s window with regions: %s", w, h, self.refresh_regions)
         new_options = damage_options.copy()
         encoding = self.auto_refresh_encodings[0]
-        new_options.update({"optimize"      : False,
-                            "auto_refresh"  : True,     #not strictly an auto-refresh, just makes sure we won't trigger one
-                            "quality"       : AUTO_REFRESH_QUALITY,
-                            "speed"         : AUTO_REFRESH_SPEED})
+        new_options.update(self.get_refresh_options())
         log("full_quality_refresh() using %s with options=%s", encoding, new_options)
         damage_time = time.time()
         self.send_delayed_regions(damage_time, window, refresh_regions, encoding, new_options)
         self.damage(window, 0, 0, w, h, options=new_options)
+
+    def get_refresh_options(self):
+        return {"optimize"      : False,
+                "auto_refresh"  : True,     #not strictly an auto-refresh, just makes sure we won't trigger one
+                "quality"       : AUTO_REFRESH_QUALITY,
+                "speed"         : AUTO_REFRESH_SPEED}        
 
     def queue_damage_packet(self, packet, damage_time, process_damage_time):
         """
