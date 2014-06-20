@@ -736,7 +736,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             # Use the temporary magic value 'S' as marker:
             display_name = 'S' + str(os.getpid())
 
-    if not shadowing and not proxying and opts.exit_with_children and not opts.start_child:
+    if not shadowing and not proxying and not upgrading and opts.exit_with_children and not opts.start_child:
         sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
         return  1
 
@@ -916,7 +916,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if xvfb_pid is not None and not opts.use_display and not shadowing:
         _cleanups.append(kill_xvfb)
 
-    if os.name=="posix" and not proxying:
+    if os.name=="posix" and not proxying and not upgrading and not shadowing:
         def reaper_quit():
             if opts.exit_with_children:
                 log.info("all children have exited and --exit-with-children was specified, exiting")
