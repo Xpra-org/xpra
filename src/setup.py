@@ -642,7 +642,7 @@ def get_xorg_version():
     return xorg_version
 
 def detect_xorg_setup():
-    if not server_ENABLED:
+    if not server_ENABLED or WIN32:
         return ("", False, False)
     #do live detection
     xorg_version = get_xorg_version()
@@ -1193,8 +1193,19 @@ if WIN32:
 
 
     #always include those files:
-    add_data_files('',      ['COPYING', 'README', 'win32/website.url', 'etc/xpra/client-only/xpra.conf'])
+    add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
     add_data_files('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*'))
+    if "install" in sys.argv or "install_exe" in sys.argv or "py2exe" in sys.argv:
+        #a bit naughty here: we copy directly to the output dir:
+        dist = "dist"
+        try:
+            #more uglyness: locate -d DISTDIR in command line:
+            dist = sys.argv[sys.argv.index("-d")+1]
+        except:
+            pass
+        if not os.path.exists(dist):
+            os.mkdir(dist)
+        build_xpra_conf(dist)
 
 
     #hard-coded pkgconfig replacement for visual studio:
