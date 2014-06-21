@@ -444,10 +444,10 @@ class WindowVideoSource(WindowSource):
             #ignore small regions:
             if count<=min_count or (r.width<min_w and r.height<min_h):
                 ignored_count[r] = count
-                size_count.setdefault((r.width, r.height), AtomicInteger(0)).increase(int(count))
             else:
+                size_count.setdefault((r.width, r.height), AtomicInteger(0)).increase(int(count))
                 damage_count[r] = count
-        c = len(damage_count)
+        c = sum([int(x) for x in damage_count.values()])
         most_damaged = -1
         most_pct = 0
         if c>0:
@@ -457,16 +457,16 @@ class WindowVideoSource(WindowSource):
 
         def select_most_damaged():
             #use the region responsible for most of the large damage requests:
-            most_damaged_regions = [k for k,v in damage_count.items() if v==most_damaged]
+            most_damaged_regions = [r for r,v in damage_count.items() if v==most_damaged]
             if not most_damaged_regions:
                 sublog("nothing matched most damaged=%s", most_damaged)
                 return novideoregion()
-            rect = rectangle(*most_damaged_regions[0])
-            if rect.width>=ww or rect.height>=wh:
+            r = most_damaged_regions[0]
+            if r.width>=ww or r.height>=wh:
                 sublog("most damaged region is the whole window!")
                 return novideoregion()
-            sublog("identified video region (%s%% of large damage requests): %s", most_pct, self.video_subregion)
-            setnewregion(rect)
+            sublog("identified video region (%s%% of large damage requests): %s", most_pct, r)
+            setnewregion(r)
 
         update_markers()
 
@@ -492,7 +492,7 @@ class WindowVideoSource(WindowSource):
                 #(edge resistance of sorts: prevents outliers from making us drop the region
                 # if we know it has worked well in the past)
                 ratio = 3.0 - 2.0/max(1, event_count)
-                if pix_pct>=min(75, vs_pct*ratio):
+                if pix_pct>=max(10, min(75, vs_pct*ratio)):
                     sublog("keeping existing video region (%s%% of window area %sx%s, %s%% of damage pixels): %s", vs_pct, ww, wh, pix_pct, self.video_subregion)
                     return
 
@@ -501,36 +501,19 @@ class WindowVideoSource(WindowSource):
             select_most_damaged()
             return
 
-        #try by size alone (in case the region has moved):
-        most_common_size = 0
-        if len(size_count)>0:
-            most_common_size = int(sorted(size_count.values())[-1])
-        if most_common_size>=c*60/100:
-            mcw, mch = [k for k,v in size_count.items() if v==most_common_size][0]
-            #now this will match more than one area..
-            #so find a recent one:
-            for _,x,y,w,h in reversed(lde):
-                if w>=ww or h>=wh:
-                    continue
-                if w==mcw and h==mch:
-                    #recent and matching size, assume this is the one
-                    sublog("identified video region by size (%sx%s), using recent match: %s", mcw, mch, self.video_subregion)
-                    setnewregion(rectangle(x, y, w, h))
-                    return
-
-        def may_use_region(info, r):
+        def may_use_region(info, region):
             #check if the region given is a good candidate, and if so we use it
             #clamp it:
-            r.width = min(ww, merged.width)
-            r.height = min(wh, merged.height)
-            if r.width<min_w or r.height<min_h:
+            region.width = min(ww, region.width)
+            region.height = min(wh, region.height)
+            if region.width<min_w or region.height<min_h:
                 return False
             #and make sure this does not end up much bigger than needed:
-            rpixels = r.width*r.height
-            outside_pixels = sum((int(w*h) for _,_,w,h in damage_count.keys()))
-            if rpixels<ww*wh*70/100 and outside_pixels*140/100<rpixels and (r.width<ww or r.height<wh):
-                sublog("identified %s video region: %s", info, r)
-                setnewregion(merged)
+            rpixels = region.width*region.height
+            outside_pixels = sum((int(r.width*r.height) for r in damage_count.keys()))
+            if rpixels<ww*wh*70/100 and outside_pixels*140/100<rpixels:
+                sublog("identified %s video region: %s", info, region)
+                setnewregion(region)
                 return True
             return False
 
@@ -540,15 +523,38 @@ class WindowVideoSource(WindowSource):
             for x,regions in d.items():
                 if len(regions)>=2:
                     #merge regions of width w at x
-                    merged = merge_all(regions)
-                    if may_use_region("vertical", merged):
-                        return
+                    min_count = max(2, len(regions)/25)
+                    keep = [r for r in regions if int(dec.get(r, 0))>=min_count]
+                    if keep:
+                        merged = merge_all(keep)
+                        if may_use_region("vertical", merged):
+                            return
         for h, d in hc.items():
             for y,regions in d.items():
                 if len(regions)>=2:
                     #merge regions of height h at y
-                    merged = merge_all(regions)
-                    if may_use_region("horizontal", merged):
+                    min_count = max(2, len(regions)/25)
+                    keep = [r for r in regions if int(dec.get(r, 0))>=min_count]
+                    if keep:
+                        merged = merge_all(keep)
+                        if may_use_region("horizontal", merged):
+                            return
+
+        #try by size alone (in case the region has moved):
+        most_common_size = 0
+        if len(size_count)>0:
+            most_common_size = int(sorted(size_count.values())[-1])
+            if most_common_size>=c*60/100:
+                mcw, mch = [k for k,v in size_count.items() if v==most_common_size][0]
+                #now this will match more than one area..
+                #so find a recent one:
+                for _,x,y,w,h in reversed(lde):
+                    if w>=ww or h>=wh:
+                        continue
+                    if w==mcw and h==mch:
+                        #recent and matching size, assume this is the one
+                        sublog("identified video region by size (%sx%s), using recent match: %s", mcw, mch, self.video_subregion)
+                        setnewregion(rectangle(x, y, w, h))
                         return
 
         #try harder still: try combining all the regions we haven't discarded

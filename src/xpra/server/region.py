@@ -17,11 +17,14 @@ class rectangle(AdHocStruct):
         self.width = w
         self.height = h
 
+    def __hash__(self):
+        return hash((self.x, self.y, self.width, self.height))
+
     def __str__(self):
         return "rectangle[%i, %i, %i, %i]" % (self.x, self.y, self.width, self.height)
 
     def __repr__(self):
-        return "R[%i, %i, %i, %i]" % (self.x, self.y, self.width, self.height)
+        return "R(%i, %i, %i, %i)" % (self.x, self.y, self.width, self.height)
 
     def __eq__(self, other):
         return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height
