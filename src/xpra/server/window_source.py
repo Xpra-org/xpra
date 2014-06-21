@@ -1067,7 +1067,7 @@ class WindowSource(object):
                     self.refresh_event_time = time.time()
                     sched_delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
                     self.refresh_timer = self.timeout_add(sched_delay, self.schedule_auto_refresh, window, options)
-        refreshlog("auto refresh: %s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
+        refreshlog("auto refresh: %5s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
 
     def remove_refresh_region(self, region):
         #removes the given region from the refresh list
@@ -1133,7 +1133,7 @@ class WindowSource(object):
         self.refresh_regions = []
         if self.can_refresh(window) and regions:
             now = time.time()
-            refreshlog("timer_full_refresh() after %ims, regions=%s", time.time()-ret, regions)
+            refreshlog("timer_full_refresh() after %ims, regions=%s", 1000.0*(time.time()-ret), regions)
             encoding = self.auto_refresh_encodings[0]
             options = self.get_refresh_options()
             WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options, exclude_region=self.get_refresh_exclude())
