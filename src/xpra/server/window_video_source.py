@@ -394,7 +394,7 @@ class WindowVideoSource(WindowSource):
         min_w = max(256, ww/4)
         min_h = max(192, wh/4)
         if ww<min_w or wh<min_h:
-            sublog("identify video: window is too small")
+            sublog("identify video: window is too small: %sx%s", min_w, min_h)
             return novideoregion()
 
         def update_markers():
@@ -411,14 +411,13 @@ class WindowVideoSource(WindowSource):
                 sublog("identify video: too much time has passed (%is for %s %s events), clearing region", elapsed, event_types, event_count)
                 update_markers()
                 return novideoregion()
-            sublog("identify video: waiting for more damage events (%s)", self.statistics.damage_events_count)
+            sublog("identify video: waiting for more %s damage events (%s) counters: %s / %s", event_types, event_count, self.video_subregion_counter, self.statistics.damage_events_count)
 
         if self.video_subregion_counter+10>self.statistics.damage_events_count:
             #less than 10 events since last time we called update_markers:
             event_count = self.statistics.damage_events_count-self.video_subregion_counter
             few_damage_events("total", event_count)
             return
-        update_markers()
 
         #create a list (copy) to work on:
         lde = list(self.statistics.last_damage_events)
@@ -426,38 +425,50 @@ class WindowVideoSource(WindowSource):
         if dc<20:
             sublog("identify video: not enough damage events yet (%s)", dc)
             return novideoregion()
-        #count how many times we see each area, and keep track of those we ignore:
+        #structures for counting areas and sizes:
+        size_count = {}
+        wc = {}
+        hc = {}
+        dec = {}
+        #count how many times we see each area, each width/height and where:
+        for _,x,y,w,h in lde:
+            r = rectangle(x,y,w,h)
+            dec.setdefault(r, AtomicInteger()).increase()
+            wc.setdefault(w, dict()).setdefault(x, []).append(r)
+            hc.setdefault(h, dict()).setdefault(y, []).append(r)
+        #split the regions we really care about (enough pixels, big enough):
         damage_count = {}
         ignored_count = {}
-        c = 0
-        for _,x,y,w,h in lde:
-            #ignore small regions:
-            if w>=min_w and h>=min_h:
-                damage_count.setdefault((x,y,w,h), AtomicInteger()).increase()
-                c += 1
-            else:
-                ignored_count.setdefault((x,y,w,h), AtomicInteger()).increase()
-        #ignore low counts, add them to ignored dict:
         min_count = max(2, len(lde)/40)
-        low_count = dict((region, count) for (region, count) in damage_count.items() if int(count)<=min_count)
-        ignored_count.update(low_count)
-        damage_count = dict((region, count) for (region, count) in damage_count.items() if region not in low_count)
-        if len(damage_count)==0:
-            few_damage_events("large", 0)
-            return
-        most_damaged = int(sorted(damage_count.values())[-1])
-        most_pct = 100*most_damaged/c
-        sublog("identify video: most=%s%% damage count=%s", most_pct, damage_count)
+        for r, count in dec.items():
+            #ignore small regions:
+            if count<=min_count or (r.width<min_w and r.height<min_h):
+                ignored_count[r] = count
+                size_count.setdefault((r.width, r.height), AtomicInteger(0)).increase(int(count))
+            else:
+                damage_count[r] = count
+        c = len(damage_count)
+        most_damaged = -1
+        most_pct = 0
+        if c>0:
+            most_damaged = int(sorted(damage_count.values())[-1])
+            most_pct = 100*most_damaged/c
+            sublog("identify video: most=%s%% damage count=%s", most_pct, damage_count)
 
         def select_most_damaged():
             #use the region responsible for most of the large damage requests:
             most_damaged_regions = [k for k,v in damage_count.items() if v==most_damaged]
+            if not most_damaged_regions:
+                sublog("nothing matched most damaged=%s", most_damaged)
+                return novideoregion()
             rect = rectangle(*most_damaged_regions[0])
             if rect.width>=ww or rect.height>=wh:
                 sublog("most damaged region is the whole window!")
                 return novideoregion()
             sublog("identified video region (%s%% of large damage requests): %s", most_pct, self.video_subregion)
             setnewregion(rect)
+
+        update_markers()
 
         #ignore current subregion, 80% is high enough:
         if most_damaged>c*80/100:
@@ -490,13 +501,10 @@ class WindowVideoSource(WindowSource):
             select_most_damaged()
             return
 
-        #group by size:
-        size_count = {}
-        for region, count in damage_count.items():
-            _, _, w, h = region
-            size_count.setdefault((w,h), AtomicInteger(0)).increase(int(count))
-        #try by size alone:
-        most_common_size = int(sorted(size_count.values())[-1])
+        #try by size alone (in case the region has moved):
+        most_common_size = 0
+        if len(size_count)>0:
+            most_common_size = int(sorted(size_count.values())[-1])
         if most_common_size>=c*60/100:
             mcw, mch = [k for k,v in size_count.items() if v==most_common_size][0]
             #now this will match more than one area..
@@ -510,19 +518,44 @@ class WindowVideoSource(WindowSource):
                     setnewregion(rectangle(x, y, w, h))
                     return
 
-        #try harder: try combining all the regions we haven't discarded
+        def may_use_region(info, r):
+            #check if the region given is a good candidate, and if so we use it
+            #clamp it:
+            r.width = min(ww, merged.width)
+            r.height = min(wh, merged.height)
+            if r.width<min_w or r.height<min_h:
+                return False
+            #and make sure this does not end up much bigger than needed:
+            rpixels = r.width*r.height
+            outside_pixels = sum((int(w*h) for _,_,w,h in damage_count.keys()))
+            if rpixels<ww*wh*70/100 and outside_pixels*140/100<rpixels and (r.width<ww or r.height<wh):
+                sublog("identified %s video region: %s", info, r)
+                setnewregion(merged)
+                return True
+            return False
+
+        #try harder: try combining regions with the same width or height:
+        #(some video players update the video region in bands)
+        for w, d in wc.items():
+            for x,regions in d.items():
+                if len(regions)>=2:
+                    #merge regions of width w at x
+                    merged = merge_all(regions)
+                    if may_use_region("vertical", merged):
+                        return
+        for h, d in hc.items():
+            for y,regions in d.items():
+                if len(regions)>=2:
+                    #merge regions of height h at y
+                    merged = merge_all(regions)
+                    if may_use_region("horizontal", merged):
+                        return
+
+        #try harder still: try combining all the regions we haven't discarded
         #(flash player with firefox and youtube does stupid unnecessary repaints)
         if len(damage_count)>=2:
             merged = merge_all(damage_count.keys())
-            #clamp it:
-            merged.width = min(ww, merged.width)
-            merged.height = min(wh, merged.height)
-            #and make sure this does not end up much bigger than needed:
-            merged_pixels = merged.width*merged.height
-            unmerged_pixels = sum((int(w*h) for _,_,w,h in damage_count.keys()))
-            if merged_pixels<ww*wh*70/100 and unmerged_pixels*140/100<merged_pixels and (merged.width<ww or merged.height<wh):
-                sublog("identified merged video region: %s", merged)
-                setnewregion(merged)
+            if may_use_region("merged", merged):
                 return
 
         sublog("failed to identify a video region")

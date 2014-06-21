@@ -148,8 +148,8 @@ def remove_rectangle(regions, region):
         regions += r.substract_rect(region)
 
 def merge_all(rectangles):
-    rx = min((x for x,_,_,_ in rectangles))
-    ry = min((y for _,y,_,_ in rectangles))
-    rw = min((x+w for x,_,w,_ in rectangles))
-    rh = min((y+h for _,y,_,h in rectangles))
+    rx = min((r.x for r in rectangles))
+    ry = min((r.y for r in rectangles))
+    rw = min((r.x+r.width for r in rectangles))
+    rh = min((r.y+r.height for r in rectangles))
     return rectangle(rx, ry, rw, rh)
