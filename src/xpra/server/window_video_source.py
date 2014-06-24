@@ -391,8 +391,8 @@ class WindowVideoSource(WindowSource):
             return novideoregion()
         #arbitrary minimum size for regions we will look at:
         #(we don't want video regions smaller than this - too much effort for little gain)
-        min_w = max(256, ww/4)
-        min_h = max(192, wh/4)
+        min_w = 128
+        min_h = 96
         if ww<min_w or wh<min_h:
             sublog("identify video: window is too small: %sx%s", min_w, min_h)
             return novideoregion()
@@ -507,15 +507,39 @@ class WindowVideoSource(WindowSource):
             region.width = min(ww, region.width)
             region.height = min(wh, region.height)
             if region.width<min_w or region.height<min_h:
+                #too small, ignore it:
                 return False
-            #and make sure this does not end up much bigger than needed:
-            rpixels = region.width*region.height
-            outside_pixels = sum((int(r.width*r.height) for r in damage_count.keys()))
-            if rpixels<ww*wh*70/100 and outside_pixels*140/100<rpixels:
-                sublog("identified %s video region: %s", info, region)
-                setnewregion(region)
+            if region.width==ww and region.height==wh:
+                #not setting a video region,
+                #but no need to continue looking for one either:
                 return True
-            return False
+            #and make sure this does not end up much bigger than needed:
+            insize = region.width*region.height
+            outsize = ww*wh-insize
+            assert outsize>0
+            #count how many pixels are in or out if this region
+            incount, outcount = 0, 0
+            for r, count in dec.items():
+                inregion = r.intersection_rect(region)
+                if inregion:
+                    incount += inregion.width*inregion.height*int(count)
+                outregions = r.substract_rect(region)
+                for x in outregions:
+                    outcount += x.width*x.height*int(count)
+            total = incount+outcount
+            assert total>0
+            sublog("testing %s video region %s: %i%% in, %i%% out", info, region, 100*incount/total, 100*outcount/total)
+            if incount<outcount:
+                #less than half the pixels, not good enough:
+                return False
+            #scale by the number of pixels in the area to evaluate,
+            #so that a large video region only wins if it really
+            #has a large proportion of the pixels:
+            if incount/insize<120*outcount/outsize/100:
+                return False
+            sublog("identified %s video region: %s", info, region)
+            setnewregion(region)
+            return True
 
         #try harder: try combining regions with the same width or height:
         #(some video players update the video region in bands)
