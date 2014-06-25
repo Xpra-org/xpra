@@ -73,8 +73,8 @@ def main(script_file, cmdline):
         except SystemExit:
             raise
         except:
-            e = sys.exc_info()[1]
-            print("xpra main exception: %s" % e)
+            import traceback
+            print(traceback.format_exc())
             sys.exit(1)
     finally:
         platform_clean()
