@@ -959,6 +959,13 @@ def run_client(parser, opts, extra_args, mode):
         app = DetachXpraClient(connect(), opts)
     else:
         app = make_client(parser.error, opts)
+        layouts = app.get_supported_window_layouts() or ["default"]
+        layouts_str = ", ".join(layouts)
+        if opts.window_layout and opts.window_layout.lower()=="help":
+            print("%s supports the following layouts: %s" % (app.client_toolkit(), layouts_str))
+            return 0
+        if opts.window_layout and opts.window_layout not in layouts:
+            parser.error("window layout '%s' is not supported by the %s toolkit, valid options are: %s" % (opts.window_layout, app.client_toolkit(), layouts_str))
         app.init(opts)
         if opts.encoding:
             #fix old encoding names if needed:
@@ -971,13 +978,6 @@ def run_client(parser, opts, extra_args, mode):
                 if err:
                     return 1
                 return 0
-        layouts = app.get_supported_window_layouts() or ["default"]
-        layouts_str = ", ".join(layouts)
-        if opts.window_layout and opts.window_layout.lower()=="help":
-            print("%s supports the following layouts: %s" % (app.client_toolkit(), layouts_str))
-            return 0
-        if opts.window_layout and opts.window_layout not in layouts:
-            parser.error("window layout '%s' is not supported by the %s toolkit, valid options are: %s" % (opts.window_layout, app.client_toolkit(), layouts_str))
         def handshake_complete(*args):
             from xpra.log import Logger
             log = Logger()
