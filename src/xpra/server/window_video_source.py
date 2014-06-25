@@ -537,7 +537,7 @@ class WindowVideoSource(WindowSource):
             #scale by the number of pixels in the area to evaluate the score,
             #so that a large video region only wins if it really
             #has a large proportion of the pixels:
-            return (100*incount/insize) / (outcount/outsize)
+            return (100*incount*outsize) / (total*insize)
 
         #try harder: try combining regions with the same width or height:
         #(some video players update the video region in bands)
