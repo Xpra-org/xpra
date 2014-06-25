@@ -23,6 +23,7 @@ log = Logger("video", "encoding")
 scorelog = Logger("score")
 scalinglog = Logger("scaling")
 sublog = Logger("subregion")
+sslog = Logger("regiondetect")
 
 
 def envint(name, d):
@@ -365,36 +366,40 @@ class WindowVideoSource(WindowSource):
         return mod
 
     def identify_video_subregion(self):
+        ww, wh = self.window_dimensions
         def novideoregion():
             self.video_subregion_set_at = 0
             self.video_subregion_counter = 0
             self.video_subregion = None
         def setnewregion(rect):
+            if rect.x<=0 and rect.y<=0 and rect.width>=ww and rect.height>=wh:
+                #same size as the window, don't use a region!
+                novideoregion()
+                return
+            self.video_subregion = rect
             self.video_subregion_set_at = self.statistics.damage_events_count
             self.video_subregion_counter = self.statistics.damage_events_count
-            self.video_subregion = rect
 
         if self.statistics.damage_events_count < self.video_subregion_set_at:
             #stats got reset
             self.video_subregion_set_at = 0
         if self.encoding not in self.video_encodings:
-            sublog("identify video: not using a video mode! (%s)", self.encoding)
+            sslog("identify video: not using a video mode! (%s)", self.encoding)
             return novideoregion()
         if self.full_frames_only or STRICT_MODE:
-            sublog("identify video: full frames only!")
+            sslog("identify video: full frames only!")
             return novideoregion()
-        ww, wh = self.window_dimensions
         #validate against window dimensions:
         if self.video_subregion and (self.video_subregion.width>ww or self.video_subregion.height>wh):
             #region is now bigger than the window!
-            sublog("identify video: window is now smaller than current region!")
+            sslog("identify video: window is now smaller than current region!")
             return novideoregion()
         #arbitrary minimum size for regions we will look at:
         #(we don't want video regions smaller than this - too much effort for little gain)
         min_w = 128
         min_h = 96
         if ww<min_w or wh<min_h:
-            sublog("identify video: window is too small: %sx%s", min_w, min_h)
+            sslog("identify video: window is too small: %sx%s", min_w, min_h)
             return novideoregion()
 
         def update_markers():
@@ -408,10 +413,10 @@ class WindowVideoSource(WindowSource):
             #make the timeout longer when the region has worked longer:
             slow_region_timeout = 10 + math.log(2+event_count, 1.5)
             if self.video_subregion is not None and elapsed>=slow_region_timeout:
-                sublog("identify video: too much time has passed (%is for %s %s events), clearing region", elapsed, event_types, event_count)
+                sslog("identify video: too much time has passed (%is for %s %s events), clearing region", elapsed, event_types, event_count)
                 update_markers()
                 return novideoregion()
-            sublog("identify video: waiting for more %s damage events (%s) counters: %s / %s", event_types, event_count, self.video_subregion_counter, self.statistics.damage_events_count)
+            sslog("identify video: waiting for more %s damage events (%s) counters: %s / %s", event_types, event_count, self.video_subregion_counter, self.statistics.damage_events_count)
 
         if self.video_subregion_counter+10>self.statistics.damage_events_count:
             #less than 10 events since last time we called update_markers:
@@ -423,7 +428,7 @@ class WindowVideoSource(WindowSource):
         lde = list(self.statistics.last_damage_events)
         dc = len(lde)
         if dc<20:
-            sublog("identify video: not enough damage events yet (%s)", dc)
+            sslog("identify video: not enough damage events yet (%s)", dc)
             return novideoregion()
         #structures for counting areas and sizes:
         size_count = {}
@@ -453,19 +458,19 @@ class WindowVideoSource(WindowSource):
         if c>0:
             most_damaged = int(sorted(damage_count.values())[-1])
             most_pct = 100*most_damaged/c
-            sublog("identify video: most=%s%% damage count=%s", most_pct, damage_count)
+            sslog("identify video: most=%s%% damage count=%s", most_pct, damage_count)
 
         def select_most_damaged():
             #use the region responsible for most of the large damage requests:
             most_damaged_regions = [r for r,v in damage_count.items() if v==most_damaged]
             if not most_damaged_regions:
-                sublog("nothing matched most damaged=%s", most_damaged)
+                sslog("nothing matched most damaged=%s", most_damaged)
                 return novideoregion()
             r = most_damaged_regions[0]
             if r.width>=ww or r.height>=wh:
-                sublog("most damaged region is the whole window!")
+                sslog("most damaged region is the whole window!")
                 return novideoregion()
-            sublog("identified video region (%s%% of large damage requests): %s", most_pct, r)
+            sslog("identified video region (%s%% of large damage requests): %s", most_pct, r)
             setnewregion(r)
 
         update_markers()
@@ -493,7 +498,7 @@ class WindowVideoSource(WindowSource):
                 # if we know it has worked well in the past)
                 ratio = 3.0 - 2.0/max(1, event_count)
                 if pix_pct>=max(10, min(75, vs_pct*ratio)):
-                    sublog("keeping existing video region (%s%% of window area %sx%s, %s%% of damage pixels): %s", vs_pct, ww, wh, pix_pct, self.video_subregion)
+                    sslog("keeping existing video region (%s%% of window area %sx%s, %s%% of damage pixels): %s", vs_pct, ww, wh, pix_pct, self.video_subregion)
                     return
 
         #try again with 50% threshold:
@@ -501,22 +506,19 @@ class WindowVideoSource(WindowSource):
             select_most_damaged()
             return
 
-        def may_use_region(info, region):
+        def score_region(info, region):
             #check if the region given is a good candidate, and if so we use it
             #clamp it:
             region.width = min(ww, region.width)
             region.height = min(wh, region.height)
             if region.width<min_w or region.height<min_h:
                 #too small, ignore it:
-                return False
-            if region.width==ww and region.height==wh:
-                #not setting a video region,
-                #but no need to continue looking for one either:
-                return True
+                return 0
             #and make sure this does not end up much bigger than needed:
             insize = region.width*region.height
             outsize = ww*wh-insize
-            assert outsize>0
+            if outsize<=0:
+                return 0
             #count how many pixels are in or out if this region
             incount, outcount = 0, 0
             for r, count in dec.items():
@@ -528,21 +530,18 @@ class WindowVideoSource(WindowSource):
                     outcount += x.width*x.height*int(count)
             total = incount+outcount
             assert total>0
-            sublog("testing %s video region %s: %i%% in, %i%% out", info, region, 100*incount/total, 100*outcount/total)
+            sslog("testing %s video region %s: %i%% in, %i%% out", info, region, 100*incount/total, 100*outcount/total)
             if incount<outcount:
                 #less than half the pixels, not good enough:
-                return False
-            #scale by the number of pixels in the area to evaluate,
+                return 0
+            #scale by the number of pixels in the area to evaluate the score,
             #so that a large video region only wins if it really
             #has a large proportion of the pixels:
-            if incount/insize<120*outcount/outsize/100:
-                return False
-            sublog("identified %s video region: %s", info, region)
-            setnewregion(region)
-            return True
+            return (100*incount/insize) / (outcount/outsize)
 
         #try harder: try combining regions with the same width or height:
         #(some video players update the video region in bands)
+        scores = {None : 0}
         for w, d in wc.items():
             for x,regions in d.items():
                 if len(regions)>=2:
@@ -551,8 +550,7 @@ class WindowVideoSource(WindowSource):
                     keep = [r for r in regions if int(dec.get(r, 0))>=min_count]
                     if keep:
                         merged = merge_all(keep)
-                        if may_use_region("vertical", merged):
-                            return
+                        scores[merged] = score_region("vertical", merged)
         for h, d in hc.items():
             for y,regions in d.items():
                 if len(regions)>=2:
@@ -561,8 +559,15 @@ class WindowVideoSource(WindowSource):
                     keep = [r for r in regions if int(dec.get(r, 0))>=min_count]
                     if keep:
                         merged = merge_all(keep)
-                        if may_use_region("horizontal", merged):
-                            return
+                        scores[merged] = score_region("vertical", merged)
+
+        sslog("merged regions scores: %s", scores)
+        highscore = max(scores.values())
+        if highscore>60:
+            region = [r for r,s in scores.items() if s==highscore][0]
+            sslog("identified video region with high score %s: %s", highscore, region)
+            setnewregion(region)
+            return True
 
         #try by size alone (in case the region has moved):
         most_common_size = 0
@@ -577,7 +582,7 @@ class WindowVideoSource(WindowSource):
                         continue
                     if w==mcw and h==mch:
                         #recent and matching size, assume this is the one
-                        sublog("identified video region by size (%sx%s), using recent match: %s", mcw, mch, self.video_subregion)
+                        sslog("identified video region by size (%sx%s), using recent match: %s", mcw, mch, self.video_subregion)
                         setnewregion(rectangle(x, y, w, h))
                         return
 
@@ -585,10 +590,12 @@ class WindowVideoSource(WindowSource):
         #(flash player with firefox and youtube does stupid unnecessary repaints)
         if len(damage_count)>=2:
             merged = merge_all(damage_count.keys())
-            if may_use_region("merged", merged):
+            score = score_region("merged", merged)
+            if score>60:
+                setnewregion(merged)
                 return
 
-        sublog("failed to identify a video region")
+        sslog("failed to identify a video region")
         novideoregion()
 
 
