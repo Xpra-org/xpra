@@ -64,12 +64,16 @@ class XpraClient(GTKXpraClient):
 
     def init(self, opts):
         GTKXpraClient.init(self, opts)
+        self.ClientWindowClass = None
         if opts.window_layout:
             assert opts.window_layout in WINDOW_LAYOUTS
             self.ClientWindowClass = WINDOW_LAYOUTS.get(opts.window_layout)
+        if self.ClientWindowClass:
+            log.info("window layout '%s' specified, disabling OpenGL", opts.window_layout)
+            opts.opengl= False
         else:
             self.ClientWindowClass = BorderClientWindow
-        log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
+            log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
 
 
     def parse_border(self, border_str):
