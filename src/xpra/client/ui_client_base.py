@@ -255,7 +255,7 @@ class UIXpraClient(XpraClientBase):
         vh.init()
 
 
-    def init_ui(self, opts):
+    def init_ui(self, opts, extra_args=[]):
         """ initialize user interface """
         self.init_opengl(opts.opengl)
 
@@ -294,7 +294,7 @@ class UIXpraClient(XpraClientBase):
             self.client_extras = ClientExtras(self, opts)
 
         if opts.border:
-            self.parse_border(opts.border)
+            self.parse_border(opts.border, extra_args)
 
         #draw thread:
         self._draw_queue = Queue()
@@ -306,7 +306,7 @@ class UIXpraClient(XpraClientBase):
             self.init_mmap(self.mmap_group, conn.filename)
 
 
-    def parse_border(self, border_str):
+    def parse_border(self, border_str, extra_args):
         #not implemented here (see gtk2 client)
         pass
 

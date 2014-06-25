@@ -984,7 +984,7 @@ def run_client(parser, opts, extra_args, mode):
             log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
         if hasattr(app, "connect"):
             app.connect("handshake-complete", handshake_complete)
-        app.init_ui(opts)
+        app.init_ui(opts, extra_args)
         conn = connect()
         app.setup_connection(conn)
     return do_run_client(app)

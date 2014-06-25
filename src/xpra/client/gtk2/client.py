@@ -76,25 +76,37 @@ class XpraClient(GTKXpraClient):
             log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
 
 
-    def parse_border(self, border_str):
+    def parse_border(self, border_str, extra_args):
         parts = [x.strip() for x in border_str.split(",")]
         color_str = parts[0]
+        def border_help():
+            log.info(" border format: color[,size]")
+            log.info("  eg: red,10")
+            log.info("  eg: ,5")
+            log.info("  eg: auto,5")
+            log.info("  eg: blue")
         if color_str.lower()=="none":
             return
-        if color_str=="auto":
+        if color_str.lower()=="help":
+            border_help()
+            return
+        if color_str=="auto" or color_str=="":
             try:
                 import hashlib
                 m = hashlib.sha1()
-                m.update(self._protocol._conn.target)
+                for x in extra_args:
+                    m.update(str(x))
                 color_str = "#%s" % m.hexdigest()[:6]
-                log("border color derived from %s: %s", self._protocol._conn.target, color_str)
+                log("border color derived from %s: %s", extra_args, color_str)
             except:
+                log.info("failed to derive border color from %s", extra_args, exc_info=True)
                 #fail: default to red
                 color_str = "red"
         try:
             color = gtk.gdk.color_parse(color_str)
         except Exception, e:
-            log.warn("invalid color specified: %s (%s)", color_str, e)
+            log.warn("invalid border color specified: '%s' (%s)", color_str, e)
+            border_help()
             color = gtk.gdk.Color("red")
         alpha = 0.6
         size = 4
