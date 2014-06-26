@@ -516,8 +516,7 @@ class WindowVideoSource(WindowSource):
                 return 0
             #and make sure this does not end up much bigger than needed:
             insize = region.width*region.height
-            outsize = ww*wh-insize
-            if outsize<=0:
+            if ww*wh<=insize:
                 return 0
             #count how many pixels are in or out if this region
             incount, outcount = 0, 0
@@ -530,14 +529,12 @@ class WindowVideoSource(WindowSource):
                     outcount += x.width*x.height*int(count)
             total = incount+outcount
             assert total>0
-            sslog("testing %s video region %s: %i%% in, %i%% out", info, region, 100*incount/total, 100*outcount/total)
-            if incount<outcount:
-                #less than half the pixels, not good enough:
-                return 0
-            #scale by the number of pixels in the area to evaluate the score,
+            score = 100*incount*ww*wh/total/insize
+            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, score=%2i", info, region, 100*incount/total, 100*outcount/total, score)
+            #devaluate by taking into account the number of pixels in the area
             #so that a large video region only wins if it really
-            #has a large proportion of the pixels:
-            return (100*incount*outsize) / (total*insize)
+            #has a larger proportion of the pixels:
+            return score
 
         #try harder: try combining regions with the same width or height:
         #(some video players update the video region in bands)
@@ -559,7 +556,7 @@ class WindowVideoSource(WindowSource):
                     keep = [r for r in regions if int(dec.get(r, 0))>=min_count]
                     if keep:
                         merged = merge_all(keep)
-                        scores[merged] = score_region("vertical", merged)
+                        scores[merged] = score_region("horizontal", merged)
 
         sslog("merged regions scores: %s", scores)
         highscore = max(scores.values())
