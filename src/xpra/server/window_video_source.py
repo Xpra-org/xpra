@@ -331,7 +331,7 @@ class WindowVideoSource(WindowSource):
                 refresh_now += r.substract_rect(vr)
         if refresh_now:
             #refresh via timeout_add so this runs in UI thread:
-            self.timeout_add(self.do_subregion_refresh, window, refresh_now)
+            self.timeout_add(0, self.do_subregion_refresh, window, refresh_now)
             #only keep the regions still in the video region:
             inrect = [vr.intersection_rect(r) for r in self.video_subregion_refresh_regions]
             self.video_subregion_refresh_regions = [r for r in inrect if r is not None]
