@@ -67,6 +67,44 @@ class AtomicInteger(object):
             return -1
 
 
+class MutableInteger(object):
+    def __init__(self, integer = 0):
+        self.counter = integer
+
+    def increase(self, inc = 1):
+        self.counter = self.counter + inc
+        return self.counter
+
+    def decrease(self, dec = 1):
+        self.counter = self.counter - dec
+        return self.counter
+
+    def get(self):
+        return self.counter
+
+    def __str__(self):
+        return str(self.counter)
+
+    def __repr__(self):
+        return "MutableInteger(%s)" % self.counter
+
+
+    def __int__(self):
+        return self.counter
+
+    def __eq__(self, other):
+        try:
+            return self.counter==int(other)
+        except:
+            return -1
+
+    def __cmp__(self, other):
+        try:
+            return self.counter-int(other)
+        except:
+            return -1
+
+
 class typedict(dict):
 
     def capsget(self, key, default=None):

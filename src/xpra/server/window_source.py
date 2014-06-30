@@ -35,7 +35,7 @@ from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.stats.maths import time_weighted_average
-from xpra.server.region import rectangle, add_rectangle, remove_rectangle, contains
+from xpra.server.region import rectangle, add_rectangle, remove_rectangle
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except Exception, e:
@@ -1075,11 +1075,10 @@ class WindowSource(object):
         remove_rectangle(self.refresh_regions, region)
 
     def add_refresh_region(self, window, region):
-        #adds the given region to the refresh list:
+        #adds the given region to the refresh list
+        #returns True if the list was modified
         #(overriden in window video source to exclude the video region)
         #Note: this does not run in the UI thread!
-        if contains(self.refresh_regions, region.x, region.y, region.width, region.height):
-            return False
         return add_rectangle(self.refresh_regions, region)
 
     def can_refresh(self, window):
