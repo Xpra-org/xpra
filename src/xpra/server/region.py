@@ -27,7 +27,7 @@ class rectangle(AdHocStruct):
         return "R(%i, %i, %i, %i)" % (self.x, self.y, self.width, self.height)
 
     def __eq__(self, other):
-        return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height
+        return other is not None and self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height
 
     def merge(self, x, y, w, h):
         newx = min(self.x, x)
@@ -134,6 +134,7 @@ def contains_rect(regions, region):
 
 def add_rectangle(regions, region):
     if contains(regions, region.x, region.y, region.width, region.height):
+        #we already have this region within another region
         return False
     for r in list(regions):
         if r.intersects_rect(region):
@@ -153,6 +154,6 @@ def remove_rectangle(regions, region):
 def merge_all(rectangles):
     rx = min((r.x for r in rectangles))
     ry = min((r.y for r in rectangles))
-    rw = min((r.x+r.width for r in rectangles))
-    rh = min((r.y+r.height for r in rectangles))
-    return rectangle(rx, ry, rw, rh)
+    rx2 = max((r.x+r.width for r in rectangles))
+    ry2 = max((r.y+r.height for r in rectangles))
+    return rectangle(rx, ry, rx2-rx, ry2-ry)
