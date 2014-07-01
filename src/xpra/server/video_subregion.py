@@ -129,7 +129,7 @@ class VideoSubregion(object):
                 #same size as the window, don't use a region!
                 self.novideoregion("region is full window")
                 return
-            sslog("setting new region %s: "+msg, *args)
+            sslog("setting new region %s: "+msg, rect, *args)
             self.set_at = damage_events_count
             self.counter = damage_events_count
             self.rectangle = rect
@@ -159,7 +159,7 @@ class VideoSubregion(object):
             slow_region_timeout = 10 + math.log(2+event_count, 1.5)
             if rect and elapsed>=slow_region_timeout:
                 update_markers()
-                return self.novideoregion("too much time has passed (%is for %s %s events), clearing region", elapsed, event_types, event_count)
+                return self.novideoregion("too much time has passed (%is for %s %s events)", elapsed, event_types, event_count)
             sslog("identify video: waiting for more %s damage events (%s) counters: %s / %s", event_types, event_count, self.counter, damage_events_count)
 
         if self.counter+10>damage_events_count:
