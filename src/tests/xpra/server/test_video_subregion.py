@@ -22,7 +22,7 @@ def main():
     log("main()")
     def refresh_cb(window, regions):
         log("refresh_cb(%s, %s)", window, regions)
-    r = VideoSubregion(gobject.timeout_add, gobject.source_remove, refresh_cb)
+    r = VideoSubregion(gobject.timeout_add, gobject.source_remove, refresh_cb, 150)
 
     ww = 1024
     wh = 768
@@ -86,7 +86,7 @@ def main():
         last_damage_events.append(v2)
     r.identify_video_subregion(ww, wh, 100, last_damage_events)
     m = merge_all([rectangle(*v1[1:]), rectangle(*v2[1:])])
-    assert r.rectangle==m
+    assert r.rectangle==m, "expected %s but got %s" % (m, r.rectangle)
 
     log.info("* but not if they are too far apart")
     last_damage_events = maxdeque(150)

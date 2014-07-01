@@ -209,11 +209,16 @@ class VideoSubregion(object):
                     outcount += x.width*x.height*int(count)
             total = incount+outcount
             assert total>0
-            score = 100*incount*ww*wh/total/insize
-            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, score=%2i", info, region, 100*incount/total, 100*outcount/total, score)
+            score = 100*incount/total
             #devaluate by taking into account the number of pixels in the area
             #so that a large video region only wins if it really
-            #has a larger proportion of the pixels:
+            #has a larger proportion of the pixels
+            #(offset the "insize" to even things out a bit:
+            # if we have a series of vertical or horizontal bands that we merge,
+            # we would otherwise end up excluding the ones on the edge
+            # if they ever happen to have a slightly lower hit count)
+            score = score * ww * wh * 6 / 5 / (ww*wh/5 + insize)
+            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, score=%2i", info, region, 100*incount/total, 100*outcount/total, score)
             return score
 
         update_markers()
