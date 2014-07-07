@@ -91,8 +91,8 @@ def main():
     log.info("* but not if they are too far apart")
     last_damage_events = maxdeque(150)
     r.reset()
-    v1 = (time.time(), 50, 50, 320, 240)
-    v2 = (time.time(), ww-50-320, wh-240-50, 320, 240)
+    v1 = (time.time(), 20, 20, 320, 240)
+    v2 = (time.time(), ww-20-320, wh-240-20, 320, 240)
     for _ in range(50):
         last_damage_events.append(v1)
         last_damage_events.append(v2)

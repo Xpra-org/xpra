@@ -209,7 +209,8 @@ class VideoSubregion(object):
                     outcount += x.width*x.height*int(count)
             total = incount+outcount
             assert total>0
-            score = 100*incount/total
+            inpct = 100*incount/total
+            outpct = 100*outcount/total
             #devaluate by taking into account the number of pixels in the area
             #so that a large video region only wins if it really
             #has a larger proportion of the pixels
@@ -217,8 +218,8 @@ class VideoSubregion(object):
             # if we have a series of vertical or horizontal bands that we merge,
             # we would otherwise end up excluding the ones on the edge
             # if they ever happen to have a slightly lower hit count)
-            score = score * ww * wh * 6 / 5 / (ww*wh/5 + insize)
-            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, score=%2i", info, region, 100*incount/total, 100*outcount/total, score)
+            score = inpct * ww*wh*2 / (ww*wh + insize)
+            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, score=%2i", info, region, inpct, outpct, score)
             return score
 
         update_markers()
@@ -251,7 +252,7 @@ class VideoSubregion(object):
             if len(most_damaged_regions)==1:
                 r = most_damaged_regions[0]
                 score = score_region("most-damaged", r)
-                if score>125:
+                if score>120:
                     if r.width>=(ww-16) and r.height>=(wh-16):
                         return self.novideoregion("most damaged region is (almost?) the whole window: %s", r)
                     setnewregion(r, "%s%% of large damage requests, score=%s", most_pct, score)
@@ -284,15 +285,18 @@ class VideoSubregion(object):
         sslog("merged regions scores: %s", scores)
         highscore = max(scores.values())
         #a score of 100 is neutral
-        if highscore>=200:
+        if highscore>=120:
             region = [r for r,s in scores.items() if s==highscore][0]
-            setnewregion(region, "high score %s: %s", highscore)
-            return True
+            return setnewregion(region, "very high score: %s", highscore)
 
         #retry existing region, tolerate lower score:
-        if cur_score>=80:
+        if cur_score>=90:
             sslog("keeping existing video region %s with score %s", rect, cur_score)
             return
+
+        if highscore>=105:
+            region = [r for r,s in scores.items() if s==highscore][0]
+            return setnewregion(region, "high score: %s", highscore)
 
         #FIXME: re-add some scrolling detection
 
@@ -301,8 +305,7 @@ class VideoSubregion(object):
         if len(damage_count)>=2:
             merged = merge_all(damage_count.keys())
             score = score_region("merged", merged)
-            if score>=150:
-                setnewregion(merged, "merged all regions, score=%s", score)
-                return
+            if score>=110:
+                return setnewregion(merged, "merged all regions, score=%s", score)
 
         self.novideoregion("failed to identify a video region")
