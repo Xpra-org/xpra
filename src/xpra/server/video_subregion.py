@@ -33,7 +33,7 @@ class VideoSubregion(object):
         self.counter = 0
         self.set_at = 0
         self.time = 0
-        self.refresh_timer = 0
+        self.refresh_timer = None
         self.refresh_regions = []
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.non_waited = 0
@@ -106,7 +106,7 @@ class VideoSubregion(object):
             delay = max(150, self.auto_refresh_delay)
             def refresh():
                 #runs via timeout_add, safe to call UI!
-                self.refresh_timer = 0
+                self.refresh_timer = None
                 regions = self.refresh_regions
                 self.refresh_regions = []
                 #it probably makes sense to refresh the whole thing:
