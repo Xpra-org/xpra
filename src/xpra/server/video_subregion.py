@@ -11,8 +11,8 @@ from xpra.util import MutableInteger
 from xpra.server.region import rectangle, add_rectangle, remove_rectangle, merge_all
 from xpra.log import Logger
 
-log = Logger("subregion")
 sslog = Logger("regiondetect")
+refreshlog = Logger("regionrefresh")
 
 MIN_EVENTS = 20
 MIN_W = 128
@@ -47,6 +47,7 @@ class VideoSubregion(object):
         self.reset()
 
     def cancel_refresh_timer(self):
+        refreshlog("cancel_refresh_timer() timer=%s", self.refresh_timer)
         if self.refresh_timer:
             self.source_remove(self.refresh_timer)
             self.refresh_timer = None
@@ -73,6 +74,7 @@ class VideoSubregion(object):
 
     def remove_refresh_region(self, region):
         remove_rectangle(self.refresh_regions, region)
+        refreshlog("remove_refresh_region(%s) updated refresh regions=%s", region, self.refresh_regions)
 
 
     def add_video_refresh(self, window, region):
@@ -81,7 +83,7 @@ class VideoSubregion(object):
         rect = self.rectangle
         if not rect:
             return
-        log("add_video_refresh(%s, %s) rectangle=%s", window, region, rect)
+        refreshlog("add_video_refresh(%s, %s) rectangle=%s", window, region, rect)
         #something in the video region is still refreshing,
         #so we re-schedule the subregion refresh:
         self.cancel_refresh_timer()
@@ -112,6 +114,7 @@ class VideoSubregion(object):
                 # and would decide to do many overlapping refreshes)
                 if len(regions)>=2 and rect:
                     regions = [self.rectangle]
+                refreshlog("refresh() calling %s with regions=%s", self.refresh_cb, regions)
                 self.refresh_cb(window, regions)
             self.refresh_timer = self.timeout_add(delay, refresh)
 

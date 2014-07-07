@@ -80,7 +80,7 @@ def set_default_level(level):
 
 
 KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "video",
-                 "score", "encoding", "scaling", "subregion", "regiondetect", "refresh", "compress", "mouse",
+                 "score", "encoding", "scaling", "subregion", "regiondetect", "regionrefresh", "refresh", "compress", "mouse",
                  "error", "verbose",
                  #codecs:
                  "csc", "cuda", "cython", "opencl", "swscale",
