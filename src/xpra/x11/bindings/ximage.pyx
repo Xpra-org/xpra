@@ -592,13 +592,12 @@ cdef class PixmapWrapper(object):
             height = self.height-y
         return get_image(self.display, self.pixmap, x, y, width, height)
 
-    def __del__(self):
+    def __dealloc__(self):                  #@DuplicatedSignature
         if XIMAGE_DEBUG:
             log("PixmapWrapper.__del__() pixmap=%s", self.pixmap)
         if self.pixmap!=0:
             XFreePixmap(self.display, self.pixmap)
             self.pixmap = 0
-
 
 
 cdef get_image(Display * display, Pixmap pixmap, int x, int y, int width, int height):
