@@ -57,6 +57,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         self._damage_handle = None
         self._use_shm = use_shm
         self._shm_handle = None
+        self._contents_handle = None
 
     def __repr__(self):
         xid = None
@@ -111,7 +112,9 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         if self._listening_to is not None:
             self._cleanup_listening(self._listening_to)
             self._listening_to = None
-        self._contents_handle = None
+        if self._contents_handle:
+            self._contents_handle.cleanup()
+            self._contents_handle = None
 
     def _cleanup_listening(self, listening):
         if listening:
