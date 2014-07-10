@@ -204,6 +204,8 @@ RGB_FORMATS[6] = RGBX
 RGB_FORMATS[7] = NULL
 
 
+cdef int ximage_counter = 0
+
 cdef class XImageWrapper:
     """
         Presents X11 image pixels as in ImageWrapper
@@ -237,6 +239,8 @@ cdef class XImageWrapper:
         self.timestamp = int(time.time()*1000)
 
     cdef set_image(self, XImage* image):
+        global ximage_counter
+        ximage_counter += 1
         self.thread_safe = 0
         self.image = image
         self.rowstride = self.image.bytes_per_line
@@ -356,7 +360,7 @@ cdef class XImageWrapper:
             ximage_counter -= 1
 
     cdef free_pixels(self):
-        ximagedebug("%s.free_pixels() pixels=%#x", <unsigned long> self.pixels)
+        ximagedebug("%s.free_pixels() pixels=%#x", self, <unsigned long> self.pixels)
         if self.pixels!=NULL:
             free(self.pixels)
             self.pixels = NULL
@@ -555,6 +559,9 @@ cdef class PixmapWrapper(object):
         self.pixmap = pixmap
         self.width = width
         self.height = height
+        global xpixmap_counter
+        xpixmap_counter += 1
+        ximagedebug("%s xpixmap counter: %i", self, xpixmap_counter)
 
     def __repr__(self):                     #@DuplicatedSignature
         return "PixmapWrapper(%#x, %i, %i)" % (self.pixmap, self.width, self.height)
@@ -590,6 +597,8 @@ cdef class PixmapWrapper(object):
         if self.pixmap!=0:
             XFreePixmap(self.display, self.pixmap)
             self.pixmap = 0
+            global xpixmap_counter
+            xpixmap_counter -= 1
 
     def cleanup(self):                      #@DuplicatedSignature
         ximagedebug("%s.cleanup() pixmap=%#x", self, self.pixmap)
@@ -606,6 +615,8 @@ cdef get_image(Display * display, Pixmap pixmap, int x, int y, int width, int he
         return None
     xi = XImageWrapper(x, y, width, height)
     xi.set_image(ximage)
+    global ximage_counter
+    ximagedebug("%s ximage counter: %i", xi, ximage_counter)
     return xi
 
 
