@@ -197,7 +197,12 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         pass
                     raise
                 if handle is None:
-                    log("failed to name a window pixmap for %s: %s", self._window.xid, e)
+                    #avoid race during signal exit, which will clear self._window:
+                    win = self._window
+                    xid = 0
+                    if win:
+                        xid = win.xid
+                    log("failed to name a window pixmap for %#x: %s", xid, e)
                     self._cleanup_listening(listening)
                 else:
                     self._contents_handle = handle
