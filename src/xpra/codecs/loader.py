@@ -216,7 +216,8 @@ def main():
     try:
         init("Loader", "Encoding Info")
         import sys
-        if "-v" in sys.argv or "--verbose" in sys.argv:
+        verbose = "-v" in sys.argv or "--verbose" in sys.argv
+        if verbose:
             log.enable_debug()
 
         load_codecs()
@@ -224,13 +225,34 @@ def main():
         #print("codec_status=%s" % codecs)
         for name in ALL_CODECS:
             mod = codecs.get(name, "")
+            f = mod
             if mod and hasattr(mod, "__file__"):
-                mod = mod.__file__
-                if mod.startswith(os.getcwd()):
-                    mod = mod[len(os.getcwd()):]
-                    if mod.startswith(os.path.sep):
-                        mod = mod[1:]
-            print("* %s : %s" % (name.ljust(20), mod))
+                f = mod.__file__
+                if f.startswith(os.getcwd()):
+                    f = f[len(os.getcwd()):]
+                    if f.startswith(os.path.sep):
+                        f = f[1:]
+            print("* %s : %s" % (name.ljust(20), f))
+            if mod and verbose:
+                try:
+                    if name=="PIL":
+                        #special case for PIL which can be used for both encoding and decoding:
+                        from xpra.codecs.codec_constants import get_PIL_encodings, get_PIL_decodings
+                        e = get_PIL_encodings(mod)
+                        print("                         ENCODE: %s" % ", ".join(e))
+                        d = get_PIL_decodings(mod)
+                        print("                         DECODE: %s" % ", ".join(d))
+                    elif name.find("enc")>=0 or name.find("dec")>=0:
+                        encodings = mod.get_encodings()
+                        print("                         %s" % ", ".join(encodings))
+                    elif name.find("csc")>=0:
+                        cs = mod.get_input_colorspaces()
+                        for c in list(cs):
+                            cs += mod.get_output_colorspaces(c)
+                        print("                         %s" % ", ".join(list(set(cs))))
+                except:
+                    e = sys.exc_info()[1]
+                    print("error getting extra information on %s: %s" % (name, e))
         print("")
         print("codecs versions:")
         def pver(v):
