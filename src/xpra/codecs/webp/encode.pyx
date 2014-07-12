@@ -271,6 +271,9 @@ ERROR_TO_NAME = {
                 VP8_ENC_ERROR_USER_ABORT                : "abort request by user",
                 }
 
+def get_encodings():
+    return ["webp"]
+
 def get_version():
     version = WebPGetEncoderVersion()
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff

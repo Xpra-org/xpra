@@ -154,6 +154,9 @@ def webp_check(int ret):
     err = ERROR_TO_NAME.get(ret, ret)
     raise Exception("error: %s" % err)
 
+def get_encodings():
+    return ["webp"]
+
 
 cdef class WebpBufferWrapper:
     """
