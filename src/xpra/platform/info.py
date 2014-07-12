@@ -9,6 +9,9 @@ Keyboard = None
 def get_sys_info():
     return {}
 
+def get_version_info():
+    return {}
+
 def _get_pwd():
     try:
         import pwd
@@ -34,5 +37,6 @@ def get_name():
 from xpra.platform import platform_import
 platform_import(globals(), "info", False,
                 "get_sys_info",
+                "get_version_info",
                 "get_username",
                 "get_name")

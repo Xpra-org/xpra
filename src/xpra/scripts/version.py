@@ -30,7 +30,14 @@ def main():
         print_dict(pi)
         print("")
         print("Host:")
-        print_dict(get_host_info())
+        d = get_host_info()
+        #add os specific version info:
+        try:
+            from xpra.platform.info import get_version_info as pvinfo
+            d.update(pvinfo())
+        except:
+            pass
+        print_dict(d)
     finally:
         clean()
 
