@@ -62,9 +62,9 @@ DEL /Q Xpra_Setup*.exe 2> NUL
 DEL /Q cx_freeze-xpra.log build-xpra.log py2exe-xpra.log innosetup.log 2> NUL
 
 if NOT "%VC%"=="" (
-	ECHO ***************************************************************
-	ECHO ****** load Visual Studio env
 	if "%VSINSTALLDIR%"=="" (
+		ECHO ***************************************************************
+		ECHO ****** load Visual Studio env
 		CALL "%VC%\bin\vcvars32.bat"
 	)
 )
