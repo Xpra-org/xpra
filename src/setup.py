@@ -76,9 +76,9 @@ if PYTHON3 and not WIN32:
 # only the default values are specified here:
 #*******************************************************************************
 def get_status_output(*args, **kwargs):
+    kwargs["stdout"] = subprocess.PIPE
+    kwargs["stderr"] = subprocess.PIPE
     try:
-        kwargs["stdout"] = subprocess.PIPE
-        kwargs["stderr"] = subprocess.PIPE
         p = subprocess.Popen(*args, **kwargs)
     except:
         e = sys.exc_info()[1]
@@ -431,12 +431,10 @@ def get_gcc_version():
     global GCC_VERSION
     if len(GCC_VERSION)==0:
         cmd = [os.environ.get("CC", "gcc"), "-v"]
-        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output, _ = proc.communicate()
-        status = proc.wait()
-        if status==0:
+        r, _, err = get_status_output(cmd)
+        if r==0:
             V_LINE = "gcc version "
-            for line in output.decode("utf8").splitlines():
+            for line in err.decode("utf8").splitlines():
                 if line.startswith(V_LINE):
                     v_str = line[len(V_LINE):].split(" ")[0]
                     for p in v_str.split("."):
@@ -559,9 +557,8 @@ def pkgconfig(*pkgs_options, **ekw):
                 options = package_options       #got given a list of options
             for option in options:
                 cmd = ["pkg-config", "--exists", option]
-                proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                status = proc.wait()
-                if status==0:
+                r, _, _ = get_status_output(cmd)
+                if r==0:
                     valid_option = option
                     break
             if not valid_option:
@@ -573,14 +570,12 @@ def pkgconfig(*pkgs_options, **ekw):
                     '-L': 'library_dirs',
                     '-l': 'libraries'}
         cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
-        proc = subprocess.Popen(cmd, env=os.environ, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (output, _) = proc.communicate()
-        status = proc.wait()
-        if status!=0:
-            sys.exit("ERROR: call to pkg-config ('%s') failed" % " ".join(cmd))
+        r, out, err = get_status_output(cmd)
+        if r!=0:
+            sys.exit("ERROR: call to pkg-config ('%s') failed (err=%s)" % (" ".join(cmd), err))
         if sys.version>='3':
-            output = output.decode('utf-8')
-        for token in output.split():
+            out = out.decode('utf-8')
+        for token in out.split():
             if token[:2] in ignored_flags:
                 pass
             elif token[:2] in flag_map:
@@ -614,42 +609,50 @@ def pkgconfig(*pkgs_options, **ekw):
 
 
 #*******************************************************************************
-xorg_version = None
-def get_xorg_version():
-    global xorg_version
-    if xorg_version:
-        return xorg_version
-    #fedora rawhide binary:
+def get_xorg_bin():
+    # Detect Xorg Binary
     if os.path.exists("/usr/libexec/Xorg.bin"):
-        cmd = ["/usr/libexec/Xorg.bin", "-version"]
+        #fedora rawhide binary:
+        return "/usr/libexec/Xorg.bin"
     else:
-        cmd = ["Xorg", "-version"]
+        #look for it in $PATH:
+        for x in os.environ.get("PATH").split(os.pathsep):
+            xorg = os.path.join(x, "Xorg")
+            if os.path.isfile(xorg):
+                return xorg
+    return None
+
+def get_xorg_version(xorg_bin):
+    # can't detect version if there is no binary
+    if not xorg_bin:
+        return None
+    cmd = [xorg_bin, "-version"]
     if verbose_ENABLED:
         print("detecting Xorg version using: %s" % str(cmd))
-    try:
-        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out, _ = proc.communicate()
+    r, _, err = get_status_output(cmd)
+    if r==0:
         V_LINE = "X.Org X Server "
-        for line in out.decode("utf8").splitlines():
+        for line in err.decode("utf8").splitlines():
             if line.startswith(V_LINE):
                 v_str = line[len(V_LINE):]
-                xorg_version = [int(x) for x in v_str.split(".")[:2]]
-                break
-    except:
-        e = sys.exc_info()[1]
-        print("failed to detect Xorg version: %s" % e)
-        xorg_version = None
-    return xorg_version
+                return [int(x) for x in v_str.split(".")[:2]]
+    else:
+        print("failed to detect Xorg version: %s" % err)
+    return None
 
 def detect_xorg_setup():
     if not server_ENABLED or WIN32:
         return ("", False, False)
-    #do live detection
-    xorg_version = get_xorg_version()
 
-    # detect displayfd
-    if not xorg_version:
-        has_displayfd = False
+    xorg_bin = get_xorg_bin()
+    #do live detection
+    xorg_version = get_xorg_version(xorg_bin)
+
+    # detect displayfd support based on Xorg version
+    # if Xdummy support is enabled,
+    # then the X server is new enough to support displayfd:
+    if Xdummy_ENABLED is True: 
+        has_displayfd = True     
     elif xorg_version >= [1, 12]:
         has_displayfd = True
     else:
@@ -658,54 +661,46 @@ def detect_xorg_setup():
     def Xvfb():
         return ("Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY", has_displayfd, False)
 
-    if sys.platform.find("bsd")>=0:
+    if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:
         print("Warning: sorry, no support for Xdummy on %s" % sys.platform)
         return Xvfb()
 
-    XORG_BIN = None
-    PATHS = os.environ.get("PATH").split(os.pathsep)
-    for x in PATHS:
-        xorg = os.path.join(x, "Xorg")
-        if os.path.isfile(xorg):
-            XORG_BIN = xorg
-            break
-    if not XORG_BIN:
-        print("Xorg not found, cannot detect version or Xdummy support")
-        return Xvfb()
-
     def Xorg_suid_check():
-        xorg_stat = os.stat(XORG_BIN)
+        xorg_stat = os.stat(xorg_bin)
         if (xorg_stat.st_mode & stat.S_ISUID)!=0:
             if (xorg_stat.st_mode & stat.S_IROTH)==0:
                 print("Xorg is suid and not readable, Xdummy support unavailable")
                 return Xvfb()
-            print("%s is suid and readable, using the xpra_Xdummy wrapper" % XORG_BIN)
+            print("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
             return ("xpra_Xdummy -dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf", has_displayfd, True)
         else:
-            print("using Xdummy config file")
+            print("using Xdummy directly")
             return ("Xorg -dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf", has_displayfd, False)
 
     if Xdummy_ENABLED is False:
         return Xvfb()
     elif Xdummy_ENABLED is True:
-        print("Xdummy support specified as 'enabled', will detect suid mode")
+        print("Xdummy support specified as 'enabled', will detect if we need the suid wrapper")
         return Xorg_suid_check()
     else:
         print("Xdummy support unspecified, will try to detect")
 
     cmd = ["lsb_release", "-cs"]
-    try:
-        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out, _ = proc.communicate()
+    r, out, err = get_status_output(cmd)
+    release = ""
+    if r==0:
         release = out.replace("\n", "")
-        print("Found OS release: %s" % release)
+        r, out, err = get_status_output(["lsb_release", "-i"])
+        dist = ""
+        if r==0:
+            dist = out.split(":")[-1].strip()
+        print("found OS release: %s %s" % (dist, release))
         if release in ("raring", "saucy"):
             #yet another instance of Ubuntu breaking something
             print("Warning: Ubuntu '%s' breaks Xorg/Xdummy usage - using Xvfb fallback" % release)
             return  Xvfb()
-    except:
-        e = sys.exc_info()[1]
-        print("failed to detect OS release using %s: %s" % (" ".join(cmd), e))
+    else:
+        print("Warning: failed to detect OS release using %s: %s" % (" ".join(cmd), err))
 
     if not xorg_version:
         print("Xorg version could not be detected, Xdummy support disabled (using Xvfb as safe default)")
@@ -713,7 +708,7 @@ def detect_xorg_setup():
     if xorg_version<[1, 12]:
         print("Xorg version %s is too old (1.12 or later required), Xdummy support not available" % str(xorg_version))
         return Xvfb()
-    print("found valid recent version of Xorg server: %s" % str(xorg_version))
+    print("found valid recent version of Xorg server: %s" % ".".join([str(x) for x in xorg_version]))
     return Xorg_suid_check()
 
 def build_xpra_conf(build_base):
