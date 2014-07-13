@@ -4,9 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os.path
 from xpra.log import Logger
 log = Logger("codec", "loader")
+
+if sys.version > '3':
+    unicode = str           #@ReservedAssignment
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
@@ -215,7 +219,6 @@ def main():
     from xpra.platform import init, clean
     try:
         init("Loader", "Encoding Info")
-        import sys
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
             log.enable_debug()
@@ -258,7 +261,7 @@ def main():
         def pver(v):
             if type(v)==tuple:
                 return ".".join([str(x) for x in v])
-            elif type(v)==str and v.startswith("v"):
+            elif type(v) in (str, unicode) and v.startswith("v"):
                 return v[1:]
             return str(v)
         for name in sorted(codec_versions.keys()):
