@@ -1377,7 +1377,10 @@ else:
             install_data.run(self)
 
             # install xpra.conf we have generated in build_conf:
-            dst_xpra_conf = os.path.join(self.install_dir.rstrip("/usr"), "etc/xpra/xpra.conf")
+            install_root = "/"
+            if "--user" in sys.argv:
+                install_root = ""
+            dst_xpra_conf = os.path.join(self.install_dir.rstrip("/usr") or install_root, "etc/xpra/xpra.conf")
             src_xpra_conf = os.path.join(self.distribution.command_obj['build'].build_base, "xpra.conf")
 
             assert os.path.exists(src_xpra_conf), "cannot find '%s' from build step" % src_xpra_conf
