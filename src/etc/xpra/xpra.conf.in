@@ -5,7 +5,7 @@
 # options here.
 # Each user can also define its own options in the file
 # ~/xpra/xpra.conf which will take precedence over this file.
-# Most options can be overriden on the xpra command line.
+# Most options can also be overriden on the xpra command line.
 # See "xpra -h" or the man page for details.
 #
 # Syntax:
@@ -16,6 +16,9 @@
 # - You may break a long line into multiple lines
 #   by ending each line with a backslash '\'.
 
+
+################################################################################
+# General Options
 
 # Enable clipboard forwarding:
 clipboard = yes
@@ -29,49 +32,16 @@ system-tray = yes
 # Forward sound output to clients:
 speaker = yes
 
-# Codec(s) to use for forwarding speaker sound:
-#speaker-codec = mp3
-#speaker-codec = flac
-#speaker-codec = wav
-#speaker-codec = wavpack
-#speaker-codec = speex
-#speaker-codec = opus
-
-# Forward sound input to server:
-# microphone = yes
-
-# Codec(s) to use for forwarding microphone sound:
-#microphone-codec = mp3
-#microphone-codec = flac
-#microphone-codec = wav
-#microphone-codec = wavpack
-#microphone-codec = speex
-#microphone-codec = opus
-
-# Enable shared memory transfers:
-mmap = yes
-
-# Use server group ownership for mmap file:
-mmap-group = no
-
-# Share session with other users:
-sharing = no
-
-# Default compression (0 to 9):
-compression_level = 1
-
-# Socket directory:
-#socket-dir = /tmp
-#socket-dir = ~/.xpra
-
 # Debugging:
 #debug =
 #debug = keyboard,clipboard,tray
 
-# OpenGL accelerated rendering:
-#opengl = yes
-#opengl = no
-opengl = auto
+# Send ping packets more regularly (every second):
+pings = no
+
+
+################################################################################
+# Picture Encoding
 
 # Default encoding
 # (not all encodings may be available in your environment):
@@ -106,6 +76,58 @@ auto-refresh-delay = 0.15
 # Default DPI:
 dpi = 96
 
+
+################################################################################
+# Sound Encoding
+
+# Codec(s) to use for forwarding speaker sound:
+#speaker-codec = mp3
+#speaker-codec = flac
+#speaker-codec = wav
+#speaker-codec = wavpack
+#speaker-codec = speex
+#speaker-codec = opus
+
+# Forward sound input to server:
+# microphone = yes
+
+# Codec(s) to use for forwarding microphone sound:
+#microphone-codec = mp3
+#microphone-codec = flac
+#microphone-codec = wav
+#microphone-codec = wavpack
+#microphone-codec = speex
+#microphone-codec = opus
+
+
+################################################################################
+# Network Connection
+
+# Enable shared memory transfers:
+mmap = yes
+
+# Use server group ownership for mmap file:
+mmap-group = no
+
+# Share session with other users:
+sharing = no
+
+# Default compression (0 to 9):
+compression_level = 1
+
+# Socket directory:
+#socket-dir = /tmp
+#socket-dir = ~/.xpra
+
+
+################################################################################
+# Client Options
+
+# OpenGL accelerated rendering:
+#opengl = yes
+#opengl = no
+opengl = auto
+
 # Client window title:
 title = @title@ on @client-machine@
 
@@ -115,16 +137,12 @@ title = @title@ on @client-machine@
 # Keyboard synchronization:
 keyboard-sync = yes
 
-# Send ping packets more regularly (every second):
-pings = no
-
 # Client ssh command:
 #ssh = /usr/bin/ssh
 
 
 ########################################################################
 # Server Options:
-#
 
 # Commands to start by default
 #  (may be specified more than once):
