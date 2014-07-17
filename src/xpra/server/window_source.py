@@ -1145,9 +1145,6 @@ class WindowSource(object):
     def full_quality_refresh(self, window, damage_options):
         #called on use request via xpra control,
         #or when we need to resend the window after a send timeout
-        if self._damage_delayed:
-            #there is already a new damage region pending
-            return
         if not window.is_managed():
             #this window is no longer managed
             return
