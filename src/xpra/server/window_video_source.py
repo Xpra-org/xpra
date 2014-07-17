@@ -247,6 +247,11 @@ class WindowVideoSource(WindowSource):
             #drop a frame which is being processed
             self.cleanup_codecs()
 
+    def full_quality_refresh(self, window, damage_options):
+        #override so we reset the video region on full quality refresh
+        self.video_subregion.reset()
+        WindowSource.full_quality_refresh(self, window, damage_options)
+
 
     def must_batch(self, delay):
         #force batching when using video region
