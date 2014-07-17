@@ -52,6 +52,7 @@ def parse_scaling_value(v):
         assert values[0]<=values[1], "cannot upscale"
         ret = values[0], values[1]
     scalinglog("parse_scaling_value(%s)=%s", v, ret)
+    return ret
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 
 
