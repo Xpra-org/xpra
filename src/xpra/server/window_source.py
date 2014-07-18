@@ -19,7 +19,7 @@ scalinglog = Logger("scaling")
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 95))
 AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 100))
-AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 25))
+AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 50))
 
 MAX_PIXELS_PREFER_RGB = 4096
 
@@ -943,10 +943,11 @@ class WindowSource(object):
                 #high speed, rgb is very good:
                 options.append("rgb24")
             if 16384<pixel_count<max_webp:
-                #don't enable webp for "true" lossless (q>99) unless speed is high
+                #don't enable webp for "true" lossless (q>99) unless speed is high enough
                 #because webp forces speed=100 for true lossless mode
                 #also avoid very small and very large areas (both slow)
-                options.append("webp")
+                if quality<100 or speed>=50:
+                    options.append("webp")
             #always allow png
             options.append("png")
         if current_encoding in ALL_OPTIONS:
