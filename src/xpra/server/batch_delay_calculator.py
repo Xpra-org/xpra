@@ -194,7 +194,9 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     info = {
             "min_quality"   : min_quality,
             "backlog_factor": int(100.0*packets_bl),
-            "batch_factor"  : int(100.0*batch_q),
-            "latency_factor": int(100.0*latency_q),
             }
+    if batch_q>=0:
+        info["batch_factor"] = int(100.0*batch_q)
+    if latency_q>=0:
+        info["latency_factor"] = int(100.0*latency_q)
     return info, target_quality
