@@ -300,13 +300,13 @@
 
   <distutils id="python-pyopengl">
      <branch repo="pypi.python.org"
-	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.0b3.tar.gz"
+	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.0.tar.gz"
 	     version="3.1.0b3"/>
   </distutils>
 
   <distutils id="python-pyopengl-accelerate">
      <branch repo="pypi.python.org"
-	     module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.1.0b2.tar.gz"
+	     module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.1.0.tar.gz"
 	     version="3.1.0b2"/>
   </distutils>
 
