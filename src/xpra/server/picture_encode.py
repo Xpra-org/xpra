@@ -57,7 +57,7 @@ def webp_encode(coding, image, supports_transparency, quality, speed, options):
         speed = max(0, min(100, speed))
         cdata = enc_webp.compress(image.get_pixels(), w, h, stride=stride/4, quality=quality, speed=speed, has_alpha=alpha)
         client_options = {"speed" : speed}
-        if quality>=0 and quality<100:
+        if quality>=0 and quality<=100:
             client_options["quality"] = quality
         if alpha:
             client_options["has_alpha"] = True
