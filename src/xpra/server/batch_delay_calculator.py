@@ -182,7 +182,8 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
             #so when we start and we don't have any records, we don't lower quality
             #just because the start delay is higher than min_delay
             ref_delay = (batch.START_DELAY*10.0/recs + batch.min_delay*recs) / (recs+10.0/recs)
-            batch_q = ref_delay / max(batch.min_delay, batch.delay)
+            #anything less than twice the minimum is good enough:
+            batch_q = ref_delay / max(1, batch.min_delay, batch.delay/2.0)
             target = min(1.0, target, batch_q)
     latency_q = -1
     if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
