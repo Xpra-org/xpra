@@ -859,7 +859,7 @@ class ServerBase(ServerCore):
             def refresh(ws, wid, window):
                 ws.refresh(window, {})
             for_all_window_sources(wids, refresh)
-            return 0, "set encoding to %s%s for %s windows" % (encoding, ["", " (strict)"][int(strict)], len(wids))
+            return 0, "set encoding to %s%s for %s windows" % (encoding, ["", " (strict)"][int(strict or 0)], len(wids))
         elif command=="auto-refresh":
             if len(args)<1:
                 return argn_err(1)
