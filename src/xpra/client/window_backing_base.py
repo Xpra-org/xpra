@@ -495,4 +495,7 @@ class WindowBackingBase(object):
         elif coding in self._PIL_encodings:
             self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
         else:
-            raise Exception("invalid encoding: %s" % coding)
+            self.do_draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
+
+    def do_draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
+        raise Exception("invalid encoding: %s" % coding)

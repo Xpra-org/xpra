@@ -37,10 +37,17 @@ class GTK2WindowBacking(GTKWindowBacking):
         gobject.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
         return  False
 
+    def do_draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
+        """ called as last resort when PIL is not available"""
+        gobject.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
+
+
     def paint_pixbuf_gdk(self, coding, img_data, x, y, width, height, options, callbacks):
         """ must be called from UI thread """
         if coding.startswith("png"):
             coding = "png"
+        else:
+            assert coding=="jpeg"
         loader = gdk.PixbufLoader(coding)
         loader.write(img_data, len(img_data))
         loader.close()
