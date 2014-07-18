@@ -926,7 +926,7 @@ class WindowSource(object):
         #log.info("get_encoding_options%s lossless_q=%s, smult=%s, max_rgb=%s, max_webp=%s", (batching, pixel_count, ww, wh, speed, quality, current_encoding), lossless_q, smult, max_rgb, max_webp)
         if quality<lossless_q:
             #add lossy options
-            ALL_OPTIONS = ["jpeg", "png/P", "png/L"]
+            ALL_OPTIONS = ["jpeg", "png/P", "png/L", "rgb24"]
             if pixel_count<max_rgb:
                 #high speed and high quality, rgb is still good
                 options.append("rgb24")
