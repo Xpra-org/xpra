@@ -19,7 +19,7 @@ scalinglog = Logger("scaling")
 AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 95))
 AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 100))
-AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
+AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 25))
 
 MAX_PIXELS_PREFER_RGB = 4096
 
@@ -1133,7 +1133,13 @@ class WindowSource(object):
         if self.can_refresh(window) and regions:
             now = time.time()
             refreshlog("timer_full_refresh() after %ims, regions=%s", 1000.0*(time.time()-ret), regions)
+            #choose an encoding:
+            ww, wh = window.get_dimensions()
             encoding = self.auto_refresh_encodings[0]
+            encodings = self.get_encoding_options(False, ww*wh, ww, wh, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
+            refresh_encodings = [x for x in self.auto_refresh_encodings if x in encodings]
+            if refresh_encodings:
+                encoding = refresh_encodings[0]
             options = self.get_refresh_options()
             WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options, exclude_region=self.get_refresh_exclude())
         return False
