@@ -781,11 +781,13 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                 print("removing Cython/build generated file: %s" % x)
             os.unlink(filename)
 
-from add_build_info import record_build_info, record_src_info, has_src_info
+from add_build_info import record_build_info, BUILD_INFO_FILE, record_src_info, SRC_INFO_FILE, has_src_info
 
 if "clean" not in sys.argv:
     # Add build info to build_info.py file:
     record_build_info()
+    # ensure it is included in the module list if it didn't exist before
+    add_modules(BUILD_INFO_FILE)
 
 if "sdist" in sys.argv:
     record_src_info()
@@ -796,6 +798,8 @@ if "install" in sys.argv or "build" in sys.argv:
     #so create one:
     if not has_src_info():
         record_src_info()
+        # ensure it is now included in the module list
+        add_modules(SRC_INFO_FILE)
 
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:

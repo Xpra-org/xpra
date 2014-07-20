@@ -147,9 +147,9 @@ def get_platform_name():
     return sys.platform
 
 
+BUILD_INFO_FILE = "./xpra/build_info.py"
 def record_build_info(is_build=True):
-    BUILD_INFO_FILE = "./xpra/build_info.py"
-
+    global BUILD_INFO_FILE
     props = get_properties(BUILD_INFO_FILE)
     if is_build:
         set_prop(props, "BUILT_BY", getpass.getuser())
