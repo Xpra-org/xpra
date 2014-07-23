@@ -162,38 +162,43 @@ def read_config(conf_file):
             d[name] = value
     return  d
 
-def read_xpra_conf(conf_dir):
+def read_xpra_conf(conf_dir, xpra_conf_filename='xpra.conf'):
     """
-        Reads an "xpra.conf" file from the given directory,
+        Reads an <xpra_conf_filename> file from the given directory,
         returns a dict with values as strings and arrays of strings.
     """
     cdir = os.path.expanduser(conf_dir)
     d = {}
     if not os.path.exists(cdir) or not os.path.isdir(cdir):
         return  d
-    conf_file = os.path.join(cdir, 'xpra.conf')
+    conf_file = os.path.join(cdir, xpra_conf_filename)
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         return  d
     return read_config(conf_file)
 
-def read_xpra_defaults():
+def read_xpra_defaults(conf_dir=None):
     """
-        Reads the global "xpra.conf" and then the user-specific one.
+        Reads the global <xpra_conf_filename> from the <conf_dir>
+        and then the user-specific one.
         (the latter overrides values from the former)
         returns a dict with values as strings and arrays of strings.
+        If the <conf_dir> is not specified, we figure out its location.
     """
     #first, read the global defaults:
     from xpra.platform.paths import get_resources_dir, get_default_conf_dir
-    if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-        #OSX and win32 use binary installers,
-        #we must look for the default config in the bundled resource location:
-        conf_dir = get_resources_dir()
-    elif sys.prefix == '/usr':
-        #default posix config location:
-        conf_dir = '/etc/xpra'
-    else:
-        #hope the prefix is something like "/usr/local":
-        conf_dir = sys.prefix + '/etc/xpra/'
+    if not conf_dir:
+        #caller has not specified a directory name to use,
+        #so we must figure it out:
+        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+            #OSX and win32 use binary installers,
+            #we must look for the default config in the bundled resource location:
+            conf_dir = get_resources_dir()
+        elif sys.prefix == '/usr':
+            #default posix config location:
+            conf_dir = '/etc/xpra'
+        else:
+            #hope the prefix is something like "/usr/local":
+            conf_dir = sys.prefix + '/etc/xpra/'
     defaults = {}
     if conf_dir:
         defaults = read_xpra_conf(conf_dir)
