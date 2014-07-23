@@ -58,6 +58,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
         def noop(*args):
             log("ignoring packet: %s", args)
         #ignore the following packet types without error:
+        #(newer servers should avoid sending us any of those)
         for t in ["new-window", "new-override-redirect",
                   "draw", "cursor", "bell",
                   "notify_show", "notify_close",
