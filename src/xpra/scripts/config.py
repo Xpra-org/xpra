@@ -16,6 +16,14 @@ def warn(msg):
     sys.stderr.write(msg+"\n")
 
 
+DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
+#set to None to let the code figure out where
+#the configuration directory should be
+#TODO: this should be replaced by platform code
+# (but this may interfere with platform init..)
+DEFAULT_XPRA_CONF_DIR = os.environ.get("XPRA_CONF_DIR", None)
+
+
 ENCRYPTION_CIPHERS = []
 try:
     from Crypto.Cipher import AES
@@ -162,7 +170,7 @@ def read_config(conf_file):
             d[name] = value
     return  d
 
-def read_xpra_conf(conf_dir, xpra_conf_filename='xpra.conf'):
+def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
     """
         Reads an <xpra_conf_filename> file from the given directory,
         returns a dict with values as strings and arrays of strings.
@@ -176,7 +184,7 @@ def read_xpra_conf(conf_dir, xpra_conf_filename='xpra.conf'):
         return  d
     return read_config(conf_file)
 
-def read_xpra_defaults(conf_dir=None):
+def read_xpra_defaults(conf_dir=DEFAULT_XPRA_CONF_DIR):
     """
         Reads the global <xpra_conf_filename> from the <conf_dir>
         and then the user-specific one.
