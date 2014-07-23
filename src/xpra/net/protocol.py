@@ -639,11 +639,11 @@ class Protocol(object):
             packet[0] = packet_type
             self.verify_packet(packet)
             raise e
-        if False and len(main_packet)>LARGE_PACKET_SIZE and packet_in[0] not in self.large_packets:
+        if len(main_packet)>LARGE_PACKET_SIZE and packet_in[0] not in self.large_packets:
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         #compress, but don't bother for small packets:
-        if False and level>0 and len(main_packet)>min_comp_size:
+        if level>0 and len(main_packet)>min_comp_size:
             cl, cdata = self._compress(main_packet, level)
             packets.append((0, cl, cdata))
         else:
