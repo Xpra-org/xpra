@@ -44,7 +44,9 @@ class XSettingsManager(object):
         self._window = self._manager.window()
 
     def set_settings(self, settings):
-        if type(settings)!=tuple:
+        if type(settings)==list:
+            settings = tuple(settings)
+        elif type(settings)!=tuple:
             log.warn("discarding xsettings because of incompatible format: %s", type(settings))
             return
         prop_set(self._window, XSETTINGS, XSETTINGS_TYPE, settings)

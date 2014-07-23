@@ -20,6 +20,10 @@ from xpra.log import Logger
 log = Logger("x11", "xsettings")
 
 
+if sys.version > '3':
+    unicode = str           #@ReservedAssignment
+
+
 #undocumented XSETTINGS endianess values:
 LITTLE_ENDIAN = 0
 BIG_ENDIAN    = 1
@@ -98,6 +102,7 @@ def set_settings(disp, d):
     all_bin_settings = []
     for setting in settings:
         setting_type, prop_name, value, last_change_serial = setting
+        prop_name = str(prop_name)
         log("set_settings(..) processing property %s of type %s", prop_name, XSettingsNames.get(setting_type, "INVALID!"))
         x = struct.pack("=BBH", setting_type, 0, len(prop_name))
         x += struct.pack("="+"s"*len(prop_name), *list(prop_name))
@@ -108,7 +113,10 @@ def set_settings(disp, d):
             assert type(value) in (int, long), "invalid value type (int or long wanted): %s" % type(value)
             x += struct.pack("=I", int(value))
         elif setting_type==XSettingsTypeString:
-            assert type(value)==str, "invalid value type (str wanted): %s" % type(value)
+            if type(value)==unicode:
+                value = str(value)
+            else:
+                assert type(value)==str, "invalid value type (str wanted): %s" % type(value)
             x += struct.pack("=I", len(value))
             x += struct.pack("="+"s"*len(value), *list(value))
             pad_len = ((len(value) + 0x3) & ~0x3) - len(value)
