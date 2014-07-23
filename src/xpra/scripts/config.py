@@ -432,7 +432,7 @@ def print_bool(k, v, true_str='yes', false_str='no'):
         return false_str
     warn("Warning: cannot print value '%s' for '%s' as a boolean" % (v, k))
 
-def parse_number(numtype, k, v, auto=-1):
+def parse_number(numtype, k, v, auto=0):
     if type(v)==str:
         v = v.lower()
     if v=="auto":
