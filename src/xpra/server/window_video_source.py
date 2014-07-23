@@ -853,9 +853,9 @@ class WindowVideoSource(WindowSource):
                 actual_scaling = 1,3
             elif self.maximized and (qs or ffps>=(10-er*3)):
                 actual_scaling = 1,2
-            elif width*height>=(2048-er*768)*1200 and (qs or ffps>=(25-er*5)):
+            elif width*height>=(2560-er*768)*1600 and (qs or ffps>=(25-er*5)):
                 actual_scaling = 1,3
-            elif width*height>=(1024-er*384)*1024 and (qs or ffps>=(30-er*10)):
+            elif width*height>=(1920-er*384)*1200 and (qs or ffps>=(30-er*10)):
                 actual_scaling = 2,3
             if actual_scaling:
                 scalinglog("calculate_scaling enabled by heuristics er=%s, qs=%s, ffps=%s", er, qs, ffps)
