@@ -352,6 +352,8 @@ class ProxyInstanceProcess(Process):
     def filter_server_caps(self, caps):
         if caps.get("rencode", False):
             self.server_protocol.enable_rencode()
+        elif caps.get("yaml", False):
+            self.server_protocol.enable_yaml()
         return self.filter_caps(caps, ("aliases", ))
 
     def filter_caps(self, caps, prefixes):

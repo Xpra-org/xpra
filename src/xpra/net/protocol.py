@@ -84,6 +84,20 @@ has_bencode = bencode is not None and bdecode is not None
 use_bencode = has_bencode and os.environ.get("XPRA_USE_BENCODER", "1")=="1"
 log("protocol: has_bencode=%s, use_bencode=%s, version=%s", has_bencode, use_bencode, bencode_version)
 
+yaml_encode, yaml_decode, yaml_version = None, None, None
+try:
+    #json messes with strings and unicode (makes it unusable for us)
+    import yaml
+    yaml_encode = yaml.dump
+    yaml_decode = yaml.load
+    yaml_version = yaml.__version__
+except ImportError:
+    log("yaml not found")
+has_yaml = yaml_encode is not None and yaml_decode is not None
+use_yaml = has_yaml and os.environ.get("XPRA_USE_YAML", "1")=="1"
+log("protocol: has_yaml=%s, use_yaml=%s, version=%s", has_yaml, use_yaml, yaml_version)
+
+
 #stupid python version breakage:
 if sys.version > '3':
     long = int          #@ReservedAssignment
@@ -148,6 +162,7 @@ def get_network_caps(legacy=True):
                 "digest"                : ("hmac", "xor"),
                 "rencode"               : use_rencode,
                 "bencode"               : use_bencode,
+                "yaml"                  : use_yaml,
                 "lz4"                   : use_lz4,
                 "mmap"                  : mmap,
                }
@@ -170,9 +185,14 @@ def get_network_caps(legacy=True):
         pass
 
     if has_rencode:
+        assert rencode_version is not None
         caps["rencode.version"] = rencode_version
     if has_bencode:
+        assert bencode_version is not None
         caps["bencode.version"] = bencode_version
+    if has_yaml:
+        assert yaml_version is not None
+        caps["yaml.version"] = yaml_version
     return caps
 
 
@@ -229,6 +249,7 @@ class Protocol(object):
 
     FLAGS_RENCODE = 0x1
     FLAGS_CIPHER = 0x2
+    FLAGS_JSON = 0x4
     FLAGS_NOHEADER = 0x40
 
     def __init__(self, scheduler, conn, process_packet_cb, get_packet_cb=None):
@@ -257,7 +278,7 @@ class Protocol(object):
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
-        self.max_packet_size = 32*1024
+        self.max_packet_size = 256*1024
         self.abs_max_packet_size = 32*1024*1024
         self.large_packets = ["hello"]
         self.send_aliases = {}
@@ -293,6 +314,7 @@ class Protocol(object):
         state["lz4"] = lz4_compress and self._compress==lz4_compress
         state["bencode"] = self._encoder == self.bencode
         state["rencode"] = self._encoder == self.rencode
+        state["yaml"] = self._encoder == self.yaml
         #state["connection"] = self._conn
         return state
 
@@ -305,6 +327,8 @@ class Protocol(object):
             self.enable_lz4()
         if state.get("rencode", False):
             self.enable_rencode()
+        elif state.get("yaml", False):
+            self.enable_yaml()
 
     def wait_for_io_threads_exit(self, timeout=None):
         for t in (self._read_thread, self._write_thread):
@@ -524,6 +548,12 @@ class Protocol(object):
         log("enable_rencode()")
         self._encoder = self.rencode
 
+    def enable_yaml(self):
+        assert has_yaml, "yaml cannot be enabled: the module failed to load!"
+        log("enable_yaml()")
+        self._encoder = self.yaml
+
+
     def enable_zlib(self):
         log("enable_zlib()")
         self._compress = zcompress
@@ -542,6 +572,10 @@ class Protocol(object):
 
     def rencode(self, data):
         return  rencode_dumps(data), Protocol.FLAGS_RENCODE
+
+    def yaml(self, data):
+        return yaml_encode(data), Protocol.FLAGS_JSON
+
 
     def encode(self, packet_in):
         """
@@ -605,11 +639,11 @@ class Protocol(object):
             packet[0] = packet_type
             self.verify_packet(packet)
             raise e
-        if len(main_packet)>LARGE_PACKET_SIZE and packet_in[0] not in self.large_packets:
+        if False and len(main_packet)>LARGE_PACKET_SIZE and packet_in[0] not in self.large_packets:
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         #compress, but don't bother for small packets:
-        if level>0 and len(main_packet)>min_comp_size:
+        if False and level>0 and len(main_packet)>min_comp_size:
             cl, cdata = self._compress(main_packet, level)
             packets.append((0, cl, cdata))
         else:
@@ -856,6 +890,9 @@ class Protocol(object):
                     if protocol_flags & Protocol.FLAGS_RENCODE:
                         assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet! not an xpra client?"
                         packet = list(rencode_loads(data))
+                    elif protocol_flags & Protocol.FLAGS_JSON:
+                        assert has_yaml, "we don't support yaml mode but the other end sent us a yaml packet! not an xpra client?"
+                        packet = list(yaml_decode(data))
                     else:
                         #if sys.version>='3':
                         #    data = data.decode("latin1")

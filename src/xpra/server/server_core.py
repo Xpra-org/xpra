@@ -28,7 +28,7 @@ from xpra.net.bytestreams import SocketConnection
 from xpra.platform import set_application_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version, mk
-from xpra.net.protocol import Protocol, use_lz4, use_rencode, new_cipher_caps, get_network_caps, repr_ellipsized
+from xpra.net.protocol import Protocol, use_lz4, use_rencode, use_yaml, new_cipher_caps, get_network_caps, repr_ellipsized
 from xpra.server.background_worker import stop_worker
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server.proxy import XpraProxy
@@ -408,6 +408,8 @@ class ServerCore(object):
         proto.set_compression_level(c.intget("compression_level", self.compression_level))
         if use_rencode and c.boolget("rencode"):
             proto.enable_rencode()
+        elif use_yaml and c.boolget("yaml"):
+            proto.enable_yaml()
         else:
             proto.enable_bencode()
 

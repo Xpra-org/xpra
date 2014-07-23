@@ -810,7 +810,10 @@ class ServerBase(ServerCore):
             if len(args)!=1:
                 return argn_err(1)
             encoder = args[0].lower()
-            opts = ("bencode", "rencode")
+            from xpra.net.protocol import use_bencode, use_rencode, use_yaml
+            opts = [x for x,b in {"bencode" : use_bencode,
+                                  "rencode" : use_rencode,
+                                  "yaml"    : use_yaml}.items() if b]
             if encoder=="bencode":
                 for cproto in protos:
                     cproto.enable_bencode()
@@ -820,6 +823,11 @@ class ServerBase(ServerCore):
                 for cproto in protos:
                     cproto.enable_rencode()
                 forward_all_clients(["enable_rencode"])
+                return success()
+            elif encoder=="yaml":
+                for cproto in protos:
+                    cproto.enable_yaml()
+                forward_all_clients(["enable_yaml"])
                 return success()
             return arg_err("must be one of: %s" % (", ".join(opts)))
         elif command=="sound-output":

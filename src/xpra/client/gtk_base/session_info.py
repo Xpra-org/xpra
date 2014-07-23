@@ -634,6 +634,8 @@ class SessionInfo(gtk.Window):
                 l.append("bencode")
             if caps.get("rencode", False):
                 l.append("rencode")
+            if caps.get("yaml", False):
+                l.append("yaml")
             return l
         self.client_packet_encoders_label.set_text(", ".join(get_encoder_list(get_network_caps())))
         self.server_packet_encoders_label.set_text(", ".join(get_encoder_list(self.client.server_capabilities)))
@@ -695,7 +697,7 @@ class SessionInfo(gtk.Window):
         if level==0:
             compression_str = "None"
         else:
-            compression_str = " + ".join([x for x in ("zlib", "lz4", "bencode", "rencode") if protocol_state.get(x, False)==True])
+            compression_str = " + ".join([x for x in ("zlib", "lz4", "bencode", "rencode", "yaml") if protocol_state.get(x, False)==True])
             compression_str += ", level %s" % level
         self.compression_label.set_text(compression_str)
 

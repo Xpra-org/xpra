@@ -15,7 +15,7 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger("client")
 
-from xpra.net.protocol import Protocol, use_lz4, use_rencode, get_network_caps
+from xpra.net.protocol import Protocol, use_lz4, use_rencode, use_yaml, get_network_caps
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, local_version
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
@@ -497,6 +497,8 @@ class XpraClientBase(object):
         c = self.server_capabilities
         if use_rencode and c.boolget("rencode"):
             self._protocol.enable_rencode()
+        elif use_yaml and c.boolget("yaml"):
+            self._protocol.enable_yaml()
         if use_lz4 and c.boolget("lz4") and self.compression_level==1:
             self._protocol.enable_lz4()
         if self.encryption:

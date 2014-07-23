@@ -912,13 +912,21 @@ class UIXpraClient(XpraClientBase):
             "encodings.core"            : self.get_core_encodings(),
             })
         control_commands = ["show_session_info", "enable_bencode", "enable_zlib"]
-        from xpra.net.protocol import use_bencode, use_rencode
+        from xpra.net.protocol import use_bencode, use_rencode, use_yaml
+        for k,b in {"lz4"       : use_lz4,
+                    "bencode"   : use_bencode,
+                    "rencode"   : use_rencode,
+                    "yaml"      : use_yaml}.items():
+            if b:
+                control_commands.append("enable_"+k)
         if use_lz4:
             control_commands.append("enable_lz4")
         if use_bencode:
             control_commands.append("enable_bencode")
         if use_rencode:
             control_commands.append("enable_rencode")
+        if use_yaml:
+            control_commands.append("enable_yaml")
         capabilities["control_commands"] = control_commands
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
@@ -1361,6 +1369,9 @@ class UIXpraClient(XpraClientBase):
         elif command=="enable_rencode":
             log.info("switching to rencode on server request")
             self._protocol.enable_rencode()
+        elif command=="enable_yaml":
+            log.info("switching to yaml on server request")
+            self._protocol.enable_yaml()            
         elif command=="name":
             assert len(args)>=3
             self.session_name = args[2]
