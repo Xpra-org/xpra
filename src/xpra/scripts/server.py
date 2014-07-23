@@ -42,6 +42,13 @@ def run_cleanups():
 
 _when_ready = []
 
+def add_when_ready(f):
+    _when_ready.append(f)
+
+def add_cleanup(f):
+    _cleanups.append(f)
+
+
 def deadly_signal(signum, frame):
     print("got deadly signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
     run_cleanups()
