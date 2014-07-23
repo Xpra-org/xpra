@@ -1516,7 +1516,7 @@ if x11_ENABLED:
                 ))
     cython_add(Extension("xpra.x11.bindings.keyboard_bindings",
                 ["xpra/x11/bindings/keyboard_bindings.pyx"],
-                **pkgconfig("x11", "xtst", "xfixes")
+                **pkgconfig("x11", "xtst", "xfixes", "xkbfile")
                 ))
 
     cython_add(Extension("xpra.x11.bindings.window_bindings",

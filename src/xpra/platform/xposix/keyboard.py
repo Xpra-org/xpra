@@ -8,6 +8,7 @@ import sys
 
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
+from xpra.keyboard.layouts import parse_xkbmap_query, xkbmap_query_tostring
 from xpra.log import Logger
 log = Logger("keyboard", "posix")
 
@@ -77,22 +78,40 @@ class Keyboard(KeyboardBase):
                 log.error("failed to use raw x11 keymap: %s", e)
         return  {}
 
-    def get_keymap_spec(self):
+
+    def get_keymap_spec_using_setxkbmap(self):
         xkbmap_print = self.exec_get_keyboard_data(["setxkbmap", "-print"])
         if xkbmap_print is None:
-            log.error("your keyboard mapping will probably be incorrect unless you are using a 'us' layout");
+            log.error("your keyboard mapping will probably be incorrect unless you are using a 'us' layout")
         xkbmap_query = self.exec_get_keyboard_data(["setxkbmap", "-query"])
         if xkbmap_query is None and xkbmap_print is not None:
-            log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
-            log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
-        return xkbmap_print, xkbmap_query
+            log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases")
+            log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred")
+            xkbmap_query_struct = parse_xkbmap_query(xkbmap_query)
+        return xkbmap_print, xkbmap_query, xkbmap_query_struct
+
+    def get_keymap_spec_from_xkb(self):
+        log("get_keymap_spec_from_xkb() keyboard_bindings=%s", keyboard_bindings)
+        if not keyboard_bindings:
+            return None
+        _query_struct = keyboard_bindings.getXkbProperties()
+        _query = xkbmap_query_tostring(_query_struct)
+        return "", _query, _query_struct
+
+    def get_keymap_spec(self):
+        v = self.get_keymap_spec_from_xkb()
+        if not v:
+            v = self.get_keymap_spec_using_setxkbmap()
+        from xpra.util import nonl
+        log("get_keymap_spec()=%s", nonl(str(v)))
+        return v
 
 
-    def get_layout_spec(self):
+    def get_xkb_rules_names_property(self):
+        #parses the "_XKB_RULES_NAMES" X11 property
         #FIXME: a bit ugly to call gtk here...
         #but otherwise we have to call XGetWindowProperty and deal with X11 errors..
-        layout = ""
-        layouts = []
+        xkb_rules_names = ""
         if "gtk" in sys.modules:
             import gtk.gdk
             prop = gtk.gdk.get_default_root_window().property_get("_XKB_RULES_NAMES", "STRING")
@@ -100,9 +119,24 @@ class Keyboard(KeyboardBase):
             if prop and len(prop)==3:
                 xkb_rules_names = prop[2].split("\0")
                 #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
-                layouts = xkb_rules_names[2].split(",")
-                if len(layouts)>0:
-                    layout = layouts[0]                
+        return xkb_rules_names
+
+    def get_layout_spec(self):
+        layout = ""
+        layouts = []
+        v = None
+        if keyboard_bindings:
+            v = keyboard_bindings.getXkbProperties().get("layout")
+        if not v:
+            #fallback:
+            v = self.get_xkb_rules_names_property()
+            #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
+            if v and len(v)>=3:
+                v = v[2]
+        if v:
+            layouts = v.split(",")
+            if len(layouts)>0:
+                layout = layouts[0]                
         return layout, layouts, "", None
 
 

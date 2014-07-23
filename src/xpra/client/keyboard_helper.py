@@ -41,6 +41,7 @@ class KeyboardHelper(object):
         self.xkbmap_variants = []
         self.xkbmap_print = ""
         self.xkbmap_query = ""
+        self.xkbmap_query_struct = {}
 
         self.hash = None
 
@@ -247,13 +248,13 @@ class KeyboardHelper(object):
 
     def query_xkbmap(self):
         self.xkbmap_layout, _, self.xkbmap_variant, self.xkbmap_variants = self.keyboard.get_layout_spec()
-        self.xkbmap_print, self.xkbmap_query = self.keyboard.get_keymap_spec()
+        self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct = self.keyboard.get_keymap_spec()
         self.xkbmap_keycodes = self.get_full_keymap()
         self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()
         self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self.keyboard.get_keymap_modifiers()
         self.update_hash()
         log("layout=%s, variant=%s", self.xkbmap_layout, self.xkbmap_variant)
-        log("print=%s, query=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query))
+        log("print=%s, query=%s, struct=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query), nonl(self.xkbmap_query_struct))
         log("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
         log("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
         log("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
@@ -284,10 +285,16 @@ class KeyboardHelper(object):
             #try python2.4 variant:
             import sha
             h = sha.new()
+        def hashadd(v):
+            h.update(("/%s" % str(v)).encode("utf8"))            
         for x in (self.xkbmap_print, self.xkbmap_query, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
-            h.update(("/%s" % str(x)).encode("utf8"))
+            hashadd(x)
+        if self.xkbmap_query_struct:
+            #flatten the dict in a predicatable order:
+            for k in sorted(self.xkbmap_query_struct.keys()):
+                hashadd(self.xkbmap_query_struct.get(k))
         self.hash = "/".join([str(x) for x in (self.xkbmap_layout, self.xkbmap_variant, h.hexdigest()) if bool(x)])
 
     def get_full_keymap(self):
@@ -296,7 +303,7 @@ class KeyboardHelper(object):
 
     def get_keymap_properties(self):
         props = {}
-        for x in ("print", "query", "mod_meanings",
+        for x in ("print", "query", "query_struct", "mod_meanings",
                   "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes"):
             p = "xkbmap_%s" % x
             props[p] = nn(getattr(self, p))

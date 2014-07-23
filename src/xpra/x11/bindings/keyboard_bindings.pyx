@@ -96,6 +96,29 @@ cdef extern from "X11/extensions/XKB.h":
     unsigned long XkbDfltXIId
     unsigned long XkbBellNotifyMask
 
+cdef extern from "X11/extensions/XKBstr.h":
+    pass
+
+cdef extern from "X11/extensions/XKBrules.h":
+    #define _XKB_RF_NAMES_PROP_ATOM         "_XKB_RULES_NAMES"
+    #unsigned int _XKB_RF_NAMES_PROP_MAXLEN
+
+    ctypedef struct XkbRF_VarDefsRec:
+        char *                  model
+        char *                  layout
+        char *                  variant
+        char *                  options
+        unsigned short          sz_extra
+        unsigned short          num_extra
+        char *                  extra_names
+        char **                 extra_values
+
+    ctypedef XkbRF_VarDefsRec* XkbRF_VarDefsPtr
+
+    Bool XkbRF_GetNamesProp(Display *dpy, char **rules_file_rtrn, XkbRF_VarDefsPtr var_defs_rtrn)
+    #Bool XkbRF_SetNamesProp(Display *dpy, char *rules_file, XkbRF_VarDefsPtr var_defs)
+
+
 cdef extern from "X11/XKBlib.h":
     KeySym XkbKeycodeToKeysym(Display *display, KeyCode kc, int group, int level)
     Bool XkbQueryExtension(Display *, int *opcodeReturn, int *eventBaseReturn, int *errorBaseReturn, int *majorRtrn, int *minorRtrn)
@@ -179,6 +202,39 @@ cdef class X11KeyboardBindings(X11CoreBindings):
     def ensure_XTest_support(self):
         cdef int ignored = 0
         XTestQueryExtension(self.display, &ignored, &ignored, &ignored, &ignored)
+
+
+    def getXkbProperties(self):
+        cdef XkbRF_VarDefsRec vd
+        cdef char *tmp = NULL
+        if XkbRF_GetNamesProp(self.display, &tmp, &vd)==0 or tmp==NULL:
+            v = {"rules"    : "base",
+                 "model"    : "pc105",
+                 "layout"   : "us",
+                 }
+            log.warn("XkbRF_GetNamesProp failed, returning defaults: %s", v)
+            return v
+        v = {}
+        if len(tmp)>0:
+            v["rules"] = tmp[:]
+            XFree(tmp)
+        if vd.model:
+            v["model"]  = vd.model[:]
+            XFree(vd.model)
+        if vd.layout:
+            v["layout"] = vd.layout[:]
+            XFree(vd.layout)
+        if vd.options!=NULL:
+            v["options"] = vd.options.split("\0")
+            XFree(vd.options)
+        #log("vd.num_extra=%s", vd.num_extra)
+        if vd.extra_names:
+            #no idea how to use this!
+            #if vd.num_extra>0:
+            #    for i in range(vd.num_extra):
+            #        v[vd.extra_names[i][:]] = vd.extra_values[] ???
+            XFree(vd.extra_names)
+        return v
 
     cdef _get_minmax_keycodes(self):
         if self.min_keycode==-1 and self.max_keycode==-1:

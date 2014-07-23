@@ -816,11 +816,14 @@ class UIXpraClient(XpraClientBase):
             #show the user a summary of what we have detected:
             kb_info = {}
             xkbq = capabilities.get("xkbmap_query")
-            if xkbq:
-                from xpra.keyboard.layouts import parse_xkbmap_query
-                d = parse_xkbmap_query(xkbq)
+            xkbqs = capabilities.get("xkbmap_query_struct")
+            if xkbqs or xkbq:
+                if not xkbqs:
+                    #parse query into a dict
+                    from xpra.keyboard.layouts import parse_xkbmap_query
+                    xkbqs = parse_xkbmap_query(xkbq)
                 for x in ["rules", "model", "layout"]:
-                    v = d.get(x)
+                    v = xkbqs.get(x)
                     if v:
                         kb_info[x] = v
             if self.keyboard_helper.xkbmap_layout:
