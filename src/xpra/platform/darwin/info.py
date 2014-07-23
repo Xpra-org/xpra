@@ -12,3 +12,17 @@ def get_sys_info():
         log = Logger("osx")
         log.error("error getting memory usage info", exc_info=True)
     return  {}
+
+def get_pyobjc_version():
+    try:
+        import objc     #@UnresolvedImport
+        return objc.__version__
+    except:
+        return None
+
+def get_version_info():
+    d = {}
+    v = get_pyobjc_version()
+    if v:
+        d["pyobjc.version"] = v
+    return d
