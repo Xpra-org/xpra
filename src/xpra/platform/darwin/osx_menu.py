@@ -18,6 +18,7 @@ log = Logger("tray", "osx")
 SHOW_SOUND_MENU = False
 SHOW_ENCODINGS_MENU = True
 SHOW_ACTIONS_MENU = True
+SHOW_ABOUT_XPRA = True
 
 
 _OSXMenuHelper = None
@@ -85,8 +86,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
     def build_menu_bar(self):
         log("OSXMenuHelper.build_menu_bar()")
-        info_menu = self.make_osxmenu("Info")
-        info_menu.add(self.menuitem("About Xpra", "information.png", None, about))
+        if SHOW_ABOUT_XPRA:
+            info_menu = self.make_osxmenu("Info")
+            info_menu.add(self.menuitem("About Xpra", "information.png", None, about))
         self.menu_bar.show_all()
 
     def add_full_menu(self):
@@ -168,7 +170,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def build_dock_menu(self):
         log("OSXMenuHelper.build_dock_menu()")
         self.dock_menu = gtk.Menu()
-        self.dock_menu.add(self.menuitem("About Xpra", "information.png", None, about))
+        if SHOW_ABOUT_XPRA:
+            self.dock_menu.add(self.menuitem("About Xpra", "information.png", None, about))
         self.dock_menu.show_all()
         return self.dock_menu
 
