@@ -10,6 +10,11 @@ import traceback
 import threading
 import sys
 
+
+if sys.version > '3':
+    unicode = str           #@ReservedAssignment
+
+
 def dump_exc():
     """Call this from a except: clause to print a nice traceback."""
     print("".join(traceback.format_exception(*sys.exc_info())))
@@ -158,6 +163,9 @@ class typedict(dict):
                 x = aslist[i]
                 if sys.version > '3' and type(x)==bytes and item_type==str:
                     x = bytestostr(x)
+                    aslist[i] = x
+                elif type(x)==unicode and item_type==str:
+                    x = str(x)
                     aslist[i] = x
                 assert type(x)==item_type, "invalid item type for %s %s: expected %s but got %s" % (type(v), k, item_type, type(x))
         if max_items is not None:
