@@ -1914,7 +1914,6 @@ class UIXpraClient(XpraClientBase):
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)
         for k,v in {
-            "hello":                self._process_hello,
             "startup-complete":     self._startup_complete,
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
