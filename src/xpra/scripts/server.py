@@ -68,6 +68,7 @@ class ChildReaper(object):
         self._quit = quit_cb
         self._children_pids = {}
         self._dead_pids = set()
+        self._ignored_pids = set()
         from xpra.log import Logger
         self._logger = Logger("server", "util")
         old_python = sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0)
@@ -103,16 +104,19 @@ class ChildReaper(object):
                 return False # Only call once
             gobject.timeout_add(0, check_once)
 
-    def add_process(self, process, command):
+    def add_process(self, process, command, ignore=False):
         process.command = command
+        assert process.pid>0
         self._children_pids[process.pid] = process
+        if ignore:
+            self._ignored_pids.add(process.pid)
 
     def check(self):
         if self._children_pids:
             for pid, proc in self._children_pids.items():
                 if proc.poll() is not None:
                     self.add_dead_pid(pid)
-            pids = set(self._children_pids.keys())
+            pids = set(self._children_pids.keys()) - self._ignored_pids
             if pids.issubset(self._dead_pids):
                 self._quit()
 
@@ -469,7 +473,7 @@ def start_pulseaudio(child_reaper, pulseaudio_command):
     log = Logger("sound")
     log("pulseaudio_command=%s", pulseaudio_command)
     pa_proc = subprocess.Popen(pulseaudio_command, stdin=subprocess.PIPE, shell=True, close_fds=True)
-    child_reaper.add_process(pa_proc, "pulseaudio")
+    child_reaper.add_process(pa_proc, "pulseaudio", ignore=True)
     log.info("pulseaudio server started with pid %s", pa_proc.pid)
     def check_pa_start():
         if pa_proc.poll() is not None or pa_proc.pid in child_reaper._dead_pids:
