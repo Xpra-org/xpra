@@ -125,14 +125,14 @@ class CommandConnectClient(GObjectXpraClient):
         #"command clients" are meant to exit quickly by losing the connection
         self.quit(EXIT_OK)
 
-    def parse_server_capabilities(self, props):
+    def server_connection_established(self):
         #don't parse all the server caps, just the network (so we can use rencode, auth, etc):
-        if not XpraClientBase.parse_network_capabilities(self, props):
+        if not XpraClientBase.parse_network_capabilities(self):
             self.quit(1)
             return
-        log("server_capabilities: %s", props)
+        log("server_capabilities: %s", self.server_capabilities)
         log("protocol state: %s", self._protocol.save_state())
-        self.do_command(props)
+        self.do_command(self.server_capabilities)
 
     def do_command(self, props):
         raise NotImplementedError()

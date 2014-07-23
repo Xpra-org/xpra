@@ -287,8 +287,8 @@ class XpraClient(GTKXpraClient):
         self._ui_packet_handlers["pointer-ungrab"] = self._process_pointer_ungrab
 
 
-    def process_ui_capabilities(self, capabilities):
-        GTKXpraClient.process_ui_capabilities(self, capabilities)
+    def process_ui_capabilities(self):
+        GTKXpraClient.process_ui_capabilities(self)
         global UI_watcher
         UI_watcher.start()
         #if server supports it, enable UI thread monitoring workaround when needed:

@@ -205,8 +205,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return screen_sizes
 
 
-    def process_ui_capabilities(self, capabilities):
-        UIXpraClient.process_ui_capabilities(self, capabilities)
+    def process_ui_capabilities(self):
+        UIXpraClient.process_ui_capabilities(self)
         if self.server_randr:
             display = display_get_default()
             i=0

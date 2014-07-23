@@ -181,6 +181,11 @@ class XpraClientBase(object):
             Protocol.GIBBERISH: self._process_gibberish,
             }
 
+    def init_authenticated_packet_handlers(self):
+        #for subclasses to override
+        pass
+
+
     def init_aliases(self):
         packet_types = list(self._packet_handlers.keys())
         packet_types += list(self._ui_packet_handlers.keys())
@@ -432,7 +437,7 @@ class XpraClientBase(object):
         try:
             self.server_capabilities = typedict(packet[1])
             log("processing hello from server: %s", self.server_capabilities)
-            self.parse_server_capabilities(self.server_capabilities)
+            self.server_connection_established()
         except Exception, e:
             log.info("error in hello packet", exc_info=True)
             self.warn_and_quit(EXIT_FAILURE, "error processing hello packet from server: %s" % e)
@@ -443,7 +448,25 @@ class XpraClientBase(object):
             v = bytestostr(v)
         return v
 
-    def parse_server_capabilities(self, c):
+
+    def server_connection_established(self):
+        log("server_connection_established()")
+        if not self.parse_version_capabilities():
+            log("server_connection_established() failed version capabilities")
+            return False
+        if not self.parse_server_capabilities():
+            log("server_connection_established() failed server capabilities")
+            return False
+        if not self.parse_network_capabilities():
+            log("server_connection_established() failed network capabilities")
+            return False
+        log("server_connection_established() adding authenticated packet handlers")
+        self.init_authenticated_packet_handlers()
+        return True
+
+
+    def parse_version_capabilities(self):
+        c = self.server_capabilities
         self._remote_machine_id = c.strget("machine_id")
         self._remote_uuid = c.strget("uuid")
         self._remote_version = c.strget("version")
@@ -465,9 +488,13 @@ class XpraClientBase(object):
         if verr is not None:
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version '%s': %s" % (self._remote_version, verr))
             return False
-        return self.parse_network_capabilities(c)
+        return True
 
-    def parse_network_capabilities(self, c):
+    def parse_server_capabilities(self):
+        return True
+
+    def parse_network_capabilities(self):
+        c = self.server_capabilities
         if use_rencode and c.boolget("rencode"):
             self._protocol.enable_rencode()
         if use_lz4 and c.boolget("lz4") and self.compression_level==1:

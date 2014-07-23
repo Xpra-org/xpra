@@ -207,7 +207,6 @@ class UIXpraClient(XpraClientBase):
         self._last_screen_settings = None
         self._suspended_at = 0
 
-        self.init_packet_handlers()
         self.init_aliases()
 
 
@@ -1124,9 +1123,16 @@ class UIXpraClient(XpraClientBase):
         self.send("min-speed", s)
 
 
-    def parse_server_capabilities(self, c):
-        if not XpraClientBase.parse_server_capabilities(self, c):
-            return
+    def server_connection_established(self):
+        if XpraClientBase.server_connection_established(self):
+            #process the rest from the UI thread:
+            self.idle_add(self.process_ui_capabilities)
+
+
+    def parse_server_capabilities(self):
+        if not XpraClientBase.parse_server_capabilities(self):
+            return  False
+        c = self.server_capabilities
         if not self.session_name:
             self.session_name = c.strget("session_name", "")
         set_application_name(self.session_name or "Xpra")
@@ -1216,10 +1222,9 @@ class UIXpraClient(XpraClientBase):
             if proxy_hostname:
                 msg += " on '%s'" % std(proxy_hostname)
             log.info(msg)
-        #process the rest from the UI thread:
-        self.idle_add(self.process_ui_capabilities, c)
+        return True
 
-    def process_ui_capabilities(self, c):
+    def process_ui_capabilities(self):
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
         if self.clipboard_enabled:
@@ -1227,6 +1232,7 @@ class UIXpraClient(XpraClientBase):
             self.clipboard_enabled = self.clipboard_helper is not None
         self.set_max_packet_size()
         self.send_deflate_level()
+        c = self.server_capabilities
         server_desktop_size = c.intlistget("desktop_size")
         log("server desktop size=%s", server_desktop_size)
         if not c.boolget("shadow"):
@@ -1911,8 +1917,15 @@ class UIXpraClient(XpraClientBase):
         log("set maximum packet size to %s", self._protocol.max_packet_size)
 
 
-    def init_packet_handlers(self):
-        XpraClientBase.init_packet_handlers(self)
+    def init_authenticated_packet_handlers(self):
+        log("init_authenticated_packet_handlers()")
+        XpraClientBase.init_authenticated_packet_handlers(self)
+        def delhandler(k):
+            #remove any existing mapping:
+            if k in self._packet_handlers:
+                del self._packet_handlers[k]
+            if k in self._ui_packet_handlers:
+                del self._ui_packet_handlers[k]
         for k,v in {
             "startup-complete":     self._startup_complete,
             "new-window":           self._process_new_window,
@@ -1936,6 +1949,7 @@ class UIXpraClient(XpraClientBase):
             "draw":                 self._process_draw,
             # "clipboard-*" packets are handled by a special case below.
             }.items():
+            delhandler(k)
             self._ui_packet_handlers[k] = v
         #these handlers can run directly from the network thread:
         for k,v in {
@@ -1944,6 +1958,7 @@ class UIXpraClient(XpraClientBase):
             "info-response":        self._process_info_response,
             "sound-data":           self._process_sound_data,
             }.items():
+            delhandler(k)
             self._packet_handlers[k] = v
 
     def process_clipboard_packet(self, packet):
