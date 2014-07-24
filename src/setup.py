@@ -1396,6 +1396,10 @@ else:
     cmdclass['install_data'] = install_data_override
 
     if OSX:
+        #pyobjc needs email.parser
+        external_excludes.remove("email")
+        external_excludes.remove("urllib")
+        external_includes += ["email", "uu", "urllib", "objc"]
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
         add_packages("xpra.platform.darwin")
