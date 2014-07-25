@@ -15,6 +15,7 @@ import os
 import threading
 import binascii
 from threading import Lock
+from zlib import decompress
 
 
 from xpra.log import Logger
@@ -23,7 +24,7 @@ debug = log.debug
 from xpra.os_util import Queue, strtobytes, get_hex_uuid
 from xpra.util import repr_ellipsized
 from xpra.net.bytestreams import ABORT
-from xpra.net.compression import zcompress, has_lz4, LZ4_FLAG, lz4_compress, LZ4_uncompress, Compressed, LevelCompressed
+from xpra.net.compression import zcompress, has_lz4, use_lz4, LZ4_FLAG, lz4_compress, LZ4_uncompress, Compressed, LevelCompressed
 
 
 try:
@@ -33,9 +34,6 @@ except Exception, e:
     AES, PBKDF2 = None, None
     log("pycrypto is missing: %s", e)
 
-
-from zlib import decompress
-use_lz4 = has_lz4 and os.environ.get("XPRA_USE_LZ4", "1")=="1"
 
 rencode_dumps, rencode_loads, rencode_version = None, None, None
 try:
