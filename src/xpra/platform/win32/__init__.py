@@ -20,6 +20,7 @@ if getattr(sys, 'frozen', False):
         v = jedir(relpathname)
         if os.path.exists(v):
             sys.path.append(v)
+    addsyspath('')
     addsyspath('bin')
     addsyspath('bin\\etc')
     addsyspath('bin\\lib')
