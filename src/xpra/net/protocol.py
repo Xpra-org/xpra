@@ -24,23 +24,22 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 debug = log.debug
 from xpra.os_util import Queue, strtobytes, get_hex_uuid
-from xpra.daemon_thread import make_daemon_thread
-from xpra.simple_stats import std_unit, std_unit_dec
+from xpra.util import repr_ellipsized
 from xpra.net.bytestreams import ABORT
-from xpra.os_util import builtins
-_memoryview = builtins.__dict__.get("memoryview")
+
 
 try:
     from Crypto.Cipher import AES
     from Crypto.Protocol.KDF import PBKDF2
 except Exception, e:
-    AES = None
-    PBKDF2 = None
+    AES, PBKDF2 = None, None
     log("pycrypto is missing: %s", e)
 
 
 from zlib import compress, decompress
 try:
+    from xpra.os_util import builtins
+    _memoryview = builtins.__dict__.get("memoryview")
     from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
     def lz4_compress(packet, level):
@@ -195,19 +194,6 @@ def get_network_caps(legacy=True):
     return caps
 
 
-def repr_ellipsized(obj, limit=100):
-    if isinstance(obj, str) and len(obj) > limit:
-        try:
-            s = repr(obj[:limit])
-            if len(obj)>limit:
-                s += "..."
-            return s
-        except:
-            return binascii.hexlify(obj[:limit])
-    else:
-        return repr(obj)
-
-
 class ConnectionClosedException(Exception):
     pass
 
@@ -295,6 +281,7 @@ class Protocol(object):
         self.cipher_out_name = None
         self.cipher_out_block_size = 0
         self._write_lock = Lock()
+        from xpra.daemon_thread import make_daemon_thread
         self._write_thread = make_daemon_thread(self._write_thread_loop, "write")
         self._read_thread = make_daemon_thread(self._read_thread_loop, "read")
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
@@ -992,6 +979,7 @@ class Protocol(object):
                     #no data sent or received, skip logging of stats:
                     self._log_stats = False
                 if self._log_stats:
+                    from xpra.simple_stats import std_unit, std_unit_dec
                     log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
                          std_unit(self.input_packetcount), std_unit_dec(self._conn.input_bytecount),
                          std_unit(self.output_packetcount), std_unit_dec(self._conn.output_bytecount)

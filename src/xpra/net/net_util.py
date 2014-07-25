@@ -152,9 +152,6 @@ if not sys.platform.startswith("win"):
 			return _libc.if_indextoname(c_uint(index), s)
 
 
-
-
-
 def main():
 	from xpra.platform import init, clean
 	try:

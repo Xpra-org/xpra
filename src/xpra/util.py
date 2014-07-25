@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import binascii
 from xpra.os_util import strtobytes, bytestostr
 import traceback
 import threading
@@ -316,6 +317,19 @@ def detect_leaks(log, detailed=[]):
         del lobjs
         return True
     return print_leaks
+
+
+def repr_ellipsized(obj, limit=100):
+    if isinstance(obj, str) and len(obj) > limit:
+        try:
+            s = repr(obj[:limit])
+            if len(obj)>limit:
+                s += "..."
+            return s
+        except:
+            return binascii.hexlify(obj[:limit])
+    else:
+        return repr(obj)
 
 
 def pver(v):
