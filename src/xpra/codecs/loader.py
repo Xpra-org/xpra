@@ -249,9 +249,9 @@ def main():
                         encodings = mod.get_encodings()
                         print("                         %s" % ", ".join(encodings))
                     elif name.find("csc")>=0:
-                        cs = mod.get_input_colorspaces()
+                        cs = list(mod.get_input_colorspaces())
                         for c in list(cs):
-                            cs += mod.get_output_colorspaces(c)
+                            cs += list(mod.get_output_colorspaces(c))
                         print("                         %s" % ", ".join(list(set(cs))))
                 except:
                     e = sys.exc_info()[1]
