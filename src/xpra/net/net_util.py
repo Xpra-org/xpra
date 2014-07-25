@@ -17,7 +17,7 @@ has_netifaces = True
 try:
 	import netifaces				#@UnresolvedImport
 	log("netifaces loaded sucessfully")
-except Exception, e:
+except:
 	has_netifaces = False
 	log.warn("python netifaces package is missing")
 iface_ipmasks = {}
@@ -53,8 +53,8 @@ def do_get_bind_IPs():
 					ips.append(ip)
 				if ipmask not in if_ipmasks:
 					if_ipmasks.append(ipmask)
-		except Exception, e:
-			log.error("error on %s: %s", iface, e)
+		except:
+			log.error("error on %s: %s", iface, sys.exc_info()[1])
 		iface_ipmasks[iface] = if_ipmasks
 	log("do_get_bind_IPs()=%s", ips)
 	return ips
@@ -71,8 +71,8 @@ def do_get_bind_ifacemask(iface):
 					try:
 						socket.inet_aton(addr)
 						ipmasks.append((addr,mask))
-					except Exception, e:
-						log.error("do_get_bind_ifacemask(%s) error on %s", iface, addr, e)
+					except:
+						log.error("do_get_bind_ifacemask(%s) error on %s", iface, addr, sys.exc_info()[1])
 	log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
 	return ipmasks
 
@@ -110,8 +110,8 @@ def get_iface(ip):
 						break
 				if match:
 					best_match = iface
-			except Exception, e:
-				log.error("error parsing ip (%s) or its mask (%s): %s", test_ip, mask, e)
+			except:
+				log.error("error parsing ip (%s) or its mask (%s): %s", test_ip, mask, sys.exc_info()[1])
 	log("get_iface(%s)=%s", ip, best_match)
 	return	best_match
 
@@ -136,18 +136,17 @@ if not sys.platform.startswith("win"):
 		#<CDLL 'libc.so.6', handle 7fcac419b000 at 7fcac1ab0c10>
 		_libc = CDLL(library)
 		log("successfully loaded socket C library from %s", library)
-	except ImportError, e:
-		log.error("library %s not found: %s", library, e)
-	except OSError, e:
-		log.error("error loading %s: %s", library, e)
+	except ImportError:
+		log.error("library %s not found: %s", library, sys.exc_info()[1])
+	except OSError:
+		log.error("error loading %s: %s", library, sys.exc_info()[1])
 	else:
 		_libc.if_indextoname.restype = c_char_p
 		_libc.if_indextoname.argtypes = [c_uint, c_char_p]
 		_libc.if_nametoindex.restype = c_uint
 		_libc.if_nametoindex.argtypes = [c_char_p]
 		def if_nametoindex(interfaceName):
-			#iname = create_string_buffer()
-			return _libc.if_nametoindex(interfaceName.encode())
+			return _libc.if_nametoindex(create_string_buffer(interfaceName.encode()))
 		def if_indextoname(index):
 			s = create_string_buffer('\000' * 256)
 			return _libc.if_indextoname(c_uint(index), s)
