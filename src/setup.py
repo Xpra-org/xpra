@@ -522,6 +522,10 @@ def get_static_pkgconfig(*libnames):
         add_to_keywords(defs,  'extra_link_args', *static_link_args(*libnames))
     return defs
 
+def is_msvc():
+    #ugly: assume we want to use visual studio if we find the env var:
+    return os.environ.get("VCINSTALLDIR") is not None
+
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
@@ -585,23 +589,29 @@ def pkgconfig(*pkgs_options, **ekw):
             for k, v in kw.items(): # remove duplicates
                 kw[k] = list(set(v))
     if warn_ENABLED:
-        add_to_keywords(kw, 'extra_compile_args', "-Wall")
-        add_to_keywords(kw, 'extra_link_args', "-Wall")
-    if strict_ENABLED:
+        if is_msvc():
+            add_to_keywords(kw, 'extra_compile_args', "/Wall")
+        else:
+            add_to_keywords(kw, 'extra_compile_args', "-Wall")
+            add_to_keywords(kw, 'extra_link_args', "-Wall")
+    if strict_ENABLED and not is_msvc():
         #these are almost certainly real errors since our code is "clean":
         if get_gcc_version()>=[4, 4]:
             eifd = "-Werror=implicit-function-declaration"
         else:
             eifd = "-Werror-implicit-function-declaration"
         add_to_keywords(kw, 'extra_compile_args', eifd)
-    if PIC_ENABLED:
+    if PIC_ENABLED and not is_msvc():
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
     if debug_ENABLED:
-        add_to_keywords(kw, 'extra_compile_args', '-g')
-        add_to_keywords(kw, 'extra_compile_args', '-ggdb')
-        if get_gcc_version()>=[4, 8]:
-            add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
-            add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
+        if is_msvc():
+            add_to_keywords(kw, 'extra_compile_args', '/Zi')
+        else:
+            add_to_keywords(kw, 'extra_compile_args', '-g')
+            add_to_keywords(kw, 'extra_compile_args', '-ggdb')
+            if get_gcc_version()>=[4, 8]:
+                add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
+                add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
