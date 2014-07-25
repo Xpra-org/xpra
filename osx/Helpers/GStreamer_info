@@ -5,4 +5,4 @@ exe_name=$(basename $0)
 full_path=$(cd "$(dirname "$0")"; pwd)
 PYTHON="$full_path/Python"
 
-exec "$PYTHON" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.gtk_common.gtk_view_keyboard import main;main()"
+exec "$PYTHON" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.sound.gstreamer_util import main;main()"

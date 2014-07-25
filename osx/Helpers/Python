@@ -1,4 +1,7 @@
 #!/bin/sh
+# This wrapper sets up all the environment variables
+# needed for running the Python interpreter that we ship,
+# including all the GTK specific magic.
 
 full_path=$(cd "$(dirname "$0")"; pwd)
 
