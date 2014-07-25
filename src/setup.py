@@ -1343,7 +1343,7 @@ if WIN32:
             try:
                 shutil.copytree(
                     module_dir, os.path.join("dist", module_name),
-                    ignore = shutil.ignore_patterns("Tk")
+                    ignore = shutil.ignore_patterns("Tk", "EGL", "GLX", "GLX.*", "_GLX.*", "GLE", "GLES1", "GLES2", "GLES3")
                 )
             except:
                 e = sys.exc_info()[1]
