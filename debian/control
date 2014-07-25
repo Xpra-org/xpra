@@ -75,6 +75,8 @@ Suggests: openssh-server
         ,pulseaudio
         ,pulseaudio-utils
         ,python-dbus
+# only useful when connecting using a JSON / YAML only client:
+		,python-yaml
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
