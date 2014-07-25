@@ -8,7 +8,6 @@
 
 # but it works on win32, for whatever that's worth.
 
-import time
 import sys
 from socket import error as socket_error
 import struct
@@ -262,6 +261,7 @@ class Protocol(object):
         self.idle_add = scheduler.idle_add
         self._conn = conn
         if FAKE_JITTER>0:
+            from xpra.net.fake_jitter import FakeJitter
             fj = FakeJitter(self.timeout_add, process_packet_cb)
             self._process_packet_cb =  fj.process_packet_cb
         else:
@@ -1034,45 +1034,3 @@ class Protocol(object):
             self._read_queue.put_nowait(None)
         except:
             pass
-
-
-class FakeJitter(object):
-
-    def __init__(self, timeout_add, process_packet_cb):
-        self.timeout_add = timeout_add
-        self.real_process_packet_cb = process_packet_cb
-        self.delay = FAKE_JITTER
-        self.ok_delay = 10*1000
-        self.switch_time = time.time()
-        self.delaying = False
-        self.pending = []
-        self.lock = Lock()
-        self.flush()
-
-    def start_buffering(self):
-        log.info("FakeJitter.start_buffering() will buffer for %s ms", FAKE_JITTER)
-        self.delaying = True
-        self.timeout_add(FAKE_JITTER, self.flush)
-
-    def flush(self):
-        log.info("FakeJitter.flush() processing %s delayed packets", len(self.pending))
-        try:
-            self.lock.acquire()
-            for proto, packet in self.pending:
-                self.real_process_packet_cb(proto, packet)
-            self.pending = []
-            self.delaying = False
-        finally:
-            self.lock.release()
-        self.timeout_add(self.ok_delay, self.start_buffering)
-        log.info("FakeJitter.flush() will start buffering again in %s ms", self.ok_delay)
-
-    def process_packet_cb(self, proto, packet):
-        try:
-            self.lock.acquire()
-            if self.delaying:
-                self.pending.append((proto, packet))
-            else:
-                self.real_process_packet_cb(proto, packet)
-        finally:
-            self.lock.release()
