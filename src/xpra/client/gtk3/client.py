@@ -10,6 +10,10 @@ from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gtk                   #@UnresolvedImport
 from gi.repository import Gdk                   #@UnresolvedImport
 
+#this is an entry point, so do thread init early:
+#GObject.threads_init()
+#Gdk.threads_init()
+
 from xpra.client.gtk3.client_window import ClientWindow
 from xpra.client.gtk3.tray_menu import GTK3TrayMenu
 from xpra.log import Logger

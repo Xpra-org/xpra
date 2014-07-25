@@ -19,7 +19,8 @@ log = Logger("proxy")
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
 from xpra.net.compression import Compressed, compressed_wrapper
-from xpra.net.protocol import Protocol, new_cipher_caps, get_network_caps
+from xpra.net.protocol import Protocol, get_network_caps
+from xpra.net.crypto import new_cipher_caps
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES

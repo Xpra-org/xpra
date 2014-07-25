@@ -8,6 +8,7 @@
 from xpra.client.keyboard_helper import KeyboardHelper, log
 from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
 from xpra.gtk_common.keymap import get_gtk_keymap
+from xpra.gtk_common.gtk_util import display_get_default
 gdk = import_gdk()
 gobject = import_gobject()
 
@@ -54,7 +55,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         old_hash = self.hash
         self.query_xkbmap()
         try:
-            self.keyboard.update_modifier_map(gdk.display_get_default(), self.xkbmap_mod_meanings)
+            self.keyboard.update_modifier_map(display_get_default(), self.xkbmap_mod_meanings)
         except:
             log.error("error querying modifier map", exc_info=True)
         log("do_keys_changed() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)

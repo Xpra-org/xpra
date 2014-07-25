@@ -10,7 +10,6 @@
 
 import sys
 from socket import error as socket_error
-import struct
 import os
 import threading
 import binascii
@@ -21,18 +20,12 @@ from zlib import decompress
 from xpra.log import Logger
 log = Logger("network", "protocol")
 debug = log.debug
-from xpra.os_util import Queue, strtobytes, get_hex_uuid
+from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized
 from xpra.net.bytestreams import ABORT
 from xpra.net.compression import zcompress, has_lz4, use_lz4, LZ4_FLAG, lz4_compress, LZ4_uncompress, Compressed, LevelCompressed
-
-
-try:
-    from Crypto.Cipher import AES
-    from Crypto.Protocol.KDF import PBKDF2
-except Exception, e:
-    AES, PBKDF2 = None, None
-    log("pycrypto is missing: %s", e)
+from xpra.net.header import unpack_header, pack_header, pack_header_and_data
+from xpra.net.crypto import get_crypto_caps, get_cipher
 
 
 rencode_dumps, rencode_loads, rencode_version = None, None, None
@@ -82,23 +75,6 @@ if sys.version > '3':
     long = int          #@ReservedAssignment
     unicode = str           #@ReservedAssignment
 
-if sys.version_info[:2]>=(2,5):
-    def unpack_header(buf):
-        return struct.unpack_from('!cBBBL', buf)
-else:
-    def unpack_header(buf):
-        return struct.unpack('!cBBBL', "".join(buf))
-
-
-#'P' + protocol-flags + compression_level + packet_index + data_size
-def pack_header(proto_flags, level, index, payload_size):
-    return struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
-
-pack_header_and_data = None
-if sys.version_info[0]<3:
-    #before v3, python does the right thing without hassle:
-    def pack_header_and_data(actual_size, proto_flags, level, index, payload_size, data):
-        return struct.pack('!BBBBL%ss' % actual_size, ord("P"), proto_flags, level, index, payload_size, data)
 
 
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
@@ -111,18 +87,6 @@ LARGE_PACKET_SIZE = 4096
 INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 2048))
 FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
 
-
-def new_cipher_caps(proto, cipher, encryption_key):
-    iv = get_hex_uuid()[:16]
-    key_salt = get_hex_uuid()+get_hex_uuid()
-    iterations = 1000
-    proto.set_cipher_in(cipher, iv, encryption_key, key_salt, iterations)
-    return {
-                 "cipher"           : cipher,
-                 "cipher.iv"        : iv,
-                 "cipher.key_salt"  : key_salt,
-                 "cipher.key_stretch_iterations" : iterations
-                 }
 
 def get_network_caps(legacy=True):
     try:
@@ -145,16 +109,7 @@ def get_network_caps(legacy=True):
                 "zlib"                  : True,
                 "chunked_compression"   : True
                 })
-    try:
-        import Crypto
-        caps["pycrypto.version"] = Crypto.__version__
-        try:
-            from Crypto.PublicKey import _fastmath
-        except:
-            _fastmath = None
-        caps["pycrypto.fastmath"] = _fastmath is not None
-    except:
-        pass
+    caps.update(get_crypto_caps())
 
     if has_rencode:
         assert rencode_version is not None
@@ -274,33 +229,21 @@ class Protocol(object):
     def set_packet_source(self, get_packet_cb):
         self._get_packet_cb = get_packet_cb
 
-    def get_cipher(self, ciphername, iv, password, key_salt, iterations):
-        log("get_cipher(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
-        if not ciphername:
-            return None, 0
-        assert iterations>=100
-        assert ciphername=="AES"
-        assert password and iv
-        assert (AES and PBKDF2), "pycrypto is missing!"
-        #stretch the password:
-        block_size = 32         #fixme: can we derive this?
-        secret = PBKDF2(password, key_salt, dkLen=block_size, count=iterations)
-        log("get_cipher(..) secret=%s, block_size=%s", secret.encode('hex'), block_size)
-        return AES.new(secret, AES.MODE_CBC, iv), block_size
 
     def set_cipher_in(self, ciphername, iv, password, key_salt, iterations):
         if self.cipher_in_name!=ciphername:
             log.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
         log("set_cipher_in%s", (ciphername, iv, password, key_salt, iterations))
-        self.cipher_in, self.cipher_in_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
+        self.cipher_in, self.cipher_in_block_size = get_cipher(ciphername, iv, password, key_salt, iterations)
 
     def set_cipher_out(self, ciphername, iv, password, key_salt, iterations):
         if self.cipher_out_name!=ciphername:
             log.info("sending data using %s encryption", ciphername)
             self.cipher_out_name = ciphername
         log("set_cipher_out%s", (ciphername, iv, password, key_salt, iterations))
-        self.cipher_out, self.cipher_out_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
+        self.cipher_out, self.cipher_out_block_size = get_cipher(ciphername, iv, password, key_salt, iterations)
+
 
     def __repr__(self):
         return "Protocol(%s)" % self._conn
