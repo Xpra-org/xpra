@@ -143,7 +143,8 @@ class SessionInfo(gtk.Window):
         gtk_version_info = get_gtk_version_info()
         def client_vinfo(prop, fallback="unknown"):
             k = "%s.version" % prop
-            return label(gtk_version_info.get(k, fallback))
+            return label(make_version_str(gtk_version_info.get(k, fallback)))
+        tb.new_row("Glib",      client_vinfo("glib"),       label(server_version_info("glib.version")))
         tb.new_row("Gobject",   client_vinfo("gobject"),    label(server_version_info("gobject.version", "pygtk_version")))
         tb.new_row("PyGTK",     client_vinfo("pygtk", ""),  label(server_version_info("pygtk.version", "pygtk_version")))
         tb.new_row("GTK",       client_vinfo("gtk"),        label(server_version_info("gtk.version", "gtk_version")))

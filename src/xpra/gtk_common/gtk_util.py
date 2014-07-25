@@ -39,13 +39,19 @@ if is_gtk3():
         GTK_VERSION_INFO["gi.version"] = gi.__version__
     except:
         pass
-if hasattr(gobject, "_version"):
+if hasattr(gobject, "pygobject_version"):
+    GTK_VERSION_INFO["gobject.version"] = gobject.pygobject_version
+elif hasattr(gobject, "_version"):
     GTK_VERSION_INFO["gobject.version"] = gobject._version
 if hasattr(cairo, "version"):
     GTK_VERSION_INFO["cairo.version"] = cairo.version
 if hasattr(pango, "version_string"):
     GTK_VERSION_INFO["pango.version"] = pango.version_string()
-
+try:
+    import glib
+    GTK_VERSION_INFO["glib.version"] = glib.glib_version
+except:
+    pass
 
 if is_gtk3():
     #where is this gone now?
