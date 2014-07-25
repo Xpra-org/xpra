@@ -1,0 +1,666 @@
+diff --git a/autogen.sh b/autogen.sh
+index 9bb4e4a..6ff90eb 100755
+--- a/autogen.sh
++++ b/autogen.sh
+@@ -13,22 +13,7 @@ FILE=gtk/gdkgl/gdkglext-types.defs
+ 
+ DIE=0
+ 
+-have_libtool=false
+-if libtoolize --version < /dev/null > /dev/null 2>&1 ; then
+-	libtool_version=`libtoolize --version | sed 's/^[^0-9]*\([0-9.][0-9.]*\).*/\1/'`
+-	case $libtool_version in
+-	    1.5*)
+-		have_libtool=true
+-		;;
+-	esac
+-fi
+-if $have_libtool ; then : ; else
+-	echo
+-	echo "You must have libtool 1.5 installed to compile $PROJECT."
+-	echo "Install the appropriate package for your distribution,"
+-	echo "or get the source tarball at http://ftp.gnu.org/gnu/libtool/"
+-	DIE=1
+-fi
++have_libtool=true
+ 
+ (autoconf --version) < /dev/null > /dev/null 2>&1 || {
+ 	echo
+@@ -38,16 +23,8 @@ fi
+ 	DIE=1
+ }
+ 
+-if automake-1.7 --version < /dev/null > /dev/null 2>&1 ; then
+-    AUTOMAKE=automake-1.7
+-    ACLOCAL=aclocal-1.7
+-else
+-	echo
+-	echo "You must have automake 1.7.x installed to compile $PROJECT."
+-	echo "Install the appropriate package for your distribution,"
+-	echo "or get the source tarball at http://ftp.gnu.org/gnu/automake/"
+-	DIE=1
+-fi
++AUTOMAKE=automake
++ACLOCAL=aclocal
+ 
+ if test "$DIE" -eq 1; then
+ 	exit 1
+diff --git a/configure.in b/configure.in
+index 1d43552..b317258 100644
+--- a/configure.in
++++ b/configure.in
+@@ -46,7 +46,7 @@ cflags_set=${CFLAGS+set}
+ AM_INIT_AUTOMAKE([1.7 no-define dist-bzip2 dist-zip])
+ 
+ # Specify a configuration file
+-AM_CONFIG_HEADER([config.h])
++AC_CONFIG_HEADER([config.h])
+ 
+ dnl Initialize maintainer mode
+ AM_MAINTAINER_MODE
+@@ -171,11 +171,14 @@ if test -n "$export_dynamic"; then
+ fi
+ 
+ # Check for GtkGLExt
+-AM_PATH_GTKGLEXT_1_0([gtkglext_required_version], ,
+-                     [AC_MSG_ERROR([GtkGLExt not found])])
+-if test -n "$export_dynamic"; then
+-  GTKGLEXT_LIBS=`echo $GTKGLEXT_LIBS | sed -e "s/$export_dynamic//"`
+-fi
++#AM_PATH_GTKGLEXT_1_0([gtkglext_required_version], ,
++#                     [AC_MSG_ERROR([GtkGLExt not found])])
++#if test -n "$export_dynamic"; then
++#  GTKGLEXT_LIBS=`echo $GTKGLEXT_LIBS | sed -e "s/$export_dynamic//"`
++#fi
++CFLAGS="$CFLAGS -I$JHBUILD_PREFIX/include/gtkglext-1.0 -I$JHBUILD_PREFIX/lib/gtkglext-1.0/include -I/usr/X11/include/"
++LIBS="-lgtkglext-quartz-1.0 -lgdkglext-quartz-1.0"
++
+ 
+ # Additional CFLAGS.
+ changequote(,)dnl
+diff --git a/gtk/gdkgl/__init__.py b/gtk/gdkgl/__init__.py
+index a8976f1..f389883 100644
+--- a/gtk/gdkgl/__init__.py
++++ b/gtk/gdkgl/__init__.py
+@@ -21,3 +21,110 @@ del gobject
+ from _gdkgl import *
+ from ext import *
+ 
++# These constants were generated like so:
++# cat ../gtkglext-1.2.0/gdk/gdkgltokens.h  | grep "^#define" | grep GDK_GL | sed 's+  GDK_GL_++g' | sed 's+,.*++g' | sed 's+/\*.*++g'  | grep -v "TOKENS_H" | sed 's+#define ++g' | awk '{print $1" = "$2}' >>  gtk/gdkgl/__init__.py
++# cat ../gtkglext-1.2.0/gdk/gdkgltokens.h  | grep GDK_GL | sed 's+  GDK_GL_++g' | sed 's+,.*++g' | sed 's+/\*.*++g' | grep -v "^#" >> gtk/gdkgl/__init__.py
++# cat ../gtkglext-1.2.0/gdk/gdkglconfig.h  | grep GDK_GL | sed 's+  GDK_GL_++g' | sed 's+,.*++g' | sed 's+/\*.*++g' | grep -v "^#" >> gtk/gdkgl/__init__.py 
++
++
++USE_GL                     = 1
++BUFFER_SIZE                = 2
++LEVEL                      = 3
++RGBA                       = 4
++DOUBLEBUFFER               = 5
++STEREO                     = 6
++AUX_BUFFERS                = 7
++RED_SIZE                   = 8
++GREEN_SIZE                 = 9
++BLUE_SIZE                  = 10
++ALPHA_SIZE                 = 11
++DEPTH_SIZE                 = 12
++STENCIL_SIZE               = 13
++ACCUM_RED_SIZE             = 14
++ACCUM_GREEN_SIZE           = 15
++ACCUM_BLUE_SIZE            = 16
++ACCUM_ALPHA_SIZE           = 17
++CONFIG_CAVEAT              = 0x20
++X_VISUAL_TYPE              = 0x22
++TRANSPARENT_TYPE           = 0x23
++TRANSPARENT_INDEX_VALUE    = 0x24
++TRANSPARENT_RED_VALUE      = 0x25
++TRANSPARENT_GREEN_VALUE    = 0x26
++TRANSPARENT_BLUE_VALUE     = 0x27
++TRANSPARENT_ALPHA_VALUE    = 0x28
++DRAWABLE_TYPE              = 0x8010
++RENDER_TYPE                = 0x8011
++X_RENDERABLE               = 0x8012
++FBCONFIG_ID                = 0x8013
++MAX_PBUFFER_WIDTH          = 0x8016
++MAX_PBUFFER_HEIGHT         = 0x8017
++MAX_PBUFFER_PIXELS         = 0x8018
++VISUAL_ID                  = 0x800B
++SCREEN                     = 0x800C
++SAMPLE_BUFFERS             = 100000
++SAMPLES                    = 100001
++CONFIG_CAVEAT_DONT_CARE    = 0xFFFFFFFF
++CONFIG_CAVEAT_NONE         = 0x8000
++SLOW_CONFIG                = 0x8001
++NON_CONFORMANT_CONFIG      = 0x800D
++VISUAL_TYPE_DONT_CARE      = 0xFFFFFFFF
++TRUE_COLOR                 = 0x8002
++DIRECT_COLOR               = 0x8003
++PSEUDO_COLOR               = 0x8004
++STATIC_COLOR               = 0x8005
++GRAY_SCALE                 = 0x8006
++STATIC_GRAY                = 0x8007
++TRANSPARENT_NONE           = 0x8000
++TRANSPARENT_RGB            = 0x8008
++TRANSPARENT_INDEX          = 0x8009
++WINDOW_BIT                 = 1 << 0
++PIXMAP_BIT                 = 1 << 1
++PBUFFER_BIT                = 1 << 2  
++RGBA_BIT                   = 1 << 0
++COLOR_INDEX_BIT            = 1 << 1  
++FRONT_LEFT_BUFFER_BIT      = 1 << 0
++FRONT_RIGHT_BUFFER_BIT     = 1 << 1
++BACK_LEFT_BUFFER_BIT       = 1 << 2
++BACK_RIGHT_BUFFER_BIT      = 1 << 3
++AUX_BUFFERS_BIT            = 1 << 4
++DEPTH_BUFFER_BIT           = 1 << 5
++STENCIL_BUFFER_BIT         = 1 << 6
++ACCUM_BUFFER_BIT           = 1 << 7  
++BAD_SCREEN                 = 1
++BAD_ATTRIBUTE              = 2
++NO_EXTENSION               = 3
++BAD_VISUAL                 = 4
++BAD_CONTEXT                = 5
++BAD_VALUE                  = 6
++BAD_ENUM                   = 7  
++RGBA_TYPE                  = 0x8014
++COLOR_INDEX_TYPE           = 0x8015
++PRESERVED_CONTENTS         = 0x801B
++LARGEST_PBUFFER            = 0x801C
++WIDTH                      = 0x801D
++HEIGHT                     = 0x801E
++EVENT_MASK                 = 0x801F
++PBUFFER_PRESERVED_CONTENTS = 0x801B
++PBUFFER_LARGEST_PBUFFER    = 0x801C
++PBUFFER_HEIGHT             = 0x8040
++PBUFFER_WIDTH              = 0x8041
++PBUFFER_CLOBBER_MASK       = 1 << 27  
++DAMAGED                    = 0x8020
++SAVED                      = 0x8021
++WINDOW                     = 0x8022
++PBUFFER                    = 0x8023
++GDK_GL_SUCCESS = 0
++GDK_GL_ATTRIB_LIST_NONE = 0
++GDK_GL_DONT_CARE = 0xFFFFFFFF
++GDK_GL_NONE = 0x8000
++MODE_RGB         = 0
++MODE_RGBA        = 0
++MODE_INDEX       = 1 << 0
++MODE_SINGLE      = 0
++MODE_DOUBLE      = 1 << 1
++MODE_STEREO      = 1 << 2
++MODE_ALPHA       = 1 << 3
++MODE_DEPTH       = 1 << 4
++MODE_STENCIL     = 1 << 5
++MODE_ACCUM       = 1 << 6
++MODE_MULTISAMPLE = 1 << 7   
+diff --git a/gtk/gdkgl/gdkglext-types.defs b/gtk/gdkgl/gdkglext-types.defs
+index b9334fb..55ec1de 100644
+--- a/gtk/gdkgl/gdkglext-types.defs
++++ b/gtk/gdkgl/gdkglext-types.defs
+@@ -58,81 +58,10 @@
+   )
+ )
+ 
+-(define-enum ConfigAttrib
+-  (in-module "Gdk")
+-  (c-name "GdkGLConfigAttrib")
+-  (gtype-id "GDK_TYPE_GL_CONFIG_ATTRIB")
+-  (values
+-    '("use-gl" "GDK_GL_USE_GL")
+-    '("buffer-size" "GDK_GL_BUFFER_SIZE")
+-    '("level" "GDK_GL_LEVEL")
+-    '("rgba" "GDK_GL_RGBA")
+-    '("doublebuffer" "GDK_GL_DOUBLEBUFFER")
+-    '("stereo" "GDK_GL_STEREO")
+-    '("aux-buffers" "GDK_GL_AUX_BUFFERS")
+-    '("red-size" "GDK_GL_RED_SIZE")
+-    '("green-size" "GDK_GL_GREEN_SIZE")
+-    '("blue-size" "GDK_GL_BLUE_SIZE")
+-    '("alpha-size" "GDK_GL_ALPHA_SIZE")
+-    '("depth-size" "GDK_GL_DEPTH_SIZE")
+-    '("stencil-size" "GDK_GL_STENCIL_SIZE")
+-    '("accum-red-size" "GDK_GL_ACCUM_RED_SIZE")
+-    '("accum-green-size" "GDK_GL_ACCUM_GREEN_SIZE")
+-    '("accum-blue-size" "GDK_GL_ACCUM_BLUE_SIZE")
+-    '("accum-alpha-size" "GDK_GL_ACCUM_ALPHA_SIZE")
+-    '("config-caveat" "GDK_GL_CONFIG_CAVEAT")
+-    '("x-visual-type" "GDK_GL_X_VISUAL_TYPE")
+-    '("transparent-type" "GDK_GL_TRANSPARENT_TYPE")
+-    '("transparent-index-value" "GDK_GL_TRANSPARENT_INDEX_VALUE")
+-    '("transparent-red-value" "GDK_GL_TRANSPARENT_RED_VALUE")
+-    '("transparent-green-value" "GDK_GL_TRANSPARENT_GREEN_VALUE")
+-    '("transparent-blue-value" "GDK_GL_TRANSPARENT_BLUE_VALUE")
+-    '("transparent-alpha-value" "GDK_GL_TRANSPARENT_ALPHA_VALUE")
+-    '("drawable-type" "GDK_GL_DRAWABLE_TYPE")
+-    '("render-type" "GDK_GL_RENDER_TYPE")
+-    '("x-renderable" "GDK_GL_X_RENDERABLE")
+-    '("fbconfig-id" "GDK_GL_FBCONFIG_ID")
+-    '("max-pbuffer-width" "GDK_GL_MAX_PBUFFER_WIDTH")
+-    '("max-pbuffer-height" "GDK_GL_MAX_PBUFFER_HEIGHT")
+-    '("max-pbuffer-pixels" "GDK_GL_MAX_PBUFFER_PIXELS")
+-    '("visual-id" "GDK_GL_VISUAL_ID")
+-    '("screen" "GDK_GL_SCREEN")
+-    '("sample-buffers" "GDK_GL_SAMPLE_BUFFERS")
+-    '("samples" "GDK_GL_SAMPLES")
+-  )
+-)
+-
+-(define-enum ConfigCaveat
+-  (in-module "Gdk")
+-  (c-name "GdkGLConfigCaveat")
+-  (gtype-id "GDK_TYPE_GL_CONFIG_CAVEAT")
+-  (values
+-    '("config-caveat-dont-care" "GDK_GL_CONFIG_CAVEAT_DONT_CARE")
+-    '("config-caveat-none" "GDK_GL_CONFIG_CAVEAT_NONE")
+-    '("slow-config" "GDK_GL_SLOW_CONFIG")
+-    '("non-conformant-config" "GDK_GL_NON_CONFORMANT_CONFIG")
+-  )
+-)
+-
+-(define-enum VisualType
+-  (in-module "Gdk")
+-  (c-name "GdkGLVisualType")
+-  (gtype-id "GDK_TYPE_GL_VISUAL_TYPE")
+-  (values
+-    '("visual-type-dont-care" "GDK_GL_VISUAL_TYPE_DONT_CARE")
+-    '("true-color" "GDK_GL_TRUE_COLOR")
+-    '("direct-color" "GDK_GL_DIRECT_COLOR")
+-    '("pseudo-color" "GDK_GL_PSEUDO_COLOR")
+-    '("static-color" "GDK_GL_STATIC_COLOR")
+-    '("gray-scale" "GDK_GL_GRAY_SCALE")
+-    '("static-gray" "GDK_GL_STATIC_GRAY")
+-  )
+-)
+-
+ (define-enum TransparentType
+   (in-module "Gdk")
+   (c-name "GdkGLTransparentType")
+-  (gtype-id "GDK_TYPE_GL_TRANSPARENT_TYPE")
++  (gtype-id "GDK_GL_TRANSPARENT_TYPE")
+   (values
+     '("none" "GDK_GL_TRANSPARENT_NONE")
+     '("rgb" "GDK_GL_TRANSPARENT_RGB")
+@@ -140,116 +69,19 @@
+   )
+ )
+ 
+-(define-flags DrawableTypeMask
+-  (in-module "Gdk")
+-  (c-name "GdkGLDrawableTypeMask")
+-  (gtype-id "GDK_TYPE_GL_DRAWABLE_TYPE_MASK")
+-  (values
+-    '("window-bit" "GDK_GL_WINDOW_BIT")
+-    '("pixmap-bit" "GDK_GL_PIXMAP_BIT")
+-    '("pbuffer-bit" "GDK_GL_PBUFFER_BIT")
+-  )
+-)
+-
+-(define-flags RenderTypeMask
+-  (in-module "Gdk")
+-  (c-name "GdkGLRenderTypeMask")
+-  (gtype-id "GDK_TYPE_GL_RENDER_TYPE_MASK")
+-  (values
+-    '("rgba-bit" "GDK_GL_RGBA_BIT")
+-    '("color-index-bit" "GDK_GL_COLOR_INDEX_BIT")
+-  )
+-)
+-
+-(define-flags BufferMask
+-  (in-module "Gdk")
+-  (c-name "GdkGLBufferMask")
+-  (gtype-id "GDK_TYPE_GL_BUFFER_MASK")
+-  (values
+-    '("front-left-buffer-bit" "GDK_GL_FRONT_LEFT_BUFFER_BIT")
+-    '("front-right-buffer-bit" "GDK_GL_FRONT_RIGHT_BUFFER_BIT")
+-    '("back-left-buffer-bit" "GDK_GL_BACK_LEFT_BUFFER_BIT")
+-    '("back-right-buffer-bit" "GDK_GL_BACK_RIGHT_BUFFER_BIT")
+-    '("aux-buffers-bit" "GDK_GL_AUX_BUFFERS_BIT")
+-    '("depth-buffer-bit" "GDK_GL_DEPTH_BUFFER_BIT")
+-    '("stencil-buffer-bit" "GDK_GL_STENCIL_BUFFER_BIT")
+-    '("accum-buffer-bit" "GDK_GL_ACCUM_BUFFER_BIT")
+-  )
+-)
+-
+-(define-enum ConfigError
+-  (in-module "Gdk")
+-  (c-name "GdkGLConfigError")
+-  (gtype-id "GDK_TYPE_GL_CONFIG_ERROR")
+-  (values
+-    '("bad-screen" "GDK_GL_BAD_SCREEN")
+-    '("bad-attribute" "GDK_GL_BAD_ATTRIBUTE")
+-    '("no-extension" "GDK_GL_NO_EXTENSION")
+-    '("bad-visual" "GDK_GL_BAD_VISUAL")
+-    '("bad-context" "GDK_GL_BAD_CONTEXT")
+-    '("bad-value" "GDK_GL_BAD_VALUE")
+-    '("bad-enum" "GDK_GL_BAD_ENUM")
+-  )
+-)
+-
+-(define-enum RenderType
+-  (in-module "Gdk")
+-  (c-name "GdkGLRenderType")
+-  (gtype-id "GDK_TYPE_GL_RENDER_TYPE")
+-  (values
+-    '("rgba-type" "GDK_GL_RGBA_TYPE")
+-    '("color-index-type" "GDK_GL_COLOR_INDEX_TYPE")
+-  )
+-)
+-
+-(define-enum DrawableAttrib
+-  (in-module "Gdk")
+-  (c-name "GdkGLDrawableAttrib")
+-  (gtype-id "GDK_TYPE_GL_DRAWABLE_ATTRIB")
+-  (values
+-    '("preserved-contents" "GDK_GL_PRESERVED_CONTENTS")
+-    '("largest-pbuffer" "GDK_GL_LARGEST_PBUFFER")
+-    '("width" "GDK_GL_WIDTH")
+-    '("height" "GDK_GL_HEIGHT")
+-    '("event-mask" "GDK_GL_EVENT_MASK")
+-  )
+-)
+-
+-(define-enum PbufferAttrib
+-  (in-module "Gdk")
+-  (c-name "GdkGLPbufferAttrib")
+-  (gtype-id "GDK_TYPE_GL_PBUFFER_ATTRIB")
+-  (values
+-    '("preserved-contents" "GDK_GL_PBUFFER_PRESERVED_CONTENTS")
+-    '("largest-pbuffer" "GDK_GL_PBUFFER_LARGEST_PBUFFER")
+-    '("height" "GDK_GL_PBUFFER_HEIGHT")
+-    '("width" "GDK_GL_PBUFFER_WIDTH")
+-  )
+-)
+-
+ (define-flags EventMask
+   (in-module "Gdk")
+   (c-name "GdkGLEventMask")
+-  (gtype-id "GDK_TYPE_GL_EVENT_MASK")
++  (gtype-id "GDK_GL_EVENT_MASK")
+   (values
+     '("k" "GDK_GL_PBUFFER_CLOBBER_MASK")
+   )
+ )
+ 
+-(define-enum EventType
+-  (in-module "Gdk")
+-  (c-name "GdkGLEventType")
+-  (gtype-id "GDK_TYPE_GL_EVENT_TYPE")
+-  (values
+-    '("damaged" "GDK_GL_DAMAGED")
+-    '("saved" "GDK_GL_SAVED")
+-  )
+-)
+-
+ (define-enum DrawableType
+   (in-module "Gdk")
+   (c-name "GdkGLDrawableType")
+-  (gtype-id "GDK_TYPE_GL_DRAWABLE_TYPE")
++  (gtype-id "GDK_GL_DRAWABLE_TYPE")
+   (values
+     '("window" "GDK_GL_WINDOW")
+     '("pbuffer" "GDK_GL_PBUFFER")
+diff --git a/gtk/gdkgl/gdkglext.defs b/gtk/gdkgl/gdkglext.defs
+index f3f8e69..37fb930 100644
+--- a/gtk/gdkgl/gdkglext.defs
++++ b/gtk/gdkgl/gdkglext.defs
+@@ -79,12 +79,6 @@
+   (return-type "GdkVisual*")
+ )
+ 
+-(define-method get_depth
+-  (of-object "GdkGLConfig")
+-  (c-name "gdk_gl_config_get_depth")
+-  (return-type "gint")
+-)
+-
+ (define-method get_layer_plane
+   (of-object "GdkGLConfig")
+   (c-name "gdk_gl_config_get_layer_plane")
+@@ -168,50 +162,16 @@
+ 
+ (define-method destroy
+   (of-object "GdkGLContext")
+-  (c-name "gdk_gl_context_destroy")
++  (c-name "_gdk_gl_context_destroy")
+   (return-type "none")
+ )
+ 
+-(define-method copy
+-  (of-object "GdkGLContext")
+-  (c-name "gdk_gl_context_copy")
+-  (return-type "gboolean")
+-  (parameters
+-    '("GdkGLContext*" "src")
+-    '("unsigned-long" "mask" (default "GL_ALL_ATTRIB_BITS"))
+-  )
+-)
+-
+ (define-method get_gl_drawable
+   (of-object "GdkGLContext")
+   (c-name "gdk_gl_context_get_gl_drawable")
+   (return-type "GdkGLDrawable*")
+ )
+ 
+-(define-method get_gl_config
+-  (of-object "GdkGLContext")
+-  (c-name "gdk_gl_context_get_gl_config")
+-  (return-type "GdkGLConfig*")
+-)
+-
+-(define-method get_share_list
+-  (of-object "GdkGLContext")
+-  (c-name "gdk_gl_context_get_share_list")
+-  (return-type "GdkGLContext*")
+-)
+-
+-(define-method is_direct
+-  (of-object "GdkGLContext")
+-  (c-name "gdk_gl_context_is_direct")
+-  (return-type "gboolean")
+-)
+-
+-(define-method get_render_type
+-  (of-object "GdkGLContext")
+-  (c-name "gdk_gl_context_get_render_type")
+-  (return-type "int")
+-)
+-
+ (define-function context_get_current
+   (c-name "gdk_gl_context_get_current")
+   (return-type "GdkGLContext*")
+@@ -282,12 +242,6 @@
+   (return-type "none")
+ )
+ 
+-(define-method get_gl_config
+-  (of-object "GdkGLDrawable")
+-  (c-name "gdk_gl_drawable_get_gl_config")
+-  (return-type "GdkGLConfig*")
+-)
+-
+ (define-method get_size
+   (of-object "GdkGLDrawable")
+   (c-name "gdk_gl_drawable_get_size")
+@@ -385,30 +339,6 @@
+ 
+ ;; From gtkglext/gdk/gdkglfont.h
+ 
+-(define-function font_use_pango_font
+-  (c-name "gdk_gl_font_use_pango_font")
+-  (return-type "PangoFont*")
+-  (parameters
+-    '("const-PangoFontDescription*" "font_desc")
+-    '("int" "first")
+-    '("int" "count")
+-    '("int" "list_base")
+-  )
+-)
+-
+-(define-function font_use_pango_font_for_display
+-  (c-name "gdk_gl_font_use_pango_font_for_display")
+-  (return-type "PangoFont*")
+-  (parameters
+-    '("GdkDisplay*" "display")
+-    '("const-PangoFontDescription*" "font_desc")
+-    '("int" "first")
+-    '("int" "count")
+-    '("int" "list_base")
+-  )
+-)
+-
+-
+ 
+ ;; From gtkglext/gdk/gdkglinit.h
+ 
+@@ -461,7 +391,7 @@
+ 
+ (define-method destroy
+   (of-object "GdkGLPixmap")
+-  (c-name "gdk_gl_pixmap_destroy")
++  (c-name "_gdk_gl_pixmap_destroy")
+   (return-type "none")
+ )
+ 
+@@ -571,95 +501,6 @@
+ 
+ 
+ 
+-;; From gtkglext/gdk/gdkglshapes.h
+-
+-(define-function draw_cube
+-  (c-name "gdk_gl_draw_cube")
+-  (return-type "none")
+-  (parameters
+-    '("gboolean" "solid")
+-    '("double" "size")
+-  )
+-)
+-
+-(define-function draw_sphere
+-  (c-name "gdk_gl_draw_sphere")
+-  (return-type "none")
+-  (parameters
+-    '("gboolean" "solid")
+-    '("double" "radius")
+-    '("int" "slices")
+-    '("int" "stacks")
+-  )
+-)
+-
+-(define-function draw_cone
+-  (c-name "gdk_gl_draw_cone")
+-  (return-type "none")
+-  (parameters
+-    '("gboolean" "solid")
+-    '("double" "base")
+-    '("double" "height")
+-    '("int" "slices")
+-    '("int" "stacks")
+-  )
+-)
+-
+-(define-function draw_torus
+-  (c-name "gdk_gl_draw_torus")
+-  (return-type "none")
+-  (parameters
+-    '("gboolean" "solid")
+-    '("double" "inner_radius")
+-    '("double" "outer_radius")
+-    '("int" "nsides")
+-    '("int" "rings")
+-  )
+-)
+-
+-(define-function draw_tetrahedron
+-  (c-name "gdk_gl_draw_tetrahedron")
+-  (return-type "none")
+-  (parameters
+-    '("gboolean" "solid")
+-  )
+-)
+-
+-(define-function draw_octahedron
+-  (c-name "gdk_gl_draw_octahedron")
+-  (return-type "none")
+-  (parameters
+-    '("gboolean" "solid")
+-  )
+-)
+-
+-(define-function draw_dodecahedron
+-  (c-name "gdk_gl_draw_dodecahedron")
+-  (return-type "none")
+-  (parameters
+-    '("gboolean" "solid")
+-  )
+-)
+-
+-(define-function draw_icosahedron
+-  (c-name "gdk_gl_draw_icosahedron")
+-  (return-type "none")
+-  (parameters
+-    '("gboolean" "solid")
+-  )
+-)
+-
+-(define-function draw_teapot
+-  (c-name "gdk_gl_draw_teapot")
+-  (return-type "none")
+-  (parameters
+-    '("gboolean" "solid")
+-    '("double" "scale")
+-  )
+-)
+-
+-
+-
+ ;; From gtkglext/gdk/gdkgltokens.h
+ 
+ 
+@@ -692,7 +533,7 @@
+ 
+ (define-method destroy
+   (of-object "GdkGLWindow")
+-  (c-name "gdk_gl_window_destroy")
++  (c-name "_gdk_gl_window_destroy")
+   (return-type "none")
+ )
+ 
+diff --git a/gtk/gdkgl/gdkglext.override b/gtk/gdkgl/gdkglext.override
+index 9f71de1..e588e44 100644
+--- a/gtk/gdkgl/gdkglext.override
++++ b/gtk/gdkgl/gdkglext.override
+@@ -127,6 +127,7 @@ _wrap_gdk_gl_config_new(PyGObject *self, PyObject *args, PyObject *kwargs)
+ 
+         /* Use gdk_gl_config_new_by_mode() */
+         
++#define GDK_TYPE_GL_CONFIG_MODE 0
+         if (pyg_flags_get_value(GDK_TYPE_GL_CONFIG_MODE, py_mode, (gint *)&mode)) {
+             PyErr_SetString(PyExc_RuntimeError,
+                             "could not get display mode bitmask value");
+diff --git a/gtk/gdkgl/gdkglmodule.c b/gtk/gdkgl/gdkglmodule.c
+index d1caf9b..5f2f04b 100644
+--- a/gtk/gdkgl/gdkglmodule.c
++++ b/gtk/gdkgl/gdkglmodule.c
+@@ -83,9 +83,9 @@ init_gdkgl(void)
+ 
+     /* GdkGLExt version */
+     tuple = Py_BuildValue("(iii)",
+-                          gdkglext_major_version,
+-                          gdkglext_minor_version,
+-                          gdkglext_micro_version);
++                          gdk_gl_get_major_version(),   /* gdkglext_major_version */
++                          gdk_gl_get_minor_version(),   /* gdkglext_minor_version */
++                          gdk_gl_get_micro_version());  /* gdkglext_micro_version */
+     PyDict_SetItemString(d, "gdkglext_version", tuple);    
+     Py_DECREF(tuple);
+ 
+@@ -106,7 +106,7 @@ init_gdkgl(void)
+     pygdkglext_register_classes(d);
+ 
+     /* add enum and flag constants */
+-    pygdkglext_add_constants(m, "GDK_GL_");
++    //pygdkglext_add_constants(m, "GDK_GL_");
+ 
+     /* additional constants */
+     PyModule_AddIntConstant(m, "SUCCESS", GDK_GL_SUCCESS);

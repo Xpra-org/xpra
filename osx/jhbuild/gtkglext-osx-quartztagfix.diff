@@ -1,0 +1,20 @@
+--- a/gdk/quartz/Makefile.in	2014-07-25 05:11:23.000000000 +0100
++++ b/gdk/quartz/Makefile.in	2014-07-25 05:11:58.000000000 +0100
+@@ -103,7 +103,7 @@
+ OBJCCOMPILE = $(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+ 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS)
+ LTOBJCCOMPILE = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+-	$(LIBTOOLFLAGS) --mode=compile $(OBJC) $(DEFS) \
++	$(LIBTOOLFLAGS) --mode=compile --tag=CC $(OBJC) $(DEFS) \
+ 	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+ 	$(AM_OBJCFLAGS) $(OBJCFLAGS)
+ AM_V_OBJC = $(am__v_OBJC_@AM_V@)
+@@ -112,7 +112,7 @@
+ am__v_OBJC_1 = 
+ OBJCLD = $(OBJC)
+ OBJCLINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+-	--mode=link $(OBJCLD) $(AM_OBJCFLAGS) $(OBJCFLAGS) \
++	--mode=link --tag=LD $(OBJCLD) $(AM_OBJCFLAGS) $(OBJCFLAGS) \
+ 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+ AM_V_OBJCLD = $(am__v_OBJCLD_@AM_V@)
+ am__v_OBJCLD_ = $(am__v_OBJCLD_@AM_DEFAULT_V@)
