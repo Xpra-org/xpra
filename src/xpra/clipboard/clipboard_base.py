@@ -21,7 +21,7 @@ log = Logger("clipboard")
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
-from xpra.net.protocol import compressed_wrapper
+from xpra.net.compression import compressed_wrapper
 
 
 MAX_CLIPBOARD_PACKET_SIZE = 256*1024

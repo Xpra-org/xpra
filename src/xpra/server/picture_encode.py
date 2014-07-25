@@ -10,7 +10,7 @@ from math import sqrt
 from xpra.log import Logger
 log = Logger("window", "encoding")
 
-from xpra.net.protocol import compressed_wrapper, Compressed, use_lz4
+from xpra.net.compression import compressed_wrapper, Compressed, use_lz4
 try:
     from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
 except Exception, e:

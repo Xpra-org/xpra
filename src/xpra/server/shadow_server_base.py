@@ -9,7 +9,7 @@ import socket
 from xpra.log import Logger
 log = Logger("shadow")
 
-from xpra.net.protocol import Compressed
+from xpra.net.compression import Compressed
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.util import AdHocStruct, prettify_plug_name
 

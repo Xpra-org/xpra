@@ -35,7 +35,7 @@ from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_DECODER_OPTIONS, NO_GFX_CSC_OPTIONS
 from xpra.simple_stats import std_unit
-from xpra.net.protocol import Compressed, use_lz4
+from xpra.net.compression import Compressed, use_lz4
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
 from xpra.util import nn, nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict

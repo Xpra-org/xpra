@@ -47,7 +47,7 @@ import xpra
 from xpra.util import nonl
 from xpra.os_util import StringIOClass
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
-from xpra.net.protocol import compressed_wrapper, Compressed
+from xpra.net.compression import compressed_wrapper, Compressed
 
 
 class DesktopManager(gtk.Widget):
