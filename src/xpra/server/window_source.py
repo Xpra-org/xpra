@@ -389,8 +389,8 @@ class WindowSource(object):
                 "encoding.last_used"    : self.encoding_last_used or "",
                 "suspended"             : self.suspended or False
                 }
-        def up(prefix, d, suffix=""):
-            updict(info, prefix, d, suffix)
+        def up(prefix, d):
+            updict(info, prefix, d)
 
         up("property",  self.get_property_info())
         up("batch",     self.batch_config.get_info())

@@ -92,8 +92,8 @@ class ChildReaper(object):
             #however.. subprocess.Popen will no longer work as expected
             #see: http://bugs.python.org/issue9127
             #so we must ensure certain things that exec happen first:
-            from xpra.version_util import get_platform_info_cache
-            get_platform_info_cache()
+            from xpra.version_util import get_platform_info
+            get_platform_info()
 
             signal.signal(signal.SIGCHLD, self.sigchld)
             # Check once after the mainloop is running, just in case the exit

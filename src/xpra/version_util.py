@@ -37,44 +37,39 @@ def version_compat_check(remote_version):
     log("local version %s should be compatible with remote version: %s", local_version, remote_version)
     return None
 
-def mk(*parts):
-    #make a prefix from a list of parts
-    #(dot seperated values)
-    return ".".join([str(x) for x in parts if x])
 
-def get_host_info(prefix=""):
+def get_host_info():
     #this function is for non UI thread info
     info = {}
     import os
     try:
         import socket
-        for k,v in {
+        info.update({
                     "pid"                   : os.getpid(),
                     "byteorder"             : sys.byteorder,
                     "hostname"              : socket.gethostname(),
                     "python.full_version"   : sys.version,
                     "python.version"        : sys.version_info[:3],
-                    }.items():
-            info[mk(prefix, k)] = v
+                    })
     except:
         pass
     for x in ("uid", "gid"):
         if hasattr(os, "get%s" % x):
             try:
-                info[mk(prefix, x)] = getattr(os, "get%s" % x)()
+                info[x] = getattr(os, "get%s" % x)()
             except:
                 pass
     return info
 
-def get_version_info(prefix=""):
+def get_version_info():
     props = {
-             mk(prefix, "version") : local_version
+             "version"  : local_version
              }
     try:
         from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
         from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU, \
                                     COMPILER_VERSION, LINKER_VERSION, BUILD_TIME, PYTHON_VERSION, CYTHON_VERSION
-        for k,v in {
+        props.update({
                     "local_modifications"  : LOCAL_MODIFICATIONS,
                     "date"                 : BUILD_DATE,
                     "time"                 : BUILD_TIME,
@@ -87,8 +82,7 @@ def get_version_info(prefix=""):
                     "linker"               : LINKER_VERSION,
                     "python"               : PYTHON_VERSION,
                     "cython"               : CYTHON_VERSION,
-                  }.items():
-            props[mk(prefix, k)] = v
+                  })
     except:
         pass
     return props
@@ -108,15 +102,8 @@ def do_get_platform_info():
     return info
 #cache the output:
 platform_info_cache = None
-def get_platform_info_cache():
+def get_platform_info():
     global platform_info_cache
     if platform_info_cache is None:
         platform_info_cache = do_get_platform_info()
     return platform_info_cache
-
-
-def get_platform_info(prefix=""):
-    info = {}
-    for k,v in get_platform_info_cache().items():
-        info[mk(prefix, k)] = v
-    return info

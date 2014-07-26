@@ -27,49 +27,51 @@ from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.platform import set_application_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
-from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version, mk
+from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, use_lz4, use_rencode, use_yaml, get_network_caps
 from xpra.net.crypto import new_cipher_caps
 from xpra.server.background_worker import stop_worker
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server.proxy import XpraProxy
-from xpra.util import typedict, repr_ellipsized
+from xpra.util import typedict, updict, repr_ellipsized
 
 
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
 
-def get_server_info(prefix=""):
+def get_server_info():
     #this function is for non UI thread info
     info = {}
-    info.update(get_host_info(prefix))
-    info.update(get_platform_info(mk(prefix, "platform")))
-    info.update(get_version_info(mk(prefix, "build")))
+    info.update(get_host_info())
+    def up(prefix, d):
+        updict(info, prefix, d)
+    up("platform",  get_platform_info())
+    up("build",     get_version_info())
     return info
 
-def get_thread_info(prefix="", proto=None):
+def get_thread_info(proto=None):
     #threads:
-    info = {}
     info_threads = proto.get_threads()
-    info[prefix+"threads"] = threading.active_count() - len(info_threads)
-    info[prefix+"info_threads"] = len(info_threads)
+    info = {
+            "count"        : threading.active_count() - len(info_threads),
+            "info.count"   : len(info_threads)
+            }
     i = 0
     #threads used by the "info" client:
     for t in info_threads:
-        info[prefix+"info_thread[%s]" % i] = t.name
+        info["info[%s]" % i] = t.name
         i += 1
     i = 0
     #all non-info threads:
     for t in threading.enumerate():
         if t not in info_threads:
-            info[prefix+"thread[%s]" % i] = t.name
+            info[str(i)] = t.name
             i += 1
     #platform specific bits:
     try:
         from xpra.platform.info import get_sys_info
-        for k,v in get_sys_info().items():
-            info[prefix+k] = v
+        info.update(get_sys_info())
     except:
         log.error("error getting system info", exc_info=True)
     return info
@@ -644,46 +646,23 @@ class ServerCore(object):
 
     def get_info(self, proto, *args):
         #this function is for non UI thread info
-        info = get_server_info("server")
-        info.update({
-                "server.mode"               : self.get_server_mode(),
-                "server.type"               : "Python",
-                "server.start_time"         : int(self.start_time),
-                "server.authenticator"      : str((self.auth_class or str)("")),
+        info = {}
+        def up(prefix, d):
+            updict(info, prefix, d)
+
+        up("network",   get_network_caps())
+        up("server",    get_server_info())
+        up("threads",   get_thread_info(proto))
+        up("server", {
+                "mode"              : self.get_server_mode(),
+                "type"              : "Python",
+                "start_time"        : int(self.start_time),
+                "authenticator"     : str((self.auth_class or str)("")),
                 })
         if self.session_name:
             info["session.name"] = self.session_name
-        info.update(self.get_thread_info(proto))
-        for k,v in get_network_caps().items():
-            info["network."+k] = v
         if self.child_reaper:
             info.update(self.child_reaper.get_info())
-        return info
-
-    def get_thread_info(self, proto):
-        #threads:
-        info = {}
-        info_threads = proto.get_threads()
-        info["threads"] = threading.active_count() - len(info_threads)
-        info["info_threads"] = len(info_threads)
-        i = 0
-        #threads used by the "info" client:
-        for t in info_threads:
-            info["info_thread[%s]" % i] = t.name
-            i += 1
-        i = 0
-        #all non-info threads:
-        for t in threading.enumerate():
-            if t not in info_threads:
-                info["thread[%s]" % i] = t.name
-                i += 1
-        #platform specific bits:
-        try:
-            from xpra.platform.info import get_sys_info
-            for k,v in get_sys_info().items():
-                info[k] = v
-        except:
-            log.error("error getting system info", exc_info=True)
         return info
 
     def process_packet(self, proto, packet):

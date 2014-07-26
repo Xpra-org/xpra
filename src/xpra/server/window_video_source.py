@@ -148,8 +148,8 @@ class WindowVideoSource(WindowSource):
     def get_info(self):
         info = WindowSource.get_info(self)
 
-        def up(prefix, d, suffix=""):
-            updict(info, prefix, d, suffix)
+        def up(prefix, d):
+            updict(info, prefix, d)
 
         sr = self.video_subregion
         if sr:

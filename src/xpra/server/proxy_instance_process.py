@@ -24,7 +24,7 @@ from xpra.net.crypto import new_cipher_caps
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES
-from xpra.util import typedict
+from xpra.util import typedict, updict
 from xpra.version_util import local_version
 from xpra.daemon_thread import make_daemon_thread
 from xpra.scripts.config import parse_number, parse_bool
@@ -319,8 +319,10 @@ class ProxyInstanceProcess(Process):
 
     def get_proxy_info(self, proto):
         info = {"proxy.version" : local_version}
-        info.update(get_server_info("proxy"))
-        info.update(get_thread_info("proxy", proto))
+        def upp(d):
+            updict(info, "proxy", d)
+        upp(get_server_info())
+        upp(get_thread_info(proto))
         info.update(self.get_encoder_info())
         return info
 
@@ -373,7 +375,7 @@ class ProxyInstanceProcess(Process):
         #replace the network caps with the proxy's own:
         pcaps.update(get_network_caps())
         #then add the proxy info:
-        pcaps.update(get_server_info("proxy"))
+        updict(pcaps, "proxy", get_server_info())
         pcaps["proxy"] = True
         pcaps["proxy.hostname"] = socket.gethostname()
         return pcaps

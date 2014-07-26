@@ -1063,11 +1063,11 @@ class ServerSource(object):
              "encodings.core"    : self.core_encodings,
              "encoding.default"  : self.default_encoding or ""
              })
-        def up(prefix, d, suffix=""):
-            updict(info, prefix, d, suffix)
-        up("encoding", self.default_encoding_options)
-        up("encoding", self.encoding_options)
-        up("connection", self.protocol.get_info())
+        def up(prefix, d):
+            updict(info, prefix, d)
+        up("encoding",      self.default_encoding_options)
+        up("encoding",      self.encoding_options)
+        up("connection",    self.protocol.get_info())
         info.update(self.get_sound_info())
         info.update(self.get_features_info())
         info.update(self.get_screen_info())

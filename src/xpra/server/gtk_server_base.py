@@ -18,6 +18,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import get_gtk_version_info
 from xpra.gtk_common.gtk2common import gtk2main
+from xpra.util import updict
 
 
 class GTKServerBase(ServerBase):
@@ -73,7 +74,7 @@ class GTKServerBase(ServerBase):
     def do_get_info(self, proto, *args):
         info = ServerBase.do_get_info(self, proto, *args)
         ss = self._server_sources.get(proto)
-        info.update(get_gtk_version_info(prefix="server", new_namespace=(ss is not None) and ss.namespace))
+        updict(info, "server", get_gtk_version_info(new_namespace=(ss is not None) and ss.namespace))
         info.update({
                      "server.type"      : "Python/gtk-x11",
                      "features.randr"   : self.randr})

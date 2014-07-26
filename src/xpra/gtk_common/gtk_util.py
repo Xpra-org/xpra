@@ -180,15 +180,15 @@ else:
     def GetClipboard(selection):
         return gtk.Clipboard(selection=selection)
 
-def get_gtk_version_info(prefix="", new_namespace=True):
+def get_gtk_version_info(new_namespace=True):
     #update props given:
-    from xpra.version_util import mk
     global GTK_VERSION_INFO
+    if new_namespace:
+        return GTK_VERSION_INFO.copy()
     info = {}
     for k,v in GTK_VERSION_INFO.items():
-        if not new_namespace:
-            k = k.replace(".", "_")
-        info[mk(prefix, k)] = v
+        k = k.replace(".", "_")
+        info[k] = v
     return info
 
 

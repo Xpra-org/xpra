@@ -21,7 +21,7 @@ from xpra.version_util import version_compat_check, get_version_info, get_platfo
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict, xor
+from xpra.util import typedict, updict, xor
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -234,8 +234,10 @@ class XpraClientBase(object):
                 })
         if self.display:
             capabilities["display"] = self.display
-        capabilities.update(get_platform_info("platform"))
-        capabilities.update(get_version_info("build"))
+        def up(prefix, d):
+            updict(capabilities, prefix, d)
+        up("platform",  get_platform_info())
+        up("build",     get_version_info())
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid
