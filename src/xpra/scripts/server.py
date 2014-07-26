@@ -141,6 +141,22 @@ class ChildReaper(object):
                 break
             self.add_dead_pid(pid)
 
+    def get_info(self):
+        d = dict(self._children_pids)
+        info = {"children"          : len(d),
+                "children.dead"     : len(self._dead_pids),
+                "children.ignored"  : len(self._ignored_pids)}
+        i = 0
+        for pid in sorted(d.keys()):
+            proc = d[pid]
+            info["child[%i].live" % i]  = pid not in self._dead_pids
+            info["child[%i].pid" % i]   = pid
+            info["child[%i].command" % i]   = proc.command
+            info["child[%i].ignored" % i] = pid in self._ignored_pids
+            i += 1
+        return info
+
+
 def save_xvfb_pid(pid):
     import gtk
     from xpra.x11.gtk_x11.prop import prop_set
@@ -940,6 +956,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if opts.start_child:
             assert os.name=="posix", "start-child cannot be used on %s" % os.name
             start_children(child_reaper, opts.start_child, (opts.fake_xinerama and not shadowing))
+        app.child_reaper = child_reaper
 
     try:
         e = app.run()

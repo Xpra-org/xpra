@@ -90,6 +90,7 @@ class ServerCore(object):
         self.start_time = time.time()
         self.auth_class = None
         self._when_ready = []
+        self.child_reaper = None
 
         self._upgrading = False
         #networking bits:
@@ -655,6 +656,8 @@ class ServerCore(object):
         info.update(self.get_thread_info(proto))
         for k,v in get_network_caps().items():
             info["network."+k] = v
+        if self.child_reaper:
+            info.update(self.child_reaper.get_info())
         return info
 
     def get_thread_info(self, proto):
