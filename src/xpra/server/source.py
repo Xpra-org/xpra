@@ -24,7 +24,6 @@ from xpra.server.window_source import WindowSource, HAS_ALPHA
 from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
-from xpra.scripts.config import python_platform
 from xpra.codecs.loader import get_codec, has_codec, OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import codec_spec
@@ -32,7 +31,7 @@ from xpra.net.compression import compressed_wrapper, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
-from xpra.util import std, typedict
+from xpra.util import std, typedict, updict, get_screen_info
 
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
@@ -1037,98 +1036,120 @@ class ServerSource(object):
         self.rewrite_encoding_values(capabilities)
         self.send("hello", capabilities)
 
-    def add_info(self, info, suffix=""):
-        if self.namespace:
-            k = "server.python.version"
-        else:
-            k = "python_version"
-        info[k] = python_platform.python_version()
-        def cv(name, v):
-            info["client."+name+suffix] = v
-        def cvs(update):
-            for k,v in update.items():
-                cv(k, v)
+
+    def get_info(self):
+        info = {
+                "version"           : self.client_version or "unknown",
+                "platform_name"     : platform_name(self.client_platform, self.client_release),
+                "uuid"              : self.uuid,
+                "idle_time"         : int(time.time()-self.last_user_event),
+                "hostname"          : self.hostname,
+                "auto_refresh"      : self.auto_refresh_delay,
+                "desktop_size"      : self.desktop_size or "",
+                "connection_time"   : int(self.connection_time),
+                "elapsed_time"      : int(time.time()-self.connection_time),
+                "suspended"         : self.suspended,
+                }
+
         def addattr(k, name):
-            try:
-                v = getattr(self, name)
-                if v is not None:
-                    cv(k, v)
-            except:
-                log.warn("cannot add attribute %s / %s", k, name, exc_info=True)
-        cv("version", self.client_version or "unknown")
+            v = getattr(self, name)
+            if v is not None:
+                info[k] = v
         for x in ("type", "platform", "release", "machine", "processor", "proxy"):
-            addattr(x, "client_" + x)
-        cvs({
-             "platform_name"      : platform_name(self.client_platform, self.client_release),
-             "uuid"               : self.uuid,
-             "idle_time"          : int(time.time()-self.last_user_event),
-             "hostname"           : self.hostname,
-             "auto_refresh"       : self.auto_refresh_delay,
-             "desktop_size"       : self.desktop_size or "",
-             "connection_time"    : int(self.connection_time),
-             "elapsed_time"       : int(time.time()-self.connection_time),
-             "suspended"          : self.suspended,
+            addattr(x, "client_"+x)
+        #encoding:
+        info.update({
+             "encodings"         : self.encodings,
+             "encodings.core"    : self.core_encodings,
+             "encoding.default"  : self.default_encoding or ""
              })
-        #= time.time()
-        #self.start_time = time.time()
-        if self.screen_sizes:
-            info["client.screens" + suffix] = len(self.screen_sizes)
-            i = 0
-            for x in self.screen_sizes:
-                if type(x) not in (tuple, list):
-                    #legacy clients:
-                    cv("screen[%s]=" % i, str(x))
-                    continue
-                cv("screen[%s].display" % i, x[0])
-                if len(x)>=3:
-                    cv("screen[%s].size" % i, (x[1], x[2]))
-                if len(x)>=5:
-                    cv("screen[%s].size_mm" % i, (x[3], x[4]))
-                if len(x)>=6:
-                    monitors = x[5]
-                    j = 0
-                    for monitor in monitors:
-                        if len(monitor)>=7:
-                            cv("screen[%s].monitor[%s].name" % (i, j), monitor[0])
-                            cv("screen[%s].monitor[%s].geometry" % (i, j), monitor[1:5])
-                            cv("screen[%s].monitor[%s].size_mm" % (i, j), monitor[5:7])
-                        j += 1
-                if len(x)>=10:
-                    cv("screen[%s].workarea" % i, x[6:10])
-                i += 1
+        def up(prefix, d, suffix=""):
+            updict(info, prefix, d, suffix)
+        up("encoding", self.default_encoding_options)
+        up("encoding", self.encoding_options)
+        up("connection", self.protocol.get_info())
+        info.update(self.get_sound_info())
+        info.update(self.get_features_info())
+        info.update(self.get_screen_info())
+        return info
+
+    def get_screen_info(self):
+        return get_screen_info(self.screen_sizes)
+
+    def get_features_info(self):
+        info = {}
+        def battr(k, name):
+            info[k] = bool(getattr(self, name))
         for prop in ("named_cursors", "server_window_resize", "share", "randr_notify",
                      "clipboard_notifications", "raw_window_icons", "system_tray", "generic_window_types",
                      "notify_startup_complete", "namespace", "lz4"):
-            addattr("features."+prop, prop)
+            battr(prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
                            "send_windows"       : "windows",
                            "send_cursors"       : "cursors",
                            "send_notifications" : "notifications",
                            "send_bell"          : "bell"}.items():
-            addattr("features."+name, prop)
-        #encoding:
-        cvs({
-             "encodings"         : self.encodings,
-             "encodings.core"    : self.core_encodings,
-             "encoding.default"  : self.default_encoding or ""
-             })
-        for k,v in self.default_encoding_options.items():
-            cv("encoding.%s" % k, v)
-        for k,v in self.encoding_options.items():
-            cv("encoding.%s" % k, v)
-        def get_sound_info(supported, prop):
+            battr(name, prop)
+        return info
+
+    def get_sound_info(self):
+        def sound_info(supported, prop):
             if not supported:
                 return {"state" : "disabled"}
             if prop is None:
                 return {"state" : "inactive"}
             return prop.get_info()
-        #sound:
+        info = {}
         for prop in ("pulseaudio_id", "pulseaudio_server"):
-            addattr(prop, prop)
-        for k,v in get_sound_info(self.supports_speaker, self.sound_source).items():
-            cv("speaker.%s" % k, v)
-        for k,v in get_sound_info(self.supports_microphone, self.sound_sink).items():
-            cv("microphone.%s" % k, v)
+            v = getattr(self, prop)
+            if v is not None:
+                info[prop] = v
+        for k,v in sound_info(self.supports_speaker, self.sound_source).items():
+            info["speaker.%s" % k] = v
+        for k,v in sound_info(self.supports_microphone, self.sound_sink).items():
+            info["microphone.%s" % k] = v
+        return info
+
+    def get_window_info(self, window_ids=[]):
+        """
+            Adds encoding and window specific information
+        """
+        info = {
+            "damage.data_queue.size.current"    : self.damage_data_queue.qsize(),
+            "damage.packet_queue.size.current"  : len(self.damage_packet_queue),
+            }
+        qpixels = [x[2] for x in list(self.damage_packet_queue)]
+        add_list_stats(info, "damage_packet_queue_pixels",  qpixels)
+        if len(qpixels)>0:
+            info["damage_packet_queue_pixels.current"] = qpixels[-1]
+
+        info.update(self.statistics.get_info())
+
+        if len(window_ids)>0:
+            total_pixels = 0
+            total_time = 0.0
+            in_latencies, out_latencies = [], []
+            for wid in window_ids:
+                ws = self.window_sources.get(wid)
+                if ws is None:
+                    continue
+                #per-window source stats:
+                updict(info, "window[%i]" % wid, ws.get_info())
+                #collect stats for global averages:
+                for _, pixels, _, _, encoding_time in list(ws.statistics.encoding_stats):
+                    total_pixels += pixels
+                    total_time += encoding_time
+                in_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_in_latency)]
+                out_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_out_latency)]
+            v = 0
+            if total_time>0:
+                v = int(total_pixels / total_time)
+            info["encoding.pixels_encoded_per_second"] = v
+            add_list_stats(info, "damage.in_latency",  in_latencies, show_percentile=[9])
+            add_list_stats(info, "damage.out_latency",  out_latencies, show_percentile=[9])
+        updict(info, "batch", self.global_batch_config.get_info())
+        return info
+
 
     def send_info_response(self, info):
         self.rewrite_encoding_values(info)
@@ -1392,45 +1413,6 @@ class ServerSource(object):
             del self.window_sources[wid]
             ws.cleanup()
 
-    def add_stats(self, info, window_ids=[], suffix=""):
-        """
-            Adds most of the statistics available to the 'info' dict passed in.
-            This is used by server.py to provide those statistics to clients
-            via the 'xpra info' command.
-        """
-        info["damage.data_queue.size%s.current" % suffix] = self.damage_data_queue.qsize()
-        info["damage.packet_queue.size%s.current" % suffix] = len(self.damage_packet_queue)
-        qpixels = [x[2] for x in list(self.damage_packet_queue)]
-        add_list_stats(info, "damage_packet_queue_pixels"+suffix,  qpixels)
-        if len(qpixels)>0:
-            info["damage_packet_queue_pixels%s.current" % suffix] = qpixels[-1]
-
-        self.protocol.add_stats(info, prefix="client.connection.", suffix=suffix)
-        self.statistics.add_stats(info, suffix=suffix)
-        if len(window_ids)>0:
-            total_pixels = 0
-            total_time = 0.0
-            in_latencies = []
-            out_latencies = []
-            for wid in window_ids:
-                ws = self.window_sources.get(wid)
-                if ws is None:
-                    continue
-                #per-window source stats:
-                ws.add_stats(info, suffix=suffix)
-                #collect stats for global averages:
-                for _, pixels, _, _, encoding_time in list(ws.statistics.encoding_stats):
-                    total_pixels += pixels
-                    total_time += encoding_time
-                in_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_in_latency)]
-                out_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_out_latency)]
-            v = 0
-            if total_time>0:
-                v = int(total_pixels / total_time)
-            info["encoding.pixels_encoded_per_second"+suffix] = v
-            add_list_stats(info, "damage.in_latency",  in_latencies, show_percentile=[9])
-            add_list_stats(info, "damage.out_latency",  out_latencies, show_percentile=[9])
-        self.global_batch_config.add_stats(info, "", suffix)
 
     def set_min_quality(self, min_quality):
         for ws in list(self.window_sources.values()):

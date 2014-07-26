@@ -189,6 +189,18 @@ class VideoHelper(object):
                 for decoder in decoders:
                     decoder_name, _ = decoder
                     d.setdefault("decoding."+encoding+"_to_"+out_csc, []).append(decoder_name)
+        def modstatus(x, def_list, active_list):
+            #the module is present
+            if x in active_list:
+                return "active"
+            elif x in def_list:
+                return "disabled"
+            else:
+                return "not found"
+        for x in ALL_VIDEO_ENCODER_OPTIONS:
+            d["encoding.video-encoder.%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), self.video_encoders)
+        for x in ALL_CSC_MODULE_OPTIONS:
+            d["encoding.csc-module.%s" % x] = modstatus(x, get_DEFAULT_CSC_MODULES(), self.csc_modules)
         return d
 
     def init(self):

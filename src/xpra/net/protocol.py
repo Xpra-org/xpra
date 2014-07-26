@@ -251,40 +251,40 @@ class Protocol(object):
     def get_threads(self):
         return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread] if x is not None]
 
-    def add_stats(self, info, prefix="net.", suffix=""):
-        info[prefix+"input.count" + suffix] = self.input_stats
-        info[prefix+"input.bytecount" + suffix] = self._conn.input_bytecount
-        info[prefix+"input.packetcount" + suffix] = self.input_packetcount
-        info[prefix+"input.raw_packetcount" + suffix] = self.input_raw_packetcount
-        info[prefix+"input.cipher" + suffix] = self.cipher_in_name or ""
-        info[prefix+"output.count" + suffix] = self.output_stats
-        info[prefix+"output.bytecount" + suffix] = self._conn.output_bytecount
-        info[prefix+"output.packetcount" + suffix] = self.output_packetcount
-        info[prefix+"output.raw_packetcount" + suffix] = self.output_raw_packetcount
-        info[prefix+"output.cipher" + suffix] = self.cipher_out_name or ""
-        info[prefix+"large_packets" + suffix] = self.large_packets
-        info[prefix+"compression_level" + suffix] = self.compression_level
+
+    def get_info(self):
+        info = {
+            "input.count"           : self.input_stats,
+            "input.packetcount"     : self.input_packetcount,
+            "input.raw_packetcount" : self.input_raw_packetcount,
+            "input.cipher"          : self.cipher_in_name or "",
+            "output.count"          : self.output_stats,
+            "output.packetcount"    : self.output_packetcount,
+            "output.raw_packetcount": self.output_raw_packetcount,
+            "output.cipher"         : self.cipher_out_name or "",
+            "large_packets"         : self.large_packets,
+            "compression_level"     : self.compression_level,
+            "max_packet_size"       : self.max_packet_size}
         if self._compress==zcompress:
-            info[prefix+"compression" + suffix] = "zlib"
+            info["compression"] = "zlib"
         elif self._compress==lz4_compress:
-            info[prefix+"compression" + suffix] = "lz4"
-        info[prefix+"max_packet_size" + suffix] = self.max_packet_size
+            info["compression"] = "lz4"
         for k,v in self.send_aliases.items():
-            info[prefix+"send_alias." + str(k) + suffix] = v
-            info[prefix+"send_alias." + str(v) + suffix] = k
+            info["send_alias." + str(k)] = v
+            info["send_alias." + str(v)] = k
         for k,v in self.receive_aliases.items():
-            info[prefix+"receive_alias." + str(k) + suffix] = v
-            info[prefix+"receive_alias." + str(v) + suffix] = k
+            info["receive_alias." + str(k)] = v
+            info["receive_alias." + str(v)] = k
         try:
-            info[prefix+"encoder" + suffix] = self._encoder.__name__
+            info["encoder"] = self._encoder.__name__
         except:
             pass
-        if self._conn:
-            try:
-                info[prefix+"type"+suffix] = self._conn.info
-                info[prefix+"endpoint"+suffix] = self._conn.target
-            except:
-                log.error("failed to report connection information", exc_info=True)
+        try:
+            info.update(self._conn.get_info())
+        except:
+            log.error("error collecting connection information on %s", self._conn, exc_info=True)
+        return info
+
 
     def start(self):
         def do_start():

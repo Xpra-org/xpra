@@ -230,6 +230,41 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 info.append("(%sx%s mm)" % (plug_width_mm, plug_height_mm))
             log.info("    "+" ".join(info))
 
+def get_screen_info(screen_sizes):
+    #same format as above
+    if not screen_sizes:
+        return {}
+    info = {
+            "screens" : len(screen_sizes)
+            }
+    i = 0
+    for x in screen_sizes:
+        if type(x) not in (tuple, list):
+            #legacy clients:
+            info["screen[%s]" % i] = str(x)
+            continue
+        info["screen[%s].display" % i] = x[0]
+        if len(x)>=3:
+            info["screen[%s].size" % i] = x[1], x[2]
+        if len(x)>=5:
+            info["screen[%s].size_mm" % i] = x[3], x[4]
+        if len(x)>=6:
+            monitors = x[5]
+            j = 0
+            for monitor in monitors:
+                if len(monitor)>=7:
+                    for k,v in {
+                                "name"      : monitor[0],
+                                "geometry"  : monitor[1:5],
+                                "size_mm"   : monitor[5:7],
+                                }.items():
+                        info["screen[%s].monitor[%s].%s" % (i, j, k)] = v
+                j += 1
+        if len(x)>=10:
+            info["screen[%s].workarea" % i] = x[6:10]
+        i += 1
+    return info
+
 
 def dump_references(log, instances, exclude=[]):
     import gc
@@ -330,6 +365,20 @@ def repr_ellipsized(obj, limit=100):
             return binascii.hexlify(obj[:limit])
     else:
         return repr(obj)
+
+
+#used for merging dicts with a prefix and suffix
+#non-None values get added to <todict> with a prefix and optional suffix
+def updict(todict, prefix, d, suffix=""):
+    for k,v in d.items():
+        if v is not None:
+            if k:
+                k = prefix+"."+k
+            else:
+                k = prefix
+            if suffix:
+                k = k+suffix
+            todict[k] = v
 
 
 def pver(v):

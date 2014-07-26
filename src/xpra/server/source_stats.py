@@ -130,21 +130,27 @@ class GlobalPerformanceStatistics(object):
             factors.append(("mmap-area", "%s%% full" % int(100*full), logp(3*full), (3*full)**2))
         return factors
 
-    def add_stats(self, info, suffix=""):
-        info["damage.events%s" % suffix] = self.damage_events_count
-        info["damage.packets_sent%s" % suffix] = self.packet_count
-        info["client.connection.mmap_bytecount%s" % suffix] = self.mmap_bytes_sent
+    def get_client_info(self):
+        info = {
+            "connection.mmap_bytecount"  : self.mmap_bytes_sent}
         if self.min_client_latency is not None:
-            info["client.latency%s.absmin" % suffix] = int(self.min_client_latency*1000)
-        qsizes = [x for _,x in list(self.damage_data_qsizes)]
-        add_list_stats(info, "damage.data_queue.size%s" % suffix,  qsizes)
-        qsizes = [x for _,x in list(self.damage_packet_qsizes)]
-        add_list_stats(info, "damage.packet_queue.size%s" % suffix,  qsizes)
+            info["latency.absmin"] = int(self.min_client_latency*1000)
         latencies = [x*1000 for (_, _, _, x) in list(self.client_latency)]
-        add_list_stats(info, "client.latency%s" % suffix,  latencies)
+        add_list_stats(info, "latency",  latencies)
+        add_list_stats(info, "server.ping_latency", [1000.0*x for _, x in list(self.server_ping_latency)])
+        add_list_stats(info, "client.ping_latency", [1000.0*x for _, x in list(self.client_ping_latency)])
+        return info
 
-        add_list_stats(info, "server.ping_latency%s" % suffix, [1000.0*x for _, x in list(self.server_ping_latency)])
-        add_list_stats(info, "client.ping_latency%s" % suffix, [1000.0*x for _, x in list(self.client_ping_latency)])
+
+    def get_info(self):
+        info = {
+            "damage.events"                     : self.damage_events_count,
+            "damage.packets_sent"               : self.packet_count
+            }
+        qsizes = [x for _,x in list(self.damage_data_qsizes)]
+        add_list_stats(info, "damage.data_queue.size",  qsizes)
+        qsizes = [x for _,x in list(self.damage_packet_qsizes)]
+        add_list_stats(info, "damage.packet_queue.size",  qsizes)
 
         #client pixels per second:
         now = time.time()
@@ -166,10 +172,12 @@ class GlobalPerformanceStatistics(object):
         log("total_time=%s, total_pixels=%s", total_time, total_pixels)
         if total_time>0:
             pixels_decoded_per_second = int(total_pixels *1000*1000 / total_time)
-            info["encoding.pixels_decoded_per_second%s" % suffix] = pixels_decoded_per_second
+            info["encoding.pixels_decoded_per_second"] = pixels_decoded_per_second
         if start_time:
             elapsed = now-start_time
             pixels_per_second = int(total_pixels/elapsed)
-            info["encoding.pixels_per_second%s" % suffix] = pixels_per_second
-            info["encoding.regions_per_second%s" % suffix] = int(len(region_sizes)/elapsed)
-            info["encoding.average_region_size%s" % suffix] = int(total_pixels/len(region_sizes))
+            info.update({
+                     "encoding.pixels_per_second"       : pixels_per_second,
+                     "encoding.regions_per_second"      : int(len(region_sizes)/elapsed),
+                     "encoding.average_region_size"     : int(total_pixels/len(region_sizes))})
+        return info

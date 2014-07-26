@@ -49,22 +49,24 @@ class DamageBatchConfig(object):
         self.factors = []
 
 
-    def add_stats(self, info, prefix, suffix=""):
-        info[prefix+"batch.min-delay"] = self.min_delay
-        info[prefix+"batch.max-delay"] = self.max_delay
-        info[prefix+"batch.timeout-delay"] = self.timeout_delay
-        info[prefix+"batch.locked"] = self.locked
+    def get_info(self):
+        info = {
+            "min-delay"         : self.min_delay,
+            "max-delay"         : self.max_delay,
+            "timeout-delay"     : self.timeout_delay,
+            "locked"            : self.locked}
         if len(self.last_delays)>0:
             batch_delays = [x for _,x in list(self.last_delays)]
-            add_list_stats(info, prefix+"batch.delay"+suffix, batch_delays)
+            add_list_stats(info, "delay", batch_delays)
         if len(self.last_actual_delays)>0:
             batch_delays = [x for _,x in list(self.last_actual_delays)]
-            add_list_stats(info, prefix+"batch.actual_delay"+suffix, batch_delays, show_percentile=[9])
+            add_list_stats(info, "actual_delay", batch_delays, show_percentile=[9])
         for name, details, factor, weight in self.factors:
-            key = prefix+"batch."+name
-            info[key+suffix] = (int(100.0*factor), int(100.0*weight))
+            info[name] = (int(100.0*factor), int(100.0*weight))
             for k,v in details.items():
-                info[key+"."+k+suffix] = v
+                info[name+"."+k] = v
+        return info
+
 
     def clone(self):
         c = DamageBatchConfig()

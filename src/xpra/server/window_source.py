@@ -31,6 +31,7 @@ STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
 
 
 from xpra.deque import maxdeque
+from xpra.util import updict
 from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
@@ -375,28 +376,30 @@ class WindowSource(object):
         """ See cancel_damage(wid) """
         return self._damage_cancelled>=(sequence or float("inf"))
 
-    def add_stats(self, info, suffix=""):
+
+    def get_info(self):
+        #should get prefixed with "client[M].window[N]." by caller
         """
             Add window specific stats
         """
-        prefix = "window[%s]." % self.wid
-        #no suffix for metadata (as it is the same for all clients):
-        info[prefix+"dimensions"] = self.window_dimensions
-        info[prefix+"encoding"+suffix] = self.encoding
-        info[prefix+"encoding.mmap"+suffix] = bool(self._mmap) and (self._mmap_size>0)
-        if self.encoding_last_used:
-            info[prefix+"encoding.last_used"+suffix] = self.encoding_last_used
-        info[prefix+"suspended"+suffix] = self.suspended or False
-        info[prefix+"property.scaling"+suffix] = self.scaling or (1, 1)
-        info[prefix+"property.fullscreen"+suffix] = self.fullscreen or False
-        self.statistics.add_stats(info, prefix, suffix)
+        info = {
+                "dimensions"            : self.window_dimensions,
+                "encoding"              : self.encoding,
+                "encoding.mmap"         : bool(self._mmap) and (self._mmap_size>0),
+                "encoding.last_used"    : self.encoding_last_used or "",
+                "suspended"             : self.suspended or False
+                }
+        def up(prefix, d, suffix=""):
+            updict(info, prefix, d, suffix)
 
-        #speed / quality properties (not necessarily the same as the video encoder settings..):
-        info[prefix+"property.min_speed"+suffix] = self._fixed_min_speed
-        info[prefix+"property.speed"+suffix] = self._fixed_speed
-        info[prefix+"property.min_quality"+suffix] = self._fixed_min_quality
-        info[prefix+"property.quality"+suffix] = self._fixed_quality
+        up("property",  self.get_property_info())
+        up("batch",     self.batch_config.get_info())
+        up("encoding",  self.get_quality_speed_info())
+        info.update(self.statistics.get_info())
+        return info
 
+    def get_quality_speed_info(self):
+        info = {}
         def add_last_rec_info(prefix, recs):
             #must make a list to work on (again!)
             l = list(recs)
@@ -406,15 +409,27 @@ class WindowSource(object):
                     info[prefix+"."+k] = v
         quality_list = self._encoding_quality
         if quality_list:
-            qp = prefix+"encoding.quality"+suffix
+            qp = "quality"
             add_list_stats(info, qp, [x for _, _, x in list(quality_list)])
             add_last_rec_info(qp, quality_list)
         speed_list = self._encoding_speed
         if speed_list:
-            sp = prefix+"encoding.speed"+suffix
+            sp = "speed"
             add_list_stats(info, sp, [x for _, _, x in list(speed_list)])
             add_last_rec_info(sp, speed_list)
-        self.batch_config.add_stats(info, prefix, suffix)
+        return info
+
+    def get_property_info(self):
+        return {
+                "scaling"               : self.scaling or (1, 1),
+                "fullscreen"            : self.fullscreen or False,
+                #speed / quality properties (not necessarily the same as the video encoder settings..):
+                "min_speed"             : self._fixed_min_speed,
+                "speed"                 : self._fixed_speed,
+                "min_quality"           : self._fixed_min_quality,
+                "quality"               : self._fixed_quality,
+                }
+
 
     def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):
         if not self.batch_config.locked:

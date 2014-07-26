@@ -20,10 +20,11 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
 from xpra.util import log_screen_sizes
 from xpra.os_util import thread, get_hex_uuid
-from xpra.util import typedict
+from xpra.util import typedict, updict
+from xpra.scripts.config import python_platform
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec, get_codec
 from xpra.codecs.codec_constants import get_PIL_encodings
-from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, get_DEFAULT_VIDEO_ENCODERS, ALL_CSC_MODULE_OPTIONS, get_DEFAULT_CSC_MODULES
+from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
@@ -659,28 +660,18 @@ class ServerBase(ServerCore):
         capabilities["exit_server"] = True
 
         if source.wants_encodings:
-            for k,v in codec_versions.items():
-                capabilities["encoding.%s.version" % k] = v
+            updict(capabilities, "encoding", codec_versions, "version")
         return capabilities
-
-    def get_encoding_info(self):
-        """
-            Warning: the encodings values may get
-            re-written on the way out.
-            (see ServerSource.rewrite_encoding_values)
-        """
-        return  {
-             "encodings"                : self.encodings,
-             "encodings.core"           : self.core_encodings,
-             "encodings.lossless"       : self.lossless_encodings,
-             "encodings.with_speed"     : [x for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb", "png", "png/P", "png/L")],
-             "encodings.with_quality"   : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
-             "encodings.with_lossless_mode" : self.lossless_mode_encodings}
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
         capabilities = self.make_hello(server_source)
         if server_source.wants_encodings:
-            capabilities.update(self.get_encoding_info())
+            for k,v in self.get_encoding_info().items():
+                if k=="":
+                    k = "encodings"
+                else:
+                    k = "encodings.%s" % k
+                capabilities[k] = v
         if server_source.wants_display:
             capabilities.update({
                          "actual_desktop_size"  : (root_w, root_h),
@@ -1015,64 +1006,87 @@ class ServerBase(ServerCore):
         log("get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 
-    def do_get_info(self, proto, server_sources=None, window_ids=None):
+
+    def get_features_info(self):
+        return {
+             "randr"            : self.randr,
+             "cursors"          : self.cursors,
+             "bell"             : self.bell,
+             "notifications"    : self.notifications_forwarder is not None,
+             "pulseaudio"       : self.pulseaudio,
+             "dbus_proxy"       : self.supports_dbus_proxy,
+             "clipboard"        : self.supports_clipboard}
+
+    def get_encoding_info(self):
+        """
+            Warning: the encodings values may get
+            re-written on the way out.
+            (see ServerSource.rewrite_encoding_values)
+        """
+        return  {
+             ""                     : self.encodings,
+             "core"                 : self.core_encodings,
+             "lossless"             : self.lossless_encodings,
+             "with_speed"           : [x for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb", "png", "png/P", "png/L")],
+             "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
+             "with_lossless_mode"   : self.lossless_mode_encodings}
+
+    def get_keyboard_info(self):
         info = {
-             "features.randr"           : self.randr,
-             "features.cursors"         : self.cursors,
-             "features.bell"            : self.bell,
-             "features.notifications"   : self.notifications_forwarder is not None,
-             "features.pulseaudio"      : self.pulseaudio,
-             "features.dbus_proxy"      : self.supports_dbus_proxy,
-             "features.clipboard"       : self.supports_clipboard}
-        if self._clipboard_helper is not None:
-            for k,v in self._clipboard_helper.get_info().items():
-                info["clipboard.%s" % k] = v
-        info.update(self.get_encoding_info())
-        for k,v in codec_versions.items():
-            info["encoding.%s.version" % k] = v
-
-        vh = getVideoHelper()
-        def modstatus(x, def_list, active_list):
-            #the module is present
-            if x in active_list:
-                return "active"
-            elif x in def_list:
-                return "disabled"
-            else:
-                return "not found"
-        for x in ALL_VIDEO_ENCODER_OPTIONS:
-            info["encoding.video-encoder.%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), vh.video_encoders)
-        for x in ALL_CSC_MODULE_OPTIONS:
-            info["encoding.csc-module.%s" % x] = modstatus(x, get_DEFAULT_CSC_MODULES(), vh.csc_modules)
-
-        info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
-        info.update({
-             "keyboard.sync"            : self.keyboard_sync,
-             "keyboard.repeat.delay"    : self.key_repeat_delay,
-             "keyboard.repeat.interval" : self.key_repeat_interval,
-             "keyboard.keys_pressed"    : self.keys_pressed.values(),
-             "keyboard.modifiers"       : self.xkbmap_mod_meanings})
+             "sync"             : self.keyboard_sync,
+             "repeat.delay"     : self.key_repeat_delay,
+             "repeat.interval"  : self.key_repeat_interval,
+             "keys_pressed"     : self.keys_pressed.values(),
+             "modifiers"        : self.xkbmap_mod_meanings}
         if self.keyboard_config:
             for k,v in self.keyboard_config.get_info().items():
                 if v is not None:
-                    info["keyboard."+k] = v
+                    info[k] = v
+        return info
+
+    def get_clipboard_info(self):
+        if self._clipboard_helper is None:
+            return {}
+        return self._clipboard_helper.get_info()
+
+    def do_get_info(self, proto, server_sources=None, window_ids=None):
+        if proto in self._server_sources and self._server_sources.get(proto).namespace:
+            #new namespace:
+            k = "server.python.version"
+        else:
+            k = "python_version"
+        info = { k : python_platform.python_version() }
+
+        def up(prefix, d, suffix=""):
+            updict(info, prefix, d, suffix)
+
+        up("features",  self.get_features_info())
+        up("clipboard", self.get_clipboard_info())
+        up("keyboard",  self.get_keyboard_info())
+        up("encodings", self.get_encoding_info())
+        up("encoding",  codec_versions, "version")
         # csc and video encoders:
         info.update(getVideoHelper().get_info())
 
+        info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
         # other clients:
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
         info["clients.unauthenticated"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
-        #find the source to report on:
-        n = len(server_sources)
+        #find the server source to report on:
+        n = len(server_sources or [])
         if n==1:
             ss = server_sources[0]
-            ss.add_info(info)
-            ss.add_stats(info, window_ids)
+            up("client", ss.get_info())
+            info.update(ss.get_window_info(window_ids))
         elif n>1:
             i = 0
             for ss in server_sources:
-                ss.add_info(info, suffix="{%s}" % i)
-                ss.add_stats(info, window_ids, suffix="{%s}" % i)
+                up("client[%i]" % i, ss.get_info())
+                wi = ss.get_window_info(window_ids)
+                up("client[%i]" % i, wi)
+                #this means that the last source overrides previous ones
+                #(bad decision was made on the namespace for this..)
+                info.update(wi)
                 i += 1
         return info
 
@@ -1105,6 +1119,7 @@ class ServerBase(ServerCore):
              "size"                 : window.get_dimensions(),
              "position"             : window.get_position()})
         return info
+
 
     def clipboard_progress(self, local_requests, remote_requests):
         assert self._clipboard_helper is not None

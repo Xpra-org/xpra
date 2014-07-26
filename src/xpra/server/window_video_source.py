@@ -15,6 +15,7 @@ from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_sub
 from xpra.server.window_source import WindowSource, MAX_PIXELS_PREFER_RGB, STRICT_MODE
 from xpra.server.video_subregion import VideoSubregion
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+from xpra.util import updict
 from xpra.log import Logger
 
 log = Logger("video", "encoding")
@@ -130,59 +131,77 @@ class WindowVideoSource(WindowSource):
             self.full_csc_modes = full_csc_modes
 
 
-    def add_stats(self, info, suffix=""):
-        WindowSource.add_stats(self, info, suffix)
-        prefix = "window[%s]." % self.wid
-        info[prefix+"client.csc_modes"] = self.csc_modes
-        if self.full_csc_modes is not None:
-            for enc, csc_modes in self.full_csc_modes.items():
-                info[prefix+"client.csc_modes.%s" % enc] = csc_modes
-        info[prefix+"client.uses_swscale"] = self.uses_swscale
-        info[prefix+"client.uses_csc_atoms"] = self.uses_csc_atoms
-        info[prefix+"client.supports_video_scaling"] = self.supports_video_scaling
-        info[prefix+"client.supports_video_reinit"] = self.supports_video_reinit
-        info[prefix+"client.supports_video_subregion"] = self.supports_video_subregion
+    def get_client_info(self):
+        info = {
+            "uses_swscale"              : self.uses_swscale,
+            "uses_csc_atoms"            : self.uses_csc_atoms,
+            "supports_video_scaling"    : self.supports_video_scaling,
+            "supports_video_reinit"     : self.supports_video_reinit,
+            "supports_video_subregion"  : self.supports_video_subregion,
+            "csc_modes"                 : self.csc_modes,
+            }
+        for enc, csc_modes in (self.full_csc_modes or {}).items():
+            info["csc_modes.%s" % enc] = csc_modes
+        return info
+
+
+    def get_info(self):
+        info = WindowSource.get_info(self)
+
+        def up(prefix, d, suffix=""):
+            updict(info, prefix, d, suffix)
+
         sr = self.video_subregion
         if sr:
-            for k,v in sr.get_info().items():
-                info[prefix+"video_subregion."+k] = v
-        info[prefix+"scaling"] = self.actual_scaling
+            up("video_subregion", sr.get_info())
+        info["scaling"] = self.actual_scaling
         csce = self._csc_encoder
         if csce:
-            info[prefix+"csc"+suffix] = csce.get_type()
-            ci = csce.get_info()
-            for k,v in ci.items():
-                info[prefix+"csc."+k+suffix] = v
+            info["csc"] = csce.get_type()
+            up("csc", csce.get_info())
         ve = self._video_encoder
         if ve:
-            info[prefix+"encoder"+suffix] = ve.get_type()
-            vi = ve.get_info()
-            for k,v in vi.items():
-                info[prefix+"encoder."+k+suffix] = v
-        lp = self.last_pipeline_params
-        if lp:
-            encoding, width, height, src_format = lp
-            info[prefix+"encoding.pipeline_param.encoding"+suffix] = encoding
-            info[prefix+"encoding.pipeline_param.dimensions"+suffix] = width, height
-            info[prefix+"encoding.pipeline_param.src_format"+suffix] = src_format
+            info["encoder"] = ve.get_type()
+            up("encoder", ve.get_info())
+        up("encoding.pipeline_param", self.get_pipeline_info())
         lps = self.last_pipeline_scores
         if lps:
             i = 0
-            for score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec in lps:
-                info[prefix+("encoding.pipeline_option[%s].score" % i)+suffix] = score
-                info[prefix+("encoding.pipeline_option[%s].scaling" % i)+suffix] = scaling
-                info[prefix+("encoding.pipeline_option[%s].csc" % i)+suffix] = repr(csc_spec)
-                if csc_spec:
-                    info[prefix+("encoding.pipeline_option[%s].csc" % i)+suffix] = repr(csc_spec)
-                    info[prefix+("encoding.pipeline_option[%s].csc.scaling" % i)+suffix] = csc_scaling
-                    info[prefix+("encoding.pipeline_option[%s].csc.width" % i)+suffix] = csc_width
-                    info[prefix+("encoding.pipeline_option[%s].csc.height" % i)+suffix] = csc_height
-                info[prefix+("encoding.pipeline_option[%s].format" % i)+suffix] = str(enc_in_format)
-                info[prefix+("encoding.pipeline_option[%s].encoder" % i)+suffix] = repr(encoder_spec)
-                info[prefix+("encoding.pipeline_option[%s].encoder.scaling" % i)+suffix] = encoder_scaling
-                info[prefix+("encoding.pipeline_option[%s].encoder.width" % i)+suffix] = enc_width
-                info[prefix+("encoding.pipeline_option[%s].encoder.height" % i)+suffix] = enc_height
+            for lp in lps:
+                up("encoding.pipeline_option[%s]" % i, self.get_pipeline_score_info(*lp))
                 i += 1
+        return info
+
+    def get_pipeline_info(self):
+        lp = self.last_pipeline_params
+        if not lp:
+            return {}
+        encoding, width, height, src_format = lp
+        return {
+                "encoding"      : encoding,
+                "dimensions"    : (width, height),
+                "src_format"    : src_format
+                }
+
+    def get_pipeline_score_info(self, score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec):
+        pi  = {
+            "score"             : score,
+            "scaling"           : scaling,
+            "csc"               : repr(csc_spec),
+            "format"            : str(enc_in_format),
+            "encoder"           : repr(encoder_spec),
+            "encoder.scaling"   : encoder_scaling,
+            "encoder.width"     : enc_width,
+            "encoder.height"    : enc_height
+              }
+        if csc_spec:
+            pi.update({
+                "csc"           : repr(csc_spec),
+                "csc.scaling"   : csc_scaling,
+                "csc.width"     : csc_width,
+                "csc.height"    : csc_height})
+        return pi
+
 
     def cleanup(self):
         WindowSource.cleanup(self)

@@ -77,7 +77,12 @@ class Connection(object):
         return r
 
     def get_info(self):
-        return self.info or ""
+        return {
+                "type"              : self.info or "",
+                "endpoint"          : self.target or "",
+                "input.bytecount"   : self.input_bytecount,
+                "output.bytecount"  : self.output_bytecount,
+                }
 
 
 # A simple, portable abstraction for a blocking, low-level
