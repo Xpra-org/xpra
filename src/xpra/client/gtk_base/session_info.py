@@ -117,7 +117,7 @@ class SessionInfo(gtk.Window):
         tb.new_row("Xpra", label(__version__), label(self.client._remote_version or "unknown"))
         cl_rev, cl_ch, cl_date = "unknown", "", ""
         try:
-            from xpra.build_info import BUILD_DATE as cl_date
+            from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
             from xpra.src_info import REVISION as cl_rev, LOCAL_MODIFICATIONS as cl_ch      #@UnresolvedImport
         except:
             pass
@@ -137,9 +137,18 @@ class SessionInfo(gtk.Window):
             return None
         def server_version_info(*prop_names):
             return make_version_str(server_info(*prop_names))
-        tb.new_row("Revision", label(cl_rev), label(make_version_str(self.client._remote_revision)))
-        tb.new_row("Local Changes", label(cl_ch), label(server_version_info("build.local_modifications", "local_modifications")))
-        tb.new_row("Build date", label(cl_date), label(server_info("build_date", "build.date")))
+        def make_revision_str(rev, changes):
+            if not changes:
+                return rev
+            return "%s (%s changes)" % (rev, changes)
+        def make_datetime(date, time):
+            if not time:
+                return date
+            return "%s %s" % (date, time)
+        tb.new_row("Revision", label(make_revision_str(cl_rev, cl_ch)),
+                               label(make_revision_str(self.client._remote_revision, server_version_info("build.local_modifications", "local_modifications"))))
+        tb.new_row("Build date", label(make_datetime(cl_date, cl_time)),
+                                 label(make_datetime(server_info("build_date", "build.date"), server_info("build.time"))))
         gtk_version_info = get_gtk_version_info()
         def client_vinfo(prop, fallback="unknown"):
             k = "%s.version" % prop
