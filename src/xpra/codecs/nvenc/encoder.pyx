@@ -1120,7 +1120,7 @@ def is_YUV444P_ENABLED():
             msg = "supported version, enabling YUV444 support"
             YUV444P_ENABLED = True
         else:
-            msg = "unsupported driver version %s, disabling YUV444 support" % version[0]
+            msg = "unsupported driver version %i.%i, disabling YUV444 support" % (version[0], version[1])
             YUV444P_ENABLED = False
         #env override and logging:
         if YUV444P_USER_OVERRIDE=="0" and YUV444P_ENABLED:
