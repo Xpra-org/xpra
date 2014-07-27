@@ -6,7 +6,8 @@
 
 import os
 import sys
-from zlib import compress
+import zlib
+import bz2
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
@@ -15,6 +16,7 @@ debug = log.debug
 
 ZLIB_FLAG = 0x00
 LZ4_FLAG = 0x10
+BZ2_FLAG = 0x20
 
 
 try:
@@ -40,10 +42,26 @@ if sys.version > '3':
     def zcompress(packet, level):
         if type(packet)!=bytes:
             packet = bytes(packet, 'UTF-8')
-        return level + ZLIB_FLAG, compress(packet, level)
+        return level + ZLIB_FLAG, zlib.compress(packet, level)
+
+    def bzcompress(packet, level):
+        if type(packet)!=bytes:
+            packet = bytes(packet, 'UTF-8')
+        return level + BZ2_FLAG, bz2.compress(packet, level)
+
+    def nocompress(packet, level):
+        if type(packet)!=bytes:
+            packet = bytes(packet, 'UTF-8')
+        return 0, packet
 else:
     def zcompress(packet, level):
-        return level + ZLIB_FLAG, compress(str(packet), level)
+        return level + ZLIB_FLAG, zlib.compress(str(packet), level)
+    def bzcompress(packet, level):
+        return level + BZ2_FLAG, bz2.compress(str(packet), level)
+    def nocompress(packet, level):
+        return 0, packet
+use_zlib = os.environ.get("XPRA_USE_ZLIB", "1")=="1"
+use_bz2 = os.environ.get("XPRA_USE_BZ2", "1")=="1"
 
 
 class Compressed(object):
@@ -55,6 +73,7 @@ class Compressed(object):
     def __repr__(self):
         return  "Compressed(%s: %s bytes)" % (self.datatype, len(self.data))
 
+
 class LevelCompressed(Compressed):
     def __init__(self, datatype, data, level, algo):
         Compressed.__init__(self, datatype, data)
@@ -64,6 +83,7 @@ class LevelCompressed(Compressed):
         return len(self.data)
     def __repr__(self):
         return  "LevelCompressed(%s: %s bytes as %s/%s)" % (self.datatype, len(self.data), self.algorithm, self.level)
+
 
 def compressed_wrapper(datatype, data, level=5, lz4=False):
     if lz4:

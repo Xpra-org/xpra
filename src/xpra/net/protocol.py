@@ -14,7 +14,8 @@ import os
 import threading
 import binascii
 from threading import Lock
-from zlib import decompress
+import zlib
+import bz2
 
 
 from xpra.log import Logger
@@ -23,7 +24,7 @@ debug = log.debug
 from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized
 from xpra.net.bytestreams import ABORT
-from xpra.net.compression import zcompress, has_lz4, use_lz4, LZ4_FLAG, lz4_compress, LZ4_uncompress, Compressed, LevelCompressed
+from xpra.net.compression import nocompress, zcompress, use_zlib, bzcompress, use_bz2, BZ2_FLAG, has_lz4, use_lz4, LZ4_FLAG, lz4_compress, LZ4_uncompress, Compressed, LevelCompressed
 from xpra.net.header import unpack_header, pack_header, pack_header_and_data
 from xpra.net.crypto import get_crypto_caps, get_cipher
 from xpra.net.packet_encoding import rencode_dumps, rencode_loads, rencode_version, has_rencode, use_rencode, \
@@ -60,13 +61,15 @@ def get_network_caps(legacy=True):
                 "bencode"               : use_bencode,
                 "yaml"                  : use_yaml,
                 "lz4"                   : use_lz4,
+                "bz2"                   : use_bz2,
+                "zlib"                  : use_zlib,
+                "zlib.version"          : zlib.__version__,
                 "mmap"                  : mmap,
                }
     if legacy:
         #for backwards compatibility only:
         caps.update({
                 "raw_packets"           : True,
-                "zlib"                  : True,
                 "chunked_compression"   : True
                 })
     caps.update(get_crypto_caps())
@@ -93,7 +96,7 @@ class Protocol(object):
 
     FLAGS_RENCODE = 0x1
     FLAGS_CIPHER = 0x2
-    FLAGS_JSON = 0x4
+    FLAGS_YAML = 0x4
     FLAGS_NOHEADER = 0x40
 
     def __init__(self, scheduler, conn, process_packet_cb, get_packet_cb=None):
@@ -131,7 +134,7 @@ class Protocol(object):
         self._log_stats = None          #None here means auto-detect
         self._closed = False
         self._encoder = self.noencode
-        self._compress = zcompress
+        self._compress = nocompress
         self.compression_level = 0
         self.cipher_in = None
         self.cipher_in_name = None
@@ -147,6 +150,7 @@ class Protocol(object):
         self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
         self._source_has_more = threading.Event()
         self.enable_default_encoder()
+        self.enable_default_compressor()
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
                     "cipher_in", "cipher_in_name", "cipher_in_block_size",
@@ -155,6 +159,7 @@ class Protocol(object):
     def save_state(self):
         state = {
                  "zlib"     : self._compress==zcompress,
+                 "bz2"      : self._compress==bzcompress,
                  "lz4"      : lz4_compress and self._compress==lz4_compress,
                  "bencode"  : self._encoder == self.bencode,
                  "rencode"  : self._encoder == self.rencode,
@@ -169,12 +174,23 @@ class Protocol(object):
         for x in Protocol.STATE_FIELDS:
             assert x in state, "field %s is missing" % x
             setattr(self, x, state[x])
-        if state.get("lz4", False):
+        if state.get("lz4"):
             self.enable_lz4()
-        if state.get("rencode", False):
+        elif state.get("bz2"):
+            self.enable_bz2()
+        elif state.get("zlib"):
+            self.enable_zlib()
+        else:
+            self.enable_nocompress()
+
+        if state.get("rencode"):
             self.enable_rencode()
-        elif state.get("yaml", False):
+        elif state.get("yaml"):
             self.enable_yaml()
+        elif state.get("bencode"):
+            self.enable_bencode()
+        else:
+            raise Exception("invalid state: no encoder specified!")
 
     def wait_for_io_threads_exit(self, timeout=None):
         for t in (self._read_thread, self._write_thread):
@@ -229,6 +245,10 @@ class Protocol(object):
             info["compression"] = "zlib"
         elif self._compress==lz4_compress:
             info["compression"] = "lz4"
+        elif self._compress==bzcompress:
+            info["compression"] = "bz2"
+        elif self._compress==nocompress:
+            info["compression"] = "none"
         for k,v in self.send_aliases.items():
             info["send_alias." + str(k)] = v
             info["send_alias." + str(v)] = k
@@ -366,11 +386,25 @@ class Protocol(object):
                 self.do_verify_packet(new_tree("key for value='%s'" % str(v)), k)
                 self.do_verify_packet(new_tree("value for key='%s'" % str(k)), v)
 
+
     def enable_default_encoder(self):
         if has_bencode:
             self.enable_bencode()
-        else:
+        elif has_rencode:
             self.enable_rencode()
+        else:
+            assert has_yaml, "no packet encoders available!"
+            self.enable_yaml()
+
+    def enable_encoder_from_caps(self, caps):
+        if use_rencode and caps.boolget("rencode"):
+            self.enable_rencode()
+        elif use_yaml and caps.boolget("yaml"):
+            self.enable_yaml()
+        elif use_bencode and caps.boolget("bencode", True):
+            self.enable_bencode()
+        else:
+            raise Exception("no matching packet encoder found!")
 
     def enable_bencode(self):
         assert has_bencode, "bencode cannot be enabled: the module failed to load!"
@@ -388,6 +422,37 @@ class Protocol(object):
         self._encoder = self.yaml
 
 
+    def enable_default_compressor(self):
+        if use_zlib:
+            self.enable_zlib()
+        elif use_lz4:
+            self.enable_lz4()
+        elif use_bz2:
+            self.enable_yaml()
+        else:
+            self.enable_nocompress()
+
+    def enable_compressor_from_caps(self, caps):
+        if self.compression_level==0:
+            self.enable_nocompress()
+            return
+        if caps.boolget("lz4") and use_lz4 and self.compression_level==1:
+            self.enable_lz4()
+        elif caps.boolget("zlib") and use_zlib:
+            self.enable_zlib()
+        elif caps.boolget("bz2") and use_bz2:
+            self.enable_bz2()
+        #retry lz4 (without level check)
+        elif caps.boolget("lz4") and use_lz4:
+            self.enable_lz4()
+        else:
+            log.error("no matching compressor found!")
+            self.enable_nocompress()
+
+    def enable_nocompress(self):
+        log("nocompress()")
+        self._compress = nocompress
+
     def enable_zlib(self):
         log("enable_zlib()")
         self._compress = zcompress
@@ -396,6 +461,12 @@ class Protocol(object):
         assert has_lz4, "lz4 cannot be enabled: the module failed to load!"
         log("enable_lz4()")
         self._compress = lz4_compress
+
+    def enable_bz2(self):
+        log("enable_bz2()")
+        self._compress = bzcompress        
+
+
 
     def noencode(self, data):
         #just send data as a string for clients that don't understand xpra packet format:
@@ -408,7 +479,7 @@ class Protocol(object):
         return  rencode_dumps(data), Protocol.FLAGS_RENCODE
 
     def yaml(self, data):
-        return yaml_encode(data), Protocol.FLAGS_JSON
+        return yaml_encode(data), Protocol.FLAGS_YAML
 
 
     def encode(self, packet_in):
@@ -486,6 +557,7 @@ class Protocol(object):
 
     def set_compression_level(self, level):
         #this may be used next time encode() is called
+        assert level>=0 and level<=10, "invalid compression level: %s (must be between 0 and 10" % level
         self.compression_level = level
 
     def _io_thread_loop(self, name, callback):
@@ -697,14 +769,23 @@ class Protocol(object):
                 if compression_level>0:
                     try:
                         if compression_level & LZ4_FLAG:
-                            assert has_lz4
+                            ctype = "lz4"
+                            assert has_lz4, "lz4 is not available"
+                            assert use_lz4, "lz4 is not enabled"
                             data = LZ4_uncompress(data)
+                        elif compression_level & BZ2_FLAG:
+                            ctype = "bz2"
+                            assert use_bz2, "bz2 is not enabled"
+                            data = bz2.decompress(data)
                         else:
-                            data = decompress(data)
+                            ctype = "zlib"
+                            assert use_zlib, "zlib is not enabled"
+                            data = zlib.decompress(data)
                     except Exception, e:
+                        log("%s packet decompression failed", ctype, exc_info=True)
                         if self.cipher_in:
-                            return self._call_connection_lost("decompression failed (invalid encryption key?): %s" % e)
-                        return self._call_connection_lost("decompression failed: %s" % e)
+                            return self._call_connection_lost("%s packet decompression failed (invalid encryption key?): %s" % (ctype, e))
+                        return self._call_connection_lost("%s packet decompression failed: %s" % (ctype, e))
 
                 if self.cipher_in and not (protocol_flags & Protocol.FLAGS_CIPHER):
                     return self._call_connection_lost("unencrypted packet dropped: %s" % repr_ellipsized(data))
@@ -724,7 +805,7 @@ class Protocol(object):
                     if protocol_flags & Protocol.FLAGS_RENCODE:
                         assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet! not an xpra client?"
                         packet = list(rencode_loads(data))
-                    elif protocol_flags & Protocol.FLAGS_JSON:
+                    elif protocol_flags & Protocol.FLAGS_YAML:
                         assert has_yaml, "we don't support yaml mode but the other end sent us a yaml packet! not an xpra client?"
                         packet = list(yaml_decode(data))
                     else:

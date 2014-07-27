@@ -785,7 +785,7 @@ class ServerBase(ServerCore):
             if len(args)!=1:
                 return argn_err(1)
             compression = args[0].lower()
-            opts = ("lz4", "zlib")
+            opts = ("lz4", "zlib", "bz2")
             if compression=="lz4":
                 for cproto in protos:
                     cproto.enable_lz4()
@@ -795,6 +795,11 @@ class ServerBase(ServerCore):
                 for cproto in protos:
                     cproto.enable_zlib()
                 forward_all_clients(["enable_zlib"])
+                return success()
+            elif compression=="bz2":
+                for cproto in protos:
+                    cproto.enable_zlib()
+                forward_all_clients(["enable_bz2"])
                 return success()
             return arg_err("must be one of: %s" % (", ".join(opts)))
         elif command=="encoder":

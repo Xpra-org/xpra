@@ -28,13 +28,12 @@ from xpra.net.bytestreams import SocketConnection
 from xpra.platform import set_application_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
-from xpra.net.protocol import Protocol, use_lz4, use_rencode, use_yaml, get_network_caps
+from xpra.net.protocol import Protocol, get_network_caps
 from xpra.net.crypto import new_cipher_caps
 from xpra.server.background_worker import stop_worker
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server.proxy import XpraProxy
 from xpra.util import typedict, updict, repr_ellipsized
-
 
 
 MAX_CONCURRENT_CONNECTIONS = 20
@@ -410,15 +409,8 @@ class ServerCore(object):
         capabilities = packet[1]
         c = typedict(capabilities)
         proto.set_compression_level(c.intget("compression_level", self.compression_level))
-        if use_rencode and c.boolget("rencode"):
-            proto.enable_rencode()
-        elif use_yaml and c.boolget("yaml"):
-            proto.enable_yaml()
-        else:
-            proto.enable_bencode()
-
-        if c.boolget("lz4") and use_lz4 and self.compression_level==1:
-            proto.enable_lz4()
+        proto.enable_encoder_from_caps(c)
+        proto.enable_compressor_from_caps(c)
 
         log("process_hello: capabilities=%s", capabilities)
         if c.boolget("version_request"):
