@@ -75,6 +75,7 @@ class ServerBase(ServerCore):
         self.dbus_helper = None
 
         #encodings:
+        self.allowed_encodings = None
         self.core_encodings = []
         self.encodings = []
         self.lossless_encodings = []
@@ -122,6 +123,7 @@ class ServerBase(ServerCore):
         ServerCore.init(self, opts)
         log("ServerBase.init(%s)", opts)
         self.supports_mmap = opts.mmap
+        self.allowed_encodings = opts.encodings
         self.init_encoding(opts.encoding)
 
         self.default_quality = opts.quality
@@ -162,13 +164,17 @@ class ServerBase(ServerCore):
         log("threaded_init() end")
 
     def init_encodings(self):
+        encs, core_encs = [], []
         def add_encodings(encodings):
             for ce in encodings:
                 e = {"rgb32" : "rgb", "rgb24" : "rgb"}.get(ce, ce)
-                if e not in self.encodings:
-                    self.encodings.append(e)
-                if ce not in self.core_encodings:
-                    self.core_encodings.append(ce)
+                if self.allowed_encodings is not None and e not in self.allowed_encodings:
+                    #not in whitelist (if it exists)
+                    continue
+                if e not in encs:
+                    encs.append(e)
+                if ce not in core_encs:
+                    core_encs.append(ce)
 
         add_encodings(["rgb24", "rgb32"])
 
@@ -178,6 +184,9 @@ class ServerBase(ServerCore):
         PIL = get_codec("PIL")
         if PIL:
             add_encodings(get_PIL_encodings(PIL))
+        #now update the variables:
+        self.encodings = encs
+        self.core_encodings = core_encs
         #Note: webp will only be enabled if PIL supports it,
         #that's because "enc_webp" needs a fallback for odd strides and pixel formats
         #(probably never gets used but difficult to predict for sure)
@@ -186,8 +195,11 @@ class ServerBase(ServerCore):
         if has_codec("enc_webp"):
             self.lossless_mode_encodings.append("webp")
             self.lossless_encodings.append("webp")
-
-        self.default_encoding = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings][0]
+        pref = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings]
+        if pref:
+            self.default_encoding = pref[0]
+        else:
+            self.default_encoding = None
 
 
     def init_encoding(self, cmdline_encoding):
@@ -806,7 +818,7 @@ class ServerBase(ServerCore):
             if len(args)!=1:
                 return argn_err(1)
             encoder = args[0].lower()
-            from xpra.net.protocol import use_bencode, use_rencode, use_yaml
+            from xpra.net.packet_encoding import use_bencode, use_rencode, use_yaml
             opts = [x for x,b in {"bencode" : use_bencode,
                                   "rencode" : use_rencode,
                                   "yaml"    : use_yaml}.items() if b]
@@ -1031,6 +1043,7 @@ class ServerBase(ServerCore):
         return  {
              ""                     : self.encodings,
              "core"                 : self.core_encodings,
+             "allowed"              : self.allowed_encodings,
              "lossless"             : self.lossless_encodings,
              "with_speed"           : [x for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb", "png", "png/P", "png/L")],
              "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],

@@ -331,10 +331,13 @@ def parse_cmdline(cmdline):
                 "These options are used by the client to specify the desired picture and network data compression."
                 "They may also be specified on the server as default values for those clients that do not set them.")
     parser.add_option_group(group)
+    group.add_option("--encodings", action="store",
+                      dest="encodings", default=defaults.encodings,
+                      help="Specify which encodings are allowed (default: %default)")
     group.add_option("--encoding", action="store",
                       metavar="ENCODING", default=defaults.encoding,
                       dest="encoding", type="str",
-                      help="What image compression algorithm to use, specify 'help' to get a list of options."
+                      help="Which image compression algorithm to use, specify 'help' to get a list of options."
                             " Default: %default."
                       )
     if (supports_server or supports_shadow):
@@ -513,10 +516,21 @@ def parse_cmdline(cmdline):
                 print("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
                 sys.exit(0)
 
+    from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW, PREFERED_ENCODING_ORDER
     if options.encoding:
         #fix old encoding names if needed:
-        from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW
         options.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(options.encoding, options.encoding)
+
+    if type(options.encodings)==str:
+        options.encodings = [x.strip() for x in options.encodings.lower().split(",")]
+    if options.encodings==["all"]:
+        #replace with an actual list
+        options.encodings = PREFERED_ENCODING_ORDER
+    if "rgb" in options.encodings:
+        if "rgb24" not in options.encodings:
+            options.encodings.append("rgb24")
+        if "rgb32" not in options.encodings:
+            options.encodings.append("rgb32")
 
     #set network attributes:
     from xpra.net import compression

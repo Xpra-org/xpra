@@ -43,6 +43,13 @@ pings = no
 ################################################################################
 # Picture Encoding
 
+# Encodings allowed:
+# (not all encodings may be available in your environment):
+#encodings = h264, vp8, png, png/P, png/L, webp, rgb, jpeg, h265, vp9
+#encodings = all
+#encodings = rgb
+encodings = all
+
 # Default encoding
 # (not all encodings may be available in your environment):
 #encoding = h264

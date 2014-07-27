@@ -100,6 +100,7 @@ class UIXpraClient(XpraClientBase):
         self.server_last_info = None
         self.info_request_pending = False
         self.screen_size_change_pending = False
+        self.allowed_encodings = []
         self.core_encodings = None
         self.encoding = None
 
@@ -212,6 +213,7 @@ class UIXpraClient(XpraClientBase):
 
     def init(self, opts):
         """ initialize variables from configuration """
+        self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         self.title = opts.title
         self.session_name = opts.session_name
@@ -451,7 +453,7 @@ class UIXpraClient(XpraClientBase):
             if encoding not in core_encodings:
                 core_encodings.append(encoding)
         #remove duplicates and use prefered encoding order:
-        core_encodings = [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings)]
+        core_encodings = [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings) and x in self.allowed_encodings]
         log("do_get_core_encodings()=%s", core_encodings)
         return core_encodings
 

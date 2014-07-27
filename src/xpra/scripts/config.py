@@ -290,7 +290,8 @@ OPTION_TYPES = {
                     "opengl"            : bool,
                     "mdns"              : bool,
                     "swap-keys"         : bool,
-                    #arrays of strings (default value, allowed options):
+                    #arrays of strings:
+                    "encodings"         : list,
                     "video-encoders"    : list,
                     "csc-modules"       : list,
                     "video-decoders"    : list,
@@ -386,6 +387,7 @@ def get_defaults():
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : os.name=="posix" and not sys.platform.startswith("darwin"),
                     "swap-keys"         : sys.platform.startswith("darwin"),    #only used on osx
+                    "encodings"         : ["all"],
                     "video-encoders"    : ["all"],
                     "csc-modules"       : ["all"],
                     "video-decoders"    : ["all"],
