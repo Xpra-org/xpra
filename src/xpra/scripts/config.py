@@ -293,6 +293,7 @@ OPTION_TYPES = {
                     #arrays of strings (default value, allowed options):
                     "video-encoders"    : list,
                     "csc-modules"       : list,
+                    "video-decoders"    : list,
                     "speaker-codec"     : list,
                     "microphone-codec"  : list,
                     "compressors"       : list,
@@ -385,8 +386,9 @@ def get_defaults():
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : os.name=="posix" and not sys.platform.startswith("darwin"),
                     "swap-keys"         : sys.platform.startswith("darwin"),    #only used on osx
-                    "video-encoders"    : [],
-                    "csc-modules"       : [],
+                    "video-encoders"    : ["all"],
+                    "csc-modules"       : ["all"],
+                    "video-decoders"    : ["all"],
                     "speaker-codec"     : [],
                     "microphone-codec"  : [],
                     "compressors"       : [],

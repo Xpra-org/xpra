@@ -346,6 +346,9 @@ def parse_cmdline(cmdline):
     group.add_option("--csc-modules", action="store",
                       dest="csc_modules", default=defaults.csc_modules,
                       help="Specify which colourspace conversion modules to enable, to get a list of all the options specify 'help' (default: %default)")
+    group.add_option("--video-decoders", action="store",
+                      dest="video_decoders", default=defaults.video_decoders,
+                      help="Specify which video decoders to enable, to get a list of all the options specify 'help'")
     group.add_option("--min-quality", action="store",
                       metavar="MIN-LEVEL",
                       dest="min_quality", type="int", default=defaults.min_quality,
@@ -547,26 +550,42 @@ def parse_cmdline(cmdline):
     if not [x for x in pe_map.keys() if getattr(packet_encoding, "use_%s" % x)]:
         parser.error("at least one valid packet encoder must be enabled")
 
-    #special case for video encoders and csc, stored as lists, but command line option is a CSV string:
+    #special case for video encoders/decoders and csc, stored as lists, but command line option is a CSV string:
+    from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
+    from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
+    from xpra.codecs.video_helper import ALL_VIDEO_DECODER_OPTIONS as avedo
     if (supports_server or supports_shadow):
         if type(options.video_encoders)==str:
-            if options.video_encoders=="help":
-                from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
+            vestr = options.video_encoders.strip().lower()
+            if vestr=="help":
                 print("the following video encoders may be available: %s" % ", ".join(aveco))
                 sys.exit(0)
-            elif options.video_encoders=="none":
-                options.video_encoders = []
-            else:
-                options.video_encoders = [x.strip() for x in options.video_encoders.split(",")]
+            options.video_encoders = [x.strip() for x in vestr.split(",")]
         if type(options.csc_modules)==str:
-            if options.csc_modules=="help":
-                from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
+            cscstr = options.csc_modules.strip().lower()
+            if cscstr=="help":
                 print("the following csc modules may be available: %s" % ", ".join(acsco))
                 sys.exit(0)
-            elif options.csc_modules=="none":
-                options.csc_modules = []
-            else:
-                options.csc_modules = [x.strip() for x in options.csc_modules.split(",")]
+            options.csc_modules = [x.strip() for x in cscstr.split(",")]
+    if type(options.video_decoders)==str:
+        vdstr = options.video_decoders.strip().lower()
+        if vdstr=="help":
+            print("the following video decoders may be available: %s" % ", ".join(avedo))
+            sys.exit(0)
+        options.video_decoders = [x.strip() for x in vdstr.split(",")]
+
+    if options.video_encoders==["none"]:
+        options.video_encoders = []
+    elif options.video_encoders==["all"]:
+        options.video_encoders = aveco
+    if options.csc_modules==["none"]:
+        options.csc_modules = []
+    elif options.csc_modules==["all"]:
+        options.csc_modules = acsco
+    if options.video_decoders==["none"]:
+        options.video_decoders = []
+    elif options.video_decoders==["all"]:
+        options.video_decoders = avedo
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2

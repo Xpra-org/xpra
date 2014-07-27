@@ -52,6 +52,25 @@ pings = no
 #encoding = rgb
 #encoding = webp
 
+# Used by the server to encode video:
+# video-encoders = x264, vpx, nvenc
+# video-encoders = none
+# video-encoders = all
+video-encoders = all
+
+# Used by both the client and server for colourspace conversion:
+# csc-modules = swscale, cython, opencl
+# csc-modules = none
+# csc-modules = all
+video-encoders = all
+
+# Used the client for decoding:
+# video-decoders = avcodec2, vpx
+# video-decoders = avcodec, vpx
+# video-decoders = none
+# video-decoders = all
+video-decoders = all
+
 # Use fixed quality
 # (value is a percentage or "auto"):
 #quality = 80

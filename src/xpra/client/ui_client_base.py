@@ -33,7 +33,7 @@ from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBO
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
 from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW
-from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_DECODER_OPTIONS, NO_GFX_CSC_OPTIONS
+from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.daemon_thread import make_daemon_thread
@@ -250,7 +250,7 @@ class UIXpraClient(XpraClientBase):
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)
         vh = getVideoHelper()
-        vh.set_modules(video_decoders=ALL_VIDEO_DECODER_OPTIONS, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
+        vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
         vh.init()
 
 
