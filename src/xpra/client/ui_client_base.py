@@ -919,14 +919,6 @@ class UIXpraClient(XpraClientBase):
                     "yaml"      : use_yaml}.items():
             if b:
                 control_commands.append("enable_"+k)
-        if use_lz4:
-            control_commands.append("enable_lz4")
-        if use_bencode:
-            control_commands.append("enable_bencode")
-        if use_rencode:
-            control_commands.append("enable_rencode")
-        if use_yaml:
-            control_commands.append("enable_yaml")
         capabilities["control_commands"] = control_commands
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
