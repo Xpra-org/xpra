@@ -112,8 +112,19 @@ mmap-group = no
 # Share session with other users:
 sharing = no
 
+# Compressors:
+#compressors = all
+#compressors = none
+#compressors = zlib
+compressors = lz4, zlib, bz2
+
 # Default compression (0 to 9):
 compression_level = 1
+
+# Packet encoders (at least one is required):
+#packet-encoders = bencode
+#packet-encoders = all
+packet-encoders = rencode, bencode, yaml
 
 # Socket directory:
 #socket-dir = /tmp

@@ -24,12 +24,14 @@ debug = log.debug
 from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized
 from xpra.net.bytestreams import ABORT
-from xpra.net.compression import nocompress, zcompress, use_zlib, bzcompress, use_bz2, BZ2_FLAG, has_lz4, use_lz4, LZ4_FLAG, lz4_compress, LZ4_uncompress, Compressed, LevelCompressed
+from xpra.net import compression
+from xpra.net.compression import nocompress, zcompress, bzcompress, BZ2_FLAG, has_lz4, LZ4_FLAG, lz4_compress, LZ4_uncompress, Compressed, LevelCompressed
 from xpra.net.header import unpack_header, pack_header, pack_header_and_data
 from xpra.net.crypto import get_crypto_caps, get_cipher
-from xpra.net.packet_encoding import rencode_dumps, rencode_loads, rencode_version, has_rencode, use_rencode, \
-                              bencode, bdecode, bencode_version, has_bencode, use_bencode, \
-                              yaml_encode, yaml_decode, yaml_version, has_yaml, use_yaml
+from xpra.net import packet_encoding
+from xpra.net.packet_encoding import rencode_dumps, rencode_loads, rencode_version, has_rencode, \
+                              bencode, bdecode, bencode_version, has_bencode, \
+                              yaml_encode, yaml_decode, yaml_version, has_yaml
 
 
 #stupid python version breakage:
@@ -57,12 +59,12 @@ def get_network_caps(legacy=True):
         mmap = False
     caps = {
                 "digest"                : ("hmac", "xor"),
-                "rencode"               : use_rencode,
-                "bencode"               : use_bencode,
-                "yaml"                  : use_yaml,
-                "lz4"                   : use_lz4,
-                "bz2"                   : use_bz2,
-                "zlib"                  : use_zlib,
+                "rencode"               : packet_encoding.use_rencode,
+                "bencode"               : packet_encoding.use_bencode,
+                "yaml"                  : packet_encoding.use_yaml,
+                "lz4"                   : compression.use_lz4,
+                "bz2"                   : compression.use_bz2,
+                "zlib"                  : compression.use_zlib,
                 "zlib.version"          : zlib.__version__,
                 "mmap"                  : mmap,
                }
@@ -397,11 +399,11 @@ class Protocol(object):
             self.enable_yaml()
 
     def enable_encoder_from_caps(self, caps):
-        if use_rencode and caps.boolget("rencode"):
+        if packet_encoding.use_rencode and caps.boolget("rencode"):
             self.enable_rencode()
-        elif use_yaml and caps.boolget("yaml"):
+        elif packet_encoding.use_yaml and caps.boolget("yaml"):
             self.enable_yaml()
-        elif use_bencode and caps.boolget("bencode", True):
+        elif packet_encoding.use_bencode and caps.boolget("bencode", True):
             self.enable_bencode()
         else:
             raise Exception("no matching packet encoder found!")
@@ -423,11 +425,11 @@ class Protocol(object):
 
 
     def enable_default_compressor(self):
-        if use_zlib:
+        if compression.use_zlib:
             self.enable_zlib()
-        elif use_lz4:
+        elif compression.use_lz4:
             self.enable_lz4()
-        elif use_bz2:
+        elif compression.use_bz2:
             self.enable_yaml()
         else:
             self.enable_nocompress()
@@ -436,14 +438,14 @@ class Protocol(object):
         if self.compression_level==0:
             self.enable_nocompress()
             return
-        if caps.boolget("lz4") and use_lz4 and self.compression_level==1:
+        if caps.boolget("lz4") and compression.use_lz4 and self.compression_level==1:
             self.enable_lz4()
-        elif caps.boolget("zlib") and use_zlib:
+        elif caps.boolget("zlib") and compression.use_zlib:
             self.enable_zlib()
-        elif caps.boolget("bz2") and use_bz2:
+        elif caps.boolget("bz2") and compression.use_bz2:
             self.enable_bz2()
         #retry lz4 (without level check)
-        elif caps.boolget("lz4") and use_lz4:
+        elif caps.boolget("lz4") and compression.use_lz4:
             self.enable_lz4()
         else:
             log.error("no matching compressor found!")
@@ -458,7 +460,7 @@ class Protocol(object):
         self._compress = zcompress
 
     def enable_lz4(self):
-        assert has_lz4, "lz4 cannot be enabled: the module failed to load!"
+        assert compression.use_lz4, "lz4 cannot be enabled: the module failed to load!"
         log("enable_lz4()")
         self._compress = lz4_compress
 
@@ -771,15 +773,15 @@ class Protocol(object):
                         if compression_level & LZ4_FLAG:
                             ctype = "lz4"
                             assert has_lz4, "lz4 is not available"
-                            assert use_lz4, "lz4 is not enabled"
+                            assert compression.use_lz4, "lz4 is not enabled"
                             data = LZ4_uncompress(data)
                         elif compression_level & BZ2_FLAG:
                             ctype = "bz2"
-                            assert use_bz2, "bz2 is not enabled"
+                            assert compression.use_bz2, "bz2 is not enabled"
                             data = bz2.decompress(data)
                         else:
                             ctype = "zlib"
-                            assert use_zlib, "zlib is not enabled"
+                            assert compression.use_zlib, "zlib is not enabled"
                             data = zlib.decompress(data)
                     except Exception, e:
                         log("%s packet decompression failed", ctype, exc_info=True)

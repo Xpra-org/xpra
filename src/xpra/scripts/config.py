@@ -139,7 +139,7 @@ def read_config(conf_file):
             continue
         lines.append(sline)
     f.close()
-    #aggregate any lines with trailing bacakslash
+    #aggregate any lines with trailing backslash
     agg_lines = []
     l = ""
     for line in lines:
@@ -295,6 +295,8 @@ OPTION_TYPES = {
                     "csc-modules"       : list,
                     "speaker-codec"     : list,
                     "microphone-codec"  : list,
+                    "compressors"       : list,
+                    "packet-encoders"   : list,
                     "key-shortcut"      : list,
                     "start-child"       : list,
                     "bind-tcp"          : list,
@@ -387,6 +389,8 @@ def get_defaults():
                     "csc-modules"       : [],
                     "speaker-codec"     : [],
                     "microphone-codec"  : [],
+                    "compressors"       : [],
+                    "packet-encoders"   : [],
                     "key-shortcut"      : ["Meta+Shift+F4:quit", "Meta+Shift+F8:magic_key", "Meta+Shift+F11:show_session_info"],
                     "bind-tcp"          : None,
                     "start-child"       : None,

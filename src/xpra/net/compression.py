@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import sys
 import zlib
 import bz2
@@ -34,8 +33,6 @@ except Exception, e:
     has_lz4 = False
     def lz4_compress(packet, level):
         raise Exception("lz4 is not supported!")
-use_lz4 = has_lz4 and os.environ.get("XPRA_USE_LZ4", "1")=="1"
-
 
 #stupid python version breakage:
 if sys.version > '3':
@@ -60,8 +57,11 @@ else:
         return level + BZ2_FLAG, bz2.compress(str(packet), level)
     def nocompress(packet, level):
         return 0, packet
-use_zlib = os.environ.get("XPRA_USE_ZLIB", "1")=="1"
-use_bz2 = os.environ.get("XPRA_USE_BZ2", "1")=="1"
+
+#defaults to True if available:
+use_zlib = True
+use_bz2 = True
+use_lz4 = has_lz4
 
 
 class Compressed(object):

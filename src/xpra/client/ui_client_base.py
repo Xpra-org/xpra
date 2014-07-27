@@ -35,7 +35,7 @@ from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_DECODER_OPTIONS, NO_GFX_CSC_OPTIONS
 from xpra.simple_stats import std_unit
-from xpra.net.compression import Compressed, use_lz4
+from xpra.net import compression, packet_encoding
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
 from xpra.util import nn, nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict
@@ -889,7 +889,7 @@ class UIXpraClient(XpraClientBase):
             "encoding.video_scaling"    : True,
             #separate plane is only supported by avcodec2:
             "encoding.video_separateplane"  : get_codec("dec_avcodec") is None and get_codec("dec_avcodec2") is not None,
-            "encoding.rgb_lz4"          : use_lz4 and self.compression_level==1,
+            "encoding.rgb_lz4"          : compression.use_lz4 and self.compression_level==1,
             "encoding.webp_leaks"       : False,
             "encoding.transparency"     : self.has_transparency(),
             "rgb24zlib"                 : True,
@@ -912,11 +912,12 @@ class UIXpraClient(XpraClientBase):
             "encodings.core"            : self.get_core_encodings(),
             })
         control_commands = ["show_session_info", "enable_bencode", "enable_zlib"]
-        from xpra.net.protocol import use_bencode, use_rencode, use_yaml
-        for k,b in {"lz4"       : use_lz4,
-                    "bencode"   : use_bencode,
-                    "rencode"   : use_rencode,
-                    "yaml"      : use_yaml}.items():
+        for k,b in {"lz4"       : compression.use_lz4,
+                    "bz2"       : compression.use_bz2,
+                    "zlib"      : compression.use_zlib,
+                    "bencode"   : packet_encoding.use_bencode,
+                    "rencode"   : packet_encoding.use_rencode,
+                    "yaml"      : packet_encoding.use_yaml}.items():
             if b:
                 control_commands.append("enable_"+k)
         capabilities["control_commands"] = control_commands
@@ -1549,7 +1550,7 @@ class UIXpraClient(XpraClientBase):
     def new_sound_buffer(self, sound_source, data, metadata):
         soundlog("new_sound_buffer(%s, %s, %s) sound source=%s", sound_source, len(data or []), metadata, self.sound_source)
         if self.sound_source:
-            self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
+            self.send("sound-data", self.sound_source.codec, compression.Compressed(self.sound_source.codec, data), metadata)
 
     def _process_sound_data(self, packet):
         codec, data, metadata = packet[1:4]

@@ -10,7 +10,7 @@ from math import sqrt
 from xpra.log import Logger
 log = Logger("window", "encoding")
 
-from xpra.net.compression import compressed_wrapper, Compressed, use_lz4
+from xpra.net import compression
 try:
     from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
 except Exception, e:
@@ -61,7 +61,7 @@ def webp_encode(coding, image, supports_transparency, quality, speed, options):
             client_options["quality"] = quality
         if alpha:
             client_options["has_alpha"] = True
-        return "webp", Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
+        return "webp", compression.Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
     #fallback to PIL
     return PIL_encode(coding, image, quality, speed, supports_transparency)
 
@@ -120,8 +120,8 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             #fewer pixels, make it more likely we won't bother compressing:
             level = level / 2
     if level>0:
-        lz4 = use_lz4 and rgb_lz4 and level<=3
-        wire_data = compressed_wrapper(coding, pixels, level=level, lz4=lz4)
+        lz4 = compression.use_lz4 and rgb_lz4 and level<=3
+        wire_data = compression.compressed_wrapper(coding, pixels, level=level, lz4=lz4)
         raw_data = wire_data.data
         #log("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
         #         coding, pixel_format, len(pixels), len(raw_data), int(100.0*len(raw_data)/len(pixels)), self.rgb_lz4)
@@ -146,7 +146,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         return  coding, wire_data, {}, width, height, stride, bpp
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
-    return coding, Compressed(coding, raw_data), options, width, height, stride, bpp
+    return coding, compression.Compressed(coding, raw_data), options, width, height, stride, bpp
 
 
 def PIL_encode(coding, image, quality, speed, supports_transparency):
@@ -242,7 +242,7 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
     log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
     data = buf.getvalue()
     buf.close()
-    return coding, Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
+    return coding, compression.Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
 
 
 def argb_swap(image, rgb_formats, supports_transparency):

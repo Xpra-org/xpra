@@ -327,7 +327,7 @@ def parse_cmdline(cmdline):
         hidden_options["microphone"] = False
         hidden_options["microphone_codec"] = []
 
-    group = OptionGroup(parser, "Picture Encoding and Compression Options",
+    group = OptionGroup(parser, "Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
                 "They may also be specified on the server as default values for those clients that do not set them.")
     parser.add_option_group(group)
@@ -368,6 +368,12 @@ def parse_cmdline(cmdline):
                       help="Idle delay in seconds before doing an automatic lossless refresh."
                       + " 0.0 to disable."
                       + " Default: %default.")
+    group.add_option("--compressors", action="store",
+                      dest="compressors", default=", ".join(defaults.compressors),
+                      help="The packet compressors to enable (default: %default)")
+    group.add_option("--packet-encoders", action="store",
+                      dest="packet_encoders", default=", ".join(defaults.packet_encoders),
+                      help="The packet encoders to enable (default: %default)")
     group.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=defaults.compression_level,
                       metavar="LEVEL",
@@ -508,6 +514,38 @@ def parse_cmdline(cmdline):
         #fix old encoding names if needed:
         from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW
         options.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(options.encoding, options.encoding)
+
+    #set network attributes:
+    from xpra.net import compression
+    compressors = [x.strip() for x in options.compressors.split(",")]
+    c_map = {"lz4" : compression.has_lz4, "bz2" : True, "zlib": True}
+    if "all" in compressors:
+        compressors = [x for x,b in c_map.items() if b]
+    else:
+        unknown = [x for x in compressors if x and x not in c_map]
+        if unknown:
+            print("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
+    for x,b in c_map.items():
+        enabled = b and x in compressors
+        setattr(compression, "use_%s" % x, enabled)
+    from xpra.net import packet_encoding
+    packet_encoders = [x.strip() for x in options.packet_encoders.split(",")]
+    pe_map = {"bencode"  : packet_encoding.has_bencode,
+              "rencode"  : packet_encoding.has_rencode,
+              "yaml"     : packet_encoding.has_yaml,
+              }
+    if "all" in packet_encoders:
+        packet_encoders = [x for x,b in pe_map.items() if b]
+    else:
+        unknown = [x for x in packet_encoders if x and x not in pe_map]
+        if unknown:
+            print("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
+    for x,b in pe_map.items():
+        enabled = b and x in packet_encoders
+        setattr(packet_encoding, "use_%s" % x, enabled)
+    #verify that at least one encoder is available:
+    if not [x for x in pe_map.keys() if getattr(packet_encoding, "use_%s" % x)]:
+        parser.error("at least one valid packet encoder must be enabled")
 
     #special case for video encoders and csc, stored as lists, but command line option is a CSV string:
     if (supports_server or supports_shadow):
