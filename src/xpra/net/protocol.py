@@ -14,8 +14,6 @@ import os
 import threading
 import binascii
 from threading import Lock
-import zlib
-import bz2
 
 
 from xpra.log import Logger
@@ -25,13 +23,12 @@ from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
-from xpra.net.compression import nocompress, zcompress, bzcompress, BZ2_FLAG, has_lz4, LZ4_FLAG, lz4_compress, LZ4_uncompress, Compressed, LevelCompressed
-from xpra.net.header import unpack_header, pack_header, pack_header_and_data
+from xpra.net.compression import nocompress, zcompress, bzcompress, lz4_compress, Compressed, LevelCompressed, get_compression_caps
+from xpra.net.header import unpack_header, pack_header, pack_header_and_data, FLAGS_RENCODE, FLAGS_YAML, FLAGS_CIPHER, FLAGS_NOHEADER
 from xpra.net.crypto import get_crypto_caps, get_cipher
 from xpra.net import packet_encoding
-from xpra.net.packet_encoding import rencode_dumps, rencode_loads, rencode_version, has_rencode, \
-                              bencode, bdecode, bencode_version, has_bencode, \
-                              yaml_encode, yaml_decode, yaml_version, has_yaml
+from xpra.net.packet_encoding import get_packet_encoding_caps, rencode_dumps, decode, has_rencode, \
+                              bencode, has_bencode, yaml_encode, has_yaml
 
 
 #stupid python version breakage:
@@ -62,10 +59,6 @@ def get_network_caps(legacy=True):
                 "rencode"               : packet_encoding.use_rencode,
                 "bencode"               : packet_encoding.use_bencode,
                 "yaml"                  : packet_encoding.use_yaml,
-                "lz4"                   : compression.use_lz4,
-                "bz2"                   : compression.use_bz2,
-                "zlib"                  : compression.use_zlib,
-                "zlib.version"          : zlib.__version__,
                 "mmap"                  : mmap,
                }
     if legacy:
@@ -75,16 +68,8 @@ def get_network_caps(legacy=True):
                 "chunked_compression"   : True
                 })
     caps.update(get_crypto_caps())
-
-    if has_rencode:
-        assert rencode_version is not None
-        caps["rencode.version"] = rencode_version
-    if has_bencode:
-        assert bencode_version is not None
-        caps["bencode.version"] = bencode_version
-    if has_yaml:
-        assert yaml_version is not None
-        caps["yaml.version"] = yaml_version
+    caps.update(get_compression_caps())
+    caps.update(get_packet_encoding_caps())
     return caps
 
 
@@ -95,11 +80,6 @@ class ConnectionClosedException(Exception):
 class Protocol(object):
     CONNECTION_LOST = "connection-lost"
     GIBBERISH = "gibberish"
-
-    FLAGS_RENCODE = 0x1
-    FLAGS_CIPHER = 0x2
-    FLAGS_YAML = 0x4
-    FLAGS_NOHEADER = 0x40
 
     def __init__(self, scheduler, conn, process_packet_cb, get_packet_cb=None):
         """
@@ -187,10 +167,10 @@ class Protocol(object):
 
         if state.get("rencode"):
             self.enable_rencode()
-        elif state.get("yaml"):
-            self.enable_yaml()
         elif state.get("bencode"):
             self.enable_bencode()
+        elif state.get("yaml"):
+            self.enable_yaml()
         else:
             raise Exception("invalid state: no encoder specified!")
 
@@ -260,11 +240,13 @@ class Protocol(object):
         try:
             info["encoder"] = self._encoder.__name__
         except:
-            pass
-        try:
-            info.update(self._conn.get_info())
-        except:
-            log.error("error collecting connection information on %s", self._conn, exc_info=True)
+            log.error("no __name__ defined on %s (type: %s)", self._encoder, type(self._encoder))
+        c = self._conn
+        if c:
+            try:
+                info.update(self._conn.get_info())
+            except:
+                log.error("error collecting connection information on %s", self._conn, exc_info=True)
         return info
 
 
@@ -333,7 +315,7 @@ class Protocol(object):
             payload_size = len(data)
             actual_size = payload_size
             if self.cipher_out:
-                proto_flags |= Protocol.FLAGS_CIPHER
+                proto_flags |= FLAGS_CIPHER
                 #note: since we are padding: l!=len(data)
                 padding = (self.cipher_out_block_size - len(data) % self.cipher_out_block_size) * " "
                 if len(padding)==0:
@@ -345,7 +327,7 @@ class Protocol(object):
                 data = self.cipher_out.encrypt(padded)
                 assert len(data)==actual_size
                 log("sending %s bytes encrypted with %s padding", payload_size, len(padding))
-            if proto_flags & Protocol.FLAGS_NOHEADER:
+            if proto_flags & FLAGS_NOHEADER:
                 #for plain/text packets (ie: gibberish response)
                 items.append((data, scb, ecb))
             elif pack_header_and_data is not None and actual_size<PACKET_JOIN_SIZE:
@@ -390,12 +372,12 @@ class Protocol(object):
 
 
     def enable_default_encoder(self):
-        if has_bencode:
+        if packet_encoding.use_bencode:
             self.enable_bencode()
-        elif has_rencode:
+        elif packet_encoding.use_rencode:
             self.enable_rencode()
         else:
-            assert has_yaml, "no packet encoders available!"
+            assert packet_encoding.use_yaml, "no packet encoders available!"
             self.enable_yaml()
 
     def enable_encoder_from_caps(self, caps):
@@ -406,7 +388,9 @@ class Protocol(object):
         elif packet_encoding.use_bencode and caps.boolget("bencode", True):
             self.enable_bencode()
         else:
-            raise Exception("no matching packet encoder found!")
+            log.error("no matching packet encoder found!")
+            return False
+        return True
 
     def enable_bencode(self):
         assert has_bencode, "bencode cannot be enabled: the module failed to load!"
@@ -430,7 +414,7 @@ class Protocol(object):
         elif compression.use_lz4:
             self.enable_lz4()
         elif compression.use_bz2:
-            self.enable_yaml()
+            self.enable_bz2()
         else:
             self.enable_nocompress()
 
@@ -472,16 +456,16 @@ class Protocol(object):
 
     def noencode(self, data):
         #just send data as a string for clients that don't understand xpra packet format:
-        return ": ".join([str(x) for x in data])+"\n", Protocol.FLAGS_NOHEADER
+        return ": ".join([str(x) for x in data])+"\n", FLAGS_NOHEADER
 
     def bencode(self, data):
         return bencode(data), 0
 
     def rencode(self, data):
-        return  rencode_dumps(data), Protocol.FLAGS_RENCODE
+        return  rencode_dumps(data), FLAGS_RENCODE
 
     def yaml(self, data):
-        return yaml_encode(data), Protocol.FLAGS_YAML
+        return yaml_encode(data), FLAGS_YAML
 
 
     def encode(self, packet_in):
@@ -713,7 +697,7 @@ class Protocol(object):
                         return
 
                     bl = len(read_buffer)-8
-                    if protocol_flags & Protocol.FLAGS_CIPHER:
+                    if protocol_flags & FLAGS_CIPHER:
                         if self.cipher_in_block_size==0 or not self.cipher_in_name:
                             log.warn("received cipher block but we don't have a cipher to decrypt it with, not an xpra client?")
                             self._invalid_header(read_buffer)
@@ -752,7 +736,7 @@ class Protocol(object):
                     read_buffer = read_buffer[payload_size:]
                 #decrypt if needed:
                 data = raw_string
-                if self.cipher_in and protocol_flags & Protocol.FLAGS_CIPHER:
+                if self.cipher_in and protocol_flags & FLAGS_CIPHER:
                     log("received %s encrypted bytes with %s padding", payload_size, len(padding))
                     data = self.cipher_in.decrypt(raw_string)
                     if padding:
@@ -770,26 +754,15 @@ class Protocol(object):
                 #uncompress if needed:
                 if compression_level>0:
                     try:
-                        if compression_level & LZ4_FLAG:
-                            ctype = "lz4"
-                            assert has_lz4, "lz4 is not available"
-                            assert compression.use_lz4, "lz4 is not enabled"
-                            data = LZ4_uncompress(data)
-                        elif compression_level & BZ2_FLAG:
-                            ctype = "bz2"
-                            assert compression.use_bz2, "bz2 is not enabled"
-                            data = bz2.decompress(data)
-                        else:
-                            ctype = "zlib"
-                            assert compression.use_zlib, "zlib is not enabled"
-                            data = zlib.decompress(data)
+                        data = compression.decompress(data, compression_level)
                     except Exception, e:
+                        ctype = compression.get_compression_type(compression_level)
                         log("%s packet decompression failed", ctype, exc_info=True)
                         if self.cipher_in:
                             return self._call_connection_lost("%s packet decompression failed (invalid encryption key?): %s" % (ctype, e))
                         return self._call_connection_lost("%s packet decompression failed: %s" % (ctype, e))
 
-                if self.cipher_in and not (protocol_flags & Protocol.FLAGS_CIPHER):
+                if self.cipher_in and not (protocol_flags & FLAGS_CIPHER):
                     return self._call_connection_lost("unencrypted packet dropped: %s" % repr_ellipsized(data))
 
                 if self._closed:
@@ -804,22 +777,13 @@ class Protocol(object):
                     continue
                 #final packet (packet_index==0), decode it:
                 try:
-                    if protocol_flags & Protocol.FLAGS_RENCODE:
-                        assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet! not an xpra client?"
-                        packet = list(rencode_loads(data))
-                    elif protocol_flags & Protocol.FLAGS_YAML:
-                        assert has_yaml, "we don't support yaml mode but the other end sent us a yaml packet! not an xpra client?"
-                        packet = list(yaml_decode(data))
-                    else:
-                        #if sys.version>='3':
-                        #    data = data.decode("latin1")
-                        packet, l = bdecode(data)
-                        assert l==len(data)
+                    packet = decode(data, protocol_flags)
                 except ValueError, e:
-                    log.error("value error reading packet: %s", e, exc_info=True)
+                    etype = packet_encoding.get_packet_encoding_type(protocol_flags)
+                    log.error("value error parsing %s packet: %s", etype, e, exc_info=True)
                     if self._closed:
                         return
-                    log("failed to parse packet: %s", binascii.hexlify(data))
+                    log("failed to parse %s packet: %s", etype, binascii.hexlify(data))
                     msg = "gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(data), packet_index, payload_size, bl, e)
                     self.gibberish(msg, data)
                     return

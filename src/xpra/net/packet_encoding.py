@@ -9,7 +9,7 @@ import sys
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
-debug = log.debug
+from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML   #, FLAGS_BENCODE
 
 
 rencode_dumps, rencode_loads, rencode_version = None, None, None
@@ -54,3 +54,43 @@ except ImportError:
 has_yaml = yaml_encode is not None and yaml_decode is not None
 use_yaml = has_yaml and os.environ.get("XPRA_USE_YAML", "1")=="1"
 log("packet encoding: has_yaml=%s, use_yaml=%s, version=%s", has_yaml, use_yaml, yaml_version)
+
+
+def get_packet_encoding_caps():
+    caps = {
+            "rencode"               : use_rencode,
+            "bencode"               : use_bencode,
+            "yaml"                  : use_yaml,
+           }
+    if has_rencode:
+        assert rencode_version is not None
+        caps["rencode.version"] = rencode_version
+    if has_bencode:
+        assert bencode_version is not None
+        caps["bencode.version"] = bencode_version
+    if has_yaml:
+        assert yaml_version is not None
+        caps["yaml.version"] = yaml_version
+    return caps
+
+def get_packet_encoding_type(protocol_flags):
+    if protocol_flags & FLAGS_RENCODE:
+        return "rencode"
+    elif protocol_flags & FLAGS_YAML:
+        return "yaml"
+    else:
+        return "bencode"
+
+def decode(data, protocol_flags):
+    if protocol_flags & FLAGS_RENCODE:
+        assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet! not an xpra client?"
+        return list(rencode_loads(data))
+    elif protocol_flags & FLAGS_YAML:
+        assert has_yaml, "we don't support yaml mode but the other end sent us a yaml packet! not an xpra client?"
+        return list(yaml_decode(data))
+    else:
+        #if sys.version>='3':
+        #    data = data.decode("latin1")
+        packet, l = bdecode(data)
+        assert l==len(data)
+        return packet

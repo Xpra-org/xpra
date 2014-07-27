@@ -10,12 +10,7 @@ import bz2
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
-debug = log.debug
-
-
-ZLIB_FLAG = 0x00
-LZ4_FLAG = 0x10
-BZ2_FLAG = 0x20
+from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, BZ2_FLAG
 
 
 try:
@@ -64,6 +59,15 @@ use_bz2 = True
 use_lz4 = has_lz4
 
 
+def get_compression_caps():
+    return {
+            "lz4"                   : use_lz4,
+            "bz2"                   : use_bz2,
+            "zlib"                  : use_zlib,
+            "zlib.version"          : zlib.__version__,
+           }
+
+
 class Compressed(object):
     def __init__(self, datatype, data):
         self.datatype = datatype
@@ -94,3 +98,25 @@ def compressed_wrapper(datatype, data, level=5, lz4=False):
         algo = "zlib"
         cl, cdata = zcompress(data, level)
     return LevelCompressed(datatype, cdata, cl, algo)
+
+
+def get_compression_type(level):
+    if level & LZ4_FLAG:
+        return "lz4"
+    elif level & BZ2_FLAG:
+        return "bz2"
+    else:
+        return "zlib"
+
+def decompress(data, level):
+    #log.info("decompress(%s bytes, %s) type=%s", len(data), get_compression_type(level))
+    if level & LZ4_FLAG:
+        assert has_lz4, "lz4 is not available"
+        assert use_lz4, "lz4 is not enabled"
+        return LZ4_uncompress(data)
+    elif level & BZ2_FLAG:
+        assert use_bz2, "bz2 is not enabled"
+        return bz2.decompress(data)
+    else:
+        assert use_zlib, "zlib is not enabled"
+        return zlib.decompress(data)

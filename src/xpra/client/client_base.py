@@ -349,6 +349,13 @@ class XpraClientBase(object):
         self.warn_and_quit(e, "server requested disconnect: %s" % info)
 
     def _process_connection_lost(self, packet):
+        p = self._protocol
+        if p and p.input_raw_packetcount==0:
+            props = p.get_info()
+            c = props.get("compression", "unknown")
+            e = props.get("encoder", "unknown")
+            log.warn("disconnected without receiving a single packet, not an xpra server?")
+            log.warn("(maybe it does not support '%s' compression or '%s' packet encoding)", c, e)
         self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
 
     def _process_challenge(self, packet):

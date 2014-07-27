@@ -7,6 +7,16 @@ import sys
 import struct
 
 
+ZLIB_FLAG       = 0x0       #assume zlib if no other compression flag is set
+FLAGS_RENCODE   = 0x1
+FLAGS_CIPHER    = 0x2
+FLAGS_YAML      = 0x4
+#0x8 is free
+LZ4_FLAG        = 0x10
+BZ2_FLAG        = 0x20
+FLAGS_NOHEADER  = 0x40
+#0x80 is free
+
 if sys.version_info[:2]>=(2,5):
     def unpack_header(buf):
         return struct.unpack_from('!cBBBL', buf)

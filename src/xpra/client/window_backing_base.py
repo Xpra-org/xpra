@@ -11,7 +11,7 @@ log = Logger("paint")
 
 from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
-from xpra.net.protocol import has_lz4, LZ4_uncompress
+from xpra.net import compression
 from xpra.util import typedict
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum, get_PIL_decodings
 from xpra.codecs.loader import get_codec
@@ -183,8 +183,8 @@ class WindowBackingBase(object):
             if options.intget("zlib", 0)>0:
                 img_data = zlib.decompress(raw_data)
             elif options.boolget("lz4", False):
-                assert has_lz4
-                img_data = LZ4_uncompress(raw_data)
+                assert compression.use_lz4
+                img_data = compression.LZ4_uncompress(raw_data)
         if len(img_data)!=rowstride * height:
             log.error("invalid img data %s: %s", type(img_data), str(img_data)[:256])
             raise Exception("expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" %
