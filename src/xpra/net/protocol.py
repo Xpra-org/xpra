@@ -26,55 +26,15 @@ from xpra.net.bytestreams import ABORT
 from xpra.net.compression import zcompress, has_lz4, use_lz4, LZ4_FLAG, lz4_compress, LZ4_uncompress, Compressed, LevelCompressed
 from xpra.net.header import unpack_header, pack_header, pack_header_and_data
 from xpra.net.crypto import get_crypto_caps, get_cipher
-
-
-rencode_dumps, rencode_loads, rencode_version = None, None, None
-try:
-    try:
-        from xpra.net.rencode import dumps as rencode_dumps  #@UnresolvedImport
-        from xpra.net.rencode import loads as rencode_loads  #@UnresolvedImport
-        from xpra.net.rencode import __version__ as rencode_version
-    except ImportError, e:
-        log.warn("rencode import error: %s", e)
-except Exception, e:
-    log.error("error loading rencode", exc_info=True)
-has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
-use_rencode = has_rencode and os.environ.get("XPRA_USE_RENCODER", "1")=="1"
-log("protocol: has_rencode=%s, use_rencode=%s, version=%s", has_rencode, use_rencode, rencode_version)
-
-bencode, bdecode, bencode_version = None, None, None
-if sys.version_info[0]<3:
-    #bencode needs porting to Python3..
-    try:
-        try:
-            from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
-        except ImportError, e:
-            log.warn("bencode import error: %s", e, exc_info=True)
-    except Exception, e:
-        log.error("error loading bencoder", exc_info=True)
-has_bencode = bencode is not None and bdecode is not None
-use_bencode = has_bencode and os.environ.get("XPRA_USE_BENCODER", "1")=="1"
-log("protocol: has_bencode=%s, use_bencode=%s, version=%s", has_bencode, use_bencode, bencode_version)
-
-yaml_encode, yaml_decode, yaml_version = None, None, None
-try:
-    #json messes with strings and unicode (makes it unusable for us)
-    import yaml
-    yaml_encode = yaml.dump
-    yaml_decode = yaml.load
-    yaml_version = yaml.__version__
-except ImportError:
-    log("yaml not found")
-has_yaml = yaml_encode is not None and yaml_decode is not None
-use_yaml = has_yaml and os.environ.get("XPRA_USE_YAML", "1")=="1"
-log("protocol: has_yaml=%s, use_yaml=%s, version=%s", has_yaml, use_yaml, yaml_version)
+from xpra.net.packet_encoding import rencode_dumps, rencode_loads, rencode_version, has_rencode, use_rencode, \
+                              bencode, bdecode, bencode_version, has_bencode, use_bencode, \
+                              yaml_encode, yaml_decode, yaml_version, has_yaml, use_yaml
 
 
 #stupid python version breakage:
 if sys.version > '3':
-    long = int          #@ReservedAssignment
+    long = int              #@ReservedAssignment
     unicode = str           #@ReservedAssignment
-
 
 
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
@@ -193,15 +153,15 @@ class Protocol(object):
                     "cipher_out", "cipher_out_name", "cipher_out_block_size",
                     "compression_level")
     def save_state(self):
-        state = {}
+        state = {
+                 "zlib"     : self._compress==zcompress,
+                 "lz4"      : lz4_compress and self._compress==lz4_compress,
+                 "bencode"  : self._encoder == self.bencode,
+                 "rencode"  : self._encoder == self.rencode,
+                 "yaml"     : self._encoder == self.yaml
+                 }
         for x in Protocol.STATE_FIELDS:
             state[x] = getattr(self, x)
-        state["zlib"] = self._compress==zcompress
-        state["lz4"] = lz4_compress and self._compress==lz4_compress
-        state["bencode"] = self._encoder == self.bencode
-        state["rencode"] = self._encoder == self.rencode
-        state["yaml"] = self._encoder == self.yaml
-        #state["connection"] = self._conn
         return state
 
     def restore_state(self, state):
