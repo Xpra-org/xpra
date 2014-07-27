@@ -1455,7 +1455,7 @@ class ServerBase(ServerCore):
         if kc and kc.enabled:
             kc.parse_options(props)
             self.set_keymap(ss, True)
-        modifiers = props.get("modifiers")
+        modifiers = props.get("modifiers", [])
         ss.make_keymask_match(modifiers)
 
     def _process_key_action(self, proto, packet):

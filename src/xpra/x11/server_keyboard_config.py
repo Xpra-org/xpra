@@ -349,7 +349,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 return bool(m)
 
         current = set(self.get_current_mask())
-        wanted = set(modifier_list)
+        wanted = set(modifier_list or [])
         if current==wanted:
             return
         log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
