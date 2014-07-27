@@ -37,8 +37,6 @@ use_lz4 = has_lz4 and os.environ.get("XPRA_USE_LZ4", "1")=="1"
 
 #stupid python version breakage:
 if sys.version > '3':
-    long = int          #@ReservedAssignment
-    unicode = str           #@ReservedAssignment
     def zcompress(packet, level):
         if type(packet)!=bytes:
             packet = bytes(packet, 'UTF-8')
