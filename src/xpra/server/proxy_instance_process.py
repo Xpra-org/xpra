@@ -471,7 +471,7 @@ class ProxyInstanceProcess(Process):
         elif packet_type=="hello":
             c = typedict(packet[1])
             maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
-            proto.max_packet_size = maxw*maxh*4
+            proto.max_packet_size = maxw*maxh*4*4
 
             caps = self.filter_server_caps(c)
             #add new encryption caps:
