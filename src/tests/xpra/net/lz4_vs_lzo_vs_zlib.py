@@ -7,14 +7,11 @@
 import time
 
 from lz4 import LZ4_compress, compressHC        #@UnresolvedImport
-from zlib import compress
+from lzo import compress as LZO_compress
+from zlib import compress as ZLIB_compress
 
 from xpra.net.rencode import dumps as rencode_dumps  #@UnresolvedImport
 from xpra.net.bencode import bencode
-
-def zlib_compress(x):
-    #always test with zlib level 1 (fastest):
-    return compress(x, 1)
 
 ENCODER_NAME = {
                 bencode             : "bencode",
@@ -23,7 +20,8 @@ ENCODER_NAME = {
 COMPRESSOR_NAME = {
                    LZ4_compress     : "lz4",
                    compressHC       : "lz4-HC",
-                   zlib_compress    : "zlib",
+                   ZLIB_compress    : "zlib",
+                   LZO_compress     : "lzo",
                    }
 
 #packets normally contain the packet type as an alias
@@ -49,18 +47,23 @@ def reset_stats():
 def print_stats():
     #print("totals: %s" % TIMES)
     lz4_time = TIMES.get(LZ4_compress)
-    zlib_time = TIMES.get(zlib_compress)
+    lzo_time = TIMES.get(LZO_compress)
+    zlib_time = TIMES.get(ZLIB_compress)
     print("average gain of lz4 over zlib: %.1f times faster" % (zlib_time/lz4_time))
+    print("average gain of lzo over zlib: %.1f times faster" % (zlib_time/lzo_time))
     lz4_ratios = RATIOS.get(LZ4_compress)
     lz4_ratio = sum(lz4_ratios)/len(lz4_ratios)
-    zlib_ratios = RATIOS.get(zlib_compress)
+    lzo_ratios = RATIOS.get(LZO_compress)
+    lzo_ratio = sum(lzo_ratios)/len(lzo_ratios)
+    zlib_ratios = RATIOS.get(ZLIB_compress)
     zlib_ratio = sum(zlib_ratios)/len(zlib_ratios)
     print("average gain of lz4 over zlib: %.1f times faster" % (zlib_time/lz4_time))
-    print("average compression ratios: lz4=%.2f, zlib=%.2f" % (lz4_ratio, zlib_ratio))
+    print("average gain of lzo over zlib: %.1f times faster" % (zlib_time/lzo_time))
+    print("average compression ratios: lz4=%.2f, lzo=%.2f, zlib=%.2f" % (lz4_ratio, lzo_ratio, zlib_ratio))
 
 def test_packet(packet):
     for encoder in (bencode, rencode_dumps):
-        for compressor in (zlib_compress, LZ4_compress, compressHC):
+        for compressor in (ZLIB_compress, LZ4_compress, compressHC, LZO_compress):
             test_compress(packet, encoder, compressor)
         #order makes no difference:
         #for compressor in (LZ4_compress, zlib_compress):
@@ -82,7 +85,7 @@ def test_compress(packet, encoder, compressor, N = 10000):
         packet_info = "%s " % ALIASES.get(packet[0], packet[0])
     compressed = compressor(enc)
     ratio = float(len(enc)) / float(len(compressed))
-    print("packet %s%scompressed %s times with %s in %.3f seconds, len: %s to %s, ratio=%.1f" %
+    print("packet %20s%scompressed %6s times with %6s in %.3f seconds, len: %5s to %5s, ratio=%.1f" %
           (packet_info, enc_info, N, COMPRESSOR_NAME.get(compressor, compressor), delta, len(enc), len(compressed), ratio))
     #if len(compressed)<64:
     #    import binascii
@@ -269,7 +272,7 @@ def test_image():
     surface.finish()
 
     reset_stats()
-    for compressor in (zlib_compress, LZ4_compress, compressHC):
+    for compressor in (ZLIB_compress, LZ4_compress, LZO_compress, compressHC):
         test_compress(pixels, None, compressor, N=200)
     print("image compression test complete")
     print_stats()
