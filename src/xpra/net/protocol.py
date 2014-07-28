@@ -345,7 +345,7 @@ class Protocol(object):
         self.enable_encoder(opts[0])
 
     def enable_encoder_from_caps(self, caps):
-        opts = packet_encoding.get_enabled_encoders()
+        opts = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
         for e in opts:
             if caps.boolget("rencode"):
                 self.enable_encoder(e)
@@ -369,7 +369,7 @@ class Protocol(object):
         if self.compression_level==0:
             self.enable_compressor("none")
             return
-        opts = compression.get_enabled_compressors()
+        opts = compression.get_enabled_compressors(order=compression.PERFORMANCE_ORDER)
         for c in opts:      #ie: [zlib, lz4, bz2]
             if caps.boolget(c):
                 self.enable_compressor(c)

@@ -84,8 +84,11 @@ def get_packet_encoding_caps():
     return caps
 
 
-#all the encoders we know about, in their default preference order:
+#all the encoders we know about, in best compatibility order:
 ALL_ENCODERS = ["bencode", "rencode", "yaml"]
+
+#order for performance:
+PERFORMANCE_ORDER = ["rencode", "bencoder", "yaml"]
 
 _ENCODERS = {
         "rencode"   : do_rencode,
@@ -93,14 +96,14 @@ _ENCODERS = {
         "yaml"      : do_yaml,
            }
 
-def get_enabled_encoders():
+def get_enabled_encoders(order=ALL_ENCODERS):
     enabled = [x for x,b in {
                 "rencode"               : use_rencode,
                 "bencode"               : use_bencode,
                 "yaml"                  : use_yaml,
                 }.items() if b]
     #order them:
-    return [x for x in ALL_ENCODERS if x in enabled]
+    return [x for x in order if x in enabled]
 
 
 def get_encoder(e):

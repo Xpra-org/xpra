@@ -58,8 +58,12 @@ use_zlib = True
 use_bz2 = True
 use_lz4 = has_lz4
 
-#all the compressors we know about, in their default preference order:
+#all the compressors we know about, in best compatibility order:
 ALL_COMPRESSORS = ["zlib", "lz4", "bz2"]
+
+#order for performance:
+PERFORMANCE_ORDER = ["lz4", "zlib", "bz2"]
+
 
 _COMPRESSORS = {
         "zlib"  : zcompress,
@@ -76,14 +80,14 @@ def get_compression_caps():
             "zlib.version"          : zlib.__version__,
            }
 
-def get_enabled_compressors():
+def get_enabled_compressors(order=ALL_COMPRESSORS):
     enabled = [x for x,b in {
             "lz4"                   : use_lz4,
             "bz2"                   : use_bz2,
             "zlib"                  : use_zlib,
             }.items() if b]
     #order them:
-    return [x for x in ALL_COMPRESSORS if x in enabled]
+    return [x for x in order if x in enabled]
 
 def get_compressor(c):
     assert c=="none" or c in ALL_COMPRESSORS
