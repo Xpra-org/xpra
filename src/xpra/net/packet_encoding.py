@@ -83,12 +83,16 @@ def get_packet_encoding_type(protocol_flags):
 
 def decode(data, protocol_flags):
     if protocol_flags & FLAGS_RENCODE:
-        assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet! not an xpra client?"
+        assert has_rencode, "rencode packet encoder is not available"
+        assert use_rencode, "rencode packet encoder is disabled"
         return list(rencode_loads(data))
     elif protocol_flags & FLAGS_YAML:
-        assert has_yaml, "we don't support yaml mode but the other end sent us a yaml packet! not an xpra client?"
+        assert has_rencode, "yaml packet encoder is not available!"
+        assert use_yaml, "yaml packet encoder is disabled"
         return list(yaml_decode(data))
     else:
+        assert has_rencode, "bencode packet encoder is not available!"
+        assert use_bencode, "bencode packet encoder is disabled"
         #if sys.version>='3':
         #    data = data.decode("latin1")
         packet, l = bdecode(data)

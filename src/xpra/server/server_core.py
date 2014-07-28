@@ -409,14 +409,10 @@ class ServerCore(object):
         proto.set_compression_level(c.intget("compression_level", self.compression_level))
         proto.enable_compressor_from_caps(c)
         if not proto.enable_encoder_from_caps(c):
-            #we cannot continue without a packet encoder!
-            from xpra.net import packet_encoding
-            opts = [x for x,b in {
-                                  "bencode"     : packet_encoding.use_bencode,
-                                  "rencode"     : packet_encoding.use_rencode,
-                                  "yaml"        : packet_encoding.use_yaml,
-                                  }.items() if b]
-            self.disconnect_client(proto, "failed to negotiate a packet encoder, try: %s" % (", ".join(opts)))
+            #this should never happen:
+            #if we got here, we parsed a packet from the client!
+            #(maybe the client used an encoding it claims not to support?)
+            self.disconnect_client(proto, "failed to negotiate a packet encoder")
             return
 
         log("process_hello: capabilities=%s", capabilities)
