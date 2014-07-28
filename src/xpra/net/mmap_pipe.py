@@ -6,6 +6,7 @@
 import os
 import ctypes
 from xpra.os_util import strtobytes
+from xpra.simple_stats import to_std_unit
 from xpra.log import Logger
 log = Logger("mmap")
 
@@ -16,8 +17,11 @@ Utility functions for communicating via mmap
 def can_use_mmap():
     return hasattr(ctypes.c_ubyte, "from_buffer")
 
+def roundup(n, m):
+    return (n + m - 1) & ~(m - 1)
 
-def init_client_mmap(token, mmap_group=None, socket_filename=None):
+
+def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024*1024):
     """
         Initializes an mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)
@@ -47,7 +51,10 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None):
             s = os.stat(socket_filename)
             os.fchown(fd, -1, s.st_gid)
             os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
-        mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
+        assert size>=1024*1024, "mmap size is too small: %s (minimum is 1MB)" % to_std_unit(size)
+        assert size<=1024*1024*1024, "mmap is too big: %s (maximum is 1GB)" % to_std_unit(size)
+        unit = max(4096, mmap.PAGESIZE)
+        mmap_size = roundup(size, unit)
         log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
         SEEK_SET = 0        #os.SEEK_SET==0 but this is not available in python2.4
         os.lseek(fd, mmap_size-1, SEEK_SET)

@@ -661,9 +661,14 @@ class UIXpraClient(XpraClientBase):
         log("init_mmap(%s, %s)", mmap_group, socket_filename)
         from xpra.os_util import get_int_uuid
         from xpra.net.mmap_pipe import init_client_mmap
+        #calculate size:
+        root_w, root_h = self.get_root_size()
+        #at least 128MB, or 8 fullscreen RGBX frames:
+        mmap_size = max(128*1024*1024, root_w*root_h*4*8)
+        mmap_size = min(1024*1024*1024, mmap_size)
         self.mmap_token = get_int_uuid()
         self.mmap_enabled, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
-            init_client_mmap(self.mmap_token, mmap_group, socket_filename)
+            init_client_mmap(self.mmap_token, mmap_group, socket_filename, mmap_size)
 
     def clean_mmap(self):
         log("XpraClient.clean_mmap() mmap_filename=%s", self.mmap_filename)
