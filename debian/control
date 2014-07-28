@@ -67,6 +67,8 @@ Recommends:
         ,ssh-askpass
 # hopefully this will motivate someone to package it (trivial too):
 		,python-lz4
+# this is not as good as lz4, but it exists today and is still better than zlib:
+		,python-lzo
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server
