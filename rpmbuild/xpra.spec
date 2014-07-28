@@ -11,6 +11,7 @@
 %define include_egg 1
 %define old_xdg 0
 
+%define requires_lzo %{nil}
 %define requires_lz4 python-lz4
 %define requires_fakexinerama libfakeXinerama
 %define avcodec_build_args %{nil}
@@ -51,6 +52,7 @@
 
 # distro-specific creative land of wonderness
 %if %{defined Fedora}
+%define requires_lzo python-lzo
 %define requires_x264 , x264-libs
 %define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %define requires_opengl , PyOpenGL, pygtkglext, python-numeric, numpy
