@@ -120,7 +120,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             #fewer pixels, make it more likely we won't bother compressing:
             level = level / 2
     if level>0:
-        lz4 = compression.use_lz4 and rgb_lz4 and level<=3
+        lz4 = (not rgb_zlib) or (compression.use_lz4 and rgb_lz4 and level<=3)
         wire_data = compression.compressed_wrapper(coding, pixels, level=level, lz4=lz4)
         raw_data = wire_data.data
         #log("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
