@@ -896,7 +896,6 @@ class UIXpraClient(XpraClientBase):
             "encoding.video_scaling"    : True,
             #separate plane is only supported by avcodec2:
             "encoding.video_separateplane"  : get_codec("dec_avcodec") is None and get_codec("dec_avcodec2") is not None,
-            "encoding.rgb_lz4"          : compression.use_lz4 and self.compression_level==1,
             "encoding.webp_leaks"       : False,
             "encoding.transparency"     : self.has_transparency(),
             "rgb24zlib"                 : True,
@@ -918,6 +917,10 @@ class UIXpraClient(XpraClientBase):
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
             })
+        #generic rgb compression flags:
+        for x in compression.ALL_COMPRESSORS:
+            capabilities["encoding.rgb_%s" % x] = x in compression.get_enabled_compressors()
+
         control_commands = ["show_session_info", "enable_bencode", "enable_zlib"]
         for x in compression.get_enabled_compressors():
             control_commands.append("enable_"+x)

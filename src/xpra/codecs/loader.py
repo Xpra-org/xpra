@@ -166,13 +166,10 @@ ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
 PREFERED_ENCODING_ORDER = ["h264", "vp8", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265", "vp9"]
 
-compressors = ["zlib"]
-try:
-    import lz4      #@UnresolvedImport
-    del lz4
-    compressors.append("lz4")
-except:
-    pass
+from xpra.net import compression
+RGB_COMP_OPTIONS  = ["Raw RGB"]
+if compression.get_enabled_compressors():
+    RGB_COMP_OPTIONS  += ["/".join(compression.get_enabled_compressors())]
 
 ENCODINGS_TO_NAME = {
       "h264"    : "H.264",
@@ -184,7 +181,7 @@ ENCODINGS_TO_NAME = {
       "png/L"   : "PNG (8bpp grayscale)",
       "webp"    : "WebP",
       "jpeg"    : "JPEG",
-      "rgb"     : "Raw RGB + %s (24/32bpp)" % ("/".join(compressors)),
+      "rgb"     : " + ".join(RGB_COMP_OPTIONS) + " (24/32bpp)",
     }
 
 ENCODINGS_HELP = {
@@ -197,7 +194,7 @@ ENCODINGS_HELP = {
       "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
       "webp"    : "WebP compression (lossless or lossy)",
       "jpeg"    : "JPEG lossy compression",
-      "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
+      "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compression.get_enabled_compressors())),
       }
 
 HELP_ORDER = ("h264", "h265", "vp8", "vp9", "png", "png/P", "png/L", "webp", "rgb", "jpeg")

@@ -639,24 +639,14 @@ class SessionInfo(gtk.Window):
         self.client_encodings_label.set_text(", ".join(sorted(self.client.get_core_encodings())))
 
         def get_encoder_list(caps):
-            l = []
-            if caps.get("bencode", True):
-                l.append("bencode")
-            if caps.get("rencode", False):
-                l.append("rencode")
-            if caps.get("yaml", False):
-                l.append("yaml")
-            return l
+            from xpra.net import packet_encoding
+            return [x for x in packet_encoding.ALL_ENCODERS if caps.get(x)]
         self.client_packet_encoders_label.set_text(", ".join(get_encoder_list(get_network_caps())))
         self.server_packet_encoders_label.set_text(", ".join(get_encoder_list(self.client.server_capabilities)))
 
         def get_compressor_list(caps):
-            l = []
-            if caps.get("zlib", False):
-                l.append("zlib")
-            if caps.get("lz4", False):
-                l.append("lz4")
-            return l
+            from xpra.net import compression
+            return [x for x in compression.ALL_COMPRESSORS if caps.get(x)]
         self.client_packet_compressors_label.set_text(", ".join(get_compressor_list(get_network_caps())))
         self.server_packet_compressors_label.set_text(", ".join(get_compressor_list(self.client.server_capabilities)))
         return False

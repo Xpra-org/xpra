@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import zlib
-
 from xpra.log import Logger
 log = Logger("paint")
 
@@ -180,11 +178,11 @@ class WindowBackingBase(object):
         """
         img_data = raw_data
         if options:
-            if options.intget("zlib", 0)>0:
-                img_data = zlib.decompress(raw_data)
-            elif options.boolget("lz4", False):
-                assert compression.use_lz4
-                img_data = compression.LZ4_uncompress(raw_data)
+            #check for one of the compressors:
+            comp = [x for x in compression.ALL_COMPRESSORS if options.intget(x, 0)]
+            if comp:
+                assert len(comp)==1, "more than one compressor specified: %s" % str(comp)
+                img_data = compression.decompress_by_name(raw_data, algo=comp[0])
         if len(img_data)!=rowstride * height:
             log.error("invalid img data %s: %s", type(img_data), str(img_data)[:256])
             raise Exception("expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" %

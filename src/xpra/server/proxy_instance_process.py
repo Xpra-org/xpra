@@ -332,7 +332,12 @@ class ProxyInstanceProcess(Process):
         def number(k, v):
             return parse_number(int, k, v)
         OPTION_WHITELIST = {"compression_level" : number,
-                            "lz4"               : parse_bool}
+                            "lz4"               : parse_bool,
+                            "bz2"               : parse_bool,
+                            "zlib"              : parse_bool,
+                            "rencode"           : parse_bool,
+                            "bencode"           : parse_bool,
+                            "yaml"              : parse_bool}
         for k,v in options.items():
             parser = OPTION_WHITELIST.get(k)
             if parser:

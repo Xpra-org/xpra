@@ -161,3 +161,14 @@ def decompress(data, level):
         if not use_zlib:
             raise InvalidCompressionException("zlib is not enabled")
         return zlib.decompress(data)
+
+NAME_TO_FLAG = {
+                "lz4"   : LZ4_FLAG,
+                "zlib"  : 0,
+                "bz2"   : BZ2_FLAG,
+                }
+
+def decompress_by_name(data, algo):
+    assert algo in NAME_TO_FLAG, "invalid compression algorithm: %s" % algo
+    flag = NAME_TO_FLAG[algo]
+    return decompress(data, flag)

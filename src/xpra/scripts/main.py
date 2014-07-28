@@ -535,37 +535,28 @@ def parse_cmdline(cmdline):
     #packet compression:
     from xpra.net import compression
     compressors = [x.strip() for x in options.compressors.split(",")]
-    c_map = {"lz4" : compression.has_lz4, "bz2" : True, "zlib": True}
-    if "all" in compressors:
-        compressors = [x for x,b in c_map.items() if b]
-    else:
-        unknown = [x for x in compressors if x and x not in c_map]
-        if unknown:
-            print("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
-    for x,b in c_map.items():
-        enabled = b and x in compressors
-        setattr(compression, "use_%s" % x, enabled)
-    if len([b for x,b in c_map.items() if b and x in compressors])==0:
-        #force compression level to zero since we have none:
+    unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS]
+    if unknown:
+        print("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
+    if "all" not in compressors:
+        for c in compression.ALL_COMPRESSORS:
+            enabled = c in compression.get_enabled_compressors() and c in compressors
+            setattr(compression, "use_%s" % c, enabled)
+    if not compression.get_enabled_compressors():
+        #force compression level to zero since we have no compressors available:
         options.compression_level = 0
     #packet encoding
     from xpra.net import packet_encoding
     packet_encoders = [x.strip() for x in options.packet_encoders.split(",")]
-    pe_map = {"bencode"  : packet_encoding.has_bencode,
-              "rencode"  : packet_encoding.has_rencode,
-              "yaml"     : packet_encoding.has_yaml,
-              }
-    if "all" in packet_encoders:
-        packet_encoders = [x for x,b in pe_map.items() if b]
-    else:
-        unknown = [x for x in packet_encoders if x and x not in pe_map]
-        if unknown:
-            print("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
-    for x,b in pe_map.items():
-        enabled = b and x in packet_encoders
-        setattr(packet_encoding, "use_%s" % x, enabled)
+    unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
+    if unknown:
+        print("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
+    if "all" not in packet_encoders:
+        for pe in [x for x in packet_encoders if x not in unknown]:
+            enabled = pe in packet_encoding.get_enabled_encoders() and pe in packet_encoders
+            setattr(packet_encoding, "use_%s" % pe, True)
     #verify that at least one encoder is available:
-    if not [x for x in pe_map.keys() if getattr(packet_encoding, "use_%s" % x)]:
+    if not packet_encoding.get_enabled_encoders():
         parser.error("at least one valid packet encoder must be enabled")
 
     #special case for video encoders/decoders and csc, stored as lists, but command line option is a CSV string:
