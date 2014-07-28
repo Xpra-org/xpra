@@ -142,7 +142,7 @@ sharing = no
 #compressors = all
 #compressors = none
 #compressors = zlib
-compressors = lz4, zlib, bz2
+compressors = lz4, zlib, lzo
 
 # Default compression (0 to 9):
 compression_level = 1

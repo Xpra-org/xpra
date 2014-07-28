@@ -6,15 +6,14 @@
 
 import sys
 import zlib
-import bz2
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
-from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, BZ2_FLAG
+from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
+from xpra.os_util import builtins
 
 
 try:
-    from xpra.os_util import builtins
     _memoryview = builtins.__dict__.get("memoryview")
     from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
@@ -24,10 +23,28 @@ try:
         return level + LZ4_FLAG, LZ4_compress(packet)
 except Exception, e:
     log("lz4 not found: %s", e)
-    LZ4_compress, LZ4_uncompress = None, None
+    LZ4_uncompress = None
     has_lz4 = False
     def lz4_compress(packet, level):
         raise Exception("lz4 is not supported!")
+
+
+try:
+    _memoryview = builtins.__dict__.get("memoryview")
+    import lzo
+    has_lzo = True
+    def lzo_compress(packet, level):
+        if _memoryview and isinstance(packet, _memoryview):
+            packet = packet.tobytes()
+        return level + LZO_FLAG, lzo.compress(packet)
+    LZO_decompress = lzo.decompress
+except Exception, e:
+    log("lzo not found: %s", e)
+    LZO_decompress = None
+    has_lzo = False
+    def lzo_compress(packet, level):
+        raise Exception("lzo is not supported!")
+
 
 #stupid python version breakage:
 if sys.version > '3':
@@ -36,11 +53,6 @@ if sys.version > '3':
             packet = bytes(packet, 'UTF-8')
         return level + ZLIB_FLAG, zlib.compress(packet, level)
 
-    def bzcompress(packet, level):
-        if type(packet)!=bytes:
-            packet = bytes(packet, 'UTF-8')
-        return level + BZ2_FLAG, bz2.compress(packet, level)
-
     def nocompress(packet, level):
         if type(packet)!=bytes:
             packet = bytes(packet, 'UTF-8')
@@ -48,34 +60,32 @@ if sys.version > '3':
 else:
     def zcompress(packet, level):
         return level + ZLIB_FLAG, zlib.compress(str(packet), level)
-    def bzcompress(packet, level):
-        return level + BZ2_FLAG, bz2.compress(str(packet), level)
     def nocompress(packet, level):
         return 0, packet
 
 #defaults to True if available:
 use_zlib = True
-use_bz2 = True
+use_lzo = has_lzo
 use_lz4 = has_lz4
 
 #all the compressors we know about, in best compatibility order:
-ALL_COMPRESSORS = ["zlib", "lz4", "bz2"]
+ALL_COMPRESSORS = ["zlib", "lz4", "lzo"]
 
 #order for performance:
-PERFORMANCE_ORDER = ["lz4", "zlib", "bz2"]
+PERFORMANCE_ORDER = ["lz4", "lzo", "zlib"]
 
 
 _COMPRESSORS = {
         "zlib"  : zcompress,
         "lz4"   : lz4_compress,
-        "bz2"   : bzcompress,
+        "lzo"   : lzo_compress,
         "none"  : nocompress,
                }
 
 def get_compression_caps():
     return {
             "lz4"                   : use_lz4,
-            "bz2"                   : use_bz2,
+            "lzo"                   : use_lzo,
             "zlib"                  : use_zlib,
             "zlib.version"          : zlib.__version__,
            }
@@ -83,7 +93,7 @@ def get_compression_caps():
 def get_enabled_compressors(order=ALL_COMPRESSORS):
     enabled = [x for x,b in {
             "lz4"                   : use_lz4,
-            "bz2"                   : use_bz2,
+            "lzo"                   : use_lzo,
             "zlib"                  : use_zlib,
             }.items() if b]
     #order them:
@@ -140,8 +150,8 @@ class InvalidCompressionException(Exception):
 def get_compression_type(level):
     if level & LZ4_FLAG:
         return "lz4"
-    elif level & BZ2_FLAG:
-        return "bz2"
+    elif level & LZO_FLAG:
+        return "lzo"
     else:
         return "zlib"
 
@@ -153,10 +163,12 @@ def decompress(data, level):
         if not use_lz4:
             raise InvalidCompressionException("lz4 is not enabled")
         return LZ4_uncompress(data)
-    elif level & BZ2_FLAG:
-        if not use_bz2:
-            raise InvalidCompressionException("bz2 is not enabled")
-        return bz2.decompress(data)
+    elif level & LZO_FLAG:
+        if not has_lzo:
+            raise InvalidCompressionException("lzo is not available")
+        if not use_lzo:
+            raise InvalidCompressionException("lzo is not enabled")
+        return LZO_decompress(data)
     else:
         if not use_zlib:
             raise InvalidCompressionException("zlib is not enabled")
@@ -165,7 +177,7 @@ def decompress(data, level):
 NAME_TO_FLAG = {
                 "lz4"   : LZ4_FLAG,
                 "zlib"  : 0,
-                "bz2"   : BZ2_FLAG,
+                "lzo"   : LZO_FLAG,
                 }
 
 def decompress_by_name(data, algo):

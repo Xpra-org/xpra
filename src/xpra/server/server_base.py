@@ -582,15 +582,15 @@ class ServerBase(ServerCore):
                 client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
                 log("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
                 self._clipboard_helper.enable_selections(client_selections)
-    
+
             #keyboard:
             ss.keyboard_config = self.get_keyboard_config(c)
-    
+
             #so only activate this feature afterwards:
             self.keyboard_sync = c.boolget("keyboard_sync", True)
             key_repeat = c.intpair("key_repeat")
             self.set_keyboard_repeat(key_repeat)
-    
+
             #always clear modifiers before setting a new keymap
             ss.make_keymask_match(c.strlistget("modifiers", []))
             self.set_keymap(ss)
@@ -798,7 +798,7 @@ class ServerBase(ServerCore):
                 return argn_err(1)
             c = args[0].lower()
             from xpra.net import compression
-            opts = compression.get_enabled_compressors()    #ie: [lz4, bz2, zlib]
+            opts = compression.get_enabled_compressors()    #ie: [lz4, lzo, zlib]
             if c in opts:
                 for cproto in protos:
                     cproto.enable_compressor(c)

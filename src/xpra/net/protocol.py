@@ -370,7 +370,7 @@ class Protocol(object):
             self.enable_compressor("none")
             return
         opts = compression.get_enabled_compressors(order=compression.PERFORMANCE_ORDER)
-        for c in opts:      #ie: [zlib, lz4, bz2]
+        for c in opts:      #ie: [zlib, lz4, lzo]
             if caps.boolget(c):
                 self.enable_compressor(c)
                 return
