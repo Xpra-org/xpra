@@ -473,6 +473,9 @@ class XpraClientBase(object):
         if not self.parse_network_capabilities():
             log("server_connection_established() failed network capabilities")
             return False
+        if not self.parse_encryption_capabilities():
+            log("server_connection_established() failed encryption capabilities")
+            return False            
         log("server_connection_established() adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True
@@ -508,9 +511,13 @@ class XpraClientBase(object):
 
     def parse_network_capabilities(self):
         c = self.server_capabilities
-        self._protocol.enable_encoder_from_caps(c)
+        if not self._protocol.enable_encoder_from_caps(c):
+            return False
         self._protocol.enable_compressor_from_caps(c)
+        return True
 
+    def parse_encryption_capabilities(self):
+        c = self.server_capabilities
         if self.encryption:
             #server uses a new cipher after second hello:
             key = self.get_encryption_key()
