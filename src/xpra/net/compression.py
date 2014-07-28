@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
@@ -13,14 +14,40 @@ from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
 from xpra.os_util import builtins
 
 
+lz4_version = None
 try:
     _memoryview = builtins.__dict__.get("memoryview")
+    import lz4
     from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
     def lz4_compress(packet, level):
         if _memoryview and isinstance(packet, _memoryview):
             packet = packet.tobytes()
         return level + LZ4_FLAG, LZ4_compress(packet)
+    #try to figure out the version number:
+    if hasattr(lz4, "__version__"):
+        lz4_version = lz4.__version__
+    elif hasattr(lz4, "__file__"):
+        #hack it..
+        import os.path
+        f = lz4.__file__
+        #ie: /usr/lib/python2.7/site-packages/lz4-0.7.0-py2.7-linux-x86_64.egg/lz4.so
+        for x in f.split(os.path.sep):
+            #ie: lz4-0.7.0-py2.7-linux-x86_64.egg
+            if x.startswith("lz4-") and x.find("-py"):
+                tmp = x.split("-")[1]
+                #ie: "0.7.0"
+                tmpv = []
+                #stop if we hit non numeric chars
+                try:
+                    for x in tmp.split("."):
+                        tmpv.append(int(x))
+                except:
+                    pass
+                #we want at least two numbers first:
+                if len(tmpv)>=2:
+                    #ie: (0, 7, 0)
+                    lz4_version = tuple(tmpv)
 except Exception, e:
     log("lz4 not found: %s", e)
     LZ4_uncompress = None
@@ -29,10 +56,12 @@ except Exception, e:
         raise Exception("lz4 is not supported!")
 
 
+lzo_version = None
 try:
     _memoryview = builtins.__dict__.get("memoryview")
     import lzo
     has_lzo = True
+    lzo_version = lzo.LZO_VERSION_STRING
     def lzo_compress(packet, level):
         if _memoryview and isinstance(packet, _memoryview):
             packet = packet.tobytes()
@@ -83,12 +112,17 @@ _COMPRESSORS = {
                }
 
 def get_compression_caps():
-    return {
+    caps = {
             "lz4"                   : use_lz4,
             "lzo"                   : use_lzo,
             "zlib"                  : use_zlib,
             "zlib.version"          : zlib.__version__,
            }
+    if lzo_version:
+        caps["lzo.version"] = lzo_version
+    if lz4_version:
+        caps["lz4.version"] = lz4_version
+    return caps
 
 def get_enabled_compressors(order=ALL_COMPRESSORS):
     enabled = [x for x,b in {
@@ -184,3 +218,18 @@ def decompress_by_name(data, algo):
     assert algo in NAME_TO_FLAG, "invalid compression algorithm: %s" % algo
     flag = NAME_TO_FLAG[algo]
     return decompress(data, flag)
+
+
+def main():
+    from xpra.platform import init, clean
+    try:
+        init("Compression", "Compression Info")
+        for k,v in sorted(get_compression_caps().items()):
+            print(k.ljust(20)+": "+str(v))
+    finally:
+        #this will wait for input on win32:
+        clean()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
@@ -155,3 +156,18 @@ def decode(data, protocol_flags):
         packet, l = bdecode(data)
         assert l==len(data)
         return packet
+
+
+def main():
+    from xpra.platform import init, clean
+    try:
+        init("Packet Encoding", "Packet Encoding Info")
+        for k,v in sorted(get_packet_encoding_caps().items()):
+            print(k.ljust(20)+": "+str(v))
+    finally:
+        #this will wait for input on win32:
+        clean()
+
+
+if __name__ == "__main__":
+    main()

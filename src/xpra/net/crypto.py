@@ -34,6 +34,7 @@ def get_crypto_caps():
     caps = {}
     try:
         import Crypto
+        caps["pycrypto"] = True
         caps["pycrypto.version"] = Crypto.__version__
         try:
             from Crypto.PublicKey import _fastmath
@@ -41,7 +42,7 @@ def get_crypto_caps():
             _fastmath = None
         caps["pycrypto.fastmath"] = _fastmath is not None
     except:
-        pass
+        caps["pycrypto"] = False
     return caps
 
 
