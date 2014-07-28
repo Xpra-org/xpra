@@ -323,10 +323,8 @@ class ServerCore(object):
     def invalid_header(self, proto, data):
         log("invalid_header(%s, %s)", proto, repr_ellipsized(data))
         if proto.input_packetcount==0 and self._tcp_proxy:
-            #look for http get:
-            if data[:4]=="GET ":
-                self.start_tcp_proxy(proto, data)
-                return
+            self.start_tcp_proxy(proto, data)
+            return
         err = "invalid packet header byte: '%#x', not an xpra client?" % ord(data[0])
         if len(data)>1:
             err += " read buffer=0x%s" % repr_ellipsized(data)
