@@ -532,7 +532,7 @@ def parse_cmdline(cmdline):
         if "rgb32" not in options.encodings:
             options.encodings.append("rgb32")
 
-    #set network attributes:
+    #packet compression:
     from xpra.net import compression
     compressors = [x.strip() for x in options.compressors.split(",")]
     c_map = {"lz4" : compression.has_lz4, "bz2" : True, "zlib": True}
@@ -545,6 +545,10 @@ def parse_cmdline(cmdline):
     for x,b in c_map.items():
         enabled = b and x in compressors
         setattr(compression, "use_%s" % x, enabled)
+    if len([b for x,b in c_map.items() if b and x in compressors])==0:
+        #force compression level to zero since we have none:
+        options.compression_level = 0
+    #packet encoding
     from xpra.net import packet_encoding
     packet_encoders = [x.strip() for x in options.packet_encoders.split(",")]
     pe_map = {"bencode"  : packet_encoding.has_bencode,

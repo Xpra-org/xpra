@@ -702,13 +702,13 @@ class SessionInfo(gtk.Window):
         set_sound_info(self.microphone_label, None, self.client.microphone_enabled, self.client.sound_source)
 
         self.connection_type_label.set_text(c.info)
-        protocol_state = p.save_state()
-        level = protocol_state.get("compression_level")
-        if level==0:
-            compression_str = "None"
-        else:
-            compression_str = " + ".join([x for x in ("zlib", "lz4", "bz2", "bencode", "rencode", "yaml") if protocol_state.get(x, False)==True])
-            compression_str += ", level %s" % level
+        protocol_info = p.get_info()
+        encoder = protocol_info.get("encoder")
+        compression = protocol_info.get("compression")
+        level = protocol_info.get("compression_level", 0)
+        compression_str = encoder + " + "+compression
+        if level>0:
+            compression_str += " (level %s)" % level
         self.compression_label.set_text(compression_str)
 
         def enclabel(label, cipher):
