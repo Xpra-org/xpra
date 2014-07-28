@@ -4,13 +4,21 @@ import os.path
 import sys
 import gobject
 
-from pycallgraph import start_trace, make_dot_graph, GlobbingFilter
+from pycallgraph import PyCallGraph, Config
+from pycallgraph.globbing_filter import GlobbingFilter
+from pycallgraph.output import GraphvizOutput
 
 #network bits:
 net = ['xpra.net.protocol.*',
        'xpra.net.protocol.Protocol.start',
        'xpra.net.bytestreams.*',
+       'xpra.net.bencode.*',
        'xpra.net.rencode.*',
+       'xpra.net.compression.*',
+       'xpra.net.packet_encoding.*',
+       'xpra.net.mmap_pipe.*',
+       'xpra.net.crypto.*',
+       'Crypto*',
        'xpra.*server*.process_packet',
        'xpra.*server*.next_packet',
        'socket.*',
@@ -95,7 +103,30 @@ std = ['pycallgraph.*',
        'traceback.*', 'linecache.*',
        '_weakrefset.*', 'weakref.*',
        'DLFCN.*',
+       'fnmatch.*',     #pycallgraph itself!
+       'pyopencl.*',    #too big
+       'OpenGL.*',      #far too big!
+       'numpy.*',       #also too big!
+       'pytools.*',
+       'decorator.*',
+       'tempfile.*',
+       'shutil.*',
+       'difflib.*',      #from numpy?
+       '*ImageFile*',    #no need for data on individual PIL formats
+       'ImagePalette',
+       'unittest.*',     #why does this even get imported?
+       'numbers.*',
+       'contextlib.*',
+       'collections.*',
+       'inspect.*',
+       'gi.*',           #GTK3!
+       'urlparse.*',
        'abc.*',
+       'string.*',
+       'StringIO.<module>',
+       'StringIO.StringIO',
+       'shlex.*',
+       'pickle.*',
        're.*', 'sre_parse.*', 'sre_compile.*',
        'atexit.*', 'warnings.*',
        'getpass.*',
@@ -107,6 +138,7 @@ std = ['pycallgraph.*',
 libs = ['gobject.*', 'gtk.*', 'uuid.*', 'pygtk.*', 'gio.*', 'cairo.*',
         'os.environ.*', 'os._Environ.*', 'UserDict.*', 'platform.*', 'string.split',
         'dbus.*',
+        'yaml.*',
         'libxml2.*', "xml.*", 'StartElement', 'EndElement',    #used by gst..
         'ctypes.*', 'hmac.*']
 
@@ -136,9 +168,22 @@ one_offs = ['xpra.<module>',
             'xpra.*server*.run',
             'xpra.*server*.do_run',
             'xpra.*server*._process_shutdown_server',
+            'xpra.util.is_unity',
+            'xpra.os_util.rel',
+            'xpra.os_util.platform_name',
             'xpra.os_util.get_hex_uuid',
+            'xpra.os_util.load_binary_file',
             'xpra.os_util.set_*_name',
+            'pkg_resources.*',
+            'pkgutil.*',
+            'zipfile.*',
             'xpra.server.DesktopManager.__init__',
+            'xpra.codecs.codec_constants.*',
+            'xpra.codecs.loader.*',
+            'xpra.codecs.video_helper.try_import_modules',
+            'xpra.codecs.video_helper.has_codec_module',
+            'xpra.codecs.video_helper.VideoHelper.*init*',
+            'xpra.codecs.video_helper.VideoHelper',
             'xpra.codecs.video_helper.VideoPipelineHelper',
             'xpra.codecs.video_helper.VideoPipelineHelper.may_init',
             'xpra.codecs.video_helper.VideoPipelineHelper.init_*',
@@ -158,20 +203,29 @@ one_offs = ['xpra.<module>',
             'xpra.x11.gtk_x11.wm.Wm.enableCursors',
             'xpra.gtk_common.*.n_arg_signal',
             'xpra.x11.gtk_x11.error._ErrorManager.__init__',
+            #dotxpra finding sockets:
+            'glob.*',
             #client bits:
-            'xpra.client.client_base.ScreenshotXpraClient',
-            'xpra.client.client_base.XpraClientBase',
-            'xpra.client.client_base.InfoXpraClient',
-            'xpra.client.client_base.VersionXpraClient',
-            'xpra.client.client_base.StopXpraClient',
-            'xpra.client.client_base.GObjectXpraClient',
-            'xpra.client.*.XpraClient',
+            'xpra.client.client_base.b',        #unavoidable
+            'xpra.client.*.*XpraClient',
+            'xpra.client.*.*CommandConnectClient',
             'xpra.client.*.ClientSource',
             'xpra.client.*.__init__',
+            'xpra.client.*.defaults_init',
+            'xpra.client.*.init',
+            'xpra.client.*.glib_init',
+            'xpra.client.*.gobject_init',
+            'xpra.client.*.install_signal_handlers',
+            'xpra.client.*.up',
+            'xpra.client.*.client_type',
+            'xpra.client.*.*get*encodings',
+            'xpra.util.updict',
             'xpra.platform.*.add_client_options', 'xpra.platform.*.add_*_option',
             'socket._socketobject.meth',
             'xpra.*.*hello*',
             'xpra.util.typedict.*',
+            'xpra.*.get_user_uuid',
+            'xpra.*.uupdate',
             'xpra.*.get_machine_id',
             'xpra.*.init_packet_handlers',
             'xpra.*.get_screen_sizes',
@@ -187,6 +241,13 @@ one_offs = ['xpra.<module>',
             'xpra.platform.init',
             'xpra.platform.*.init',
             'xpra.platform.*.do_init',
+            'xpra.platform.*set_prgname',
+            'xpra.platform.*get_username',
+            'xpra.platform.*get_name',
+            'xpra.platform.*._get_pwd',
+            'xpra.platform.*clean',
+            'xpra.platform.*clean',
+            'xpra.platform.paths*.get*dir',
             #keyboard stuff that we only do once:
             'xpra.*._do_keys_changed',
             'xpra.*.query_xkbmap',
@@ -370,7 +431,7 @@ def usage(msg=None):
     print("#profile server:")
     print("%s -i '*' -e ALL -- start :10" % cmd)
     print("#profile client:")
-    print("%s -i '*' -e ALL -- attach  :10" % cmd)
+    print("%s -i '*' -e ALL -- attach  :10 --opengl=no --csc-module=cython" % cmd)
     print("#profile the client's draw thread:")
     print("%s -t draw -i '*' -e ALL -- attach  :10" % cmd)
     print("#profile the client's write thread without logging for 10 seconds, xpra runs without mmap and with x264 as primary encoding:")
@@ -446,7 +507,11 @@ import fnmatch
 fnmatch._MAXCACHE = max(fnmatch._MAXCACHE, len(exclude), len(include)) + 10
 fnmatch._purge()
 
-filter_func = GlobbingFilter(include=include, exclude=exclude)
+graphviz = GraphvizOutput()
+graphviz.output_file = "./pycallgraph-xpra.png"
+config = Config(groups=True)
+config.trace_filter = GlobbingFilter(include=include, exclude=exclude)
+pcg = PyCallGraph(output=graphviz, config=config)
 
 if trace_thread:
     from xpra import daemon_thread
@@ -458,7 +523,7 @@ if trace_thread:
             if name==trace_thread and trace_count==0:
                 trace_count += 1
                 print("started tracing %s / %s!" % (target, name))
-                start_trace(filter_func=filter_func)
+                pcg.start()
             else:
                 print("not tracing %s / %s!" % (target, name))
             target()
@@ -467,7 +532,7 @@ if trace_thread:
 else:
     def do_start_trace(*args):
         print("starting trace")
-        start_trace(filter_func=filter_func)
+        pcg.start()
     #trace main thread
     if delay==0:
         do_start_trace()
@@ -485,7 +550,9 @@ print("calling xpra with: %s" % str(sys.argv))
 import xpra.scripts.main
 x = xpra.scripts.main.main(__file__, sys.argv)
 
-filename = 'pycallgraph.png'
-make_dot_graph(filename)
+pcg.stop()
+
+graphviz.start()
+graphviz.done()
 
 sys.exit(x)
