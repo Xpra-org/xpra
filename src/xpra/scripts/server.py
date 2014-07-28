@@ -527,7 +527,7 @@ def start_Xvfb(xvfb_str, display_name):
     else:
         xorg_log_file = None
 
-    #apply string substitutions: 
+    #apply string substitutions:
     subs = {"XAUTHORITY"    : xauthority,
             "USER"          : os.environ.get("USER", "unknown-user"),
             "HOME"          : os.environ.get("HOME", os.getcwd()),

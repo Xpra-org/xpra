@@ -286,7 +286,7 @@ class KeyboardHelper(object):
             import sha
             h = sha.new()
         def hashadd(v):
-            h.update(("/%s" % str(v)).encode("utf8"))            
+            h.update(("/%s" % str(v)).encode("utf8"))
         for x in (self.xkbmap_print, self.xkbmap_query, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):

@@ -1534,7 +1534,7 @@ class ServerSource(object):
 #
     def queue_size(self):
         return self.damage_data_queue.qsize()
-    
+
     def queue_damage(self, *fn_and_args):
         """
             This is used by WindowSource to queue damage processing to be done in the 'data_to_packet' thread.

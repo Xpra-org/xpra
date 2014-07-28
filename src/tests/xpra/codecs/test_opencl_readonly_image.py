@@ -65,7 +65,7 @@ def test():
     test_buffer(rw)
     ro = PyBuffer_FromMemory(pointer, size)
     test_buffer(ro)
-    
+
 
 def test_buffer(buf):
     try:

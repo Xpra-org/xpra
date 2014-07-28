@@ -475,7 +475,7 @@ class XpraClientBase(object):
             return False
         if not self.parse_encryption_capabilities():
             log("server_connection_established() failed encryption capabilities")
-            return False            
+            return False
         log("server_connection_established() adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True

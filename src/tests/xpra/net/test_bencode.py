@@ -35,7 +35,6 @@ def use_print():
 def use_noop():
     global log
     log = noop
-    
 
 
 def i(s):

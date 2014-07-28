@@ -466,7 +466,7 @@ def vscroll(scrollbar, scrolltype, value):
 def hscroll(scrollbar, scrolltype, value):
     global hscroll_listeners
     call_scroll_cb(hscroll_listeners, scrollbar, scrolltype, value)
-        
+
 
 if __name__ == "__main__":
     webbrowser = WebBrowser()

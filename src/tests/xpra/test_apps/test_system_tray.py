@@ -7,7 +7,7 @@ class StatusIcon:
     def __init__(self):
         self.statusicon = gtk.StatusIcon()
         self.counter = 0
-        self.statusicon.set_from_stock(gtk.STOCK_HOME) 
+        self.statusicon.set_from_stock(gtk.STOCK_HOME)
         self.statusicon.connect("popup-menu", self.popup_menu)
         self.statusicon.connect("activate", self.activate)
         self.statusicon.set_tooltip("StatusIcon Example")
@@ -21,7 +21,7 @@ class StatusIcon:
         self.counter += 1
         name, stock = list(self.stock.items())[self.counter % len(self.stock)]
         print("setting tray icon to: %s" % name)
-        self.statusicon.set_from_stock(stock) 
+        self.statusicon.set_from_stock(stock)
 
     def popup_menu(self, icon, button, time):
         menu = gtk.Menu()
@@ -30,7 +30,7 @@ class StatusIcon:
         menu.append(quit_menu)
         menu.show_all()
         menu.popup(None, None, gtk.status_icon_position_menu, button, time, self.statusicon)
-        
+
 
 def main():
     StatusIcon()

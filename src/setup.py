@@ -661,8 +661,8 @@ def detect_xorg_setup():
     # detect displayfd support based on Xorg version
     # if Xdummy support is enabled,
     # then the X server is new enough to support displayfd:
-    if Xdummy_ENABLED is True: 
-        has_displayfd = True     
+    if Xdummy_ENABLED is True:
+        has_displayfd = True
     elif xorg_version >= [1, 12]:
         has_displayfd = True
     else:

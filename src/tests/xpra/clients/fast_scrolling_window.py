@@ -102,7 +102,7 @@ def main():
     import socket
     sock = socket.socket(socket.AF_UNIX)
     sock.connect(target)
-    
+
     from xpra.net.bytestreams import SocketConnection
     conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), target, "scroll-test")
     print("socket connection=%s" % conn)
