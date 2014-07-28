@@ -609,7 +609,7 @@ class Protocol(object):
 
     def _internal_error(self, message="", exc_info=False):
         log.error("internal error: %s", message)
-        self.idle_add(self._connection_lost, message, exc_info=exc_info)
+        self.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
         log("connection lost: %s", message, exc_info=exc_info)
