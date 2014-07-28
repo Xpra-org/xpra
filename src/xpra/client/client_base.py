@@ -9,6 +9,7 @@ import os
 import sys
 import socket
 import binascii
+import string
 from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
 
@@ -21,7 +22,7 @@ from xpra.version_util import version_compat_check, get_version_info, get_platfo
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict, updict, xor
+from xpra.util import typedict, updict, xor, repr_ellipsized
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -167,6 +168,8 @@ class XpraClientBase(object):
         self._protocol.large_packets.append("server-settings")
         self._protocol.set_compression_level(self.compression_level)
         self._protocol.receive_aliases.update(self._aliases)
+        self._protocol.enable_default_encoder()
+        self._protocol.enable_default_compressor()
         self.have_more = self._protocol.source_has_more
 
     def init_packet_handlers(self):
@@ -174,11 +177,12 @@ class XpraClientBase(object):
             "hello": self._process_hello,
             }
         self._ui_packet_handlers = {
-            "challenge": self._process_challenge,
-            "disconnect": self._process_disconnect,
-            "set_deflate": self._process_set_deflate,
-            Protocol.CONNECTION_LOST: self._process_connection_lost,
-            Protocol.GIBBERISH: self._process_gibberish,
+            "challenge":                self._process_challenge,
+            "disconnect":               self._process_disconnect,
+            "set_deflate":              self._process_set_deflate,
+            Protocol.CONNECTION_LOST:   self._process_connection_lost,
+            Protocol.GIBBERISH:         self._process_gibberish,
+            Protocol.INVALID:           self._process_invalid,
             }
 
     def init_authenticated_packet_handlers(self):
@@ -521,8 +525,14 @@ class XpraClientBase(object):
         pass
 
     def _process_gibberish(self, packet):
-        (_, data) = packet
-        log.info("Received uninterpretable nonsense: %s", repr(data))
+        (_, message, data) = packet
+        p = self._protocol
+        if (p and p.input_packetcount>0) or not all(c in string.printable for c in data):
+            log.info("Received uninterpretable nonsense: %s", message)
+            log.info(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
+        else:
+            #looks like the first packet back is just text, print it:
+            log.info("Failed to connect: %s", repr_ellipsized(data.strip("\n").strip("\r")))
         if str(data).find("assword")>0:
             log.warn("Your ssh program appears to be asking for a password."
                              + GOT_PASSWORD_PROMPT_SUGGESTION)
@@ -533,6 +543,13 @@ class XpraClientBase(object):
             self.quit(EXIT_SSH_FAILURE)
         else:
             self.quit(EXIT_PACKET_FAILURE)
+
+    def _process_invalid(self, packet):
+        (_, message, data) = packet
+        log.info("Received invalid packet: %s", message)
+        log(" data: %s", repr_ellipsized(data))
+        self.quit(EXIT_PACKET_FAILURE)
+
 
     def process_packet(self, proto, packet):
         try:

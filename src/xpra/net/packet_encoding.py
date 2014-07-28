@@ -81,18 +81,29 @@ def get_packet_encoding_type(protocol_flags):
     else:
         return "bencode"
 
+
+class InvalidPacketEncodingException(Exception):
+    pass
+
+
 def decode(data, protocol_flags):
     if protocol_flags & FLAGS_RENCODE:
-        assert has_rencode, "rencode packet encoder is not available"
-        assert use_rencode, "rencode packet encoder is disabled"
+        if not has_rencode:
+            raise InvalidPacketEncodingException("rencode is not available")
+        if not use_rencode:
+            raise InvalidPacketEncodingException("rencode is disabled")
         return list(rencode_loads(data))
     elif protocol_flags & FLAGS_YAML:
-        assert has_rencode, "yaml packet encoder is not available!"
-        assert use_yaml, "yaml packet encoder is disabled"
+        if not has_yaml:
+            raise InvalidPacketEncodingException("yaml is not available")
+        if not use_yaml:
+            raise InvalidPacketEncodingException("yaml is disabled")
         return list(yaml_decode(data))
     else:
-        assert has_rencode, "bencode packet encoder is not available!"
-        assert use_bencode, "bencode packet encoder is disabled"
+        if not has_bencode:
+            raise InvalidPacketEncodingException("bencode is not available")
+        if not use_bencode:
+            raise InvalidPacketEncodingException("bencode is disabled")
         #if sys.version>='3':
         #    data = data.decode("latin1")
         packet, l = bdecode(data)

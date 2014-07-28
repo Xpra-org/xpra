@@ -100,6 +100,10 @@ def compressed_wrapper(datatype, data, level=5, lz4=False):
     return LevelCompressed(datatype, cdata, cl, algo)
 
 
+class InvalidCompressionException(Exception):
+    pass
+
+
 def get_compression_type(level):
     if level & LZ4_FLAG:
         return "lz4"
@@ -111,12 +115,16 @@ def get_compression_type(level):
 def decompress(data, level):
     #log.info("decompress(%s bytes, %s) type=%s", len(data), get_compression_type(level))
     if level & LZ4_FLAG:
-        assert has_lz4, "lz4 is not available"
-        assert use_lz4, "lz4 is not enabled"
+        if not has_lz4:
+            raise InvalidCompressionException("lz4 is not available")
+        if not use_lz4:
+            raise InvalidCompressionException("lz4 is not enabled")
         return LZ4_uncompress(data)
     elif level & BZ2_FLAG:
-        assert use_bz2, "bz2 is not enabled"
+        if not use_bz2:
+            raise InvalidCompressionException("bz2 is not enabled")
         return bz2.decompress(data)
     else:
-        assert use_zlib, "zlib is not enabled"
+        if not use_zlib:
+            raise InvalidCompressionException("zlib is not enabled")
         return zlib.decompress(data)

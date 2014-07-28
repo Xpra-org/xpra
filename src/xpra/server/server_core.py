@@ -202,6 +202,7 @@ class ServerCore(object):
             "info-request":                         self._process_info_request,
             Protocol.CONNECTION_LOST:               self._process_connection_lost,
             Protocol.GIBBERISH:                     self._process_gibberish,
+            Protocol.INVALID:                       self._process_invalid,
             }
 
     def init_aliases(self):
@@ -325,9 +326,7 @@ class ServerCore(object):
         if proto.input_packetcount==0 and self._tcp_proxy:
             self.start_tcp_proxy(proto, data)
             return
-        err = "invalid packet header byte: '%#x', not an xpra client?" % ord(data[0])
-        if len(data)>1:
-            err += " read buffer=0x%s" % repr_ellipsized(data)
+        err = "invalid packet format, not an xpra client?"
         proto.gibberish(err, data)
 
     def start_tcp_proxy(self, proto, data):
@@ -378,24 +377,30 @@ class ServerCore(object):
         proto.close()
 
     def disconnect_client(self, protocol, reason):
-        if protocol:
+        if protocol and not protocol._closed:
             self.disconnect_protocol(protocol, reason)
-        log.info("Connection lost")
 
     def disconnect_protocol(self, protocol, reason):
-        log.info("Disconnecting existing client %s, reason is: %s", protocol, reason)
+        log.info("Disconnecting client %s: %s", protocol, reason)
         protocol.flush_then_close(["disconnect", reason])
 
 
     def _process_connection_lost(self, proto, packet):
-        log.info("Connection lost")
         if proto in self._potential_protocols:
+            log.info("Connection lost")
             self._potential_protocols.remove(proto)
 
     def _process_gibberish(self, proto, packet):
-        data = packet[1]
-        log.info("Received uninterpretable nonsense: %s", repr(data))
-        self.disconnect_client(proto, "invalid packet format, not an xpra client?")
+        (_, message, data) = packet
+        log("Received uninterpretable nonsense from %s: %s", proto, message)
+        log(" data: %s", repr_ellipsized(data))
+        self.disconnect_client(proto, message)
+
+    def _process_invalid(self, protocol, packet):
+        (_, message, data) = packet
+        log("Received invalid packet: %s", message)
+        log(" data: %s", repr_ellipsized(data))
+        self.disconnect_client(protocol, message)
 
 
     def send_version_info(self, proto):

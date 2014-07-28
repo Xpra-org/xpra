@@ -23,11 +23,11 @@ from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
-from xpra.net.compression import nocompress, zcompress, bzcompress, lz4_compress, Compressed, LevelCompressed, get_compression_caps
+from xpra.net.compression import nocompress, zcompress, bzcompress, lz4_compress, Compressed, LevelCompressed, get_compression_caps, InvalidCompressionException
 from xpra.net.header import unpack_header, pack_header, pack_header_and_data, FLAGS_RENCODE, FLAGS_YAML, FLAGS_CIPHER, FLAGS_NOHEADER
 from xpra.net.crypto import get_crypto_caps, get_cipher
 from xpra.net import packet_encoding
-from xpra.net.packet_encoding import get_packet_encoding_caps, rencode_dumps, decode, has_rencode, \
+from xpra.net.packet_encoding import InvalidPacketEncodingException, get_packet_encoding_caps, rencode_dumps, decode, has_rencode, \
                               bencode, has_bencode, yaml_encode, has_yaml
 
 
@@ -80,6 +80,7 @@ class ConnectionClosedException(Exception):
 class Protocol(object):
     CONNECTION_LOST = "connection-lost"
     GIBBERISH = "gibberish"
+    INVALID = "invalid"
 
     def __init__(self, scheduler, conn, process_packet_cb, get_packet_cb=None):
         """
@@ -131,8 +132,6 @@ class Protocol(object):
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
         self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
         self._source_has_more = threading.Event()
-        self.enable_default_encoder()
-        self.enable_default_compressor()
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
                     "cipher_in", "cipher_in_name", "cipher_in_block_size",
@@ -617,28 +616,41 @@ class Protocol(object):
             return
         self.input_raw_packetcount += 1
 
-    def _call_connection_lost(self, message="", exc_info=False):
-        log("will call connection lost: %s", message)
+    def _internal_error(self, message="", exc_info=False):
+        log.error("internal error: %s", message)
         self.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
-        log.info("connection lost: %s", message, exc_info=exc_info)
+        log("connection lost: %s", message, exc_info=exc_info)
         self.close()
         return False
 
-    def gibberish(self, msg, data):
-        self.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, data])
+
+    def invalid(self, msg, data):
+        self.idle_add(self._process_packet_cb, self, [Protocol.INVALID, msg, data])
         # Then hang up:
         self.timeout_add(1000, self._connection_lost, msg)
 
+    def gibberish(self, msg, data):
+        self.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, msg, data])
+        # Then hang up:
+        self.timeout_add(1000, self._connection_lost, msg)
+
+
+    #delegates to invalid_header()
+    #(so this can more easily be intercepted and overriden
+    # see tcp-proxy)
     def _invalid_header(self, data):
-        self.invalid_header(self, data)
+        #call via idle_add gives the client time
+        #to disconnect (and so we don't bother with it)
+        self.idle_add(self.invalid_header, self, data)
 
     def invalid_header(self, proto, data):
-        err = "invalid packet header byte: '%#x'" % ord(data[0])
+        err = "invalid packet header: '%s'" % binascii.hexlify(data[:8])
         if len(data)>1:
-            err += " read buffer=0x%s" % repr_ellipsized(data)
+            err += " read buffer=%s" % repr_ellipsized(data)
         self.gibberish(err, data)
+
 
     def _read_parse_thread_loop(self):
         log("read_parse_thread_loop starting")
@@ -715,11 +727,13 @@ class Protocol(object):
                         #this packet is seemingly too big, but check again from the main UI thread
                         #this gives 'set_max_packet_size' a chance to run from "hello"
                         def check_packet_size(size_to_check, packet_header):
-                            if not self._closed:
-                                log("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
-                                if size_to_check>self.max_packet_size:
-                                    self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
-                                                                  (size_to_check, self.max_packet_size, repr_ellipsized(packet_header)))
+                            if self._closed:
+                                return False
+                            log("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
+                            if size_to_check>self.max_packet_size:
+                                msg = "packet size requested is %s but maximum allowed is %s" % \
+                                              (size_to_check, self.max_packet_size)
+                                self.invalid(msg, packet_header)
                             return False
                         self.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
 
@@ -748,22 +762,28 @@ class Protocol(object):
                         if not data.endswith(padding):
                             log("decryption failed: string does not end with '%s': %s (%s) -> %s (%s)",
                             padding, debug_str(raw_string), type(raw_string), debug_str(data), type(data))
-                            self._connection_lost("encryption error (wrong key?)")
+                            self._internal_error("encryption error (wrong key?)")
                             return
                         data = data[:-len(padding)]
                 #uncompress if needed:
                 if compression_level>0:
                     try:
                         data = compression.decompress(data, compression_level)
+                    except InvalidCompressionException, e:
+                        self.invalid("invalid compression: %s" % e, data)
+                        return
                     except Exception, e:
                         ctype = compression.get_compression_type(compression_level)
                         log("%s packet decompression failed", ctype, exc_info=True)
+                        msg = "%s packet decompression failed" % ctype
                         if self.cipher_in:
-                            return self._call_connection_lost("%s packet decompression failed (invalid encryption key?): %s" % (ctype, e))
-                        return self._call_connection_lost("%s packet decompression failed: %s" % (ctype, e))
+                            msg += " (invalid encryption key?)"
+                        msg = "msg: %s" % e
+                        return self.gibberish(msg, data)
 
                 if self.cipher_in and not (protocol_flags & FLAGS_CIPHER):
-                    return self._call_connection_lost("unencrypted packet dropped: %s" % repr_ellipsized(data))
+                    self.invalid("unencrypted packet dropped", data)
+                    return
 
                 if self._closed:
                     return
@@ -773,18 +793,22 @@ class Protocol(object):
                     payload_size = -1
                     packet_index = 0
                     if len(raw_packets)>=4:
-                        return self._call_connection_lost("too many raw packets: %s" % len(raw_packets))
+                        self.invalid("too many raw packets: %s" % len(raw_packets), data)
+                        return
                     continue
                 #final packet (packet_index==0), decode it:
                 try:
                     packet = decode(data, protocol_flags)
+                except InvalidPacketEncodingException, e:
+                    self.invalid("invalid packet encoding: %s" % e, data)
+                    return
                 except ValueError, e:
                     etype = packet_encoding.get_packet_encoding_type(protocol_flags)
-                    log.error("value error parsing %s packet: %s", etype, e, exc_info=True)
+                    log.error("failed to parse %s packet: %s", etype, e, exc_info=not self._closed)
                     if self._closed:
                         return
                     log("failed to parse %s packet: %s", etype, binascii.hexlify(data))
-                    msg = "gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(data), packet_index, payload_size, bl, e)
+                    msg = "packet index=%s, packet size=%s, buffer size=%s, error=%s" % (packet_index, payload_size, bl, e)
                     self.gibberish(msg, data)
                     return
 
