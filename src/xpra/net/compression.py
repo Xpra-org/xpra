@@ -25,8 +25,10 @@ try:
             packet = packet.tobytes()
         return level + LZ4_FLAG, LZ4_compress(packet)
     #try to figure out the version number:
-    if hasattr(lz4, "__version__"):
-        lz4_version = lz4.__version__
+    if hasattr(lz4, "VERSION"):
+        lz4_version = lz4.VERSION
+        if hasattr(lz4, "LZ4_VERSION"):
+            lz4_version.append(lz4.LZ4_VERSION)
     elif hasattr(lz4, "__file__"):
         #hack it..
         import os.path
