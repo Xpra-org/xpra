@@ -126,10 +126,9 @@ class CommandConnectClient(GObjectXpraClient):
         self.quit(EXIT_OK)
 
     def server_connection_established(self):
-        #don't parse all the server caps, just the network (so we can use rencode, auth, etc):
-        if not XpraClientBase.parse_network_capabilities(self):
-            self.quit(1)
-            return
+        #don't bother parsing the network caps:
+        #* it would cause errors because the caps will be missing
+        #* we don't care about sending anything back after hello
         log("server_capabilities: %s", self.server_capabilities)
         log("protocol state: %s", self._protocol.save_state())
         self.do_command()
