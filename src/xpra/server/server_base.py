@@ -796,46 +796,25 @@ class ServerBase(ServerCore):
         elif command=="compression":
             if len(args)!=1:
                 return argn_err(1)
-            compression = args[0].lower()
-            opts = ("lz4", "zlib", "bz2")
-            if compression=="lz4":
+            c = args[0].lower()
+            from xpra.net import compression
+            opts = compression.get_enabled_compressors()    #ie: [lz4, bz2, zlib]
+            if c in opts:
                 for cproto in protos:
-                    cproto.enable_lz4()
-                forward_all_clients(["enable_lz4"])
-                return success()
-            elif compression=="zlib":
-                for cproto in protos:
-                    cproto.enable_zlib()
-                forward_all_clients(["enable_zlib"])
-                return success()
-            elif compression=="bz2":
-                for cproto in protos:
-                    cproto.enable_zlib()
-                forward_all_clients(["enable_bz2"])
+                    cproto.enable_compressor(c)
+                forward_all_clients(["enable_%s" % c])
                 return success()
             return arg_err("must be one of: %s" % (", ".join(opts)))
         elif command=="encoder":
             if len(args)!=1:
                 return argn_err(1)
-            encoder = args[0].lower()
-            from xpra.net.packet_encoding import use_bencode, use_rencode, use_yaml
-            opts = [x for x,b in {"bencode" : use_bencode,
-                                  "rencode" : use_rencode,
-                                  "yaml"    : use_yaml}.items() if b]
-            if encoder=="bencode":
+            e = args[0].lower()
+            from xpra.net import packet_encoding
+            opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, bencode, yaml]
+            if e in opts:
                 for cproto in protos:
-                    cproto.enable_bencode()
-                forward_all_clients(["enable_bencode"])
-                return success()
-            elif encoder=="rencode":
-                for cproto in protos:
-                    cproto.enable_rencode()
-                forward_all_clients(["enable_rencode"])
-                return success()
-            elif encoder=="yaml":
-                for cproto in protos:
-                    cproto.enable_yaml()
-                forward_all_clients(["enable_yaml"])
+                    cproto.enable_encoder(e)
+                forward_all_clients(["enable_%s" % e])
                 return success()
             return arg_err("must be one of: %s" % (", ".join(opts)))
         elif command=="sound-output":

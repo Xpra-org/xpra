@@ -23,12 +23,11 @@ from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
-from xpra.net.compression import nocompress, zcompress, bzcompress, lz4_compress, Compressed, LevelCompressed, get_compression_caps, InvalidCompressionException
-from xpra.net.header import unpack_header, pack_header, pack_header_and_data, FLAGS_RENCODE, FLAGS_YAML, FLAGS_CIPHER, FLAGS_NOHEADER
-from xpra.net.crypto import get_crypto_caps, get_cipher
 from xpra.net import packet_encoding
-from xpra.net.packet_encoding import InvalidPacketEncodingException, get_packet_encoding_caps, rencode_dumps, decode, has_rencode, \
-                              bencode, has_bencode, yaml_encode, has_yaml
+from xpra.net.compression import get_compression_caps, decompress, InvalidCompressionException, Compressed, LevelCompressed
+from xpra.net.packet_encoding import get_packet_encoding_caps, decode, InvalidPacketEncodingException
+from xpra.net.header import unpack_header, pack_header, pack_header_and_data, FLAGS_CIPHER, FLAGS_NOHEADER
+from xpra.net.crypto import get_crypto_caps, get_cipher
 
 
 #stupid python version breakage:
@@ -116,8 +115,10 @@ class Protocol(object):
         self.receive_aliases = {}
         self._log_stats = None          #None here means auto-detect
         self._closed = False
+        self.encoder = "none"
         self._encoder = self.noencode
-        self._compress = nocompress
+        self.compressor = "none"
+        self._compress = compression.nocompress
         self.compression_level = 0
         self.cipher_in = None
         self.cipher_in_name = None
@@ -136,16 +137,9 @@ class Protocol(object):
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
                     "cipher_in", "cipher_in_name", "cipher_in_block_size",
                     "cipher_out", "cipher_out_name", "cipher_out_block_size",
-                    "compression_level")
+                    "compression_level", "encoder", "compressor")
     def save_state(self):
-        state = {
-                 "zlib"     : self._compress==zcompress,
-                 "bz2"      : self._compress==bzcompress,
-                 "lz4"      : lz4_compress and self._compress==lz4_compress,
-                 "bencode"  : self._encoder == self.bencode,
-                 "rencode"  : self._encoder == self.rencode,
-                 "yaml"     : self._encoder == self.yaml
-                 }
+        state = {}
         for x in Protocol.STATE_FIELDS:
             state[x] = getattr(self, x)
         return state
@@ -155,23 +149,9 @@ class Protocol(object):
         for x in Protocol.STATE_FIELDS:
             assert x in state, "field %s is missing" % x
             setattr(self, x, state[x])
-        if state.get("lz4"):
-            self.enable_lz4()
-        elif state.get("bz2"):
-            self.enable_bz2()
-        elif state.get("zlib"):
-            self.enable_zlib()
-        else:
-            self.enable_nocompress()
-
-        if state.get("rencode"):
-            self.enable_rencode()
-        elif state.get("bencode"):
-            self.enable_bencode()
-        elif state.get("yaml"):
-            self.enable_yaml()
-        else:
-            raise Exception("invalid state: no encoder specified!")
+        #special handling for compressor / encoder which are named objects:
+        self.enable_compressor(self.compressor)
+        self.enable_encoder(self.encoder)
 
     def wait_for_io_threads_exit(self, timeout=None):
         for t in (self._read_thread, self._write_thread):
@@ -221,25 +201,15 @@ class Protocol(object):
             "output.cipher"         : self.cipher_out_name or "",
             "large_packets"         : self.large_packets,
             "compression_level"     : self.compression_level,
-            "max_packet_size"       : self.max_packet_size}
-        if self._compress==zcompress:
-            info["compression"] = "zlib"
-        elif self._compress==lz4_compress:
-            info["compression"] = "lz4"
-        elif self._compress==bzcompress:
-            info["compression"] = "bz2"
-        elif self._compress==nocompress:
-            info["compression"] = "none"
+            "max_packet_size"       : self.max_packet_size,
+            "compressor"            : compression.get_compressor_name(self._compress),
+            "encoder"               : packet_encoding.get_encoder_name(self._encoder)}
         for k,v in self.send_aliases.items():
             info["send_alias." + str(k)] = v
             info["send_alias." + str(v)] = k
         for k,v in self.receive_aliases.items():
             info["receive_alias." + str(k)] = v
             info["receive_alias." + str(v)] = k
-        try:
-            info["encoder"] = self._encoder.__name__
-        except:
-            log.error("no __name__ defined on %s (type: %s)", self._encoder, type(self._encoder))
         c = self._conn
         if c:
             try:
@@ -370,100 +340,52 @@ class Protocol(object):
 
 
     def enable_default_encoder(self):
-        if packet_encoding.use_bencode:
-            self.enable_bencode()
-        elif packet_encoding.use_rencode:
-            self.enable_rencode()
-        else:
-            assert packet_encoding.use_yaml, "no packet encoders available!"
-            self.enable_yaml()
+        opts = packet_encoding.get_enabled_encoders()
+        assert len(opts)>0, "no packet encoders available!"
+        self.enable_encoder(opts[0])
 
     def enable_encoder_from_caps(self, caps):
-        if packet_encoding.use_rencode and caps.boolget("rencode"):
-            self.enable_rencode()
-        elif packet_encoding.use_yaml and caps.boolget("yaml"):
-            self.enable_yaml()
-        elif packet_encoding.use_bencode and caps.boolget("bencode", True):
-            self.enable_bencode()
-        else:
-            log.error("no matching packet encoder found!")
-            return False
-        return True
+        opts = packet_encoding.get_enabled_encoders()
+        for e in opts:
+            if caps.boolget("rencode"):
+                self.enable_encoder(e)
+                return True
+        log.error("no matching packet encoder found!")
+        return False
 
-    def enable_bencode(self):
-        assert has_bencode, "bencode cannot be enabled: the module failed to load!"
-        log("enable_bencode()")
-        self._encoder = self.bencode
-
-    def enable_rencode(self):
-        assert has_rencode, "rencode cannot be enabled: the module failed to load!"
-        log("enable_rencode()")
-        self._encoder = self.rencode
-
-    def enable_yaml(self):
-        assert has_yaml, "yaml cannot be enabled: the module failed to load!"
-        log("enable_yaml()")
-        self._encoder = self.yaml
+    def enable_encoder(self, e):
+        self._encoder = packet_encoding.get_encoder(e)
+        self.encoder = e
 
 
     def enable_default_compressor(self):
-        if compression.use_zlib:
-            self.enable_zlib()
-        elif compression.use_lz4:
-            self.enable_lz4()
-        elif compression.use_bz2:
-            self.enable_bz2()
+        opts = compression.get_enabled_compressors()
+        if len(opts)>0:
+            self.enable_compressor(opts[0])
         else:
-            self.enable_nocompress()
+            self.enable_compressor("none")
 
     def enable_compressor_from_caps(self, caps):
         if self.compression_level==0:
-            self.enable_nocompress()
+            self.enable_compressor("none")
             return
-        if caps.boolget("lz4") and compression.use_lz4 and self.compression_level==1:
-            self.enable_lz4()
-        elif caps.boolget("zlib") and compression.use_zlib:
-            self.enable_zlib()
-        elif caps.boolget("bz2") and compression.use_bz2:
-            self.enable_bz2()
-        #retry lz4 (without level check)
-        elif caps.boolget("lz4") and compression.use_lz4:
-            self.enable_lz4()
-        else:
-            log.error("no matching compressor found!")
-            self.enable_nocompress()
+        opts = compression.get_enabled_compressors()
+        for c in opts:      #ie: [zlib, lz4, bz2]
+            if caps.boolget(c):
+                self.enable_compressor(c)
+                return
+        log.warn("compression disabled: no matching compressor found")
+        self.enable_nocompress()
 
-    def enable_nocompress(self):
-        log("nocompress()")
-        self._compress = nocompress
-
-    def enable_zlib(self):
-        log("enable_zlib()")
-        self._compress = zcompress
-
-    def enable_lz4(self):
-        assert compression.use_lz4, "lz4 cannot be enabled: the module failed to load!"
-        log("enable_lz4()")
-        self._compress = lz4_compress
-
-    def enable_bz2(self):
-        log("enable_bz2()")
-        self._compress = bzcompress        
-
+    def enable_compressor(self, compressor):
+        self._compress = compression.get_compressor(compressor)
+        self.compressor = compressor
+        log("enable_compressor(%s): %s", compressor, self._compress)
 
 
     def noencode(self, data):
         #just send data as a string for clients that don't understand xpra packet format:
         return ": ".join([str(x) for x in data])+"\n", FLAGS_NOHEADER
-
-    def bencode(self, data):
-        return bencode(data), 0
-
-    def rencode(self, data):
-        return  rencode_dumps(data), FLAGS_RENCODE
-
-    def yaml(self, data):
-        return yaml_encode(data), FLAGS_YAML
 
 
     def encode(self, packet_in):
@@ -558,7 +480,7 @@ class Protocol(object):
         except (OSError, IOError, socket_error), e:
             if not self._closed:
                 self._internal_error("%s connection %s reset: %s" % (name, self._conn, e), exc_info=e.args[0] in ABORT)
-        except Exception, e:
+        except:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
                 log.error("%s error on %s", name, self._conn, exc_info=True)
@@ -758,7 +680,7 @@ class Protocol(object):
                 #uncompress if needed:
                 if compression_level>0:
                     try:
-                        data = compression.decompress(data, compression_level)
+                        data = decompress(data, compression_level)
                     except InvalidCompressionException, e:
                         self.invalid("invalid compression: %s" % e, data)
                         return

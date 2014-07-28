@@ -56,6 +56,16 @@ use_yaml = has_yaml and os.environ.get("XPRA_USE_YAML", "1")=="1"
 log("packet encoding: has_yaml=%s, use_yaml=%s, version=%s", has_yaml, use_yaml, yaml_version)
 
 
+def do_bencode(data):
+    return bencode(data), 0
+
+def do_rencode(data):
+    return  rencode_dumps(data), FLAGS_RENCODE
+
+def do_yaml(data):
+    return yaml_encode(data), FLAGS_YAML
+
+
 def get_packet_encoding_caps():
     caps = {
             "rencode"               : use_rencode,
@@ -72,6 +82,39 @@ def get_packet_encoding_caps():
         assert yaml_version is not None
         caps["yaml.version"] = yaml_version
     return caps
+
+
+#all the encoders we know about, in their default preference order:
+ALL_ENCODERS = ["bencode", "rencode", "yaml"]
+
+_ENCODERS = {
+        "rencode"   : do_rencode,
+        "bencode"   : do_bencode,
+        "yaml"      : do_yaml,
+           }
+
+def get_enabled_encoders():
+    enabled = [x for x,b in {
+                "rencode"               : use_rencode,
+                "bencode"               : use_bencode,
+                "yaml"                  : use_yaml,
+                }.items() if b]
+    #order them:
+    return [x for x in ALL_ENCODERS if x in enabled]
+
+
+def get_encoder(e):
+    assert e in ALL_ENCODERS, "invalid encoder name: %s" % e
+    assert e in get_enabled_encoders(), "%s is not available" % e
+    return _ENCODERS[e]
+
+def get_encoder_name(e):
+    assert e in _ENCODERS.values(), "invalid encoder: %s" % e
+    for k,v in _ENCODERS.items():
+        if v==e:
+            return k
+    raise Exception("impossible bug!")
+
 
 def get_packet_encoding_type(protocol_flags):
     if protocol_flags & FLAGS_RENCODE:

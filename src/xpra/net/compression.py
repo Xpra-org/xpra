@@ -58,6 +58,15 @@ use_zlib = True
 use_bz2 = True
 use_lz4 = has_lz4
 
+#all the compressors we know about, in their default preference order:
+ALL_COMPRESSORS = ["zlib", "lz4", "bz2"]
+
+_COMPRESSORS = {
+        "zlib"  : zcompress,
+        "lz4"   : lz4_compress,
+        "bz2"   : bzcompress,
+        "none"  : nocompress,
+               }
 
 def get_compression_caps():
     return {
@@ -66,6 +75,26 @@ def get_compression_caps():
             "zlib"                  : use_zlib,
             "zlib.version"          : zlib.__version__,
            }
+
+def get_enabled_compressors():
+    enabled = [x for x,b in {
+            "lz4"                   : use_lz4,
+            "bz2"                   : use_bz2,
+            "zlib"                  : use_zlib,
+            }.items() if b]
+    #order them:
+    return [x for x in ALL_COMPRESSORS if x in enabled]
+
+def get_compressor(c):
+    assert c=="none" or c in ALL_COMPRESSORS
+    return _COMPRESSORS[c]
+
+def get_compressor_name(c):
+    assert c in _COMPRESSORS.values(), "invalid compressor: %s" % c
+    for k,v in _COMPRESSORS.items():
+        if v==c:
+            return k
+    raise Exception("impossible bug!")
 
 
 class Compressed(object):

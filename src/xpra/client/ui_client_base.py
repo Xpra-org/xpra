@@ -919,14 +919,10 @@ class UIXpraClient(XpraClientBase):
             "encodings.core"            : self.get_core_encodings(),
             })
         control_commands = ["show_session_info", "enable_bencode", "enable_zlib"]
-        for k,b in {"lz4"       : compression.use_lz4,
-                    "bz2"       : compression.use_bz2,
-                    "zlib"      : compression.use_zlib,
-                    "bencode"   : packet_encoding.use_bencode,
-                    "rencode"   : packet_encoding.use_rencode,
-                    "yaml"      : packet_encoding.use_yaml}.items():
-            if b:
-                control_commands.append("enable_"+k)
+        for x in compression.get_enabled_compressors():
+            control_commands.append("enable_"+x)
+        for x in packet_encoding.get_enabled_encoders():
+            control_commands.append("enable_"+x)
         capabilities["control_commands"] = control_commands
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
@@ -1357,21 +1353,14 @@ class UIXpraClient(XpraClientBase):
             args = packet[2:]
             log("calling show_session_info%s on server request", args)
             self.show_session_info(*args)
-        elif command=="enable_zlib":
-            log.info("switching to zlib on server request")
-            self._protocol.enable_zlib()
-        elif command=="enable_lz4":
-            log.info("switching to lz4 on server request")
-            self._protocol.enable_lz4()
-        elif command=="enable_bencode":
-            log.info("switching to bencode on server request")
+        elif command in ("enable_%x" for x in compression.get_enabled_compressors()):
+            compressor = command.split("_")[1]
+            log.info("switching to %s on server request", compressor)
+            self._protocol.enable_compressor(compressor)
+        elif command in ("enable_%x" for x in packet_encoding.get_enabled_encoders()):
+            packet_encoding = command.split("_")[1]
+            log.info("switching to %s on server request", packet_encoding)
             self._protocol.enable_bencode()
-        elif command=="enable_rencode":
-            log.info("switching to rencode on server request")
-            self._protocol.enable_rencode()
-        elif command=="enable_yaml":
-            log.info("switching to yaml on server request")
-            self._protocol.enable_yaml()            
         elif command=="name":
             assert len(args)>=3
             self.session_name = args[2]
