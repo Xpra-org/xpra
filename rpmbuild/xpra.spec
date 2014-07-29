@@ -11,6 +11,7 @@
 %define include_egg 1
 %define old_xdg 0
 
+%define requires_selinux %{nil}
 %define requires_lzo %{nil}
 %define requires_lz4 python-lz4
 %define requires_fakexinerama libfakeXinerama
@@ -144,6 +145,10 @@
 %endif
 %endif
 
+#if we have static modules, we need semanage to label them:
+%if 0%{?static_x264}%{?static_vpx}%{?static_ffmpeg}
+%define requires_selinux policycoreutils-python
+%endif
 
 #remove dependency on webp for now since it leaks memory:
 %define requires_webp %{nil}
@@ -158,7 +163,7 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}%{dist}
 License: GPL
-Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_fakexinerama}
+Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_fakexinerama} %{requires_selinux}
 Group: Networking
 Packager: Antoine Martin <antoine@devloop.org.uk>
 URL: http://xpra.org/
@@ -298,13 +303,18 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 %if 0%{?static_ffmpeg}
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/csc_swscale/colorspace_converter.so
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/dec_avcodec*/decoder.so
+semanage fcontext -a -t texrel_shlib_t %{python_sitelib}/xpra/codecs/csc_swscale/colorspace_converter.so
+semanage fcontext -a -t texrel_shlib_t %{python_sitelib}/xpra/codecs/dec_avcodec*/decoder.so
 %endif
 %if 0%{?static_vpx}
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/encoder.so
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/decoder.so
+semanage fcontext -a -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/encoder.so
+semanage fcontext -a -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/decoder.so
 %endif
 %if 0%{?static_x264}
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
+semanage fcontext -a -t texrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
 %endif
 %if %{defined Fedora}
 update-desktop-database &> /dev/null || :
