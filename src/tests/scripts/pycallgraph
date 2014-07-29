@@ -28,11 +28,13 @@ net = ['xpra.net.protocol.*',
        '*._read_thread_loop',
        '*._read_parse_thread_loop',
        #mdns:
-       'xpra.net.avahi*'
+       'xpra.net.avahi*',
        ]
 x11 = ['xpra.x11.*']
-damage = ['xpra.server.source.*',
-          'xpra.server.*._damage'
+damage = [
+          #'xpra.server.source.*',
+          #'xpra.server.*._damage',
+          'xpra.server.region*',
           'xpra.server.window*_source.*',
           'xpra.server.video_subregion.*',
           'xpra.server.batch_delay_calculator.*',
@@ -269,8 +271,8 @@ one_offs = ['__main__',
             'threading.Thread.__init__',
             'threading.Condition.*', 'threading.Event.*',
             'xpra.gtk_common.quit.*',           #gtk_main_quit_forever, gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
-            'xpra.x11.gtk_x11.wm.Wm.__init__'
-            'xpra.x11.gtk_x11.wm.Wm.__setup_ewmh_window'
+            'xpra.x11.gtk_x11.wm.Wm.__init__',
+            'xpra.x11.gtk_x11.wm.Wm.__setup_ewmh_window',
             'xpra.x11.gtk_x11.wm.Wm.enableCursors',
             'xpra.gtk_common.*.n_arg_signal',
             'xpra.x11.gtk_x11.error._ErrorManager.__init__',
@@ -454,7 +456,7 @@ dialogs = [
             'xpra.*.session_info',
             'xpra.*.session_info.*',
             'xpra.platform.graph.*',
-            'xpra.*.TableBuilder*'
+            'xpra.*.TableBuilder*',
             ]
 
 connection = ['xpra.*server*.send_hello',
@@ -576,12 +578,16 @@ pairs = []
 for i in range(len(cg_args)/2):
     pairs.append((cg_args[i*2], cg_args[i*2+1]))
 
-def get_group(v):
-    if v=="*":
-        return ["*"]
-    if v not in SETS:
-        usage("invalid package group %s, options are: %s" % (v, SETS))
-    return globals()[v]
+def get_groups(v):
+    r = []
+    for x in v.split(","):
+        if x=="*":
+            return ["*"]
+        if x not in SETS:
+            usage("invalid package group '%s', options are: %s" % (x, SETS))
+            return
+        r += globals()[x]
+    return r
 
 exclude = []
 include = []
@@ -592,9 +598,9 @@ for a,v in pairs:
     if a not in ("-i", "-e", "-d", "-r", "-t"):
         usage("invalid argument: %s" % a)
     if a=="-i":
-        include += get_group(v)
+        include += get_groups(v)
     elif a=="-e":
-        exclude += get_group(v)
+        exclude += get_groups(v)
     elif a=="-d":
         delay  = int(v)
     elif a=="-r":
