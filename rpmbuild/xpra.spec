@@ -147,7 +147,11 @@
 
 #if we have static modules, we need semanage to label them:
 %if 0%{?static_x264}%{?static_vpx}%{?static_ffmpeg}
+%if 0%{?el5}
+%define requires_selinux policycoreutils
+%else:
 %define requires_selinux policycoreutils-python
+%endif
 %endif
 
 #remove dependency on webp for now since it leaks memory:
