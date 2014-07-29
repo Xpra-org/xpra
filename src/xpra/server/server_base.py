@@ -499,19 +499,27 @@ class ServerBase(ServerCore):
         # (but only if this is going to be a UI session - control sessions can co-exist)
         ui_client = c.boolget("ui_client", True)
         share_count = 0
+        disconnected = 0
         for p,ss in self._server_sources.items():
-            #check existing sessions are willing to share:
-            if not ui_client or not ss.ui_client:
-                pass
-            elif detach_request:
+            if detach_request and p!=proto:
                 self.disconnect_client(p, "detach requested")
-            elif not self.sharing:
-                self.disconnect_client(p, "new valid connection received, this session does not allow sharing")
-            elif not c.boolget("share"):
-                self.disconnect_client(p, "new valid connection received, the new client does not wish to share")
-            elif not ss.share:
-                self.disconnect_client(p, "new valid connection received, this client had not enabled sharing ")
+                disconnected += 1
+            elif ui_client and ss.ui_client:
+                #check if existing sessions are willing to share:
+                if not self.sharing:
+                    self.disconnect_client(p, "new valid connection received, this session does not allow sharing")
+                    disconnected += 1
+                elif not c.boolget("share"):
+                    self.disconnect_client(p, "new valid connection received, the new client does not wish to share")
+                    disconnected += 1
+                elif not ss.share:
+                    self.disconnect_client(p, "new valid connection received, this client had not enabled sharing ")
+                    disconnected += 1
             share_count += 1
+
+        if detach_request:
+            self.disconnect_client(proto, "%i other clients have been disconnected" % disconnected)
+            return
 
         if not is_request and ui_client:
             if share_count>0:
