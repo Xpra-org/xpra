@@ -112,11 +112,11 @@ class ChildReaper(object):
             self._ignored_pids.add(process.pid)
 
     def check(self):
-        if self._children_pids:
+        pids = set(self._children_pids.keys()) - self._ignored_pids
+        if pids:
             for pid, proc in self._children_pids.items():
                 if proc.poll() is not None:
                     self.add_dead_pid(pid)
-            pids = set(self._children_pids.keys()) - self._ignored_pids
             if pids.issubset(self._dead_pids):
                 self._quit()
 
