@@ -359,9 +359,6 @@ class ServerSource(object):
             self.mmap = None
             self.mmap_size = 0
         self.stop_sending_sound()
-        if self.protocol:
-            self.protocol.close()
-            self.protocol = None
 
 
     def recalculate_delays(self):
