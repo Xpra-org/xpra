@@ -535,7 +535,7 @@ def parse_cmdline(cmdline):
     #packet compression:
     from xpra.net import compression
     compressors = [x.strip() for x in options.compressors.split(",")]
-    unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS]
+    unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS+["all"]]
     if unknown:
         print("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
     if "all" not in compressors:
@@ -548,7 +548,7 @@ def parse_cmdline(cmdline):
     #packet encoding
     from xpra.net import packet_encoding
     packet_encoders = [x.strip() for x in options.packet_encoders.split(",")]
-    unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
+    unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS+["all"]]
     if unknown:
         print("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
     if "all" not in packet_encoders:
