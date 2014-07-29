@@ -15,7 +15,7 @@ workspacelog = Logger("workspace")
 log = Logger("window")
 keylog = Logger("keyboard")
 
-from xpra.util import AdHocStruct, nn, bytestostr
+from xpra.util import AdHocStruct, bytestostr
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
@@ -450,11 +450,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         keyname = KEY_TRANSLATIONS.get((keyname, keyval, keycode), keyname)
         key_event = GTKKeyEvent()
         key_event.modifiers = self._client.mask_to_names(event.state)
-        key_event.keyname = nn(keyname)
-        key_event.keyval = nn(keyval)
+        key_event.keyname = keyname or ""
+        key_event.keyval = keyval or 0
         key_event.keycode = keycode
         key_event.group = event.group
-        key_event.string = nn(event.string)
+        key_event.string = event.string or ""
         key_event.pressed = pressed
         keylog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
         return key_event

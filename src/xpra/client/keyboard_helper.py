@@ -10,7 +10,7 @@ log = Logger("keyboard")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.platform.keyboard import Keyboard
-from xpra.util import nn, nonl
+from xpra.util import nonl
 
 
 class KeyboardHelper(object):
@@ -270,7 +270,7 @@ class KeyboardHelper(object):
 
     def send_layout(self):
         log("send_layout()")
-        self.send("layout-changed", nn(self.xkbmap_layout), nn(self.xkbmap_variant))
+        self.send("layout-changed", self.xkbmap_layout or "", self.xkbmap_variant or "")
 
     def send_keymap(self):
         log("send_keymap()")
@@ -306,5 +306,5 @@ class KeyboardHelper(object):
         for x in ("print", "query", "query_struct", "mod_meanings",
                   "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes"):
             p = "xkbmap_%s" % x
-            props[p] = nn(getattr(self, p))
+            props[p] = getattr(self, p) or ""
         return  props

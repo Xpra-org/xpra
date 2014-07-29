@@ -401,11 +401,6 @@ def alnum(_str):
         return str.isalnum(str(v))
     return "".join(filter(f, _str))
 
-def nn(x):
-    if x is None:
-        return  ""
-    return x
-
 def nonl(x):
     if x is None:
         return None

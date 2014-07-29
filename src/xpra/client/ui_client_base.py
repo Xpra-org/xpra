@@ -38,7 +38,7 @@ from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
-from xpra.util import nn, nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict
+from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -818,8 +818,8 @@ class UIXpraClient(XpraClientBase):
         else:
             for k,v in self.get_keymap_properties().items():
                 capabilities[k] = v
-            capabilities["xkbmap_layout"] = nn(self.keyboard_helper.xkbmap_layout)
-            capabilities["xkbmap_variant"] = nn(self.keyboard_helper.xkbmap_variant)
+            capabilities["xkbmap_layout"] = self.keyboard_helper.xkbmap_layout or ""
+            capabilities["xkbmap_variant"] = self.keyboard_helper.xkbmap_variant or ""
             #show the user a summary of what we have detected:
             kb_info = {}
             xkbq = capabilities.get("xkbmap_query")
