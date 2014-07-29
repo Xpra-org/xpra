@@ -110,20 +110,25 @@ class ChildReaper(object):
         self._children_pids[process.pid] = process
         if ignore:
             self._ignored_pids.add(process.pid)
+        self._logger("add_process(%s, %s, %s) pid=%s", process, command, ignore, process.pid)
 
     def check(self):
         pids = set(self._children_pids.keys()) - self._ignored_pids
+        self._logger("check() pids=%s", pids)
         if pids:
             for pid, proc in self._children_pids.items():
                 if proc.poll() is not None:
                     self.add_dead_pid(pid)
+            self._logger("check() pids=%s, dead_pids=%s", pids, self._dead_pids)
             if pids.issubset(self._dead_pids):
                 self._quit()
 
     def sigchld(self, signum, frame):
+        self._logger("sigchld(%s, %s)", signum, frame)
         self.reap()
 
     def add_dead_pid(self, pid):
+        self._logger("add_dead_pid(%s)", pid)
         if pid not in self._dead_pids:
             proc = self._children_pids.get(pid)
             if proc:
@@ -137,6 +142,7 @@ class ChildReaper(object):
                 pid, _ = os.waitpid(-1, os.WNOHANG)
             except OSError:
                 break
+            self._logger("reap() waitpid=%s", pid)
             if pid == 0:
                 break
             self.add_dead_pid(pid)
