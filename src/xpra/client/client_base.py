@@ -17,6 +17,7 @@ from xpra.log import Logger
 log = Logger("client")
 
 from xpra.net.protocol import Protocol, get_network_caps
+from xpra.scripts.main import SOCKET_TIMEOUT
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, local_version
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
@@ -40,7 +41,7 @@ EXIT_UNSUPPORTED = 12
 EXIT_REMOTE_ERROR = 13
 
 
-DEFAULT_TIMEOUT = 20*1000
+DEFAULT_TIMEOUT = (10 + SOCKET_TIMEOUT)*1000        #in millis
 ALLOW_UNENCRYPTED_PASSWORDS = os.environ.get("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", "0")=="1"
 DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
 
