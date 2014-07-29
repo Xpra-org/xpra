@@ -756,6 +756,7 @@ class Protocol(object):
             then no matter what, we close the connection and stop the threads.
         """
         if self._closed:
+            log("flush_then_close: already closed")
             return
         def wait_for_queue(timeout=10):
             #IMPORTANT: if we are here, we have the write lock held!
@@ -772,6 +773,7 @@ class Protocol(object):
                 log("flush_then_close: queue is now empty, sending the last packet and closing")
                 chunks, proto_flags = self.encode(last_packet)
                 def close_cb(*args):
+                    log("flush_then_close: close_cb()")
                     self.close()
                 self._add_chunks_to_queue(chunks, proto_flags, start_send_cb=None, end_send_cb=close_cb)
                 self._write_lock.release()
@@ -794,6 +796,7 @@ class Protocol(object):
         # -> wait_for_queue
         # -> _add_chunks_to_queue
         # -> close
+        log("flush_then_close: wait_for_write_lock()")
         wait_for_write_lock()
 
     def close(self):
