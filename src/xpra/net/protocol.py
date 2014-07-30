@@ -43,7 +43,7 @@ READ_BUFFER_SIZE = int(os.environ.get("XPRA_READ_BUFFER_SIZE", 65536))
 PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE))
 LARGE_PACKET_SIZE = 4096
 #inline compressed data in packet if smaller than:
-INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 2048))
+INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 32768))
 FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
 
 
@@ -407,6 +407,7 @@ class Protocol(object):
         packets = []
         packet = list(packet_in)
         level = self.compression_level
+        size_check = LARGE_PACKET_SIZE
         min_comp_size = 378
         for i in range(1, len(packet)):
             item = packet[i]
@@ -422,6 +423,7 @@ class Protocol(object):
                     #data is small enough, inline it:
                     packet[i] = item.data
                     min_comp_size += len(item)
+                    size_check += len(item)
             elif ti==LevelCompressed:
                 #already compressed data as zlib or lz4, send as-is with compression marker
                 assert item.level>0
@@ -452,7 +454,7 @@ class Protocol(object):
             packet[0] = packet_type
             self.verify_packet(packet)
             raise e
-        if len(main_packet)>LARGE_PACKET_SIZE and packet_in[0] not in self.large_packets:
+        if len(main_packet)>size_check and packet_in[0] not in self.large_packets:
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         #compress, but don't bother for small packets:
