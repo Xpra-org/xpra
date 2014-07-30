@@ -633,6 +633,8 @@ graphviz = GraphvizOutput()
 graphviz.output_file = "./pycallgraph-xpra.png"
 config = Config(groups=True)
 config.trace_filter = GlobbingFilter(include=include, exclude=exclude)
+config.include_stdlib = bool(trace_thread)
+#config.threaded = bool(trace_thread)
 pcg = PyCallGraph(output=graphviz, config=config)
 
 if trace_thread:
@@ -642,13 +644,19 @@ if trace_thread:
     def make_trace_daemon_thread(target, name):
         def trace_target(*args):
             global trace_count
-            if name==trace_thread and trace_count==0:
+            tracing = name==trace_thread and trace_count==0
+            if tracing:
                 trace_count += 1
-                print("started tracing %s / %s!" % (target, name))
-                pcg.start()
+                print("started tracing '%s' : %s" % (name, target))
+                pcg.start(reset=False)
             else:
-                print("not tracing %s / %s!" % (target, name))
+                print("not tracing     '%s' : %s" % (name, target))
             target()
+            print("ended           '%s' : %s" % (name, target))
+            if tracing:
+                trace_count -= 0
+                if trace_count<=0:
+                    pcg.stop()
         return saved_make_daemon_thread(trace_target, name)
     daemon_thread.make_daemon_thread = make_trace_daemon_thread
 else:
@@ -671,8 +679,10 @@ if runtime>0:
 print("calling xpra with: %s" % str(sys.argv))
 import xpra.scripts.main
 x = xpra.scripts.main.main(__file__, sys.argv)
+print("xpra main returned %s" % x)
 
-pcg.stop()
+if not trace_thread:
+    pcg.stop()
 
 graphviz.start()
 graphviz.done()
