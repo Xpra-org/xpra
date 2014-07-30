@@ -354,16 +354,16 @@ class WindowVideoSource(WindowSource):
         #overrides the default method for finding the encoding of a region
         #so we can ensure we don't use the video encoder when we don't want to:
 
-        def nonvideo(regions=regions, encoding=coding, exclude_region=None):
+        def send_nonvideo(regions=regions, encoding=coding, exclude_region=None):
             WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, fallback=self.non_video_encodings)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
-            return nonvideo(encoding=None)
+            return send_nonvideo(encoding=None)
 
         if coding not in self.video_encodings:
             sublog("not a video encoding")
-            return nonvideo()
+            return send_nonvideo()
 
         vr = self.video_subregion.rectangle
         if not vr:
@@ -414,7 +414,7 @@ class WindowVideoSource(WindowSource):
 
         if actual_vr is None:
             sublog("send_delayed_regions: video region %s not found in: %s (using non video encoding)", vr, regions)
-            return nonvideo(encoding=None)
+            return send_nonvideo(encoding=None)
 
         #found the video region:
         #send this straight away using the video encoder:
@@ -445,7 +445,7 @@ class WindowVideoSource(WindowSource):
                 delay = self.video_subregion.non_max_wait-elapsed
                 self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
                 return
-        nonvideo(regions=trimmed, encoding=None, exclude_region=actual_vr)
+        send_nonvideo(regions=trimmed, encoding=None, exclude_region=actual_vr)
 
 
     def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
