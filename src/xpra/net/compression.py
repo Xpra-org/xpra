@@ -23,7 +23,7 @@ try:
     def lz4_compress(packet, level):
         if _memoryview and isinstance(packet, _memoryview):
             packet = packet.tobytes()
-        return level + LZ4_FLAG, LZ4_compress(packet)
+        return level | LZ4_FLAG, LZ4_compress(packet)
     #try to figure out the version number:
     if hasattr(lz4, "VERSION"):
         lz4_version = lz4.VERSION
@@ -68,7 +68,7 @@ try:
     def lzo_compress(packet, level):
         if _memoryview and isinstance(packet, _memoryview):
             packet = packet.tobytes()
-        return level + LZO_FLAG, lzo.compress(packet)
+        return level | LZO_FLAG, lzo.compress(packet)
     LZO_decompress = lzo.decompress
 except Exception, e:
     log("lzo not found: %s", e)
