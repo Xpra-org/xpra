@@ -1158,6 +1158,7 @@ class UIXpraClient(XpraClientBase):
         self.bell_enabled = self.server_supports_bell and self.client_supports_bell
         self.server_supports_clipboard = c.boolget("clipboard")
         self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
+        self.server_compressors = c.strlistget("compressors", ["zlib"])
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.server_dbus_proxy = c.boolget("dbus_proxy")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")

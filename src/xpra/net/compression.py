@@ -168,6 +168,16 @@ class LevelCompressed(Compressed):
         return  "LevelCompressed(%s: %s bytes as %s/%s)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
 
+class Uncompressed(object):
+    def __init__(self, datatype, data):
+        self.datatype = datatype
+        self.data = data
+    def __len__(self):
+        return len(self.data)
+    def __repr__(self):
+        return  "Uncompressed(%s: %s bytes)" % (self.datatype, len(self.data))
+
+
 def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, can_inline=True):
     if lz4:
         assert use_lz4, "cannot use lz4"

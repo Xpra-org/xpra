@@ -55,9 +55,8 @@ def get_network_caps(legacy=True):
         mmap = False
     caps = {
                 "digest"                : ("hmac", "xor"),
-                "rencode"               : packet_encoding.use_rencode,
-                "bencode"               : packet_encoding.use_bencode,
-                "yaml"                  : packet_encoding.use_yaml,
+                "compressors"           : compression.get_enabled_compressors(),
+                "encoders"              : packet_encoding.get_enabled_encoders(),
                 "mmap"                  : mmap,
                }
     if legacy:

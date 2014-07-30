@@ -233,7 +233,14 @@ class XpraClient(GTKXpraClient):
         clipboardlog("setup_clipboard_helper(%s, %s, %s)", helperClass, args, kwargs)
         def clipboard_send(*parts):
             if self.clipboard_enabled:
-                self.send(*parts)
+                #handle clipboard compression if needed:
+                from xpra.net.compression import Uncompressed
+                packet = list(parts)
+                for i in range(len(packet)):
+                    v = packet[i]
+                    if type(v)==Uncompressed:
+                        packet[i] = self.compressed_wrapper(v.datatype, v.data)
+                self.send(*packet)
             else:
                 clipboardlog("clipboard is disabled, not sending clipboard packet")
         def clipboard_progress(local_requests, remote_requests):
@@ -272,6 +279,17 @@ class XpraClient(GTKXpraClient):
             self.tray.set_icon(None)    #None means back to default icon
             self.tray.set_tooltip(self.get_tray_title())
             self.tray.set_blinking(False)
+
+
+    def compressed_wrapper(self, datatype, data):
+        #FIXME: ugly assumptions here, should pass by name!
+        zlib = "zlib" in self.server_compressors
+        lz4 = "lz4" in self.server_compressors
+        lzo = "lzo" in self.server_compressors
+        if zlib or lz4 or lzo:
+            from xpra.net import compression
+            return compression.compressed_wrapper(datatype, data, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
+        return data
 
 
     def make_hello(self):

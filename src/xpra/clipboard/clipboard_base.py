@@ -21,10 +21,10 @@ log = Logger("clipboard")
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
-from xpra.net.compression import compressed_wrapper
+from xpra.net.compression import Uncompressed
 
 
-MAX_CLIPBOARD_PACKET_SIZE = 256*1024
+MAX_CLIPBOARD_PACKET_SIZE = 4*1024*1024
 
 ALL_CLIPBOARDS = ["CLIPBOARD", "PRIMARY", "SECONDARY"]
 CLIPBOARDS = ALL_CLIPBOARDS
@@ -340,13 +340,11 @@ class ClipboardProtocolHelperBase(object):
         proxy.get_contents(target, got_contents)
 
     def _may_compress(self, dtype, dformat, wire_data):
-        if len(wire_data)>256:
-            wire_data = compressed_wrapper("clipboard: %s / %s" % (dtype, dformat), wire_data, zlib=True)
-            if len(wire_data)>self.max_clipboard_packet_size:
-                log.warn("even compressed, clipboard contents are too big and have not been sent:"
-                         " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
-                return  None
-        return wire_data
+        if len(wire_data)>self.max_clipboard_packet_size:
+            log.warn("clipboard contents are too big and have not been sent:"
+                     " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
+            return  None
+        return Uncompressed("clipboard: %s / %s" % (dtype, dformat), wire_data)
 
     def _process_clipboard_contents(self, packet):
         request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:8]

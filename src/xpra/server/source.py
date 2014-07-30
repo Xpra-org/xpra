@@ -27,7 +27,7 @@ from xpra.simple_stats import add_list_stats, std_unit
 from xpra.codecs.loader import get_codec, has_codec, OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import codec_spec
-from xpra.net.compression import compressed_wrapper, Compressed
+from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
@@ -1192,6 +1192,15 @@ class ServerSource(object):
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended:
             return
+        packet = list(packet)
+        for i in range(len(packet)):
+            v = packet[i]
+            if type(v)==Uncompressed:
+                log.info("Uncompressed in clipboard packet!")
+                packet[i] = self.compressed_wrapper(v.datatype, v.data)
+                #TODO: move this out of the UI thread
+                #and compress it using the self.damage_data_queue
+                #or using a wrapper telling the network encode layer to do it
         self.send(*packet)
 
 
