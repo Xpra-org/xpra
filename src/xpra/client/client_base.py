@@ -535,7 +535,7 @@ class XpraClientBase(object):
     def _process_gibberish(self, packet):
         (_, message, data) = packet
         p = self._protocol
-        if (p and p.input_packetcount>0) or not all(c in string.printable for c in data):
+        if (p and p.input_packetcount>0) or len(c not in string.printable for c in data)>0:
             log.info("Received uninterpretable nonsense: %s", message)
             log.info(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
         else:
