@@ -3,7 +3,7 @@
 
 import gtk
 from gtk import gdk
-from xpra.gtk_common.cursor_names import cursor_names
+from xpra.gtk_common.cursor_names import cursor_types
 
 width = 400
 height = 200
@@ -14,14 +14,14 @@ def main():
 
 	cursor_combo = gtk.combo_box_new_text()
 	cursor_combo.append_text("")
-	for name in sorted(cursor_names.keys()):
+	for name in sorted(cursor_types.keys()):
 		cursor_combo.append_text(name)
 	window.add(cursor_combo)
 
 	def change_cursor(*args):
 		name = cursor_combo.get_active_text()
 		print(name)
-		gdk_cursor = cursor_names.get(name)
+		gdk_cursor = cursor_types.get(name)
 		cursor = gdk.Cursor(gdk_cursor)
 		window.get_window().set_cursor(cursor)
 
