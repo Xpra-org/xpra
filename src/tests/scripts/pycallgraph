@@ -5,7 +5,6 @@ import sys
 import gobject
 
 from pycallgraph import PyCallGraph, Config
-from pycallgraph.globbing_filter import GlobbingFilter
 from pycallgraph.output import GraphvizOutput
 
 #network bits:
@@ -629,10 +628,25 @@ import fnmatch
 fnmatch._MAXCACHE = max(fnmatch._MAXCACHE, len(exclude), len(include)) + 10
 fnmatch._purge()
 
+class ExtendedGlobbingFilter(object):
+    def __init__(self, include, exclude, default_return):
+        self.include = include
+        self.exclude = exclude
+        self.default_return = default_return
+
+    def __call__(self, full_name=None):
+        m = fnmatch.fnmatch
+        if any(True for pattern in self.exclude if m(full_name, pattern)):
+            return False
+        if any(True for pattern in self.include if m(full_name, pattern)):
+            return True
+        return self.default_return
+
 graphviz = GraphvizOutput()
 graphviz.output_file = "./pycallgraph-xpra.png"
 config = Config(groups=True)
-config.trace_filter = GlobbingFilter(include=include, exclude=exclude)
+default_return = not bool(include)
+config.trace_filter = ExtendedGlobbingFilter(include, exclude, default_return)
 config.include_stdlib = bool(trace_thread)
 #config.threaded = bool(trace_thread)
 pcg = PyCallGraph(output=graphviz, config=config)
