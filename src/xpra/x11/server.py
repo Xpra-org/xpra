@@ -47,7 +47,7 @@ import xpra
 from xpra.util import nonl
 from xpra.os_util import StringIOClass
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
-from xpra.net.compression import compressed_wrapper, Compressed
+from xpra.net.compression import Compressed
 
 
 class DesktopManager(gtk.Widget):
@@ -211,9 +211,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #cursor:
         self.default_cursor_data = None
         self.last_cursor_serial = None
+        self.last_cursor_data = None
         self.send_cursor_pending = False
-        self.cursor_data = None
-        self.cursor_sizes = None
         def get_default_cursor():
             self.default_cursor_data = X11Keyboard.get_cursor_image()
             cursorlog("get_default_cursor=%s", self.default_cursor_data)
@@ -232,9 +231,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def do_get_info(self, proto, server_sources, window_ids):
         info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
-        log("do_get_info: adding cursor=%s", self.cursor_data)
+        log("do_get_info: adding cursor=%s", self.last_cursor_data)
         #copy to prevent race:
-        cd = self.cursor_data
+        cd = self.last_cursor_data
         if cd is None:
             info["cursor"] = "None"
         else:
@@ -375,7 +374,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         display = gtk.gdk.display_get_default()
         self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
         cursorlog("cursor_sizes=%s", self.cursor_sizes)
-        ss.send_cursor(self.cursor_data, self.cursor_sizes)
+        ss.send_cursor(self.get_cursor_data)
 
 
     def _new_window_signaled(self, wm, window):
@@ -491,33 +490,26 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         cursorlog("cursor_event: %s", event)
         self.last_cursor_serial = event.cursor_serial
-        if not self.send_cursor_pending:
-            self.send_cursor_pending = True
-            gobject.timeout_add(10, self.send_cursor)
-
-    def send_cursor(self):
-        self.send_cursor_pending = False
-        self.cursor_data = X11Keyboard.get_cursor_image()
-        display = gtk.gdk.display_get_default()
-        self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
-        if self.cursor_data is not None:
-            pixels = self.cursor_data[7]
-            cursorlog("send_cursor() cursor=%s", self.cursor_data[:7]+["%s bytes" % len(pixels)]+self.cursor_data[8:])
-            if self.default_cursor_data is not None and str(pixels)==str(self.default_cursor_data[7]):
-                cursorlog("send_cursor(): default cursor - clearing it")
-                self.cursor_data = None
-            elif pixels is not None:
-                #convert bytearray to string:
-                pixels = str(pixels)
-                if len(pixels)<64:
-                    self.cursor_data[7] = pixels
-                else:
-                    self.cursor_data[7] = compressed_wrapper("cursor", pixels)
-        else:
-            cursorlog("send_cursor() failed to get cursor image")
         for ss in self._server_sources.values():
-            ss.send_cursor(self.cursor_data, self.cursor_sizes)
+            ss.send_cursor(self.get_cursor_data)
         return False
+
+    def get_cursor_data(self):
+        #must be called from the UI thread!
+        cursor_data = X11Keyboard.get_cursor_image()
+        if cursor_data is None:
+            cursorlog("get_cursor_data() failed to get cursor image")
+            return None, []
+        self.last_cursor_data = cursor_data
+        pixels = self.last_cursor_data[7]
+        cursorlog("get_cursor_data() cursor=%s", cursor_data[:7]+["%s bytes" % len(pixels)]+cursor_data[8:])
+        if self.default_cursor_data is not None and str(pixels)==str(self.default_cursor_data[7]):
+            cursorlog("get_cursor_data(): default cursor - clearing it")
+            cursor_data = None
+        display = gtk.gdk.display_get_default()
+        cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
+        return (cursor_data, cursor_sizes)
+
 
     def _bell_signaled(self, wm, event):
         log("bell signaled on window %s", event.window.xid)

@@ -335,8 +335,8 @@ class ServerSource(object):
         self.server_driven = False
 
         self.keyboard_config = None
-        self.cursor_data = None
         self.send_cursor_pending = False
+        self.last_cursor_sent = None
 
 
     def is_closed(self):
@@ -1202,32 +1202,44 @@ class ServerSource(object):
             self.send("pointer-ungrab", wid)
 
 
-    def send_cursor(self, cursor_data, sizes):
+    def send_cursor(self, get_cursor_data_cb):
         if not self.send_cursors or self.suspended:
             return
-        self.cursor_data = cursor_data
-        self.cursor_sizes = sizes
+        def do_send_cursor():
+            self.send_cursor_pending = False
+            cursor_data, cursor_sizes = get_cursor_data_cb()
+            if cursor_data:
+                if self.last_cursor_sent and self.last_cursor_sent==cursor_data[:8]:
+                    cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
+                    return
+                self.last_cursor_sent = cursor_data[:8]
+                w, h, _xhot, _yhot, serial, pixels = cursor_data[2:8]
+                cursorlog("do_send_cursor(..) sending %s bytes for %sx%s cursor %s with delay=%s", len(pixels), w, h, serial, delay)
+                #compress pixels if needed:
+                if pixels is not None:
+                    #convert bytearray to string:
+                    pixels = str(pixels)
+                    if len(pixels)<256:
+                        cursor_data[7] = pixels
+                    else:
+                        cursor_data[7] = compressed_wrapper("cursor", pixels, lz4=self.lz4)
+                #prepare packet format:
+                if not self.named_cursors:
+                    #old versions have limited support (no cursor names, no sizes):
+                    args = cursor_data[:8]
+                else:
+                    args = list(cursor_data[:9]) + list(cursor_sizes)
+            else:
+                cursorlog("do_send_cursor(..) sending empty cursor with delay=%s", delay)
+                args = [""]
+                self.last_cursor_sent = None
+            self.send("cursor", *args)
+        #if not pending already, schedule it:
         if not self.send_cursor_pending:
             self.send_cursor_pending = True
             delay = max(10, int(self.global_batch_config.delay/4))
-            if cursor_data:
-                w, h, _xhot, _yhot, serial, pixels = cursor_data[2:8]
-                cursorlog("send_cursor(..) sending %s bytes for %sx%s cursor %s with delay=%s", len(pixels), w, h, serial, delay)
-            else:
-                cursorlog("send_cursor(..) sending empty cursor with delay=%s", delay)
-            self.timeout_add(delay, self.do_send_cursor)
+            self.timeout_add(delay, do_send_cursor)
 
-    def do_send_cursor(self):
-        self.send_cursor_pending = False
-        if self.cursor_data:
-            if not self.named_cursors:
-                #old versions have limited support (no cursor names, no sizes):
-                args = self.cursor_data[:8]
-            else:
-                args = list(self.cursor_data[:9]) + list(self.cursor_sizes)
-            self.send("cursor", *args)
-        else:
-            self.send("cursor", "")
 
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         if not self.send_bell or self.suspended:
