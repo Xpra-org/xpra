@@ -518,7 +518,7 @@ class ProxyInstanceProcess(Process):
                     lz4 = self.caps.get("lz4", False)
                     lzo = self.caps.get("lzo", False)
                     if zlib or lz4 or lzo:
-                        packet[8] = compressed_wrapper("cursor", pixels, zlib=zlib, lz4=lz4, lzo=lzo)
+                        packet[8] = compressed_wrapper("cursor", pixels, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
         self.queue_client_packet(packet)
 
 

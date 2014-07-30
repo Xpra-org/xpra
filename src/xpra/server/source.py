@@ -1206,7 +1206,7 @@ class ServerSource(object):
 
     def compressed_wrapper(self, datatype, data):
         if self.zlib or self.lz4 or self.lzo:
-            return compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo)
+            return compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo, can_inline=False)
         return data
 
     def send_cursor(self, get_cursor_data_cb):
@@ -1221,15 +1221,15 @@ class ServerSource(object):
                     return
                 self.last_cursor_sent = cursor_data[:8]
                 w, h, _xhot, _yhot, serial, pixels = cursor_data[2:8]
-                cursorlog("do_send_cursor(..) sending %s bytes for %sx%s cursor %s with delay=%s", len(pixels), w, h, serial, delay)
                 #compress pixels if needed:
                 if pixels is not None:
                     #convert bytearray to string:
-                    pixels = str(pixels)
-                    if len(pixels)<256:
-                        cursor_data[7] = pixels
-                    else:
-                        cursor_data[7] = self.compressed_wrapper("cursor", pixels)
+                    cpixels = str(pixels)
+                    if len(cpixels)>=256:
+                        cpixels = self.compressed_wrapper("cursor", pixels)
+                        cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
+                    cursor_data[7] = cpixels
+                cursorlog("do_send_cursor(..) %sx%s cursor %s with delay=%s", w, h, serial, delay)
                 #prepare packet format:
                 if not self.named_cursors:
                     #old versions have limited support (no cursor names, no sizes):

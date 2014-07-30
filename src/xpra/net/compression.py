@@ -149,9 +149,10 @@ def get_compressor_name(c):
 
 
 class Compressed(object):
-    def __init__(self, datatype, data):
+    def __init__(self, datatype, data, can_inline=False):
         self.datatype = datatype
         self.data = data
+        self.can_inline = can_inline
     def __len__(self):
         return len(self.data)
     def __repr__(self):
@@ -159,28 +160,28 @@ class Compressed(object):
 
 
 class LevelCompressed(Compressed):
-    def __init__(self, datatype, data, level, algo):
-        Compressed.__init__(self, datatype, data)
-        self.algorithm = algo
+    def __init__(self, datatype, data, level, algo, can_inline):
+        Compressed.__init__(self, datatype, data, can_inline)
         self.level = level
+        self.algorithm = algo
     def __repr__(self):
         return  "LevelCompressed(%s: %s bytes as %s/%s)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
 
-def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False):
+def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, can_inline=True):
     if lz4:
         assert use_lz4, "cannot use lz4"
         algo = "lz4"
-        cl, cdata = lz4_compress(data, level & LZ4_FLAG)
+        cl, cdata = lz4_compress(data, level)
     elif lzo:
         assert use_lzo, "cannot use lzo"
         algo = "lzo"
-        cl, cdata = lzo_compress(data, level & LZO_FLAG)
+        cl, cdata = lzo_compress(data, level)
     else:
         assert use_zlib, "cannot use zlib"
         algo = "zlib"
         cl, cdata = zcompress(data, level)
-    return LevelCompressed(datatype, cdata, cl, algo)
+    return LevelCompressed(datatype, cdata, cl, algo, can_inline=can_inline)
 
 
 class InvalidCompressionException(Exception):

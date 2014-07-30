@@ -152,7 +152,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         return  coding, wire_data, {}, width, height, stride, bpp
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
-    return coding, compression.Compressed(coding, raw_data), options, width, height, stride, bpp
+    return coding, compression.Compressed(coding, raw_data, True), options, width, height, stride, bpp
 
 
 def PIL_encode(coding, image, quality, speed, supports_transparency):

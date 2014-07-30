@@ -416,9 +416,15 @@ class Protocol(object):
                 continue
             l = len(item)
             if ti in (Compressed, LevelCompressed):
-                #already compressed data (usually pixels), send it as-is
-                if l>INLINE_SIZE:
-                    packets.append((i, 0, item.data))
+                #already compressed data (usually pixels, cursors, etc)
+                if not item.can_inline or l>INLINE_SIZE:
+                    il = 0
+                    if ti==LevelCompressed:
+                        #unlike Compressed (usually pixels, decompressed in the paint thread),
+                        #LevelCompressed is decompressed by the network layer
+                        #so we must tell it how to do that and pass the level flag
+                        il = item.level
+                    packets.append((i, il, item.data))
                     packet[i] = ''
                 else:
                     #data is small enough, inline it:
