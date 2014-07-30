@@ -693,10 +693,10 @@ class SessionInfo(gtk.Window):
 
         self.connection_type_label.set_text(c.info)
         protocol_info = p.get_info()
-        encoder = protocol_info.get("encoder")
-        compression = protocol_info.get("compression")
+        encoder = protocol_info.get("encoder", "bug")
+        compressor = protocol_info.get("compressor", "none")
         level = protocol_info.get("compression_level", 0)
-        compression_str = encoder + " + "+compression
+        compression_str = encoder + " + "+compressor
         if level>0:
             compression_str += " (level %s)" % level
         self.compression_label.set_text(compression_str)
