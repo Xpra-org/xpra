@@ -167,12 +167,17 @@ class LevelCompressed(Compressed):
         return  "LevelCompressed(%s: %s bytes as %s/%s)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
 
-def compressed_wrapper(datatype, data, level=5, lz4=False):
+def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False):
     if lz4:
         assert use_lz4, "cannot use lz4"
         algo = "lz4"
         cl, cdata = lz4_compress(data, level & LZ4_FLAG)
+    elif lzo:
+        assert use_lzo, "cannot use lzo"
+        algo = "lzo"
+        cl, cdata = lzo_compress(data, level & LZO_FLAG)
     else:
+        assert use_zlib, "cannot use zlib"
         algo = "zlib"
         cl, cdata = zcompress(data, level)
     return LevelCompressed(datatype, cdata, cl, algo)

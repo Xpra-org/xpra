@@ -515,7 +515,9 @@ class ServerSource(object):
         self.client_version = c.strget("version")
         self.client_proxy = c.boolget("proxy")
         #general features:
+        self.zlib = c.boolget("zlib", True)
         self.lz4 = c.boolget("lz4", False)
+        self.lzo = c.boolget("lzo", False)
         self.send_windows = self.ui_client and c.boolget("windows", True)
         self.window_raise = c.boolget("window.raise")
         self.pointer_grabs = c.boolget("pointer.grabs")
@@ -1079,7 +1081,7 @@ class ServerSource(object):
             info[k] = bool(getattr(self, name))
         for prop in ("named_cursors", "server_window_resize", "share", "randr_notify",
                      "clipboard_notifications", "raw_window_icons", "system_tray", "generic_window_types",
-                     "notify_startup_complete", "namespace", "lz4"):
+                     "notify_startup_complete", "namespace", "lz4", "lzo"):
             battr(prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
                            "send_windows"       : "windows",
@@ -1202,6 +1204,11 @@ class ServerSource(object):
             self.send("pointer-ungrab", wid)
 
 
+    def compressed_wrapper(self, datatype, data):
+        if self.zlib or self.lz4 or self.lzo:
+            return compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo)
+        return data
+
     def send_cursor(self, get_cursor_data_cb):
         if not self.send_cursors or self.suspended:
             return
@@ -1222,7 +1229,7 @@ class ServerSource(object):
                     if len(pixels)<256:
                         cursor_data[7] = pixels
                     else:
-                        cursor_data[7] = compressed_wrapper("cursor", pixels, lz4=self.lz4)
+                        cursor_data[7] = self.compressed_wrapper("cursor", pixels)
                 #prepare packet format:
                 if not self.named_cursors:
                     #old versions have limited support (no cursor names, no sizes):
@@ -1366,7 +1373,7 @@ class ServerSource(object):
             w, h, pixel_format, pixel_data = make_window_icon(surf, ("png" in self.encodings))
             assert pixel_format in ("premult_argb32", "png")
             if pixel_format=="premult_argb32":
-                data = compressed_wrapper("argb32", pixel_data)
+                data = self.compressed_wrapper("argb32", pixel_data)
             else:
                 data = Compressed("png", pixel_data)
             self.send("window-icon", wid, w, h, pixel_format, data)

@@ -97,6 +97,7 @@ class WindowSource(object):
                                                         #supports rgb (both rgb24 and rgb32..) compression outside network layer (unwrapped)
         self.rgb_zlib = encoding_options.boolget("rgb_zlib", True)      #client supports zlib pixel compression (not to be confused with 'rgb24zlib'...)
         self.rgb_lz4 = encoding_options.boolget("rgb_lz4", False)       #client supports lz4 pixel compression
+        self.rgb_lzo = encoding_options.boolget("rgb_lzo", False)       #client supports lzo pixel compression
         self.webp_leaks = encoding_options.boolget("webp_leaks", True)  #all clients leaked memory until this flag got added
         self.generic_encodings = encoding_options.boolget("generic")
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
@@ -202,6 +203,7 @@ class WindowSource(object):
         self.supports_rgb24zlib = False
         self.rgb_zlib = False
         self.rgb_lz4 = False
+        self.rgb_lzo = False
         self.generic_encodings = []
         self.supports_transparency = False
         self.full_frames_only = False
@@ -1354,7 +1356,7 @@ class WindowSource(object):
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self._current_speed
         return rgb_encode(coding, image, self.rgb_formats, self.supports_transparency, s,
-                          self.rgb_zlib, self.rgb_lz4, self.encoding_client_options, self.supports_rgb24zlib)
+                          self.rgb_zlib, self.rgb_lz4, self.rgb_lzo, self.encoding_client_options, self.supports_rgb24zlib)
 
     def PIL_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:

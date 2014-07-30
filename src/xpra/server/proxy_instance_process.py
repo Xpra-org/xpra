@@ -502,6 +502,8 @@ class ProxyInstanceProcess(Process):
             self.encode_queue.put(packet)
             #which will queue the packet itself when done:
             return
+        #we do want to reformat cursor packets...
+        #as they will have been uncompressed by the network layer already: 
         elif packet_type=="cursor":
             #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
             #or:
@@ -511,7 +513,12 @@ class ProxyInstanceProcess(Process):
                 if len(pixels)<512:
                     packet[8] = str(pixels)
                 else:
-                    packet[8] = compressed_wrapper("cursor", pixels)
+                    #FIXME: this is ugly and not generic!
+                    zlib = self.caps.get("zlib", True)
+                    lz4 = self.caps.get("lz4", False)
+                    lzo = self.caps.get("lzo", False)
+                    if zlib or lz4 or lzo:
+                        packet[8] = compressed_wrapper("cursor", pixels, zlib=zlib, lz4=lz4, lzo=lzo)
         self.queue_client_packet(packet)
 
 

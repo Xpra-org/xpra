@@ -69,7 +69,7 @@ def webp_encode(coding, image, supports_transparency, quality, speed, options):
 def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
 
-def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, encoding_client_options=True, supports_rgb24zlib=True):
+def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, rgb_lzo=False, encoding_client_options=True, supports_rgb24zlib=True):
     pixel_format = image.get_pixel_format()
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4, encoding_client_options, supports_rgb24zlib), pixel_format, rgb_formats)
     if pixel_format not in rgb_formats:
@@ -114,14 +114,24 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     wire_data = raw_data
     level = 0
     algo = "not"
-    if rgb_zlib or rgb_lz4:
+    if len(pixels)>=256 and (rgb_zlib and compression.use_zlib) or (rgb_lz4 and compression.lz4) or (rgb_lzo and compression.use_lzo):
         level = max(0, min(5, int(115-speed)/20))
         if len(pixels)<1024:
             #fewer pixels, make it more likely we won't bother compressing:
             level = level / 2
     if level>0:
-        lz4 = (not rgb_zlib) or (compression.use_lz4 and rgb_lz4 and level<=3)
-        wire_data = compression.compressed_wrapper(coding, pixels, level=level, lz4=lz4)
+        if rgb_lz4 and compression.use_lz4:
+            wire_data = compression.compressed_wrapper(coding, pixels, lz4=True)
+            algo = "lz4"
+            level = 1
+        elif rgb_lzo and compression.use_lzo:
+            wire_data = compression.compressed_wrapper(coding, pixels, lzo=True)
+            algo = "lzo"
+            level = 1
+        else:
+            assert rgb_zlib and compression.use_zlib
+            wire_data = compression.compressed_wrapper(coding, pixels, zlib=True, level=level)
+            algo = "zlib"
         raw_data = wire_data.data
         #log("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
         #         coding, pixel_format, len(pixels), len(raw_data), int(100.0*len(raw_data)/len(pixels)), self.rgb_lz4)
@@ -131,12 +141,8 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             wire_data = str(pixels)
             raw_data = wire_data
         else:
-            if lz4:
-                options["lz4"] = True
-                algo = "lz4"
-            else:
-                options["zlib"] = level
-                algo = "zlib"
+            #add compressed marker:
+            options[algo] = level
     if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
         bpp = 32
     else:

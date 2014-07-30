@@ -341,7 +341,7 @@ class ClipboardProtocolHelperBase(object):
 
     def _may_compress(self, dtype, dformat, wire_data):
         if len(wire_data)>256:
-            wire_data = compressed_wrapper("clipboard: %s / %s" % (dtype, dformat), wire_data)
+            wire_data = compressed_wrapper("clipboard: %s / %s" % (dtype, dformat), wire_data, zlib=True)
             if len(wire_data)>self.max_clipboard_packet_size:
                 log.warn("even compressed, clipboard contents are too big and have not been sent:"
                          " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
