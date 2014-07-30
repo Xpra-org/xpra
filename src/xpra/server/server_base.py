@@ -1135,7 +1135,7 @@ class ServerBase(ServerCore):
     def send_clipboard_packet(self, *parts):
         assert self._clipboard_helper is not None
         if self._clipboard_client:
-            self._clipboard_client.send(*parts)
+            self._clipboard_client.send_clipboard(parts)
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
         assert self.notifications_forwarder
