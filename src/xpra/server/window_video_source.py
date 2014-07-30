@@ -275,7 +275,7 @@ class WindowVideoSource(WindowSource):
     def must_batch(self, delay):
         #force batching when using video region
         #because the video region code is in the send_delayed path
-        return self.video_subregion.rectangle or WindowSource.must_batch(self, delay)
+        return self.video_subregion.rectangle is not None or WindowSource.must_batch(self, delay)
 
 
     def get_lossless_threshold(self, pixel_count, ww, wh, speed):
@@ -463,7 +463,7 @@ class WindowVideoSource(WindowSource):
 
 
     def must_encode_full_frame(self, window, encoding):
-        return WindowSource.must_encode_full_frame(self, window, encoding) or (encoding in self.video_encodings)
+        return self.full_frames_only or self.is_tray or (encoding in self.video_encodings)
 
 
     def get_encoding_options(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
@@ -493,7 +493,7 @@ class WindowVideoSource(WindowSource):
             #window has just been resized, may still resize
             return nonvideo(q=quality-30)
 
-        if self.get_current_quality()!=quality or self.get_current_speed()!=speed:
+        if self._current_quality!=quality or self.get_current_speed()!=speed:
             #quality or speed override, best not to force video encoder re-init
             return nonvideo()
 
@@ -578,7 +578,7 @@ class WindowVideoSource(WindowSource):
             else:
                 pixel_format = ve.get_src_format()
             width, height = self.window_dimensions
-            quality = self.get_current_quality()
+            quality = self._current_quality
             speed = self.get_current_speed()
 
             scores = self.get_video_pipeline_options(ve.get_encoding(), width, height, pixel_format)
@@ -633,7 +633,7 @@ class WindowVideoSource(WindowSource):
         encoder_specs = self.video_helper.get_encoder_specs(encoding)
         if len(encoder_specs)==0:
             return scores
-        scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self.get_min_speed(), int(self.get_current_quality()), self.get_min_quality())
+        scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self._fixed_min_speed, int(self._current_quality), self._fixed_min_quality)
         def add_scores(info, csc_spec, enc_in_format):
             #find encoders that take 'enc_in_format' as input:
             colorspace_specs = encoder_specs.get(enc_in_format)
@@ -691,8 +691,8 @@ class WindowVideoSource(WindowSource):
 
         #the lower the current quality
         #the more we need an HQ encoder/csc to improve things:
-        qscore = max(0, (100.0-self.get_current_quality()) * quality/100.0)
-        mq = self.get_min_quality()
+        qscore = max(0, (100.0-self._current_quality) * quality/100.0)
+        mq = self._fixed_min_quality
         if mq>=0:
             #if the encoder quality is lower or close to min_quality
             #then it isn't very suitable:
@@ -710,7 +710,7 @@ class WindowVideoSource(WindowSource):
         #the lower the current speed
         #the more we need a fast encoder/csc to cancel it out:
         sscore = max(0, (100.0-self.get_current_speed()) * speed/100.0)
-        ms = self.get_min_speed()
+        ms = self._fixed_min_speed
         if ms>=0:
             #if the encoder speed is lower or close to min_speed
             #then it isn't very suitable:
@@ -843,7 +843,7 @@ class WindowVideoSource(WindowSource):
             scalinglog("using hardcoded scaling: %s", actual_scaling)
         elif actual_scaling is None and self.statistics.damage_events_count>50 and (time.time()-self.statistics.last_resized)>0.5:
             #no scaling window attribute defined, so use heuristics to enable:
-            q = self.get_current_quality()
+            q = self._current_quality
             s = self.get_current_speed()
             #full frames per second (measured in pixels vs window size):
             ffps = 0
@@ -974,7 +974,7 @@ class WindowVideoSource(WindowSource):
                 _, scaling, _, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec = option
                 log("setup_pipeline: trying %s", option)
                 speed = self.get_current_speed()
-                quality = self.get_current_quality()
+                quality = self._current_quality
                 min_w = 1
                 min_h = 1
                 max_w = 16384
