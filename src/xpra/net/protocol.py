@@ -414,22 +414,18 @@ class Protocol(object):
             ti = type(item)
             if ti in (int, long, bool, dict, list, tuple):
                 continue
-            elif ti==Compressed:
+            l = len(item)
+            if ti in (Compressed, LevelCompressed):
                 #already compressed data (usually pixels), send it as-is
-                if len(item)>INLINE_SIZE:
+                if l>INLINE_SIZE:
                     packets.append((i, 0, item.data))
                     packet[i] = ''
                 else:
                     #data is small enough, inline it:
                     packet[i] = item.data
-                    min_comp_size += len(item)
-                    size_check += len(item)
-            elif ti==LevelCompressed:
-                #already compressed data as zlib or lz4, send as-is with compression marker
-                assert item.level>0
-                packets.append((i, item.level, item.data))
-                packet[i] = ''
-            elif ti==str and level>0 and len(item)>LARGE_PACKET_SIZE:
+                    min_comp_size += l
+                    size_check += l
+            elif ti==str and level>0 and l>LARGE_PACKET_SIZE:
                 log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
                 cl, cdata = self._compress(item, level)
