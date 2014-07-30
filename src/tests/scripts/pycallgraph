@@ -29,7 +29,8 @@ net = ['xpra.net.protocol.*',
        #mdns:
        'xpra.net.avahi*',
        ]
-x11 = ['xpra.x11.*']
+x11 = ['xpra.x11.*',
+       'xpra.gtk_common.error.*']
 damage = [
           #'xpra.server.source.*',
           #'xpra.server.*._damage',
@@ -202,7 +203,7 @@ one_offs = ['__main__',
             '<module>',
             'xpra.<module>',
             'xpra.*.<module>',
-            'Queue.<module>', 'Queue.Full', 'Queue.Queue', 'Queue.Empty', 'Queue.LifoQueue', 'Queue.PriorityQueue',
+            'Queue.<module>', 'Queue,_init', 'Queue.Full', 'Queue.Queue', 'Queue.Empty', 'Queue.LifoQueue', 'Queue.PriorityQueue',
             'xpra.*.*init_aliases',
             'xpra.*server*.*ServerBase',
             'xpra.*server*.__init__',
