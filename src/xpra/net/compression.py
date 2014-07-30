@@ -163,8 +163,6 @@ class LevelCompressed(Compressed):
         Compressed.__init__(self, datatype, data)
         self.algorithm = algo
         self.level = level
-    def __len__(self):
-        return len(self.data)
     def __repr__(self):
         return  "LevelCompressed(%s: %s bytes as %s/%s)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
