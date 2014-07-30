@@ -146,11 +146,10 @@ class WindowSource(object):
         self._fixed_min_quality = default_encoding_options.get("min-quality", 0)
         self._fixed_speed = default_encoding_options.get("speed", 0)
         self._fixed_min_speed = default_encoding_options.get("min-speed", 0)
-        #will be overriden by update_quality() and update_speed(), just here for clarity
+        #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
+        #just here for clarity:
         self._current_quality = 50
         self._current_speed = 50
-        self.update_quality()
-        self.update_speed()
 
         self.init_encoders()
         self.update_encoding_selection(encoding)
@@ -169,6 +168,8 @@ class WindowSource(object):
         self.auto_refresh_encodings = [x for x in self.client_refresh_encodings if x in self.common_encodings]
         log("update_encoding_selection(%s) encoding=%s, common encodings=%s, auto_refresh_encodings=%s", encoding, self.encoding, self.common_encodings, self.auto_refresh_encodings)
         assert self.encoding is not None
+        self.update_quality()
+        self.update_speed()
 
     def init_encoders(self):
         self._encoders["rgb24"] = self.rgb_encode
@@ -480,6 +481,7 @@ class WindowSource(object):
         if self.encoding in ("rgb", "png", "png/P", "png/L"):
             #the user has selected an encoding which does not use quality
             #so skip the calculations!
+            self._current_quality = 100
             return
         quality = self._fixed_quality
         if quality<=0:
