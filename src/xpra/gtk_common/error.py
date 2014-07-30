@@ -51,7 +51,7 @@ class XError(Exception):
 
 
 xerror_to_name = None
-def XErrorToName(xerror):
+def get_X_error(xerror):
     global xerror_to_name
     if type(xerror)!=int:
         return xerror
@@ -62,14 +62,21 @@ def XErrorToName(xerror):
             for name,code in constants.items():
                 if name=="Success" or name.startswith("Bad"):
                     xerror_to_name[code] = name
-            log("XErrorToName(..) initialized error names: %s", xerror_to_name)
+            log("get_X_error(..) initialized error names: %s", xerror_to_name)
         if xerror in xerror_to_name:
             return xerror_to_name.get(xerror)
         from xpra.x11.bindings.core_bindings import X11CoreBindings     #@UnresolvedImport
         return X11CoreBindings().get_error_text(xerror)
     except Exception, e:
-        log.error("XErrorToName: %s", e, exc_info=True)
+        log.error("get_X_error(%s) %s", xerror, e, exc_info=True)
     return xerror
+
+class XErrorInfo(object):
+    def __init__(self, xerror):
+        self.xerror = xerror
+    def __repr__(self):
+        return str(get_X_error(self.xerror))
+
 
 # gdk has its own depth tracking stuff, but we have to duplicate it here to
 # minimize calls to XSync.
@@ -90,7 +97,7 @@ class _ErrorManager(object):
         # This is a Xlib error constant (Success == 0)
         error = gdk.error_trap_pop()
         if error:
-            raise XError(XErrorToName(error))
+            raise XError(get_X_error(error))
 
     def _call(self, need_sync, fun, args, kwargs):
         # Goal: call the function.  In all conditions, call _exit exactly once
@@ -107,7 +114,7 @@ class _ErrorManager(object):
             try:
                 self._exit(need_sync)
             except XError, ee:
-                log("XError %s detected while already in unwind; discarding", XErrorToName(ee))
+                log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
             raise e
         self._exit(need_sync)
         return value
@@ -128,7 +135,7 @@ class _ErrorManager(object):
             self.call_unsynced(fun, *args, **kwargs)
             return True
         except XError, e:
-            log("Ignoring X error: %s on %s", XErrorToName(e.msg), fun)
+            log("Ignoring X error: %s on %s", XErrorInfo(e.msg), fun)
             return False
 
     def swallow_synced(self, fun, *args, **kwargs):
@@ -136,7 +143,7 @@ class _ErrorManager(object):
             self.call_synced(fun, *args, **kwargs)
             return True
         except XError, e:
-            log("Ignoring X error: %s on %s", XErrorToName(e.msg), fun)
+            log("Ignoring X error: %s on %s", XErrorInfo(e.msg), fun)
             return False
 
     if XPRA_SYNCHRONIZE:
