@@ -121,7 +121,7 @@ class rectangle(AdHocStruct):
     def clone(self):
         return rectangle(self.x, self.y, self.width, self.height)
 
-if "any" in builtins:
+if builtins.__dict__.get("any"):
     #python 2.5 onwards:
     def contains(regions, x, y, w, h):
         x2 = x+w
