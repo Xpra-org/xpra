@@ -1316,11 +1316,12 @@ class ServerSource(object):
                 self.send("window-metadata", wid, metadata)
 
     def can_send_window(self, window):
-        if not self.send_windows and not window.is_tray():
-            return  False
-        if window.is_tray() and not self.system_tray:
-            return  False
-        return True
+        if self.send_windows and self.system_tray:
+            #common case shortcut
+            return True
+        if window.is_tray():
+            return self.system_tray
+        return self.send_windows
 
     def new_tray(self, wid, window, w, h):
         assert window.is_tray()
