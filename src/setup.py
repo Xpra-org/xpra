@@ -516,8 +516,8 @@ def get_static_pkgconfig(*libnames):
     if os.name=="posix":
         if debug_ENABLED:
             add_to_keywords(defs, 'extra_link_args', "-Wl,--verbose")
-        defs.update({'include_dirs': ["/usr/local/include"],
-                     'library_dirs': ["/usr/local/lib", "/usr/local/lib64"]})
+        defs.update({'include_dirs': ["/usr/include/xpra", "/usr/local/include"],
+                     'library_dirs': ["/usr/lib64/xpra", "/usr/lib/xpra", "/usr/local/lib", "/usr/local/lib64"]})
     if len(libnames)>0:
         add_to_keywords(defs,  'extra_link_args', *static_link_args(*libnames))
     return defs
