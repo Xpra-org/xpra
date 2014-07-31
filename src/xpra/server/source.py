@@ -946,7 +946,7 @@ class ServerSource(object):
 #
     def set_auto_refresh_delay(self, delay, window_ids):
         if window_ids is not None:
-            wss = [self.window_sources.get(wid) for wid in window_ids]
+            wss = (self.window_sources.get(wid) for wid in window_ids)
         else:
             wss = self.window_sources.values()
         for ws in wss:
@@ -1171,7 +1171,7 @@ class ServerSource(object):
         if len(replace)==0:
             return
         #filter only "encodings.*" keys:
-        for k in [x for x in d.keys() if x=="encodings" or x.startswith("encodings.")]:
+        for k in (x for x in d.keys() if x=="encodings" or x.startswith("encodings.")):
             v = d.get(k)
             if type(v) not in (list, tuple):
                 continue
@@ -1508,8 +1508,7 @@ class ServerSource(object):
             #or for transparent windows (if the client supports transparency) since video doesn't do alpha (yet?)
             if not window.is_tray() and (not window.has_alpha() or not self.supports_transparency):
                 wts = get_generic_window_type(window, strip_net=True)
-                video_window_types = ("NORMAL", "DIALOG", "DESKTOP")
-                if len([x for x in wts if x in video_window_types])>0:
+                if set(("NORMAL", "DIALOG", "DESKTOP")).intersection(wts):
                     wclass = WindowVideoSource
 
             ws = wclass(self.idle_add, self.timeout_add, self.source_remove,
