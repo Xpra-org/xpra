@@ -228,7 +228,7 @@ class ClipboardProtocolHelperBase(object):
         # Some types just cannot be marshalled:
         if type in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
                     "PIXEL", "COLORMAP"):
-            log("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data))
+            log("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data or ""))
             return None, None
         if target=="TARGETS" and dtype=="ATOM":
             #targets is special cased here
@@ -284,10 +284,12 @@ class ClipboardProtocolHelperBase(object):
             return None, None
 
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
-        log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s", encoding, dtype, dformat, len(data))
+        log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s", encoding, dtype, dformat, len(data or ""))
         if encoding == "bytes":
             return data
         elif encoding == "integers":
+            if len(data or "")==0:
+                return ""
             if dformat == 32:
                 format_char = "L"
             elif dformat == 16:
