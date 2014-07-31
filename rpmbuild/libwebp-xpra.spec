@@ -1,6 +1,6 @@
 Name:	     libwebp-xpra
 Version:     0.4.0
-Release:     1%{?dist}
+Release:     2%{?dist}
 Summary:     WebP library and conversion tools
 
 Group:       Applications/Multimedia
@@ -34,7 +34,6 @@ WebP images.
     --prefix="%{_prefix}" \
     --libdir="%{_libdir}/xpra" \
     --includedir="%{_includedir}/xpra" \
-    --enable-pic \
     --enable-shared
 
 make %{?_smp_mflags}
@@ -67,5 +66,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Jul 31 2014 Antoine Martin <antoine@devloop.org.uk>
+- configure doesn't support --enable-pic
+
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>
 - initial package 
