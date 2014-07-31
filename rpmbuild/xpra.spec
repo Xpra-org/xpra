@@ -226,7 +226,12 @@ cd xpra-%{version}
 %build
 cd xpra-%{version}
 rm -rf build install
-CFLAGS=-O2 python setup.py build %{dummy} %{ffmpeg_build_args} %{vpx_build_args} %{x264_build_args} %{opencl_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
+
+# set pkg_config_path for xpra video libs
+PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%{_libdir}/xpra/pkgconfig
+export PKG_CONFIG_PATH
+
+CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra python setup.py build %{dummy} %{ffmpeg_build_args} %{vpx_build_args} %{x264_build_args} %{opencl_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
 
 %install
 rm -rf $RPM_BUILD_ROOT
