@@ -1047,7 +1047,7 @@ class WindowVideoSource(WindowSource):
             Video encoders only deal with fixed dimensions,
             so we must clean and reinitialize the encoder if the window dimensions
             has changed.
-            Since this runs in the non-UI thread 'data_to_packet', we must
+            Since this runs in the non-UI 'encode' thread, we must
             use the '_lock' to prevent races.
         """
         log("video_encode%s", (encoding, image, options))

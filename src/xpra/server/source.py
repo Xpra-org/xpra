@@ -173,13 +173,13 @@ class ServerSource(object):
     It sends damage pixels to the client via its 'protocol' instance (network connection).
 
     Strategy: if we have 'ordinary_packets' to send, send those.
-    When we don't, then send window updates from the 'damage_packet_queue'.
+    When we don't, then send packets from the 'packet_queue'. (compressed pixels or clipboard data)
     See 'next_packet'.
 
     The UI thread calls damage(), which goes into WindowSource and eventually (batching may be involved)
-    adds the damage pixels ready for processing to the damage_data_queue,
-    items are picked off by the separate 'data_to_packet' thread and added to the
-    damage_packet_queue.
+    adds the damage pixels ready for processing to the compression_work_queue,
+    items are picked off by the separate 'encode' thread (see )
+    and added to the damage_packet_queue.
     """
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
@@ -239,12 +239,13 @@ class ServerSource(object):
         self.connection_time = time.time()
 
         # the queues of damage requests we work through:
-        self.damage_data_queue = Queue()           #holds functions to call to process damage data
-                                                    #items placed in this queue are picked off by the "data_to_packet" thread,
-                                                    #the functions should add the packets they generate to the 'damage_packet_queue'
-        self.damage_packet_queue = deque()         #holds actual packets ready for sending (already encoded)
+        self.compression_work_queue = Queue()       #holds functions to call to compress data (pixels, clipboard)
+                                                    #items placed in this queue are picked off by the "encode" thread,
+                                                    #the functions should add the packets they generate to the 'packet_queue'
+        self.packet_queue = deque()                 #holds actual packets ready for sending (already encoded)
                                                     #these packets are picked off by the "protocol" via 'next_packet()'
                                                     #format: packet, wid, pixels, start_send_cb, end_send_cb
+                                                    #(only packet is required - the rest can be 0/None for clipboard packets)
         #if we "proxy video", we will modify the video helper to add
         #new encoders, so we must make a deep copy to preserve the original
         #which may be used by other clients (other ServerSource instances)
@@ -258,7 +259,7 @@ class ServerSource(object):
 
         # ready for processing:
         protocol.set_packet_source(self.next_packet)
-        self.encode_thread = make_daemon_thread(self.data_to_packet, "encode")
+        self.encode_thread = make_daemon_thread(self.encode_loop, "encode")
         self.encode_thread.start()
         #for managing the recalculate_delays work:
         self.calculate_window_ids = set()
@@ -351,7 +352,7 @@ class ServerSource(object):
         #it is now safe to add the end of queue marker:
         #(all window sources will have stopped queuing data,
         # they queue data using the UI thread, so we use it too)
-        self.idle_add(self.damage_data_queue.put, None)
+        self.idle_add(self.compression_work_queue.put, None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
         if self.mmap:
@@ -927,9 +928,9 @@ class ServerSource(object):
         if not self.is_closed():
             if len(self.ordinary_packets)>0:
                 packet = self.ordinary_packets.pop(0)
-            elif len(self.damage_packet_queue)>0:
-                packet, _, _, start_send_cb, end_send_cb = self.damage_packet_queue.popleft()
-            have_more = packet is not None and (len(self.ordinary_packets)>0 or len(self.damage_packet_queue)>0)
+            elif len(self.packet_queue)>0:
+                packet, _, _, start_send_cb, end_send_cb = self.packet_queue.popleft()
+            have_more = packet is not None and (len(self.ordinary_packets)>0 or len(self.packet_queue)>0)
         return packet, start_send_cb, end_send_cb, have_more
 
     def send(self, *parts):
@@ -1114,13 +1115,13 @@ class ServerSource(object):
             Adds encoding and window specific information
         """
         info = {
-            "damage.data_queue.size.current"    : self.damage_data_queue.qsize(),
-            "damage.packet_queue.size.current"  : len(self.damage_packet_queue),
+            "damage.compression_queue.size.current" : self.compression_work_queue.qsize(),
+            "damage.packet_queue.size.current"      : len(self.packet_queue),
             }
-        qpixels = [x[2] for x in list(self.damage_packet_queue)]
-        add_list_stats(info, "damage_packet_queue_pixels",  qpixels)
+        qpixels = [x[2] for x in list(self.packet_queue)]
+        add_list_stats(info, "packet_queue_pixels",  qpixels)
         if len(qpixels)>0:
-            info["damage_packet_queue_pixels.current"] = qpixels[-1]
+            info["packet_queue_pixels.current"] = qpixels[-1]
 
         info.update(self.statistics.get_info())
 
@@ -1192,16 +1193,19 @@ class ServerSource(object):
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended:
             return
+        #call compress_clibboard via the work queue:
+        self.compression_work_queue.put((self.compress_clipboard, packet))
+
+    def compress_clipboard(self, packet):
+        #Note: this runs in the 'encode' thread!
         packet = list(packet)
         for i in range(len(packet)):
             v = packet[i]
             if type(v)==Uncompressed:
-                log.info("Uncompressed in clipboard packet!")
                 packet[i] = self.compressed_wrapper(v.datatype, v.data)
-                #TODO: move this out of the UI thread
-                #and compress it using the self.damage_data_queue
+                #and compress it using the self.compression_work_queue
                 #or using a wrapper telling the network encode layer to do it
-        self.send(*packet)
+        self.queue_packet(packet)
 
 
     def pointer_grab(self, wid):
@@ -1559,25 +1563,26 @@ class ServerSource(object):
 # Methods used by WindowSource:
 #
     def queue_size(self):
-        return self.damage_data_queue.qsize()
+        return self.compression_work_queue.qsize()
 
     def queue_damage(self, *fn_and_args):
         """
-            This is used by WindowSource to queue damage processing to be done in the 'data_to_packet' thread.
-            The 'encode_and_send_cb' will then add the resulting packet to the 'damage_packet_queue' via 'queue_packet'.
+            This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
+            The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
         """
-        self.statistics.damage_data_qsizes.append((time.time(), self.damage_data_queue.qsize()))
-        self.damage_data_queue.put(fn_and_args)
+        self.statistics.compression_work_qsizes.append((time.time(), self.compression_work_queue.qsize()))
+        self.compression_work_queue.put(fn_and_args)
 
-    def queue_packet(self, packet, wid, pixels, start_send_cb, end_send_cb):
+    def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None):
         """
-            Add a new 'draw' packet to the 'damage_packet_queue'.
+            Add a new 'draw' packet to the 'packet_queue'.
             Note: this code runs in the non-ui thread
         """
         now = time.time()
-        self.statistics.damage_packet_qsizes.append((now, len(self.damage_packet_queue)))
-        self.statistics.damage_packet_qpixels.append((now, wid, sum([x[2] for x in list(self.damage_packet_queue) if x[1]==wid])))
-        self.damage_packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb))
+        self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
+        if wid>0:
+            self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in list(self.packet_queue) if x[1]==wid)))
+        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb))
         p = self.protocol
         if p:
             p.source_has_more()
@@ -1585,15 +1590,15 @@ class ServerSource(object):
 #
 # The damage packet thread loop:
 #
-    def data_to_packet(self):
+    def encode_loop(self):
         """
             This runs in a separate thread and calls all the function callbacks
-            which are added to the 'damage_data_queue'.
+            which are added to the 'compression_work_queue'.
             Must run until we hit the end of queue marker,
             to ensure all the queued items get called.
         """
         while True:
-            fn_and_args = self.damage_data_queue.get(True)
+            fn_and_args = self.compression_work_queue.get(True)
             if fn_and_args is None:
                 return              #empty marker
             try:

@@ -1179,8 +1179,8 @@ class WindowSource(object):
 
     def queue_damage_packet(self, packet, damage_time, process_damage_time):
         """
-            Adds the given packet to the damage_packet_queue,
-            (warning: this runs from the non-UI thread 'data_to_packet')
+            Adds the given packet to the packet_queue,
+            (warning: this runs from the non-UI 'encode' thread)
             we also record a number of statistics:
             - damage packet queue size
             - number of pixels in damage packet queue
@@ -1244,8 +1244,8 @@ class WindowSource(object):
     def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options):
         """
             Picture encoding - non-UI thread.
-            Converts a damage item picked from the 'damage_data_queue'
-            by the 'data_to_packet' thread and returns a packet
+            Converts a damage item picked from the 'compression_work_queue'
+            by the 'encode' thread and returns a packet
             ready for sending by the network layer.
 
             * 'mmap' will use 'mmap_send' + 'mmap_encode' - always if available, otherwise:

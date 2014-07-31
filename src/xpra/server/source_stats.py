@@ -35,11 +35,11 @@ class GlobalPerformanceStatistics(object):
         self.mmap_bytes_sent = 0
         self.mmap_free_size = 0                         #how much of the mmap space is left (may be negative if we failed to write the last chunk)
         # queue statistics:
-        self.damage_data_qsizes = maxdeque(NRECS)       #size of the damage_data_queue before we add a new record to it
+        self.compression_work_qsizes = maxdeque(NRECS)  #size of the compression_work_queue before we add a new record to it
                                                         #(event_time, size)
-        self.damage_packet_qsizes = maxdeque(NRECS)     #size of the damage_packet_queue before we add a new packet to it
+        self.packet_qsizes = maxdeque(NRECS)            #size of the packet_queue before we add a new packet to it
                                                         #(event_time, size)
-        self.damage_packet_qpixels = maxdeque(NRECS)    #number of pixels waiting in the damage_packet_queue for a specific window,
+        self.damage_packet_qpixels = maxdeque(NRECS)    #number of pixels waiting in the packet_queue for a specific window,
                                                         #before we add a new packet to it
                                                         #(event_time, wid, size)
         self.damage_last_events = maxdeque(NRECS)       #records the x11 damage requests as they are received:
@@ -116,13 +116,13 @@ class GlobalPerformanceStatistics(object):
             l = 0.005 + self.min_server_ping_latency
             wm = logp(l / 0.050)
             factors.append(calculate_for_target(metric, l, self.avg_server_ping_latency, self.recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
-        #damage packet queue size: (includes packets from all windows)
-        factors.append(queue_inspect("damage-packet-queue-size", self.damage_packet_qsizes, smoothing=sqrt))
-        #damage packet queue pixels (global):
+        #packet queue size: (includes packets from all windows)
+        factors.append(queue_inspect("packet-queue-size", self.packet_qsizes, smoothing=sqrt))
+        #packet queue pixels (global):
         qpix_time_values = [(event_time, value) for event_time, _, value in list(self.damage_packet_qpixels)]
-        factors.append(queue_inspect("damage-packet-queue-pixels", qpix_time_values, div=pixel_count, smoothing=sqrt))
-        #damage data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
-        factors.append(queue_inspect("damage-data-queue", self.damage_data_qsizes))
+        factors.append(queue_inspect("packet-queue-pixels", qpix_time_values, div=pixel_count, smoothing=sqrt))
+        #compression data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
+        factors.append(queue_inspect("compression-work-queue", self.compression_work_qsizes))
         if self.mmap_size>0:
             #full: effective range is 0.0 to ~1.2
             full = 1.0-float(self.mmap_free_size)/self.mmap_size
@@ -147,9 +147,9 @@ class GlobalPerformanceStatistics(object):
             "damage.events"                     : self.damage_events_count,
             "damage.packets_sent"               : self.packet_count
             }
-        qsizes = [x for _,x in list(self.damage_data_qsizes)]
+        qsizes = [x for _,x in list(self.compression_work_qsizes)]
         add_list_stats(info, "damage.data_queue.size",  qsizes)
-        qsizes = [x for _,x in list(self.damage_packet_qsizes)]
+        qsizes = [x for _,x in list(self.packet_qsizes)]
         add_list_stats(info, "damage.packet_queue.size",  qsizes)
 
         #client pixels per second:
