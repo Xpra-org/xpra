@@ -1,15 +1,9 @@
-%{?el5: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
-
-# For EPEL5 make a python26 package.
-%if 0%{?rhel} == 5
-%global __python26 %{_bindir}/python2.6
-%{!?pydir26: %global pydir26 %{_builddir}/python26-%{name}-%{version}-%{release}}
-%{!?python26_sitearch: %global python26_sitearch %(%{__python26} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%endif
+%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name:		Cython
 Version:	0.20.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
@@ -19,14 +13,6 @@ Source:		http://www.cython.org/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	python-devel python-setuptools
-%if 0%{?rhel} == 5
-BuildRequires:  python26-devel
-BuildRequires:  python26-distribute
-%endif 
-
-%if 0%{?rhel} ==  5
-Requires:       python(abi) = 2.4
-%endif
 
 %description
 This is a development version of Pyrex, a language
@@ -40,54 +26,16 @@ For more info, see:
     Demos	   for usage examples
 
 
-%if 0%{?rhel} == 5
-%package -n python26-Cython
-Summary:        A language for writing Python extension modules
-Group:          Development/Libraries
-Requires:       python(abi) = 2.6
-
-%description -n python26-Cython
-This is a development version of Pyrex, a language
-for writing Python extension modules.
-
-For more info, see:
-
-    Doc/About.html for a description of the language
-    INSTALL.txt	   for installation instructions
-    USAGE.txt	   for usage instructions
-    Demos	   for usage examples
-%endif
-
 %prep
 %setup -q -n %{name}-%{version}
-
-%if 0%{?rhel} == 5
-rm -rf   %{pydir26}
-mkdir -p %{pydir26}
-cp -a *  %{pydir26}
-%endif
 
 
 %build
 %{__python} setup.py build
 
-%if 0%{?rhel} == 5
-pushd %{pydir26}
-%{__python26} setup.py build
-popd
-%endif
 
 %install
 rm -rf %{buildroot}
-%if 0%{?rhel} == 5
-pushd %{pydir26}
-%{__python26} setup.py install -O1 --skip-build --root %{buildroot}
-popd
-pushd %{buildroot}%{_bindir}
-mv cython cython-python26
-mv cygdb  cygdb-python26
-popd
-%endif
 
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
@@ -111,26 +59,18 @@ rm -rf %{buildroot}
 %{python_sitearch}/Cython*egg-info
 %doc *.txt Demos Doc Tools
 
-%if 0%{?rhel} == 5
-%files -n python26-Cython
-%defattr(-,root,root,-)
-%{_bindir}/cython-python26
-%{_bindir}/cygdb-python26
-%{python26_sitearch}/Cython
-%{python26_sitearch}/cython.py*
-%{python26_sitearch}/pyximport
-%{python26_sitearch}/Cython*egg-info
-%doc *.txt Demos Doc Tools
-%endif
 
 %changelog
+* Thu Jul 31 2014 Antoine Martin <antoine@devloop.org.uk> - 0.20.2-2
+- Removed EPEL bits that get in the way, fix (guess) date in changelog
+
 * Tue Jun 17 2014 Matthew Gyurgyik <pyther@pyther.net> - 0.20.2-1
 - Updated to 0.20.2
 
 * Fri Jun 13 2014 Matthew Gyurgyik <pyther@pyther.net> - 0.20.1-1
 - Updated to 0.20.1
 
-* Sun Apr 03 2012 Steve Traylen <steve.traylen@cern.ch> - 0.14.1-3
+* Tue Apr 03 2012 Steve Traylen <steve.traylen@cern.ch> - 0.14.1-3
 - Adapt SPEC file for python3 and python26 on EPEL5.
 
 * Mon Feb 07 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.14.1-2
