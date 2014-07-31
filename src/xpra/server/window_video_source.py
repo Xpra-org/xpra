@@ -493,7 +493,7 @@ class WindowVideoSource(WindowSource):
             #window has just been resized, may still resize
             return nonvideo(q=quality-30)
 
-        if self._current_quality!=quality or self.get_current_speed()!=speed:
+        if self._current_quality!=quality or self._current_speed!=speed:
             #quality or speed override, best not to force video encoder re-init
             return nonvideo()
 
@@ -579,7 +579,7 @@ class WindowVideoSource(WindowSource):
                 pixel_format = ve.get_src_format()
             width, height = self.window_dimensions
             quality = self._current_quality
-            speed = self.get_current_speed()
+            speed = self._current_speed
 
             scores = self.get_video_pipeline_options(ve.get_encoding(), width, height, pixel_format)
             if len(scores)==0:
@@ -633,7 +633,7 @@ class WindowVideoSource(WindowSource):
         encoder_specs = self.video_helper.get_encoder_specs(encoding)
         if len(encoder_specs)==0:
             return scores
-        scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), int(self.get_current_speed()), self._fixed_min_speed, int(self._current_quality), self._fixed_min_quality)
+        scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), self._current_speed, self._fixed_min_speed, int(self._current_quality), self._fixed_min_quality)
         def add_scores(info, csc_spec, enc_in_format):
             #find encoders that take 'enc_in_format' as input:
             colorspace_specs = encoder_specs.get(enc_in_format)
@@ -709,7 +709,7 @@ class WindowVideoSource(WindowSource):
             speed /= 2.25
         #the lower the current speed
         #the more we need a fast encoder/csc to cancel it out:
-        sscore = max(0, (100.0-self.get_current_speed()) * speed/100.0)
+        sscore = max(0, (100.0-self._current_speed) * speed/100.0)
         ms = self._fixed_min_speed
         if ms>=0:
             #if the encoder speed is lower or close to min_speed
@@ -727,7 +727,7 @@ class WindowVideoSource(WindowSource):
             and a required encoding step (encoder_spec and width/height),
             we calculate a score of how well this matches our requirements:
             * our quality target (as per get_currend_quality)
-            * our speed target (as per get_current_speed)
+            * our speed target (as per _current_speed)
             * how expensive it would be to switch to this pipeline option
             Note: we know the current pipeline settings, so the "switching
             cost" will be lower for pipelines that share components with the
@@ -844,7 +844,7 @@ class WindowVideoSource(WindowSource):
         elif actual_scaling is None and self.statistics.damage_events_count>50 and (time.time()-self.statistics.last_resized)>0.5:
             #no scaling window attribute defined, so use heuristics to enable:
             q = self._current_quality
-            s = self.get_current_speed()
+            s = self._current_speed
             #full frames per second (measured in pixels vs window size):
             ffps = 0
             stime = time.time()-5           #only look at the last 5 seconds max
@@ -973,7 +973,7 @@ class WindowVideoSource(WindowSource):
             try:
                 _, scaling, _, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec = option
                 log("setup_pipeline: trying %s", option)
-                speed = self.get_current_speed()
+                speed = self._current_speed
                 quality = self._current_quality
                 min_w = 1
                 min_h = 1
