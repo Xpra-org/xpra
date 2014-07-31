@@ -554,7 +554,7 @@ def usage(msg=None):
     print("%s -t draw -i '*' -e ALL -- attach  :10" % cmd)
     print("#profile the client's write thread without logging for 10 seconds, xpra runs without mmap and with x264 as primary encoding:")
     print("%s -t write -i '*' -e logging -r 10 -- attach  :10  --no-mmap --encoding=x264" % cmd)
-    print("#profile server data_to_packet thread, excluding standard libraries")
+    print("#profile server encode thread, excluding standard libraries")
     print("%s -t encode -i '*' -e std -e libs -- start :10" % cmd)
     sys.exit(1)
 
