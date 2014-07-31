@@ -632,8 +632,12 @@ def get_xorg_bin():
                 return xorg
     return None
 
+xorg_version = None
 def get_xorg_version(xorg_bin):
     # can't detect version if there is no binary
+    global xorg_version
+    if xorg_version is not None:
+        return xorg_version
     if not xorg_bin:
         return None
     cmd = [xorg_bin, "-version"]
@@ -645,25 +649,24 @@ def get_xorg_version(xorg_bin):
         for line in err.decode("utf8").splitlines():
             if line.startswith(V_LINE):
                 v_str = line[len(V_LINE):]
-                return [int(x) for x in v_str.split(".")[:2]]
+                xorg_version = [int(x) for x in v_str.split(".")[:2]]
+                break
     else:
         print("failed to detect Xorg version: %s" % err)
-    return None
+    return xorg_version
 
 def detect_xorg_setup():
     if not server_ENABLED or WIN32:
         return ("", False, False)
 
     xorg_bin = get_xorg_bin()
-    #do live detection
-    xorg_version = get_xorg_version(xorg_bin)
 
     # detect displayfd support based on Xorg version
     # if Xdummy support is enabled,
     # then the X server is new enough to support displayfd:
     if Xdummy_ENABLED is True:
         has_displayfd = True
-    elif xorg_version >= [1, 12]:
+    elif get_xorg_version(xorg_bin) >= [1, 12]:
         has_displayfd = True
     else:
         has_displayfd = False
@@ -712,6 +715,7 @@ def detect_xorg_setup():
     else:
         print("Warning: failed to detect OS release using %s: %s" % (" ".join(cmd), err))
 
+    xorg_version = get_xorg_version(xorg_bin)
     if not xorg_version:
         print("Xorg version could not be detected, Xdummy support disabled (using Xvfb as safe default)")
         return Xvfb()
