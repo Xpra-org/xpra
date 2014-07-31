@@ -24,7 +24,7 @@ from xpra.util import repr_ellipsized
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net import packet_encoding
-from xpra.net.compression import get_compression_caps, decompress, InvalidCompressionException, Compressed, LevelCompressed
+from xpra.net.compression import get_compression_caps, decompress, InvalidCompressionException, Compressed, LevelCompressed, Uncompressed
 from xpra.net.packet_encoding import get_packet_encoding_caps, decode, InvalidPacketEncodingException
 from xpra.net.header import unpack_header, pack_header, pack_header_and_data, FLAGS_CIPHER, FLAGS_NOHEADER
 from xpra.net.crypto import get_crypto_caps, get_cipher
@@ -393,7 +393,7 @@ class Protocol(object):
         """
         Given a packet (tuple or list of items), converts it for the wire.
         This method returns all the binary packets to send, as an array of:
-        (index, compression_level, binary_data)
+        (index, compression_level and compression flags, binary_data)
         The index, if positive indicates the item to populate in the packet
         whose index is zero.
         ie: ["blah", [large binary data], "hello", 200]
@@ -414,6 +414,13 @@ class Protocol(object):
             if ti in (int, long, bool, dict, list, tuple):
                 continue
             l = len(item)
+            if ti==Uncompressed:
+                #this is a marker used to tell us we should compress it now
+                #(used by the client for clipboard data)
+                item = item.compress()
+                packet[i] = item
+                ti = type(item)
+                #(it may now be a "Compressed" item and be processed further)
             if ti in (Compressed, LevelCompressed):
                 #already compressed data (usually pixels, cursors, etc)
                 if not item.can_inline or l>INLINE_SIZE:

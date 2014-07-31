@@ -176,7 +176,8 @@ class Uncompressed(object):
         return len(self.data)
     def __repr__(self):
         return  "Uncompressed(%s: %s bytes)" % (self.datatype, len(self.data))
-
+    def compress(self):
+        raise Exception("compress() not defined on %s" % self)
 
 def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, can_inline=True):
     if lz4:

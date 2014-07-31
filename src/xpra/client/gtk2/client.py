@@ -232,17 +232,21 @@ class XpraClient(GTKXpraClient):
     def setup_clipboard_helper(self, helperClass, *args, **kwargs):
         clipboardlog("setup_clipboard_helper(%s, %s, %s)", helperClass, args, kwargs)
         def clipboard_send(*parts):
-            if self.clipboard_enabled:
-                #handle clipboard compression if needed:
-                from xpra.net.compression import Uncompressed
-                packet = list(parts)
-                for i in range(len(packet)):
-                    v = packet[i]
-                    if type(v)==Uncompressed:
-                        packet[i] = self.compressed_wrapper(v.datatype, v.data)
-                self.send(*packet)
-            else:
+            if not self.clipboard_enabled:
                 clipboardlog("clipboard is disabled, not sending clipboard packet")
+                return
+            #handle clipboard compression if needed:
+            from xpra.net.compression import Uncompressed
+            packet = list(parts)
+            for i in range(len(packet)):
+                v = packet[i]
+                if type(v)==Uncompressed:
+                    #register the compressor which will fire in protocol.encode:
+                    def compress_clipboard():
+                        log("compress_clipboard() compressing %s", args, v)
+                        return self.compressed_wrapper(v.datatype, v.data)
+                    v.compress = compress_clipboard
+            self.send(*packet)
         def clipboard_progress(local_requests, remote_requests):
             clipboardlog("clipboard_progress(%s, %s)", local_requests, remote_requests)
             if local_requests is not None:
