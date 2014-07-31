@@ -20,6 +20,7 @@ from pycuda.compiler import compile
 
 
 DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "-1"))
+DEFAULT_CUDA_DEVICE_NAME = int(os.environ.get("XPRA_CUDA_DEVICE_NAME", ""))
 
 
 #record when we get failures/success:
@@ -108,7 +109,7 @@ def reset_state():
     DEVICES = None
 
 
-def select_device(preferred_device_id=DEFAULT_CUDA_DEVICE_ID, min_compute=0):
+def select_device(preferred_device_id=DEFAULT_CUDA_DEVICE_ID, preferred_device_name=DEFAULT_CUDA_DEVICE_NAME, min_compute=0):
     devices = init_all_devices()
     global DEVICE_STATE
     free_pct = 0
@@ -135,6 +136,10 @@ def select_device(preferred_device_id=DEFAULT_CUDA_DEVICE_ID, min_compute=0):
                 if compute<min_compute:
                     log("ignoring device %s: compute capability %#x (minimum %#x required)", device_info(device), compute, min_compute)
                 elif device_id==preferred_device_id:
+                    log("device matches preferred device id: %s", preferred_device_id)
+                    return device_id, device
+                elif preferred_device_name and device_info(device).find(preferred_device_name)>=0:
+                    log("device matches preferred device name: %s", preferred_device_name)
                     return device_id, device
                 elif tpct>free_pct:
                     selected_device = device
