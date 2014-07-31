@@ -283,11 +283,11 @@ class XpraClient(GTKXpraClient):
 
     def compressed_wrapper(self, datatype, data):
         #FIXME: ugly assumptions here, should pass by name!
-        zlib = "zlib" in self.server_compressors
-        lz4 = "lz4" in self.server_compressors
-        lzo = "lzo" in self.server_compressors
+        from xpra.net import compression
+        zlib = "zlib" in self.server_compressors and compression.use_zlib
+        lz4 = "lz4" in self.server_compressors and compression.use_lz4
+        lzo = "lzo" in self.server_compressors and compression.use_lzo
         if zlib or lz4 or lzo:
-            from xpra.net import compression
             return compression.compressed_wrapper(datatype, data, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
         return data
 
