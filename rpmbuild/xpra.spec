@@ -108,6 +108,7 @@
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
+%define dummy --without-Xdummy
 %if 0%{?static_video_libs}
 %define webp_build_args --with-webp --with-webp_static
 %else
@@ -225,7 +226,7 @@ cd xpra-%{version}
 %build
 cd xpra-%{version}
 rm -rf build install
-CFLAGS=-O2 python setup.py build %{ffmpeg_build_args} %{vpx_build_args} %{x264_build_args} %{opencl_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
+CFLAGS=-O2 python setup.py build %{dummy} %{ffmpeg_build_args} %{vpx_build_args} %{x264_build_args} %{opencl_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
 
 %install
 rm -rf $RPM_BUILD_ROOT
