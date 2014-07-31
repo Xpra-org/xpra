@@ -566,9 +566,9 @@ class WindowSource(object):
             if options is not None:
                 override = options.get("override_options", False)
                 existing_options = self._damage_delayed[4]
-                for k,v in options.items():
+                for k in options.keys():
                     if override or k not in existing_options:
-                        existing_options[k] = v
+                        existing_options[k] = options[k]
             log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
                 x, y, w, h, options, self.wid, self._damage_delayed[3], now-self._damage_delayed[0])
             return
@@ -779,7 +779,7 @@ class WindowSource(object):
 
         regions = list(set(regions))
         bytes_threshold = ww*wh*self.max_bytes_percent/100
-        pixel_count = sum([rect.width*rect.height for rect in regions])
+        pixel_count = sum(rect.width*rect.height for rect in regions)
         bytes_cost = pixel_count+self.small_packet_cost*len(regions)
         log("send_delayed_regions: bytes_cost=%s, bytes_threshold=%s, pixel_count=%s", bytes_cost, bytes_threshold, pixel_count)
         if bytes_cost>=bytes_threshold:
@@ -811,7 +811,7 @@ class WindowSource(object):
 
         #check to see if the total amount of pixels makes us use a fullscreen update instead:
         if len(regions)>1:
-            pixel_count = sum([rect.width*rect.height for rect in regions])
+            pixel_count = sum(rect.width*rect.height for rect in regions)
             log("send_delayed_regions: %s regions with %s pixels (coding=%s)", len(regions), pixel_count, coding)
             actual_encoding = get_encoding(pixel_count)
             if self.must_encode_full_frame(window, actual_encoding):
@@ -1109,7 +1109,7 @@ class WindowSource(object):
 
         #decide if now is the right time, or if we delay some more
         #(the more pixels we have to refresh, the longer we wait)
-        pixels = sum([r.width*r.height for r in self.refresh_regions])
+        pixels = sum(r.width*r.height for r in self.refresh_regions)
         ww, wh = window.get_dimensions()
         pct = 100*pixels/(ww*wh)
         #target auto_refresh_delay, but double that if we have a full screen update:
