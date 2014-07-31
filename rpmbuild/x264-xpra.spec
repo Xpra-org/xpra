@@ -38,8 +38,8 @@ This package contains the development files for %{name}.
     --prefix="%{_prefix}" \
     --libdir="%{_libdir}/xpra" \
     --includedir="%{_includedir}/xpra" \
-    --enable-shared
-    #--enable-static \
+    --enable-shared \
+    --enable-static
 
 make %{?_smp_mflags}
 
@@ -66,7 +66,7 @@ rm -rf %{buildroot}
 %defattr(644,root,root,0755)
 %{_includedir}/xpra/x264.h
 %{_includedir}/xpra/x264_config.h
-#%{_libdir}/xpra/libx264.a
+%{_libdir}/xpra/libx264.a
 %{_libdir}/xpra/libx264.so
 %{_libdir}/xpra/pkgconfig/x264.pc
 
