@@ -662,12 +662,12 @@ if trace_thread:
             tracing = name==trace_thread and trace_count==0
             if tracing:
                 trace_count += 1
-                print("started tracing '%s' : %s" % (name, target))
+                print("started tracing  %s : %s" % (name.rjust(16), target))
                 pcg.start(reset=False)
             else:
-                print("not tracing     '%s' : %s" % (name, target))
+                print("not tracing      %s : %s" % (name.rjust(16), target))
             target()
-            print("ended           '%s' : %s" % (name, target))
+            print("ended            %s : %s" % (name.rjust(16), target))
             if tracing:
                 trace_count -= 0
                 if trace_count<=0:
