@@ -19,11 +19,6 @@ Source:         https://pypi.python.org/packages/source/l/lz4/lz4-%{version}.tar
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 BuildRequires:  python-devel
-%if 0%{?el6}
-BuildRequires:  python-nose1.1
-%else
-BuildRequires:  python-nose
-%endif
 
 %description
 This package provides bindings for the lz4 compression library
