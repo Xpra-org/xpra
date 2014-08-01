@@ -1195,6 +1195,8 @@ if WIN32:
         add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
         add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
         add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
+        add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")
+        add_console_exe("xpra/platform/features.py",        "features.ico",     "Feature_info")
         if sound_ENABLED:
             add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
             add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")

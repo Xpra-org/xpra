@@ -110,3 +110,26 @@ platform_import(globals(), "paths", True,
 platform_import(globals(), "paths", False,
                 "get_default_conf_dir",
                 "get_default_socket_dir")
+
+
+def main():
+    from xpra.util import nonl, pver
+    def print_dict(d):
+        for k in sorted(d.keys()):
+            v = d[k]
+            print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
+    from xpra.platform import init, clean
+    try:
+        init("Path-Info", "Path Info")
+        d = {"conf"         : get_default_conf_dir(),
+             "socket"       : get_default_socket_dir(),
+             "app"          : get_app_dir(),
+             "app.default"  : default_get_app_dir(),
+             "resources"    : get_resources_dir(),
+             "icons"        : get_icon_dir()}
+        print_dict(d)
+    finally:
+        clean()
+
+if __name__ == "__main__":
+    main()

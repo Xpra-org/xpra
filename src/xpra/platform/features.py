@@ -18,9 +18,7 @@ CLIPBOARD_NATIVE_CLASS = None
 CAN_DAEMONIZE = False
 UI_THREAD_POLLING = 0
 
-from xpra.platform import platform_import
-platform_import(globals(), "features", False,
-                "LOCAL_SERVERS_SUPPORTED",
+_features_list_ = ["LOCAL_SERVERS_SUPPORTED",
                 "SHADOW_SUPPORTED",
                 "CAN_DAEMONIZE",
                 "MMAP_SUPPORTED",
@@ -31,4 +29,27 @@ platform_import(globals(), "features", False,
                 "CLIPBOARD_WANT_TARGETS",
                 "CLIPBOARD_GREEDY",
                 "CLIPBOARD_NATIVE_CLASS",
-                "UI_THREAD_POLLING")
+                "UI_THREAD_POLLING"]
+from xpra.platform import platform_import
+platform_import(globals(), "features", False,
+                *_features_list_)
+
+
+def main():
+    from xpra.util import nonl, pver
+    def print_dict(d):
+        for k in sorted(d.keys()):
+            v = d[k]
+            print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
+    from xpra.platform import init, clean
+    try:
+        init("Features-Info", "Features Info")
+        d = {}
+        for k in sorted(_features_list_):
+            d[k] = globals()[k]
+        print_dict(d)
+    finally:
+        clean()
+
+if __name__ == "__main__":
+    main()
