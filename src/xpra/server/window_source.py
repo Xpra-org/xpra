@@ -754,7 +754,7 @@ class WindowSource(object):
         window.acknowledge_changes()
         self.do_send_delayed_regions(damage_time, window, regions, coding, options)
 
-    def do_send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, fallback=None):
+    def do_send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, fallback=[]):
         ww,wh = window.get_dimensions()
         speed = options.get("speed") or self._current_speed
         quality = options.get("quality") or self._current_quality
@@ -858,20 +858,22 @@ class WindowSource(object):
             #add all the fallbacks so something will match
             options += [x for x in fallback+self.common_encodings if x is not None and x not in options]
         e = self.do_get_best_encoding(options, current_encoding, fallback)
-        return e
+        return e or self.common_encodings[0]
 
-    def do_get_best_encoding(self, options, current_encoding, fallback):
+    def do_get_best_encoding(self, options, current_encoding, fallback=[]):
         #non-video encodings: stick to what we have if we can:
         if current_encoding in options:
             return current_encoding
         return self.pick_encoding(options, fallback)
 
-    def pick_encoding(self, encodings, fallback=None):
+    def pick_encoding(self, encodings, fallback=[]):
         """ choose an encoding from the list, or use the fallback """
         matches = [e for e in encodings if e is not None and ({"rgb32" : "rgb", "rgb24" : "rgb"}.get(e, e) in self.common_encodings)]
         if matches:
             return matches[0]
-        return {"rgb" : "rgb24"}.get(fallback, fallback)
+        if not fallback:
+            return None
+        return {"rgb" : "rgb24"}.get(fallback[0], fallback[0])
 
     def transparent_encoding_options(self, current_encoding, pixel_count, speed, quality):
         current_encoding = {"rgb" : "rgb32"}.get(current_encoding, current_encoding)
