@@ -113,6 +113,10 @@ platform_import(globals(), "paths", False,
 
 
 def main():
+    if "-v" in sys.argv or "--verbose" in sys.argv:
+        from xpra.log import add_debug_category
+        add_debug_category("util")
+
     from xpra.util import nonl, pver
     def print_dict(d):
         for k in sorted(d.keys()):
