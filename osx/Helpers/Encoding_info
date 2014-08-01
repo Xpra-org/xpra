@@ -5,4 +5,4 @@ exe_name=$(basename $0)
 full_path=$(cd "$(dirname "$0")"; pwd)
 PYTHON="$full_path/PythonExecWrapper"
 
-exec "$PYTHON" "Encoding Info" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.codecs.loader import main;main()"
+exec "$PYTHON" "Encoding Info" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.codecs.loader import main;main()" "$@"
