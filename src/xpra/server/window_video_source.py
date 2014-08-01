@@ -355,7 +355,11 @@ class WindowVideoSource(WindowSource):
         #so we can ensure we don't use the video encoder when we don't want to:
 
         def send_nonvideo(regions=regions, encoding=coding, exclude_region=None):
-            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, fallback=self.non_video_encodings)
+            if self.non_video_encodings:
+                fallback = self.non_video_encodings[0]
+            else:
+                fallback = self.encoding
+            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, fallback=fallback)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
