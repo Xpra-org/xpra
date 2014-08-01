@@ -123,9 +123,8 @@ class WindowSource(object):
         self.has_alpha = window.has_alpha()
         self.window_dimensions = 0, 0
         self.fullscreen = window.get_property("fullscreen")
-        self.scaling = window.get_property("scaling")
+        self.scaling = None
         self.maximized = False          #set by the client!
-        window.connect("notify::scaling", self._scaling_changed)
         window.connect("notify::fullscreen", self._fullscreen_changed)
 
         #for deciding between small regions and full screen updates:
@@ -294,11 +293,6 @@ class WindowSource(object):
         self.statistics.reset()
         self.last_pixmap_data = None
         self.update_encoding_selection(encoding)
-
-    def _scaling_changed(self, window, *args):
-        self.scaling = window.get_property("scaling")
-        scalinglog("window recommended scaling changed: %s", self.scaling)
-        self.reconfigure(True)
 
     def set_scaling(self, scaling):
         scalinglog("set_scaling(%s)", scaling)

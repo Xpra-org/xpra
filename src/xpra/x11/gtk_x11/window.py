@@ -279,9 +279,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Is the window a system tray icon", "",
                        False,
                        gobject.PARAM_READABLE),
-        "scaling" : (gobject.TYPE_PYOBJECT,
-                       "Application requested scaling as a fraction (pair of numbers)", "",
-                       gobject.PARAM_READWRITE),
         "role" : (gobject.TYPE_PYOBJECT,
                           "The window's role (ICCCM session management)", "",
                           gobject.PARAM_READABLE),
@@ -484,20 +481,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("xid", self.client_window.xid)
         self._internal_set_property("pid", pget("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", pget("WM_WINDOW_ROLE", "latin1"))
-        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_XPRA_SCALING"]:
+        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY"]:
             self._call_property_handler(mutable)
 
-
-    def _handle_scaling(self):
-        scaling = self.prop_get("_XPRA_SCALING", "u32", raise_xerrors=False)
-        scaling_v, scaling_u = 1, 1
-        if scaling>0:
-            scaling_v = scaling & 0xFFFF
-            scaling_u = (scaling >> 16) & 0xFFFF
-            self._internal_set_property("scaling", (scaling_v, scaling_u))
-        else:
-            self._internal_set_property("scaling", None)
-    _property_handlers["_XPRA_SCALING"] = _handle_scaling
 
     def _handle_opacity_change(self):
         opacity = self.prop_get("_NET_WM_WINDOW_OPACITY", "u32", True) or -1
