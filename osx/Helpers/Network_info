@@ -3,6 +3,6 @@
 #call the "Python" wrapper:
 exe_name=$(basename $0)
 full_path=$(cd "$(dirname "$0")"; pwd)
-PYTHON="$full_path/Python"
+PYTHON="$full_path/PythonExecWrapper"
 
-exec "$PYTHON" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.net.net_util import main;main()"
+exec "$PYTHON" "Network Info" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.net.net_util import main;main()"

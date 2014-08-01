@@ -3,7 +3,7 @@
 #call the "Python" wrapper:
 exe_name=$(basename $0)
 full_path=$(cd "$(dirname "$0")"; pwd)
-PYTHON="$full_path/Python"
+PYTHON="$full_path/PythonExecWrapper"
 
 #parse arguments into a string:
 args="[\"xpra\""
@@ -13,4 +13,4 @@ while (($#)); do
 done
 args="$args]"
 
-exec "$PYTHON" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;main('xpra', $args)"
+exec "$PYTHON" "Xpra" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;main('xpra', $args)"
