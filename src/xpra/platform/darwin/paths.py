@@ -5,6 +5,13 @@
 
 import os.path
 
+def debug(*msg):
+    """ delay import of logger to prevent cycles """
+    from xpra.log import Logger
+    log = Logger("util")
+    log.debug(*msg)
+    return None
+
 
 def get_resources_dir():
     rsc = None
@@ -12,6 +19,7 @@ def get_resources_dir():
         import gtkosx_application        #@UnresolvedImport
         try:
             rsc = gtkosx_application.gtkosx_application_get_resource_path()
+            debug("get_resources_dir() gtkosx_application_get_resource_path=%s", rsc)
             if rsc:
                 RESOURCES = "/Resources/"
                 i = rsc.rfind(RESOURCES)
@@ -25,6 +33,7 @@ def get_resources_dir():
     if not rsc:
         from xpra.platform.paths import default_get_app_dir
         rsc = default_get_app_dir()
+        debug("get_resources_dir() default_get_app_dir()=%s", rsc)
     if rsc:
         #when we run from a jhbuild installation,
         #~/gtk/inst/bin/xpra is the binary
@@ -33,8 +42,10 @@ def get_resources_dir():
         #so let's try to look for that
         #(there is no /bin/ in the regular application bundle path)
         head, tail = os.path.split(rsc)
+        debug("get_resources_dir() split: %s / %s", head, tail)
         if tail=="bin":
-            return head
+            rsc = head
+    debug("get_resources_dir()=%s", rsc)
     return rsc
 
 def get_app_dir():
@@ -42,9 +53,12 @@ def get_app_dir():
     CONTENTS = "/Contents/"
     i = rsc.rfind(CONTENTS)
     if i>0:
-        return rsc[:i+len(CONTENTS)]
+        rsc = rsc[:i+len(CONTENTS)]
+    debug("get_app_dir()=%s", rsc)
     return rsc  #hope for the best..
 
 def get_icon_dir():
     rsc = get_resources_dir()
-    return os.path.join(rsc, "share", "xpra", "icons")
+    i = os.path.join(rsc, "share", "xpra", "icons")
+    debug("get_icon_dir()=%s", i)
+    return i
