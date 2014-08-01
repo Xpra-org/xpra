@@ -24,7 +24,7 @@ from xpra.net.crypto import new_cipher_caps
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES
-from xpra.util import typedict, updict
+from xpra.util import typedict, updict, LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
 from xpra.daemon_thread import make_daemon_thread
 from xpra.scripts.config import parse_number, parse_bool
@@ -270,14 +270,14 @@ class ProxyInstanceProcess(Process):
     def verify_connection_accepted(self, protocol):
         if not protocol._closed and protocol in self.potential_protocols:
             log.error("connection timedout: %s", protocol)
-            self.send_disconnect(protocol, "login timeout")
+            self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def process_control_packet(self, proto, packet):
         try:
             self.do_process_control_packet(proto, packet)
-        except:
+        except Exception, e:
             log.error("error processing control packet", exc_info=True)
-            self.send_disconnect(proto, "error processing request")
+            self.send_disconnect(proto, CONTROL_COMMAND_ERROR, str(e))
 
     def do_process_control_packet(self, proto, packet):
         log("process_control_packet(%s, %s)", proto, packet)
@@ -290,11 +290,11 @@ class ProxyInstanceProcess(Process):
         if packet_type=="hello":
             caps = typedict(packet[1])
             if caps.boolget("challenge"):
-                self.send_disconnect(proto, "this socket does not use authentication")
+                self.send_disconnect(proto, AUTHENTICATION_ERROR, "this socket does not use authentication")
                 return
             if caps.get("info_request", False):
                 proto.send_now(("hello", self.get_proxy_info(proto)))
-                self.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
+                self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "info sent")
                 return
             elif caps.get("stop_request", False):
                 self.stop("socket request", None)
@@ -302,15 +302,15 @@ class ProxyInstanceProcess(Process):
             elif caps.get("version_request", False):
                 from xpra import __version__
                 proto.send_now(("hello", {"version" : __version__}))
-                self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
+                self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "version sent")
                 return
-        self.send_disconnect(proto, "this socket only handles 'info', 'version' and 'stop' requests")
+        self.send_disconnect(proto, CONTROL_COMMAND_ERROR, "this socket only handles 'info', 'version' and 'stop' requests")
 
-    def send_disconnect(self, proto, reason):
-        log("send_disconnect(%s, %s)", proto, reason)
+    def send_disconnect(self, proto, reason, *extra):
+        log("send_disconnect(%s, %s, %s)", proto, reason, extra)
         if proto._closed:
             return
-        proto.send_now(["disconnect", reason])
+        proto.send_now(["disconnect", reason]+list(extra))
         self.timeout_add(1000, self.force_disconnect, proto)
 
     def force_disconnect(self, proto):
@@ -425,7 +425,7 @@ class ProxyInstanceProcess(Process):
         self.encode_queue = q
         for proto in (self.client_protocol, self.server_protocol):
             if proto and proto!=skip_proto:
-                proto.flush_then_close(["disconnect", reason])
+                proto.flush_then_close(["disconnect", SERVER_SHUTDOWN, reason])
 
 
     def queue_client_packet(self, packet):

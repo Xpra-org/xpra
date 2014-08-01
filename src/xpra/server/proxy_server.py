@@ -15,6 +15,7 @@ from xpra.log import Logger
 log = Logger("proxy")
 
 
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND
 from xpra.server.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.scripts.config import make_defaults_struct
@@ -122,7 +123,7 @@ class ProxyServer(ServerCore):
         #if we start a proxy, the protocol will be closed
         #(a new one is created in the proxy process)
         if not protocol._closed:
-            self.send_disconnect(protocol, "connection timeout")
+            self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def hello_oked(self, proto, packet, c, auth_caps):
         if c.boolget("stop_request"):
@@ -134,22 +135,22 @@ class ProxyServer(ServerCore):
     def start_proxy(self, client_proto, c, auth_caps):
         assert client_proto.authenticator is not None
         #find the target server session:
-        def disconnect(msg):
-            self.send_disconnect(client_proto, msg)
+        def disconnect(reason, *extras):
+            self.send_disconnect(client_proto, reason, *extras)
         try:
             sessions = client_proto.authenticator.get_sessions()
         except Exception, e:
             log.error("failed to get the list of sessions: %s", e)
-            disconnect("authentication error")
+            disconnect(AUTHENTICATION_ERROR)
             return
         if sessions is None:
-            disconnect("no sessions found")
+            disconnect(SESSION_NOT_FOUND, "no sessions found")
             return
         log("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         uid, gid, displays, env_options, session_options = sessions
         #log("unused options: %s, %s", env_options, session_options)
         if len(displays)==0:
-            disconnect("no displays found")
+            disconnect(SESSION_NOT_FOUND, "no displays found")
             return
         display = c.strget("display")
         proxy_virtual_display = os.environ.get("DISPLAY")
@@ -157,21 +158,21 @@ class ProxyServer(ServerCore):
         if proxy_virtual_display in displays:
             displays.remove(proxy_virtual_display)
         if display==proxy_virtual_display:
-            disconnect("invalid display")
+            disconnect(SESSION_NOT_FOUND, "invalid display")
             return
         if display:
             if display not in displays:
-                disconnect("display not found")
+                disconnect(SESSION_NOT_FOUND, "display not found")
                 return
         else:
             if len(displays)!=1:
-                disconnect("please specify a display (more than one available)")
+                disconnect(SESSION_NOT_FOUND, "please specify a display (more than one available)")
                 return
             display = displays[0]
 
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
         def parse_error(*args):
-            disconnect("invalid display string")
+            disconnect(SESSION_NOT_FOUND, "invalid display string")
             log.warn("parse error on %s: %s", display, args)
             raise Exception("parse error on %s: %s" % (display, args))
         opts = make_defaults_struct()
@@ -182,7 +183,7 @@ class ProxyServer(ServerCore):
             server_conn = connect_to(disp_desc)
         except Exception, e:
             log.error("cannot start proxy connection to %s: %s", disp_desc, e, exc_info=True)
-            disconnect("failed to connect to display")
+            disconnect(SESSION_NOT_FOUND, "failed to connect to display")
             return
         log("server connection=%s", server_conn)
 

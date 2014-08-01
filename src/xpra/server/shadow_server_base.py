@@ -11,7 +11,7 @@ log = Logger("shadow")
 
 from xpra.net.compression import Compressed
 from xpra.server.batch_config import DamageBatchConfig
-from xpra.util import AdHocStruct, prettify_plug_name
+from xpra.util import AdHocStruct, prettify_plug_name, DONE
 
 DEFAULT_DELAY = 50              #50ms refresh
 
@@ -214,7 +214,7 @@ class ShadowServerBase(object):
     def _process_close_window(self, proto, packet):
         wid = packet[1]
         self._process_window_common(wid)
-        self.disconnect_client(proto, "closed the only window")
+        self.disconnect_client(proto, DONE, "closed the only window")
 
     def make_screenshot_packet(self):
         w, h, encoding, rowstride, data = self.root_window_model.take_screenshot()

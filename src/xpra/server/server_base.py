@@ -18,9 +18,8 @@ commandlog = Logger("command")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
-from xpra.util import log_screen_sizes
 from xpra.os_util import thread, get_hex_uuid
-from xpra.util import typedict, updict
+from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE
 from xpra.scripts.config import python_platform
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec, get_codec
 from xpra.codecs.codec_constants import get_PIL_encodings
@@ -411,29 +410,29 @@ class ServerBase(ServerCore):
     def add_listen_socket(self, socktype, socket):
         raise NotImplementedError()
 
-    def _disconnect_all(self, message):
+    def _disconnect_all(self, message, *extra):
         for p in self._potential_protocols:
             try:
-                self.send_disconnect(p, message)
+                self.send_disconnect(p, message, *extra)
             except:
                 pass
 
     def _process_exit_server(self, proto, packet):
         log.info("Exiting response to request")
-        self._disconnect_all("server exiting")
+        self._disconnect_all(SERVER_EXIT)
         self.timeout_add(1000, self.clean_quit, False, ServerCore.EXITING_CODE)
 
     def _process_shutdown_server(self, proto, packet):
         log.info("Shutting down in response to request")
-        self._disconnect_all("server shutdown")
+        self._disconnect_all(SERVER_SHUTDOWN)
         self.timeout_add(1000, self.clean_quit)
 
     def force_disconnect(self, proto):
         self.cleanup_source(proto)
         ServerCore.force_disconnect(self, proto)
 
-    def disconnect_protocol(self, protocol, reason):
-        ServerCore.disconnect_protocol(self, protocol, reason)
+    def disconnect_protocol(self, protocol, reason, *extra):
+        ServerCore.disconnect_protocol(self, protocol, reason, *extra)
         self.cleanup_source(protocol)
 
     def cleanup_source(self, protocol):
@@ -466,7 +465,9 @@ class ServerBase(ServerCore):
 
 
     def _process_disconnect(self, proto, packet):
-        self.disconnect_protocol(proto, "on client request")
+        info = packet[1:]
+        log.info("client %s has requested disconnection: %s", proto, info)
+        self.disconnect_protocol(proto, CLIENT_REQUEST)
 
     def _process_connection_lost(self, proto, packet):
         log.info("Connection lost")
@@ -502,23 +503,23 @@ class ServerBase(ServerCore):
         disconnected = 0
         for p,ss in self._server_sources.items():
             if detach_request and p!=proto:
-                self.disconnect_client(p, "detach requested")
+                self.disconnect_client(p, DETACH_REQUEST)
                 disconnected += 1
             elif ui_client and ss.ui_client:
                 #check if existing sessions are willing to share:
                 if not self.sharing:
-                    self.disconnect_client(p, "new valid connection received, this session does not allow sharing")
+                    self.disconnect_client(p, NEW_CLIENT, "this session does not allow sharing")
                     disconnected += 1
                 elif not c.boolget("share"):
-                    self.disconnect_client(p, "new valid connection received, the new client does not wish to share")
+                    self.disconnect_client(p, NEW_CLIENT, "the new client does not wish to share")
                     disconnected += 1
                 elif not ss.share:
-                    self.disconnect_client(p, "new valid connection received, this client had not enabled sharing ")
+                    self.disconnect_client(p, NEW_CLIENT, "this client had not enabled sharing")
                     disconnected += 1
             share_count += 1
 
         if detach_request:
-            self.disconnect_client(proto, "%i other clients have been disconnected" % disconnected)
+            self.disconnect_client(proto, DONE, "%i other clients have been disconnected" % disconnected)
             return
 
         if not is_request and ui_client:

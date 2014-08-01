@@ -12,7 +12,7 @@ log = Logger("gobject", "client")
 
 import sys
 import re
-from xpra.util import nonl
+from xpra.util import nonl, DONE
 from xpra.os_util import bytestostr
 from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, \
     EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR
@@ -204,7 +204,7 @@ class InfoXpraClient(CommandConnectClient):
                         return w
                     v = fixvalue(v)
                 log.info("%s=%s", bytestostr(k), nonl(v))
-        self.quit(0)
+        self.quit(EXIT_OK)
 
     def make_hello(self):
         capabilities = GObjectXpraClient.make_hello(self)
@@ -295,7 +295,9 @@ class StopXpraClient(CommandConnectClient):
 
     def do_command(self):
         gobject.idle_add(self.send, "shutdown-server")
-
+        #not exiting the client here,
+        #the server should send us the shutdown disconnection message anyway
+        #and if not, we will then hit the timeout to tell us something went wrong
 
 class DetachXpraClient(CommandConnectClient):
     """ run the detach subcommand """
@@ -312,5 +314,6 @@ class DetachXpraClient(CommandConnectClient):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
     def do_command(self):
-        gobject.idle_add(self.send, "disconnect", "detaching")
-        gobject.idle_add(self.quit, 0)
+        gobject.idle_add(self.send, "disconnect", DONE, "detaching")
+        #not exitint the client here,
+        #the server should disconnect us with the response

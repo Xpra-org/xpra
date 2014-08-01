@@ -31,7 +31,7 @@ from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
-from xpra.util import std, typedict, updict, get_screen_info
+from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOUT
 
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
@@ -1295,7 +1295,7 @@ class ServerSource(object):
         timeout = 60
         def check_echo_timeout(*args):
             if self.last_ping_echoed_time<now_ms and not self.is_closed():
-                self.disconnect("client ping timeout, - waited %s seconds without a response" % timeout)
+                self.disconnect(CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
         self.timeout_add(timeout*1000, check_echo_timeout)
 
     def process_ping(self, time_to_echo):

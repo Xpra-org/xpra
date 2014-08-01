@@ -23,7 +23,7 @@ from xpra.version_util import version_compat_check, get_version_info, get_platfo
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict, updict, xor, repr_ellipsized
+from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -342,16 +342,23 @@ class XpraClientBase(object):
         self.quit(exit_code)
 
     def _process_disconnect(self, packet):
-        if len(packet)==2:
-            info = packet[1]
-        else:
-            info = packet[1:]
-        e = EXIT_OK
+        #ie: ("disconnect", "version error", "incompatible version")
+        reason = packet[1]
+        info = packet[2:]
+        s = nonl(str(reason))
+        if len(info):
+            s += " (%s)" % (", ".join([nonl(str(x)) for x in info]))
         if self.server_capabilities is None or len(self.server_capabilities)==0:
             #server never sent hello to us - so disconnect is an error
             #(but we don't know which one - the info message may help)
+            log.warn("server failure: disconnected before the session could be established")
             e = EXIT_FAILURE
-        self.warn_and_quit(e, "server requested disconnect: %s" % info)
+        elif disconnect_is_an_error(reason):
+            log.warn("server failure: %s", reason)
+            e = EXIT_FAILURE
+        else:
+            e = EXIT_OK
+        self.warn_and_quit(e, "server requested disconnect: %s" % s)
 
     def _process_connection_lost(self, packet):
         p = self._protocol
@@ -542,13 +549,13 @@ class XpraClientBase(object):
             #looks like the first packet back is just text, print it:
             log.info("Failed to connect: %s", repr_ellipsized(data.strip("\n").strip("\r")))
         if str(data).find("assword")>0:
-            log.warn("Your ssh program appears to be asking for a password."
+            self.warn_and_quit(EXIT_SSH_FAILURE,
+                              "Your ssh program appears to be asking for a password."
                              + GOT_PASSWORD_PROMPT_SUGGESTION)
-            self.quit(EXIT_SSH_FAILURE)
         elif str(data).find("login")>=0:
-            log.warn("Your ssh program appears to be asking for a username.\n"
+            self.warn_and_quit(EXIT_SSH_FAILURE,
+                             "Your ssh program appears to be asking for a username.\n"
                              "Perhaps try using something like 'ssh:USER@host:display'?")
-            self.quit(EXIT_SSH_FAILURE)
         else:
             self.quit(EXIT_PACKET_FAILURE)
 

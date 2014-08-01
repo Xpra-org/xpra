@@ -12,6 +12,31 @@ import threading
 import sys
 
 
+#constants shared between client and server:
+#(do not modify the values, see also disconnect_is_an_error)
+#timeouts:
+CLIENT_PING_TIMEOUT     = "client ping timeout"
+LOGIN_TIMEOUT           = "login timeout"
+CLIENT_EXIT_TIMEOUT     = "client exit timeout"
+#errors:
+PROTOCOL_ERROR          = "protocol error"
+VERSION_ERROR           = "version error"
+CONTROL_COMMAND_ERROR   = "control command error"
+AUTHENTICATION_ERROR    = "authentication error"
+SERVER_ERROR            = "server error"
+SESSION_NOT_FOUND       = "session not found error"
+#informational (not a problem):
+DONE                    = "done"
+SERVER_EXIT             = "server exit"
+SERVER_SHUTDOWN         = "server shutdown"
+CLIENT_REQUEST          = "client request"
+DETACH_REQUEST          = "detach request"
+NEW_CLIENT              = "new client"
+#convenience method based on the strings above:
+def disconnect_is_an_error(reason):
+    return reason.find("error")>=0 or reason.find("timeout")>=0
+
+
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
 

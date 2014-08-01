@@ -33,7 +33,8 @@ from xpra.net.crypto import new_cipher_caps
 from xpra.server.background_worker import stop_worker
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server.proxy import XpraProxy
-from xpra.util import typedict, updict, repr_ellipsized
+from xpra.util import typedict, updict, repr_ellipsized, \
+        SERVER_SHUTDOWN, SERVER_EXIT, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, AUTHENTICATION_ERROR
 
 
 MAX_CONCURRENT_CONNECTIONS = 20
@@ -284,9 +285,9 @@ class ServerCore(object):
             p.quit()
         log("cleanup will disconnect: %s", self._potential_protocols)
         if self._upgrading:
-            reason = "upgrading/exiting"
+            reason = SERVER_EXIT
         else:
-            reason = "shutting down"
+            reason = SERVER_SHUTDOWN
         for proto in list(self._potential_protocols):
             self.disconnect_client(proto, reason)
         self._potential_protocols = []
@@ -364,25 +365,28 @@ class ServerCore(object):
     def verify_connection_accepted(self, protocol):
         if self.is_timedout(protocol):
             log.error("connection timedout: %s", protocol)
-            self.send_disconnect(protocol, "login timeout")
+            self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
-    def send_disconnect(self, proto, reason):
-        log("send_disconnect(%s, %s)", proto, reason)
+    def send_disconnect(self, proto, reason, *extra):
+        log("send_disconnect(%s, %s, %s)", proto, reason, extra)
         if proto._closed:
             return
-        proto.send_now(["disconnect", reason])
+        proto.send_now(["disconnect", reason]+list(extra))
         self.timeout_add(1000, self.force_disconnect, proto)
 
     def force_disconnect(self, proto):
         proto.close()
 
-    def disconnect_client(self, protocol, reason):
+    def disconnect_client(self, protocol, reason, *extra):
         if protocol and not protocol._closed:
-            self.disconnect_protocol(protocol, reason)
+            self.disconnect_protocol(protocol, reason, *extra)
 
-    def disconnect_protocol(self, protocol, reason):
-        log.info("Disconnecting client %s: %s", protocol, reason)
-        protocol.flush_then_close(["disconnect", reason])
+    def disconnect_protocol(self, protocol, reason, *extra):
+        i = str(reason)
+        if extra:
+            i += " (%s)" % extra
+        log.info("Disconnecting client %s: %s", protocol, i)
+        protocol.flush_then_close(["disconnect", reason]+list(extra))
 
 
     def _process_connection_lost(self, proto, packet):
@@ -406,7 +410,8 @@ class ServerCore(object):
     def send_version_info(self, proto):
         response = {"version" : xpra.__version__}
         proto.send_now(("hello", response))
-        self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
+        #client is meant to close the connection itself, but just in case:
+        self.timeout_add(5*1000, self.send_disconnect, proto, DONE, "version sent")
 
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
@@ -417,7 +422,7 @@ class ServerCore(object):
             #this should never happen:
             #if we got here, we parsed a packet from the client!
             #(maybe the client used an encoding it claims not to support?)
-            self.disconnect_client(proto, "failed to negotiate a packet encoder")
+            self.disconnect_client(proto, PROTOCOL_ERROR, "failed to negotiate a packet encoder")
             return
 
         log("process_hello: capabilities=%s", capabilities)
@@ -440,7 +445,7 @@ class ServerCore(object):
                 self.hello_oked(proto, packet, c, auth_caps)
             except:
                 log.error("server error processing new connection from %s", proto, exc_info=True)
-                self.disconnect_client(proto, "server error accepting new connection")
+                self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
 
     def set_socket_timeout(self, conn, timeout=None):
         #FIXME: this is ugly, but less intrusive than the alternative?
@@ -452,7 +457,7 @@ class ServerCore(object):
         remote_version = c.strget("version")
         verr = version_compat_check(remote_version)
         if verr is not None:
-            self.disconnect_client(proto, "incompatible version: %s" % verr)
+            self.disconnect_client(proto, VERSION_ERROR, "incompatible version: %s" % verr)
             proto.close()
             return  False
 
@@ -519,7 +524,7 @@ class ServerCore(object):
         else:
             #did the client expect a challenge?
             if c.boolget("challenge"):
-                self.disconnect_client(proto, "this server does not require authentication")
+                self.disconnect_client(proto, AUTHENTICATION_ERROR, "this server does not require authentication")
                 return False
         return auth_caps
 
