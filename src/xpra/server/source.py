@@ -1205,8 +1205,6 @@ class ServerSource(object):
             v = packet[i]
             if type(v)==Uncompressed:
                 packet[i] = self.compressed_wrapper(v.datatype, v.data)
-                #and compress it using the self.compression_work_queue
-                #or using a wrapper telling the network encode layer to do it
         self.queue_packet(packet)
 
 
@@ -1222,7 +1220,8 @@ class ServerSource(object):
     def compressed_wrapper(self, datatype, data):
         if self.zlib or self.lz4 or self.lzo:
             return compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo, can_inline=False)
-        return data
+        #we can't compress, so at least avoid warnings in the protocol layer:
+        return Compressed("raw %s" % datatype, data, can_inline=True)
 
     def send_cursor(self, get_cursor_data_cb):
         if not self.send_cursors or self.suspended:

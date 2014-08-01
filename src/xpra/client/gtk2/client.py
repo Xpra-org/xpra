@@ -295,7 +295,8 @@ class XpraClient(GTKXpraClient):
         lzo = "lzo" in self.server_compressors and compression.use_lzo
         if zlib or lz4 or lzo:
             return compression.compressed_wrapper(datatype, data, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
-        return data
+        #we can't compress, so at least avoid warnings in the protocol layer:
+        return compression.Compressed("raw %s" % datatype, data, can_inline=True)
 
 
     def make_hello(self):
