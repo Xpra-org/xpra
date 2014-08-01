@@ -491,7 +491,7 @@ class Protocol(object):
                 self._internal_error("%s connection %s closed: %s" % (name, self._conn, e))
         except (OSError, IOError, socket_error), e:
             if not self._closed:
-                self._internal_error("%s connection %s reset: %s" % (name, self._conn, e), exc_info=e.args[0] in ABORT)
+                self._internal_error("%s connection %s reset: %s" % (name, self._conn, e), exc_info=e.args[0] not in ABORT)
         except:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
