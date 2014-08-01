@@ -757,7 +757,7 @@ class Protocol(object):
                 log("processing packet %s", packet_type)
                 self._process_packet_cb(self, packet)
 
-    def flush_then_close(self, last_packet):
+    def flush_then_close(self, last_packet, done_callback=None):
         """ Note: this is best effort only
             the packet may not get sent.
 
@@ -767,9 +767,12 @@ class Protocol(object):
             we wait again for the queue to flush,
             then no matter what, we close the connection and stop the threads.
         """
+        def done():
+            if done_callback:
+                done_callback()
         if self._closed:
             log("flush_then_close: already closed")
-            return
+            return done()
         def wait_for_queue(timeout=10):
             #IMPORTANT: if we are here, we have the write lock held!
             if not self._write_queue.empty():
@@ -778,6 +781,7 @@ class Protocol(object):
                     log("flush_then_close: queue still busy, closing without sending the last packet")
                     self._write_lock.release()
                     self.close()
+                    done()
                 else:
                     log("flush_then_close: still waiting for queue to flush")
                     self.timeout_add(100, wait_for_queue, timeout-1)
@@ -791,6 +795,7 @@ class Protocol(object):
                         self._write_lock.release()
                     except:
                         pass
+                    done()
                 def wait_for_packet_sent():
                     log("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s", self._write_queue.empty(), self._closed)
                     if self._write_queue.empty() or self._closed:
@@ -812,6 +817,7 @@ class Protocol(object):
                 if timeout<=0:
                     log("flush_then_close: timeout waiting for the write lock")
                     self.close()
+                    done()
                 else:
                     log("flush_then_close: write lock is busy, will retry %s more times", timeout)
                     self.timeout_add(10, wait_for_write_lock, timeout-1)

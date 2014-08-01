@@ -150,9 +150,21 @@ class XpraClientBase(object):
             sys.stderr.flush()
             signal.signal(signal.SIGINT, deadly_signal)
             signal.signal(signal.SIGTERM, deadly_signal)
-            self.timeout_add(0, self.quit, 128 + signum)
+            self.timeout_add(0, self.disconnect_and_quit(128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum)))
         signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
+
+    def disconnect_and_quit(self, exit_code, reason):
+        #try to tell the server we're going, then quit
+        log("disconnect_and_quit(%s, %s)", exit_code, reason)
+        if self._protocol._closed:
+            self.quit(exit_code)
+            return
+        def do_quit():
+            log("disconnect_and_quit: do_quit()")
+            self.quit(exit_code)
+        self._protocol.flush_then_close(["disconnect", reason], done_callback=do_quit)
+        self.timeout_add(1000, do_quit)
 
 
     def client_type(self):

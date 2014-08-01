@@ -32,6 +32,9 @@ SERVER_SHUTDOWN         = "server shutdown"
 CLIENT_REQUEST          = "client request"
 DETACH_REQUEST          = "detach request"
 NEW_CLIENT              = "new client"
+#client telling the server:
+CLIENT_EXIT             = "client exit"
+
 #convenience method based on the strings above:
 def disconnect_is_an_error(reason):
     return reason.find("error")>=0 or reason.find("timeout")>=0

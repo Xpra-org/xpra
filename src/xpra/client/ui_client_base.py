@@ -38,7 +38,7 @@ from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
-from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict
+from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, CLIENT_EXIT
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -545,7 +545,7 @@ class UIXpraClient(XpraClientBase):
             traylog("xpra_tray_mouseover(%s)", args)
         def xpra_tray_exit(*args):
             traylog("xpra_tray_exit(%s)", args)
-            self.quit(0)
+            self.disconnect_and_quit(0, CLIENT_EXIT)
         def xpra_tray_geometry(*args):
             traylog("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())
         menu = None
@@ -1054,6 +1054,7 @@ class UIXpraClient(XpraClientBase):
     def check_echo_timeout(self, ping_time):
         log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
         if self.last_ping_echoed_time<ping_time:
+            #no point trying to use disconnect_and_quit() to tell the server here..
             self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
 
     def send_ping(self):

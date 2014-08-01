@@ -465,7 +465,9 @@ class ServerBase(ServerCore):
 
 
     def _process_disconnect(self, proto, packet):
-        info = packet[1:]
+        info = packet[1]
+        if len(packet)>2:
+            info += " (%s)" % (", ".join(packet[2:]))
         log.info("client %s has requested disconnection: %s", proto, info)
         self.disconnect_protocol(proto, CLIENT_REQUEST)
 

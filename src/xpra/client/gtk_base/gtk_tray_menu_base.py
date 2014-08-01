@@ -10,7 +10,9 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gobject, is_gtk3
 gtk = import_gtk()
 gobject = import_gobject()
 
+from xpra.util import CLIENT_EXIT
 from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, menuitem
+from xpra.client.client_base import EXIT_OK
 from xpra.client.gtk_base.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
 from xpra.log import Logger
@@ -857,7 +859,7 @@ class GTKTrayMenuBase(object):
 
     def make_disconnectmenuitem(self):
         def menu_quit(*args):
-            self.client.quit(0)
+            self.client.disconnect_and_quit(EXIT_OK, CLIENT_EXIT)
         return self.handshake_menuitem("Disconnect", "quit.png", None, menu_quit)
 
     def make_closemenuitem(self):
