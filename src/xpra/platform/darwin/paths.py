@@ -15,16 +15,16 @@ def debug(*msg):
 
 def get_resources_dir():
     rsc = None
+    RESOURCES = "/Resources/"
     try:
         import gtkosx_application        #@UnresolvedImport
         try:
             rsc = gtkosx_application.gtkosx_application_get_resource_path()
             debug("get_resources_dir() gtkosx_application_get_resource_path=%s", rsc)
             if rsc:
-                RESOURCES = "/Resources/"
                 i = rsc.rfind(RESOURCES)
-                if i>0:
-                    rsc = rsc[:i+len(RESOURCES)]
+                if i<=0:
+                    rsc = None
         except:
             #maybe we're not running from an app bundle?
             pass
@@ -34,17 +34,11 @@ def get_resources_dir():
         from xpra.platform.paths import default_get_app_dir
         rsc = default_get_app_dir()
         debug("get_resources_dir() default_get_app_dir()=%s", rsc)
-    if rsc:
-        #when we run from a jhbuild installation,
-        #~/gtk/inst/bin/xpra is the binary
-        #so rsc=~/gtk/inst/bin
-        #and we want to find ~/gtk/inst/share with get_icon_dir()
-        #so let's try to look for that
-        #(there is no /bin/ in the regular application bundle path)
-        head, tail = os.path.split(rsc)
-        debug("get_resources_dir() split: %s / %s", head, tail)
-        if tail=="bin":
-            rsc = head
+    i = rsc.rfind(RESOURCES)
+    if i>0:
+        rsc = rsc[:i+len(RESOURCES)]
+    else:
+        rsc = None
     debug("get_resources_dir()=%s", rsc)
     return rsc
 
