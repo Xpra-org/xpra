@@ -23,7 +23,7 @@
 		${project}/Helpers/Xpra
 	</data>
 	<data dest="${bundle}/Contents/MacOS/">
-		${project}/Helpers/Python
+		${project}/Helpers/PythonExecWrapper
 	</data>
 
 	<binary>
