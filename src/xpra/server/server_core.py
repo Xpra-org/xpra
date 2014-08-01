@@ -21,6 +21,7 @@ log = Logger("server")
 commandlog = Logger("command")
 
 import xpra
+from xpra.server import ClientException
 from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.scripts.server import deadly_signal
@@ -443,8 +444,15 @@ class ServerCore(object):
             #continue processing hello packet:
             try:
                 self.hello_oked(proto, packet, c, auth_caps)
-            except:
-                log.error("server error processing new connection from %s", proto, exc_info=True)
+            except ClientException, e:
+                log.error("error setting up connection for %s: %s", proto, e)
+                self.disconnect_client(proto, SERVER_ERROR, str(e))
+            except Exception, e:
+                #log full stack trace at debug level,
+                #log exception as error
+                #but don't disclose internal details to the client
+                log("hello parsing error", exc_info=True)
+                log.error("server error processing new connection from %s: %s", proto, e)
                 self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
 
     def set_socket_timeout(self, conn, timeout=None):

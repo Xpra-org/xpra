@@ -19,6 +19,7 @@ soundlog = Logger("sound")
 keylog = Logger("keyboard")
 cursorlog = Logger("cursor")
 
+from xpra.server import ClientException
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_source import WindowSource, HAS_ALPHA
 from xpra.server.window_video_source import WindowVideoSource
@@ -981,8 +982,9 @@ class ServerSource(object):
                 common = [e for e in self.encodings if e in self.server_encodings]
                 elog("encodings supported by both ends: %s", common)
                 if not common:
-                    raise Exception("cannot find compatible encoding between "
-                                    "client (%s) and server (%s)" % (self.encodings, self.server_encodings))
+                    log.error("cannot find compatible encoding between "
+                                    "client (%s) and server (%s)" % (", ".join(self.encodings), ", ".join(self.server_encodings)))
+                    raise ClientException("cannot find a common encoding to use")
                 encoding = common[0]
         if window_ids is not None:
             wss = [self.window_sources.get(wid) for wid in window_ids]
