@@ -554,7 +554,7 @@ def parse_cmdline(cmdline):
     if "all" not in packet_encoders:
         for pe in [x for x in packet_encoders if x not in unknown]:
             enabled = pe in packet_encoding.get_enabled_encoders() and pe in packet_encoders
-            setattr(packet_encoding, "use_%s" % pe, True)
+            setattr(packet_encoding, "use_%s" % pe, enabled)
     #verify that at least one encoder is available:
     if not packet_encoding.get_enabled_encoders():
         parser.error("at least one valid packet encoder must be enabled")
