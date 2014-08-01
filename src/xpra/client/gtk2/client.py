@@ -158,12 +158,14 @@ class XpraClient(GTKXpraClient):
     def do_get_core_encodings(self):
         encodings = GTKXpraClient.do_get_core_encodings(self)
         #we can handle rgb32 format (but not necessarily transparency!)
-        encodings.append("rgb32")
+        def add(x):
+            if x in self.allowed_encodings and x not in encodings:
+                encodings.append(x)
+        add("rgb32")
         #gtk2 can handle 'png' and 'jpeg' natively (without PIL)
         #(though using PIL is better since we can do that in the decode thread)
         for x in ("png", "jpeg"):
-            if x not in encodings:
-                encodings.append(x)
+            add(x)
         return encodings
 
     def has_transparency(self):
