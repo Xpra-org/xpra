@@ -39,6 +39,10 @@ def enabled_str(v):
 
 
 def warn(msg):
+    #use this function to print warnings
+    #we must write to stderr to prevent
+    #the output from interfering when running as proxy over ssh
+    #(which uses stdin / stdout as communication channel)
     sys.stderr.write(msg+"\n")
 
 def nox():
@@ -537,7 +541,7 @@ def parse_cmdline(cmdline):
     compressors = [x.strip() for x in options.compressors.split(",")]
     unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS+["all"]]
     if unknown:
-        print("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
+        warn("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
     if "all" not in compressors:
         for c in compression.ALL_COMPRESSORS:
             enabled = c in compression.get_enabled_compressors() and c in compressors
@@ -550,7 +554,7 @@ def parse_cmdline(cmdline):
     packet_encoders = [x.strip() for x in options.packet_encoders.split(",")]
     unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS+["all"]]
     if unknown:
-        print("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
+        warn("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
     if "all" not in packet_encoders:
         for pe in packet_encoding.ALL_ENCODERS:
             enabled = pe in packet_encoding.get_enabled_encoders() and pe in packet_encoders
