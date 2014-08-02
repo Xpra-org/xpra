@@ -1190,6 +1190,7 @@ if WIN32:
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
         add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
+        add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
         add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
         add_console_exe("xpra/client/gtk_base/gtk_version_info.py", "gtk.ico",  "GTK_info")
         add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")

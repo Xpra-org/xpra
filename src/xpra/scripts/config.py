@@ -15,13 +15,11 @@ from xpra.util import AdHocStruct
 def warn(msg):
     sys.stderr.write(msg+"\n")
 
+def debug(*args):
+    #can be overriden
+    pass
 
 DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
-#set to None to let the code figure out where
-#the configuration directory should be
-#TODO: this should be replaced by platform code
-# (but this may interfere with platform init..)
-DEFAULT_XPRA_CONF_DIR = os.environ.get("XPRA_CONF_DIR", None)
 
 
 ENCRYPTION_CIPHERS = []
@@ -128,17 +126,24 @@ def read_config(conf_file):
     """
     d = {}
     if not os.path.isfile(conf_file):
+        debug("read_config(%s) is not a file!", conf_file)
         return d
     f = open(conf_file, "rU")
     lines = []
+    no = 0
     for line in f:
         sline = line.strip().rstrip('\r\n').strip()
+        no += 1
         if len(sline) == 0:
+            debug("%4s empty line", no)
             continue
         if sline[0] in ( '!', '#' ):
+            debug("%4s skipping comments   : %s", no, sline[:16]+"..")
             continue
+        debug("%4s loaded              : %s", no, sline)
         lines.append(sline)
     f.close()
+    debug("loaded %s lines", len(lines))
     #aggregate any lines with trailing backslash
     agg_lines = []
     l = ""
@@ -152,9 +157,11 @@ def read_config(conf_file):
     if len(l)>0:
         #last line had a trailing backslash... meh
         agg_lines.append(l)
+    debug("loaded %s aggregated lines", len(agg_lines))
     #parse name=value pairs:
     for sline in agg_lines:
         if sline.find("=")<=0:
+            debug("skipping line which is missing an equal sign: %s", sline)
             continue
         props = sline.split("=", 1)
         assert len(props)==2
@@ -166,7 +173,9 @@ def read_config(conf_file):
                 d[name] = current_value + [value]
             else:
                 d[name] = [current_value, value]
+            debug("added to: %s='%s'", name, d[name])
         else:
+            debug("assigned (new): %s='%s'", name, value)
             d[name] = value
     return  d
 
@@ -175,16 +184,19 @@ def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
         Reads an <xpra_conf_filename> file from the given directory,
         returns a dict with values as strings and arrays of strings.
     """
+    debug("read_xpra_conf(%s, %s)", conf_dir, xpra_conf_filename)
     cdir = os.path.expanduser(conf_dir)
     d = {}
     if not os.path.exists(cdir) or not os.path.isdir(cdir):
+        debug("invalid config directory: %s", cdir)
         return  d
     conf_file = os.path.join(cdir, xpra_conf_filename)
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
+        debug("config file does not exist: %s", conf_file)
         return  d
     return read_config(conf_file)
 
-def read_xpra_defaults(conf_dir=DEFAULT_XPRA_CONF_DIR):
+def read_xpra_defaults(conf_dir=None):
     """
         Reads the global <xpra_conf_filename> from the <conf_dir>
         and then the user-specific one.
@@ -193,20 +205,10 @@ def read_xpra_defaults(conf_dir=DEFAULT_XPRA_CONF_DIR):
         If the <conf_dir> is not specified, we figure out its location.
     """
     #first, read the global defaults:
-    from xpra.platform.paths import get_resources_dir, get_default_conf_dir
+    from xpra.platform.paths import get_global_conf_dir, get_default_conf_dir
     if not conf_dir:
-        #caller has not specified a directory name to use,
-        #so we must figure it out:
-        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            #OSX and win32 use binary installers,
-            #we must look for the default config in the bundled resource location:
-            conf_dir = get_resources_dir()
-        elif sys.prefix == '/usr':
-            #default posix config location:
-            conf_dir = '/etc/xpra'
-        else:
-            #hope the prefix is something like "/usr/local":
-            conf_dir = sys.prefix + '/etc/xpra/'
+        conf_dir = get_global_conf_dir()
+    #load the system wide defaults:
     defaults = {}
     if conf_dir:
         defaults = read_xpra_conf(conf_dir)
@@ -510,7 +512,10 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras={}):
 def make_defaults_struct():
     #populate config with default values:
     defaults = read_xpra_defaults()
-    validated = validate_config(defaults)
+    return dict_to_validated_config(defaults)
+
+def dict_to_validated_config(d):
+    validated = validate_config(d)
     options = get_defaults().copy()
     options.update(validated)
     for k,v in CLONES.items():
@@ -524,7 +529,36 @@ def make_defaults_struct():
 
 
 def main():
-    print("default configuration: %s" % make_defaults_struct())
+    from xpra.util import nonl
+    def print_options(o):
+        for k in sorted(OPTION_TYPES.keys()):
+            attr_name = k.replace("-", "_")
+            v = getattr(o, attr_name, "")
+            print("* %-32s : %s" % (k, nonl(v)))
+    from xpra.platform import init, clean
+    try:
+        init("Config-Info", "Config Info")
+        args = list(sys.argv[1:])
+        if "-v" in args:
+            global debug
+            def debug(*args):
+                print(args[0] % args[1:])
+            args.remove("-v")
+
+        print("Default Configuration:")
+        print_options(make_defaults_struct())
+        if len(args)>0:
+            for filename in args:
+                print("")
+                print("Configuration file '%s':" % filename)
+                if not os.path.exists(filename):
+                    print(" Error: file not found")
+                    continue
+                d = read_config(filename)
+                config = dict_to_validated_config(d)
+                print_options(config)
+    finally:
+        clean()
 
 
 if __name__ == "__main__":

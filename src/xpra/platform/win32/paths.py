@@ -25,11 +25,17 @@ def _get_data_dir():
 def get_icon_dir():
     return os.path.join(get_app_dir(), "icons")
 
+def get_global_conf_dir():
+    #ie: C:\Program Files\Xpra\
+    return os.environ.get("XPRA_SYSCONF_DIR", get_app_dir())
+
 def get_default_conf_dir():
-    return _get_data_dir()
+    #ie: C:\Documents and Settings\Username\Application Data\Xpra
+    return os.environ.get("XPRA_CONF_DIR", _get_data_dir())
 
 def get_default_socket_dir():
-    return _get_data_dir()
+    #ie: C:\Documents and Settings\Username\Application Data\Xpra
+    return os.environ.get("XPRA_SOCKET_DIR", _get_data_dir())
 
 APP_DIR = None
 if hasattr(sys, 'frozen') and sys.frozen in (True, "windows_exe", "console_exe"):    #@UndefinedVariable

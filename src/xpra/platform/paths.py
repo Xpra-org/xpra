@@ -16,6 +16,15 @@ def valid_dir(path):
         return False
 
 
+def get_global_conf_dir():
+    if sys.prefix == '/usr':
+        #default posix config location:
+        default_conf_dir = '/etc/xpra'
+    else:
+        #hope the prefix is something like "/usr/local":
+        default_conf_dir = sys.prefix + '/etc/xpra/'
+    return os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)
+
 def get_default_conf_dir():
     return os.environ.get("XPRA_CONF_DIR", "~/.xpra")
 
