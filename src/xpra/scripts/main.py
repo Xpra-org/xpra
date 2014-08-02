@@ -702,7 +702,7 @@ def run_mode(script_file, parser, options, args, mode):
         elif (mode in ("start", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
             nox()
             from xpra.scripts.server import run_server
-            return run_server(parser, options, mode, script_file, args)
+            return run_server(parser.error, options, mode, script_file, args)
         elif mode in ("attach", "detach", "screenshot", "version", "info", "control"):
             return run_client(parser, options, args, mode)
         elif mode in ("stop", "exit") and (supports_server or supports_shadow):

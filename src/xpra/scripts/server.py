@@ -713,7 +713,7 @@ def start_children(child_reaper, commands, fake_xinerama):
             sys.stderr.write("Error spawning child '%s': %s\n" % (child_cmd, e))
 
 
-def run_server(parser, opts, mode, xpra_file, extra_args):
+def run_server(error_cb, opts, mode, xpra_file, extra_args):
     if opts.encoding and opts.encoding=="help":
         #avoid errors and warnings:
         opts.encoding = ""
@@ -757,20 +757,20 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         display_name = guess_xpra_display(opts.socket_dir)
     else:
         if len(extra_args) > 1:
-            parser.error("too many extra arguments: only expected a display number")
+            error_cb("too many extra arguments: only expected a display number")
         if len(extra_args) == 1:
             display_name = extra_args[0]
             if not shadowing and not proxying:
                 display_name_check(display_name)
         else:
             if not opts.displayfd:
-                parser.error("displayfd support is not enabled on this system, you must specify the display to use")
+                error_cb("displayfd support is not enabled on this system, you must specify the display to use")
             # We will try to find one automaticaly
             # Use the temporary magic value 'S' as marker:
             display_name = 'S' + str(os.getpid())
 
     if not shadowing and not proxying and not upgrading and opts.exit_with_children and not opts.start_child:
-        sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
+        error_cb("--exit-with-children specified without any children to spawn; exiting immediately\n")
         return  1
 
     atexit.register(run_cleanups)
