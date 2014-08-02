@@ -23,7 +23,7 @@ from xpra.version_util import version_compat_check, get_version_info, get_platfo
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error
+from xpra.util import b, typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -44,14 +44,6 @@ EXIT_REMOTE_ERROR = 13
 DEFAULT_TIMEOUT = (10 + SOCKET_TIMEOUT)*1000        #in millis
 ALLOW_UNENCRYPTED_PASSWORDS = os.environ.get("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", "0")=="1"
 DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
-
-
-if sys.version < '3':
-    def b(x):
-        return x
-else:
-    def b(x):
-        return bytes(x, 'UTF-8')
 
 
 class XpraClientBase(object):

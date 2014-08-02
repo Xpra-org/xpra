@@ -11,6 +11,14 @@ import traceback
 import threading
 import sys
 
+#stupid python3 breakage:
+if sys.version < '3':
+    def b(x):
+        return x
+else:
+    def b(x):
+        return bytes(x, 'UTF-8')
+
 
 #constants shared between client and server:
 #(do not modify the values, see also disconnect_is_an_error)
@@ -37,7 +45,7 @@ CLIENT_EXIT             = "client exit"
 
 #convenience method based on the strings above:
 def disconnect_is_an_error(reason):
-    return reason.find("error")>=0 or reason.find("timeout")>=0
+    return reason.find(b("error"))>=0 or reason.find(b("timeout"))>=0
 
 
 if sys.version > '3':
