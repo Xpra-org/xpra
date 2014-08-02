@@ -62,21 +62,29 @@ if supports_server:
     except:
         supports_server = False
 
+class InitException(Exception):
+    pass
 
 def main(script_file, cmdline):
     from xpra.platform import init as platform_init, clean as platform_clean
     try:
         platform_init("Xpra")
         try:
-            parser, options, args = parse_cmdline(cmdline)
+            options, args = parse_cmdline(cmdline)
             if not args:
                 print("xpra: need a mode")
                 return -1
             mode = args.pop(0)
-            return run_mode(script_file, parser, options, args, mode)
+            def err(*args):
+                raise InitException(*args)
+            return run_mode(script_file, err, options, args, mode)
         except SystemExit:
             raise
-        except:
+        except InitException:
+            print("xpra error: %s" % sys.exc_info()[1])            
+            sys.exit(1)
+        except Exception, e:
+            print("main error: %s" % e)
             import traceback
             print(traceback.format_exc())
             sys.exit(1)
@@ -639,7 +647,7 @@ def parse_cmdline(cmdline):
             parser.error("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
     #ensure opengl is either True, False or None
     options.opengl = parse_bool("opengl", options.opengl)
-    return parser, options, args
+    return options, args
 
 def dump_frames(*arsg):
     import traceback
@@ -687,7 +695,7 @@ def configure_logging(options, mode):
         signal.signal(signal.SIGUSR1, sigusr1)
 
 
-def run_mode(script_file, parser, options, args, mode):
+def run_mode(script_file, error_cb, options, args, mode):
     #configure default logging handler:
     if os.name=="posix" and os.getuid()==0 and mode!="proxy":
         warn("\nWarning: running as root")
@@ -698,21 +706,21 @@ def run_mode(script_file, parser, options, args, mode):
         ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))
         if mode in ("start", "shadow") and ssh_display:
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
-            return run_remote_server(parser, options, args, mode)
+            return run_remote_server(error_cb, options, args, mode)
         elif (mode in ("start", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
             nox()
             from xpra.scripts.server import run_server
-            return run_server(parser.error, options, mode, script_file, args)
+            return run_server(error_cb, options, mode, script_file, args)
         elif mode in ("attach", "detach", "screenshot", "version", "info", "control"):
-            return run_client(parser, options, args, mode)
+            return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit") and (supports_server or supports_shadow):
             nox()
-            return run_stopexit(mode, parser, options, args)
+            return run_stopexit(mode, error_cb, options, args)
         elif mode == "list" and (supports_server or supports_shadow):
-            return run_list(parser, options, args)
+            return run_list(error_cb, options, args)
         elif mode in ("_proxy", "_proxy_start", "_shadow_start") and (supports_server or supports_shadow):
             nox()
-            return run_proxy(parser, options, script_file, args, mode)
+            return run_proxy(error_cb, options, script_file, args, mode)
         elif mode == "initenv":
             from xpra.scripts.server import xpra_runner_shell_script, write_runner_shell_script
             script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
@@ -720,7 +728,7 @@ def run_mode(script_file, parser, options, args, mode):
             write_runner_shell_script(dotxpra, script, False)
             return 0
         else:
-            parser.error("invalid mode '%s'" % mode)
+            error_cb("invalid mode '%s'" % mode)
             return 1
     except KeyboardInterrupt, e:
         sys.stderr.write("\ncaught %s, exiting\n" % repr(e))
@@ -858,7 +866,7 @@ def parse_display_name(error_cb, opts, display_name):
     else:
         error_cb("unknown format for display name: %s" % display_name)
 
-def pick_display(parser, opts, extra_args):
+def pick_display(error_cb, opts, extra_args):
     if len(extra_args) == 0:
         # Pick a default server
         sockdir = DotXpra(opts.socket_dir or get_default_socket_dir())
@@ -868,16 +876,16 @@ def pick_display(parser, opts, extra_args):
                         if state is DotXpra.LIVE]
         if len(live_servers) == 0:
             if not LOCAL_SERVERS_SUPPORTED:
-                parser.error("this installation does not support local servers, you must specify a remote display")
-            parser.error("cannot find a live server to connect to")
+                error_cb("this installation does not support local servers, you must specify a remote display")
+            error_cb("cannot find a live server to connect to")
         elif len(live_servers) == 1:
-            return parse_display_name(parser.error, opts, live_servers[0])
+            return parse_display_name(error_cb, opts, live_servers[0])
         else:
-            parser.error("there are multiple servers running, please specify")
+            error_cb("there are multiple servers running, please specify")
     elif len(extra_args) == 1:
-        return parse_display_name(parser.error, opts, extra_args[0])
+        return parse_display_name(error_cb, opts, extra_args[0])
     else:
-        parser.error("too many arguments")
+        error_cb("too many arguments")
 
 def _socket_connect(sock, endpoint, description, dtype):
     sock.connect(endpoint)
@@ -992,20 +1000,20 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     return conn
 
 
-def run_client(parser, opts, extra_args, mode):
+def run_client(error_cb, opts, extra_args, mode):
     if mode=="screenshot":
         if len(extra_args)==0:
-            parser.error("invalid number of arguments for screenshot mode")
+            error_cb("invalid number of arguments for screenshot mode")
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
 
     if opts.compression_level < 0 or opts.compression_level > 9:
-        parser.error("Compression level must be between 0 and 9 inclusive.")
+        error_cb("Compression level must be between 0 and 9 inclusive.")
     if opts.quality!=-1 and (opts.quality < 0 or opts.quality > 100):
-        parser.error("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
+        error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
     def connect():
-        return connect_or_fail(pick_display(parser, opts, extra_args))
+        return connect_or_fail(pick_display(error_cb, opts, extra_args))
 
     if mode=="screenshot":
         from xpra.client.gobject_client_base import ScreenshotXpraClient
@@ -1016,7 +1024,7 @@ def run_client(parser, opts, extra_args, mode):
     elif mode=="control":
         from xpra.client.gobject_client_base import ControlXpraClient
         if len(extra_args)<=1:
-            parser.error("not enough arguments for 'control' mode")
+            error_cb("not enough arguments for 'control' mode")
         args = extra_args[1:]
         extra_args = extra_args[:1]
         app = ControlXpraClient(connect(), opts)
@@ -1028,14 +1036,14 @@ def run_client(parser, opts, extra_args, mode):
         from xpra.client.gobject_client_base import DetachXpraClient
         app = DetachXpraClient(connect(), opts)
     else:
-        app = make_client(parser.error, opts)
+        app = make_client(error_cb, opts)
         layouts = app.get_supported_window_layouts() or ["default"]
         layouts_str = ", ".join(layouts)
         if opts.window_layout and opts.window_layout.lower()=="help":
             print("%s supports the following layouts: %s" % (app.client_toolkit(), layouts_str))
             return 0
         if opts.window_layout and opts.window_layout not in layouts:
-            parser.error("window layout '%s' is not supported by the %s toolkit, valid options are: %s" % (opts.window_layout, app.client_toolkit(), layouts_str))
+            error_cb("window layout '%s' is not supported by the %s toolkit, valid options are: %s" % (opts.window_layout, app.client_toolkit(), layouts_str))
         app.init(opts)
         if opts.encoding:
             #fix old encoding names if needed:
@@ -1108,9 +1116,9 @@ def do_run_client(app):
     finally:
         app.cleanup()
 
-def run_remote_server(parser, opts, args, mode):
+def run_remote_server(error_cb, opts, args, mode):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
-    params = parse_display_name(parser.error, opts, args[0])
+    params = parse_display_name(error_cb, opts, args[0])
     #add special flags to "display_as_args"
     proxy_args = []
     if params["display"] is not None:
@@ -1139,7 +1147,7 @@ def run_remote_server(parser, opts, args, mode):
     else:
         assert mode=="start"
         params["proxy_command"] = ["_proxy_start"]
-    app = make_client(parser.error, opts)
+    app = make_client(error_cb, opts)
     app.init(opts)
     app.init_ui(opts)
     conn = connect_or_fail(params)
@@ -1191,7 +1199,7 @@ def guess_X11_display(socket_dir):
     assert len(displays)==1, "too many live X11 displays to choose from: %s" % ", ".join(displays)
     return displays[0]
 
-def run_proxy(parser, opts, script_file, args, mode):
+def run_proxy(error_cb, opts, script_file, args, mode):
     from xpra.server.proxy import XpraProxy
     assert "gtk" not in sys.modules
     if mode in ("_proxy_start", "_shadow_start"):
@@ -1237,14 +1245,14 @@ def run_proxy(parser, opts, script_file, args, mode):
             proc.wait()
         from xpra.daemon_thread import make_daemon_thread
         make_daemon_thread(reaper, "server-startup-reaper").start()
-    server_conn = connect_or_fail(pick_display(parser, opts, args))
+    server_conn = connect_or_fail(pick_display(error_cb, opts, args))
     app = XpraProxy(TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
     signal.signal(signal.SIGINT, app.quit)
     signal.signal(signal.SIGTERM, app.quit)
     app.run()
     return  0
 
-def run_stopexit(mode, parser, opts, extra_args):
+def run_stopexit(mode, error_cb, opts, extra_args):
     assert "gtk" not in sys.modules
 
     def show_final_state(display):
@@ -1266,7 +1274,7 @@ def run_stopexit(mode, parser, opts, extra_args):
             assert False, "invalid state: %s" % final_state
             return 1
 
-    display_desc = pick_display(parser, opts, extra_args)
+    display_desc = pick_display(error_cb, opts, extra_args)
     conn = connect_or_fail(display_desc)
     e = 1
     try:
@@ -1299,15 +1307,14 @@ def may_cleanup_socket(sockdir, state, display, clean_states=[DotXpra.DEAD]):
             sys.stdout.write(" (cleaned up)")
     sys.stdout.write("\n")
 
-def run_list(parser, opts, extra_args):
+def run_list(error_cb, opts, extra_args):
     assert "gtk" not in sys.modules
     if extra_args:
-        parser.error("too many arguments for mode")
+        error_cb("too many arguments for mode")
     sockdir = DotXpra(opts.socket_dir)
     results = sockdir.sockets()
     if not results:
-        sys.stdout.write("No xpra sessions found\n")
-        return  1
+        error_cb("No xpra sessions found")
     sys.stdout.write("Found the following xpra sessions:\n")
     for state, display in results:
         may_cleanup_socket(sockdir, state, display)

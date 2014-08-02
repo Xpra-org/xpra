@@ -672,7 +672,7 @@ def main():
 
     #logging init:
     from xpra.scripts.main import parse_cmdline, fixup_debug_option
-    _, options, args = parse_cmdline(sys.argv)
+    options, args = parse_cmdline(sys.argv)
     debug = fixup_debug_option(options.debug)
     if debug:
         for x in debug.split(","):

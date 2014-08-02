@@ -770,8 +770,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             display_name = 'S' + str(os.getpid())
 
     if not shadowing and not proxying and not upgrading and opts.exit_with_children and not opts.start_child:
-        error_cb("--exit-with-children specified without any children to spawn; exiting immediately\n")
-        return  1
+        error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
 
     atexit.register(run_cleanups)
     #the server class will usually override those:
