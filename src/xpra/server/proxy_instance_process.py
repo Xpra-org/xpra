@@ -404,6 +404,13 @@ class ProxyInstanceProcess(Process):
             except:
                 log.error("error during main loop callback %s", fn, exc_info=True)
         self.exit = True
+        #wait for connections to close down cleanly before we exit
+        for i in range(10):
+            if self.client_protocol._closed and self.server_protocol._closed:
+                break
+            if i==0:
+                log.info("waiting for network connections to close")
+            time.sleep(0.1)
         log.info("proxy instance %s stopped", os.getpid())
 
     def stop(self, reason="proxy terminating", skip_proto=None):
