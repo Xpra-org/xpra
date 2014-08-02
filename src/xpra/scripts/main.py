@@ -66,6 +66,10 @@ class InitException(Exception):
     pass
 
 def main(script_file, cmdline):
+    if len(cmdline)==1:
+        from xpra.client.gtk_base.client_launcher import main
+        return main()
+
     from xpra.platform import init as platform_init, clean as platform_clean
     try:
         platform_init("Xpra")
