@@ -23,7 +23,7 @@ from xpra.version_util import version_compat_check, get_version_info, get_platfo
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import b, typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error
+from xpra.util import b, ss, typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -347,11 +347,11 @@ class XpraClientBase(object):
 
     def _process_disconnect(self, packet):
         #ie: ("disconnect", "version error", "incompatible version")
-        reason = packet[1]
+        reason = ss(packet[1])
         info = packet[2:]
-        s = nonl(str(reason))
+        s = nonl(reason)
         if len(info):
-            s += " (%s)" % (", ".join([nonl(str(x)) for x in info]))
+            s += " (%s)" % (", ".join([nonl(ss(x)) for x in info]))
         if self.server_capabilities is None or len(self.server_capabilities)==0:
             #server never sent hello to us - so disconnect is an error
             #(but we don't know which one - the info message may help)

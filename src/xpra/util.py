@@ -15,9 +15,18 @@ import sys
 if sys.version < '3':
     def b(x):
         return x
+    def ss(x):
+        return str(x)
 else:
     def b(x):
-        return bytes(x, 'UTF-8')
+        return bytes(x, 'latin1')
+    def ss(x):
+        if type(x)==str:
+            return x
+        elif type(x)==bytes:
+            return str(x, "latin1")
+        else:
+            return str(x)
 
 
 #constants shared between client and server:
@@ -45,7 +54,7 @@ CLIENT_EXIT             = "client exit"
 
 #convenience method based on the strings above:
 def disconnect_is_an_error(reason):
-    return reason.find(b("error"))>=0 or reason.find(b("timeout"))>=0
+    return reason.find("error")>=0 or reason.find("timeout")>=0
 
 
 if sys.version > '3':
