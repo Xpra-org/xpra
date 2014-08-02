@@ -194,7 +194,7 @@ def get_svn_props():
                 "LOCAL_MODIFICATIONS" : "unknown"
             }
     #find revision:
-    proc = subprocess.Popen("svnversion -n", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("svnversion -n ..", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
     if proc.returncode!=0:
         print("'svnversion -n' failed with return code %s" % proc.returncode)
