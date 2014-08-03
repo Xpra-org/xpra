@@ -192,7 +192,7 @@ So basically it's screen for remote X apps.
 
 %prep
 rm -rf $RPM_BUILD_DIR/xpra-%{version}
-bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xvf -
+bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
 cd xpra-%{version}
 
 %if 0%{?no_pulseaudio}
