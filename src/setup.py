@@ -1421,9 +1421,11 @@ else:
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
         add_packages("xpra.platform.darwin")
+        remove_packages("xpra.platform.win32", "xpra.platform.xposix")
     else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
+        remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         #always include the wrapper in case we need it later:
         #(we remove it during the 'install' step below if it isn't actually needed)
         scripts.append("scripts/xpra_Xdummy")

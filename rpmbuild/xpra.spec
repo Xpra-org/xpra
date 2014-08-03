@@ -224,11 +224,6 @@ rm -rf $RPM_BUILD_ROOT
 cd xpra-%{version}
 %{__python} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
 
-#we should pass arguments to setup.py but rpm macros make this too difficult
-#so we delete after installation (ugly but this works)
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/win32
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/darwin
-
 #why do we even need to do this ourselves?
 %ifarch x86_64
 mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
