@@ -19,14 +19,6 @@
 %define webp_build_args --with-webp
 %define server_build_args --with-server
 %define opencl_build_args --with-csc_opencl
-#if building a generic rpm: exclude anything that requires cython modules:
-%if 0%{?generic}
-%define webp_build_args --without-webp
-%define server_build_args --without-server
-%define no_video 1
-%define no_sound 1
-%define no_pulseaudio 1
-%endif
 
 %if 0%{?static_video_libs}
 %define static_vpx 1
@@ -130,11 +122,6 @@
 %define ffmpeg_build_args %{nil}
 %define vpx_build_args %{nil}
 %define x264_build_args %{nil}
-%if 0%{?no_video}
-%define ffmpeg_build_args --without-dec_avcodec --without-dec_avcodec2 --without-csc_swscale
-%define x264_build_args --without-x264
-%define vpx_build_args --without-vpx
-%else
 %if 0%{?static_ffmpeg}
 %define ffmpeg_build_args --without-dec_avcodec --with-dec_avcodec2 --with-avcodec2_static --with-csc_swscale --with-swscale_static
 %endif
@@ -143,7 +130,6 @@
 %endif
 %if 0%{?static_x264}
 %define x264_build_args --with-enc_x264 --with-x264_static
-%endif
 %endif
 
 #if we have static modules, we need semanage to label them:
@@ -155,25 +141,26 @@
 %endif
 %endif
 
-#remove dependency on webp for now since it leaks memory:
-%define requires_webp %{nil}
 %if 0%{?no_sound}
 %define requires_sound %{nil}
 %endif
 
 
-Summary: Xpra gives you "persistent remote applications" for X.
-Vendor: http://xpra.org/
 Name: xpra
 Version: %{version}
 Release: %{build_no}%{dist}
-License: GPL
-Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_fakexinerama} %{requires_selinux}
+Summary: Xpra gives you "persistent remote applications" for X.
+
 Group: Networking
-Packager: Antoine Martin <antoine@devloop.org.uk>
+License: GPL
 URL: http://xpra.org/
+Packager: Antoine Martin <antoine@devloop.org.uk>
+Vendor: http://xpra.org/
+
 Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
+
+Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_fakexinerama} %{requires_selinux}
 %if %{defined fedora}
 BuildRequires: python, setuptool
 BuildRequires: ffmpeg-devel
@@ -207,21 +194,20 @@ So basically it's screen for remote X apps.
 rm -rf $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xvf -
 cd xpra-%{version}
-%if 0%{?no_strict}
-(sed -e -i s'/strict_ENABLED = True/strict_ENABLED = False/g' setup.py)
-(echo "setup.py" >> %{S:ignored_changed_files.txt})
-%endif
+
 %if 0%{?no_pulseaudio}
 (sed -e -i s'/sound_ENABLED = True/sound_ENABLED = False/g' setup.py)
 (echo "setup.py" >> %{S:ignored_changed_files.txt})
 (echo "etc/*/xpra.conf" >> %{S:ignored_changed_files.txt})
 %endif
+
 %if 0%{?old_xdg}
 %patch12 -p1
-(echo "xdg/*.desktop" >> %{S:ignored_changed_files.txt})
 %endif
 
+
 %debug_package
+
 
 %build
 cd xpra-%{version}
@@ -243,50 +229,25 @@ cd xpra-%{version}
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/win32
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/darwin
 
+#why do we even need to do this ourselves?
+%ifarch x86_64
+mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
+%endif
+
 %if 0%{?opengl}
 #included by default
 %else
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/client/gl
 %endif
 
-%if 0%{?generic}
-# remove anything relying on dynamic libraries (not suitable for a generic RPM):
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/gtk_common/gdk_atoms.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/gtk_x11/*.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/bindings/*.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode/_rencode.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/*/*.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/server/stats/cymaths.so
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/argb
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/buffers
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/csc_cython
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/csc_swscale
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/cuda_common
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec*
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x265
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/nvenc
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/webp
-%else
-#not a generic RPM
-%ifarch x86_64
-mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
-%endif
-#exclude list for non-generic RPMs:
-%if 0%{?no_video}
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec*
-%endif
 %if 0%{?no_sound}
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/sound
-%endif
 %endif
 
 
 %clean
 rm -rf $RPM_BUILD_ROOT
+
 
 %files
 %defattr(-,root,root)
@@ -303,6 +264,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_sysconfdir}/xpra
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config(noreplace) %{_sysconfdir}/xpra/xpra.conf
+
 
 %check
 desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
