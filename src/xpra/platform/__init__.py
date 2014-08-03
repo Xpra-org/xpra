@@ -27,6 +27,14 @@ def do_init():
     pass
 
 
+#platforms can override this
+def command_error(message):
+    print(message)
+
+def command_info(message):
+    print(message)
+
+
 _clean_done = False
 def clean():
     global _clean_done
@@ -79,6 +87,12 @@ def get_application_name():
     return _application_name
 
 
+def get_main_fallback():
+    #this is used on some platforms (win32),
+    #when the user tries to run "xpra" without arguments
+    #returns the function to run as fallback (or None)
+    return None
+
 
 def platform_import(where, pm, required, *imports):
     if os.name == "nt":
@@ -110,5 +124,5 @@ def platform_import(where, pm, required, *imports):
         where[x] = v
 
 platform_import(globals(), None, True, "do_init", "do_clean")
-platform_import(globals(), None, False, "do_set_prgname")
-platform_import(globals(), None, False, "do_set_application_name")
+platform_import(globals(), None, False, "do_set_prgname", "do_set_application_name",
+                "command_error", "command_info", "get_main_fallback")

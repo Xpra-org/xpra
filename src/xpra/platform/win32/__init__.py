@@ -40,10 +40,13 @@ def is_wine():
     return False
 
 
+prg_name = "Xpra"
 def set_prgname(name):
+    global prg_name
+    prg_name = name
     try:
         import win32api                     #@UnresolvedImport
-        win32api.SetConsoleTitle("Xpra")
+        win32api.SetConsoleTitle(name)
         import glib
         glib.set_prgname(name)
     except:
@@ -253,6 +256,47 @@ def do_init():
     log_file = os.path.join(d, LOG_FILENAME)
     sys.stdout = open(log_file, "a")
     sys.stderr = sys.stdout
+
+
+SHOW_MESSAGEBOX = os.environ.get("XPRA_MESSAGEBOX", "1")=="1"
+MB_ICONEXCLAMATION  = 0x00000030L
+MB_ICONINFORMATION  = 0x00000040L
+MB_SYSTEMMODAL      = 0x00001000L
+def _show_message(message, uType):
+    global prg_name
+    #TODO: detect cx_freeze equivallent
+    GUI_MODE = hasattr(sys, "frozen") and sys.frozen=="windows_exe"
+    if SHOW_MESSAGEBOX and GUI_MODE:
+        #try to use an alert box since no console output will be shown:
+        try:
+            import win32api         #@UnresolvedImport
+            win32api.MessageBox(0, message, prg_name, uType)
+            return
+        except:
+            pass
+    print(message)
+
+def command_info(message):
+    _show_message(message, MB_ICONINFORMATION | MB_SYSTEMMODAL)
+
+def command_error(message):
+    _show_message(message, MB_ICONEXCLAMATION | MB_SYSTEMMODAL)
+
+
+def get_main_fallback():
+    set_wait_for_input()
+    global _wait_for_input
+    if _wait_for_input:
+        #something will be shown in a console,
+        #so don't bother showing anything else
+        return None
+    #try the launcher (better than nothing!)
+    try:
+        from xpra.client.gtk_base.client_launcher import main
+        return main
+    except:
+        return None
+
 
 def do_clean():
     global _wait_for_input

@@ -199,15 +199,15 @@ def get_sound_codecs(is_speaker, is_server):
 
 def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     if not has_gst:
-        print("sound is not supported - gstreamer not present or not accessible")
-        return True
+        return "sound is not supported - gstreamer not present or not accessible"
+    info = []
     all_speaker_codecs = get_sound_codecs(True, is_server)
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
     hs = "help" in speaker_codecs
     if hs:
-        print("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
+        info.append("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
     elif len(invalid_sc):
-        log.warn("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
+        info.append("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
         for x in invalid_sc:
             speaker_codecs.remove(x)
     elif len(speaker_codecs)==0:
@@ -217,14 +217,14 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
     hm = "help" in microphone_codecs
     if hm:
-        print("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
+        info.append("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
     elif len(invalid_mc):
-        log.warn("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
+        info.append("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
         for x in invalid_mc:
             microphone_codecs.remove(x)
     elif len(microphone_codecs)==0:
         microphone_codecs += all_microphone_codecs
-    return hm or hs
+    return info
 
 
 def get_encoder_formatter(name):

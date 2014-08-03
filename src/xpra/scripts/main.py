@@ -10,11 +10,12 @@ import os
 import stat
 import socket
 import time
-from optparse import OptionParser, OptionGroup
+import optparse
 import logging
 from subprocess import Popen, PIPE
 import signal
 import shlex
+import traceback
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.dotxpra import DotXpra, osexpand
@@ -62,15 +63,28 @@ if supports_server:
     except:
         supports_server = False
 
+
 class InitException(Exception):
     pass
+class InitInfo(Exception):
+    pass
+
+#this parse doesn't exit when it encounters an error,
+#allowing us to deal with it better and show a UI message if needed.
+class ModifiedOptionParser(optparse.OptionParser):
+    def error(self, msg):
+        raise InitException(msg)
+    def exit(self, status=0, msg=None):
+        raise InitException(msg)
+
 
 def main(script_file, cmdline):
+    from xpra.platform import init as platform_init, clean as platform_clean, command_error, command_info, get_main_fallback
     if len(cmdline)==1:
-        from xpra.client.gtk_base.client_launcher import main
-        return main()
+        fm = get_main_fallback()
+        if fm:
+            return fm()
 
-    from xpra.platform import init as platform_init, clean as platform_clean
     try:
         platform_init("Xpra")
         try:
@@ -84,14 +98,15 @@ def main(script_file, cmdline):
             return run_mode(script_file, err, options, args, mode)
         except SystemExit:
             raise
+        except InitInfo:
+            command_info("%s" % sys.exc_info()[1])
+            return 0
         except InitException:
-            print("xpra error: %s" % sys.exc_info()[1])            
-            sys.exit(1)
-        except Exception, e:
-            print("main error: %s" % e)
-            import traceback
-            print(traceback.format_exc())
-            sys.exit(1)
+            command_error("xpra error:\n%s" % sys.exc_info()[1])
+            return 1
+        except Exception:
+            command_error("main error:\n%s" % traceback.format_exc())
+            return 1
     finally:
         platform_clean()
 
@@ -148,12 +163,12 @@ def parse_cmdline(cmdline):
     if not supports_server:
         command_options.append("(This xpra installation does not support starting local servers.)")
 
-    parser = OptionParser(version="xpra v%s" % XPRA_VERSION,
+    parser = ModifiedOptionParser(version="xpra v%s" % XPRA_VERSION,
                           usage="\n" + "".join(command_options))
     hidden_options = {"display" : defaults.display,
                       "displayfd" : defaults.displayfd}
     if len(server_modes):
-        group = OptionGroup(parser, "Server Options",
+        group = optparse.OptionGroup(parser, "Server Options",
                     "These options are only relevant on the server when using the %s mode." %
                     " or ".join(["'%s'" % x for x in server_modes]))
         parser.add_option_group(group)
@@ -251,7 +266,7 @@ def parse_cmdline(cmdline):
         hidden_options["pulseaudio_command"] = ""
         hidden_options["dbus_proxy"] = False
 
-    group = OptionGroup(parser, "Server Controlled Features",
+    group = optparse.OptionGroup(parser, "Server Controlled Features",
                 "These options can be used to turn certain features on or off, "
                 "they can be specified on the client or on the server, "
                 "but the client cannot enable them if they are disabled on the server.")
@@ -343,7 +358,7 @@ def parse_cmdline(cmdline):
         hidden_options["microphone"] = False
         hidden_options["microphone_codec"] = []
 
-    group = OptionGroup(parser, "Encoding and Compression Options",
+    group = optparse.OptionGroup(parser, "Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
                 "They may also be specified on the server as default values for those clients that do not set them.")
     parser.add_option_group(group)
@@ -406,7 +421,7 @@ def parse_cmdline(cmdline):
                       + " 0 to disable compression,"
                       + " 9 for maximal (slowest) compression. Default: %default.")
 
-    group = OptionGroup(parser, "Client Features Options",
+    group = optparse.OptionGroup(parser, "Client Features Options",
                 "These options control client features that affect the appearance or the keyboard.")
     parser.add_option_group(group)
     group.add_option("--opengl", action="store",
@@ -457,7 +472,7 @@ def parse_cmdline(cmdline):
                       dest="keyboard_sync", default=defaults.keyboard_sync,
                       help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly (default: %s)" % enabled_str(defaults.keyboard_sync))
 
-    group = OptionGroup(parser, "Advanced Options",
+    group = optparse.OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
     parser.add_option_group(group)
     group.add_option("--password-file", action="store",
@@ -529,8 +544,7 @@ def parse_cmdline(cmdline):
         categories = options.debug.split(",")
         for cat in categories:
             if cat=="help":
-                print("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
-                sys.exit(0)
+                raise InitInfo("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
 
     from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW, PREFERED_ENCODING_ORDER
     if options.encoding:
@@ -573,7 +587,7 @@ def parse_cmdline(cmdline):
             setattr(packet_encoding, "use_%s" % pe, enabled)
     #verify that at least one encoder is available:
     if not packet_encoding.get_enabled_encoders():
-        parser.error("at least one valid packet encoder must be enabled")
+        raise InitException("at least one valid packet encoder must be enabled")
 
     #special case for video encoders/decoders and csc, stored as lists, but command line option is a CSV string:
     from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
@@ -583,20 +597,17 @@ def parse_cmdline(cmdline):
         if type(options.video_encoders)==str:
             vestr = options.video_encoders.strip().lower()
             if vestr=="help":
-                print("the following video encoders may be available: %s" % ", ".join(aveco))
-                sys.exit(0)
+                raise InitInfo("the following video encoders may be available: %s" % ", ".join(aveco))
             options.video_encoders = [x.strip() for x in vestr.split(",")]
         if type(options.csc_modules)==str:
             cscstr = options.csc_modules.strip().lower()
             if cscstr=="help":
-                print("the following csc modules may be available: %s" % ", ".join(acsco))
-                sys.exit(0)
+                raise InitInfo("the following csc modules may be available: %s" % ", ".join(acsco))
             options.csc_modules = [x.strip() for x in cscstr.split(",")]
     if type(options.video_decoders)==str:
         vdstr = options.video_decoders.strip().lower()
         if vdstr=="help":
-            print("the following video decoders may be available: %s" % ", ".join(avedo))
-            sys.exit(0)
+            raise InitInfo("the following video decoders may be available: %s" % ", ".join(avedo))
         options.video_decoders = [x.strip() for x in vdstr.split(",")]
 
     if options.video_encoders==["none"]:
@@ -642,19 +653,18 @@ def parse_cmdline(cmdline):
     try:
         int(options.dpi)
     except Exception, e:
-        parser.error("invalid dpi: %s" % e)
+        raise InitException("invalid dpi: %s" % e)
     if options.encryption:
         assert len(ENCRYPTION_CIPHERS)>0, "cannot use encryption: no ciphers available"
         if options.encryption not in ENCRYPTION_CIPHERS:
-            parser.error("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
+            raise InitException("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
         if not options.password_file and not options.encryption_keyfile:
-            parser.error("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
+            raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
     #ensure opengl is either True, False or None
     options.opengl = parse_bool("opengl", options.opengl)
     return options, args
 
 def dump_frames(*arsg):
-    import traceback
     frames = sys._current_frames()
     print("")
     print("found %s frames:" % len(frames))
@@ -668,8 +678,8 @@ def configure_logging(options, mode):
     if mode in ("start", "upgrade", "attach", "shadow", "proxy"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             from xpra.sound.gstreamer_util import show_sound_codec_help
-            show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
-            return 0
+            info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
+            raise InitInfo("\n".join(info))
     else:
         #a bit naughty here, but it's easier to let xpra.log initialize
         #the logging system every time, and just undo things here..
@@ -900,7 +910,7 @@ def connect_or_fail(display_desc):
     try:
         return connect_to(display_desc)
     except Exception, e:
-        sys.exit("connection failed: %s" % e)
+        raise InitException("connection failed: %s" % e)
 
 def ssh_connect_failed(message):
     #by the time ssh fails, we may have entered the gtk main loop
@@ -1044,22 +1054,19 @@ def run_client(error_cb, opts, extra_args, mode):
         layouts = app.get_supported_window_layouts() or ["default"]
         layouts_str = ", ".join(layouts)
         if opts.window_layout and opts.window_layout.lower()=="help":
-            print("%s supports the following layouts: %s" % (app.client_toolkit(), layouts_str))
-            return 0
+            raise InitInfo("%s supports the following layouts: %s" % (app.client_toolkit(), layouts_str))
         if opts.window_layout and opts.window_layout not in layouts:
             error_cb("window layout '%s' is not supported by the %s toolkit, valid options are: %s" % (opts.window_layout, app.client_toolkit(), layouts_str))
         app.init(opts)
         if opts.encoding:
             #fix old encoding names if needed:
             err = opts.encoding not in app.get_encodings()
+            info = ""
             if err and opts.encoding!="help":
-                print("invalid encoding: %s" % opts.encoding)
+                info = "invalid encoding: %s\n" % opts.encoding
             if opts.encoding=="help" or err:
                 from xpra.codecs.loader import encodings_help
-                print("%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(app.get_encodings()))))
-                if err:
-                    return 1
-                return 0
+                raise InitInfo(info+"%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(app.get_encodings()))))
         def handshake_complete(*args):
             from xpra.log import Logger
             log = Logger()
