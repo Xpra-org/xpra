@@ -172,7 +172,7 @@ Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_v
 Group: Networking
 Packager: Antoine Martin <antoine@devloop.org.uk>
 URL: http://xpra.org/
-Source: xpra-%{version}.tar.gz
+Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 %if %{defined fedora}
 BuildRequires: python, setuptool
@@ -205,7 +205,7 @@ So basically it's screen for remote X apps.
 
 %prep
 rm -rf $RPM_BUILD_DIR/xpra-%{version}
-zcat $RPM_SOURCE_DIR/xpra-%{version}.tar.gz | tar -xvf -
+bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xvf -
 cd xpra-%{version}
 %if 0%{?no_strict}
 (sed -e -i s'/strict_ENABLED = True/strict_ENABLED = False/g' setup.py)
@@ -295,11 +295,11 @@ rm -rf $RPM_BUILD_ROOT
 %if %{include_egg}
 %{python_sitelib}/xpra-*.egg-info
 %endif
-/usr/share/xpra
-/usr/share/man/man1/xpra*
-/usr/share/applications/xpra_launcher.desktop
-/usr/share/applications/xpra.desktop
-/usr/share/icons/xpra.png
+%{_datadir}/xpra
+%{_datadir}/man/man1/xpra*
+%{_datadir}/applications/xpra_launcher.desktop
+%{_datadir}/applications/xpra.desktop
+%{_datadir}/icons/xpra.png
 %dir %{_sysconfdir}/xpra
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config(noreplace) %{_sysconfdir}/xpra/xpra.conf
