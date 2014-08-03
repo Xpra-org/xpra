@@ -1,6 +1,4 @@
 include COPYING NEWS README
-include xpra/x11/bindings/constants.txt
-include xpra/x11/gtk_x11/constants.txt
 include xpra/codecs/inline.h
 include xpra/codecs/inline.c
 include xpra/codecs/buffers/memalign.h
@@ -8,8 +6,6 @@ include xpra/codecs/buffers/memalign.c
 include xpra/codecs/buffers/buffers.h
 include xpra/codecs/buffers/new_buffers.c
 include xpra/codecs/buffers/old_buffers.c
-include xpra/codecs/vpx/vpxlib.h
-include xpra/codecs/vpx/vpxlib.c
 recursive-include html5 *
 recursive-include man *
 recursive-include patches *
@@ -18,7 +14,5 @@ recursive-include xdg *
 recursive-include icons *
 recursive-include scripts *
 global-include *.py *.txt *.pyx *.pxd
-global-exclude *~ #* *.orig *.bak *.rej *.pxi
+global-exclude *~ \#* *.orig *.bak *.rej *.pxi
 prune build
-prune dist
-prune install
