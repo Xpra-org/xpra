@@ -656,6 +656,7 @@ def get_xorg_version(xorg_bin):
     return xorg_version
 
 def detect_xorg_setup():
+    #returns (xvfb_command, has_displayfd, use_dummmy_wrapper)
     if not server_ENABLED or WIN32:
         return ("", False, False)
 
@@ -679,16 +680,24 @@ def detect_xorg_setup():
         return Xvfb()
 
     def Xorg_suid_check():
+        xorg_conf = "/etc/xpra/xorg.conf"
+        if sys.prefix!="/usr":
+            #ie: /usr/local/etc/xpra/xorg.conf
+            xorg_conf = os.path.join(sys.prefix, xorg_conf)
+        Xorg_args = "-dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config %s" % xorg_conf
+        if not xorg_bin:
+            print("Xorg binary not found, assuming the wrapper is needed!")
+            return ("xpra_Xdummy "+Xorg_args, has_displayfd, True)
         xorg_stat = os.stat(xorg_bin)
         if (xorg_stat.st_mode & stat.S_ISUID)!=0:
             if (xorg_stat.st_mode & stat.S_IROTH)==0:
                 print("Xorg is suid and not readable, Xdummy support unavailable")
                 return Xvfb()
             print("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
-            return ("xpra_Xdummy -dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf", has_displayfd, True)
+            return ("xpra_Xdummy "+Xorg_args, has_displayfd, True)
         else:
             print("using Xdummy directly")
-            return ("Xorg -dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf", has_displayfd, False)
+            return ("Xorg "+Xorg_args, has_displayfd, False)
 
     if Xdummy_ENABLED is False:
         return Xvfb()
