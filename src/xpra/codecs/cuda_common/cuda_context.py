@@ -20,7 +20,7 @@ from pycuda.compiler import compile
 
 
 DEFAULT_CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "-1"))
-DEFAULT_CUDA_DEVICE_NAME = int(os.environ.get("XPRA_CUDA_DEVICE_NAME", ""))
+DEFAULT_CUDA_DEVICE_NAME = os.environ.get("XPRA_CUDA_DEVICE_NAME", "")
 
 
 #record when we get failures/success:
