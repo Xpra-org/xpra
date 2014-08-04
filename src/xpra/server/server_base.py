@@ -443,6 +443,7 @@ class ServerBase(ServerCore):
             self._potential_protocols.remove(protocol)
         source = self._server_sources.get(protocol)
         if source:
+            self.server_event("connection-lost", source.uuid)
             source.close()
             del self._server_sources[protocol]
             if self.exit_with_client:
@@ -477,8 +478,6 @@ class ServerBase(ServerCore):
         if self._clipboard_client and self._clipboard_client.protocol==proto:
             self._clipboard_client = None
         source = self.cleanup_source(proto)
-        if source:
-            self.server_event("connection-lost", source.uuid)
         if len(self._server_sources)==0:
             self._clear_keys_pressed()
             self._focus(source, 0, [])
