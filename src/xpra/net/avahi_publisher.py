@@ -72,30 +72,14 @@ class AvahiPublishers:
 			self.publishers.append(AvahiPublisher(service_name, port, service_type, domain="", host=host, text=txt, interface=iface_index))
 
 	def start(self):
+		log("starting: %s", self.publishers)
 		for publisher in self.publishers:
-			try:
-				publisher.start()
-			except Exception, e:
-				log.error("error on publisher %s", publisher, exc_info=True)
-				try:
-					import dbus.exceptions
-					if type(e)==dbus.exceptions.DBusException:
-						message = e.get_dbus_message()
-						dbus_error_name = e.get_dbus_name()
-						if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
-							log.error("error starting publisher %s: another instance already claims this dbus name: %s, message: %s", publisher, e, message)
-							continue
-				except:
-					pass
-				log.error("error on publisher %s: %s", publisher, e)
+			publisher.start()
 
 	def stop(self):
 		log("stopping: %s", self.publishers)
 		for publisher in self.publishers:
-			try:
-				publisher.stop()
-			except Exception, e:
-				log.error("error stopping publisher %s: %s", publisher, e)
+			publisher.stop()
 
 
 class AvahiPublisher:
@@ -115,10 +99,22 @@ class AvahiPublisher:
 		return	"AvahiPublisher(%s %s:%s interface=%s)" % (self.name, self.host, self.port, self.interface)
 
 	def start(self):
-		bus = dbus.SystemBus()
-		server = dbus.Interface(bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER), avahi.DBUS_INTERFACE_SERVER)
+		def helpmsg():
+			log.info("you may want to disable mdns support to avoid this warning")			
+		try:
+			bus = dbus.SystemBus()
+		except Exception, e:
+			log.warn("failed to connect to system dbus: %s", e)
+			helpmsg()
+			return
 
-		g = dbus.Interface(bus.get_object(avahi.DBUS_NAME, server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
+		try:
+			server = dbus.Interface(bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER), avahi.DBUS_INTERFACE_SERVER)
+			g = dbus.Interface(bus.get_object(avahi.DBUS_NAME, server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
+		except Exception, e:
+			log.warn("failed to connect to avahi's dbus interface: %s", e)
+			helpmsg()
+			return
 
 		try:
 			args = (self.interface, avahi.PROTO_UNSPEC,dbus.UInt32(0),
@@ -130,13 +126,28 @@ class AvahiPublisher:
 			self.group = g
 			log("dbus service added")
 		except Exception, e:
+			#use try+except as older versions may not have those modules?
+			try:
+				import dbus.exceptions
+				if type(e)==dbus.exceptions.DBusException:
+					message = e.get_dbus_message()
+					dbus_error_name = e.get_dbus_name()
+					if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
+						log.error("error starting publisher %s: another instance already claims this dbus name: %s, message: %s", self, e, message)
+						return
+			except:
+				pass
 			log.warn("failed to start %s: %s", self, e)
+			helpmsg()
 
 	def stop(self):
 		log("%s.stop() group=%s", self, self.group)
 		if self.group:
-			self.group.Reset()
-			self.group = None
+			try:
+				self.group.Reset()
+				self.group = None
+			except Exception, e:
+				log.error("error stopping publisher %s: %s", self, e)
 
 
 def main():
