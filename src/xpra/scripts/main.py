@@ -725,7 +725,7 @@ def run_mode(script_file, error_cb, options, args, mode):
             nox()
             from xpra.scripts.server import run_server
             return run_server(error_cb, options, mode, script_file, args)
-        elif mode in ("attach", "detach", "screenshot", "version", "info", "control"):
+        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor"):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit") and (supports_server or supports_shadow):
             nox()
@@ -1035,6 +1035,9 @@ def run_client(error_cb, opts, extra_args, mode):
     elif mode=="info":
         from xpra.client.gobject_client_base import InfoXpraClient
         app = InfoXpraClient(connect(), opts)
+    elif mode=="_monitor":
+        from xpra.client.gobject_client_base import MonitorXpraClient
+        app = MonitorXpraClient(connect(), opts)
     elif mode=="control":
         from xpra.client.gobject_client_base import ControlXpraClient
         if len(extra_args)<=1:

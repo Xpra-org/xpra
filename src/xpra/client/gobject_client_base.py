@@ -112,12 +112,10 @@ class CommandConnectClient(GObjectXpraClient):
 
     def make_hello(self):
         capabilities = GObjectXpraClient.make_hello(self)
-        #don't bother with many of these things for one-off caommands:
-        capabilities["ui_client"] = False
-        capabilities["wants_aliases"] = False
-        capabilities["wants_versions"] = False
-        capabilities["wants_features"] = False
-        capabilities["wants_sound"] = False
+        #don't bother with many of these things for one-off commands:
+        for x in ("ui_client", "wants_aliases", "wants_encodings",
+                  "wants_versions", "wants_features", "wants_sound", "windows"):
+            capabilities[x] = False
         return capabilities
 
     def _process_connection_lost(self, packet):
@@ -210,6 +208,38 @@ class InfoXpraClient(CommandConnectClient):
         capabilities = GObjectXpraClient.make_hello(self)
         log.debug("make_hello() adding info_request to %s", capabilities)
         capabilities["info_request"] = True
+        return capabilities
+
+
+class MonitorXpraClient(CommandConnectClient):
+    """ This client does one thing only:
+        it prints out events received from the server.
+        If the server does not support this feature it exits with an error.
+    """
+
+    def timeout(self, *args):
+        pass
+        #self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
+
+    def do_command(self):
+        if not self.server_capabilities.get("server-events") or not self.server_capabilities.get("event_request"):
+            self.warn_and_quit(EXIT_UNSUPPORTED, "this server does not support event monitor mode")
+            return
+        log.info("waiting for server events")
+
+    def _process_server_event(self, packet):
+        log.info(": ".join(packet[1:]))
+
+    def init_packet_handlers(self):
+        CommandConnectClient.init_packet_handlers(self)
+        self._packet_handlers["server-event"] = self._process_server_event
+
+    def make_hello(self):
+        capabilities = CommandConnectClient.make_hello(self)
+        log.debug("make_hello() adding info_request to %s", capabilities)
+        capabilities["wants_features"]  = True      #so we can verify that the server supports monitor mode
+        capabilities["wants_events"]    = True      #tell the server we do support server events
+        capabilities["event_request"]   = True      #ask the server to enter this request mode (we're not a proper client)
         return capabilities
 
 

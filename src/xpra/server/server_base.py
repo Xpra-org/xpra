@@ -384,6 +384,7 @@ class ServerBase(ServerCore):
             "disconnect":                           self._process_disconnect,
             # Note: "clipboard-*" packets are handled via a special case..
             })
+        self._default_packet_handlers["info-request"] = self._process_info_request
 
     def init_aliases(self):
         packet_types = list(self._default_packet_handlers.keys())
@@ -472,10 +473,12 @@ class ServerBase(ServerCore):
         self.disconnect_protocol(proto, CLIENT_REQUEST)
 
     def _process_connection_lost(self, proto, packet):
-        log.info("Connection lost")
+        ServerCore._process_connection_lost(self, proto, packet)
         if self._clipboard_client and self._clipboard_client.protocol==proto:
             self._clipboard_client = None
         source = self.cleanup_source(proto)
+        if source:
+            self.server_event("connection-lost", source.uuid)
         if len(self._server_sources)==0:
             self._clear_keys_pressed()
             self._focus(source, 0, [])
@@ -493,10 +496,12 @@ class ServerBase(ServerCore):
         detach_request  = c.boolget("detach_request", False)
         stop_request    = c.boolget("stop_request", False)
         exit_request    = c.boolget("exit_request", False)
-        is_request = detach_request or stop_request or exit_request
+        event_request   = c.boolget("event_request", False)
+        is_request = detach_request or stop_request or exit_request or event_request
         if not is_request:
             #"normal" connection, so log welcome message:
             log.info("Handshake complete; enabling connection")
+        self.server_event("handshake-complete")
 
         # Things are okay, we accept this connection, and may disconnect previous one(s)
         # (but only if this is going to be a UI session - control sessions can co-exist)
@@ -622,6 +627,13 @@ class ServerBase(ServerCore):
             self.send_windows_and_cursors(ss, share_count>0)
 
         ss.startup_complete()
+        self.server_event("startup-complete", ss.uuid)
+
+
+    def server_event(self, *args):
+        for s in self._server_sources.values():
+            s.send_server_event(*args)
+
 
     def update_server_settings(self, settings, reset=False):
         log("server settings ignored: ", settings)
@@ -685,6 +697,8 @@ class ServerBase(ServerCore):
              "encoding.strict_control"      : True,
              "sound.server_driven"          : True,
              "command_request"              : True,
+             "event_request"                : True,
+             "server-events"                : True,
              })
         #this is a feature, but we would need the hello request
         #to know if it is really needed.. so always include it:
@@ -990,6 +1004,15 @@ class ServerBase(ServerCore):
         except Exception, e:
             log.error("failed to capture screenshot", exc_info=True)
             self.send_disconnect(proto, "screenshot failed: %s" % e)
+
+
+    def _process_info_request(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        assert ss, "cannot find server source for %s" % proto
+        def info_callback(_proto, info):
+            assert proto==_proto
+            ss.send_info_response(info)
+        self.get_all_info(info_callback, proto, *packet[1:])
 
     def send_hello_info(self, proto):
         log.info("processing info request from %s", proto._conn)

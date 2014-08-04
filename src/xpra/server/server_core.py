@@ -201,7 +201,6 @@ class ServerCore(object):
         log("initializing packet handlers")
         self._default_packet_handlers = {
             "hello":                                self._process_hello,
-            "info-request":                         self._process_info_request,
             Protocol.CONNECTION_LOST:               self._process_connection_lost,
             Protocol.GIBBERISH:                     self._process_gibberish,
             Protocol.INVALID:                       self._process_invalid,
@@ -451,8 +450,7 @@ class ServerCore(object):
                 #log full stack trace at debug level,
                 #log exception as error
                 #but don't disclose internal details to the client
-                log("hello parsing error", exc_info=True)
-                log.error("server error processing new connection from %s: %s", proto, e)
+                log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
                 self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
 
     def set_socket_timeout(self, conn, timeout=None):
@@ -633,14 +631,6 @@ class ServerCore(object):
     def do_send_info(self, proto, info):
         proto.send_now(("hello", info))
 
-    def _process_info_request(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        assert ss, "cannot find server source for %s" % proto
-        def info_callback(_proto, info):
-            assert proto==_proto
-            ss.send_info_response(info)
-        self.get_all_info(info_callback, proto, *packet[1:])
-
     def get_all_info(self, callback, proto, *args):
         ui_info = self.get_ui_info(proto, *args)
         def in_thread(*args):
@@ -689,8 +679,7 @@ class ServerCore(object):
                 handler(proto, packet)
                 return
             log.error("unknown or invalid packet type: %s from %s", packet_type, proto)
-            if proto not in self._server_sources:
-                proto.close()
+            proto.close()
         except KeyboardInterrupt:
             raise
         except:

@@ -872,6 +872,7 @@ class UIXpraClient(XpraClientBase):
             except:
                 pass
         capabilities.update({
+            "wants_events"              : True,
             "randr_notify"              : True,
             "compressible_cursors"      : True,
             "dpi"                       : self.dpi,
@@ -1094,6 +1095,10 @@ class UIXpraClient(XpraClientBase):
         if len(self.server_ping_latency)>0:
             _, sl = self.server_ping_latency[-1]
         self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
+
+
+    def _process_server_event(self, packet):
+        log(": ".join(packet[1:]))
 
 
     def _process_info_response(self, packet):
@@ -1965,6 +1970,7 @@ class UIXpraClient(XpraClientBase):
             "ping_echo":            self._process_ping_echo,
             "info-response":        self._process_info_response,
             "sound-data":           self._process_sound_data,
+            "server-event":         self._process_server_event,
             }.items():
             delhandler(k)
             self._packet_handlers[k] = v

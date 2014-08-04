@@ -329,6 +329,7 @@ class ServerSource(object):
         self.wants_features = True
         self.wants_display = True
         self.wants_sound = True
+        self.wants_events = False
         #sound props:
         self.pulseaudio_id = None
         self.pulseaudio_server = None
@@ -491,6 +492,7 @@ class ServerSource(object):
         self.wants_encodings = c.boolget("wants_encodings", self.ui_client)
         self.wants_display = c.boolget("wants_display", self.ui_client)
         self.wants_sound = c.boolget("wants_sound", True)
+        self.wants_events = c.boolget("wants_events", False)
         self.wants_aliases = c.boolget("wants_aliases", True)
         self.wants_versions = c.boolget("wants_versions", True)
         self.wants_features = c.boolget("wants_features", True)
@@ -1020,7 +1022,7 @@ class ServerSource(object):
                 except Exception, e:
                     log.error("failed to setup sound: %s", e)
         if self.wants_encodings or self.send_windows:
-            assert self.encoding
+            assert self.encoding, "cannot send windows/encodings without an encoding!"
             encoding = self.encoding
             if not self.generic_encodings:
                 #translate back into the legacy names:
@@ -1187,6 +1189,11 @@ class ServerSource(object):
             if l!=newlist:
                 d[k] = newlist
                 log("rewrite_encoding_values for key '%s': %s replaced by %s", k, l, newlist)
+
+
+    def send_server_event(self, *args):
+        if self.wants_events:
+            self.send("server-event", *args)
 
 
     def send_clipboard_enabled(self, reason=""):
