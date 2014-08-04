@@ -262,8 +262,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %check
-desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
-desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
+/usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
+/usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 
 
 %post
@@ -284,14 +284,14 @@ semanage fcontext -a -t textrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/e
 restorecon %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
 %endif
 %if %{defined Fedora}
-update-desktop-database &> /dev/null || :
-touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+/usr/bin/update-desktop-database &> /dev/null || :
+/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 %endif
 
 
 %postun
 %if %{defined Fedora}
-update-desktop-database &> /dev/null || :
+/usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
     /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
     /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
