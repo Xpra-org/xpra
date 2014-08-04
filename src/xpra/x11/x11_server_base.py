@@ -382,8 +382,9 @@ class X11ServerBase(GTKServerBase):
             return oldconf is not None
         if not self.fake_xinerama:
             return delfile(None)
-        if len(self._server_sources)!=1:
-            return delfile("fakeXinerama can only be enabled for a single client")
+        ui_client_count = len([True for s in self._server_sources.values() if s.ui_client])
+        if ui_client_count!=1:
+            return delfile("fakeXinerama can only be enabled for a single client (found %s)", ui_client_count)
         source = self._server_sources.values()[0]
         ss = source.screen_sizes
         if len(ss)==0:
