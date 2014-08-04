@@ -283,20 +283,16 @@ restorecon %{python_sitelib}/xpra/codecs/vpx/decoder.so
 semanage fcontext -a -t textrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
 restorecon %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
 %endif
-%if %{defined Fedora}
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
-%endif
 
 
 %postun
-%if %{defined Fedora}
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
     /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
     /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 fi
-%endif
 
 
 %posttrans
