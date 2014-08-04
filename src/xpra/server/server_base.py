@@ -543,8 +543,8 @@ class ServerBase(ServerCore):
         #use blocking sockets from now on:
         self.set_socket_timeout(proto._conn, None)
 
-        def drop_client(reason="unknown"):
-            self.disconnect_client(proto, reason)
+        def drop_client(reason="unknown", *args):
+            self.disconnect_client(proto, reason, *args)
         def get_window_id(wid):
             return self._window_to_id.get(wid)
         from xpra.server.source import ServerSource
