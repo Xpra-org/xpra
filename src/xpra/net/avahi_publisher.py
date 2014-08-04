@@ -136,6 +136,7 @@ class AvahiPublisher:
 		log("%s.stop() group=%s", self, self.group)
 		if self.group:
 			self.group.Reset()
+			self.group = None
 
 
 def main():
