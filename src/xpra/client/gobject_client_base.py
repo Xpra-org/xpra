@@ -233,6 +233,7 @@ class MonitorXpraClient(CommandConnectClient):
     def init_packet_handlers(self):
         CommandConnectClient.init_packet_handlers(self)
         self._packet_handlers["server-event"] = self._process_server_event
+        self._packet_handlers["ping"] = self._process_ping
 
     def make_hello(self):
         capabilities = CommandConnectClient.make_hello(self)
@@ -241,6 +242,10 @@ class MonitorXpraClient(CommandConnectClient):
         capabilities["wants_events"]    = True      #tell the server we do support server events
         capabilities["event_request"]   = True      #ask the server to enter this request mode (we're not a proper client)
         return capabilities
+
+    def _process_ping(self, packet):
+        echotime = packet[1]
+        self.send("ping_echo", echotime, 0, 0, 0, -1)
 
 
 class VersionXpraClient(CommandConnectClient):
