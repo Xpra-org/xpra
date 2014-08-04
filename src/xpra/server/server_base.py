@@ -663,6 +663,20 @@ class ServerBase(ServerCore):
             log.warn("This client is running within the Xpra server %s", server_uuid)
         return True
 
+    def get_server_features(self):
+        #these are flags that have been added over time with new versions
+        #to expose new server features:
+        return ("toggle_cursors_bell_notify", "toggle_keyboard_sync",
+                "window_configure", "window_unmap", "window_refresh_config",
+                "xsettings-tuple",
+                "change-quality", "change-min-quality", "change-speed", "change-min-speed",
+                "client_window_properties",
+                "sound_sequence", "notify-startup-complete", "suspend-resume",
+                "encoding.generic", "encoding.strict_control",
+                "sound.server_driven",
+                "command_request",
+                "event_request", "server-events")
+
     def make_hello(self, source):
         capabilities = ServerCore.make_hello(self, source)
         capabilities["server_type"] = "base"
@@ -678,28 +692,8 @@ class ServerBase(ServerCore):
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
                  })
-            capabilities.update({
-             "toggle_cursors_bell_notify"   : True,
-             "toggle_keyboard_sync"         : True,
-             "window_configure"             : True,
-             "window_unmap"                 : True,
-             "window_refresh_config"        : True,
-             "xsettings-tuple"              : True,
-             "change-quality"               : True,
-             "change-min-quality"           : True,
-             "change-speed"                 : True,
-             "change-min-speed"             : True,
-             "client_window_properties"     : True,
-             "sound_sequence"               : True,
-             "notify-startup-complete"      : True,
-             "suspend-resume"               : True,
-             "encoding.generic"             : True,
-             "encoding.strict_control"      : True,
-             "sound.server_driven"          : True,
-             "command_request"              : True,
-             "event_request"                : True,
-             "server-events"                : True,
-             })
+            for x in self.get_server_features():
+                capabilities[x] = True
         #this is a feature, but we would need the hello request
         #to know if it is really needed.. so always include it:
         capabilities["exit_server"] = True
@@ -1046,7 +1040,7 @@ class ServerBase(ServerCore):
 
 
     def get_features_info(self):
-        return {
+        i = {
              "randr"            : self.randr,
              "cursors"          : self.cursors,
              "bell"             : self.bell,
@@ -1054,6 +1048,9 @@ class ServerBase(ServerCore):
              "pulseaudio"       : self.pulseaudio,
              "dbus_proxy"       : self.supports_dbus_proxy,
              "clipboard"        : self.supports_clipboard}
+        for x in self.get_server_features():
+            i[x] = True
+        return i
 
     def get_encoding_info(self):
         """
