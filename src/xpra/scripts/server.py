@@ -966,6 +966,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     try:
         e = app.run()
     except KeyboardInterrupt:
+        log.info("stopping on KeyboardInterrupt") 
         e = 0
     except Exception, e:
         log.error("server error", exc_info=True)
