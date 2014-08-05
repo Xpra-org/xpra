@@ -37,7 +37,7 @@ GTK3_SCROLL_MAP = {
                    # calling gdk_event_get_scroll_deltas()
                   }
 
-GTK3_OR_TYPE_HINTS = [Gdk.WindowTypeHint.DIALOG,
+GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.MENU,
                       Gdk.WindowTypeHint.TOOLBAR,
                       #Gdk.WindowTypeHint.SPLASHSCREEN,
@@ -49,7 +49,8 @@ GTK3_OR_TYPE_HINTS = [Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.TOOLTIP,
                       #Gdk.WindowTypeHint.NOTIFICATION,
                       Gdk.WindowTypeHint.COMBO,
-                      Gdk.WindowTypeHint.DND]
+                      Gdk.WindowTypeHint.DND)
+
 
 GTK3_NAME_TO_HINT = {
                 "NORMAL"        : Gdk.WindowTypeHint.NORMAL,
@@ -90,9 +91,10 @@ class ClientWindow(GTKClientWindowBase):
     def init_window(self, metadata):
         #TODO: no idea how to do the window-type with gtk3
         #maybe not even be possible..
-        window_type = Gtk.WindowType.TOPLEVEL
-        if self._override_redirect:
+        if self._is_popup(metadata):
             window_type = Gtk.WindowType.POPUP
+        else:
+            window_type = Gtk.WindowType.TOPLEVEL
         Gtk.Window.__init__(self,
                             type = window_type,
                             decorated = not self._override_redirect,

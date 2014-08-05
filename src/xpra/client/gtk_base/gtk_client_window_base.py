@@ -56,6 +56,22 @@ except:
     unpremultiply_argb, byte_buffer_to_buffer  = None, None
 
 
+#window types we map to POPUP rather than TOPLEVEL
+POPUP_TYPE_HINTS = set((
+                    #"DIALOG",
+                    "MENU",
+                    #"TOOLBAR",
+                    "SPLASHSCREEN",
+                    #"UTILITY",
+                    "DOCK",
+                    #"DESKTOP",
+                    "DROPDOWN_MENU",
+                    "POPUP_MENU",
+                    "TOOLTIP",
+                    "NOTIFICATION",
+                    "COMBO",
+                    "DND"))
+
 
 class GTKKeyEvent(AdHocStruct):
     pass
@@ -73,6 +89,17 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ClientWindowBase.init_window(self, metadata)
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
 
+    def _is_popup(self, metadata):
+        #decide if the window type is POPUP or NORMAL:
+        if self._override_redirect:
+            return True
+        window_types = metadata.get("window-type", [])
+        popup_types = list(POPUP_TYPE_HINTS.intersection(window_types))
+        log("popup_types(%s)=%s", window_types, popup_types)
+        if popup_types:
+            log("forcing POPUP window type for %s", popup_types)
+            return True
+        return False
 
     def setup_window(self):
         self.set_app_paintable(True)

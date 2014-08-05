@@ -18,14 +18,18 @@ from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS
 GTK2_WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK \
             | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK \
             | gdk.PROPERTY_CHANGE_MASK
-GTK2_OR_TYPE_HINTS = [gdk.WINDOW_TYPE_HINT_DIALOG,
+GTK2_OR_TYPE_HINTS = (gdk.WINDOW_TYPE_HINT_DIALOG,
                 gdk.WINDOW_TYPE_HINT_MENU, gdk.WINDOW_TYPE_HINT_TOOLBAR,
-                #gdk.WINDOW_TYPE_HINT_SPLASHSCREEN, gdk.WINDOW_TYPE_HINT_UTILITY,
-                gdk.WINDOW_TYPE_HINT_DOCK, #gdk.WINDOW_TYPE_HINT_DESKTOP,
-                gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU, gdk.WINDOW_TYPE_HINT_POPUP_MENU,
+                #gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
+                #gdk.WINDOW_TYPE_HINT_UTILITY,
+                gdk.WINDOW_TYPE_HINT_DOCK,
+                #gdk.WINDOW_TYPE_HINT_DESKTOP,
+                gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU,
+                gdk.WINDOW_TYPE_HINT_POPUP_MENU,
                 gdk.WINDOW_TYPE_HINT_TOOLTIP,
                 #gdk.WINDOW_TYPE_HINT_NOTIFICATION,
-                gdk.WINDOW_TYPE_HINT_COMBO,gdk.WINDOW_TYPE_HINT_DND]
+                gdk.WINDOW_TYPE_HINT_COMBO,
+                gdk.WINDOW_TYPE_HINT_DND)
 GTK2_NAME_TO_HINT = {
                 "NORMAL"        : gdk.WINDOW_TYPE_HINT_NORMAL,
                 "DIALOG"        : gdk.WINDOW_TYPE_HINT_DIALOG,
@@ -75,7 +79,7 @@ class GTK2WindowBase(GTKClientWindowBase):
 
 
     def init_window(self, metadata):
-        if self._override_redirect:
+        if self._is_popup(metadata):
             gtk.Window.__init__(self, gtk.WINDOW_POPUP)
         else:
             gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
