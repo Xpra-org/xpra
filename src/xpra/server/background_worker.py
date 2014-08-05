@@ -68,12 +68,13 @@ def get_worker(create=True):
     #fast path:
     if singleton is not None or not create:
         return singleton
-    lock.acquire()
-    if singleton:
-        return singleton
-    singleton = Worker_Thread()
-    singleton.start()
-    lock.release()
+    try:
+        lock.acquire()
+        if not singleton:
+            singleton = Worker_Thread()
+            singleton.start()
+    finally:
+        lock.release()
     return singleton
 
 def add_work_item(item):
