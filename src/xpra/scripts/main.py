@@ -1259,7 +1259,7 @@ def run_proxy(error_cb, opts, script_file, args, mode):
         dotxpra = DotXpra()
         start = time.time()
         while dotxpra.server_state(display_name, 1)!=DotXpra.LIVE:
-            if time.time()-start>5:
+            if time.time()-start>15:
                 warn("server failed to start after %.1f seconds - sorry!" % (time.time()-start))
                 return
             time.sleep(0.10)
