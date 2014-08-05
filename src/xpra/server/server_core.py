@@ -216,6 +216,10 @@ class ServerCore(object):
             self._reverse_aliases[key] = i
             i += 1
 
+
+    def reaper_quit(self):
+        self.clean_quit(False)
+
     def signal_quit(self, signum, frame):
         log.info("")
         log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
@@ -224,6 +228,13 @@ class ServerCore(object):
         self.clean_quit(True)
 
     def clean_quit(self, from_signal=False, upgrading=False):
+        log("clean_quit(%s, %s)", from_signal, upgrading)
+        #ensure the reaper doesn't call us again:
+        if self.child_reaper:
+            def noop():
+                pass
+            self.reaper_quit = noop
+            log("clean_quit: reaper_quit=%s", self.reaper_quit)
         self.cleanup()
         def quit_timer(*args):
             log.debug("quit_timer()")
@@ -238,6 +249,7 @@ class ServerCore(object):
             log.debug("force_quit()")
             os._exit(1)
         self.timeout_add(5000, force_quit)
+        log("clean_quit(..) quit timers scheduled")
 
     def quit(self, upgrading):
         log("quit(%s)", upgrading)
@@ -245,6 +257,7 @@ class ServerCore(object):
         log.info("xpra is terminating.")
         sys.stdout.flush()
         self.do_quit()
+        log("quit(%s) do_quit done!", upgrading)
 
     def do_quit(self):
         raise NotImplementedError()

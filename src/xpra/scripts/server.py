@@ -18,6 +18,7 @@ import socket
 import getpass
 import select
 import time
+import traceback
 
 from xpra.scripts.main import TCP_NODELAY
 from xpra.dotxpra import DotXpra, ServerSockInUse
@@ -37,7 +38,6 @@ def run_cleanups():
             c()
         except:
             print("error running cleanup %s" % c)
-            import traceback
             traceback.print_exception(*sys.exc_info())
 
 _when_ready = []
@@ -952,7 +952,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         def reaper_quit():
             if opts.exit_with_children:
                 log.info("all children have exited and --exit-with-children was specified, exiting")
-                gobject.idle_add(app.clean_quit)
+                gobject.idle_add(app.reaper_quit)
         child_reaper = ChildReaper(reaper_quit)
         if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
             start_pulseaudio(child_reaper, opts.pulseaudio_command)
