@@ -68,6 +68,10 @@ class InitException(Exception):
     pass
 class InitInfo(Exception):
     pass
+class InitExit(Exception):
+    def __init__(self, status, msg):
+        self.status = status
+        Exception.__init__(self, msg)
 
 #this parse doesn't exit when it encounters an error,
 #allowing us to deal with it better and show a UI message if needed.
@@ -75,7 +79,7 @@ class ModifiedOptionParser(optparse.OptionParser):
     def error(self, msg):
         raise InitException(msg)
     def exit(self, status=0, msg=None):
-        raise InitException(msg)
+        raise InitExit(status, msg)
 
 
 def main(script_file, cmdline):
@@ -98,11 +102,17 @@ def main(script_file, cmdline):
             return run_mode(script_file, err, options, args, mode)
         except SystemExit:
             raise
+        except InitExit:
+            e = sys.exc_info()[1]
+            if str(e) and e.args and (e.args[0] or len(e.args)>1):
+                command_info("%s" % e)
+            return e.status
         except InitInfo:
             command_info("%s" % sys.exc_info()[1])
             return 0
         except InitException:
-            command_error("xpra error:\n%s" % sys.exc_info()[1])
+            e = sys.exc_info()[1]
+            command_error("xpra error: %s\n%s" % (type(e), e))
             return 1
         except Exception:
             command_error("main error:\n%s" % traceback.format_exc())
