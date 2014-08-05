@@ -178,7 +178,9 @@ class ServerBase(ServerCore):
         add_encodings(["rgb24", "rgb32"])
 
         #video encoders (empty when first called - see threaded_init)
-        add_encodings(getVideoHelper().get_encodings())  #ie: ["vp8", "h264"]
+        ve = getVideoHelper().get_encodings()
+        log("init_encodings() adding video encodings: %s", ve)
+        add_encodings(ve)  #ie: ["vp8", "h264"]
         #Pithon Imaging Libary:
         PIL = get_codec("PIL")
         if PIL:
