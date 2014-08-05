@@ -73,6 +73,12 @@ class AdHocStruct(object):
                 % (type(self).__name__, self.__dict__))
 
 
+def remove_dupes(seq):
+    seen = set()
+    seen_add = seen.add
+    return [x for x in seq if not (x in seen or seen_add(x))]
+
+
 class AtomicInteger(object):
     def __init__(self, integer = 0):
         self.counter = integer

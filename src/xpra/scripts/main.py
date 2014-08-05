@@ -603,22 +603,23 @@ def parse_cmdline(cmdline):
     from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
     from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
     from xpra.codecs.video_helper import ALL_VIDEO_DECODER_OPTIONS as avedo
+    from xpra.util import remove_dupes
     if (supports_server or supports_shadow):
         if type(options.video_encoders)==str:
             vestr = options.video_encoders.strip().lower()
             if vestr=="help":
                 raise InitInfo("the following video encoders may be available: %s" % ", ".join(aveco))
-            options.video_encoders = [x.strip() for x in vestr.split(",")]
+            options.video_encoders = remove_dupes(x.strip() for x in vestr.split(","))
         if type(options.csc_modules)==str:
             cscstr = options.csc_modules.strip().lower()
             if cscstr=="help":
                 raise InitInfo("the following csc modules may be available: %s" % ", ".join(acsco))
-            options.csc_modules = [x.strip() for x in cscstr.split(",")]
+            options.csc_modules = remove_dupes(x.strip() for x in cscstr.split(","))
     if type(options.video_decoders)==str:
         vdstr = options.video_decoders.strip().lower()
         if vdstr=="help":
             raise InitInfo("the following video decoders may be available: %s" % ", ".join(avedo))
-        options.video_decoders = [x.strip() for x in vdstr.split(",")]
+        options.video_decoders = remove_dupes(x.strip() for x in vdstr.split(","))
 
     if options.video_encoders==["none"]:
         options.video_encoders = []
