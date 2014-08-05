@@ -65,7 +65,7 @@ lock = Lock()
 
 def get_worker(create=True):
     global singleton
-    #fast path:
+    #fast path (no lock):
     if singleton is not None or not create:
         return singleton
     try:
@@ -78,9 +78,12 @@ def get_worker(create=True):
     return singleton
 
 def add_work_item(item):
-    get_worker().add(item)
+    w = get_worker(True)
+    debug("add_work_item(%s) worker=%s", item, w)
+    w.add(item)
 
 def stop_worker(force=False):
     w = get_worker(False)
+    debug("stop_worker(%s) worker=%s", force, w)
     if w:
         w.stop(force)
