@@ -69,7 +69,7 @@ video-encoders = all
 # csc-modules = swscale, cython, opencl
 # csc-modules = none
 # csc-modules = all
-video-encoders = all
+csc-modules = all
 
 # Used the client for decoding:
 # video-decoders = avcodec2, vpx
