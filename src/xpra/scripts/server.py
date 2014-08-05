@@ -930,7 +930,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             return 1
         app = XpraServer()
         app.init(clobber, opts)
-        _cleanups.insert(0, app.cleanup)
+    #ensure app.cleanup will fire all cleanups,
+    #incuding its own cleanups
+    _cleanups.insert(0, app.cleanup)
+    app.cleanup = run_cleanups
 
     app.init_sockets(sockets)
     app.init_when_ready(_when_ready)
