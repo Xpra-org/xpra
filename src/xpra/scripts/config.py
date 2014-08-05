@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -313,7 +313,7 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform.features import DEFAULT_SSH_CMD
+    from xpra.platform.features import DEFAULT_SSH_CMD, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_XVFB_COMMAND
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -334,15 +334,12 @@ def get_defaults():
                     "password"          : "",
                     "password-file"     : "",
                     "clipboard-filter-file" : "",
-                    "pulseaudio-command": "pulseaudio --start --daemonize=false --system=false "
-                                            +" --exit-idle-time=-1 -n --load=module-suspend-on-idle "
-                                            +" --load=module-null-sink --load=module-native-protocol-unix "
-                                            +" --log-level=2 --log-target=stderr",
+                    "pulseaudio-command": DEFAULT_PULSEAUDIO_COMMAND,
                     "encryption"        : "",
                     "encryption_keyfile": "",
                     "mode"              : "tcp",
                     "ssh"               : DEFAULT_SSH_CMD,
-                    "xvfb"              : "Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY",
+                    "xvfb"              : DEFAULT_XVFB_COMMAND,
                     "socket-dir"        : "",
                     "log-file"          : "$DISPLAY.log",
                     "border"            : "auto,0",
