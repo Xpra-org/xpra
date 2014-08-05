@@ -46,7 +46,7 @@ SET VERSION=ERROR
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print(__version__)"') DO set VERSION=%%i
 ECHO Building Xpra Version  %VERSION%
 SET SVNVERSION=ERROR
-FOR /F "delims=" %%i IN ('%SVNVERSION_EXE% -n') DO set SVNVERSION=%%i
+FOR /F "delims=" %%i IN ('%SVNVERSION_EXE% -n ..') DO set SVNVERSION=%%i
 ECHO Found svnversion       %SVNVERSION%
 SET REVISION=
 FOR /F "tokens=2 delims=:" %%G IN ("%SVNVERSION%") DO set REVISION=%%G
