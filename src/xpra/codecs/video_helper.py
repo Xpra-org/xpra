@@ -130,9 +130,14 @@ class VideoHelper(object):
 
     def set_modules(self, video_encoders=[], csc_modules=[], video_decoders=[]):
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
-        self.video_encoders = [x for x in video_encoders if x in ALL_VIDEO_ENCODER_OPTIONS]
-        self.csc_modules    = [x for x in csc_modules    if x in ALL_CSC_MODULE_OPTIONS]
-        self.video_decoders = [x for x in video_decoders if x in ALL_VIDEO_DECODER_OPTIONS]
+        def filt(name, inlist, all_list):
+            notfound = [x for x in inlist if x not in all_list]
+            if notfound:
+                log.warn("ignoring unknown %s: %s", name, ", ".join(notfound))
+            return [x for x in inlist if x in all_list]
+        self.video_encoders = filt("video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
+        self.csc_modules    = filt("csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)
+        self.video_decoders = filt("video decoders" , video_decoders,   ALL_VIDEO_DECODER_OPTIONS)
         log("VideoHelper.set_modules(%s, %s, %s) video encoders=%s, csc=%s, video decoders=%s",
             video_encoders, csc_modules, video_decoders, self.video_encoders, self.csc_modules, self.video_decoders)
 
