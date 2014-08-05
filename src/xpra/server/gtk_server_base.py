@@ -41,12 +41,15 @@ class GTKServerBase(ServerBase):
         gtk.gdk.keymap_get_default().connect("keys-changed", self._keys_changed)
 
     def do_quit(self):
+        log("do_quit: calling gtk_main_quit_really")
         gtk_main_quit_really()
+        log("do_quit: gtk_main_quit_really done")
 
     def do_run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
+        log("do_run() calling %s", gtk2main)
         gtk2main()
-        log("end of gtk.main()")
+        log("do_run() end of gtk.main()")
 
     def add_listen_socket(self, socktype, sock):
         sock.listen(5)
