@@ -112,10 +112,10 @@ def main(script_file, cmdline):
             return 0
         except InitException:
             e = sys.exc_info()[1]
-            command_error("xpra error: %s\n%s" % (type(e), e))
+            command_error("xpra initialization error:\n%s" % e)
             return 1
         except Exception:
-            command_error("main error:\n%s" % traceback.format_exc())
+            command_error("xpra main error:\n%s" % traceback.format_exc())
             return 1
     finally:
         platform_clean()
