@@ -422,7 +422,7 @@ def updict(todict, prefix, d, suffix=""):
             else:
                 k = prefix
             if suffix:
-                k = k+suffix
+                k = k+"."+suffix
             todict[k] = v
 
 
