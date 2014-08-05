@@ -528,9 +528,11 @@ def dict_to_validated_config(d):
 def main():
     from xpra.util import nonl
     def print_options(o):
-        for k in sorted(OPTION_TYPES.keys()):
+        for k,ot in sorted(OPTION_TYPES.items()):
             attr_name = k.replace("-", "_")
             v = getattr(o, attr_name, "")
+            if ot==bool and v is None:
+                v = "Auto"
             print("* %-32s : %s" % (k, nonl(v)))
     from xpra.platform import init, clean
     try:
