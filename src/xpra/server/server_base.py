@@ -382,9 +382,9 @@ class ServerBase(ServerCore):
             "buffer-refresh":                       self._process_buffer_refresh,
             "screenshot":                           self._process_screenshot,
             "disconnect":                           self._process_disconnect,
+            "info-request":                         self._process_info_request,
             # Note: "clipboard-*" packets are handled via a special case..
             })
-        self._default_packet_handlers["info-request"] = self._process_info_request
 
     def init_aliases(self):
         packet_types = list(self._default_packet_handlers.keys())
