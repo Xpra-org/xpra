@@ -133,8 +133,8 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-pic --enable-shared --enable-static"
              autogen-sh="configure">
-    <branch module="/pub/x264/snapshots/x264-snapshot-20140711-2245-stable.tar.bz2"
-			version="20140711-2245-stable"
+    <branch module="/pub/x264/snapshots/x264-snapshot-20140731-2245-stable.tar.bz2"
+			version="20140731-2245-stable"
             repo="download.videolan.org"/>
   </autotools>
 
@@ -157,9 +157,9 @@
 --disable-filter=atrim --disable-filter=null
 --disable-programs --disable-avfilter"
              autogen-sh="configure">
-    <branch module="/releases/ffmpeg-2.2.4.tar.bz2"
-			version="2.2.4"
-                        hash="md5:5b85aea53d8dcd5b0f7b497f233bc101"
+    <branch module="/releases/ffmpeg-2.3.tar.bz2"
+			version="2.3"
+                        hash="md5:00f98a030d21366b6583875d57d98c27"
             repo="ffmpeg.org"/>
   </autotools>
 
@@ -245,15 +245,15 @@
 
   <distutils id="python-pillow">
      <branch repo="pypi.python.org"
-	     module="/packages/source/P/Pillow/Pillow-2.5.0.zip"
-             hash="md5:3da46b9a4aeba22e22724ba7a15fe617"
-	     version="2.5.0"/>
+	     module="/packages/source/P/Pillow/Pillow-2.5.1.zip"
+             hash="md5:cf42c695fab68116af2c8ef816fca0d9"
+	     version="2.5.1"/>
   </distutils>
 
   <distutils id="python-py2app">
      <branch repo="pypi.python.org"
-	     module="/packages/source/p/py2app/py2app-0.8.tar.gz"
-	     version="0.8"/>
+	     module="/packages/source/p/py2app/py2app-0.8.1.tar.gz"
+	     version="0.8.1"/>
   </distutils>
 
   <distutils id="python-cython">
@@ -301,13 +301,13 @@
   <distutils id="python-pyopengl">
      <branch repo="pypi.python.org"
 	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.0.tar.gz"
-	     version="3.1.0b3"/>
+	     version="3.1.0"/>
   </distutils>
 
   <distutils id="python-pyopengl-accelerate">
      <branch repo="pypi.python.org"
 	     module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.1.0.tar.gz"
-	     version="3.1.0b2"/>
+	     version="3.1.0"/>
   </distutils>
 
   <distutils id="python-pyobjc-core">
