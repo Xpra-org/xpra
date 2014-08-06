@@ -259,9 +259,9 @@ def do_init():
 
 
 SHOW_MESSAGEBOX = os.environ.get("XPRA_MESSAGEBOX", "1")=="1"
-MB_ICONEXCLAMATION  = 0x00000030L
-MB_ICONINFORMATION  = 0x00000040L
-MB_SYSTEMMODAL      = 0x00001000L
+MB_ICONEXCLAMATION  = 0x00000030
+MB_ICONINFORMATION  = 0x00000040
+MB_SYSTEMMODAL      = 0x00001000
 def _show_message(message, uType):
     global prg_name
     #TODO: detect cx_freeze equivallent
