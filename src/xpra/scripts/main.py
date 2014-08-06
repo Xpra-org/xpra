@@ -148,37 +148,21 @@ def fixup_video_all_or_none(options):
     from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
     from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
     from xpra.codecs.video_helper import ALL_VIDEO_DECODER_OPTIONS as avedo
-    
     vestr   = _csvstr(options.video_encoders)
     cscstr  = _csvstr(options.csc_modules)
     vdstr   = _csvstr(options.video_decoders)
-
-    if vestr=="help":
-        raise InitInfo("the following video encoders may be available: %s" % ", ".join(aveco))
-    elif vestr=="none":
-        options.video_encoders = []
-    elif vestr=="all":
-        options.video_encoders = aveco
-    else:
-        options.video_encoders = _nodupes(vestr)
-
-    if cscstr=="help":
-        raise InitInfo("the following csc modules may be available: %s" % ", ".join(acsco))
-    elif cscstr=="none":
-        options.csc_modules = []
-    elif cscstr=="all":
-        options.csc_modules = acsco
-    else:
-        options.csc_modules = _nodupes(cscstr)
-
-    if vdstr=="help":
-        raise InitInfo("the following video decoders may be available: %s" % ", ".join(avedo))
-    elif vdstr=="none":
-        options.video_decoders = []
-    elif vdstr=="all":
-        options.video_decoders = avedo
-    else:
-        options.video_decoders = _nodupes(vdstr)
+    def getlist(strarg, help_txt, all_list):
+        if strarg=="help":
+            raise InitInfo("the following %s may be available: %s" % (help_txt, ", ".join(all_list)))
+        elif strarg=="none":
+            return []
+        elif strarg=="all":
+            return all_list
+        else:
+            return _nodupes(strarg)
+    options.video_encoders  = getlist(vestr,    "video encoders",   aveco)
+    options.csc_modules     = getlist(cscstr,   "csc modules",      acsco)
+    options.video_decoders  = getlist(vdstr,    "video decoders",   avedo)
 
 def fixup_encodings(options):
     from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW, PREFERED_ENCODING_ORDER
