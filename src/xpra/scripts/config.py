@@ -208,8 +208,9 @@ def read_xpra_defaults(conf_dir=None):
     # load config files in this order (the later ones override earlier ones):
     # * application defaults   (ie: "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX)
     #                          (ie: "C:\Program Files\Xpra\" on win32)
-    #                          (ie: None on posix-but-not-OSX)
-    # * system defaults        (ie: "/etc/xpra" on all Posix, including OSX)
+    #                          (ie: None on others)
+    # * system defaults        (ie: "/etc/xpra" on Posix - not on OSX)
+    #                          (ie: "/Library/Application Support/Xpra" on OSX)
     #                          (ie: "C:\Documents and Settings\All Users\Application Data\Xpra" with XP)
     #                          (ie: "C:\ProgramData\Xpra" with Vista onwards)
     # * user config            (ie: "~/.xpra/" on all Posix, including OSX)

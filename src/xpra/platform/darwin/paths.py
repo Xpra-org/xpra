@@ -62,3 +62,8 @@ def get_default_conf_dir():
     #the default config file we install into the Resources folder:
     #ie: /Volumes/Xpra/Xpra.app/Contents/Resources/
     return get_resources_dir()
+
+def get_system_conf_dir():
+    #the system wide configuration directory
+    default_conf_dir = "/Library/Application Support/Xpra"
+    return os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)
