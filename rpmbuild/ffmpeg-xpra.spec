@@ -81,7 +81,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc COPYING* CREDITS README doc/ffserver.conf
+%doc COPYING* CREDITS doc/ffserver.conf
 %{_libdir}/xpra/libavcodec.so.*
 %{_libdir}/xpra/libavfilter.so.*
 %{_libdir}/xpra/libavformat.so.*
