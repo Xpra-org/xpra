@@ -133,40 +133,108 @@ def fixup_debug_option(value):
     #if we're here, the value should be a CSV list of categories
     return value
 
+def _csvstr(value):
+    if type(value) in (tuple, list):
+        return ",".join(str(x).lower().strip() for x in value)
+    elif type(value)==str:
+        return value.strip().lower()
+    raise Exception("don't know how to convert %s to a csv list!" % type(value))
+
+def _nodupes(s):
+    from xpra.util import remove_dupes
+    return remove_dupes(x.strip().lower() for x in s.split(","))
+
 def fixup_video_all_or_none(options):
     from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
     from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
     from xpra.codecs.video_helper import ALL_VIDEO_DECODER_OPTIONS as avedo
-    from xpra.util import remove_dupes
-    if (supports_server or supports_shadow):
-        if type(options.video_encoders)==str:
-            vestr = options.video_encoders.strip().lower()
-            if vestr=="help":
-                raise InitInfo("the following video encoders may be available: %s" % ", ".join(aveco))
-            options.video_encoders = remove_dupes(x.strip() for x in vestr.split(","))
-        if type(options.csc_modules)==str:
-            cscstr = options.csc_modules.strip().lower()
-            if cscstr=="help":
-                raise InitInfo("the following csc modules may be available: %s" % ", ".join(acsco))
-            options.csc_modules = remove_dupes(x.strip() for x in cscstr.split(","))
-    if type(options.video_decoders)==str:
-        vdstr = options.video_decoders.strip().lower()
-        if vdstr=="help":
-            raise InitInfo("the following video decoders may be available: %s" % ", ".join(avedo))
-        options.video_decoders = remove_dupes(x.strip() for x in vdstr.split(","))
+    
+    vestr   = _csvstr(options.video_encoders)
+    cscstr  = _csvstr(options.csc_modules)
+    vdstr   = _csvstr(options.video_decoders)
 
-    if options.video_encoders==["none"]:
+    if vestr=="help":
+        raise InitInfo("the following video encoders may be available: %s" % ", ".join(aveco))
+    elif vestr=="none":
         options.video_encoders = []
-    elif options.video_encoders==["all"]:
+    elif vestr=="all":
         options.video_encoders = aveco
-    if options.csc_modules==["none"]:
+    else:
+        options.video_encoders = _nodupes(vestr)
+
+    if cscstr=="help":
+        raise InitInfo("the following csc modules may be available: %s" % ", ".join(acsco))
+    elif cscstr=="none":
         options.csc_modules = []
-    elif options.csc_modules==["all"]:
+    elif cscstr=="all":
         options.csc_modules = acsco
-    if options.video_decoders==["none"]:
+    else:
+        options.csc_modules = _nodupes(cscstr)
+
+    if vdstr=="help":
+        raise InitInfo("the following video decoders may be available: %s" % ", ".join(avedo))
+    elif vdstr=="none":
         options.video_decoders = []
-    elif options.video_decoders==["all"]:
+    elif vdstr=="all":
         options.video_decoders = avedo
+    else:
+        options.video_decoders = _nodupes(vdstr)
+
+def fixup_encodings(options):
+    from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW, PREFERED_ENCODING_ORDER
+    if options.encoding:
+        #fix old encoding names if needed:
+        options.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(options.encoding, options.encoding)
+    estr = _csvstr(options.encodings)
+    if estr=="all":
+        #replace with an actual list
+        options.encodings = PREFERED_ENCODING_ORDER
+        return
+    encodings = _nodupes(estr)
+    if "rgb" in encodings:
+        if "rgb24" not in encodings:
+            encodings.append("rgb24")
+        if "rgb32" not in encodings:
+            encodings.append("rgb32")
+    options.encodings = encodings
+
+def fixup_compression(options):
+    #packet compression:
+    from xpra.net import compression
+    cstr = _csvstr(options.compressors)
+    if cstr=="none":
+        compressors = []
+    elif cstr=="all":
+        compressors = compression.get_enabled_compressors()
+    else:
+        compressors = _nodupes(cstr)
+        unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS]
+        if unknown:
+            warn("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
+    for c in compression.ALL_COMPRESSORS:
+        enabled = c in compression.get_enabled_compressors() and c in compressors
+        setattr(compression, "use_%s" % c, enabled)
+    if not compression.get_enabled_compressors():
+        #force compression level to zero since we have no compressors available:
+        options.compression_level = 0
+
+def fixup_packetencoding(options):
+    #packet encoding
+    from xpra.net import packet_encoding
+    pestr = _csvstr(options.packet_encoders)
+    if pestr=="all":
+        packet_encoders = packet_encoding.get_enabled_encoders()
+    else:
+        packet_encoders = _nodupes(pestr)
+        unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
+        if unknown:
+            warn("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
+    for pe in packet_encoding.ALL_ENCODERS:
+        enabled = pe in packet_encoding.get_enabled_encoders() and pe in packet_encoders
+        setattr(packet_encoding, "use_%s" % pe, enabled)
+    #verify that at least one encoder is available:
+    if not packet_encoding.get_enabled_encoders():
+        raise InitException("at least one valid packet encoder must be enabled (not '%s')" % options.packet_encoders)
 
 
 def parse_cmdline(cmdline):
@@ -591,50 +659,11 @@ def parse_cmdline(cmdline):
             if cat=="help":
                 raise InitInfo("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
 
-    from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW, PREFERED_ENCODING_ORDER
-    if options.encoding:
-        #fix old encoding names if needed:
-        options.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(options.encoding, options.encoding)
-
-    if type(options.encodings)==str:
-        options.encodings = [x.strip() for x in options.encodings.lower().split(",")]
-    if options.encodings==["all"]:
-        #replace with an actual list
-        options.encodings = PREFERED_ENCODING_ORDER
-    if "rgb" in options.encodings:
-        if "rgb24" not in options.encodings:
-            options.encodings.append("rgb24")
-        if "rgb32" not in options.encodings:
-            options.encodings.append("rgb32")
-
-    #packet compression:
-    from xpra.net import compression
-    compressors = [x.strip() for x in options.compressors.split(",")]
-    unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS+["all"]]
-    if unknown:
-        warn("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
-    if "all" not in compressors:
-        for c in compression.ALL_COMPRESSORS:
-            enabled = c in compression.get_enabled_compressors() and c in compressors
-            setattr(compression, "use_%s" % c, enabled)
-    if not compression.get_enabled_compressors():
-        #force compression level to zero since we have no compressors available:
-        options.compression_level = 0
-    #packet encoding
-    from xpra.net import packet_encoding
-    packet_encoders = [x.strip() for x in options.packet_encoders.split(",")]
-    unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS+["all"]]
-    if unknown:
-        warn("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
-    if "all" not in packet_encoders:
-        for pe in packet_encoding.ALL_ENCODERS:
-            enabled = pe in packet_encoding.get_enabled_encoders() and pe in packet_encoders
-            setattr(packet_encoding, "use_%s" % pe, enabled)
-    #verify that at least one encoder is available:
-    if not packet_encoding.get_enabled_encoders():
-        raise InitException("at least one valid packet encoder must be enabled")
-
-    #special case for video encoders/decoders and csc, stored as lists, but command line option is a CSV string:
+    #special case for things stored as lists, but command line option is a CSV string:
+    #and may have "none" or "all" special values
+    fixup_encodings(options)
+    fixup_compression(options)
+    fixup_packetencoding(options)
     fixup_video_all_or_none(options)
 
     #special handling for URL mode:
