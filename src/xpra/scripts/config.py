@@ -204,19 +204,23 @@ def read_xpra_defaults(conf_dir=None):
         returns a dict with values as strings and arrays of strings.
         If the <conf_dir> is not specified, we figure out its location.
     """
-    #first, read the global defaults:
-    from xpra.platform.paths import get_global_conf_dir, get_default_conf_dir
-    if not conf_dir:
-        conf_dir = get_global_conf_dir()
-    #load the system wide defaults:
+    from xpra.platform.paths import get_default_conf_dir, get_system_conf_dir, get_user_conf_dir
+    # load config files in this order (the later ones override earlier ones):
+    # * application defaults   (ie: "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX)
+    #                          (ie: "C:\Program Files\Xpra\" on win32)
+    #                          (ie: None on posix-but-not-OSX)
+    # * system defaults        (ie: "/etc/xpra" on all Posix, including OSX)
+    #                          (ie: "C:\Documents and Settings\All Users\Application Data\Xpra" with XP)
+    #                          (ie: "C:\ProgramData\Xpra" with Vista onwards)
+    # * user config            (ie: "~/.xpra/" on all Posix, including OSX)
+    #                          (ie: "C:\Documents and Settings\Username\Application Data\Xpra" with XP)
+    #                          (ie: "C:\Users\<user name>\AppData\Roaming" with Visa onwards)
+    dirs = [get_default_conf_dir(), get_system_conf_dir(), get_user_conf_dir()]
     defaults = {}
-    if conf_dir:
-        defaults = read_xpra_conf(conf_dir)
-    #now load the per-user config over it:
-    def_dir = get_default_conf_dir()
-    if def_dir and def_dir!=conf_dir:
-        user_defaults = read_xpra_conf(get_default_conf_dir())
-        defaults.update(user_defaults)
+    for d in dirs:
+        if not d or not os.path.exists(d):
+            continue
+        defaults.update(read_xpra_conf(d))
     return defaults
 
 

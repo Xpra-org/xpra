@@ -58,8 +58,7 @@ def get_icon_dir():
     return i
 
 
-def get_global_conf_dir():
-    #assume we never install directly into the system's /etc folder,
-    #use the default config file we install into the Resources folder:
+def get_default_conf_dir():
+    #the default config file we install into the Resources folder:
     #ie: /Volumes/Xpra/Xpra.app/Contents/Resources/
-    return os.environ.get("XPRA_SYSCONF_DIR", get_resources_dir())
+    return get_resources_dir()

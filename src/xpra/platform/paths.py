@@ -16,7 +16,12 @@ def valid_dir(path):
         return False
 
 
-def get_global_conf_dir():
+def get_default_conf_dir():
+    #some platforms may also ship a default config with the application
+    return None
+
+def get_system_conf_dir():
+    #the system wide configuration directory
     if sys.prefix == '/usr':
         #default posix config location:
         default_conf_dir = '/etc/xpra'
@@ -25,8 +30,10 @@ def get_global_conf_dir():
         default_conf_dir = sys.prefix + '/etc/xpra/'
     return os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)
 
-def get_default_conf_dir():
-    return os.environ.get("XPRA_CONF_DIR", "~/.xpra")
+def get_user_conf_dir():
+    #per-user configuration location:
+    return os.environ.get("XPRA_USER_CONF_DIR", "~/.xpra")
+
 
 def get_default_socket_dir():
     return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
@@ -118,6 +125,8 @@ platform_import(globals(), "paths", True,
                 "get_icon_dir")
 platform_import(globals(), "paths", False,
                 "get_default_conf_dir",
+                "get_system_conf_dir",
+                "get_user_conf_dir",
                 "get_default_socket_dir")
 
 

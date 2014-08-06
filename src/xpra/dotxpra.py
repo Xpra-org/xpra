@@ -27,8 +27,8 @@ def osexpand(s, actual_username=""):
 
 class DotXpra(object):
     def __init__(self, sockdir=None, confdir=None, actual_username=""):
-        from xpra.platform.paths import get_default_socket_dir, get_default_conf_dir
-        self._confdir = osexpand(confdir or get_default_conf_dir(), actual_username)
+        from xpra.platform.paths import get_default_socket_dir, get_user_conf_dir
+        self._confdir = osexpand(confdir or get_user_conf_dir(), actual_username)
         self._sockdir = osexpand(sockdir or get_default_socket_dir(), actual_username)
         if not os.path.exists(self._confdir):
             os.mkdir(self._confdir, o0700)

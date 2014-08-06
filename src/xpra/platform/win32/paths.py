@@ -9,12 +9,17 @@ import sys
 
 
 def _get_data_dir():
+    #if not running from a binary, return current directory:
     if not getattr(sys, 'frozen', ''):
         return  os.getcwd()
-    #on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
-    #UAC in vista onwards will not allow us to write where the software is installed,
-    #so we place the log file (etc) in "~/Application Data"
-    appdata = os.environ.get("APPDATA")
+    try:
+        from win32com.shell import shell, shellcon      #@UnresolvedImport
+        appdata = shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, None, 0)
+    except:
+        #on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
+        #UAC in vista onwards will not allow us to write where the software is installed,
+        #so we place the log file (etc) in "~/Application Data"
+        appdata = os.environ.get("APPDATA")
     if not os.path.exists(appdata):
         os.mkdir(appdata)
     data_dir = os.path.join(appdata, "Xpra")
@@ -25,13 +30,26 @@ def _get_data_dir():
 def get_icon_dir():
     return os.path.join(get_app_dir(), "icons")
 
-def get_global_conf_dir():
-    #ie: C:\Program Files\Xpra\
-    return os.environ.get("XPRA_SYSCONF_DIR", get_app_dir())
+
+def get_system_conf_dir():
+    #ie: "C:\Documents and Settings\All Users\Application Data\Xpra" with XP
+    #or: "C:\ProgramData\Xpra" with Vista onwards
+    try:
+        from win32com.shell import shell, shellcon      #@UnresolvedImport
+        common_appdata = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, None, 0)
+        return os.path.join(common_appdata, "Xpra")
+    except:
+        return None
 
 def get_default_conf_dir():
-    #ie: C:\Documents and Settings\Username\Application Data\Xpra
+    #ie: C:\Program Files\Xpra\
+    return get_app_dir()
+
+def get_user_conf_dir():
+    #ie: "C:\Documents and Settings\<user name>\Application Data\Xpra" with XP
+    #or: "C:\Users\<user name>\AppData\Roaming" with Visa onwards
     return os.environ.get("XPRA_CONF_DIR", _get_data_dir())
+
 
 def get_default_socket_dir():
     #ie: C:\Documents and Settings\Username\Application Data\Xpra
