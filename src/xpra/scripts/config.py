@@ -521,6 +521,8 @@ def main():
             v = getattr(o, attr_name, "")
             if ot==bool and v is None:
                 v = "Auto"
+            if type(v)==list:
+                v = ", ".join(str(x) for x in v)
             print("* %-32s : %s" % (k, nonl(v)))
     from xpra.platform import init, clean
     try:
