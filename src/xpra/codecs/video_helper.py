@@ -310,6 +310,7 @@ class VideoHelper(object):
             csc_module.init_module()
             self._cleanup_modules.append(csc_module)
         except Exception, e:
+            log("exception in %s module initialization %s: %s", csc_type, csc_module.init_module, e, exc_info=True)
             log.warn("cannot use %s module %s: %s", csc_type, csc_module, e)
             return
         in_cscs = csc_module.get_input_colorspaces()
@@ -345,6 +346,7 @@ class VideoHelper(object):
             decoder_module.init_module()
             self._cleanup_modules.append(decoder_module)
         except Exception, e:
+            log("exception in %s module initialization %s: %s", encoder_type, decoder_module.init_module, e, exc_info=True)
             log.warn("cannot use %s module %s: %s", encoder_type, decoder_module, e, exc_info=True)
             return
         encodings = decoder_module.get_encodings()
