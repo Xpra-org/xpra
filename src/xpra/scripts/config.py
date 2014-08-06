@@ -111,11 +111,14 @@ def save_config(conf_file, config, keys, extras_types={}):
     f = open(conf_file, "w")
     option_types = OPTION_TYPES.copy()
     option_types.update(extras_types)
+    saved = {}
     for key in keys:
         assert key in option_types, "invalid configuration key: %s" % key
         fn = key.replace("-", "_")
         v = getattr(config, fn)
+        saved[key] = v
         f.write("%s=%s%s" % (key, v, os.linesep))
+    debug("save_config: saved %s to %s", saved, conf_file)
     f.close()
 
 def read_config(conf_file):
@@ -196,7 +199,7 @@ def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
         return  d
     return read_config(conf_file)
 
-def read_xpra_defaults(conf_dir=None):
+def read_xpra_defaults():
     """
         Reads the global <xpra_conf_filename> from the <conf_dir>
         and then the user-specific one.
@@ -220,8 +223,10 @@ def read_xpra_defaults(conf_dir=None):
     defaults = {}
     for d in dirs:
         if not d or not os.path.exists(d):
+            debug("read_xpra_defaults: skipping %s", d)
             continue
         defaults.update(read_xpra_conf(d))
+        debug("read_xpra_defaults: updated defaults with %s", d)
     return defaults
 
 
