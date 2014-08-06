@@ -26,7 +26,7 @@ pango = import_pango()
 
 from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
-from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
+from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, ENCRYPTION_CIPHERS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, is_gtk3, \
                                     OptionMenu, \
@@ -43,9 +43,45 @@ from xpra.log import Logger, enable_debug_for
 log = Logger("launcher")
 
 
-black = gdk.color_parse("black")
-red = gdk.color_parse("red")
-white = gdk.color_parse("white")
+#what we save in the config file:
+SAVED_FIELDS = ["username", "password", "host", "port", "mode", "ssh_port",
+                "encoding", "quality", "min-quality", "speed", "min-speed"]
+
+#options not normally found in xpra config file
+#but which can be present in a launcher config:
+LAUNCHER_OPTION_TYPES ={
+                        "host"              : str,
+                        "port"              : int,
+                        "password"          : str,
+                        "mode"              : str,
+                        "autoconnect"       : bool,
+                        "ssh_port"          : int,
+                        }
+LAUNCHER_DEFAULTS = {
+                        "host"              : "",
+                        "port"              : -1,
+                        "password"          : "",
+                        "mode"              : "tcp",    #tcp,ssh,..
+                        "autoconnect"       : False,
+                        "ssh_port"          : 22,
+                    }
+#TODO: since "mode" is not part of global options
+#this validation should be injected from the launcher instead
+MODES = ["tcp", "ssh"]
+if "AES" in ENCRYPTION_CIPHERS:
+    MODES = ["tcp", "tcp + aes", "ssh"]
+def validate_in_list(x, options):
+    if x in options:
+        return None
+    return "must be in %s" % (", ".join(options))
+LAUNCHER_VALIDATION = {
+                        "mode"              : lambda x : validate_in_list(x, MODES),
+                      }
+
+
+black   = gdk.color_parse("black")
+red     = gdk.color_parse("red")
+white   = gdk.color_parse("white")
 
 
 def get_active_item_index(optionmenu):
@@ -69,11 +105,12 @@ class ApplicationWindow:
 
     def    __init__(self):
         # Default connection options
-        self.config = make_defaults_struct()
-        self.config.ssh_port = "22"
+        self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=LAUNCHER_VALIDATION)
+        #TODO: the fixup does not belong here?
+        from xpra.scripts.main import fixup_video_all_or_none
+        fixup_video_all_or_none(self.config)
         #what we save by default:
-        self.config_keys = set(["username", "password", "host", "port", "mode", "ssh_port",
-                                "encoding", "quality", "min-quality", "speed", "min-speed"])
+        self.config_keys = set(SAVED_FIELDS)
         if is_gtk3():
             self.config.client_toolkit = "gtk3"
         else:
@@ -124,7 +161,8 @@ class ApplicationWindow:
         self.mode_combo = gtk.combo_box_new_text()
         self.mode_combo.get_model().clear()
         self.mode_combo.append_text("TCP")
-        self.mode_combo.append_text("TCP + AES")
+        if "AES" in ENCRYPTION_CIPHERS:
+            self.mode_combo.append_text("TCP + AES")
         self.mode_combo.append_text("SSH")
         self.mode_combo.connect("changed", self.mode_changed)
         hbox.pack_start(self.mode_combo)
@@ -582,7 +620,7 @@ class ApplicationWindow:
         mode_enc = self.mode_combo.get_active_text()
         if mode_enc.startswith("TCP"):
             self.config.mode = "tcp"
-            if mode_enc.find("AES")>0:
+            if mode_enc.find("AES")>0 and "AES" in ENCRYPTION_CIPHERS:
                 self.config.encryption = "AES"
         else:
             self.config.mode = "ssh"
@@ -592,7 +630,7 @@ class ApplicationWindow:
         #mode:
         if self.config.mode == "tcp":
             self.mode_combo.set_active(0)
-        elif self.config.mode == "tcp + aes":
+        elif self.config.mode == "tcp + aes" and "AES" in ENCRYPTION_CIPHERS:
             self.mode_combo.set_active(1)
         else:
             self.mode_combo.set_active(2)
@@ -623,9 +661,7 @@ class ApplicationWindow:
         props = read_config(filename)
         #we rely on "ssh_port" being defined on the config object
         #so try to load it from file, and define it if not present:
-        options = validate_config(props, extras={"ssh_port" : int})
-        if "ssh_port" not in options:
-            options["ssh_port"] = 22
+        options = validate_config(props, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=LAUNCHER_VALIDATION)
         for k,v in options.items():
             fn = k.replace("-", "_")
             setattr(self.config, fn, v)
@@ -654,7 +690,7 @@ class ApplicationWindow:
     def save_clicked(self, *args):
         self.update_options_from_gui()
         def do_save(filename):
-            save_config(filename, self.config, self.config_keys, extras={"ssh_port" : int})
+            save_config(filename, self.config, self.config_keys, extras_types=LAUNCHER_OPTION_TYPES)
         self.choose_session_file("Save session settings to file", FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, do_save)
 
     def load_clicked(self, *args):

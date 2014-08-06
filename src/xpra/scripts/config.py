@@ -107,10 +107,10 @@ def get_build_info():
     return info
 
 
-def save_config(conf_file, config, keys, extras={}):
+def save_config(conf_file, config, keys, extras_types={}):
     f = open(conf_file, "w")
     option_types = OPTION_TYPES.copy()
-    option_types.update(extras)
+    option_types.update(extras_types)
     for key in keys:
         assert key in option_types, "invalid configuration key: %s" % key
         fn = key.replace("-", "_")
@@ -220,11 +220,12 @@ def read_xpra_defaults(conf_dir=None):
     return defaults
 
 
+OPTIONS_VALIDATION = {}
+
 OPTION_TYPES = {
                     #string options:
                     "encoding"          : str,
                     "title"             : str,
-                    "host"              : str,
                     "username"          : str,
                     "auth"              : str,
                     "remote-xpra"       : str,
@@ -233,7 +234,6 @@ OPTION_TYPES = {
                     "dock-icon"         : str,
                     "tray-icon"         : str,
                     "window-icon"       : str,
-                    "password"          : str,
                     "password-file"     : str,
                     "clipboard-filter-file" : str,
                     "pulseaudio-command": str,
@@ -244,7 +244,6 @@ OPTION_TYPES = {
                     "xvfb"              : str,
                     "socket-dir"        : str,
                     "log-file"          : str,
-                    "mode"              : str,
                     "border"            : str,
                     "window-layout"     : str,
                     "display"           : str,
@@ -255,7 +254,6 @@ OPTION_TYPES = {
                     "min-quality"       : int,
                     "speed"             : int,
                     "min-speed"         : int,
-                    "port"              : int,
                     "compression_level" : int,
                     "dpi"               : int,
                     #float options:
@@ -285,7 +283,6 @@ OPTION_TYPES = {
                     "sharing"           : bool,
                     "delay-tray"        : bool,
                     "windows"           : bool,
-                    "autoconnect"       : bool,
                     "exit-with-children": bool,
                     "exit-with-client"  : bool,
                     "exit-ssh"          : bool,
@@ -322,7 +319,6 @@ def get_defaults():
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
                     "title"             : "@title@ on @client-machine@",
-                    "host"              : "",
                     "username"          : username,
                     "auth"              : "",
                     "remote-xpra"       : "~/.xpra/run-xpra",
@@ -331,13 +327,11 @@ def get_defaults():
                     "dock-icon"         : "",
                     "tray-icon"         : "",
                     "window-icon"       : "",
-                    "password"          : "",
                     "password-file"     : "",
                     "clipboard-filter-file" : "",
                     "pulseaudio-command": DEFAULT_PULSEAUDIO_COMMAND,
                     "encryption"        : "",
                     "encryption_keyfile": "",
-                    "mode"              : "tcp",
                     "ssh"               : DEFAULT_SSH_CMD,
                     "xvfb"              : DEFAULT_XVFB_COMMAND,
                     "socket-dir"        : "",
@@ -351,7 +345,6 @@ def get_defaults():
                     "min-quality"       : 30,
                     "speed"             : 0,
                     "min-speed"         : 0,
-                    "port"              : -1,
                     "compression_level" : 1,
                     "dpi"               : 96,
                     "max-bandwidth"     : 0.0,
@@ -379,7 +372,6 @@ def get_defaults():
                     "sharing"           : False,
                     "delay-tray"        : False,
                     "windows"           : True,
-                    "autoconnect"       : False,
                     "exit-with-children": False,
                     "exit-with-client"  : False,
                     "exit-ssh"          : True,
@@ -399,14 +391,6 @@ def get_defaults():
                     "start-child"       : None,
                     }
     return GLOBAL_DEFAULTS
-MODES = ["tcp", "tcp + aes", "ssh"]
-def validate_in_list(x, options):
-    if x in options:
-        return None
-    return "must be in %s" % (", ".join(options))
-OPTIONS_VALIDATION = {
-                    "mode"              : lambda x : validate_in_list(x, MODES),
-                    }
 #fields that got renamed:
 CLONES = {
             "quality"       : "jpeg-quality",
@@ -450,15 +434,17 @@ def parse_number(numtype, k, v, auto=0):
         warn("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
         return None
 
-def validate_config(d={}, discard=NO_FILE_OPTIONS, extras={}):
+def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_validation={}):
     """
         Validates all the options given in a dict with fields as keys and
         strings or arrays of strings as values.
         Each option is strongly typed and invalid value are discarded.
         We get the required datatype from OPTION_TYPES
     """
+    validations = OPTIONS_VALIDATION.copy()
+    validations.update(extras_validation)
     option_types = OPTION_TYPES.copy()
-    option_types.update(extras)
+    option_types.update(extras_types)
     nd = {}
     for k, v in d.items():
         if k in discard:
@@ -496,7 +482,7 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras={}):
                 continue
         else:
             warn("Error: unknown option type for '%s': %s" % (k, vt))
-        validation = OPTIONS_VALIDATION.get(k)
+        validation = validations.get(k)
         if validation and v is not None:
             msg = validation(v)
             if msg:
@@ -506,14 +492,16 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras={}):
     return nd
 
 
-def make_defaults_struct():
+def make_defaults_struct(extras_defaults={}, extras_types={}, extras_validation={}):
     #populate config with default values:
     defaults = read_xpra_defaults()
-    return dict_to_validated_config(defaults)
+    return dict_to_validated_config(defaults, extras_defaults, extras_types, extras_validation)
 
-def dict_to_validated_config(d):
-    validated = validate_config(d)
+def dict_to_validated_config(d, extras_defaults={}, extras_types={}, extras_validation={}):
     options = get_defaults().copy()
+    options.update(extras_defaults)
+    #parse config:
+    validated = validate_config(d, extras_types=extras_types, extras_validation=extras_validation)
     options.update(validated)
     for k,v in CLONES.items():
         if k in options:
