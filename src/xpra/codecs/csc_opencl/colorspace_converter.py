@@ -219,7 +219,7 @@ def gen_yuv_to_rgb():
 
     YUV_to_RGB_KERNELS = {}
 
-    if selected_platform.name.find("CUDA")>=0 and not NVIDIA_YUV2RGB:
+    if selected_platform and selected_platform.name and selected_platform.name.find("CUDA")>=0 and not NVIDIA_YUV2RGB:
         log.warn("CUDA device detected, YUV to RGB disabled")
         return
 
