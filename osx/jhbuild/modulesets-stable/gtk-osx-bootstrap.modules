@@ -36,20 +36,19 @@
   </autotools>
 
   <autotools id="libpng" autogenargs="--enable-shared" autogen-sh="configure">
-    <branch version="1.5.13" module="libpng/libpng-1.5.13.tar.bz2"
+    <branch version="1.6.12" module="project/libpng/libpng16/1.6.12/libpng-1.6.12.tar.gz"
 	    repo="sourceforge"/>
   </autotools>
 
-  <autotools id="libjpeg" autogen-sh="configure">
-    <branch module="jpegsrc.v8d.tar.gz" version="8c"
-            repo="jpeg"
-            checkoutdir="jpeg-8d">
+  <autotools id="libjpeg" autogenargs="" autogen-sh="configure">
+    <branch module="project/libjpeg-turbo/1.3.1/libjpeg-turbo-1.3.1.tar.gz" version="1.3.1"
+            repo="sourceforge">
     </branch>
   </autotools>
 
   <autotools id="libtiff" autogen-sh="configure"
 	     autogenargs="--without-x --without-apple-opengl-framework">
-    <branch version="3.9.5" module="libtiff/tiff-3.9.5.tar.gz"
+    <branch version="4.0.3" module="libtiff/tiff-4.0.3.tar.gz"
 	    repo="libtiff"/>
     <dependencies>
       <dep package="libjpeg"/>

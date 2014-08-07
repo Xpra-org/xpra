@@ -390,7 +390,7 @@ Libglade itself is deprecated. This is the last release. -->
 
   <autotools id="gmp">
     <!--branch repo="ftp.gnu.org" module="gmp/gmp-5.0.5.tar.bz2" version="5.0.5"/-->
-    <branch repo="ftp.gnu.org" module="gmp/gmp-4.3.2.tar.bz2" version="4.3.2"/>
+    <branch repo="ftp.gnu.org" module="gmp/gmp-6.0.0.tar.bz2" version="6.0.0"/>
   </autotools>
 
   <autotools id="libunistring" autogen-sh="configure">

@@ -67,10 +67,10 @@
     </after>
   </metamodule>
 
-  <autotools id="glib" autogen-sh="autoreconf">
-    <branch module="glib/2.38/glib-2.38.2.tar.xz"  version="2.38.2"
-            hash="sha256:056a9854c0966a0945e16146b3345b7a82562a5ba4d5516fd10398732aea5734">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-724590-GSlice-slab_stack-corruption.patch" strip="1"/>
+  <autotools id="glib" autogen-sh="autoreconf" autogenargs="">
+    <branch module="glib/2.40/glib-2.40.0.tar.xz"  version="2.40.0"
+            hash="sha256:0d27f195966ecb1995dcce0754129fd66ebe820c7cd29200d264b02af1aa28b5">
+      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-724590-GSlice-slab_stack-corruption.patch" strip="1"/-->
     </branch>
     <dependencies>
       <dep package="libffi"/>
@@ -116,8 +116,8 @@
   </autotools>
 
  <autotools id="pango"  autogen-sh="autoreconf">
-    <branch version="1.36.0" module="pango/1.36/pango-1.36.0.tar.xz"
-            hash="sha256:bb41d1b26ee7450e5430a7d2765f38c51ebe72db9fce616a9ee52611b55906a0">
+    <branch version="1.36.0" module="pango/1.36/pango-1.36.5.tar.xz"
+            hash="sha256:be0e94b2e5c7459f0b6db21efab6253556c8f443837200b8736d697071276ac8">
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/pango_gir_cflags.patch" strip="1"/>
     </branch>
     <dependencies>
@@ -144,8 +144,8 @@
   </autotools>
 
   <autotools id="gdk-pixbuf" autogen-sh="configure">
-    <branch module="gdk-pixbuf/2.30/gdk-pixbuf-2.30.0.tar.xz" version="2.30.0"
-            hash="sha256:4a73600525621283a14436c5f873c1126c4feafcb07d24a746f13215e2caa658"/>
+    <branch module="gdk-pixbuf/2.30/gdk-pixbuf-2.30.8.tar.xz" version="2.30.8"
+            hash="sha256:4853830616113db4435837992c0aebd94cbb993c44dc55063cee7f72a7bef8be"/>
     <after>
       <dep package="pango"/>
     </after>
@@ -153,12 +153,12 @@
 
   <autotools id="gtk+" autogen-sh="autoreconf"
              autogenargs="--with-gdktarget=quartz --enable-quartz-relocation --disable-introspection">
-    <branch module="gtk+/2.24/gtk+-2.24.21.tar.xz" version="2.24.21"
-            hash="sha256:302e9216dd19ec4b5b9e2f77275e23758253f7e86b06287284d8e794ef38dce3">
+    <branch module="gtk+/2.24/gtk+-2.24.24.tar.xz" version="2.24.24"
+            hash="sha256:12ceb2e198c82bfb93eb36348b6e9293c8fdcd60786763d04cfec7ebe7ed3d6d">
       <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0004-Bug-571582-GtkSelection-implementation-for-quartz.patch" strip="1"/-->
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0008-Implement-GtkDragSourceOwner-pasteboardChangedOwner.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0006-Bug-658722-Drag-and-Drop-sometimes-stops-working.patch" strip="1"/>
-<patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gtk+-2-m4-creation.patch" strip="1"/>
+      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0008-Implement-GtkDragSourceOwner-pasteboardChangedOwner.patch" strip="1"/-->
+      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0006-Bug-658722-Drag-and-Drop-sometimes-stops-working.patch" strip="1"/-->
+      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gtk+-2-m4-creation.patch" strip="1"/-->
    </branch>
     <dependencies>
       <dep package="glib"/>

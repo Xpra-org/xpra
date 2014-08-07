@@ -70,7 +70,7 @@
   <autotools id="python" autogenargs="--enable-shared"
 	     autogen-sh="configure">
     <branch repo="python"
-	    module="2.7.6/Python-2.7.6.tar.xz" version="2.7.6">
+	    module="2.7.8/Python-2.7.8.tar.xz" version="2.7.8">
     </branch>
     <dependencies>
       <dep package="gettext-runtime"/>
