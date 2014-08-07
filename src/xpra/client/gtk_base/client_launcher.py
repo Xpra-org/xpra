@@ -29,9 +29,9 @@ gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, ENCRYPTION_CIPHERS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, is_gtk3, \
-                                    OptionMenu, \
-                                    WIN_POS_CENTER, STATE_NORMAL, RESPONSE_CANCEL, \
-                                    RESPONSE_OK, FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
+                                    OptionMenu, choose_file, \
+                                    WIN_POS_CENTER, STATE_NORMAL, \
+                                    FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
 from xpra.os_util import thread
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
@@ -671,24 +671,10 @@ class ApplicationWindow:
         self.config_keys = self.config_keys.union(set(props.keys()))
 
     def choose_session_file(self, title, action, action_button, callback):
-        log("choose_session_file(%s, %s)", title, callback)
-        chooser = gtk.FileChooserDialog(title,
-                                    parent=self.window, action=action,
-                                    buttons=(gtk.STOCK_CANCEL, RESPONSE_CANCEL, action_button, RESPONSE_OK))
-        chooser.set_select_multiple(False)
-        chooser.set_default_response(gtk.RESPONSE_OK)
         file_filter = gtk.FileFilter()
         file_filter.set_name("Xpra")
         file_filter.add_pattern("*.xpra")
-        chooser.add_filter(file_filter)
-        response = chooser.run()
-        filenames = chooser.get_filenames()
-        chooser.hide()
-        chooser.destroy()
-        if response!=RESPONSE_OK or len(filenames)!=1:
-            return
-        filename = filenames[0]
-        callback(filename)
+        choose_file(self.window, title, action, action_button, callback, file_filter)
 
     def save_clicked(self, *args):
         self.update_options_from_gui()

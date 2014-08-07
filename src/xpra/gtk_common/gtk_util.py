@@ -418,3 +418,22 @@ class TableBuilder(object):
     def new_row(self, row_label_str, value1, value2=None, label_tooltip=None):
         row_label = label(row_label_str, label_tooltip)
         self.add_row(row_label, value1, value2)
+
+
+def choose_file(parent_window, title, action, action_button, callback, file_filter=None):
+    log("choose_file%s", (parent_window, title, action, action_button, callback, file_filter))
+    chooser = gtk.FileChooserDialog(title,
+                                parent=parent_window, action=action,
+                                buttons=(gtk.STOCK_CANCEL, RESPONSE_CANCEL, action_button, RESPONSE_OK))
+    chooser.set_select_multiple(False)
+    chooser.set_default_response(gtk.RESPONSE_OK)
+    if file_filter:
+        chooser.add_filter(file_filter)
+    response = chooser.run()
+    filenames = chooser.get_filenames()
+    chooser.hide()
+    chooser.destroy()
+    if response!=RESPONSE_OK or len(filenames)!=1:
+        return
+    filename = filenames[0]
+    callback(filename)
