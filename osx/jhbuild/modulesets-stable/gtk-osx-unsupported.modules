@@ -1,0 +1,208 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+  <repository type="tarball" name="ftp.gnome.org" default="yes"
+              href="http://ftp.gnome.org/pub/GNOME/sources/"/>
+  <repository type='tarball' name='michael.68k.org'
+              href="http://www.68k.org/~michael/"/>
+  <repository type='tarball' name='ftp.gnu.org' href="ftp://ftp.gnu.org/gnu/"/>
+  <repository type='tarball' name='ftp.gnupg.org' href="ftp://ftp.gnupg.org/" />
+  <repository type="tarball" name="sourceforge"
+              href="http://downloads.sourceforge.net/sourceforge/"/>
+  <repository type="svn" name="svn.debian.org" href="svn://svn.debian.org/"/>
+  <repository type="tarball" name="abisource/enchant"
+              href="http://www.abisource.com/downloads/enchant/" />
+  <repository type="tarball" name="iso-codes"
+	      href="http://pkg-isocodes.alioth.debian.org/downloads/"/>
+  <repository type='tarball' name='libproxy.google.com'
+              href='http://libproxy.googlecode.com/files/'/>
+  <repository type="tarball" name="curl.haxx.se"
+              href="http://curl.haxx.se/download/"/>
+  <repository type="tarball" name="webkit.org"
+              href="http://www.webkitgtk.org/releases/"/>
+  <repository type="svn" name="svn.webkit.org"
+	      href="http://svn.webkit.org/repository/"/>
+  <repository type='tarball' name='icu'
+	      href='http://download.icu-project.org/files/'/>
+
+  <metamodule id="meta-gtk-osx-unsupported">
+    <dependencies>
+      <dep package="gnome-mime-data"/>
+      <dep package="iso-codes"/>
+    </dependencies>
+  </metamodule>
+
+  <metamodule id="meta-gtk-osx-webkit">
+    <dependencies>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="libsoup"/>
+      <dep package="WebKit"/>
+    </dependencies>
+  </metamodule>
+
+  <metamodule id="meta-gtk-osx-webkit-gtk3">
+    <dependencies>
+      <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="libsoup"/>
+      <dep package="WebKit"/>
+    </dependencies>
+  </metamodule>
+
+  <autotools id="gnome-mime-data" autogen-sh="configure">
+   <branch module="gnome-mime-data/2.18/gnome-mime-data-2.18.0.tar.bz2"
+           version="2.18.0" md5sum="541858188f80090d12a33b5a7c34d42c"/>
+    <dependencies>
+      <dep package="glib"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="iso-codes" autogen-sh="configure">
+    <branch module="iso-codes-3.51.tar.xz" version="3.51"
+	    repo="iso-codes"/>
+  </autotools>
+
+  <autotools id="zlib" autogen-sh="configure" skip-autogen="never"
+	     supports-non-srcdir-builds="no">
+    <branch repo="sourceforge" version="1.2.7"
+	    module="libpng/zlib-1.2.7.tar.gz"/>
+  </autotools>
+
+  <autotools id="gnutls" autogen-sh="configure"
+	     autogenargs="--with-libgcrypt --without-p11-kit">
+    <branch repo='ftp.gnu.org' version='2.12.20'
+            module="gnutls/gnutls-2.12.20.tar.bz2"/>
+    <dependencies>
+      <dep package="libgcrypt" />
+      <dep package="libtasn1" />
+      <dep package="zlib"/>
+    </dependencies>
+  </autotools>
+
+  <cmake id='libproxy' cmakeargs="-DWITH_PYTHON=OFF">
+    <branch version='0.4.10' module='libproxy-0.4.10.tar.gz'
+            repo='libproxy.google.com'>
+    </branch>
+    <dependencies>
+    </dependencies>
+  </cmake>
+
+  <autotools id="libgnome-keyring" autogenargs="--disable-tests"
+	     autogen-sh="configure">
+    <branch module="libgnome-keyring/3.6/libgnome-keyring-3.6.0.tar.xz"
+	    version="3.6.0" hash="sha256:6dca37fb7b37f800f498031ffe303a567410bec09a9bdd877a18865dafcc9830">
+    </branch>
+    <dependencies>
+      <dep package="glib"/>
+      <dep package="libgcrypt"/>
+      <dep package="libtasn1"/>
+      <dep package="dbus"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="glib-networking" autogen-sh="configure"
+	     autogenargs="--without-ca-certificates set_more_warnings=no">
+    <branch module="glib-networking/2.34/glib-networking-2.34.0.tar.xz"
+	    version="2.34.0" hash="sha256:c56eb4161671bff9568f3a92a88531ca01217eb7ee8514bb6255730400f877f1"/>
+    <dependencies>
+      <dep package="gnutls"/>
+      <dep package="libgcrypt"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="libsoup" autogen-sh="configure" autogenargs="set_more_warnings=no">
+    <branch module="libsoup/2.40/libsoup-2.40.1.tar.xz"
+            version="2.40.1" hash="sha256:77a55d57e7e8055acd2f44e0cc889b9ba48052e8b7f07e829157d57417ac650a" />
+    <dependencies>
+      <dep package="glib"/>
+      <dep package="glib-networking"/>
+      <dep package="libgnome-keyring"/>
+      <dep package='sqlite'/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="enchant" autogen-sh="configure"
+	     autogenargs="--with-myspell-dir=/Library/Dictionaries">
+    <branch module="1.6.0/enchant-1.6.0.tar.gz" version="1.6.0"
+	    repo="abisource/enchant">
+ <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-gsize.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="glib"/>
+    </dependencies>
+  </autotools>
+
+   <autotools id="libgpg-error" autogen-sh="configure"
+	      supports-non-srdir-builds="no">
+    <branch repo='ftp.gnupg.org' version='1.10'
+	    module="gcrypt/libgpg-error/libgpg-error-1.10.tar.bz2"/>
+  </autotools>
+
+  <autotools id="libgcrypt" autogen-sh="configure" autogenargs="--disable-asm">
+    <branch repo='ftp.gnupg.org' version='1.5.3'
+	    module='gcrypt/libgcrypt/libgcrypt-1.5.3.tar.bz2'>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libgcrypt-build-clang.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="libgpg-error" />
+    </dependencies>
+  </autotools>
+
+  <autotools id="libtasn1" supports-non-srcdir-builds="no"
+	     autogen-sh="configure">
+    <branch repo="ftp.gnu.org" version='2.14'
+	    module="libtasn1/libtasn1-2.14.tar.gz"/>
+  </autotools>
+
+   <!-- 10.5 has 7.16.3, which is too old for some things. Otherwise can be skipped. -->
+  <autotools id="libcurl" autogen-sh="configure">
+    <branch repo="curl.haxx.se" module="curl-7.28.0.tar.bz2" version="7.28.0" />
+  </autotools>
+
+  <autotools id="WebKit" autogen-sh="configure"
+	     autogenargs="--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=2.0">
+    <branch repo="webkit.org" module="webkit-1.6.1.tar.gz" version="1.6.1">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-no-x11.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-pango-includes.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-missing-icu-files.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-missing-utf8-include.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-enable-blob.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-gnome-3.6-fixup.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-clang-fixup.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-out-of-source-fixup.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="enchant"/>
+      <dep package="libsoup"/>
+      <dep package="meta-gtk-osx-freetype"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="meta-gtk-osx-gtk3"/>
+    </after>
+  </autotools>
+
+  <autotools id='icu' autogen-sh='source/configure'
+	     makeargs='CFLAGS="$CFLAGS -DU_CHARSET_IS_UTF8=1 -DU_USING_ICU_NAMESPACE=0"'>
+    <branch repo='icu' version='50.1.2' checkoutdir='icu'
+	    module='icu4c/50.1.2/icu4c-50_1_2-src.tgz'>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/icu-clang.patch" strip="1"/>
+    </branch>
+  </autotools>
+
+  <autotools id="WebKit-svn"
+	     autogenargs="--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=3.0">
+    <branch repo="svn.webkit.org" module="webkit/trunk" checkoutdir="WebKit"/>
+    <dependencies>
+      <dep package="libsoup"/>
+      <dep package="enchant"/>
+      <!--dep package="libgail"/-->
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="meta-gtk-osx-gtk3"/>
+      <!--dep package="gst-plugins-base"/-->
+    </after>
+  </autotools>
+
+</moduleset>

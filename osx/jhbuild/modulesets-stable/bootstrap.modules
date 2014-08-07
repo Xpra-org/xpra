@@ -1,0 +1,214 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: nxml -*-->
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+  <repository type="tarball" name="ftp.gnome.org" default="yes"
+	      href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
+  <repository type="tarball" name="ftp.gnu.org"
+	      href="ftp://ftp.gnu.org/gnu/"/>
+  <repository type="tarball" name="pkgconfig"
+	      href="http://pkgconfig.freedesktop.org/releases/"/>
+  <repository type="tarball" name="python"
+	      href="http://www.python.org/ftp/python/"/>
+  <repository type="tarball" name="sourceforge"
+	      href="http://downloads.sourceforge.net/sourceforge/"/>
+  <repository type="tarball" name="apache.org"
+	      href="http://archive.apache.org/dist/"/>
+  <repository type="tarball" name="tukaani.org"
+	      href="http://tukaani.org/"/>
+  <repository type="tarball" name="cmake"
+	      href="http://www.cmake.org/files/"/>
+  <repository type="tarball" name="cpan" href="http://search.cpan.org/CPAN/" />
+  <repository type="tarball" name="intltool"
+	       href="http://launchpad.net/intltool/trunk/"/>
+
+  <autotools id="make">
+    <branch repo="ftp.gnu.org" module="make/make-3.82.tar.gz" version="3.82"/>
+  </autotools>
+
+  <autotools id="xz" autogen-sh="configure">
+    <branch repo="tukaani.org" module="xz/xz-5.0.4.tar.bz2" version="5.0.4"/>
+  </autotools>
+
+  <autotools id="apr">
+    <branch repo="apache.org" module="apr/apr-1.4.5.tar.bz2" version="1.4.5"/>
+  </autotools>
+
+  <autotools id="apr-util" autogenargs="--with-apr=$PREFIX/bin/apr-1-config">
+    <branch repo="apache.org" module="apr/apr-util-1.3.12.tar.bz2"
+	    version="1.3.12"/>
+    <dependencies>
+      <dep package="apr"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="subversion">
+    <branch repo="apache.org" module="subversion/subversion-1.5.9.tar.bz2"
+	    version="1.5.9"/>
+    <dependencies>
+      <dep package="apr-util"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="gettext-tools" autogen-sh="configure"
+	     autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp --with-included-glib">
+    <branch repo="ftp.gnu.org" source-subdir="gettext-tools"
+	    module="gettext/gettext-0.18.1.1.tar.gz" version="0.18.1.1"
+            size="15139737" md5sum="3dd55b952826d2b32f51308f2f91aa89">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gettext-bug33999-stpncpy.patch" strip="1"/>
+    </branch>
+  </autotools>
+
+  <autotools id="cmake" autogen-sh="bootstrap"
+	     autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s">
+    <branch repo="cmake" module="v2.8/cmake-2.8.12.tar.gz" version="2.8.12"/>
+  </autotools>
+
+  <autotools id="m4" autogen-sh="configure">
+    <branch repo="ftp.gnu.org"
+	    module="m4/m4-1.4.16.tar.bz2" version="1.4.16"/>
+  </autotools>
+
+  <autotools id="autoconf" autogen-sh="configure">
+    <branch repo="ftp.gnu.org"
+            module="autoconf/autoconf-2.69.tar.xz" version="2.69"/>
+    <dependencies>
+      <dep package="m4"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="libtool" autogen-sh="configure">
+    <branch repo="ftp.gnu.org"
+            module="libtool/libtool-2.4.2.tar.gz" version="2.4.2"/>
+  </autotools>
+
+  <autotools id="automake-1.10" autogen-sh="configure">
+    <branch repo="ftp.gnu.org"
+            module="automake/automake-1.10.3.tar.bz2" version="1.10.3"
+            size="957505" md5sum="b8e67fb458da396bc35555af7ef2b49f" />
+  </autotools>
+
+  <autotools id="automake-1.11" autogen-sh="configure">
+    <branch repo="ftp.gnu.org"
+	    module="automake/automake-1.11.6.tar.xz" version="1.11.6"/>
+  </autotools>
+
+  <autotools id="automake-1.12" autogen-sh="configure">
+    <branch repo="ftp.gnu.org"
+	    module="automake/automake-1.12.6.tar.xz" version="1.12.6"/>
+  </autotools>
+
+  <autotools id="automake-1.13" autogen-sh="configure">
+    <branch repo="ftp.gnu.org"
+	    module="automake/automake-1.13.1.tar.xz" version="1.13.1"/>
+  </autotools>
+
+<!-- Pkg-config 0.26 and later requires glib, which requires
+     pkg-config, which, well, you get the idea. -->
+  <autotools id="pkg-config" autogen-sh="configure">
+    <branch repo="pkgconfig"
+            module="pkg-config-0.25.tar.gz" version="0.25"/>
+  </autotools>
+
+  <!-- 10.4 has 1.28 which is too old, 10.5 & 10.6 have 2.3 which is OK. -->
+  <autotools id="bison" autogen-sh="configure">
+    <branch repo="ftp.gnu.org" module="bison/bison-2.6.3.tar.bz2"
+            version="2.6.3"/>
+  </autotools>
+
+  <!-- 10.4 has 2.5.4, too old for gstreamer (and probably others as well)
+10.6 has 2.5.35, 10.5 2.5.33 -->
+  <autotools id="flex" autogen-sh="configure">
+    <branch repo="sourceforge" module="flex/flex-2.5.37.tar.bz2"
+	    version="2.5.37"/>
+  </autotools>
+
+  <!-- Expat could be skipped for >= 10.5 since it's is part of the SDK there. -->
+  <autotools id="expat" autogen-sh="configure">
+    <branch module="expat/expat-2.1.0.tar.gz" version="2.1.0"
+	    repo="sourceforge"/>
+  </autotools>
+
+  <perl id="perl-xml-parser" makeargs="EXPATLIBPATH=${prefix}/lib EXPATINCPATH=${prefix}/include">
+    <branch repo="cpan"
+        module="authors/id/T/TO/TODDR/XML-Parser-2.41.tar.gz"
+	version="2.41"/>
+    <dependencies>
+      <dep package="expat"/>
+    </dependencies>
+  </perl>
+
+  <perl id="perl-xml-simple">
+    <branch repo="cpan"
+        module="authors/id/G/GR/GRANTM/XML-Simple-2.20.tar.gz" version="2.20"
+        size="75993" md5sum="4d10964e123b76eca36678464daa63cd"/>
+    <dependencies>
+      <dep package="perl-xml-parser"/>
+    </dependencies>
+  </perl>
+
+  <!-- Needed for building Gnome apps from the repository -->
+  <autotools id="gnome-common">
+     <branch module="gnome-common/3.6/gnome-common-3.6.0.tar.xz" version="3.6.0"
+	     hash="sha256:e10f09de06bddcc8f980422e3bfdcd8185eee7f1eae11543a765ec8e764b8d95"/>
+  </autotools>
+  <!-- This is generated by tarring up the needed docbook stylesheets
+       for gtk-doc to work. If someone wants to work on a setup that
+       uses the real docbook source from upstream, feel free to do so,
+       it used to be a huge amount of work, but might be easier these
+       days.
+
+   -->
+  <autotools id="gtk-osx-docbook" autogen-sh="configure"
+	     supports-non-srcdir-builds="no" >
+     <branch repo="sourceforge" module="gtk-osx/gtk-osx-docbook-1.1.tar.gz"
+	     version="1.1"/>
+  </autotools>
+
+  <autotools id="gtk-doc" autogenargs="--disable-scrollkeeper --with-xml-catalog=$JHBUILD_PREFIX/etc/xml/catalog"
+	     makeargs="-k -i" makeinstallargs="-k -i install"
+	     autogen-sh="configure">
+    <branch version="1.18" module="gtk-doc/1.18/gtk-doc-1.18.tar.bz2"
+	    hash="sha256:a634d2e93d70468237033c06a17c97f29cf71a35ac5cc01c016324c965d42f73"/>
+    <dependencies>
+      <dep package="gtk-osx-docbook"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="intltool" autogen-sh="configure">
+    <branch repo="intltool" module="0.50.2/+download/intltool-0.50.2.tar.gz"
+	    version="0.50.2"
+	    hash="md5:23fbd879118253cb99aeac067da5f591"/>
+    <dependencies>
+      <dep package="gnome-common"/>
+      <dep package="perl-xml-parser"/>
+    </dependencies>
+  </autotools>
+
+  <metamodule id="meta-bootstrap">
+    <dependencies>
+      <dep package="xz"/>
+      <dep package="make"/>     <!-- Needed for Tiger, skipped otherwise -->
+      <dep package="subversion"/>   <!-- Needed for Tiger, skipped otherwise -->
+      <dep package="gettext-tools" /> <!-- Needed for 64-bit -->
+      <dep package="cmake"/>
+      <dep package="m4"/>	<!-- Can be skipped for Leopard and later -->
+      <dep package="autoconf" />
+      <dep package="libtool" />
+      <dep package="automake-1.10" />
+      <dep package="automake-1.11" />
+      <dep package="automake-1.12" />
+      <dep package="automake-1.13" />
+      <dep package="pkg-config" />
+      <dep package="bison"/>   <!-- included for Tiger, skipped otherwise -->
+      <dep package="flex"/>    <!-- included for Tiger, skipped otherwise -->
+      <dep package="expat"/>
+      <dep package="perl-xml-parser"/>
+      <dep package="perl-xml-simple"/>
+      <dep package="gtk-osx-docbook"/>
+      <dep package="gtk-doc"/>
+      <dep package="gnome-common"/>
+      <dep package="intltool"/>
+   </dependencies>
+  </metamodule>
+
+</moduleset>

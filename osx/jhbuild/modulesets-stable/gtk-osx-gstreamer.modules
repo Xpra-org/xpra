@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+  <repository type="tarball" name="ftp.gnome.org" default="yes"
+              href="http://ftp.gnome.org/pub/GNOME/sources/"/>
+  <repository type="tarball" name="liboil"
+              href="http://liboil.freedesktop.org/download/"/>
+  <repository type="tarball" name="sourceforge"
+              href="http://downloads.sourceforge.net/sourceforge/"/>
+  <repository type="tarball" name="entropywave"
+	      href="http://code.entropywave.com/download/"/>
+
+  <autotools id="liboil" autogen-template="autoreconf -fis &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s"
+	     makeargs=' CFLAGS="$CFLAGS -DHAVE_SYMBOL_UNDERSCORE"'>
+    <branch repo="liboil" module="liboil-0.3.17.tar.gz" version="0.3.17" />
+  </autotools>
+
+  <autotools id="liborc" autogen-sh="configure">
+    <branch module="orc/orc-0.4.16.tar.gz"
+	    repo="entropywave" version="0.4.16"/>
+  </autotools>
+
+  <autotools id="faad2" autogen-sh="autoreconf"
+             autogenargs="-without-bmp --without-xmms --without-drm --without-mpeg4ip">
+    <branch repo="sourceforge" module="faac/faad2-2.7.tar.gz"
+            version="2.7" />
+  </autotools>
+
+  <autotools id="gstreamer" autogenargs="--disable-tests" supports-non-srcdir-builds="no"
+    makeargs="ERROR_CFLAGS=" autogen-sh="configure">
+    <branch module="gstreamer/0.10/gstreamer-0.10.35.tar.bz2" version="0.10.35"
+            hash="sha256:817bfea2cd46e2487b97e2ed9218f0299b32a3de1e5e80b4c7868d17e9089786">
+    </branch>
+    <after>
+      <dep package="glib"/>
+    </after>
+  </autotools>
+
+  <autotools id="gstreamer-1.0" autogenargs="--disable-tests" supports-non-srcdir-builds="no"
+    makeargs="ERROR_CFLAGS=" autogen-sh="configure">
+    <branch module="gstreamer/1.0/gstreamer-1.0.2.tar.xz" version="1.0.2"
+            hash="sha256:10c59112bb01a274eb33950300da13d25fd23a7494781bf1b2328372fdb6ee06">
+    </branch>
+    <after>
+      <dep package="glib"/>
+    </after>
+  </autotools>
+
+<!-- This doesn't build: see https://bugzilla.gnome.org/show_bug.cgi?id=660302-->
+  <autotools id="gst-plugins-base" autogenargs="-- --disable-tests --disable-x --disable-xvideo" supports-non-srcdir-builds="no"
+    makeargs="ERROR_CFLAGS=" autogen-sh="configure">
+    <branch module="gst-plugins-base/0.10/gst-plugins-base-0.10.35.tar.bz2"
+            version="0.10.15" hash="sha256:cd24f01bb5258a1f400bc4f2c212bb7cee9ee23c9ffb80d537a24ef366d17103"/>
+    <dependencies>
+      <dep package="gstreamer"/>
+      <dep package="liboil"/>
+    </dependencies>
+    <after>
+    </after>
+  </autotools>
+
+  <autotools id="gst-plugins-base-1.0" autogenargs="--disable-tests --disable-x --disable-xvideo" supports-non-srcdir-builds="no"
+    makeargs="ERROR_CFLAGS=" autogen-sh="configure">
+    <branch module="gst-plugins-base/1.0/gst-plugins-base-1.0.2.tar.xz"
+            version="1.0.2" hash="sha256:7ce2c4462ff89f62a82b4503a3788ce2e5077f886e535796fecc223397acf78d"/>
+    <dependencies>
+      <dep package="gstreamer"/>
+      <dep package="liborc"/>
+    </dependencies>
+    <after>
+    </after>
+  </autotools>
+
+  <autotools id="gst-plugins-good" autogenargs="-- --disable-tests --disable-x --disable-xvideo --disable-osx-video" supports-non-srcdir-builds="no"
+    makeargs="ERROR_CFLAGS=" autogen-sh="configure">
+    <branch module="gst-plugins-good/0.10/gst-plugins-good-0.10.30.tar.bz2"
+            version="0.10.30" hash="sha256:b12cba90b27d8423cd0a808939098d19db3996cfb9bf528507c6321782e095f6"/>
+    <dependencies>
+      <dep package="gstreamer"/>
+      <dep package="gst-plugins-base"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="gst-plugins-good-1.0" autogenargs="-- --disable-tests --disable-x --disable-xvideo --disable-osx-video" supports-non-srcdir-builds="no"
+    makeargs="ERROR_CFLAGS=" autogen-sh="configure">
+    <branch module="gst-plugins-good/1.0/gst-plugins-good-1.0.2.tar.xz"
+            version="1.0.2" hash="sha256:34762dbd1462dd31b6ca2a01cf6477843c9dc7112e5819cc9d6dd7396b79244c"/>
+    <dependencies>
+      <dep package="gstreamer"/>
+      <dep package="gst-plugins-base"/>
+    </dependencies>
+  </autotools>
+
+ <!-- The gst-ffmpeg, gst-plugins-bad and gst-plugins-ugly packages have been
+      removed from gnome sources. -->
+
+
+  <metamodule id="meta-gtk-osx-gstreamer">
+    <dependencies>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="liboil"/>
+      <dep package="gstreamer"/>
+      <dep package="gst-plugins-base"/>
+      <dep package="gst-plugins-good"/>
+      </dependencies>
+  </metamodule>
+
+  <metamodule id="meta-gtk-osx-gstreamer-1.0">
+    <dependencies>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="liborc"/>
+      <dep package="gstreamer-1.0"/>
+      <dep package="gst-plugins-base-1.0"/>
+      <dep package="gst-plugins-good-1.0"/>
+      </dependencies>
+  </metamodule>
+
+</moduleset>

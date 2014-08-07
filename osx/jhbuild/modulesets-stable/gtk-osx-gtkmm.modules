@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+  <repository type="tarball" name="ftp.gnome.org" default="yes" 
+              href="http://ftp.gnome.org/pub/GNOME/sources/"/>
+  <repository type="tarball" name="doxygen" 
+              href="http://ftp.stack.nl/pub/users/dimitri/"/>
+  <repository type="tarball" name="cairographics"
+              href="http://cairographics.org/releases/"/>
+
+  <metamodule id="meta-gtk-osx-gtkmm">
+    <dependencies>
+      <dep package="gtkmm"/>
+    </dependencies>
+  </metamodule>
+
+  <metamodule id="meta-gtk-osx-gtkmm3">
+    <dependencies>
+      <dep package="gtkmm3"/>
+    </dependencies>
+  </metamodule>
+
+  <autotools id="cairomm" autogen-sh="configure">
+    <branch module="cairomm-1.10.0.tar.gz" version="1.10.0"
+	    hash="sha1:f08bf8a331067f0d1e876523f07238fba6b26b99"
+            repo="cairographics" />
+    <dependencies>
+      <dep package="cairo"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="glibmm" autogen-sh="configure">
+    <branch module="glibmm/2.38/glibmm-2.38.1.tar.xz" version="2.38.1"
+            hash="sha256:49c925ee1d3c4d0d6cd7492d7173bd6826db51d0b55f458a6496406ae267c4a2"/>
+    <dependencies>
+      <dep package="glib"/>
+      <dep package="libsigc++2"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="pangomm" autogen-sh="configure">
+    <branch module="pangomm/2.34/pangomm-2.34.0.tar.xz" version="2.34.0"
+            hash="sha256:0e82bbff62f626692a00f3772d8b17169a1842b8cc54d5f2ddb1fec2cede9e41"/>
+    <dependencies>
+      <dep package="glibmm"/>
+      <dep package="cairomm"/>
+      <dep package="pango"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="atkmm" autogen-sh="configure">
+    <branch module="atkmm/2.22/atkmm-2.22.7.tar.xz" version="2.22.7"
+	    hash="sha256:bfbf846b409b4c5eb3a52fa32a13d86936021969406b3dcafd4dd05abd70f91b"/>
+    <dependencies>
+      <dep package="glibmm"/>
+      <dep package="cairomm"/>
+      <dep package="pangomm"/>
+      <dep package="atk"/>
+    </dependencies>
+  </autotools>
+
+<!-- libsigc++ depends on doxygen for documentation, but doxygen
+     doesn't build correctly under gtk-osx. It builds fine on its own,
+     of course, and there are OSX binaries available on their
+     website. If you want the docs, install it separately and renable
+     documentation in your jhbuildrc-custom. -->
+  <autotools id="libsigc++2" autogen-sh="configure"
+	     autogen-args="--disable-documentation">
+    <branch module="libsigc++/2.2/libsigc++-2.2.11.tar.xz" version="2.2.11"
+            hash="sha256:9834045f74f56752c2c6b3cdc195c30ab8314ad22dc8e626d6f67f940f1e4957"/>
+  </autotools>
+
+  <autotools id="gtkmm3" autogen-sh="configure">
+    <branch module="gtkmm/3.10/gtkmm-3.10.1.tar.xz" version="3.10.1"
+            hash="sha256:6fa5cdaa5cf386ea7c77fafed47e913afadd48fe45e28d8cb01075c3ee412538">
+    </branch>
+    <dependencies>
+      <dep package="glibmm"/>
+      <dep package="cairomm"/>
+      <dep package="pangomm"/>
+      <dep package="atkmm"/>
+      <dep package="gtk+-3.0"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="gtkmm" autogen-sh="configure">
+    <branch module="gtkmm/2.24/gtkmm-2.24.4.tar.xz" version="2.24.4"
+            hash="sha256:443a2ff3fcb42a915609f1779000390c640a6d7fd19ad8816e6161053696f5ee"/>
+    <dependencies>
+      <dep package="glibmm"/>
+      <dep package="cairomm"/>
+      <dep package="pangomm"/>
+      <dep package="atkmm"/>
+      <dep package="gtk+"/>
+    </dependencies>
+  </autotools>
+
+</moduleset>

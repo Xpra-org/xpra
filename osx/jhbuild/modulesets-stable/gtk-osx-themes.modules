@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+  <repository type="tarball" name="ftp.gnome.org" default="yes" 
+              href="http://ftp.gnome.org/pub/GNOME/sources/"/>
+  <repository type="git" name="git.gnome.org"
+              href="git://git.gnome.org/"/>
+  <repository type="tarball" name="sourceforge" 
+	      href="http://downloads.sourceforge.net/sourceforge/"/>
+  <repository type="tarball" name="tango.freedesktop.org"
+              href="http://tango.freedesktop.org/releases/"/>
+  <repository type="tarball" name="icon-theme.freedesktop.org"
+	      href="http://icon-theme.freedesktop.org/releases"/>
+  <repository type="git" name="freedesktop.git"
+	      href="git://anongit.freedesktop.org/git/"/>
+
+  <metamodule id="meta-gtk-osx-themes">
+    <dependencies>
+      <dep package="tango-icon-theme"/>
+      <dep package="gnome-icon-theme"/>
+      <dep package="icon-naming-utils"/>
+      <dep package="gtk-engines"/>
+    </dependencies>
+  </metamodule>
+
+  <metamodule id="meta-gtk-osx-gtk3-core-themes">
+    <dependencies>
+      <dep package="icon-naming-utils"/>
+      <dep package="gnome-icon-theme-symbolic"/>
+      <dep package="gnome-themes-standard"/>
+    </dependencies>
+  </metamodule>
+
+  <autotools id="icon-naming-utils" autogen-sh="configure">
+    <branch repo="tango.freedesktop.org"  version="0.8.90"
+            module="icon-naming-utils-0.8.90.tar.bz2"
+            hash="md5:dd8108b56130b9eedc4042df634efa66"/>
+    <after>
+      <dep package="meta-gtk-osx-bootstrap"/>
+    </after>
+  </autotools>
+
+  <autotools id="tango-icon-theme" autogenargs="--disable-icon-framing"
+             autogen-sh="configure">
+    <branch repo="tango.freedesktop.org" version="0.8.90"
+            module="tango-icon-theme-0.8.90.tar.gz"
+            hash="md5:0795895d2f20eddcbd2bffe94ed431a6"/>
+    <dependencies>
+      <dep package="icon-naming-utils"/>
+      <dep package="hicolor-icon-theme"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="gnome-icon-theme" autogen-sh="configure">
+    <branch module="gnome-icon-theme/3.10/gnome-icon-theme-3.10.0.tar.xz"
+            version="3.10.0" hash="sha256:c65472b5846c67b97fe75200c5180faccd1347a04caa8390fc0ad23de75b36f6"/>
+    <dependencies>
+      <dep package="hicolor-icon-theme"/>
+      <dep package="icon-naming-utils"/>
+    </dependencies>
+  </autotools>
+
+ <autotools id="gnome-icon-theme-symbolic" autogen-sh="configure">
+    <branch module="gnome-icon-theme-symbolic/3.10/gnome-icon-theme-symbolic-3.10.1.tar.xz"
+            version="3.10.1" hash="sha256:344e88e5f9dac3184bf012d9bac972110df2133b93d76f2ad128d4c9cbf41412"/>
+    <dependencies>
+      <dep package="gnome-icon-theme"/>
+    </dependencies>
+  </autotools>
+
+ <autotools id="gnome-icon-theme-extras" autogen-sh="configure">
+    <branch module="gnome-icon-theme/3.6/gnome-icon-theme-3.6.2.tar.xz"
+            version="3.6.2" hash="sha256:93aaaadf40c85ebc42232a4d8e45ca507754b8e1271e797bbcdaded52bd03ec7"/>
+    <dependencies>
+      <dep package="gnome-icon-theme"/>
+    </dependencies>
+  </autotools>
+
+ <autotools id="gnome-themes-standard" autogen-sh="configure"
+	    autogenargs='--disable-gtk2-engine'>
+    <branch module="gnome-themes-standard/3.10/gnome-themes-standard-3.10.0.tar.xz"
+            version="3.10.0" hash="sha256:812c6cfc534fced921dc327b436e70020d8979529284bb59d72d6f37af1f4b38"/>
+    <dependencies>
+      <dep package="librsvg"/>
+      <dep package="gnome-icon-theme"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="gtk-engines" autogen-sh="configure">
+    <branch module="gtk-engines/2.20/gtk-engines-2.20.2.tar.bz2"
+            version="2.20.2" hash="sha256:15b680abca6c773ecb85253521fa100dd3b8549befeecc7595b10209d62d66b5"/>
+    <after>
+      <dep package="meta-gtk-osx-core"/>
+    </after>
+  </autotools>
+
+  <autotools id="murrine-engine" autogen-sh="configure">
+    <branch module="murrine/0.98/murrine-0.98.1.1.tar.bz2" version="0.98.1.1"
+	    hash="sha256:e6a2af72674403d06c03e067d915004e8d9cdeec206f3350c7f3ee595b139912"/>
+  </autotools>
+
+  <autotools id="librsvg" autogenargs="--disable-Bsymbolic">
+    <branch module="librsvg/2.36/librsvg-2.36.4.tar.xz" version="2.36.4"
+	    hash="sha256:1021935204798f4f0ad3004a09b583668ea94a48593461b147fdcff68a18e6c2"/>
+    <dependencies>
+      <dep package="libcroco"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="libcroco" autogenargs="--disable-Bsymbolic"
+	     autogen-sh="configure">
+    <branch module="libcroco/0.6/libcroco-0.6.8.tar.xz" version="0.6.8"
+	    hash="sha256:ea6e1b858c55219cefd7109756bff5bc1a774ba7a55f7d3ccd734d6b871b8570"/>
+  </autotools>
+
+  <autotools id="libccss" autogenargs="--disable-examples">
+    <branch module="ccss" repo="freedesktop.git"/>
+    <dependencies>
+      <dep package="libcroco"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="gtk-css-engine" >
+    <branch module="gtk-css-engine/0.3/gtk-css-engine-0.3.1.tar.bz2"
+	    version="0.3.1" hash="sha256:c1d0000e00516b50f976db7726cd3f5e6318182704ad04be980d4ec7731e75d4"/>
+    <dependencies>
+      <dep package="libccss"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-core"/>
+    </after>
+  </autotools>
+
+  <autotools id="gtk-quartz-engine" autogen-sh="autogen.sh">
+    <branch module="gtk-osx/gtk-quartz-engine-0.2.tar.gz"
+            repo="sourceforge" version="0.2" />
+    <after>
+      <dep package="meta-gtk-osx-core"/>
+    </after>
+  </autotools>
+</moduleset>

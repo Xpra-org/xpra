@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+
+  <repository type="tarball" name="ftp.gnome.org" default="yes"
+              href="http://ftp.gnome.org/pub/GNOME/sources/"/>
+  <repository type="tarball" name="mozilla" href="ftp://ftp.mozilla.org/pub/"/>
+
+  <metamodule id="meta-gtk-osx-javascript">
+    <dependencies>
+      <dep package="gjs"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gtk-osx-bootstrap"/>
+    </after>
+  </metamodule>
+
+  <autotools id="gjs" autogenargs="--enable-installed-tests">
+    <branch version="1.38.1" module="gjs/1.38/gjs-1.38.1.tar.xz"
+            hash="sha256:6b2065a0e7bd1db562a70c5fd52ea2499097f1cf02c9c279d1b82b660bfb8176">
+      <patch strip="1"
+             file="http://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Fix-uint-type-in-variable.patch"/>
+    </branch>
+    <dependencies>
+      <dep package="gobject-introspection"/>
+      <dep package="js17"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="js17" check-target="false" autogen-sh="configure"
+             supports-non-srcdir-builds="no"
+             autogenargs="--enable-threadsafe --with-system-nspr --with-system-zlib --enable-system-ffi">
+    <branch repo="mozilla" module="js/mozjs17.0.0.tar.gz" version="17.0.0"
+            hash="md5:20b6f8f1140ef6e47daa3b16965c9202"
+            checkoutdir="js17-17.0.0">
+      <patch file="js17-build-fixes.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="libffi"/>
+      <dep package="nspr"/>
+    </dependencies>
+    <after>
+      <dep package="python"/>
+      <dep package="zlib"/>
+    </after>
+  </autotools>
+
+  <autotools id="js24" autogen-sh="configure"
+             autogenargs="--with-system-nspr --with-system-zlib --enable-system-ffi --enable-threadsafe">
+    <branch repo="mozilla" module="js/mozjs-24.2.0.tar.bz2" version="24.2.0"
+            checkoutdir="js24-24.2.0" source-subdir="js/src"
+            hash="sha1:ce779081cc11bd0c871c6f303fc4a0091cf4fe66"/>
+    <dependencies>
+      <dep package="libffi"/>
+      <dep package="nspr"/>
+    </dependencies>
+    <after>
+      <dep package="python"/>
+      <dep package="zlib"/>
+    </after>
+  </autotools>
+
+  <autotools id="nspr" autogen-sh="mozilla/nsprpub/configure"
+             autogenargs="--enable-64bit" check-target="false">
+    <branch repo="mozilla" version="4.9.2"
+            module="nspr/releases/v4.9.2/src/nspr-4.9.2.tar.gz">
+      <patch file="nspr.autogen.patch" strip="1"/>
+      <patch file="nspr.config_64bits.patch" strip="1"/>
+      <patch file="nspr.hostcompiler.patch" strip="1"/>
+    </branch>
+  </autotools>
+
+</moduleset>
