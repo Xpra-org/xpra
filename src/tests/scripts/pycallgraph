@@ -691,6 +691,12 @@ if runtime>0:
         os.kill(os.getpid(), signal.SIGINT)
     gobject.timeout_add((runtime+delay)*1000, force_exit)
 
+#ensure we don't call os._exit() when trying to force quit:
+def no_force_quit(*args):
+    print("no_force_quit%s called" % str(args))
+from xpra import os_util
+os_util.force_quit = no_force_quit
+
 print("calling xpra with: %s" % str(sys.argv))
 import xpra.scripts.main
 x = xpra.scripts.main.main(__file__, sys.argv)

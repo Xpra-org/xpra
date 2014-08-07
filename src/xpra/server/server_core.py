@@ -247,7 +247,8 @@ class ServerCore(object):
         self.timeout_add(500, quit_timer)
         def force_quit(*args):
             log.debug("force_quit()")
-            os._exit(1)
+            from xpra import os_util
+            os_util.force_quit()
         self.timeout_add(5000, force_quit)
         log("clean_quit(..) quit timers scheduled")
 

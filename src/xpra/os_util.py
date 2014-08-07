@@ -195,6 +195,10 @@ def load_binary_file(filename):
     except:
         return None
 
+#here so we can override it when needed
+def force_quit(status=1):
+    os._exit(status)
+
 
 def main():
     from xpra.log import Logger
