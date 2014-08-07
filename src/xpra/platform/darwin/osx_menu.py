@@ -96,6 +96,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         assert self.client
         _, info_menu = self.menus.get("Info")
         info_menu.append(self.make_sessioninfomenuitem())
+        info_menu.append(self.make_bugreportmenuitem())
         features_menu = self.make_osxmenu("Features")
         features_menu.add(self.make_bellmenuitem())
         features_menu.add(self.make_cursorsmenuitem())
