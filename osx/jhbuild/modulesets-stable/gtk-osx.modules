@@ -45,7 +45,7 @@
   <include href="gtk-osx-themes.modules"/>
   <include href="gtk-osx-unsupported.modules"/>
   <include href="gtk-osx-universal.modules"/>
-
+  <include href="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra.modules"/> <!--include for simplicity-->
   <metamodule id="meta-gtk-osx-core">
     <dependencies>
       <dep package="gtk+"/>
