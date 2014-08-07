@@ -4,11 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-""" bug_report.py
-
-This is a simple GUI for starting the xpra client.
-
-"""
 
 import os.path
 import sys
@@ -124,7 +119,8 @@ class BugReport(object):
                    ("encoding", "Encodings",        codec_versions, "Picture encodings supported"),
                    ("sound",    "Sound",            get_sound_info, "Sound codecs and GStreamer version information"),
                    ("keyboard", "Keyboard Mapping", get_gtk_keymap, "Keyboard layout and key mapping"),
-                   ("xpra-info","Server Info",      self.xpra_info, "Full server information from 'xpra info'")
+                   ("xpra-info","Server Info",      self.xpra_info, "Full server information from 'xpra info'"),
+                   ("screenshot", "Screenshot",     None,           "Takes a screenshot"),
                    )
         for name, title, value_cb, tooltip in self.toggles:
             cb = gtk.CheckButton(title+[" (not available)", ""][bool(value_cb)])
@@ -221,6 +217,8 @@ class BugReport(object):
                 except TypeError:
                     log.error("error on %s", value_cb, exc_info=True)
                     value = str(value_cb)
+                except Exception, e:
+                    value = e
             if type(value)==dict:
                 s = "\n".join("%s : %s" % (k.ljust(32), nonl(str(v))) for k,v in sorted(value.items()))
             else:
@@ -242,7 +240,7 @@ class BugReport(object):
         choose_file(self.window, "Save Bug Report Data", FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, self.do_save)
 
     def do_save(self, filename):
-        log.info("do_save(%s)", filename)
+        log("do_save(%s)", filename)
         basenoext, _ = os.path.splitext(os.path.basename(filename))
         data = self.get_text_data()
         import zipfile, time
