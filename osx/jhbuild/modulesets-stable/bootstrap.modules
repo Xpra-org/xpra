@@ -168,7 +168,7 @@
 	     makeargs="-k -i" makeinstallargs="-k -i install"
 	     autogen-sh="configure">
     <branch version="1.21" module="gtk-doc/1.21/gtk-doc-1.21.tar.xz"
-	    hash="sha256:a634d2e93d70468237033c06a17c97f29cf71a35ac5cc01c016324c965d42f73"/>
+	    hash="sha256:5d934d012ee08edd1585544792efa80da271652587ba5b843d2cea8e8b80ee3e"/>
     <dependencies>
       <dep package="gtk-osx-docbook"/>
     </dependencies>
