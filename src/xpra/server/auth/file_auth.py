@@ -170,7 +170,11 @@ class Authenticator(object):
         fpassword, uid, gid, displays, env_options, session_options = entry
         verify = hmac.HMAC(fpassword, salt).hexdigest()
         log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(salt), verify)
-        if verify!=challenge_response:
+        if hasattr(hmac, "compare_digest"):
+            eq = hmac.compare_digest(verify, challenge_response)
+        else:
+            eq = verify==challenge_response
+        if not eq:
             log("expected '%s' but got '%s'", verify, challenge_response)
             log.error("hmac password challenge for %s does not match", self.username)
             return False
