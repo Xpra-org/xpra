@@ -129,6 +129,18 @@ platform_import(globals(), "paths", False,
                 "get_user_conf_dir",
                 "get_default_socket_dir")
 
+def get_info():
+    return {
+            "default_conf.dir"  : get_default_conf_dir(),
+            "system_conf_dir"   : get_system_conf_dir(),
+            "user_conf_dir"     : get_user_conf_dir(),
+            "socket"            : get_default_socket_dir(),
+            "app"               : get_app_dir(),
+            "app.default"       : default_get_app_dir(),
+            "resources"         : get_resources_dir(),
+            "icons"             : get_icon_dir()
+            }
+
 
 def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
@@ -143,13 +155,7 @@ def main():
     from xpra.platform import init, clean
     try:
         init("Path-Info", "Path Info")
-        d = {"conf"         : get_default_conf_dir(),
-             "socket"       : get_default_socket_dir(),
-             "app"          : get_app_dir(),
-             "app.default"  : default_get_app_dir(),
-             "resources"    : get_resources_dir(),
-             "icons"        : get_icon_dir()}
-        print_dict(d)
+        print_dict(get_info())
     finally:
         clean()
 
