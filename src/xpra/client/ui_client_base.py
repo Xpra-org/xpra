@@ -994,21 +994,27 @@ class UIXpraClient(XpraClientBase):
         if iq<0:
             iq = 70
         capabilities["encoding.initial_quality"] = iq
+        sound_caps = {}
         try:
-            from xpra.sound.gstreamer_util import has_gst, add_gst_capabilities
-        except:
+            from xpra.sound.gstreamer_util import has_gst, get_info as get_gst_info
+            sound_caps.update(get_gst_info(receive=self.speaker_allowed, send=self.microphone_allowed,
+                                 receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
+        except Exception, e:
+            log.error("failed to setup sound: %s", e, exc_info=True)
+            self.speaker_allowed = False
+            self.microphone_allowed = False
             has_gst = False
         if has_gst:
             try:
-                from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
-                add_pulseaudio_capabilities(capabilities)
-                add_gst_capabilities(capabilities, receive=self.speaker_allowed, send=self.microphone_allowed,
-                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs, new_namespace=True)
-                soundlog("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
+                from xpra.sound.pulseaudio_util import get_info as get_pa_info
+                sound_caps.update(get_pa_info())
+                sound_caps.update(get_gst_info(receive=self.speaker_allowed, send=self.microphone_allowed,
+                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
             except Exception, e:
-                log.error("failed to setup sound: %s", e, exc_info=True)
-                self.speaker_allowed = False
-                self.microphone_allowed = False
+                pass
+        from xpra.util import updict
+        updict(capabilities, "sound", sound_caps)
+        soundlog("sound capabilities: %s", sound_caps)
         #batch options:
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
             evalue = os.environ.get("XPRA_BATCH_%s" % bprop.upper())

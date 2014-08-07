@@ -272,22 +272,6 @@ def plugin_str(plugin, options):
         s += " ".join([("%s=%s" % (k,v)) for k,v in options.items()])
     return s
 
-def add_gst_capabilities(capabilities, receive=True, send=True,
-                        receive_codecs=[], send_codecs=[], new_namespace=False):
-    if not has_gst:
-        return
-    if new_namespace:
-        capabilities["sound.gst.version"] = gst_version
-        capabilities["sound.pygst.version"] = pygst_version
-    else:
-        capabilities["gst_version"] = gst_version
-        capabilities["pygst_version"] = pygst_version
-    capabilities.update({
-                "sound.decoders"    : receive_codecs,
-                "sound.encoders"    : send_codecs,
-                "sound.receive"     : receive and len(receive_codecs)>0,
-                "sound.send"        : send and len(send_codecs)>0})
-
 
 WARNED_MULTIPLE_DEVICES = False
 def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
@@ -360,6 +344,19 @@ def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_p
         e = sys.exc_info()[1]
         log.error("error setting up sound: %s", e, exc_info=True)
         return    None
+
+
+def get_info(receive=True, send=True, receive_codecs=[], send_codecs=[]):
+    if not has_gst:
+        return  {}
+    return {"gst.version"   : gst_version,
+            "pygst.version" : pygst_version,
+            "decoders"      : receive_codecs,
+            "encoders"      : send_codecs,
+            "receive"       : receive and len(receive_codecs)>0,
+            "send"          : send and len(send_codecs)>0,
+            "plugins"       : get_all_plugin_names(),
+            }
 
 
 def main():

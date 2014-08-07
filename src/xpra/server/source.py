@@ -1006,21 +1006,27 @@ class ServerSource(object):
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
         if self.wants_sound:
+            sound_caps = {}
             try:
-                from xpra.sound.gstreamer_util import has_gst, add_gst_capabilities
-            except:
-                has_gst = False
-            if has_gst:
-                try:
-                    from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
-                    add_pulseaudio_capabilities(capabilities)
-                    add_gst_capabilities(capabilities,
-                                         receive=self.supports_microphone, send=self.supports_speaker,
-                                         receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs,
-                                         new_namespace=self.namespace)
-                    log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
-                except Exception, e:
-                    log.error("failed to setup sound: %s", e)
+                from xpra.sound.gstreamer_util import get_info as get_gst_info
+                sound_caps.update(get_gst_info(receive=self.supports_microphone, send=self.supports_speaker,
+                                 receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
+            except ImportError:
+                pass
+            except Exception, e:
+                log.error("failed to setup sound: %s", e)
+            try:
+                from xpra.sound.pulseaudio_util import get_info as get_pa_info
+                sound_caps.update(get_pa_info())
+            except ImportError:
+                pass
+            except Exception, e:
+                log.error("failed to setup sound: %s", e)
+            if self.namespace:
+                updict(capabilities, "sound", sound_caps)
+            else:
+                capabilities.update(sound_caps)
+            log("sound capabilities: %s", sound_caps)
         if self.wants_encodings or self.send_windows:
             assert self.encoding, "cannot send windows/encodings without an encoding!"
             encoding = self.encoding

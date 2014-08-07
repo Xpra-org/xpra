@@ -191,18 +191,28 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
             device_description = line[len("device.description = "):].strip('"')
     return devices
 
-def add_pulseaudio_capabilities(capabilities):
-    capabilities["sound.pulseaudio.id"] = get_pulse_id()
-    capabilities["sound.pulseaudio.server"] = get_pulse_server(False)
-
-
-def main():
-    log.enable_debug()
+def get_info():
+    info = {
+            "pulseaudio.id"     : get_pulse_id(),
+            "pulseaudio.server" : get_pulse_server(False),
+           }
+    i = 0
     for monitors in (True, False):
         for io in (True, False):
             devices = get_pa_device_options(monitors, io)
-            log.info("devices(%s,%s)=%s", monitors, io, devices)
+            #info[""]
+            for d,name in devices.items():
+                info["device.%s" % d] = name
+            i += 1
+    info["devices"] = i
+    return info
 
+
+def main():
+    if "-v" in sys.argv:
+        log.enable_debug()
+    for k,v in get_info().items():
+        log.info("%s : %s", k.ljust(64), v)
 
 if __name__ == "__main__":
     main()
