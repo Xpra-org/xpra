@@ -304,7 +304,7 @@ class WindowVideoSource(WindowSource):
         factors = (smult,                                       #speed multiplier
                    1 + int(self.is_OR)*2,                       #OR windows tend to be static
                    max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
-                   1 + int(batching)*2,                         #if we're not batching, allow more pixels
+                   1 + int(not batching)*2,                     #if we're not batching, allow more pixels
                    1.0 / (int(bool(self._video_encoder)) + 1)   #if we have a video encoder already, make it more likely we'll use it:
                    )
         max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
