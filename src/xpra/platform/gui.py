@@ -48,6 +48,7 @@ def get_native_notifier_classes():
 def gl_check():
     return None     #no problem
 
+take_screenshot = None
 ClientExtras = None
 
 from xpra.platform import platform_import
@@ -56,6 +57,7 @@ platform_import(globals(), "gui", False,
                 "do_init",
                 "gl_check",
                 "ClientExtras",
+                "take_screenshot",
                 "get_native_tray_menu_helper_classes",
                 "get_native_tray_classes",
                 "get_native_system_tray_classes",

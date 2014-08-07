@@ -212,8 +212,7 @@ class GTKTrayMenuBase(object):
 
         menu.append(self.make_aboutmenuitem())
         menu.append(self.make_sessioninfomenuitem())
-        if not is_gtk3():
-            menu.append(self.make_bugreportmenuitem())
+        menu.append(self.make_bugreportmenuitem())
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_bellmenuitem())
         if self.client.windows_enabled:

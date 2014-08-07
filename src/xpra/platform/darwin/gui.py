@@ -72,6 +72,56 @@ def system_bell(*args):
     Snd.SysBeep(1)
     return True
 
+try:
+    import Quartz.CoreGraphics as CG    #@UnresolvedImport
+    ALPHA = {
+             CG.kCGImageAlphaNone                  : "AlphaNone",
+             CG.kCGImageAlphaPremultipliedLast     : "PremultipliedLast",
+             CG.kCGImageAlphaPremultipliedFirst    : "PremultipliedFirst",
+             CG.kCGImageAlphaLast                  : "Last",
+             CG.kCGImageAlphaFirst                 : "First",
+             CG.kCGImageAlphaNoneSkipLast          : "SkipLast",
+             CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
+       }
+except:
+    CG = None
+
+
+def get_CG_imagewrapper():
+    from xpra.codecs.image_wrapper import ImageWrapper
+    assert CG, "cannot capture without Quartz.CoreGraphics"
+    #region = CG.CGRectMake(0, 0, 100, 100)
+    region = CG.CGRectInfinite
+    image = CG.CGWindowListCreateImage(region,
+                CG.kCGWindowListOptionOnScreenOnly,
+                CG.kCGNullWindowID,
+                CG.kCGWindowImageDefault)
+    width = CG.CGImageGetWidth(image)
+    height = CG.CGImageGetHeight(image)
+    bpc = CG.CGImageGetBitsPerComponent(image)
+    bpp = CG.CGImageGetBitsPerPixel(image)
+    rowstride = CG.CGImageGetBytesPerRow(image)
+    alpha = CG.CGImageGetAlphaInfo(image)
+    alpha_str = ALPHA.get(alpha, alpha)
+    log("get_CG_imagewrapper(..) image size: %sx%s, bpc=%s, bpp=%s, rowstride=%s, alpha=%s", width, height, bpc, bpp, rowstride, alpha_str)
+    prov = CG.CGImageGetDataProvider(image)
+    argb = CG.CGDataProviderCopyData(prov)
+    return ImageWrapper(0, 0, width, height, argb, "BGRX", 24, rowstride)
+
+def take_screenshot():
+    log("grabbing screenshot")
+    from PIL import Image
+    from xpra.os_util import StringIOClass
+    image = get_CG_imagewrapper()
+    w = image.get_width()
+    h = image.get_height()
+    img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", image.get_pixel_format(), image.get_rowstride())
+    buf = StringIOClass()
+    img.save(buf, "PNG")
+    data = buf.getvalue()
+    buf.close()
+    return w, h, "png", image.get_rowstride(), data
+
 
 try:
     import Foundation                           #@UnresolvedImport

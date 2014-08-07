@@ -9,8 +9,7 @@ log = Logger("shadow", "osx")
 
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
-from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.os_util import StringIOClass
+from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 
 import gtk.gdk
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
@@ -29,36 +28,11 @@ ALPHA = {
 class OSXRootWindowModel(RootWindowModel):
 
     def get_image(self, x, y, width, height, logger=None):
-        #region = CG.CGRectMake(0, 0, 100, 100)
-        region = CG.CGRectInfinite
-        image = CG.CGWindowListCreateImage(region,
-                    CG.kCGWindowListOptionOnScreenOnly,
-                    CG.kCGNullWindowID,
-                    CG.kCGWindowImageDefault)
-        width = CG.CGImageGetWidth(image)
-        height = CG.CGImageGetHeight(image)
-        bpc = CG.CGImageGetBitsPerComponent(image)
-        bpp = CG.CGImageGetBitsPerPixel(image)
-        rowstride = CG.CGImageGetBytesPerRow(image)
-        alpha = CG.CGImageGetAlphaInfo(image)
-        alpha_str = ALPHA.get(alpha, alpha)
-        if logger:
-            logger("OSXRootWindowModel.get_image(..) image size: %sx%s, bpc=%s, bpp=%s, rowstride=%s, alpha=%s", width, height, bpc, bpp, rowstride, alpha_str)
-        prov = CG.CGImageGetDataProvider(image)
-        argb = CG.CGDataProviderCopyData(prov)
-        return ImageWrapper(0, 0, width, height, argb, "BGRX", 24, rowstride)
+        return get_CG_imagewrapper()
 
     def take_screenshot(self):
         log("grabbing screenshot")
-        from PIL import Image
-        w, h = self.get_dimensions()
-        image = self.get_image(0, 0, w, h)
-        img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", image.get_pixel_format(), image.get_rowstride())
-        buf = StringIOClass()
-        img.save(buf, "PNG")
-        data = buf.getvalue()
-        buf.close()
-        return w, h, "png", image.get_rowstride(), data
+        return take_screenshot()
 
 
 class ShadowServer(ShadowServerBase, GTKServerBase):
