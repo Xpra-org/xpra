@@ -933,7 +933,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         app.init(clobber, opts)
     log("%s(%s)", app.init_sockets, sockets)
     app.init_sockets(sockets)
-    log("app.init_when_ready(%s)", app.init_when_ready, _when_ready)
+    log("%s(%s)", app.init_when_ready, _when_ready)
     app.init_when_ready(_when_ready)
 
     #we got this far so the sockets have initialized and
