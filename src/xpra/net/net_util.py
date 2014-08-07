@@ -151,11 +151,17 @@ if not sys.platform.startswith("win"):
 			s = create_string_buffer('\000' * 256)
 			return _libc.if_indextoname(c_uint(index), s)
 
+def get_info():
+	from xpra.net.protocol import get_network_caps
+	i = get_network_caps()
+	i["interfaces"] = get_interfaces()
+	return i
+
 
 def main():
 	from xpra.platform import init, clean
 	try:
-		init("Loader", "Encoding Info")
+		init("Network-Info", "Network Info")
 		verbose = "-v" in sys.argv or "--verbose" in sys.argv
 		if verbose:
 			log.enable_debug()
