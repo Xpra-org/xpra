@@ -50,7 +50,7 @@ class OSXRootWindowModel(RootWindowModel):
 
     def take_screenshot(self):
         log("grabbing screenshot")
-        import Image
+        from PIL import Image
         w, h = self.get_dimensions()
         image = self.get_image(0, 0, w, h)
         img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", image.get_pixel_format(), image.get_rowstride())
