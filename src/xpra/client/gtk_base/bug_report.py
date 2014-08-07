@@ -161,7 +161,7 @@ class BugReport(object):
                     btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
             return btn
-            
+
         #Copy:
         btn("Copy to clipboard", "Copy all data to clipboard", self.copy_clicked, "clipboard.png")
         btn("Save", "Save Bug Report", self.save_clicked, "download.png")

@@ -510,7 +510,7 @@ class ProxyInstanceProcess(Process):
             #which will queue the packet itself when done:
             return
         #we do want to reformat cursor packets...
-        #as they will have been uncompressed by the network layer already: 
+        #as they will have been uncompressed by the network layer already:
         elif packet_type=="cursor":
             #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
             #or:

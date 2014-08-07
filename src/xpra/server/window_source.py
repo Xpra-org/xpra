@@ -377,7 +377,7 @@ class WindowSource(object):
         self.update_quality()
         self.update_speed()
         self.set_encoding_options()
-    
+
     def set_encoding_options(self):
         #choose which encoding options methods to use:
         want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)

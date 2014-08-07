@@ -14,7 +14,7 @@ elif hasattr(ctypes.pythonapi, 'Py_InitModule4_64'):
     Py_ssize_t = ctypes.c_int64
 PyBuffer_FromReadWriteMemory = ctypes.pythonapi.PyBuffer_FromReadWriteMemory
 PyBuffer_FromReadWriteMemory.restype = ctypes.py_object
-PyBuffer_FromReadWriteMemory.argtypes = [ctypes.c_void_p, Py_ssize_t]    
+PyBuffer_FromReadWriteMemory.argtypes = [ctypes.c_void_p, Py_ssize_t]
 
 PyBuffer_FromMemory = ctypes.pythonapi.PyBuffer_FromMemory
 PyBuffer_FromMemory.restype = ctypes.py_object
