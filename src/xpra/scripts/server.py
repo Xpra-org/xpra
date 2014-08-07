@@ -50,7 +50,8 @@ def add_cleanup(f):
 
 
 def deadly_signal(signum, frame):
-    print("got deadly signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+    sys.stdout.write("got deadly signal %s, exiting\n" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+    sys.stdout.flush()
     run_cleanups()
     # This works fine in tests, but for some reason if I use it here, then I
     # get bizarre behavior where the signal handler runs, and then I get a
@@ -930,12 +931,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             return 1
         app = XpraServer()
         app.init(clobber, opts)
-    #ensure app.cleanup will fire all cleanups,
-    #incuding its own cleanups
-    _cleanups.insert(0, app.cleanup)
-    app.cleanup = run_cleanups
-
+    log("%s(%s)", app.init_sockets, sockets)
     app.init_sockets(sockets)
+    log("app.init_when_ready(%s)", app.init_when_ready, _when_ready)
     app.init_when_ready(_when_ready)
 
     #we got this far so the sockets have initialized and
@@ -967,7 +965,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         app.child_reaper = child_reaper
 
     try:
+        log("running %s", app.run)
         e = app.run()
+        log("%s()=%s", app.run, e)
     except KeyboardInterrupt:
         log.info("stopping on KeyboardInterrupt")
         e = 0
