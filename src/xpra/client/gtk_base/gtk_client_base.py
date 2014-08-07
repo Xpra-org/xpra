@@ -42,6 +42,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
         self.session_info = None
+        self.bug_report = None
 
     def init(self, opts):
         GObjectXpraClient.init(self, opts)
@@ -74,6 +75,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def cleanup(self):
         if self.session_info:
             self.session_info.destroy()
+            self.session_info = None
+        if self.bug_report:
+            self.bug_report.destroy()
+            self.bug_report = None
         UIXpraClient.cleanup(self)
 
     def show_session_info(self, *args):
@@ -88,6 +93,24 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.session_info = SessionInfo(self, self.session_name, pixbuf, self._protocol._conn, self.get_pixbuf)
         self.session_info.set_args(*args)
         self.session_info.show_all()
+
+    def show_bug_report(self, *args):
+        if self.bug_report:
+            self.bug_report.show()
+            return
+        self.send_info_request()
+        from xpra.client.gtk_base.bug_report import BugReport
+        self.bug_report = BugReport()
+        def init_bug_report():
+            #skip things we aren't using:
+            includes ={
+                       "keyboard"       : bool(self.keyboard_helper),
+                       "opengl"         : self.opengl_enabled,
+                       }
+            self.bug_report.init(show_about=False, xpra_info=self.server_last_info, includes=includes)
+            self.bug_report.show()
+        #ugly: gives the server time to send an info response..
+        self.timeout_add(1500, init_bug_report)
 
 
     def get_pixbuf(self, icon_name):

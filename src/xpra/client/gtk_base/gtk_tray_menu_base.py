@@ -194,6 +194,10 @@ class GTKTrayMenuBase(object):
     def show_session_info(self, *args):
         self.client.show_session_info(*args)
 
+    def show_bug_report(self, *args):
+        self.client.show_bug_report(*args)
+
+
     def get_image(self, *args):
         return self.client.get_image(*args)
 
@@ -208,6 +212,8 @@ class GTKTrayMenuBase(object):
 
         menu.append(self.make_aboutmenuitem())
         menu.append(self.make_sessioninfomenuitem())
+        if not is_gtk3():
+            menu.append(self.make_bugreportmenuitem())
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_bellmenuitem())
         if self.client.windows_enabled:
@@ -309,6 +315,12 @@ class GTKTrayMenuBase(object):
             #(which contain the menu widget and are of no interest to the 'show_session_info' function)
             self.show_session_info()
         return  self.handshake_menuitem(title, "statistics.png", None, show_session_info_cb)
+
+    def make_bugreportmenuitem(self):
+        def show_bug_report_cb(*args):
+            self.show_bug_report()
+        return  self.handshake_menuitem("Bug Report", "bugs.png", None, show_bug_report_cb)
+
 
     def make_bellmenuitem(self):
         def bell_toggled(*args):

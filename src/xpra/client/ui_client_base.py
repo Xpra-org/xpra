@@ -413,6 +413,9 @@ class UIXpraClient(XpraClientBase):
     def show_session_info(self, *args):
         log.warn("show_session_info() is not implemented in %s", self)
 
+    def show_bug_report(self, *args):
+        log.warn("show_bug_report() is not implemented in %s", self)
+
 
     def get_encodings(self):
         """
