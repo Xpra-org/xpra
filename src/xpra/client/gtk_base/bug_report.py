@@ -18,8 +18,6 @@ gobject.threads_init()
 pango = import_pango()
 
 
-from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, \
                                     WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file
 from xpra.client.gtk_base.about import about
@@ -283,6 +281,9 @@ class BugReport(object):
 
 
 def main():
+    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
+    gtk_main_quit_on_fatal_exceptions_enable()
+
     from xpra.platform import init as platform_init
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     platform_init("Xpra-Bug-Report", "Xpra Bug Report")

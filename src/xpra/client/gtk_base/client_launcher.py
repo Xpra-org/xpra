@@ -24,8 +24,6 @@ gobject.threads_init()
 pango = import_pango()
 
 
-from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, ENCRYPTION_CIPHERS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, is_gtk3, \
@@ -690,6 +688,9 @@ class ApplicationWindow:
 
 
 def main():
+    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
+    gtk_main_quit_on_fatal_exceptions_enable()
+
     from xpra.platform import init as platform_init
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     platform_init("Xpra-Launcher", "Xpra Connection Launcher")
