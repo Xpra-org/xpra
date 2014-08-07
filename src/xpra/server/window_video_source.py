@@ -123,14 +123,6 @@ class WindowVideoSource(WindowSource):
         self.non_video_encodings = []
 
 
-    def parse_csc_modes(self, csc_modes, full_csc_modes):
-        #only override if values are specified:
-        if csc_modes is not None and type(csc_modes) in (list, tuple):
-            self.csc_modes = csc_modes
-        if full_csc_modes is not None and type(full_csc_modes)==dict:
-            self.full_csc_modes = full_csc_modes
-
-
     def get_client_info(self):
         info = {
             "uses_swscale"              : self.uses_swscale,
@@ -143,7 +135,6 @@ class WindowVideoSource(WindowSource):
         for enc, csc_modes in (self.full_csc_modes or {}).items():
             info["csc_modes.%s" % enc] = csc_modes
         return info
-
 
     def get_info(self):
         info = WindowSource.get_info(self)
@@ -235,6 +226,15 @@ class WindowVideoSource(WindowSource):
         self._video_encoder.clean()
         self._video_encoder = None
 
+
+    def parse_csc_modes(self, csc_modes, full_csc_modes):
+        #only override if values are specified:
+        if csc_modes is not None and type(csc_modes) in (list, tuple):
+            self.csc_modes = csc_modes
+        if full_csc_modes is not None and type(full_csc_modes)==dict:
+            self.full_csc_modes = full_csc_modes
+
+
     def set_new_encoding(self, encoding, strict=None):
         if self.encoding!=encoding:
             #ensure we re-init the codecs asap:
@@ -253,6 +253,86 @@ class WindowVideoSource(WindowSource):
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
         log("set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
 
+
+    def get_encoding_options_default(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
+        """
+            decide whether we send a full window update using the video encoder,
+            or if a separate small region(s) is a better choice
+        """
+        def nonvideo(s=speed, q=quality):
+            s = max(0, min(100, s))
+            q = max(0, min(100, q))
+            return WindowSource.get_encoding_options_default(self, batching, pixel_count, ww, wh, s, q, current_encoding)
+
+        if current_encoding not in self.video_encodings:
+            #not doing video, bail out:
+            return nonvideo()
+
+        if ww*wh<=MAX_NONVIDEO_PIXELS:
+            #window is too small!
+            return nonvideo()
+
+        if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
+            #video encoder cannot handle this size!
+            #(maybe this should be an 'assert' statement here?)
+            return nonvideo()
+
+        if time.time()-self.statistics.last_resized<0.150:
+            #window has just been resized, may still resize
+            return nonvideo(q=quality-30)
+
+        if self._current_quality!=quality or self._current_speed!=speed:
+            #quality or speed override, best not to force video encoder re-init
+            return nonvideo()
+
+        def lossless(reason):
+            log("get_encoding_options_default(..) temporarily switching to lossless mode for %8i pixels: %s", pixel_count, reason)
+            return nonvideo(q=100)
+
+        #if speed is high, assume we have bandwidth to spare
+        smult = max(1, (speed-75)/5.0)
+        if pixel_count<=MAX_PIXELS_PREFER_RGB * smult:
+            return lossless("low pixel count")
+
+        sr = self.video_subregion.rectangle
+        if sr and (sr.width!=ww or sr.height!=wh):
+            #we have a video region, and this is not it, so don't use video
+            #raise the quality as the areas around video tend to not be graphics
+            return nonvideo(q=quality+30)
+
+        #calculate the threshold for using video vs small regions:
+        factors = (smult,                                       #speed multiplier
+                   1 + int(self.is_OR)*2,                       #OR windows tend to be static
+                   max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
+                   1 + int(batching)*2,                         #if we're not batching, allow more pixels
+                   1.0 / (int(bool(self._video_encoder)) + 1)   #if we have a video encoder already, make it more likely we'll use it:
+                   )
+        max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
+        if pixel_count<=max_nvp:
+            #below threshold
+            return nonvideo()
+
+        #ensure the dimensions we use for decision making are the ones actually used:
+        ww = ww & self.width_mask
+        wh = wh & self.height_mask
+        if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
+            #failsafe:
+            return nonvideo()
+        return [current_encoding]
+
+    def get_lossless_threshold(self, pixel_count, ww, wh, speed):
+        if self.video_subregion.rectangle:
+            #when we have a video region, lower the lossless threshold
+            #especially for small regions
+            return min(80, 10+speed/5+(100*pixel_count/(ww*wh)))
+        return WindowSource.get_lossless_threshold(self, pixel_count, ww, wh, speed)
+
+    def do_get_best_encoding(self, options, current_encoding, fallback):
+        #video encodings: always pick from the ordered list of options
+        #rather than sticking with the current encoding:
+        return self.pick_encoding(options, fallback)
+
+
     def unmap(self):
         WindowSource.cancel_damage(self)
         self.cleanup_codecs()
@@ -266,6 +346,7 @@ class WindowVideoSource(WindowSource):
             #drop a frame which is being processed
             self.cleanup_codecs()
 
+
     def full_quality_refresh(self, window, damage_options):
         #override so we reset the video region on full quality refresh
         self.video_subregion.reset()
@@ -276,14 +357,6 @@ class WindowVideoSource(WindowSource):
         #force batching when using video region
         #because the video region code is in the send_delayed path
         return self.video_subregion.rectangle is not None or WindowSource.must_batch(self, delay)
-
-
-    def get_lossless_threshold(self, pixel_count, ww, wh, speed):
-        if self.video_subregion.rectangle:
-            #when we have a video region, lower the lossless threshold
-            #especially for small regions
-            return min(80, 10+speed/5+(100*pixel_count/(ww*wh)))
-        return WindowSource.get_lossless_threshold(self, pixel_count, ww, wh, speed)
 
 
     def get_speed(self, encoding):
@@ -431,7 +504,7 @@ class WindowVideoSource(WindowSource):
 
         #decide if we want to send the rest now or delay some more:
         event_count = max(0, self.statistics.damage_events_count - self.video_subregion.set_at)
-        #only delay once the video encoder has deal with a few frames:
+        #only delay once the video encoder has dealt with a few frames:
         if event_count>100:
             elapsed = int(1000.0*(time.time()-damage_time)) + self.video_subregion.non_waited
             if elapsed>=self.video_subregion.non_max_wait:
@@ -464,78 +537,6 @@ class WindowVideoSource(WindowSource):
 
     def must_encode_full_frame(self, window, encoding):
         return self.full_frames_only or self.is_tray or (encoding in self.video_encodings)
-
-
-    def get_encoding_options(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
-        """
-            decide whether we send a full window update using the video encoder,
-            or if a separate small region(s) is a better choice
-        """
-        def nonvideo(s=speed, q=quality):
-            s = max(0, min(100, s))
-            q = max(0, min(100, q))
-            return WindowSource.get_encoding_options(self, batching, pixel_count, ww, wh, s, q, current_encoding)
-
-        if current_encoding not in self.video_encodings:
-            #not doing video, bail out:
-            return nonvideo()
-
-        if ww*wh<=MAX_NONVIDEO_PIXELS:
-            #window is too small!
-            return nonvideo()
-
-        if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
-            #video encoder cannot handle this size!
-            #(maybe this should be an 'assert' statement here?)
-            return nonvideo()
-
-        if time.time()-self.statistics.last_resized<0.150:
-            #window has just been resized, may still resize
-            return nonvideo(q=quality-30)
-
-        if self._current_quality!=quality or self._current_speed!=speed:
-            #quality or speed override, best not to force video encoder re-init
-            return nonvideo()
-
-        def lossless(reason):
-            log("get_encoding_options(..) temporarily switching to lossless mode for %8i pixels: %s", pixel_count, reason)
-            return nonvideo(q=100)
-
-        #if speed is high, assume we have bandwidth to spare
-        smult = max(1, (speed-75)/5.0)
-        if pixel_count<=MAX_PIXELS_PREFER_RGB * smult:
-            return lossless("low pixel count")
-
-        sr = self.video_subregion.rectangle
-        if sr and (sr.width!=ww or sr.height!=wh):
-            #we have a video region, and this is not it, so don't use video
-            #raise the quality as the areas around video tend to not be graphics
-            return nonvideo(q=quality+30)
-
-        #calculate the threshold for using video vs small regions:
-        factors = (smult,                                       #speed multiplier
-                   1 + int(self.is_OR)*2,                       #OR windows tend to be static
-                   max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
-                   1 + int(batching)*2,                         #if we're not batching, allow more pixels
-                   1.0 / (int(bool(self._video_encoder)) + 1)   #if we have a video encoder already, make it more likely we'll use it:
-                   )
-        max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
-        if pixel_count<=max_nvp:
-            #below threshold
-            return nonvideo()
-
-        #ensure the dimensions we use for decision making are the ones actually used:
-        ww = ww & self.width_mask
-        wh = wh & self.height_mask
-        if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
-            #failsafe:
-            return nonvideo()
-        return [current_encoding]
-
-    def do_get_best_encoding(self, options, current_encoding, fallback):
-        #video encodings: always pick from the ordered list of options
-        #rather than sticking with the current encoding:
-        return self.pick_encoding(options, fallback)
 
 
     def reconfigure(self, force_reload=False):
