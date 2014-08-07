@@ -489,7 +489,7 @@ class WindowSource(object):
             quality = min(99, quality)
         else:
             info = {}
-            quality = self._fixed_min_quality, min(100, quality)
+            quality = min(100, quality)
         self._current_quality = int(quality)
         log("update_quality() info=%s, quality=%s", info, self._current_quality)
         self._encoding_quality.append((time.time(), info, self._current_quality))
