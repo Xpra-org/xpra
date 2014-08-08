@@ -320,17 +320,10 @@ class WindowVideoSource(WindowSource):
             return nonvideo()
         return [current_encoding]
 
-    def get_lossless_threshold(self, pixel_count, ww, wh, speed):
-        if self.video_subregion.rectangle:
-            #when we have a video region, lower the lossless threshold
-            #especially for small regions
-            return min(80, 10+speed/5+(100*pixel_count/(ww*wh)))
-        return WindowSource.get_lossless_threshold(self, pixel_count, ww, wh, speed)
-
     def do_get_best_encoding(self, options, current_encoding, fallback):
         #video encodings: always pick from the ordered list of options
         #rather than sticking with the current encoding:
-        return self.pick_encoding(options, fallback)
+        return self.pick_encoding(options + fallback)
 
 
     def unmap(self):
@@ -539,7 +532,7 @@ class WindowVideoSource(WindowSource):
         return self.full_frames_only or self.is_tray or (encoding in self.video_encodings)
 
 
-    def reconfigure(self, force_reload=False):
+    def update_encoding_options(self, force_reload=False):
         """
             This is called when we want to force a full re-init (force_reload=True)
             or from the timer that allows to tune the quality and speed.
@@ -549,8 +542,7 @@ class WindowVideoSource(WindowSource):
             This uses get_video_pipeline_options() to get a list of pipeline
             options with a score for each.
         """
-        if not WindowSource.reconfigure(self, force_reload):
-            return
+        WindowSource.update_encoding_options(self, force_reload)
         log("reconfigure(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
         if self.supports_video_subregion:
             if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE:
@@ -559,8 +551,17 @@ class WindowVideoSource(WindowSource):
             else:
                 #FIXME: small race if a refresh timer is due when we change encoding - meh
                 self.video_subregion.reset()
-        if not self._video_encoder:
-            return
+
+            if self.video_subregion.rectangle:
+                #when we have a video region, lower the lossless threshold
+                #especially for small regions
+                self._lossless_threshold_base = min(80, 10+self._current_speed/5)
+                self._lossless_threshold_pixel_boost = 90
+
+        if self._video_encoder:
+            self.check_pipeline_score(force_reload)
+
+    def check_pipeline_score(self, force_reload):
         try:
             self._lock.acquire()
             ve = self._video_encoder
