@@ -14,6 +14,7 @@
 %define requires_selinux %{nil}
 %define requires_lzo %{nil}
 %define requires_lz4 python-lz4
+%define requires_pycrypto python-crypto
 %define requires_fakexinerama libfakeXinerama
 %define avcodec_build_args %{nil}
 %define webp_build_args --with-webp
@@ -160,7 +161,7 @@ Vendor: http://xpra.org/
 Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
-Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_fakexinerama} %{requires_selinux}
+Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_fakexinerama} %{requires_selinux} %{requires_pycrypto}
 %if %{defined fedora}
 BuildRequires: python, setuptool
 BuildRequires: ffmpeg-devel
