@@ -1,5 +1,5 @@
-%{!?python2_sitearch: %define python2_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 %{!?__python2: %define __python2 python2}
+%{!?python2_sitearch: %define python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Name:           PyOpenGL-accelerate
 Version:        3.1.0
@@ -10,7 +10,13 @@ Group:          System Environment/Libraries
 URL:            http://pyopengl.sourceforge.net/
 Source0:        http://downloads.sourceforge.net/pyopengl/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  python-devel python-setuptools-devel Cython PyOpenGL
+BuildRequires:  python-devel Cython PyOpenGL
+#see: http://fedoraproject.org/wiki/Changes/Remove_Python-setuptools-devel
+%if 0%{?fedora}
+BuildRequires:  python-setuptools
+%else
+BuildRequires:  python-setuptools-devel
+%endif
 Requires:       PyOpenGL
 
 %description

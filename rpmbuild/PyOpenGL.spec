@@ -9,7 +9,13 @@ Group:          System Environment/Libraries
 URL:            http://pyopengl.sourceforge.net/
 Source0:        http://downloads.sourceforge.net/pyopengl/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  python-devel python-setuptools-devel
+BuildRequires:  python-devel
+#see: http://fedoraproject.org/wiki/Changes/Remove_Python-setuptools-devel
+%if 0%{?fedora}
+BuildRequires:  python-setuptools
+%else
+BuildRequires:  python-setuptools-devel
+%endif
 BuildArch:      noarch
 Requires:       numpy python-setuptools freeglut
 # in some other repositories this is named python-opengl
