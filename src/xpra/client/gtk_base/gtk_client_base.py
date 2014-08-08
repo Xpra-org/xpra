@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import sys
-import os
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk
 gobject = import_gobject()
 gtk = import_gtk()
