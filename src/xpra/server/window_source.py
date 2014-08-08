@@ -995,7 +995,8 @@ class WindowSource(object):
         if not window.is_managed():
             log("the window %s is not composited!?", window)
             return
-        sequence = self._sequence + 1
+        self._sequence += 1
+        sequence = self._sequence
         if self.is_cancelled(sequence):
             log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
@@ -1011,12 +1012,10 @@ class WindowSource(object):
             return
 
         now = time.time()
-        process_damage_time = now
-        self._sequence += 1
         log("process_damage_regions: wid=%s, adding %s pixel data to queue, elapsed time: %.1f ms, request rgb time: %.1f ms",
-                self.wid, coding, 1000.0*(now-damage_time), 1000.0*(now-rgb_request_time))
+                self.wid, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
-        self.queue_damage(self.make_data_packet_cb, window, damage_time, process_damage_time, self.wid, image, coding, sequence, options)
+        self.queue_damage(self.make_data_packet_cb, window, damage_time, now, self.wid, image, coding, sequence, options)
 
     def make_data_packet_cb(self, window, damage_time, process_damage_time, wid, image, coding, sequence, options):
         """ This function is called from the damage data thread!
