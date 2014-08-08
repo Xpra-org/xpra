@@ -17,8 +17,8 @@ License:        GPLv2+
 Group:          Development/Languages/Python
 Source:         https://pypi.python.org/packages/source/l/lz4/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-
 BuildRequires:  python-devel
+Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
 
 %description
 This package provides bindings for the lz4 compression library
@@ -31,6 +31,12 @@ http://code.google.com/p/lz4/ by Yann Collet.
 
 %prep
 %setup -q -n lz4-%{version}
+#only needed on centos (a fairly brutal solution):
+%if 0%{?fedora:1}
+#should work... until things get out of sync again
+%else
+%patch0 -p1
+%endif
 
 %build
 export CFLAGS="%{optflags}"
@@ -60,4 +66,3 @@ rm -rf %{buildroot}
 
 * Sun Dec 8 2013 Stephen Gauthier <sgauthier@spikes.com> - 0.6.0-0
 - First version for Fedora Extras
-

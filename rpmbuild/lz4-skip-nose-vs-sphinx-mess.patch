@@ -1,0 +1,11 @@
+--- a/setup.py  2014-08-08 05:00:01.054064000 -0400
++++ b/setup.py  2014-08-08 05:00:10.824064000 -0400
+@@ -29,8 +29,6 @@
+             "-DLZ4_VERSION=\"r119\"",
+         ])
+     ],
+-    setup_requires=["nose>=1.0"],
+-    test_suite = "nose.collector",
+     classifiers=[
+         'Development Status :: 5 - Production/Stable',
+         'License :: OSI Approved :: BSD License',
