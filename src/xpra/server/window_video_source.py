@@ -12,7 +12,7 @@ from threading import Lock
 from xpra.net.compression import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, get_default_csc_modes, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
-from xpra.server.window_source import WindowSource, MAX_PIXELS_PREFER_RGB, STRICT_MODE
+from xpra.server.window_source import WindowSource, STRICT_MODE
 from xpra.server.video_subregion import VideoSubregion
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.util import updict
@@ -254,7 +254,7 @@ class WindowVideoSource(WindowSource):
         log("set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
 
 
-    def get_encoding_options_default(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
+    def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=[]):
         """
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
@@ -262,7 +262,7 @@ class WindowVideoSource(WindowSource):
         def nonvideo(s=speed, q=quality):
             s = max(0, min(100, s))
             q = max(0, min(100, q))
-            return WindowSource.get_encoding_options_default(self, batching, pixel_count, ww, wh, s, q, current_encoding)
+            return WindowSource.get_best_encoding(self, batching, pixel_count, ww, wh, s, q, current_encoding, fallback)
 
         if current_encoding not in self.video_encodings:
             #not doing video, bail out:
@@ -290,8 +290,7 @@ class WindowVideoSource(WindowSource):
             return nonvideo(q=100)
 
         #if speed is high, assume we have bandwidth to spare
-        smult = max(1, (speed-75)/5.0)
-        if pixel_count<=MAX_PIXELS_PREFER_RGB * smult:
+        if pixel_count<=self._small_as_rgb:
             return lossless("low pixel count")
 
         sr = self.video_subregion.rectangle
@@ -301,7 +300,7 @@ class WindowVideoSource(WindowSource):
             return nonvideo(q=quality+30)
 
         #calculate the threshold for using video vs small regions:
-        factors = (smult,                                       #speed multiplier
+        factors = (max(1, (speed-75)/5.0),                      #speed multiplier
                    1 + int(self.is_OR)*2,                       #OR windows tend to be static
                    max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
                    1 + int(not batching)*2,                     #if we're not batching, allow more pixels
@@ -318,7 +317,7 @@ class WindowVideoSource(WindowSource):
         if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
             #failsafe:
             return nonvideo()
-        return [current_encoding]
+        return current_encoding
 
     def do_get_best_encoding(self, options, current_encoding, fallback):
         #video encodings: always pick from the ordered list of options

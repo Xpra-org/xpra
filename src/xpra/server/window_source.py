@@ -409,6 +409,7 @@ class WindowSource(object):
         self._lossless_threshold_base = min(95, 75+self._current_speed/5)
         self._lossless_threshold_pixel_boost = 20
         #calculate the threshold for using rgb
+        #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
         qmult = max(0, self._current_quality/20.0)
         self._small_as_rgb = int(MAX_PIXELS_PREFER_RGB * smult * qmult * (1 + int(self.is_OR)*2))
