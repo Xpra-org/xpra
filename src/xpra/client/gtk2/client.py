@@ -245,7 +245,7 @@ class XpraClient(GTKXpraClient):
                 if type(v)==Uncompressed:
                     #register the compressor which will fire in protocol.encode:
                     def compress_clipboard():
-                        log("compress_clipboard() compressing %s", args, v)
+                        clipboardlog("compress_clipboard() compressing %s", args, v)
                         return self.compressed_wrapper(v.datatype, v.data)
                     v.compress = compress_clipboard
             self.send(*packet)
