@@ -26,6 +26,7 @@ from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.client.window_border import WindowBorder
+from xpra.net.compression import Uncompressed
 from xpra.log import Logger
 
 log = Logger("gtk", "client")
@@ -238,7 +239,6 @@ class XpraClient(GTKXpraClient):
                 clipboardlog("clipboard is disabled, not sending clipboard packet")
                 return
             #handle clipboard compression if needed:
-            from xpra.net.compression import Uncompressed
             packet = list(parts)
             for i in range(len(packet)):
                 v = packet[i]
