@@ -24,6 +24,7 @@ from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Uncompressed
 
 
+MIN_CLIPBOARD_COMPRESSION_SIZE = 512
 MAX_CLIPBOARD_PACKET_SIZE = 4*1024*1024
 
 ALL_CLIPBOARDS = ["CLIPBOARD", "PRIMARY", "SECONDARY"]
@@ -346,7 +347,9 @@ class ClipboardProtocolHelperBase(object):
             log.warn("clipboard contents are too big and have not been sent:"
                      " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
             return  None
-        return Uncompressed("clipboard: %s / %s" % (dtype, dformat), wire_data)
+        if type(wire_data)==str and len(wire_data)>=MIN_CLIPBOARD_COMPRESSION_SIZE:
+            return Uncompressed("clipboard: %s / %s" % (dtype, dformat), wire_data)
+        return wire_data
 
     def _process_clipboard_contents(self, packet):
         request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:8]
