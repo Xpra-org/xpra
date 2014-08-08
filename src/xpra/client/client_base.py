@@ -142,7 +142,7 @@ class XpraClientBase(object):
             sys.stderr.flush()
             signal.signal(signal.SIGINT, deadly_signal)
             signal.signal(signal.SIGTERM, deadly_signal)
-            self.timeout_add(0, self.disconnect_and_quit(128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum)))
+            self.timeout_add(0, self.disconnect_and_quit, 128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
 
