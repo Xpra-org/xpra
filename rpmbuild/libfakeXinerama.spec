@@ -46,5 +46,5 @@ rm -rf %{buildroot}
 %postun -p /sbin/ldconfig
 
 %changelog
-* Mon Feb 03 2014 Antoine Martin <antoine@devloop.org.uk - 0.1.0-3.0
+* Mon Feb 03 2014 Antoine Martin <antoine@devloop.org.uk> - 0.1.0-3.0
 - First version
