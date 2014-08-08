@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import time
-import os
 
 from xpra.log import Logger
 log = Logger("encoder", "x265")
