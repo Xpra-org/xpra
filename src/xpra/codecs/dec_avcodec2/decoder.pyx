@@ -172,7 +172,8 @@ def get_encodings():
     return CODECS
 
 def get_input_colorspaces(encoding):
-    assert encoding in CODECS
+    if encoding not in CODECS:
+        return []
     if encoding in ("h264", "h265"):
         return COLORSPACES
     elif encoding=="vp8":
@@ -183,7 +184,8 @@ def get_input_colorspaces(encoding):
     return ["YUV420P", "YUV422P", "YUV444P"]
 
 def get_output_colorspace(encoding, csc):
-    assert encoding in CODECS
+    if encoding not in CODECS:
+        return ""
     if encoding=="h264" and csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
         #h264 from plain RGB data is returned as "GBRP"!
         return "GBRP"
@@ -424,6 +426,8 @@ cdef class Decoder:
         return str(errnum)
 
     def __repr__(self):                      #@DuplicatedSignature
+        if self.is_closed():
+            return "dec_avcodec.Decoder(*closed*)"
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
     def get_info(self):                      #@DuplicatedSignature
