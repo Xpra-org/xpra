@@ -531,7 +531,7 @@ def usage(msg=None):
     if msg:
         print(msg)
     cmd = os.path.basename(sys.argv[0])
-    print("%s usage: -i include-set -e exclude-set -d DELAY -r RUNTIME -t thread-name -- XPRA ARGS" % sys.argv[0])
+    print("%s usage: -I include-expressions -i include-set -E exclude-expressions -e exclude-set -d DELAY -r RUNTIME -t thread-name -- XPRA ARGS" % sys.argv[0])
     print("The default thread is the main thread, other options are:")
     print(" - for both client and server: %s" % ", ".join(COMMON_THREAD_NAMES))
     print(" - server-only threads: %s" % ", ".join(SERVER_THREAD_NAMES))
@@ -595,12 +595,16 @@ trace_thread = None
 delay = 0
 runtime = 0
 for a,v in pairs:
-    if a not in ("-i", "-e", "-d", "-r", "-t"):
+    if a not in ("-i", "-I", "-e", "-E", "-d", "-r", "-t"):
         usage("invalid argument: %s" % a)
     if a=="-i":
         include += get_groups(v)
+    elif a=="-I":
+        include += v.split(",")
     elif a=="-e":
         exclude += get_groups(v)
+    elif a=="-E":
+        exclude += v.split(",")
     elif a=="-d":
         delay  = int(v)
     elif a=="-r":
