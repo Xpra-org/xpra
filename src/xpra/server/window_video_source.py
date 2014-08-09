@@ -76,7 +76,7 @@ class WindowVideoSource(WindowSource):
         WindowSource.init_encoders(self)
         self.csc_modes = get_default_csc_modes(self.encoding_client_options)       #for pre 0.12 clients: just one list of modes for all encodings..
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
-        self.parse_csc_modes(self.encoding_options.get("csc_modes"), self.encoding_options.get("full_csc_modes"))
+        self.parse_csc_modes(self.encoding_options.listget("csc_modes", default_value=None), self.encoding_options.dictget("full_csc_modes", default_value=None))
 
         self.video_encodings = self.video_helper.get_encodings()
         for x in self.video_encodings:
@@ -243,7 +243,7 @@ class WindowVideoSource(WindowSource):
 
     def set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
-        self.parse_csc_modes(properties.get("encoding.csc_modes"), properties.get("encoding.full_csc_modes"))
+        self.parse_csc_modes(properties.listget("encoding.csc_modes", default_value=None), properties.dictget("encoding.full_csc_modes", default_value=None))
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
         self.supports_video_subregion = properties.boolget("encoding.video_subregion", self.supports_video_subregion)
         self.uses_swscale = properties.boolget("encoding.uses_swscale", self.uses_swscale)
