@@ -153,7 +153,7 @@ class WindowSource(object):
         self._want_alpha = False
         self._lossless_threshold_base = 85
         self._lossless_threshold_pixel_boost = 20
-        self._small_as_rgb = MAX_PIXELS_PREFER_RGB
+        self._rgb_auto_threshold = MAX_PIXELS_PREFER_RGB
 
         self.init_encoders()
         self.update_encoding_selection(encoding)
@@ -271,7 +271,7 @@ class WindowSource(object):
         up("encoding.lossless_threshold", {
                 "base"                  : self._lossless_threshold_base,
                 "pixel_boost"           : self._lossless_threshold_pixel_boost})
-        info["encoding.rgb_threshold"] = self._small_as_rgb
+        info["encoding.rgb_threshold"] = self._rgb_auto_threshold
 
         up("property",  self.get_property_info())
         up("batch",     self.batch_config.get_info())
@@ -396,10 +396,10 @@ class WindowSource(object):
         #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
         qmult = max(0, self._current_quality/20.0)
-        self._small_as_rgb = int(MAX_PIXELS_PREFER_RGB * smult * qmult * (1 + int(self.is_OR)*2))
+        self._rgb_auto_threshold = int(MAX_PIXELS_PREFER_RGB * smult * qmult * (1 + int(self.is_OR)*2))
         self.get_best_encoding = self.get_best_encoding_impl()
         log("update_encoding_options(%s) want_alpha=%s, lossless threshold: %s / %s, small_as_rgb=%s, get_best_encoding=%s",
-                        force_reload, self._want_alpha, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._small_as_rgb, self.get_best_encoding)
+                        force_reload, self._want_alpha, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._rgb_auto_threshold, self.get_best_encoding)
 
     def get_best_encoding_impl(self):
         #choose which method to use for selecting an encoding
@@ -442,7 +442,7 @@ class WindowSource(object):
 
     def get_transparent_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
-        if "rgb32" in self.common_encodings and (pixel_count<self._small_as_rgb or quality>=90 and speed>=90):
+        if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or quality>=90 and speed>=90):
             return "rgb32"
         #choose webp for limited sizes:
         if "webp" in self.common_encodings:
@@ -457,7 +457,7 @@ class WindowSource(object):
         return self.common_encodings[0]
 
     def get_current_or_rgb(self, pixel_count, ww, wh, *args):
-        if pixel_count<self._small_as_rgb:
+        if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
         return self.encoding
 

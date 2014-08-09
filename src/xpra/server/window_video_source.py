@@ -66,11 +66,11 @@ class WindowVideoSource(WindowSource):
         #this will call init_vars():
         WindowSource.__init__(self, *args)
         #client uses uses_swscale (has extra limits on sizes)
-        self.uses_swscale = self.encoding_options.get("uses_swscale", True)
-        self.uses_csc_atoms = self.encoding_options.get("csc_atoms", False)
-        self.supports_video_scaling = self.encoding_options.get("video_scaling", False)
-        self.supports_video_reinit = self.encoding_options.get("video_reinit", False)
-        self.supports_video_subregion = self.encoding_options.get("video_subregion", False)
+        self.uses_swscale = self.encoding_options.boolget("uses_swscale", True)
+        self.uses_csc_atoms = self.encoding_options.boolget("csc_atoms", False)
+        self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
+        self.supports_video_reinit = self.encoding_options.boolget("video_reinit", False)
+        self.supports_video_subregion = self.encoding_options.boolget("video_subregion", False)
 
     def init_encoders(self):
         WindowSource.init_encoders(self)
@@ -244,9 +244,9 @@ class WindowVideoSource(WindowSource):
     def set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
         self.parse_csc_modes(properties.get("encoding.csc_modes"), properties.get("encoding.full_csc_modes"))
-        self.supports_video_scaling = properties.get("encoding.video_scaling", self.supports_video_scaling)
-        self.supports_video_subregion = properties.get("encoding.video_subregion", self.supports_video_subregion)
-        self.uses_swscale = properties.get("encoding.uses_swscale", self.uses_swscale)
+        self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
+        self.supports_video_subregion = properties.boolget("encoding.video_subregion", self.supports_video_subregion)
+        self.uses_swscale = properties.boolget("encoding.uses_swscale", self.uses_swscale)
         WindowSource.set_client_properties(self, properties)
         #encodings may have changed, so redo this:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
@@ -297,7 +297,7 @@ class WindowVideoSource(WindowSource):
             return nonvideo(q=100)
 
         #if speed is high, assume we have bandwidth to spare
-        if pixel_count<=self._small_as_rgb:
+        if pixel_count<=self._rgb_auto_threshold:
             return lossless("low pixel count")
 
         sr = self.video_subregion.rectangle
@@ -329,7 +329,7 @@ class WindowVideoSource(WindowSource):
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
         options = options or self.non_video_encodings
-        if pixel_count<self._small_as_rgb and "rgb24" in options:
+        if pixel_count<self._rgb_auto_threshold and "rgb24" in options:
             #high speed and high quality, rgb is still good
             return "rgb24"
         #use sliding scale for lossless threshold
