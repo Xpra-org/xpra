@@ -14,7 +14,7 @@ from xpra.util import CLIENT_EXIT
 from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, menuitem
 from xpra.client.client_base import EXIT_OK
 from xpra.client.gtk_base.about import about, close_about
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME, HIDDEN_ENCODINGS
 from xpra.log import Logger
 log = Logger("tray")
 
@@ -543,7 +543,11 @@ class GTKTrayMenuBase(object):
         return encodings
 
     def make_encodingssubmenu(self, handshake_complete=True):
-        encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+        all_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+        encodings = [x for x in all_encodings if x not in HIDDEN_ENCODINGS]
+        if not encodings:
+            #all we have, show the "bad" hidden ones then!
+            encodings = all_encodings
         encodings_submenu = make_encodingsmenu(self.get_current_encoding, self.set_current_encoding, encodings, self.client.server_encodings)
         self.popup_menu_workaround(encodings_submenu)
         return encodings_submenu

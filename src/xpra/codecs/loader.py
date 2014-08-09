@@ -191,7 +191,7 @@ ENCODINGS_TO_NAME = {
 
 ENCODINGS_HELP = {
       "h264"    : "H.264 video codec",
-      "h265"    : "H.265 (HEVC) video codec (slow)",
+      "h265"    : "H.265 (HEVC) video codec (slow and buggy - do not use!)",
       "vp8"     : "VP8 video codec",
       "vp9"     : "VP9 video codec (very slow - do not use!)",
       "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
@@ -203,6 +203,10 @@ ENCODINGS_HELP = {
       }
 
 HELP_ORDER = ("h264", "h265", "vp8", "vp9", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
+
+#those are so useless that we don't want the user to select them by mistake
+HIDDEN_ENCODINGS = ("h265", "vp9")
+
 
 def encodings_help(encodings):
     h = []
