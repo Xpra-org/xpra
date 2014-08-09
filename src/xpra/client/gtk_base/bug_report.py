@@ -30,7 +30,7 @@ log = Logger("util")
 
 class BugReport(object):
 
-    def init(self, show_about=True, xpra_info=None, includes={}):
+    def init(self, show_about=True, xpra_info=None, opengl_info=None, includes={}):
         self.xpra_info = xpra_info
         self.includes = includes
         self.window = gtk.Window()
@@ -96,11 +96,17 @@ class BugReport(object):
             from xpra.sound.gstreamer_util import get_info as get_sound_info
         except:
             get_sound_info = None
-        from xpra.net.net_util import get_info as get_net_info
-        try:
-            from xpra.client.gl.gl_check import check_support as get_gl_info
-        except:
-            get_gl_info = None
+        if opengl_info:
+            def get_gl_info():
+                return opengl_info
+        else:
+            from xpra.net.net_util import get_info as get_net_info
+            try:
+                from xpra.client.gl.gl_check import check_support
+                def get_gl_info():
+                    return check_support(force_enable=True)
+            except:
+                get_gl_info = None
         from xpra.platform.paths import get_info as get_path_info
         from xpra.version_util import get_version_info, get_platform_info, get_host_info
         def get_sys_info():
@@ -242,7 +248,9 @@ class BugReport(object):
             if value is None:
                 continue
             if type(value)==dict:
-                s = "\n".join("%s : %s" % (k.ljust(32), nonl(str(v))) for k,v in sorted(value.items()))
+                s = os.linesep.join("%s : %s" % (k.ljust(32), nonl(str(v))) for k,v in sorted(value.items()))
+            elif type(value) in (list, tuple):
+                s = os.linesep.join(str(x) for x in value)
             else:
                 s = str(value)
             data.append((title, tooltip, dtype, s))
@@ -250,7 +258,7 @@ class BugReport(object):
 
     def copy_clicked(self, *args):
         data = self.get_text_data()
-        text = "\n".join("%s: %s\n%s\n" % (title, tooltip, v) for (title,tooltip,dtype,v) in data if dtype=="txt")
+        text = os.linesep.join("%s: %s%s%s%s" % (title, tooltip, os.linesep, v, os.linesep) for (title,tooltip,dtype,v) in data if dtype=="txt")
         clipboard = gtk.clipboard_get(gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(text)
         log.info("%s characters copied to clipboard", len(text))

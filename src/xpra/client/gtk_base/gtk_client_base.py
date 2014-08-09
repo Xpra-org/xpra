@@ -109,7 +109,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                        "keyboard"       : bool(self.keyboard_helper),
                        "opengl"         : self.opengl_enabled,
                        }
-            self.bug_report.init(show_about=False, xpra_info=self.server_last_info, includes=includes)
+            self.bug_report.init(show_about=False, xpra_info=self.server_last_info, opengl_info=self.opengl_props, includes=includes)
             self.bug_report.show()
         #ugly: gives the server time to send an info response..
         self.timeout_add(1500, init_bug_report)
