@@ -266,10 +266,20 @@ class WindowVideoSource(WindowSource):
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
         """
-        def nonvideo(s=speed, q=quality):
-            s = max(0, min(100, s))
+        def nonvideo(q=quality):
+            s = max(0, min(100, speed))
             q = max(0, min(100, q))
             return self.get_best_nonvideo_encoding(pixel_count, ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
+
+        def lossless(reason):
+            log("get_best_encoding_video(..) temporarily switching to lossless mode for %8i pixels: %s", pixel_count, reason)
+            s = max(0, min(100, speed))
+            q = 100
+            return self.get_best_nonvideo_encoding(pixel_count, ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
+
+        #if speed is high, assume we have bandwidth to spare
+        if pixel_count<=self._rgb_auto_threshold:
+            return lossless("low pixel count")
 
         if current_encoding not in self.video_encodings:
             #not doing video, bail out:
@@ -284,21 +294,13 @@ class WindowVideoSource(WindowSource):
             #(maybe this should be an 'assert' statement here?)
             return nonvideo()
 
-        if time.time()-self.statistics.last_resized<0.150:
+        if time.time()-self.statistics.last_resized<0.350:
             #window has just been resized, may still resize
             return nonvideo(q=quality-30)
 
         if self._current_quality!=quality or self._current_speed!=speed:
             #quality or speed override, best not to force video encoder re-init
             return nonvideo()
-
-        def lossless(reason):
-            log("get_encoding_options_default(..) temporarily switching to lossless mode for %8i pixels: %s", pixel_count, reason)
-            return nonvideo(q=100)
-
-        #if speed is high, assume we have bandwidth to spare
-        if pixel_count<=self._rgb_auto_threshold:
-            return lossless("low pixel count")
 
         sr = self.video_subregion.rectangle
         if sr and (sr.width!=ww or sr.height!=wh):
