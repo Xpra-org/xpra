@@ -19,11 +19,11 @@ pango = import_pango()
 
 
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, \
-                                    WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file
+                                    WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
 from xpra.client.gtk_base.about import about
 from xpra.client.client_base import SIGNAMES
 from xpra.platform.paths import get_icon_dir
-from xpra.util import nonl
+from xpra.util import nonl, updict
 from xpra.log import Logger, enable_debug_for
 log = Logger("util")
 
@@ -110,12 +110,16 @@ class BugReport(object):
         from xpra.platform.paths import get_info as get_path_info
         from xpra.version_util import get_version_info, get_platform_info, get_host_info
         def get_sys_info():
-            return {
+            d = {}
+            for k,v in {
                     "version"       : get_version_info(),
                     "platform"      : get_platform_info(),
                     "host"          : get_host_info(),
                     "paths"         : get_path_info(),
-                    }
+                    "gtk"           : get_gtk_version_info(),
+                    }.items():
+                updict(d, k, v)
+            return d
         get_screenshot, take_screenshot_fn = None, None
         #screenshot: may have OS-specific code
         try:
@@ -139,8 +143,8 @@ class BugReport(object):
         self.toggles = (
                    ("system",       "txt",  "System",           get_sys_info,   "Xpra version, platform and host information"),
                    ("network",      "txt",  "Network",          get_net_info,   "Compression, packet encoding and encryption"),
-                   ("opengl",       "txt",  "OpenGL",           get_gl_info,    "OpenGL driver and features"),
                    ("encoding",     "txt",  "Encodings",        codec_versions, "Picture encodings supported"),
+                   ("opengl",       "txt",  "OpenGL",           get_gl_info,    "OpenGL driver and features"),
                    ("sound",        "txt",  "Sound",            get_sound_info, "Sound codecs and GStreamer version information"),
                    ("keyboard",     "txt",  "Keyboard Mapping", get_gtk_keymap, "Keyboard layout and key mapping"),
                    ("xpra-info",    "txt",  "Server Info",      self.xpra_info, "Full server information from 'xpra info'"),
