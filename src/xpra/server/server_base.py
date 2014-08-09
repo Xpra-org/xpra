@@ -1632,11 +1632,12 @@ class ServerBase(ServerCore):
     def _process_buffer_refresh(self, proto, packet):
         """ can be used for requesting a refresh, or tuning batch config, or both """
         wid, _, qual = packet[1:4]
-        options = typedict({})
-        client_properties = {}
         if len(packet)>=6:
             options = typedict(packet[4])
             client_properties = packet[5]
+        else:
+            options = typedict({})
+            client_properties = {}
         if wid==-1:
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:

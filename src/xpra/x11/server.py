@@ -664,9 +664,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
-        client_properties = {}
         if len(packet)>=7:
             client_properties = packet[6]
+        else:
+            client_properties = {}
         resize_counter = 0
         if len(packet)>=8:
             resize_counter = packet[7]
