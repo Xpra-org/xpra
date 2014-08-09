@@ -204,8 +204,8 @@ ENCODINGS_HELP = {
 
 HELP_ORDER = ("h264", "h265", "vp8", "vp9", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
 
-#those are so useless that we don't want the user to select them by mistake
-HIDDEN_ENCODINGS = ("h265", "vp9")
+#those are currently so useless that we don't want the user to select them by mistake
+PROBLEMATIC_ENCODINGS = ("h265", "vp9")
 
 
 def encodings_help(encodings):

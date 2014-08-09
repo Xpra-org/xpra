@@ -21,7 +21,7 @@ from xpra.server.server_core import ServerCore
 from xpra.os_util import thread, get_hex_uuid
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE
 from xpra.scripts.config import python_platform
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, codec_versions, has_codec, get_codec
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, codec_versions, has_codec, get_codec
 from xpra.codecs.codec_constants import get_PIL_encodings
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 if sys.version > '3':
@@ -1064,6 +1064,7 @@ class ServerBase(ServerCore):
              "core"                 : self.core_encodings,
              "allowed"              : self.allowed_encodings,
              "lossless"             : self.lossless_encodings,
+             "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
              "with_speed"           : [x for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb", "png", "png/P", "png/L")],
              "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
              "with_lossless_mode"   : self.lossless_mode_encodings}

@@ -32,7 +32,7 @@ from xpra.platform import set_application_name
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
 from xpra.codecs.codec_constants import get_PIL_decodings
-from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW
+from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
@@ -166,6 +166,7 @@ class UIXpraClient(XpraClientBase):
         self.server_generic_encodings = False
         self.server_encodings = []
         self.server_core_encodings = []
+        self.server_encodings_problematic = PROBLEMATIC_ENCODINGS
         self.server_encodings_with_speed = ()
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless = ()
@@ -1200,6 +1201,7 @@ class UIXpraClient(XpraClientBase):
         self.server_generic_encodings = c.boolget("encoding.generic")
         self.server_encodings = getenclist("encodings")
         self.server_core_encodings = getenclist("encodings.core", self.server_encodings)
+        self.server_encodings_problematic = getenclist("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
         self.server_encodings_with_speed = getenclist("encodings.with_speed", ("h264",)) #old servers only supported x264
         self.server_encodings_with_quality = getenclist("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = getenclist("encodings.with_lossless_mode", ())
