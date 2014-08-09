@@ -67,24 +67,29 @@ def get_version_info():
              }
     try:
         from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
+        props.update({
+                    "local_modifications"  : LOCAL_MODIFICATIONS,
+                    "revision"             : REVISION,
+                  })
+    except Exception, e:
+        log.warn("missing some source information: %s", e)
+    try:
         from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU, \
                                     COMPILER_VERSION, LINKER_VERSION, BUILD_TIME, PYTHON_VERSION, CYTHON_VERSION
         props.update({
-                    "local_modifications"  : LOCAL_MODIFICATIONS,
                     "date"                 : BUILD_DATE,
                     "time"                 : BUILD_TIME,
                     "by"                   : BUILT_BY,
                     "on"                   : BUILT_ON,
                     "bit"                  : BUILD_BIT,
                     "cpu"                  : BUILD_CPU,
-                    "revision"             : REVISION,
                     "compiler"             : COMPILER_VERSION,
                     "linker"               : LINKER_VERSION,
                     "python"               : PYTHON_VERSION,
                     "cython"               : CYTHON_VERSION,
                   })
-    except:
-        pass
+    except Exception, e:
+        log.warn("missing some build information: %s", e)
     return props
 
 def do_get_platform_info():
