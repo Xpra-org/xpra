@@ -261,7 +261,7 @@ class WindowVideoSource(WindowSource):
         return self.get_best_encoding_video
 
 
-    def get_best_encoding_video(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
+    def get_best_encoding_video(self, pixel_count, ww, wh, speed, quality, current_encoding):
         """
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
@@ -269,7 +269,7 @@ class WindowVideoSource(WindowSource):
         def nonvideo(s=speed, q=quality):
             s = max(0, min(100, s))
             q = max(0, min(100, q))
-            return WindowSource.get_best_encoding_default(self, batching, pixel_count, ww, wh, s, q, current_encoding)
+            return self.get_best_nonvideo_encoding(pixel_count, ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
 
         if current_encoding not in self.video_encodings:
             #not doing video, bail out:
@@ -310,7 +310,6 @@ class WindowVideoSource(WindowSource):
         factors = (max(1, (speed-75)/5.0),                      #speed multiplier
                    1 + int(self.is_OR)*2,                       #OR windows tend to be static
                    max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
-                   1 + int(not batching)*2,                     #if we're not batching, allow more pixels
                    1.0 / (int(bool(self._video_encoder)) + 1)   #if we have a video encoder already, make it more likely we'll use it:
                    )
         max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
@@ -325,6 +324,45 @@ class WindowVideoSource(WindowSource):
             #failsafe:
             return nonvideo()
         return current_encoding
+
+    def get_best_nonvideo_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding, options=[]):
+        #if we're here, then the window has no alpha (or the client cannot handle alpha)
+        #and we can ignore the current encoding
+        options = options or self.non_video_encodings
+        if pixel_count<self._small_as_rgb and "rgb24" in options:
+            #high speed and high quality, rgb is still good
+            return "rgb24"
+        #use sliding scale for lossless threshold
+        #(high speed favours switching to lossy sooner)
+        #take into account how many pixels need to be encoder:
+        #more pixels means we switch to lossless more easily
+        lossless_q = self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh)
+        if quality<lossless_q:
+            #lossy options:
+            if "jpeg" in options:
+                #assume that we have "turbojpeg",
+                #which beats everything in terms of efficiency for lossy compression:
+                return "jpeg"
+            #avoid large areas (too slow), especially at low speed and high quality:
+            if "webp" in options and pixel_count>16384:
+                max_webp = 1024*1024 * (200-quality)/100 * speed/100
+                if speed>30 and pixel_count<max_webp:
+                    return "webp"
+        else:
+            #lossless options:
+            #webp: don't enable it for "true" lossless (q>99) unless speed is high enough
+            #because webp forces speed=100 for true lossless mode
+            #also avoid very small and very large areas (both slow)
+            if "webp" in options and (quality<100 or speed>=50) and pixel_count>16384:
+                max_webp = 1024*1024 * (200-quality)/100 * speed/100
+                if pixel_count<max_webp:
+                    return "webp"
+            if "rgb24" in options and speed>75:
+                return "rgb24"
+            if "png" in options:
+                return "png"
+        #we failed to find a good match, default to the first of the options..
+        return options[0]
 
 
     def unmap(self):
@@ -389,12 +427,7 @@ class WindowVideoSource(WindowSource):
         #could have been cleared by another thread:
         if vr:
             w, h = vr.width, vr.height
-        encoding = self.auto_refresh_encodings[0]
-        encodings = self.get_best_encoding_default(False, ww*wh, w, h, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
-        refresh_encodings = [x for x in self.auto_refresh_encodings if x in encodings]
-        if refresh_encodings:
-            return refresh_encodings[0]
-        return encoding
+        return self.get_best_nonvideo_encoding(ww*wh, w, h, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, self.auto_refresh_encodings[0], self.auto_refresh_encodings)
 
     def remove_refresh_region(self, region):
         #override so we can update the subregion timers / regions tracking:
@@ -436,7 +469,7 @@ class WindowVideoSource(WindowSource):
         #so we can ensure we don't use the video encoder when we don't want to:
 
         def send_nonvideo(regions=regions, encoding=coding, exclude_region=None):
-            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=self.get_best_encoding_default)
+            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=self.get_best_nonvideo_encoding)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")

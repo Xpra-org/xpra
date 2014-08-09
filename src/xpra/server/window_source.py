@@ -398,6 +398,8 @@ class WindowSource(object):
         qmult = max(0, self._current_quality/20.0)
         self._small_as_rgb = int(MAX_PIXELS_PREFER_RGB * smult * qmult * (1 + int(self.is_OR)*2))
         self.get_best_encoding = self.get_best_encoding_impl()
+        log("update_encoding_options(%s) want_alpha=%s, lossless threshold: %s / %s, small_as_rgb=%s, get_best_encoding=%s",
+                        force_reload, self._want_alpha, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._small_as_rgb, self.get_best_encoding)
 
     def get_best_encoding_impl(self):
         #choose which method to use for selecting an encoding
@@ -419,15 +421,15 @@ class WindowSource(object):
         elif self._want_alpha:
             if self.encoding in ("rgb", "rgb32") and "rgb32" in self.common_encodings:
                 return self.encoding_is_rgb32
-            if self.encoding in ("png", "webp", "png/P", "png/L"):
+            if self.encoding in ("png", "webp", "png/P"):
                 #chosen encoding does alpha, stick to it:
                 #(prevents alpha bleeding artifacts,
                 # as different encoders may encode alpha differently)
                 return self.get_strict_encoding
             #choose an alpha encoding and keep it?
-            #stick to specified encoding when non-video?
             return self.get_transparent_encoding
-        return self.get_best_encoding_default
+        #stick to what is specified or use rgb for small regions:
+        return self.get_current_or_rgb
 
     def encoding_is_rgb32(self, *args):
         return "rgb32"
@@ -438,7 +440,7 @@ class WindowSource(object):
     def get_strict_encoding(self, *args):
         return self.encoding
 
-    def get_transparent_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
+    def get_transparent_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
         if "rgb32" in self.common_encodings and (pixel_count<self._small_as_rgb or quality>=90 and speed>=90):
             return "rgb32"
@@ -454,53 +456,10 @@ class WindowSource(object):
                 return x
         return self.common_encodings[0]
 
-    def get_best_encoding_default(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
-        current_encoding = {"rgb" : "rgb24"}.get(current_encoding, current_encoding)
-        if current_encoding in ("rgb24", "rgb32", "png"):
-            #the user has selected a lossless encoding:
-            quality = 100
-        options = []
-        #use sliding scale for lossless threshold
-        #(high speed favours switching to lossy sooner)
-        #take into account how many pixels need to be encoder:
-        #fewer pixels means we switch to lossless more easily
-        lossless_q = self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh)
-        #avoid large areas (too slow), especially at low speed and high quality:
-        max_webp = 1024*1024 * (200-quality)/100 * speed/100
-        #log.info("get_encoding_options%s lossless_q=%s, smult=%s, max_rgb=%s, max_webp=%s", (batching, pixel_count, ww, wh, speed, quality, current_encoding), lossless_q, smult, max_rgb, max_webp)
-        if quality<lossless_q:
-            #add lossy options
-            ALL_OPTIONS = ["jpeg", "png/P", "png/L", "rgb24"]
-            if pixel_count<self._small_as_rgb:
-                #high speed and high quality, rgb is still good
-                options.append("rgb24")
-            if speed>20:
-                #at medium to high speed, jpeg is always good
-                options.append("jpeg")
-            if speed>30 and 16384<pixel_count<max_webp:
-                #medium speed: webp compresses well (just a bit slow)
-                options.append("webp")
-        else:
-            #lossless options:
-            ALL_OPTIONS = ["png", "rgb24"]
-            if speed>75 or pixel_count<self._small_as_rgb:
-                #high speed, rgb is very good:
-                options.append("rgb24")
-            if 16384<pixel_count<max_webp:
-                #don't enable webp for "true" lossless (q>99) unless speed is high enough
-                #because webp forces speed=100 for true lossless mode
-                #also avoid very small and very large areas (both slow)
-                if quality<100 or speed>=50:
-                    options.append("webp")
-            #always allow png
-            options.append("png")
-        #current encoding is OK:
-        if current_encoding in options:
-            return current_encoding
-        for x in ALL_OPTIONS:
-            if x in self.common_encodings:
-                return x
-        return self.common_encodings[0]
+    def get_current_or_rgb(self, pixel_count, ww, wh, *args):
+        if pixel_count<self._small_as_rgb:
+            return "rgb24"
+        return self.encoding
 
 
     def unmap(self):
@@ -732,7 +691,7 @@ class WindowSource(object):
             if actual_encoding is None:
                 q = options.get("quality") or self._current_quality
                 s = options.get("speed") or self._current_speed
-                actual_encoding = self.get_best_encoding(False, w*h, ww, wh, s, q, self.encoding)
+                actual_encoding = self.get_best_encoding(w*h, ww, wh, s, q, self.encoding)
             if self.must_encode_full_frame(window, actual_encoding):
                 x, y = 0, 0
                 w, h = ww, wh
@@ -885,7 +844,7 @@ class WindowSource(object):
         quality = options.get("quality") or self._current_quality
         get_best_encoding = get_best_encoding or self.get_best_encoding
         def get_encoding(pixel_count):
-            return get_best_encoding(True, pixel_count, ww, wh, speed, quality, coding)
+            return get_best_encoding(pixel_count, ww, wh, speed, quality, coding)
 
         def send_full_window_update():
             actual_encoding = get_encoding(ww*wh)
@@ -1141,7 +1100,7 @@ class WindowSource(object):
             #choose an encoding:
             ww, wh = window.get_dimensions()
             encoding = self.auto_refresh_encodings[0]
-            encodings = self.get_best_encoding(False, ww*wh, ww, wh, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
+            encodings = self.get_best_encoding(ww*wh, ww, wh, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
             refresh_encodings = [x for x in self.auto_refresh_encodings if x in encodings]
             if refresh_encodings:
                 encoding = refresh_encodings[0]
