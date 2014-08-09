@@ -317,6 +317,12 @@ def add_modules(*mods):
     """
     global modules
     for x in mods:
+        #ugly path stripping:
+        if x.startswith("./"):
+            x = x[2:]
+        if x.endswith(".py"):
+            x = x[:-3]
+            x = x.replace("/", ".") #.replace("\\", ".")
         pathname = os.path.sep.join(x.split("."))
         #is this a file module?
         f = "%s.py" % pathname
@@ -757,6 +763,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     #ensure we remove the files we generate:
     CLEAN_FILES = [
                    "xpra/src_info.py",
+                   "xpra/build_info.py",
                    "xpra/gtk_common/gdk_atoms.c",
                    "xpra/x11/gtk_x11/constants.pxi",
                    "xpra/x11/gtk_x11/gdk_bindings.c",
