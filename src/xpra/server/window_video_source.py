@@ -12,7 +12,7 @@ from threading import Lock
 from xpra.net.compression import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, get_default_csc_modes, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
-from xpra.server.window_source import WindowSource, STRICT_MODE
+from xpra.server.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
 from xpra.server.video_subregion import VideoSubregion
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.util import updict
@@ -253,8 +253,11 @@ class WindowVideoSource(WindowSource):
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
         log("set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
 
+    def get_best_encoding_impl(self):
+        return self.get_best_encoding_video
 
-    def get_best_encoding(self, batching, pixel_count, ww, wh, speed, quality, current_encoding, fallback=[]):
+
+    def get_best_encoding_video(self, batching, pixel_count, ww, wh, speed, quality, current_encoding):
         """
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
@@ -262,7 +265,7 @@ class WindowVideoSource(WindowSource):
         def nonvideo(s=speed, q=quality):
             s = max(0, min(100, s))
             q = max(0, min(100, q))
-            return WindowSource.get_best_encoding(self, batching, pixel_count, ww, wh, s, q, current_encoding, fallback)
+            return WindowSource.get_best_encoding_default(self, batching, pixel_count, ww, wh, s, q, current_encoding)
 
         if current_encoding not in self.video_encodings:
             #not doing video, bail out:
@@ -319,11 +322,6 @@ class WindowVideoSource(WindowSource):
             return nonvideo()
         return current_encoding
 
-    def do_get_best_encoding(self, options, current_encoding, fallback):
-        #video encodings: always pick from the ordered list of options
-        #rather than sticking with the current encoding:
-        return self.pick_encoding(options + fallback)
-
 
     def unmap(self):
         WindowSource.cancel_damage(self)
@@ -378,7 +376,21 @@ class WindowVideoSource(WindowSource):
         now = time.time()
         encoding = self.auto_refresh_encodings[0]
         options = self.get_refresh_options()
-        WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options)
+        WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options, get_best_encoding=self.get_refresh_subregion_encoding)
+
+    def get_refresh_subregion_encoding(self, *args):
+        ww, wh = self.window_dimensions
+        w, h = ww, wh
+        vr = self.video_subregion.rectangle
+        #could have been cleared by another thread:
+        if vr:
+            w, h = vr.width, vr.height
+        encoding = self.auto_refresh_encodings[0]
+        encodings = self.get_best_encoding_default(False, ww*wh, w, h, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
+        refresh_encodings = [x for x in self.auto_refresh_encodings if x in encodings]
+        if refresh_encodings:
+            return refresh_encodings[0]
+        return encoding
 
     def remove_refresh_region(self, region):
         #override so we can update the subregion timers / regions tracking:
@@ -420,7 +432,7 @@ class WindowVideoSource(WindowSource):
         #so we can ensure we don't use the video encoder when we don't want to:
 
         def send_nonvideo(regions=regions, encoding=coding, exclude_region=None):
-            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, fallback=self.non_video_encodings)
+            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=self.get_best_encoding_default)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
