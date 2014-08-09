@@ -40,7 +40,7 @@ class BugReport(object):
         self.window.set_title("Xpra Bug Report")
         self.window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
 
-        icon_pixbuf = self.get_icon("xpra.png")
+        icon_pixbuf = self.get_icon("bugs.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(WIN_POS_CENTER)
@@ -50,6 +50,7 @@ class BugReport(object):
 
         # Title
         hbox = gtk.HBox(False, 0)
+        icon_pixbuf = self.get_icon("xpra.png")
         if icon_pixbuf and show_about:
             logo_button = gtk.Button("")
             settings = logo_button.get_settings()
