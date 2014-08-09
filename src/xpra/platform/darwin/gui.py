@@ -172,6 +172,9 @@ class ClientExtras(object):
 
     def setup_event_loop(self):
         if NSWorkspace is None:
+            self.notificationCenter = None
+            self.handler = None
+            log.warn("event loop not started")
             return
         ws = NSWorkspace.sharedWorkspace()
         self.notificationCenter = ws.notificationCenter()
