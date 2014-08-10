@@ -83,11 +83,7 @@ if not OpenGL_safety_check()[0]:
 def get_build_info():
     info = []
     try:
-        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
-        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, CYTHON_VERSION, COMPILER_VERSION
-        info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
-        if BUILD_DATE:
-            info.append(BUILD_DATE)
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS             #@UnresolvedImport
         try:
             mods = int(LOCAL_MODIFICATIONS)
         except:
@@ -96,6 +92,13 @@ def get_build_info():
             info.append("revision %s" % REVISION)
         else:
             info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
+    except Exception, e:
+        warn("Error: could not find the source information: %s" % e)
+    try:
+        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, CYTHON_VERSION, COMPILER_VERSION    #@UnresolvedImport
+        info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
+        if BUILD_DATE:
+            info.append(BUILD_DATE)
         if CYTHON_VERSION!="unknown" or COMPILER_VERSION!="unknown":
             info.append("")
         if CYTHON_VERSION!="unknown":
@@ -103,7 +106,7 @@ def get_build_info():
         if COMPILER_VERSION!="unknown":
             info.append(COMPILER_VERSION)
     except Exception, e:
-        warn("Error: could not find the source or build information: %s" % e)
+        warn("Error: could not find the build information: %s" % e)
     return info
 
 
