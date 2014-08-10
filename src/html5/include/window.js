@@ -1,10 +1,11 @@
 /*
  * Copyright (c) 2013 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Licensed under MPL 2.0
  *
  * xpra window
  *
- * Based on shape.js
+ * Based on shape.js but no longer requires it
  */
 
 /**
@@ -17,8 +18,10 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	"use strict";
 	// use me in jquery callbacks as we lose 'this'
 	var me = this;
-	//keep reference to the canvas:
+	//keep reference both the internal canvas and screen drawn canvas:
 	this.canvas = canvas_state;
+	this.offscreen_canvas = document.createElement("canvas");
+	//enclosing div in page DOM
 	this.div = jQuery("#" + String(wid));
 
 	//callbacks start null until we finish init:
@@ -142,12 +145,18 @@ XpraWindow.prototype.ensure_visible = function() {
 }
 
 XpraWindow.prototype.updateCSSGeometry = function() {
-	// set size of canvas if needed
+	// set size of both canvas if needed
 	if(this.canvas.width != this.w) {
 		this.canvas.width = this.w;
 	}
 	if(this.canvas.height != this.h) {
 		this.canvas.height = this.h;
+	}
+	if(this.offscreen_canvas.width != this.w) {
+		this.offscreen_canvas.width = this.w;
+	}
+	if(this.offscreen_canvas.height != this.h) {
+		this.offscreen_canvas.height = this.h;
 	}
 	// work out outer size
 	this.outerH = this.h + this.topoffset + this.bottomoffset;
@@ -181,6 +190,7 @@ XpraWindow.prototype.registerEventListener = function(event_type, useCapture) {
 		handler.call(self, e);
 	};
 	this.event_listeners[event_type] = fn;
+	// attach event listener to visible canvas
 	this.canvas["on"+event_type] = fn;
 };
 
@@ -257,10 +267,11 @@ XpraWindow.prototype.create_image_backing = function() {
 	var previous_image = this.image;
 	var img_geom = this.get_internal_geometry();
 	//show("createImageData: "+img_geom.toSource());
-	this.image = this.canvas.getContext('2d').createImageData(img_geom.w, img_geom.h);
+	// this should draw to the offscreen canvas
+	this.image = this.offscreen_canvas.getContext('2d').createImageData(img_geom.w, img_geom.h);
 	if (previous_image) {
 		//copy previous pixels to new image, ignoring bit gravity
-		this.canvas.getContext('2d').putImageData(previous_image, 0, 0);
+		this.offscreen_canvas.getContext('2d').putImageData(previous_image, 0, 0);
 	}
 };
 
@@ -554,22 +565,24 @@ XpraWindow.prototype.update_icon = function(w, h, pixel_format, data) {
 }
 
 /**
- * Draws this window to the given context:
- * - draw the window frame (if not an OR window and not fullscreen)
- * - draw the backing image (the window pixels)
- * - draw selection borders (if the window is the one currently selected)
+ * This function draws the contents of the off-screen canvas to the visible
+ * canvas. However the drawing is requested by requestAnimationFrame which allows
+ * the browser to group screen redraws together, and automatically adjusts the
+ * framerate e.g if the browser window/tab is not visible.
  */
-XpraWindow.prototype.draw = function(ctx) {
+XpraWindow.prototype.draw = function() {
 	"use strict";
-	//draw the window pixels:
+	//get visible canvas context
 	var ctx = this.canvas.getContext('2d');
-	ctx.putImageData(this.image, 0, 0);
+	//pass the 'buffer' canvas directly, nice
+	ctx.drawImage(this.offscreen_canvas, 0, 0);
 };
 
 
 /**
  * Updates the window image with new pixel data
  * we have received from the server.
+ * The image is painted into off-screen canvas.
  */
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options) {
 	"use strict";
@@ -601,8 +614,9 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 	var stride = this.image.width*4;
 	//and we can paint the canvas with it
 	//(if we have transparency, we should probably repaint what is underneath...)
-	var ctx = this.canvas.getContext('2d');
+	var ctx = this.offscreen_canvas.getContext('2d');
 
+	// redraw entire window
 	if (x==0 && width==this.image.width && y+height<=this.image.height) {
 		//take a shortcut: copy all lines
 		data.set(img_data, y*stride);
@@ -610,13 +624,14 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		if (this.focused) {
 			//shortcut: paint canvas directly
 			ctx.putImageData(this.image, 0, 0);
-			return;
+			return true;
 		} else {
 			// window is not in focus but should we draw it anyway?
 			ctx.putImageData(this.image, 0, 0);
-			return;
+			return true;
 		}
 	}
+	// draw window portion
 	else if (x+width<=this.image.width && y+height<=this.image.height) {
 		var line;
 		var in_stride = width*4;
@@ -631,18 +646,15 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		if (this.focused) {
 			//shortcut: paint canvas directly
 			ctx.putImageData(img, x, y);
-			return;
+			return true;
 		} else {
 			// window is not in focus but should we draw it anyway?
 			ctx.putImageData(img, x, y);
-			return;
+			return true;
 		}
 	}
-	else {
-		//no action taken, no need to invalidate
-		return;
-	}
-	//this.state.invalidate();
+	//no action taken, no need to invalidate
+	return false;
 };
 
 /**
