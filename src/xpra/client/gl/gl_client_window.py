@@ -54,6 +54,7 @@ class GLClientWindow(GTK2WindowBase):
             self._backing.gl_expose_event(self._backing._backing, "spinner: fake event")
             self.queue_draw(0, 0, w, h)
         else:
+            self._backing.gl_expose_event(self._backing._backing, "spinner: fake event")
             window = self._backing._backing.get_window()
             context = window.cairo_create()
             self.paint_spinner(context, gdk.Rectangle(0, 0, w, h))

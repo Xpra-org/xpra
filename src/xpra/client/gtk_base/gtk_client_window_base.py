@@ -304,7 +304,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         log("%s.paint_spinner(%s, %s)", self, context, area)
         #add grey semi-opaque layer on top:
         context.set_operator(cairo.OPERATOR_OVER)
-        context.set_source_rgba(0.2, 0.2, 0.2, 0.8)
+        context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
         context.rectangle(area)
         #w, h = self._size
         #context.rectangle(gdk.Rectangle(0, 0, w, h))
