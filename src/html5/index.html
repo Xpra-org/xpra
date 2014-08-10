@@ -19,51 +19,125 @@
 			    width: 100%;
 			    padding: 0;
 			    margin: 0;
-			    color: white;
-			}
-			div.form {
-				background-color: #708090;
-				border: 4px solid #506070;
-				box-sizing: border-box;
+			    overflow: hidden;
 			}
 			div#disconnect_form {
 				display: none;
 			}
-			fieldset {
-				margin: 0px;
-				border: 0px solid black;
-			}
 			canvas {
-				border: 0px solid black;
-				display: none;
+				border: none;
+				padding: 0;
+				margin: 0;
 			}
+			.window {
+				border: 1px;
+				position: absolute;
+				box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
+				padding: 0;
+				overflow: hidden; /* required for radius clip */
+			}
+			.window-NORMAL {
+				border-radius: 6px;
+			}
+			.window-DROPDOWN_MENU {
+				z-index: 20000;
+			}
+			.window-TOOLTIP {
+				z-index: 20000;
+			}
+			.window-POPUP_MENU {
+				z-index: 20000;
+			}
+			.window-COMBO {
+				z-index: 20000;
+			}
+			.window-UTILITY {
+				z-index: 15000;
+			}
+			.windowhead {
+				height: 30px;
+				color: #000000;
+				background-color: #c0c0c0;
+			}
+			.windowtitle {
+				display: inline-block;
+				float: left;
+				width: 80%;
+				overflow: hidden;
+				text-overflow:ellipsis;
+				white-space: nowrap;
+				padding: 5px;
+				cursor: default;
+			}
+			.windowbuttons {
+			    display: inline-block;
+			    float: right;
+			    padding-right: 5px;
+			    cursor: pointer;
+			    padding-top: 7px;
+			}
+			.windowinfocus {
+				z-index: 10000;
+			}
+			.ui-resizable-helper { 
+				border: 2px dotted #00F; 
+				z-index: 30000 !important;
+			}
+			.ui-resizable-handle { position: absolute;font-size: 0.1px; display: block; }
+			.ui-resizable-disabled .ui-resizable-handle, .ui-resizable-autohide .ui-resizable-handle { display: none; }
+			.ui-resizable-n { cursor: n-resize; height: 7px; width: 100%; top: -5px; left: 0; }
+			.ui-resizable-s { cursor: s-resize; height: 7px; width: 100%; bottom: -5px; left: 0; }
+			.ui-resizable-e { cursor: e-resize; width: 7px; right: -5px; top: 0; height: 100%; }
+			.ui-resizable-w { cursor: w-resize; width: 7px; left: -5px; top: 0; height: 100%; }
+			.ui-resizable-se { cursor: se-resize; width: 12px; height: 12px; right: 1px; bottom: 1px; }
+			.ui-resizable-sw { cursor: sw-resize; width: 9px; height: 9px; left: -5px; bottom: -5px; }
+			.ui-resizable-nw { cursor: nw-resize; width: 9px; height: 9px; left: -5px; top: -5px; }
+			.ui-resizable-ne { cursor: ne-resize; width: 9px; height: 9px; right: -5px; top: -5px;}
 		</style>
 
+		<script type="text/javascript" src="include/util.js"></script>
 		<script type="text/javascript" src="include/websock.js"></script>
 		<script type="text/javascript" src="include/bencode.js"></script>
 		<script type="text/javascript" src="include/inflate.min.js"></script>
 		<script type="text/javascript" src="include/protocol.js"></script>
 		<script type="text/javascript" src="include/keycodes.js"></script>
-		<script type="text/javascript" src="include/shapes.js"></script>
 		<script type="text/javascript" src="include/window.js"></script>
-		<script type="text/javascript" src="include/util.js"></script>
+		<script type="text/javascript" src="include/jquery.min.js"></script>
+		<script type="text/javascript" src="include/jqueryui.min.js"></script>
 
 		<script>
 			var protocol;
 			var status = "ready";
+
+			var topwindow = null;
+			var topindex = 0;
 
 			var id_to_window = {};
 			var window_to_id = {};
 			var focus = -1;
 			var screen_size_change_pending = false;
 
+			// from http://stackoverflow.com/a/11744120
+			var w = window,
+			    d = document,
+			    e = d.documentElement,
+			    g = d.getElementsByTagName('body')[0];
+
+			var screen_width = w.innerWidth || e.clientWidth || g.clientWidth;
+			var screen_height = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
 			var OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
 			var RGB_FORMATS = ["RGBX", "RGBA"];
-			var canvas_state = null;
 
 			var caps_lock = null;
 			var alt_modifier = null;
 			var meta_modifier = null;
+
+			// disable right click menu:
+			window.oncontextmenu = function(e) {
+				//showCustomMenu();
+				return false;
+			}
 
 			/**
 			 * Returns the modifiers set for the current event.
@@ -95,8 +169,6 @@
 			 */
 			function processKeyEvent(pressed, event) {
 				"use strict";
-				if (canvas_state==null)
-					return;
 				// MSIE hack
 				if (window.event)
 					event = window.event;
@@ -125,11 +197,9 @@
 				if ((caps_lock && shift) || (!caps_lock && !shift))
 					str = str.toLowerCase();
 
-				var win = canvas_state.topOfStack();
-				if (win != null) {
+				if (topwindow != null) {
 					//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
-					var wid = window_to_id[win];
-					var packet = ["key-action", wid, keyname, pressed, modifiers, keyval, str, keycode, group];
+					var packet = ["key-action", topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
 					send(packet);
 				}
 			}
@@ -256,16 +326,16 @@
 			//These are callbacks from XpraWindow to us
 			//to notify us of window clicks and events:
 
-			function window_closed(win) {
+			function window_closed(wid) {
 				"use strict";
-				var wid = window_to_id[win];
 				send(["close-window", wid]);
 			}
 			function window_geometry_changed(win) {
 				"use strict";
-				//show("window_geometry_changed("+win+") geometry="+win.get_window_geometry().toSource());
+				show("geometry changed");
+				//show("window_geometry_changed="+win.get_window_geometry().toSource());
 				var geom = win.get_internal_geometry();
-				var wid = window_to_id[win];
+				var wid = win.wid;
 				if (!win.override_redirect)
 					self.set_focus(wid);
 				send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, get_client_properties(win)]);
@@ -278,15 +348,13 @@
 			function mouse_click(win, button, pressed, x, y, modifiers, buttons) {
 				"use strict";
 				var wid = window_to_id[win];
-				//show("mouse_click(..) wid("+win+")="+wid);
-				check_focus();
+				set_focus(wid);
 				send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
 			};
 
 			function check_focus() {
 				"use strict";
 				var wid = -1;
-				var win = canvas_state.topOfStack();
 				if (win != null)
 					wid = window_to_id[win];
 				//show("check_focus() window_to_id["+win+"]="+wid+", focus="+wid+", window_to_id="+window_to_id.toSource());
@@ -298,12 +366,21 @@
 				"use strict";
 				focus = wid;
 				send(["focus", focus, []]);
+				topwindow = wid;
 				//set the focused flag on all windows:
             	var win;
 				for (var i in id_to_window) {
 					win = id_to_window[i];
 					win.focused = (i==wid);
+					win.updateFocus();
 				}
+			}
+
+			function refresh_window(wid) {
+				"use strict";
+				// refresh the window
+				show("send buffer-refresh");
+				send(['buffer-refresh', wid, true, 95]);
 			}
 
 			function get_client_properties(win) {
@@ -315,9 +392,18 @@
 
 			function make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties) {
 				"use strict";
-				var win = new XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties,
-						window_geometry_changed, mouse_move, mouse_click, window_closed);
-				//show("make_new_window("+wid+", "+x+", "+y+", "+w+", "+h+", "+metadata+", "+override_redirect+", "+client_properties+")="+win);
+				// each window needs their own DIV that contains a canvas
+				var mydiv = document.createElement("div");
+				mydiv.id = String(wid);
+				var mycanvas = document.createElement("canvas");
+				mydiv.appendChild(mycanvas);
+				document.body.appendChild(mydiv);
+				// set initial sizes
+				mycanvas.width = w;
+				mycanvas.height = h;
+				// create the XpraWindow object to own the new div
+				var win = new XpraWindow(mycanvas, wid, x, y, w, h, metadata, override_redirect, client_properties,
+						window_geometry_changed, mouse_move, mouse_click, set_focus, window_closed);
 				id_to_window[wid] = win;
 				window_to_id[win] = wid;
 				var geom = win.get_internal_geometry();
@@ -414,7 +500,6 @@
 				var win = id_to_window[wid];
 				if (win!=null) {
 					win.destroy();
-					check_focus();
 				}
 			}
 
@@ -423,15 +508,20 @@
 				var wid = packet[1];
 				var win = id_to_window[wid];
 				if (win!=null) {
-					canvas_state.raiseShape(win);
-					focus = wid;
-					check_focus();
+					set_focus(wid);
 				}
 			}
 
 			function process_window_resized(packet) {
-				//TODO
+				var wid = packet[1];
+				var width = packet[2];
+				var height = packet[3];
+				var win = id_to_window[wid];
+				if (win!=null) {
+					win.resize(width, height);
+				}
 			}
+
 			function process_new_tray(packet) {
 				//TODO
 			}
@@ -462,15 +552,12 @@
 				return 96;
 			}
 
-
 			function get_desktop_size() {
 				"use strict";
-				var canvas = document.getElementById('screen');
-				return [canvas.width, canvas.height];
+				return [screen_width, screen_height];
 			}
 			function get_screen_sizes() {
 				"use strict";
-				var canvas = document.getElementById('screen');
 				var dpi = get_DPI();
 				/*
 				equivallent GTK code:
@@ -482,13 +569,13 @@
 						monitors,
 						work_x, work_y, work_width, work_height)
 				*/
-				var wmm = Math.round(canvas.width*25.4/dpi);
-				var hmm = Math.round(canvas.height*25.4/dpi);
-				var monitor = ["Canvas", 0, 0, canvas.width, canvas.height, wmm, hmm];
-				var screen = ["HTML", canvas.width, canvas.height,
+				var wmm = Math.round(screen_width*25.4/dpi);
+				var hmm = Math.round(screen_height*25.4/dpi);
+				var monitor = ["Canvas", 0, 0, screen_width, screen_height, wmm, hmm];
+				var screen = ["HTML", screen_width, screen_height,
 							wmm, hmm,
 							[monitor],
-							0, 0, canvas.width, canvas.height
+							0, 0, screen_width, screen_height
 						];
 				//just a single screen:
 				return [screen];
@@ -593,7 +680,7 @@
 
 			function do_send_new_screen_size() {
 				//show("do_send_new_screen_size()");
-				if (protocol==null || canvas_state==null)
+				if (protocol==null)
 					return;
 				screen_size_change_pending = false;
 				var ds = get_desktop_size();
@@ -607,42 +694,14 @@
 				}
 			}
 
-			function onresize() {
-				var container = document.getElementById('screen_container');
-				var d_form = document.getElementById('disconnect_form');
-				var c_form = document.getElementById('connect_form');
-				/*show("onresize() container size: "+container.clientWidth+"x"+container.clientHeight+
-								", window size: "+window.innerWidth+"x"+window.innerHeight+
-								", d form size: "+d_form.offsetWidth+"x"+d_form.offsetHeight+
-								", c form size: "+c_form.offsetWidth+"x"+c_form.offsetHeight);*/
-				if (canvas_state!=null) {
-					var width = Math.min(container.clientWidth, window.innerWidth);
-					var height = Math.max(0, window.innerHeight-d_form.offsetHeight-c_form.offsetHeight);
-					canvas_state.canvas.width = width;
-					canvas_state.canvas.height = height;
-					canvas_state.width = width;
-					canvas_state.height = height;
-					canvas_state.invalidate();
-				}
-				send_new_screen_size();
-			}
-
 			function do_start(params) {
 				"use strict";
 				show("start()");
-				onresize();
 
 				//hook document and window events:
 				document.onkeydown = onkeydown;
 				document.onkeyup = onkeyup;
 				document.onkeypress = onkeypress;
-				window.addEventListener("resize", onresize, false);
-
-				var canvas = document.getElementById('screen');
-				canvas.style.display = "block";
-
-				if (canvas_state==null)
-					canvas_state = new CanvasState(canvas);
 				protocol = new Protocol();
 				protocol.set_packet_handler("open", process_open);
 				protocol.set_packet_handler("close", process_close);
@@ -672,20 +731,14 @@
 				document.onkeydown = null;
 				document.onkeyup = null;
 				document.onkeypress = null;
-				window.removeEventListener("resize", onresize);
 				if (protocol!=null) {
 					protocol.close();
 					protocol = null;
 				}
-				if (canvas_state!=null) {
-					canvas_state.destroy();
-					canvas_state = null;
-				}
+
 				document.getElementById('connect_form').style.display = "block";
 				document.getElementById('disconnect_form').style.display = "none";
 
-				var canvas = document.getElementById('screen');
-				canvas.style.display = "none";
 				status = "ready";
 			}
 
@@ -714,7 +767,6 @@
 					document.getElementById('disconnect_form').style.display = "block";
 				else
 					document.getElementById('disconnect_form').style.display = "none";
-				onresize();
 				set_ui_message("");
 
 				show("connected to server - sending hello");
@@ -877,11 +929,11 @@
 							<td><input id="options" type="checkbox" /></td>
 						</tr>
 					</table>
-					<button id="connect" value="true" onclick="start();">Connect</button>
-					<button id="popup" value="true" onclick="new_popup();">Popup</button>
 				</fieldset>
-			</form>
+				<button id="connect" value="true" class="btn btn-primary" onclick="start();">Connect</button>
+        	</form>
 		</div>
+
 		<div class="form" id="disconnect_form">
 			<form onsubmit="return false;">
 				<fieldset>
@@ -890,9 +942,6 @@
 				<br />
 				</fieldset>
 			</form>
-		</div>
-		<div id="screen_container">
-			<canvas id="screen" width="800" height="600"></canvas>
 		</div>
 		<div id="dpi" style="width: 1in; height: 1in; left: -100%; top: -100%; position: absolute;">
 		</div>

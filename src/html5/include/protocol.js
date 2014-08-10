@@ -107,8 +107,9 @@ function process_bytes(bytearray) {
 function process_buffer() {
 	"use strict";
 
-	if (buf[0]!=ord("P"))
+	if (buf[0]!=ord("P")) {
 		throw "invalid packet header format: "+hex2(buf[0]);
+	}
 
 	var proto_flags = buf[1];
 	if (proto_flags!=0)
@@ -169,6 +170,7 @@ function process_packet(packet) {
 	var fn = "";
 	try {
 		packet_type = packet[0];
+		show("received a " + packet_type + " packet");
 		fn = packet_handlers[packet_type];
 		if (fn==undefined)
 			error("no packet handler for "+packet_type+"!");
