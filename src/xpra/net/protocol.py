@@ -108,7 +108,7 @@ class Protocol(object):
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 256*1024
-        self.abs_max_packet_size = 32*1024*1024
+        self.abs_max_packet_size = 256*1024*1024
         self.large_packets = ["hello"]
         self.send_aliases = {}
         self.receive_aliases = {}
