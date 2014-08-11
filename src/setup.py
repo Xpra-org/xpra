@@ -98,6 +98,20 @@ def pkg_config_ok(*args, **kwargs):
     cmd = [PKG_CONFIG]  + [str(x) for x in args]
     return get_status_output(cmd)[0]==0
 
+def check_pyopencl_AMD():
+    try:
+        import pyopencl
+        opencl_platforms = pyopencl.get_platforms()
+        for platform in opencl_platforms:
+            print(platform.name)
+            if platform.name.startswith("AMD"):
+                print("WARNING: AMD OpenCL icd found, refusing to build OpenCL by default!")
+                print(" you must use --with-csc_opencl to force enable it, then deal with the bugs it causes yourself")
+                return False
+    except:
+        pass
+    return True
+
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3
@@ -151,7 +165,7 @@ csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32
 swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
 nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")       #or os.path.exists("C:\\nvenc_3.0_windows_sdk")
-csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL")
+csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = PYTHON3
 
 warn_ENABLED            = True
