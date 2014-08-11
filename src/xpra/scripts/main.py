@@ -1271,7 +1271,7 @@ def run_proxy(error_cb, opts, script_file, args, mode):
         cmd += args
         if opts.start_child and len(opts.start_child)>0:
             for x in opts.start_child:
-                cmd.append("--start-child=%s" % x)
+                cmd.append("--start-child=%s" % shellquote(x))
         if opts.exit_with_children:
             cmd.append("--exit-with-children")
         if opts.exit_with_client or mode=="_shadow_start":
