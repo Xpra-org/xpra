@@ -8,10 +8,14 @@
  * more similar to the python version of xpra.
  *
  * requires the following javascript imports:
- * - websock.js		: websockets
+ * - websock.js		: fast binary websockets
  * - bencode.js		: bencoder
  * - inflate.min.js	: zlib inflate
  * - deflate.min.js : zlib deflate - do not use, broken!
+ *
+ * instead of using the WebSocket object directly, it wraps
+ * the Websock object which adds more robust recieve queue
+ * buffering
  */
 
 
@@ -20,7 +24,6 @@ function Protocol() {
 
 var api = {},         // Public API
 	ws,
-	buf = "",
 	raw_packets = {},
 	packet_handlers = {},
 	log_packets = true,
@@ -57,63 +60,46 @@ function hexstr(uintArray) {
 }
 
 
-//
-// websocket glue functions
-//
-
 //got a packet from websock:
-function on_message(m) {
+function on_message() {
 	"use strict";
-	var blob = m.data;
-	var reader = new FileReader()
-	reader.onload = function(evt) {
-		var result = new Uint8Array(this.result);
-		process_bytes(result);
+	// websock on_message event is simply a notification
+	// that data is available on the recieve queue
+	// check for 8 bytes on buffer
+	if(ws.rQwait("", 8, 0) == false) {
+		//got a complete header, try and parse
+		process_buffer();
 	}
-	reader.readAsArrayBuffer(blob);
 }
 
 //hook websock events using packet handlers:
-function on_open(m) {
+function on_open() {
 	//debug("on_open("+m+")");
-	process_packet(["open", m]);
+	process_packet(["open"]);
 }
-function on_close(m) {
+function on_close(e) {
 	//show("on_close("+m+")");
-	process_packet(["close", m]);
+	process_packet(["close"]);
 }
-function on_error(m) {
+function on_error(e) {
 	//show("on_error("+m+")");
-	process_packet(["error", m]);
-}
-
-
-//process some bytes we have received:
-function process_bytes(bytearray) {
-	"use strict";
-
-	//debug("process_bytes("+bytearray.byteLength+" bytes)");
-	//add to existing buffer:
-	var tmp = new Uint8Array(buf.length + bytearray.byteLength);
-	if (buf.length>0)
-		tmp.set(buf, 0);
-	tmp.set(bytearray, buf.length);
-	buf = tmp;
-	if (buf.byteLength>8)
-		process_buffer();
+	process_packet(["error"]);
 }
 
 //we have enough bytes for a header, try to parse:
 function process_buffer() {
 	"use strict";
+	//debug("peeking at first 8 bytes of buffer...")
+	var buf = ws.rQpeekBytes(8);
 
 	if (buf[0]!=ord("P")) {
 		throw "invalid packet header format: "+hex2(buf[0]);
 	}
 
 	var proto_flags = buf[1];
-	if (proto_flags!=0)
+	if (proto_flags!=0) {
 		throw "we cannot handle any protocol flags yet, sorry";
+	}
 	var level = buf[2];
 	var index = buf[3];
 	var packet_size = 0;
@@ -122,13 +108,18 @@ function process_buffer() {
 		packet_size = packet_size*0x100;
 		packet_size += buf[4+i];
 	}
-	//debug("packet_size="+packet_size+", data buffer size="+(buf.byteLength-8));
-	if (buf.byteLength-8<packet_size) {
+	//debug("packet_size="+packet_size+", level="+level+", index="+index);
+
+	// wait for packet to be complete
+	if (ws.rQlen() < packet_size-8) {
 		debug("packet is not complete yet");
 		return;
 	}
-	var packet_data = buf.subarray(8, packet_size+8);
-	buf = buf.subarray(packet_size+8);
+
+	// packet is complete but header is still on buffer
+	ws.rQshiftBytes(8);
+	//debug("got a full packet, shifting off "+packet_size);
+	var packet_data = ws.rQshiftBytes(packet_size);
 
 	//decompress it if needed:
 	if (level!=0) {
@@ -148,19 +139,22 @@ function process_buffer() {
 	var packet = null;
 	try {
 		packet = bdecode(packet_data);
-		//debug("packet[0]="+packet[0]);
 		for (var index in raw_packets) {
 			packet[index] = raw_packets[index];
 		}
-		raw_packets = {}
+		raw_packets = {};
 		process_packet(packet);
 	}
 	catch (e) {
 		debug("error processing packet: "+e);
-		debug("packet_data="+hexstr(packet_data));
+		debug("packet_data="+packet_data);
 	}
-	if (buf.byteLength>8)
+
+	// see if buffer still has unread packets
+	if (ws.rQlen() > 8) {
 		process_buffer();
+	}
+
 }
 
 function process_packet(packet) {
@@ -193,31 +187,27 @@ function send(packet) {
 	"use strict";
 
 	var bdata = bencode(packet);
-
 	//convert string to a byte array:
 	var cdata = [];
 	for (var i=0; i<bdata.length; i++)
 		cdata.push(ord(bdata[i]));
 	var level = 0;
+	/*
 	var use_zlib = false;		//does not work...
 	if (use_zlib) {
 		cdata = new Zlib.Deflate(cdata).compress();
 		level = 1;
-	}
+	}*/
 	var len = cdata.length;
 	//struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
-	var P = "P".charCodeAt(0);
-	var header = [P, 0, level, 0];
+	var header = ["P".charCodeAt(0), 0, level, 0];
 	for (var i=3; i>=0; i--)
 		header.push((len >> (8*i)) & 0xFF);
-
-	var data = new Uint8Array(8+len);
-	data.set(header);
-	data.set(cdata, 8);
-
-	if (log_packets && no_log_packet_types.indexOf(packet[0])<0)
-		show("send("+packet+") "+data.byteLength+" bytes in packet for: "+bdata.substring(0, 32)+"..");
-	ws.send(data);
+	//concat data to header, saves an intermediate array which may or may not have
+	//been optimised out by the JS compiler anyway, but it's worth a shot
+	header = header.concat(cdata);
+	//debug("send("+packet+") "+data.byteLength+" bytes in packet for: "+bdata.substring(0, 32)+"..");
+	ws.send(header);
 }
 
 
@@ -234,11 +224,12 @@ function open(uri) {
 		debug("opening a new uri, closing current websocket connection");
 		close();
 	}
-	ws = new WebSocket(uri, ['binary']);
-	ws.onmessage = on_message;
-	ws.onopen = on_open;
-	ws.onclose = on_close;
-	ws.onerror = on_error;
+	ws = new Websock();
+	ws.on('open', on_open);
+	ws.on('close', on_close);
+	ws.on('error', on_error);
+	ws.on('message', on_message);
+	ws.open(uri, ['binary']);
 }
 
 function close() {

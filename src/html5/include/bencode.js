@@ -13,20 +13,20 @@ all copies or substantial portions of the Software. */
 
 /*
  * This is a modified version, suitable for xpra wire encoding:
- * - the input must be a buffer (typically a byte array)
+ * - the input must be a buffer (a byte array or native JS array)
  * - we do not sort lists or dictionaries (the existing order is preserved)
  * - error out instead of writing "null" and generating a broken stream
  * - handle booleans as ints (0, 1)
  */
 
 function debug(args) {
-	console.log(args);
+    console.log(args);
 }
 
 // bencode an object
 function bencode(obj) {
-	if (obj==null || obj==undefined)
-		throw "invalid: cannot encode null";
+    if (obj==null || obj==undefined)
+        throw "invalid: cannot encode null";
     switch(btypeof(obj)) {
         case "string":     return bstring(obj);
         case "number":     return bint(obj);
@@ -50,57 +50,80 @@ function bdecode(buf) {
 // all bparse* functions return an array in the form
 // [parsed object, remaining buffer to parse]
 function bparse(buf) {
-    switch(buf[0]) {
-        case ord("d"): return bparseDict(buf.subarray(1));
-        case ord("l"): return bparseList(buf.subarray(1));
-        case ord("i"): return bparseInt(buf.subarray(1));
-        default:  return bparseString(buf);
+    if(buf.subarray) {
+        switch(buf[0]) {
+            case ord("d"): return bparseDict(buf.subarray(1));
+            case ord("l"): return bparseList(buf.subarray(1));
+            case ord("i"): return bparseInt(buf.subarray(1));
+            default:  return bparseString(buf);
+        }
+    } else {
+        //assume normal js array and use slice
+        switch(buf[0]) {
+            case ord("d"): return bparseDict(buf.slice(1));
+            case ord("l"): return bparseList(buf.slice(1));
+            case ord("i"): return bparseInt(buf.slice(1));
+            default:  return bparseString(buf);
+        }
     }
 }
 
 function uintToString(uintArray) {
-	return String.fromCharCode.apply(null, uintArray);
+    return String.fromCharCode.apply(null, uintArray);
 }
 
 
 // javascript equivallent of ord()
 // returns the numeric value of the character
 function ord(c) {
-	return c.charCodeAt(0);
+    return c.charCodeAt(0);
 }
 // returns the part of the buffer
 // before character c
 function subto(buf, c) {
-	var i = 0;
-	var o = ord(c);
-	while (buf[i]!=o) {
-		if (i>=buf.length)
-			return buf;
-		i++;
-	}
-	return buf.subarray(0, i);
+    var i = 0;
+    var o = ord(c);
+    while (buf[i]!=o) {
+        if (i>=buf.length)
+            return buf;
+        i++;
+    }
+    if(buf.subarray) {
+       return buf.subarray(0, i);
+    } else {
+        return buf.slice(0, i);
+    }
 }
 // splits the buffer into two parts:
 // before and after the first occurrence of c
 function split1(buf, c) {
-	var i = 0;
-	var o = ord(c);
-	while (buf[i]!=o) {
-		if (i>=buf.length)
-			return [buf];
-		i++;
-	}
-	return [buf.subarray(0, i), buf.subarray(i+1)];
+    var i = 0;
+    var o = ord(c);
+    while (buf[i]!=o) {
+        if (i>=buf.length)
+            return [buf];
+        i++;
+    }
+    if(buf.subarray) {
+       return [buf.subarray(0, i), buf.subarray(i+1)];
+    } else {
+        return [buf.slice(0, i), buf.slice(i+1)];
+    }
 }
 
 // parse a bencoded string
 function bparseString(buf) {
-	var len = 0;
+    var len = 0;
     var buf2 = subto(buf, ":");
     if(isNum(buf2)) {
         len = parseInt(uintToString(buf2));
-        var str = buf.subarray(buf2.length+1, buf2.length+1+len);
-        var r = buf.subarray(buf2.length+1+len);
+        if(buf.subarray) {
+            var str = buf.subarray(buf2.length+1, buf2.length+1+len);
+            var r = buf.subarray(buf2.length+1+len);
+        } else {
+            var str = buf.slice(buf2.length+1, buf2.length+1+len);
+            var r = buf.slice(buf2.length+1+len);
+        }
         return [uintToString(str), r];
     }
     return null;
@@ -112,7 +135,11 @@ function bparseInt(buf) {
     if(!isNum(buf2)) {
         return null;
     }
-    return [parseInt(uintToString(buf2)), buf.subarray(buf2.length+1)];
+    if(buf.subarray) {
+        return [parseInt(uintToString(buf2)), buf.subarray(buf2.length+1)];
+    } else {
+        return [parseInt(uintToString(buf2)), buf.slice(buf2.length+1)];
+    }
 }
 
 // parse a bencoded list
@@ -127,10 +154,14 @@ function bparseList(buf) {
         buf = p[1];
     }
     if(buf.length <= 0) {
-    	debug("unexpected end of buffer reading list");
+        debug("unexpected end of buffer reading list");
         return null;
     }
-    return [list, buf.subarray(1)];
+    if(buf.subarray) {
+        return [list, buf.subarray(1)];
+    } else {
+        return [list, buf.slice(1)];
+    }
 }
 
 // parse a bencoded dictionary
@@ -151,14 +182,18 @@ function bparseDict(buf) {
     }
     if(buf.length <= 0)
         return null;
-    return [dict, buf.subarray(1)];
+    if(buf.subarray) {
+        return [dict, buf.subarray(1)];
+    } else {
+        return [dict, buf.slice(1)];
+    }
 }
 
 // is the given string numeric?
 function isNum(buf) {
     var i, c;
     if(buf.length==0)
-    	return false;
+        return false;
     if(buf[0] == ord('-'))
         i = 1;
     else
