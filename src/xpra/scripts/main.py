@@ -1157,6 +1157,9 @@ def do_run_client(app):
     finally:
         app.cleanup()
 
+def shellquote(s):
+    return "'" + s.replace("'", "'\\''") + "'"
+
 def run_remote_server(error_cb, opts, args, mode):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     params = parse_display_name(error_cb, opts, args[0])
@@ -1166,7 +1169,7 @@ def run_remote_server(error_cb, opts, args, mode):
         proxy_args.append(params["display"])
     if opts.start_child:
         for c in opts.start_child:
-            proxy_args.append("--start-child=%s" % c)
+            proxy_args.append("--start-child=%s" % shellquote(c))
     #key=value options we forward:
     for x in ("session-name", "encoding", "socket-dir", "dpi"):
         v = getattr(opts, x.replace("-", "_"))
