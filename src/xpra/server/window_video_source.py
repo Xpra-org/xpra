@@ -22,7 +22,6 @@ log = Logger("video", "encoding")
 scorelog = Logger("score")
 scalinglog = Logger("scaling")
 sublog = Logger("subregion")
-sslog = Logger("regiondetect")
 
 
 def envint(name, d):
