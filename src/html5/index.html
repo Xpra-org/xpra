@@ -742,6 +742,13 @@
 			function stop() {
 				"use strict";
 				show("stop()");
+				// destroy windows
+				var win;
+				for (var i in id_to_window) {
+					win = id_to_window[i];
+					win.destroy();
+				}
+				// free everything else
 				id_to_window = {};
 				window_to_id = {};
 				focus = -1;
