@@ -20,6 +20,7 @@ PREFERRED_DEVICE_PLATFORM = os.environ.get("XPRA_OPENCL_PLATFORM", "")
 
 NVIDIA_YUV2RGB = os.environ.get("XPRA_OPENCL_NVIDIA_YUV2RGB", "0")=="1"
 
+AMD_WARNING_SHOWN = not os.environ.get("XPRA_AMD_WARNING", "1")=="1"
 
 opencl_platforms = pyopencl.get_platforms()
 if len(opencl_platforms)==0:
@@ -93,7 +94,7 @@ def reselect_device():
     context = None
     select_device()
 def select_device():
-    global context, selected_device,selected_platform
+    global context, selected_device,selected_platform,AMD_WARNING_SHOWN
     if context is not None:
         return
     log_version_info()
@@ -101,6 +102,10 @@ def select_device():
     #try to choose a platform and device using *our* heuristics / env options:
     options = {}
     for platform in opencl_platforms:
+        if platform.name.startswith("AMD") and not AMD_WARNING_SHOWN:
+            log.warn("Warning: the AMD OpenCL is loaded, it is known to interfere with signal delivery!")
+            log.warn(" please consider disabling OpenCL or removing the AMD icd")
+            AMD_WARNING_SHOWN = True
         devices = platform.get_devices()
         is_cuda = platform.name.find("CUDA")>=0
         for d in devices:
