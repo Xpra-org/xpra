@@ -914,7 +914,7 @@ class WindowModel(BaseWindowModel):
         # the client is naughty and tried to map their window which is
         # currently not displayed.  In either case, we should just ignore the
         # request.
-        pass
+        log("do_child_map_request_event(%s)", event)
 
     def do_xpra_unmap_event(self, event):
         if event.delivered_to is self.corral_window or self.corral_window is None:
