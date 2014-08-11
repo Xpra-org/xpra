@@ -1019,6 +1019,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             except Exception, e:
                 print("error trying to stop ssh tunnel process: %s" % e)
         conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
+        conn.timeout = 0            #taken care of by abort_test
 
     elif dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):
@@ -1028,6 +1029,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         sock.settimeout(SOCKET_TIMEOUT)
         sockfile = sockdir.socket_path(display_desc["display"])
         conn = _socket_connect(sock, sockfile, display_name, dtype)
+        conn.timeout = SOCKET_TIMEOUT
 
     elif dtype == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1035,6 +1037,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
+        conn.timeout = SOCKET_TIMEOUT
 
     else:
         assert False, "unsupported display type in connect: %s" % dtype

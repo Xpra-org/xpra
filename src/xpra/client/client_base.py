@@ -17,7 +17,6 @@ from xpra.log import Logger
 log = Logger("client")
 
 from xpra.net.protocol import Protocol, get_network_caps
-from xpra.scripts.main import SOCKET_TIMEOUT
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, local_version
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
@@ -41,7 +40,7 @@ EXIT_UNSUPPORTED = 12
 EXIT_REMOTE_ERROR = 13
 
 
-DEFAULT_TIMEOUT = (10 + SOCKET_TIMEOUT)*1000        #in millis
+EXTRA_TIMEOUT = 10
 ALLOW_UNENCRYPTED_PASSWORDS = os.environ.get("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", "0")=="1"
 DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
 
@@ -176,6 +175,8 @@ class XpraClientBase(object):
         self._protocol.enable_default_encoder()
         self._protocol.enable_default_compressor()
         self.have_more = self._protocol.source_has_more
+        if conn.timeout>0:
+            self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
 
     def init_packet_handlers(self):
         self._packet_handlers = {
@@ -219,7 +220,6 @@ class XpraClientBase(object):
                 hello["challenge_client_salt"] = client_salt
         log.debug("send_hello(%s) packet=%s", binascii.hexlify(b(challenge_response or "")), hello)
         self.send("hello", hello)
-        self.timeout_add(DEFAULT_TIMEOUT, self.verify_connected)
 
     def verify_connected(self):
         if self.server_capabilities is None:

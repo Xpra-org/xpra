@@ -53,6 +53,7 @@ class Connection(object):
         self.output_bytecount = 0
         self.filename = None            #only used for unix domain sockets!
         self.active = True
+        self.timeout = 0
 
     def is_active(self):
         return self.active

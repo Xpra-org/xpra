@@ -14,7 +14,7 @@ import sys
 import re
 from xpra.util import nonl, DONE
 from xpra.os_util import bytestostr
-from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, \
+from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT, \
     EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR
 
 
@@ -76,7 +76,8 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
 
     def connect_with_timeout(self, conn):
         self.setup_connection(conn)
-        gobject.timeout_add(DEFAULT_TIMEOUT, self.timeout)
+        if conn.timeout>0:
+            gobject.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.timeout)
         gobject.idle_add(self.send_hello)
 
     def run(self):
