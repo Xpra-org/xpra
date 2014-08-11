@@ -177,6 +177,11 @@ keyboard-sync = yes
 # Client ssh command:
 #ssh = /usr/bin/ssh
 
+# Key Shortcuts:
+key-shortcut = Meta+Shift+F4:quit
+key-shortcut = Meta+Shift+F8:magic_key
+key-shortcut = Meta+Shift+F11:show_session_info
+
 
 ########################################################################
 # Server Options:
