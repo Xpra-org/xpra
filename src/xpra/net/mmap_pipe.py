@@ -103,10 +103,16 @@ def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
     if not can_use_mmap():
         log.error("cannot use mmap: python version is too old?")
         return None, 0
-    import mmap
-    mmap_area = None
     try:
         f = open(mmap_filename, "r+b")
+    except Exception, e:
+        log.error("cannot access mmap file '%s' (see mmap-group option?)", mmap_filename)
+        log.error("  %s", e)
+        return None, 0
+
+    mmap_area = None
+    try:
+        import mmap
         mmap_size = os.path.getsize(mmap_filename)
         mmap_area = mmap.mmap(f.fileno(), mmap_size)
         if mmap_token:
