@@ -92,14 +92,15 @@ def main(script_file, cmdline):
     try:
         platform_init("Xpra")
         try:
-            options, args = parse_cmdline(cmdline)
+            defaults = make_defaults_struct()
+            options, args = do_parse_cmdline(cmdline, defaults)
             if not args:
                 print("xpra: need a mode")
                 return -1
             mode = args.pop(0)
             def err(*args):
                 raise InitException(*args)
-            return run_mode(script_file, err, options, args, mode)
+            return run_mode(script_file, err, options, args, mode, defaults)
         except SystemExit:
             raise
         except InitExit:
@@ -222,6 +223,10 @@ def fixup_packetencoding(options):
 
 
 def parse_cmdline(cmdline):
+    defaults = make_defaults_struct()
+    return do_parse_cmdline(cmdline, defaults)
+
+def do_parse_cmdline(cmdline, defaults):
     #################################################################
     ## NOTE NOTE NOTE
     ##
@@ -238,7 +243,6 @@ def parse_cmdline(cmdline):
                         "\t%prog control DISPLAY command [arg1] [arg2]..\n",
                         "\t%prog version [DISPLAY]\n"
                       ]
-    defaults = make_defaults_struct()
     server_modes = []
     if supports_server:
         server_modes.append("start")
@@ -736,7 +740,7 @@ def configure_logging(options, mode):
         signal.signal(signal.SIGUSR1, sigusr1)
 
 
-def run_mode(script_file, error_cb, options, args, mode):
+def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
     if os.name=="posix" and os.getuid()==0 and mode!="proxy":
         warn("\nWarning: running as root")
@@ -747,7 +751,7 @@ def run_mode(script_file, error_cb, options, args, mode):
         ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))
         if mode in ("start", "shadow") and ssh_display:
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
-            return run_remote_server(error_cb, options, args, mode)
+            return run_remote_server(error_cb, options, args, mode, defaults)
         elif (mode in ("start", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
             nox()
             from xpra.scripts.server import run_server
@@ -1163,7 +1167,7 @@ def do_run_client(app):
 def shellquote(s):
     return "'" + s.replace("'", "'\\''") + "'"
 
-def run_remote_server(error_cb, opts, args, mode):
+def run_remote_server(error_cb, opts, args, mode, defaults):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     params = parse_display_name(error_cb, opts, args[0])
     #add special flags to "display_as_args"
@@ -1172,7 +1176,11 @@ def run_remote_server(error_cb, opts, args, mode):
         proxy_args.append(params["display"])
     if opts.start_child:
         for c in opts.start_child:
-            proxy_args.append("--start-child=%s" % shellquote(c))
+            #ensure we don't pass start-child commands
+            #which came from defaults (the configuration files)
+            #only the ones specified on the command line:
+            if c not in (defaults.start_child or []):
+                proxy_args.append("--start-child=%s" % shellquote(c))
     #key=value options we forward:
     for x in ("session-name", "encoding", "socket-dir", "dpi"):
         v = getattr(opts, x.replace("-", "_"))
