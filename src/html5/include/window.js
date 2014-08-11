@@ -88,7 +88,7 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	if((this.windowtype == "NORMAL") || (this.windowtype == "DIALOG") || (this.windowtype == "UTILITY")) {
 		if(!this.override_redirect) {
 			// create header
-			jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> <span class="windowtitle" id="title' + String(wid) + '">' + this.title + '</span> <span class="windowbuttons"> <span id="close' + String(wid) + '"><img src="include/close.png" /></span> </span></div>');
+			jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> <span class="windowtitle" id="title' + String(wid) + '">' + this.title + '</span> <span class="windowbuttons"> <span id="maximize' + String(wid) + '"><img src="include/maximize.png" /></span> <span id="close' + String(wid) + '"><img src="include/close.png" /></span> </span></div>');
 			// make draggable
 			jQuery(this.div).draggable({
 				cancel: "canvas",
@@ -105,6 +105,7 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 		    });
 			this.d_header = '#head' + String(wid);
 			this.d_closebtn = '#close' + String(wid);
+			this.d_maximizebtn = '#maximize' + String(wid);
 			// adjust top offset
 			this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
 			// assign some interesting callbacks
@@ -113,6 +114,9 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 			});
 			jQuery('#close' + String(wid)).click(function() {
 				window_closed_cb(wid);
+			});
+			jQuery('#maximize' + String(wid)).click(function() {
+				me.toggle_maximized();
 			});
 		}
 	}
@@ -314,35 +318,18 @@ XpraWindow.prototype.set_metadata = function(metadata) {
  */
 XpraWindow.prototype.save_geometry = function() {
 	"use strict";
-	/*
 
-	TODO
-
-	* probably won't need to do this just use CSS to display: none;
-	* see restore_geometry
-
-	if (this.x==undefined || this.y==undefined)
-		return;
     this.saved_geometry = {
     		"x" : this.x,
     		"y"	: this.y,
     		"w"	: this.w,
-    		"h" : this.h,
-    		"maximized"	: this.maximized,
-    		"fullscreen" : this.fullscreen};
-    */
+    		"h" : this.h};
 }
 /**
  * Restores the saved geometry (if it exists).
  */
 XpraWindow.prototype.restore_geometry = function() {
 	"use strict";
-	/*
-
-	TODO
-
-	* we probably won't need to do this since we can just change CSS to
-	* display: none; to hide it!
 
 	if (this.saved_geometry==null) {
 		return;
@@ -351,9 +338,10 @@ XpraWindow.prototype.restore_geometry = function() {
 	this.y = this.saved_geometry["y"];
 	this.w = this.saved_geometry["w"];
 	this.h = this.saved_geometry["h"];
-	this.maximized = this.saved_geometry["maximized"];
-	this.fullscreen = this.saved_geometry["fullscreen"];
-	*/
+	// delete saved geometry
+	this.saved_geometry = null;
+	// then call local resized callback
+	this.handle_resized();
 };
 
 /**
@@ -361,20 +349,28 @@ XpraWindow.prototype.restore_geometry = function() {
  */
 XpraWindow.prototype.set_maximized = function(maximized) {
 	"use strict";
-	/*
-
-	TODO
-
 	//show("set_maximized("+maximized+")");
 	if (this.maximized==maximized) {
 		return;
 	}
 	this.max_save_restore(maximized);
 	this.maximized = maximized;
-	this.calculate_offsets();
-	this.handle_resize();
-	*/
+	this.handle_resized();
 };
+
+/**
+ * Toggle maximized state
+ */
+XpraWindow.prototype.toggle_maximized = function() {
+	"use strict";
+	//show("set_maximized("+maximized+")");
+	if (this.maximized==true) {
+		this.set_maximized(false);
+	} else {
+		this.set_maximized(true);
+	}
+};
+
 /**
  * Fullscreen / unfullscreen the window.
  */
@@ -402,36 +398,27 @@ XpraWindow.prototype.set_fullscreen = function(fullscreen) {
  */
 XpraWindow.prototype.max_save_restore = function(use_all_space) {
 	"use strict";
-	/*
-
-	TODO
-
-	* again see save|restore_geometry
-
 	if (use_all_space) {
 		this.save_geometry();
-		this.fill_canvas();
+		this.fill_screen();
 	}
 	else {
 		this.restore_geometry();
 	}
-	*/
 };
 
 /**
- * Use up all the canvas space
+ * Use up all the available screen space
  */
-XpraWindow.prototype.fill_canvas = function() {
+XpraWindow.prototype.fill_screen = function() {
 	"use strict";
-	/*
-
-	TODO
-
-	this.x = 0;
-	this.y = 0;
-	this.w = 640;
-	this.h = 480;
-	*/
+	// should be as simple as this
+	// in future we may have a taskbar for minimized windows
+	// which should be subtracted from screen size
+	this.x = 0 + this.leftoffset;
+	this.y = 0 + this.topoffset;
+	this.w = (screen_width - this.leftoffset) - this.rightoffset;
+	this.h = (screen_height - this.topoffset) - this.bottomoffset;
 };
 
 /**
@@ -446,8 +433,10 @@ XpraWindow.prototype.handle_resized = function(e) {
 	// this function is called on local resize only,
 	// remote resize will call this.resize()
 	// need to update the internal geometry
-	this.w = e.size.width - this.leftoffset - this.rightoffset;
-	this.h = e.size.height - this.topoffset - this.bottomoffset;
+	if(e) {
+		this.w = e.size.width - this.leftoffset - this.rightoffset;
+		this.h = e.size.height - this.topoffset - this.bottomoffset;
+	}
 	// then update CSS and redraw backing
 	this.updateCSSGeometry();
 	this.create_image_backing();
