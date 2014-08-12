@@ -1175,12 +1175,17 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
     if params["display"] is not None:
         proxy_args.append(params["display"])
     if opts.start_child:
-        for c in opts.start_child:
+        start_child = opts.start_child
+        if defaults.start_child:
             #ensure we don't pass start-child commands
             #which came from defaults (the configuration files)
             #only the ones specified on the command line:
-            if c not in (defaults.start_child or []):
-                proxy_args.append("--start-child=%s" % shellquote(c))
+            #(and only remove them once so the command line can re-add the same ones!)
+            for x in defaults.start_child:
+                if x in start_child:
+                    start_child.remove(x)
+        for c in start_child:
+            proxy_args.append("--start-child=%s" % shellquote(c))
     #key=value options we forward:
     for x in ("session-name", "encoding", "socket-dir", "dpi"):
         v = getattr(opts, x.replace("-", "_"))
