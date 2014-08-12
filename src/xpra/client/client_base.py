@@ -148,13 +148,15 @@ class XpraClientBase(object):
     def disconnect_and_quit(self, exit_code, reason):
         #try to tell the server we're going, then quit
         log("disconnect_and_quit(%s, %s)", exit_code, reason)
-        if self._protocol._closed:
+        p = self._protocol
+        if p and p._closed:
             self.quit(exit_code)
             return
         def do_quit():
             log("disconnect_and_quit: do_quit()")
             self.quit(exit_code)
-        self._protocol.flush_then_close(["disconnect", reason], done_callback=do_quit)
+        if p:
+            p.flush_then_close(["disconnect", reason], done_callback=do_quit)
         self.timeout_add(1000, do_quit)
 
 
