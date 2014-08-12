@@ -101,13 +101,13 @@ class BugReport(object):
             def get_gl_info():
                 return opengl_info
         else:
-            from xpra.net.net_util import get_info as get_net_info
             try:
                 from xpra.client.gl.gl_check import check_support
                 def get_gl_info():
                     return check_support(force_enable=True)
             except:
                 get_gl_info = None
+        from xpra.net.net_util import get_info as get_net_info
         from xpra.platform.paths import get_info as get_path_info
         from xpra.version_util import get_version_info, get_platform_info, get_host_info
         def get_sys_info():
