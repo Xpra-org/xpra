@@ -200,9 +200,13 @@ class Protocol(object):
             "output.cipher"         : self.cipher_out_name or "",
             "large_packets"         : self.large_packets,
             "compression_level"     : self.compression_level,
-            "max_packet_size"       : self.max_packet_size,
-            "compressor"            : compression.get_compressor_name(self._compress),
-            "encoder"               : packet_encoding.get_encoder_name(self._encoder)}
+            "max_packet_size"       : self.max_packet_size}
+        c = self._compress
+        if c:
+            info["compressor"] = compression.get_compressor_name(self._compress)
+        e = self._encoder
+        if e:
+            info["encoder"] = packet_encoding.get_encoder_name(self._encoder)
         for k,v in self.send_aliases.items():
             info["send_alias." + str(k)] = v
             info["send_alias." + str(v)] = k
