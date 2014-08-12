@@ -592,7 +592,7 @@ class WindowVideoSource(WindowSource):
             options with a score for each.
         """
         WindowSource.update_encoding_options(self, force_reload)
-        log("reconfigure(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
+        log("update_encoding_options(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
         if self.supports_video_subregion:
             if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE:
                 ww, wh = self.window_dimensions
@@ -632,10 +632,10 @@ class WindowVideoSource(WindowSource):
 
             scores = self.get_video_pipeline_options(ve.get_encoding(), width, height, pixel_format)
             if len(scores)==0:
-                log("reconfigure(%s) no pipeline options found!")
+                log("check_pipeline_score(%s) no pipeline options found!")
                 return
 
-            log("reconfigure(%s) best=%s", force_reload, scores[0])
+            log("check_pipeline_score(%s) best=%s", force_reload, scores[0])
             _, _, _, csc_width, csc_height, csc_spec, enc_in_format, _, enc_width, enc_height, encoder_spec = scores[0]
             if self._csc_encoder:
                 if csc_spec is None or \
@@ -643,13 +643,13 @@ class WindowVideoSource(WindowSource):
                    self._csc_encoder.get_dst_format()!=enc_in_format or \
                    self._csc_encoder.get_src_width()!=csc_width or \
                    self._csc_encoder.get_src_height()!=csc_height:
-                    log("reconfigure(%s) found better csc encoder: %s", force_reload, scores[0])
+                    log("check_pipeline_score(%s) found better csc encoder: %s", force_reload, scores[0])
                     self.do_csc_encoder_cleanup()
             if type(self._video_encoder)!=encoder_spec.codec_class or \
                self._video_encoder.get_src_format()!=enc_in_format or \
                self._video_encoder.get_width()!=enc_width or \
                self._video_encoder.get_height()!=enc_height:
-                log("reconfigure(%s) found better video encoder: %s", force_reload, scores[0])
+                log("check_pipeline_score(%s) found better video encoder: %s", force_reload, scores[0])
                 self.do_video_encoder_cleanup()
 
             if self._video_encoder is None:
