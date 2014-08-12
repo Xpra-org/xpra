@@ -13,7 +13,17 @@ log = Logger("opengl")
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 
+WHITELIST = {}
 BLACKLIST = {"vendor" : ["nouveau", "Humper", "VMware, Inc."]}
+if False:
+    #for testing:
+    BLACKLIST["vendor"].append("NVIDIA Corporation")
+    WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
+    
+if sys.platform.startswith("darwin"): 
+    #crashes were reported with the Intel driver on OSX 
+    BLACKLIST["vendor"].append("Intel Inc.")
+    WHITELIST["renderer"] = ["Intel HD Graphics 4000 OpenGL Engine"]
 
 
 DEFAULT_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
@@ -177,13 +187,25 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             log("%s: %s", d, v)
             props[d] = v
 
+        blacklisted = None
+        whitelisted = None
         for k,vlist in BLACKLIST.items():
             v = props.get(k)
             if v in vlist:
-                if force_enable:
-                    log.warn("Warning: %s '%s' is blacklisted!", k, v)
-                else:
-                    gl_check_error("%s '%s' is blacklisted!" % (k, v))
+                log("%s '%s' found in blacklist: %s", k, v, vlist)
+                blacklisted = k, v
+        for k,vlist in WHITELIST.items():
+            v = props.get(k)
+            if v in vlist:
+                log("%s '%s' found in whitelist: %s", k, v, vlist)
+                whitelisted = k, v
+        if blacklisted:
+            if whitelisted:
+                log.info("%s '%s' enabled (found in both blacklist and whitelist)", *whitelisted)
+            elif force_enable:
+                log.warn("Warning: %s '%s' is blacklisted!", *blacklisted)
+            else:
+                gl_check_error("%s '%s' is blacklisted!" % (blacklisted))
 
         #check for specific functions we need:
         from OpenGL.GL import glActiveTexture, glTexSubImage2D, glTexCoord2i, \
