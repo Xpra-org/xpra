@@ -113,7 +113,7 @@ def main(script_file, cmdline):
             return 0
         except InitException:
             e = sys.exc_info()[1]
-            command_error("xpra initialization error:\n%s" % e)
+            command_error("xpra initialization error: %s" % e)
             return 1
         except Exception:
             command_error("xpra main error:\n%s" % traceback.format_exc())
