@@ -240,17 +240,17 @@ class WindowVideoSource(WindowSource):
             self.cleanup_codecs()
         WindowSource.set_new_encoding(self, encoding, strict)
 
-    def set_client_properties(self, properties):
+    def do_set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
         self.parse_csc_modes(properties.listget("encoding.csc_modes", default_value=None), properties.dictget("encoding.full_csc_modes", default_value=None))
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
         self.supports_video_subregion = properties.boolget("encoding.video_subregion", self.supports_video_subregion)
         self.uses_swscale = properties.boolget("encoding.uses_swscale", self.uses_swscale)
-        WindowSource.set_client_properties(self, properties)
+        WindowSource.do_set_client_properties(self, properties)
         #encodings may have changed, so redo this:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
-        log("set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
+        log("do_set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
 
     def get_best_encoding_impl(self):
         #if we're here, the window does not have any alpha (or the client does not support it)

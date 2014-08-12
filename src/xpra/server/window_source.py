@@ -340,6 +340,16 @@ class WindowSource(object):
         self.reconfigure(True)
 
     def set_client_properties(self, properties):
+        #filter out stuff we don't care about
+        #to see if there is anything to set at all,
+        #and if not, don't bother doing the potentially expensive update_encoding_selection()
+        for k in ("workspace", "screen"):
+            if k in properties:
+                del properties[k]
+        if properties:
+            self.do_set_client_properties(properties)
+
+    def do_set_client_properties(self, properties):
         self.maximized = properties.boolget("maximized", False)
         self.client_refresh_encodings = properties.strlistget("encoding.auto_refresh_encodings", self.client_refresh_encodings)
         self.full_frames_only = properties.boolget("encoding.full_frames_only", self.full_frames_only)
