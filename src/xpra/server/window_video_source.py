@@ -672,16 +672,16 @@ class WindowVideoSource(WindowSource):
             Each solution is rated and we return all of them in descending
             score (best solution comes first).
         """
-        scores = []
         #these are the CSC modes the client can handle for this encoding:
         #we must check that the output csc mode for each encoder is one of those
         supported_csc_modes = self.full_csc_modes.get(encoding, self.csc_modes)
-        if len(supported_csc_modes)==0:
-            return scores
+        if not supported_csc_modes:
+            return []
         encoder_specs = self.video_helper.get_encoder_specs(encoding)
-        if len(encoder_specs)==0:
-            return scores
+        if not encoder_specs:
+            return []
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), self._current_speed, self._fixed_min_speed, int(self._current_quality), self._fixed_min_quality)
+        scores = []
         def add_scores(info, csc_spec, enc_in_format):
             #find encoders that take 'enc_in_format' as input:
             colorspace_specs = encoder_specs.get(enc_in_format)
@@ -691,7 +691,7 @@ class WindowVideoSource(WindowSource):
             for encoder_spec in colorspace_specs:
                 #ensure that the output of the encoder can be processed by the client:
                 matches = set(encoder_spec.output_colorspaces) & set(supported_csc_modes)
-                if len(matches)==0:
+                if not matches:
                     continue
                 scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
                 score_data = self.get_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling)
