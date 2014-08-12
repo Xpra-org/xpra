@@ -103,7 +103,6 @@ def check_pyopencl_AMD():
         import pyopencl
         opencl_platforms = pyopencl.get_platforms()
         for platform in opencl_platforms:
-            print(platform.name)
             if platform.name.startswith("AMD"):
                 print("WARNING: AMD OpenCL icd found, refusing to build OpenCL by default!")
                 print(" you must use --with-csc_opencl to force enable it, then deal with the bugs it causes yourself")
