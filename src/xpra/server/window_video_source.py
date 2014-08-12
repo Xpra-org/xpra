@@ -88,6 +88,7 @@ class WindowVideoSource(WindowSource):
 
         self._csc_encoder = None
         self._video_encoder = None
+        self._last_pipeline_check = 0
         self._lock = Lock()               #to ensure we serialize access to the encoder and its internals
 
     def __repr__(self):
@@ -611,6 +612,28 @@ class WindowVideoSource(WindowSource):
             self.check_pipeline_score(force_reload)
 
     def check_pipeline_score(self, force_reload):
+        if not force_reload:
+            if time.time()-self._last_pipeline_check<0.5:
+                #already checked not long ago
+                return
+            def checknovideo(*info):
+                scorelog(*info)
+                self.cleanup_codecs()
+            #do some sanity checks to see if there is any point in setting up / having a video context at all:
+            if self.encoding not in self.video_encodings:
+                return checknovideo("non-video encoding: %s", self.encoding)
+            if self._sequence<2 or self._damage_cancelled>=float("inf"):
+                #too early, or too late!
+                return checknovideo("sequence=%s (cancelled=%s)", self._sequence, self._damage_cancelled)
+            ww, wh = self.window_dimensions
+            if ww*wh<=MAX_NONVIDEO_PIXELS:
+                return checknovideo("not enough pixels: %sx%s", ww, wh)
+            w = ww & self.width_mask
+            h = wh & self.height_mask
+            if w<self.min_w or w>self.max_w or h<self.min_h or h>self.max_h:
+                return checknovideo("out of bounds: %sx%s (min %sx%s, max %sx%s)", w, h, self.min_w, self.min_h, self.max_w, self.max_h)
+            if time.time()-self.statistics.last_resized<0.500:
+                return checknovideo("resized just %.1f seconds ago", time.time()-self.statistics.last_resized)
         try:
             self._lock.acquire()
             ve = self._video_encoder
@@ -658,6 +681,7 @@ class WindowVideoSource(WindowSource):
                 self._video_encoder.set_encoding_speed(self._current_speed)
                 self._video_encoder.set_encoding_quality(self._current_quality)
         finally:
+            self._last_pipeline_check = time.time()
             self._lock.release()
 
 
