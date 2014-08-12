@@ -629,8 +629,6 @@ class WindowVideoSource(WindowSource):
             else:
                 pixel_format = ve.get_src_format()
             width, height = self.window_dimensions
-            quality = self._current_quality
-            speed = self._current_speed
 
             scores = self.get_video_pipeline_options(ve.get_encoding(), width, height, pixel_format)
             if len(scores)==0:
@@ -656,10 +654,9 @@ class WindowVideoSource(WindowSource):
 
             if self._video_encoder is None:
                 self.setup_pipeline(scores, width, height, pixel_format)
-
-            if self._video_encoder:
-                self._video_encoder.set_encoding_speed(speed)
-                self._video_encoder.set_encoding_quality(quality)
+            else:
+                self._video_encoder.set_encoding_speed(self._current_speed)
+                self._video_encoder.set_encoding_quality(self._current_quality)
         finally:
             self._lock.release()
 
