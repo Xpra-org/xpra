@@ -1185,7 +1185,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
                 if x in start_child:
                     start_child.remove(x)
         for c in start_child:
-            proxy_args.append("--start-child=%s" % shellquote(c))
+            proxy_args.append(shellquote("--start-child=%s" % c))
     #key=value options we forward:
     for x in ("session-name", "encoding", "socket-dir", "dpi"):
         v = getattr(opts, x.replace("-", "_"))
@@ -1284,7 +1284,7 @@ def run_proxy(error_cb, opts, script_file, args, mode):
         cmd += args
         if opts.start_child and len(opts.start_child)>0:
             for x in opts.start_child:
-                cmd.append("--start-child=%s" % shellquote(x))
+                cmd.append("--start-child=%s" % x)
         if opts.exit_with_children:
             cmd.append("--exit-with-children")
         if opts.exit_with_client or mode=="_shadow_start":
