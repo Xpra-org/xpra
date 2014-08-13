@@ -20,7 +20,7 @@ import select
 import time
 import traceback
 
-from xpra.scripts.main import TCP_NODELAY
+from xpra.scripts.main import TCP_NODELAY, warn
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
 o0117 = 79
@@ -479,17 +479,44 @@ def sanitize_env():
              #"XDG_RUNTIME_DIR",
              "QT_GRAPHICSSYSTEM_CHECKED",
              )
-    #force 'simple' / 'xim', as 'ibus' 'immodule' breaks keyboard handling
-    #unless its daemon is also running - and we don't know if it is..
-    #this should override any XSETTINGS too.
+
+def configure_imsettings_env(input_method):
+    im = (input_method or "").lower()
+    if im in ("none", "no"):
+        #the default: set DISABLE_IMSETTINGS=1, fallback to xim
+        #that's because the 'ibus' 'immodule' breaks keyboard handling
+        #unless its daemon is also running - and we don't know if it is..
+        imsettings_env(True, "xim", "xim", "none", "")
+    elif im=="keep":
+        #do nothing and keep whatever is already set, hoping for the best
+        pass
+    elif im in ("xim", "IBus", "SCIM", "uim"):
+        #ie: (False, "ibus", "ibus", "IBus", "@im=ibus")
+        imsettings_env(True, im.lower(), im.lower(), im, "@im=%s" % im.lower())
+    else:
+        v = imsettings_env(True, im.lower(), im.lower(), im, "@im=%s" % im.lower())
+        warn("using input method settings: %s" % str(v))
+        warn("unknown input method specified: %s" % input_method)
+        warn(" if it is correct, you may want to file a bug to get it recognized")
+
+def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmodifiers):
     #for more information, see imsettings:
     #https://code.google.com/p/imsettings/source/browse/trunk/README
-    os.environ.update({
-               "DISABLE_IMSETTINGS" : "true",
-               "GTK_IM_MODULE"      : "xim",                #or "gtk-im-context-simple"?
-               "QT_IM_MODULE"       : "xim",                #or "simple"?
-               "IMSETTINGS_MODULE"  : "none",               #or "xim"?
-               "XMODIFIERS"         : ""})                  #oe "@im=none"
+    if disabled is True:
+        os.environ["DISABLE_IMSETTINGS"] = "1"                  #this should override any XSETTINGS too
+    elif disabled is False and ("DISABLE_IMSETTINGS" in os.environ):
+        del os.environ["DISABLE_IMSETTINGS"]
+    v = {
+         "GTK_IM_MODULE"      : gtk_im_module,            #or "gtk-im-context-simple"?
+         "QT_IM_MODULE"       : qt_im_module,             #or "simple"?
+         "IMSETTINGS_MODULE"  : imsettings_module,        #or "xim"?
+         "XMODIFIERS"         : xmodifiers,
+         #not really sure what to do with those:
+         #"IMSETTINGS_DISABLE_DESKTOP_CHECK"   : "true",   #
+         #"IMSETTINGS_INTEGRATE_DESKTOP" : "no"}           #we're not a real desktop
+        }
+    os.environ.update(v)
+    return v
 
 def start_pulseaudio(child_reaper, pulseaudio_command):
     from xpra.log import Logger
@@ -828,6 +855,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     if display_name[0] != 'S':
         os.environ["DISPLAY"] = display_name
     sanitize_env()
+    configure_imsettings_env(opts.input_method)
 
     # Start the Xvfb server first to get the display_name if needed
     xvfb = None

@@ -262,6 +262,7 @@ OPTION_TYPES = {
                     "display"           : str,
                     "tcp-proxy"         : str,
                     "debug"             : str,
+                    "input-method"      : str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -354,6 +355,7 @@ def get_defaults():
                     "display"           : "",
                     "tcp-proxy"         : "",
                     "debug"             : "",
+                    "input-method"      : "none",
                     "quality"           : 0,
                     "min-quality"       : 30,
                     "speed"             : 0,

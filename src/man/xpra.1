@@ -51,6 +51,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
+[\fB\-\-input\-method\fP=\fIMETHOD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP]
 .HP
@@ -650,6 +651,33 @@ System notifications require the xpra server to have its own instance
 of a dbus daemon, if it is missing a warning will be printed on
 startup.  This switch disables the feature entirely, and avoids
 the warning.
+.TP
+\fB\-\-input\-method\fP=\fIMETHOD\fP
+Specify which input method to configure.
+This sets a number of environment variables which should be
+honoured by applications started with the \fBstart\-child\fP option.
+
+.br
+The following \fIMETHOD\fPs are currently supported:
+.RS
+.IP \fBnone\fP
+Disable input methods completely and prevent it from
+interfering with keyboard input. This is the default.
+.IP \fBkeep\fP
+Keeps the environment unchanged. You are responsible for ensuring
+it is correct.
+.IP \fBxim\fP
+Enables the X Input Method.
+.IP \fBIBus\fP
+Enables the Intelligent Input Bus.
+.IP \fBSCIM\fP
+Enables the Smart Common Input Method.
+.IP \fBuim\fP
+Enables the Universal Input Method.
+.RE
+.PP
+Any other value will also be set up, but will trigger a warning.
+
 .TP
 \fB\-\-xsettings\fP or \fB\-\-no\-xsettings\fP
 Enable or disable xsettings synchronization.  Xsettings are only forwarded

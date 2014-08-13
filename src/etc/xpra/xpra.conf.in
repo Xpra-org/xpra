@@ -217,6 +217,17 @@ log-file = $DISPLAY.log
 # Publish sessions:
 mdns = yes
 
+# Input methods
+# To disable input method completely:
+#input-method=none
+# To keep the environment unchanged:
+#input-method=keep
+# Other possible options:
+#input-method=IBus
+#input-method=SCIM
+#input-method=uim
+input-method=none
+
 # Start a pulseaudio server with each session:
 pulseaudio = yes
 
