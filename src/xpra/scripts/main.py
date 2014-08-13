@@ -959,7 +959,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     if dtype == "ssh":
         cmd = display_desc["full_ssh"]
         proxy_cmd = display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
-        cmd += ["xpra", "initenv", ">>", "/dev/null", "2>&1", "||", "echo", "\"Warning: xpra server does not support initenv\"", "1>&2", ";"] + proxy_cmd
+        cmd += ["sh -c 'xpra initenv >> /dev/null 2>&1 || echo \"Warning: xpra server does not support initenv\" 1>&2;"+(" ".join(proxy_cmd))+"'"]
         try:
             kwargs = {}
             kwargs["stderr"] = sys.stderr
