@@ -103,13 +103,24 @@
 		<script type="text/javascript" src="include/websock.js"></script>
 		<script type="text/javascript" src="include/bencode.js"></script>
 		<script type="text/javascript" src="include/inflate.min.js"></script>
-		<script type="text/javascript" src="include/protocol.js"></script>
 		<script type="text/javascript" src="include/keycodes.js"></script>
 		<script type="text/javascript" src="include/window.js"></script>
 		<script type="text/javascript" src="include/jquery.min.js"></script>
 		<script type="text/javascript" src="include/jqueryui.min.js"></script>
 
 		<script>
+			/* 
+			 * We need to either load protocol.js (non-worker method) or if the browser is WebKit based
+			 * load protocol_host.js which is the WebWorker implementation
+			 */
+			if(window.webkitConvertPointFromNodeToPage) {
+				debug("webkit based browser, using web workers");
+				jQuery.getScript('include/protocol_host.js');
+			} else {
+				debug("not using web worker implementation");
+				jQuery.getScript('include/protocol.js');
+			}
+
 			var protocol;
 			var status = "ready";
 
