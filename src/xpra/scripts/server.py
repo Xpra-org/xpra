@@ -486,7 +486,7 @@ def configure_imsettings_env(input_method):
         #the default: set DISABLE_IMSETTINGS=1, fallback to xim
         #that's because the 'ibus' 'immodule' breaks keyboard handling
         #unless its daemon is also running - and we don't know if it is..
-        imsettings_env(True, "xim", "xim", "none", "")
+        imsettings_env(True, "xim", "xim", "none", "@im=none")
     elif im=="keep":
         #do nothing and keep whatever is already set, hoping for the best
         pass
