@@ -11,136 +11,68 @@
 %define include_egg 1
 %define old_xdg 0
 
-%define requires_selinux %{nil}
-%define requires_lzo %{nil}
-%define requires_lz4 python-lz4
-%define requires_pycrypto python-crypto
-%define requires_fakexinerama libfakeXinerama
-%define avcodec_build_args %{nil}
-%define webp_build_args --with-webp
-%define server_build_args --with-server
-%define opencl_build_args --with-csc_opencl
+#the only build option we specify:
+%define dummy --with-Xdummy
 
-%if 0%{?static_video_libs}
-%define static_vpx 1
-%define static_x264 1
-%define static_ffmpeg 1
-%endif
-
-
-#leave it to auto-detect by default:
-%define dummy %{nil}
-#python and gtk bits:
-%define requires_python_gtk ,pygtk2, python-imaging, dbus-python
-#Vfb (Xvfb or Xdummy):
-%define requires_xorg , xorg-x11-server-utils, xorg-x11-server-Xvfb, xorg-x11-xauth, libXfont
+#some of these dependencies may get turned off (empty) on some platforms:
+%define requires_lzo , python-lzo
+%define requires_lz4 , python-lz4
 #OpenGL bits:
-%define requires_opengl %{nil}
+%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext, numpy
 #Anything extra (distro specific):
 %define requires_extra %{nil}
-%define requires_vpx , libvpx
-%define requires_x264 , libx264
-%define requires_webp , libwebp
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-plugins-ugly, gstreamer-python, pulseaudio, pulseaudio-utils
-%define xim gtk2-immodule-xim
+%define requires_xim , gtk2-immodule-xim
 
-# distro-specific creative land of wonderness
-%if %{defined Fedora}
-%define requires_lzo python-lzo
-%define requires_x264 , x264-libs
-%define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
-%define requires_opengl , PyOpenGL, pygtkglext, python-numeric, numpy
+#Vfb (Xvfb or Xdummy):
+%define xorg_deps xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
+%define libwebp libwebp
+%define libvpx libvpx
+
+# any centos / rhel supported:
+%if 0%{?el5}%{?el6}%{?el7}
+#not available:
+%define requires_lzo %{nil}
+#do not disable sound support, but do not declare deps for it either
+#(so it can be installed if desired):
+%define no_sound 0
+%define requires_sound %{nil}
 %endif
 
 %if 0%{?el7}
-#version shipped is good enough for dynamic linking:
-%define static_vpx 0
-%define requires_vpx libvpx
-%define requires_x264 %{nil}
-%define requires_webp libwebp
-%define webp_build_args --with-webp
-%define requires_sound %{nil}
-#do not disable sound support, but do not declare deps for it either
-#(so it can be installed if desired):
-%define no_sound 0
-%define requires_sound %{nil}
-#OpenGL packages are not available yet:
-#%define requires_opengl , PyOpenGL, pygtkglext
+#OpenGL cannot be used because pygtkglext is missing from centos7
 %define requires_opengl %{nil}
-#7.x has dummy support
-%define dummy --with-Xdummy
-%define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %endif
 
 %if 0%{?el6}
-%define requires_vpx %{nil}
-%define requires_x264 %{nil}
-%define requires_webp %{nil}
-%if 0%{?static_video_libs}
-%define webp_build_args --with-webp --with-webp_static
-%else
-%define webp_build_args --without-webp
-%endif
-%define requires_sound %{nil}
-#do not disable sound support, but do not declare deps for it either
-#(so it can be installed if desired):
-%define no_sound 0
-%define requires_sound %{nil}
-#opengl is supported from 6.4 onwards:
-%if %(egrep -q 'release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
-%define requires_opengl , PyOpenGL, pygtkglext
-#6.4 also has Xdummy support, but detection fails because of console ownership issues..
-#so override and set it for 6.4 and later
-%define dummy --with-Xdummy
-%define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
+#distro version is too old replace with our private libraries
+%define libvpx libvpx-xpra
+%define libwebp libwebp-xpra
+#only v6.4 onwards have Xdummy support:
+%if %(egrep -q 'release 6.0|release 6.1|release 6.2|release 6.3' /etc/redhat-release && echo 1 || echo 0)
+%define dummy --without-Xdummy
 %endif
 %endif
 
 %if 0%{?el5}
+#distro version is too old replace with our private libraries
+%define libvpx libvpx-xpra
+%define libwebp libwebp-xpra
+#does not build against python24:
 %define requires_lz4 %{nil}
-%define requires_vpx %{nil}
-%define requires_x264 %{nil}
-%define requires_webp %{nil}
 %define dummy --without-Xdummy
-%if 0%{?static_video_libs}
-%define webp_build_args --with-webp --with-webp_static
-%else
-%define webp_build_args --without-webp
-%endif
-%define opencl_build_args --without-csc_opencl
-%define requires_sound %{nil}
-%define xim %{nil}
+#not available:
+%define requires_opengl %{nil}
+%define requires_xim %{nil}
 %define no_sound 1
 %define no_pulseaudio 1
-%define no_strict 1
 %define old_xdg 1
 #uuidgen is in e2fsprogs! (no we don't do any fs stuff)
 %define requires_extra , e2fsprogs, python-ctypes
+%define xorg_deps xorg-x11-server-utils, xorg-x11-server-Xvfb, xorg-x11-xauth, libXfont
 %define include_egg 0
 %endif
 
-
-%define ffmpeg_build_args %{nil}
-%define vpx_build_args %{nil}
-%define x264_build_args %{nil}
-%if 0%{?static_ffmpeg}
-%define ffmpeg_build_args --without-dec_avcodec --with-dec_avcodec2 --with-avcodec2_static --with-csc_swscale --with-swscale_static
-%endif
-%if 0%{?static_vpx}
-%define vpx_build_args --with-vpx --with-vpx_static
-%endif
-%if 0%{?static_x264}
-%define x264_build_args --with-enc_x264 --with-x264_static
-%endif
-
-#if we have static modules, we need semanage to label them:
-%if 0%{?static_x264}%{?static_vpx}%{?static_ffmpeg}
-%if 0%{?el5}
-%define requires_selinux policycoreutils
-%else:
-%define requires_selinux policycoreutils-python
-%endif
-%endif
 
 %if 0%{?no_sound}
 %define requires_sound %{nil}
@@ -161,22 +93,32 @@ Vendor: http://xpra.org/
 Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
-Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_fakexinerama} %{requires_selinux} %{requires_pycrypto}
-%if %{defined fedora}
-BuildRequires: python, setuptool
-BuildRequires: ffmpeg-devel
-BuildRequires: libvpx-devel
-BuildRequires: x264-devel
+Requires: python %{requires_extra} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_lzo} %{requires_xim}
+Requires: pygtk2
+Requires: python-imaging
+Requires: dbus-python
+Requires: python-crypto
+Requires: libfakeXinerama
+Requires: %{xorg_deps}
+Requires: %{libvpx}
+Requires: %{libwebp}
+Requires: x264-xpra
+Requires: ffmpeg-xpra
+
 BuildRequires: pkgconfig
 BuildRequires: Cython
 BuildRequires: pygtk2-devel
+BuildRequires: python, setuptool
 BuildRequires: pygobject2-devel
 BuildRequires: libXtst-devel
 BuildRequires: libXfixes-devel
 BuildRequires: libXcomposite-devel
 BuildRequires: libXdamage-devel
 BuildRequires: libXrandr-devel
-%endif
+BuildRequires: %{libvpx}-devel
+BuildRequires: %{libwebp}-devel
+BuildRequires: x264-xpra-devel
+BuildRequires: ffmpeg-xpra-devel
 BuildRequires: desktop-file-utils
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
@@ -218,7 +160,7 @@ rm -rf build install
 PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%{_libdir}/xpra/pkgconfig
 export PKG_CONFIG_PATH
 
-CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra python setup.py build %{dummy} %{ffmpeg_build_args} %{vpx_build_args} %{x264_build_args} %{opencl_build_args} %{webp_build_args} %{server_build_args} %{avcodec_build_args}
+CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra python setup.py build %{dummy}
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -268,22 +210,6 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %post
-%if 0%{?static_ffmpeg}
-semanage fcontext -a -t textrel_shlib_t %{python_sitelib}/xpra/codecs/csc_swscale/colorspace_converter.so
-semanage fcontext -a -t textrel_shlib_t %{python_sitelib}/xpra/codecs/dec_avcodec*/decoder.so
-restorecon %{python_sitelib}/xpra/codecs/csc_swscale/colorspace_converter.so
-restorecon %{python_sitelib}/xpra/codecs/dec_avcodec*/decoder.so
-%endif
-%if 0%{?static_vpx}
-semanage fcontext -a -t textrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/encoder.so
-semanage fcontext -a -t textrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/decoder.so
-restorecon %{python_sitelib}/xpra/codecs/vpx/encoder.so
-restorecon %{python_sitelib}/xpra/codecs/vpx/decoder.so
-%endif
-%if 0%{?static_x264}
-semanage fcontext -a -t textrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
-restorecon %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
-%endif
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
