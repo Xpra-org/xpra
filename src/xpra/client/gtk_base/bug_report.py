@@ -276,6 +276,8 @@ class BugReport(object):
 
     def do_save(self, filename):
         log("do_save(%s)", filename)
+        if not filename.lower().endswith(".zip"):
+            filename = filename+".zip"
         basenoext, _ = os.path.splitext(os.path.basename(filename))
         data = self.get_text_data()
         import zipfile, time
