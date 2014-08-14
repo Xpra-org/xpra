@@ -327,6 +327,102 @@ fi
 - more Cython compile time optimizations
 - some focus issues fixed
 
+* Wed Aug 13 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.9-1
+- fix clipboard on OSX
+- fix remote ssh start with start-child issues
+- use secure "compare_digest" if available
+- fix crashes in codec cleanup
+- fix video encoding fallback code
+- fix fakeXinerama setup wrongly skipped in some cases
+- fix connection failures with large screens and uncompressed RGB
+- fix Ubuntu trustyi Xvfb configuration
+- fix clipboard errors with no data
+- fix opencl platform initialization errors
+
+* Wed Aug 06 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.8-1
+- fix server early exit when pulseaudio terminates
+- fix SELinux static codec library label (make it persistent)
+- fix missed auto-refresh when batching
+- fix disabled clipboard packets coming through
+- fix cleaner client connection shutdown sequence and exit code
+- fix resource leak on connection error
+- fix potential bug in fallback encoding selection
+- fix deadlock on worker race it was meant to prevent
+- fix remote ssh server start timeout
+- fix avahi double free on exit
+- fix png and jpeg painting via gdk pixbuf (when PIL is missing)
+- fix webp refresh loops
+- honour lz4-off environment variable
+- fix proxy handling of raw RGB data for large screen sizes
+- fix potential error from missing data in client packets
+
+* Thu Jul 10 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.7-3
+- fix x11 server pixmap memory leak
+- fix speed and quality values range (1 to 100)
+- fix nvenc device allocation errors
+- fix unnecessary refreshes with nvenc
+- fix "initenv" compatibility with older servers
+- don't start child when upgrading or shadowing
+
+* Tue Jun 17 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.6-3
+- fix compatibility older versions of pygtk (centos5)
+- fix compatibility with python 2.4 (centos5)
+- fix AltGr workaround with win32 clients
+- fix some missing keys with 'fr' keyboard layout (win32)
+- fix installation on systems without python-glib (centos5)
+- fix Xorg version detection for Fedora rawhide
+
+* Sat Jun 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.5-3
+- re-fix opengl compatibility 
+
+* Fri Jun 13 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.5-1
+- fix use correct dimensions when evaluating video
+- fix invalid latency statistics recording
+- fix auto-refresh wrongly cancelled
+- fix connection via nested ssh commands
+- fix statically linked builds of swscale codec
+- fix system tray icons when upgrading server
+- fix opengl compatibility with older libraries
+- fix ssh connection with shells not starting in home directory
+- fix keyboard layout change forwarding
+
+* Tue Jun 10 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.4-1
+- fix numeric keypad period key mapping on some non-us keyboards
+- fix client launcher GUI on OSX
+- fix remote ssh start with clean user account
+- fix remote shadow start with automatic display selection
+- fix avoid scaling during resize
+- fix changes of speed and quality via xpra control (make it stick)
+- fix xpra info global batch statistics
+- fix focus issue with some applications
+- fix batch delay use
+
+* Sun Jun 01 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.3-1
+- fix xpra upgrade
+- fix xpra control error handling
+- fix window refresh on inactive workspace
+- fix slow cursor updates
+- fix error in rgb strict mode
+- add missing x11 server type information
+
+* Sun Jun 01 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.2-1
+- fix painting of forwarded tray
+- fix initial window workspace
+- fix launcher with debug option in config file
+- fix compilation of x265 encoder
+- fix infinite recursion in cython csc module
+- don't include sound utilities when building without sound
+
+* Wed May 28 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.1-1
+- honour lossless encodings
+- fix avcodec2 build for Debian jessie and sid
+- fix pam authentication module
+- fix proxy server launched without a display
+- fix xpra info data format (wrong prefix)
+- fix transparency with png/L mode
+- fix loss of transparency when toggling OpenGL
+- fix re-stride code for compatibility with ancient clients
+- fix timer reference leak causing some warnings
 
 * Thu May 22 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.0-1
 - Python3 / GTK3 client support
