@@ -301,8 +301,32 @@ fi
 
 
 %changelog
-* Mon May 26 2014 Antoine Martin <antoine@devloop.org.uk> 0.14.0-1
-- TODO
+* Thu Aug 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.14.0-1
+- support for lzo compression
+- support for choosing the compressors enabled (lz4, lzo, zlib)
+- support for choosing the packet encoders enabled (bencode, rencode, yaml)
+- support for choosing the video decoders enabled
+- built in bug report tool, capable of collecting debug information
+- automatic display selection using Xorg "-displayfd"
+- better video region support, increased quality for non-video regions
+- more reliable exit and cleanup code, hooks and notifications
+- prevent SSH timeouts on login password or passphrase input
+- automatic launch the correct tool on MS Windows
+- OSX: may use the Application Services folder for a global configuration
+- removed python-webm, we now use the native cython codec only
+- OpenCL: warn when AMD icd is present (causes problems with signals)
+- better avahi mDNS error reporting
+- better clipboard compression support
+- better packet level network tuning
+- support for input methods
+- xpra info cleanups and improvments (show children, more versions, etc)
+- integrated keyboard layout detection on *nix
+- upgrade and shadow now ignore start child
+- improved automatic encoding selection, also faster
+- keyboard layout selection via system tray on *nix
+- more Cython compile time optimizations
+- some focus issues fixed
+
 
 * Thu May 22 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.0-1
 - Python3 / GTK3 client support
