@@ -1,5 +1,5 @@
 Name:	     x264-xpra	
-Version:     20140719
+Version:     20140814
 Release:     1%{?dist}
 Summary:     x264 library for xpra	
 
