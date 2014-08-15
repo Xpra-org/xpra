@@ -54,6 +54,10 @@
 %if %(egrep -q 'release 6.0|release 6.1|release 6.2|release 6.3' /etc/redhat-release && echo 1 || echo 0)
 %define dummy --without-Xdummy
 %endif
+#don't try to support opengl with anything older than 6.5:
+%if %(egrep -q 'release 6.0|release 6.1|release 6.2|release 6.3|release 6.4' /etc/redhat-release && echo 1 || echo 0)
+%define requires_opengl %{nil}
+%endif
 %endif
 
 %if 0%{?el5}
