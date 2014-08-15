@@ -93,8 +93,11 @@ class XpraClient(GTKXpraClient):
             return
         if color_str=="auto" or color_str=="":
             try:
-                import hashlib
-                m = hashlib.sha1()
+                try: 
+                    from hashlib import md5
+                except ImportError:
+                    from md5 import md5
+                m = md5()
                 for x in extra_args:
                     m.update(str(x))
                 color_str = "#%s" % m.hexdigest()[:6]
