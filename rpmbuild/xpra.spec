@@ -110,6 +110,7 @@ BuildRequires: Cython
 BuildRequires: pygtk2-devel
 BuildRequires: python, setuptool
 BuildRequires: pygobject2-devel
+BuildRequires: libxkbfile-devel
 BuildRequires: libXtst-devel
 BuildRequires: libXfixes-devel
 BuildRequires: libXcomposite-devel
