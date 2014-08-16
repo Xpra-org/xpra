@@ -30,6 +30,7 @@
 %define xorg_deps xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %define libwebp libwebp
 %define libvpx libvpx
+%define mdns_deps avahi-ui-tools netifaces
 
 # any centos / rhel supported:
 %if 0%{?el5}%{?el6}%{?el7}
@@ -67,6 +68,8 @@
 #does not build against python24:
 %define requires_lz4 %{nil}
 %define dummy --without-Xdummy
+#no avahi tools (bindings):
+%define mdns_deps netifaces
 #not available:
 %define requires_opengl %{nil}
 %define requires_xim %{nil}
@@ -104,6 +107,7 @@ Requires: pygtk2
 Requires: python-imaging
 Requires: dbus-python
 Requires: python-crypto
+Requires: %{mdns_deps}
 Requires: libfakeXinerama
 Requires: %{xorg_deps}
 Requires: %{libvpx}
