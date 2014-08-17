@@ -7,20 +7,20 @@ import os.path
 import sys
 
 def get_resources_dir():
-    try:
-        # test for a local installation path (run from source tree):
-        local_share_path = os.path.join(os.path.dirname(sys.argv[0]), "..", "share", "xpra")
-        if os.path.exists(local_share_path):
-            return local_share_path
-    except:
-        pass
     #is there a better/cleaner way?
     options = [os.path.join(sys.exec_prefix, "share", "xpra"),
                "/usr/share/xpra",
                "/usr/local/share/xpra"]
     for x in options:
-        if os.path.exists(x):
+        if os.path.exists(x) and os.path.isdir(x):
             return x
+    try:
+        # test for a local installation path (run from source tree):
+        local_share_path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "..", "share", "xpra"))
+        if os.path.exists(local_share_path) and os.path.isdir(local_share_path):
+            return local_share_path
+    except:
+        pass
     return os.getcwd()
 
 def get_app_dir():
