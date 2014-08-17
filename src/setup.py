@@ -145,8 +145,6 @@ x265_static_ENABLED     = False
 webp_static_ENABLED     = False
 vpx_ENABLED             = pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32)
 vpx_static_ENABLED      = False
-#ffmpeg 1.x and libav:
-dec_avcodec_ENABLED     = pkg_config_ok("--max-version=55", "libavcodec", fallback=not WIN32)
 #ffmpeg 2 onwards:
 dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fallback=WIN32)
 # some version strings I found:
@@ -158,7 +156,6 @@ dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fa
 # * jessie and sid: (last updated 2014-05-26): 55.34.1
 #   (moved to ffmpeg2 style buffer API sometime in early 2014)
 # * wheezy: 53.35
-avcodec_static_ENABLED  = False
 avcodec2_static_ENABLED = False
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 swscale_static_ENABLED  = False
@@ -178,7 +175,6 @@ bundle_tests_ENABLED    = False
 SWITCHES = ("enc_x264", "x264_static",
             "enc_x265", "x265_static",
             "nvenc",
-            "dec_avcodec", "avcodec_static",
             "dec_avcodec2", "avcodec2_static",
             "csc_swscale", "swscale_static",
             "csc_opencl", "csc_cython",
@@ -799,8 +795,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/enc_x265/encoder.c",
                    "xpra/codecs/webp/encode.c",
                    "xpra/codecs/webp/decode.c",
-                   "xpra/codecs/dec_avcodec/decoder.c",
-                   "xpra/codecs/dec_avcodec/constants.pxi",
                    "xpra/codecs/dec_avcodec2/decoder.c",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
                    "xpra/codecs/csc_swscale/constants.pxi",
@@ -873,11 +867,7 @@ if WIN32:
 
     #ffmpeg is needed for both swscale and x264:
     libffmpeg_path = ""
-    if dec_avcodec_ENABLED:
-        assert not dec_avcodec2_ENABLED, "cannot enable both dec_avcodec and dec_avcodec2"
-        libffmpeg_path = "C:\\ffmpeg-win32-bin"
-    elif dec_avcodec2_ENABLED:
-        assert not dec_avcodec_ENABLED, "cannot enable both dec_avcodec and dec_avcodec2"
+    if dec_avcodec2_ENABLED:
         libffmpeg_path = "C:\\ffmpeg2-win32-bin"
     else:
         if csc_swscale_ENABLED:
@@ -1682,14 +1672,6 @@ if webp_ENABLED:
     cython_add(Extension("xpra.codecs.webp.decode",
                 ["xpra/codecs/webp/decode.pyx"]+membuffers_c,
                 **webp_pkgconfig))
-
-toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
-if dec_avcodec_ENABLED:
-    make_constants("xpra", "codecs", "dec_avcodec", "constants")
-    avcodec_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec_static_ENABLED)
-    cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
-                ["xpra/codecs/dec_avcodec/decoder.pyx"]+membuffers_c,
-                **avcodec_pkgconfig))
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
