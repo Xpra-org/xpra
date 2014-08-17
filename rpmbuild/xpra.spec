@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define version 0.14.0
-%{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %if 0%{?build_no} == 0
 %define build_no 0
 %endif
@@ -178,19 +178,15 @@ rm -rf $RPM_BUILD_ROOT
 cd xpra-%{version}
 %{__python} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
 
-#why do we even need to do this ourselves?
-%ifarch x86_64
-mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
-%endif
 
 %if 0%{?opengl}
 #included by default
 %else
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/client/gl
+rm -fr ${RPM_BUILD_ROOT}/%{python_sitearch}/xpra/client/gl
 %endif
 
 %if 0%{?no_sound}
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/sound
+rm -fr ${RPM_BUILD_ROOT}/%{python_sitearch}/xpra/sound
 %endif
 
 
@@ -201,9 +197,9 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %{_bindir}/xpra*
-%{python_sitelib}/xpra
+%{python_sitearch}/xpra
 %if %{include_egg}
-%{python_sitelib}/xpra-*.egg-info
+%{python_sitearch}/xpra-*.egg-info
 %endif
 %{_datadir}/xpra
 %{_datadir}/man/man1/xpra*
