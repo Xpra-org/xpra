@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.14.0
+%define version 0.15.0
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %if 0%{?build_no} == 0
 %define build_no 0
@@ -235,6 +235,9 @@ fi
 
 
 %changelog
+* Sun Aug 17 2014 Antoine Martin <antoine@devloop.org.uk> 0.15.0-1
+- TODO
+
 * Thu Aug 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.14.0-1
 - support for lzo compression
 - support for choosing the compressors enabled (lz4, lzo, zlib)
