@@ -118,7 +118,7 @@ Requires: ffmpeg-xpra
 BuildRequires: pkgconfig
 BuildRequires: Cython
 BuildRequires: pygtk2-devel
-BuildRequires: python, setuptool
+BuildRequires: python, python-setuptools
 BuildRequires: pygobject2-devel
 BuildRequires: libxkbfile-devel
 BuildRequires: libXtst-devel
