@@ -8,7 +8,11 @@
 
 import avahi
 import dbus
-
+try:
+	from dbus.exceptions import DBusException
+except:
+	#not available in all versions of the bindings?
+	DBusException = Exception
 XPRA_MDNS_TYPE = '_xpra._tcp.'
 
 from xpra.log import Logger
@@ -125,18 +129,13 @@ class AvahiPublisher:
 			g.Commit()
 			self.group = g
 			log("dbus service added")
-		except Exception, e:
+		except DBusException, e:
 			#use try+except as older versions may not have those modules?
-			try:
-				import dbus.exceptions
-				if type(e)==dbus.exceptions.DBusException:
-					message = e.get_dbus_message()
-					dbus_error_name = e.get_dbus_name()
-					if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
-						log.error("error starting publisher %s: another instance already claims this dbus name: %s, message: %s", self, e, message)
-						return
-			except:
-				pass
+			message = e.get_dbus_message()
+			dbus_error_name = e.get_dbus_name()
+			if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
+				log.error("error starting publisher %s: another instance already claims this dbus name: %s, message: %s", self, e, message)
+				return
 			log.warn("failed to start %s: %s", self, e)
 			helpmsg()
 
