@@ -45,6 +45,7 @@ except Exception, e:
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
 from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
+from xpra.net import compression
 
 
 class WindowSource(object):
@@ -95,9 +96,9 @@ class WindowSource(object):
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.boolget("rgb24zlib")
                                                         #supports rgb (both rgb24 and rgb32..) compression outside network layer (unwrapped)
-        self.rgb_zlib = encoding_options.boolget("rgb_zlib", True)      #client supports zlib pixel compression (not to be confused with 'rgb24zlib'...)
-        self.rgb_lz4 = encoding_options.boolget("rgb_lz4", False)       #client supports lz4 pixel compression
-        self.rgb_lzo = encoding_options.boolget("rgb_lzo", False)       #client supports lzo pixel compression
+        self.rgb_zlib = compression.use_zlib and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression (not to be confused with 'rgb24zlib'...)
+        self.rgb_lz4 = compression.use_lz4 and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
+        self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
         self.webp_leaks = encoding_options.boolget("webp_leaks", True)  #all clients leaked memory until this flag got added
         self.generic_encodings = encoding_options.boolget("generic")
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")

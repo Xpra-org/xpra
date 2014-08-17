@@ -28,7 +28,8 @@ from xpra.simple_stats import add_list_stats, std_unit
 from xpra.codecs.loader import get_codec, has_codec, OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import codec_spec
-from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed, has_lzo, has_lz4
+from xpra.net import compression
+from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
@@ -520,8 +521,8 @@ class ServerSource(object):
         self.client_proxy = c.boolget("proxy")
         #general features:
         self.zlib = c.boolget("zlib", True)
-        self.lz4 = c.boolget("lz4", False) and has_lz4
-        self.lzo = c.boolget("lzo", False) and has_lzo
+        self.lz4 = c.boolget("lz4", False) and compression.use_lz4
+        self.lzo = c.boolget("lzo", False) and compression.use_lzo
         self.send_windows = self.ui_client and c.boolget("windows", True)
         self.window_raise = c.boolget("window.raise")
         self.pointer_grabs = c.boolget("pointer.grabs")
