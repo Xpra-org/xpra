@@ -1142,8 +1142,6 @@ def make_client(error_cb, opts):
         toolkits["gtk2"] = "xpra.client.gtk2.client"
     elif check_toolkit("gi", "xpra.client.gtk3"):
         toolkits["gtk3"] = "xpra.client.gtk3.client"
-    if check_toolkit("PyQt4.QtCore", "PyQt4.QtGui", "xpra.client.qt4"):
-        toolkits["qt4"] = "xpra.client.qt4.client"
 
     if len(toolkits)==0:
         error_cb("no client toolkit found! (maybe this is a server-only installation?)")
