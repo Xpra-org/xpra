@@ -31,9 +31,6 @@ except:
     xor_str = None
 
 
-sys.modules['QtCore']=None
-
-
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     __gsignals__ = UIXpraClient.__gsignals__
 
