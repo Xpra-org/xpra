@@ -7,7 +7,6 @@
 # this used to be implemented using a gtk.gdk.Rectangle
 # but we don't want its union() behaviour which can be too expensive
 
-from xpra.os_util import builtins
 from xpra.util import AdHocStruct
 
 class rectangle(AdHocStruct):
@@ -121,20 +120,10 @@ class rectangle(AdHocStruct):
     def clone(self):
         return rectangle(self.x, self.y, self.width, self.height)
 
-if builtins.__dict__.get("any"):
-    #python 2.5 onwards:
-    def contains(regions, x, y, w, h):
-        x2 = x+w
-        y2 = y+h
-        return any(True for r in regions if (x>=r.x and y>=r.y and x2<=(r.x+r.width) and y2<=(r.y+r.height)))
-else:
-    def contains(regions, x, y, w, h):
-        x2 = x+w
-        y2 = y+h
-        for r in regions:
-            if x>=r.x and y>=r.y and x2<=(r.x+r.width) and y2<=(r.y+r.height):
-                return True
-        return False
+def contains(regions, x, y, w, h):
+    x2 = x+w
+    y2 = y+h
+    return any(True for r in regions if (x>=r.x and y>=r.y and x2<=(r.x+r.width) and y2<=(r.y+r.height)))
 
 
 def contains_rect(regions, region):
