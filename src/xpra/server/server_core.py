@@ -61,13 +61,13 @@ def get_thread_info(proto=None):
     i = 0
     #threads used by the "info" client:
     for t in info_threads:
-        info["info[%s]" % i] = t.name
+        info["info[%s]" % i] = t.getName()
         i += 1
     i = 0
     #all non-info threads:
     for t in threading.enumerate():
         if t not in info_threads:
-            info[str(i)] = t.name
+            info[str(i)] = t.getName()
             i += 1
     #platform specific bits:
     try:
