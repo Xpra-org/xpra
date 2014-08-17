@@ -775,7 +775,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     add_packages("xpra")
     #ensure we remove the files we generate:
     CLEAN_FILES = [
-                   "xpra/src_info.py",
                    "xpra/build_info.py",
                    "xpra/gtk_common/gdk_atoms.c",
                    "xpra/x11/gtk_x11/constants.pxi",
