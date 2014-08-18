@@ -363,7 +363,6 @@ class ServerBase(ServerCore):
             "pointer-position":                     self._process_pointer_position,
             #attributes / settings:
             "server-settings":                      self._process_server_settings,
-            "jpeg-quality":                         self._process_quality,
             "quality":                              self._process_quality,
             "min-quality":                          self._process_min_quality,
             "speed":                                self._process_speed,

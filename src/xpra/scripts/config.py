@@ -407,9 +407,7 @@ def get_defaults():
                     }
     return GLOBAL_DEFAULTS
 #fields that got renamed:
-CLONES = {
-            "quality"       : "jpeg-quality",
-          }
+CLONES = {}
 
 #these options should not be specified in config files:
 NO_FILE_OPTIONS = ["daemon"]
