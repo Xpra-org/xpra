@@ -688,7 +688,7 @@ def detect_xorg_setup():
         has_displayfd = False
 
     def Xvfb():
-        return ("Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY", has_displayfd, False)
+        return ("Xvfb +extension Composite -screen 0 5760x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY", has_displayfd, False)
 
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:
         print("Warning: sorry, no support for Xdummy on %s" % sys.platform)
