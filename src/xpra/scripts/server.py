@@ -15,7 +15,6 @@ import os.path
 import atexit
 import signal
 import socket
-import getpass
 import select
 import time
 import traceback
@@ -894,8 +893,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
 
     #publish mdns records:
     if opts.mdns:
+        from xpra.platform.info import get_username
         mdns_info = {"display" : display_name,
-                     "username": getpass.getuser()}
+                     "username": get_username()}
         if opts.session_name:
             mdns_info["session"] = opts.session_name
         for mode, listen_on in mdns_recs:

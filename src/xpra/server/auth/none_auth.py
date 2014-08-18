@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator
-import os
+from xpra.platform.info import get_username
 
 
 def init(opts):
@@ -15,13 +15,7 @@ class Authenticator(SysAuthenticator):
     def __init__(self, username):
         self.salt = None
         self.pw = None
-        try:
-            import pwd
-            self.pw = pwd.getpwuid(os.getuid())
-            self.username = self.pw.pw_name
-        except:
-            import getpass
-            self.username = getpass.getuser()
+        self.username = get_username()
 
     def requires_challenge(self):
         return False
