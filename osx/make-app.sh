@@ -106,11 +106,6 @@ echo
 echo "*******************************************************************************"
 echo "Add xpra/server/python scripts"
 rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
-# copy "python" binary as another name so we can have a process that is not called "python"
-# for each one of the tools we provide a script for:
-cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra"
-cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra_Launcher"
-cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Keyboard_Tool"
 #we dont need the wrapper installed by distutils:
 rm "${MACOS_DIR}/Xpra_Launcher-bin"
 
@@ -127,13 +122,15 @@ rsync -rpl $PYTHON_PACKAGES/xpra/* $LIBDIR/python/xpra/
 echo "removing files that should not be installed in the first place (..)"
 for x in "*.c" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
 	echo "removing $x:"
-	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm {} \; | sed "s+$LIBDIR/python/xpra/++g" | xargs -L 1 echo "* "
+	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm "{}" \; | sed "s+$LIBDIR/python/xpra/++g" | xargs -L 1 echo "* "
 done
+echo "removing py if we have the pyc:"
 #only remove ".py" source if we have a binary ".pyc" for it:
 for x in `find $LIBDIR/python/xpra -name "*.py" -type f`; do
 	d="`dirname $x`"
 	f="`basename $x`"
-	if [ -r "$d/$fc" ]; then
+	if [ -r "$d/${f}c" ]; then
+		echo "* $x"
 		rm "$x"
 	fi
 done
@@ -158,6 +155,20 @@ rsync -rpl $PYTHON_PACKAGES/pygtk* $PYGTK_LIBDIR
 rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR
 #opengl: just take everything:
 rsync -rpl $PYTHON_PACKAGES/OpenGL* $LIBDIR/python/
+#then remove what we know we don't need:
+pushd $LIBDIR/python/OpenGL
+for x in GLE Tk EGL GLES3 GLUT WGL GLX GLES1 GLES2; do
+	rm -fr ./$x
+	rm -fr ./raw/$x
+done
+popd
+#remove numpy bits:
+pushd $LIBDIR/python/numpy
+rm -fr ./f2py/docs
+for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing; do
+	rm -fr ./$x/tests
+done
+popd
 
 #gst bits expect to find dylibs in Frameworks!?
 pushd ${CONTENTS_DIR}
