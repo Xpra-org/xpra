@@ -1,6 +1,6 @@
 Summary: Modular Assembler
 Name: yasm
-Version: 1.2.0
+Version: 1.3.0
 Release: 1%{?dist}
 # See COPYING for the detail, there is quite a lot!
 License: BSD and (GPLv2+ or Artistic or LGPLv2+) and LGPLv2
@@ -71,6 +71,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Aug 18 2014 Antoine Martin <antoine@devloop.org.uk> 1.3.0-1
+- Update to 1.3.0
+
 * Thu Mar 15 2012 Matthias Saou <matthias@saou.eu> 1.2.0-1
 - Update to 1.2.0 (#750234).
 - Minor spec file cleanups (keep EPEL compatibility, #802162).
