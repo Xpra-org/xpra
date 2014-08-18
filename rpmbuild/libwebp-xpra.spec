@@ -1,6 +1,6 @@
 Name:	     libwebp-xpra
-Version:     0.4.0
-Release:     2%{?dist}
+Version:     0.4.1
+Release:     1%{?dist}
 Summary:     WebP library and conversion tools
 
 Group:       Applications/Multimedia
@@ -66,6 +66,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Aug 18 2014 Antoine Martin <antoine@devloop.org.uk> 0.4.1-1
+- Update to 0.4.1
+
 * Thu Jul 31 2014 Antoine Martin <antoine@devloop.org.uk>
 - configure doesn't support --enable-pic
 

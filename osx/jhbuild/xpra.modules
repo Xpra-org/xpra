@@ -139,8 +139,8 @@
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
-    <branch module="/files/libwebp-0.4.0.tar.gz"
-			version="0.4.0"
+    <branch module="/files/libwebp-0.4.1.tar.gz"
+			version="0.4.1"
             repo="webp.googlecode.com"/>
   </autotools>
 
