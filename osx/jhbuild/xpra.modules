@@ -11,7 +11,7 @@
   <repository type="tarball" name="wavpack.com" href="http://www.wavpack.com"/>
   <repository type="tarball" name="webm.googlecode.com" href="https://webm.googlecode.com"/>
   <repository type="tarball" name="download.videolan.org" href="http://download.videolan.org"/>
-  <repository type="tarball" name="webp.googlecode.com" href="https://webp.googlecode.com"/>
+  <repository type="tarball" name="downloads.webmproject.org" href="http://downloads.webmproject.org"/>
   <repository type="tarball" name="ffmpeg.org" href="http://ffmpeg.org"/>
   <repository type="tarball" name="www.libsdl.org" href="http://www.libsdl.org"/>
   <repository type="tarball" name="gstreamer.freedesktop.org" href="http://gstreamer.freedesktop.org"/>
@@ -139,9 +139,9 @@
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
-    <branch module="/files/libwebp-0.4.1.tar.gz"
+    <branch module="/releases/webp/libwebp-0.4.1.tar.gz"
 			version="0.4.1"
-            repo="webp.googlecode.com"/>
+            repo="downloads.webmproject.org"/>
   </autotools>
 
   <autotools id="ffmpeg"
