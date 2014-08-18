@@ -19,9 +19,9 @@ if False:
     #for testing:
     BLACKLIST["vendor"].append("NVIDIA Corporation")
     WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
-    
+
 if sys.platform.startswith("darwin"): 
-    #crashes were reported with the Intel driver on OSX 
+    #crashes were reported with the Intel driver on OSX
     BLACKLIST["vendor"].append("Intel Inc.")
     WHITELIST["renderer"] = ["Intel HD Graphics 4000 OpenGL Engine"]
 

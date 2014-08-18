@@ -93,7 +93,7 @@ class XpraClient(GTKXpraClient):
             return
         if color_str=="auto" or color_str=="":
             try:
-                try: 
+                try:
                     from hashlib import md5
                 except ImportError:
                     from md5 import md5
