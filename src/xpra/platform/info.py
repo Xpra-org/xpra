@@ -33,6 +33,11 @@ def get_name():
         return ""
     return p.pw_gecos.replace(",", "")
 
+def get_user_info():
+    return {
+            "username"  : get_username(),
+            "name"      : get_name()
+            }
 
 from xpra.platform import platform_import
 platform_import(globals(), "info", False,

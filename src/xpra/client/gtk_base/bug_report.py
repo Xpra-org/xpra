@@ -23,6 +23,7 @@ from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_i
 from xpra.client.gtk_base.about import about
 from xpra.client.client_base import SIGNAMES
 from xpra.platform.paths import get_icon_dir
+from xpra.platform.info import get_user_info
 from xpra.util import nonl, updict
 from xpra.log import Logger, enable_debug_for
 log = Logger("util")
@@ -118,6 +119,7 @@ class BugReport(object):
                     "host"          : get_host_info(),
                     "paths"         : get_path_info(),
                     "gtk"           : get_gtk_version_info(),
+                    "user"          : get_user_info(),
                     }.items():
                 updict(d, k, v)
             return d
