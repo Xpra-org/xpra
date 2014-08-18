@@ -20,6 +20,9 @@ from distutils.command.build import build
 from distutils.command.install_data import install_data
 import shutil
 
+if sys.version<'2.6':
+    raise Exception("xpra no longer supports Python versions older than 2.6")
+
 try:
     from hashlib import md5         #@UnusedImport
     new_md5 = md5
