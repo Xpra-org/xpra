@@ -618,7 +618,6 @@ class ServerSource(object):
         #defined their name before the "encoding." prefix convention,
         #or because we want to pass default values (zlib/lz4):
         for k,ek in {"initial_quality"          : "initial_quality",
-                     "encoding_client_options"  : "client_options",
                      "quality"                  : "quality",
                      "zlib"                     : "rgb_zlib",
                      "lz4"                      : "rgb_lz4",

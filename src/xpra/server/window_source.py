@@ -92,8 +92,6 @@ class WindowSource(object):
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
-        self.encoding_client_options = encoding_options.boolget("client_options")
-                                                        #does the client support encoding options?
         self.rgb_zlib = compression.use_zlib and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression (not to be confused with 'rgb24zlib'...)
         self.rgb_lz4 = compression.use_lz4 and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
@@ -185,7 +183,6 @@ class WindowSource(object):
         self.rgb_formats = []
         self.client_refresh_encodings = []
         self.encoding_options = {}
-        self.encoding_client_options = {}
         self.rgb_zlib = False
         self.rgb_lz4 = False
         self.rgb_lzo = False
@@ -1326,7 +1323,7 @@ class WindowSource(object):
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self._current_speed
         return rgb_encode(coding, image, self.rgb_formats, self.supports_transparency, s,
-                          self.rgb_zlib, self.rgb_lz4, self.rgb_lzo, self.encoding_client_options)
+                          self.rgb_zlib, self.rgb_lz4, self.rgb_lzo)
 
     def PIL_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:

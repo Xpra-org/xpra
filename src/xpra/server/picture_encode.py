@@ -69,9 +69,9 @@ def webp_encode(coding, image, supports_transparency, quality, speed, options):
 def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
 
-def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, rgb_lzo=False, encoding_client_options=True):
+def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, rgb_lzo=False):
     pixel_format = image.get_pixel_format()
-    #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4, encoding_client_options), pixel_format, rgb_formats)
+    #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
     if pixel_format not in rgb_formats:
         if not rgb_reformat(image, rgb_formats, supports_transparency):
             raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))
@@ -148,8 +148,6 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     else:
         bpp = 24
     log("rgb_encode using level=%s, %s compressed %sx%s in %s/%s: %s bytes down to %s", level, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(raw_data))
-    if not encoding_client_options:
-        return  coding, wire_data, {}, width, height, stride, bpp
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
     return coding, compression.Compressed(coding, raw_data, True), options, width, height, stride, bpp

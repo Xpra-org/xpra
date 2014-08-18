@@ -81,15 +81,6 @@ RGB_FORMATS = ("XRGB",
                "RGB")
 
 
-def get_default_csc_modes(encoding_client_options=True):
-    if not encoding_client_options:
-        #very old clients can only use 420P:
-        return ("YUV420P", )
-    #default for newer clients that don't specify "csc_modes":
-    #(0.10 onwards should have specified csc_modes)
-    return ("YUV420P", "YUV422P", "YUV444P")
-
-
 class TransientCodecException(Exception):
     pass
 

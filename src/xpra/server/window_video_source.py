@@ -10,7 +10,7 @@ import operator
 from threading import Lock
 
 from xpra.net.compression import Compressed
-from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, get_default_csc_modes, \
+from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
 from xpra.server.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
 from xpra.server.video_subregion import VideoSubregion
@@ -73,8 +73,11 @@ class WindowVideoSource(WindowSource):
 
     def init_encoders(self):
         WindowSource.init_encoders(self)
-        self.csc_modes = get_default_csc_modes(self.encoding_client_options)       #for pre 0.12 clients: just one list of modes for all encodings..
-        self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
+        #default for clients that don't specify "csc_modes":
+        #(0.10 onwards should have specified csc_modes or full_csc_modes)
+        self.csc_modes = ("YUV420P", "YUV422P", "YUV444P")
+        #for 0.12 onwards: per encoding lists:
+        self.full_csc_modes = {}
         self.parse_csc_modes(self.encoding_options.listget("csc_modes", default_value=None), self.encoding_options.dictget("full_csc_modes", default_value=None))
 
         self.video_encodings = self.video_helper.get_encodings()
@@ -1154,19 +1157,18 @@ class WindowVideoSource(WindowSource):
             self.free_image_wrapper(csc_image)
             del csc_image
 
-            if self.encoding_client_options:
-                #tell the client which colour subsampling we used:
-                #(note: see csc_equiv!)
-                if self.uses_csc_atoms:
-                    client_options["csc"] = self.csc_equiv(csc)
-                else:
-                    #ugly hack: expose internal ffmpeg/libav constant
-                    #for old versions without the "csc_atoms" feature:
-                    client_options["csc_pixel_format"] = get_avutil_enum_from_colorspace(csc)
-                #tell the client about scaling (the size of the encoded picture):
-                #(unless the video encoder has already done so):
-                if self._csc_encoder and ("scaled_size" not in client_options) and (enc_width!=width or enc_height!=height):
-                    client_options["scaled_size"] = enc_width, enc_height
+            #tell the client which colour subsampling we used:
+            #(note: see csc_equiv!)
+            if self.uses_csc_atoms:
+                client_options["csc"] = self.csc_equiv(csc)
+            else:
+                #ugly hack: expose internal ffmpeg/libav constant
+                #for old versions without the "csc_atoms" feature:
+                client_options["csc_pixel_format"] = get_avutil_enum_from_colorspace(csc)
+            #tell the client about scaling (the size of the encoded picture):
+            #(unless the video encoder has already done so):
+            if self._csc_encoder and ("scaled_size" not in client_options) and (enc_width!=width or enc_height!=height):
+                client_options["scaled_size"] = enc_width, enc_height
             log("video_encode encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                                 encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
             return self._video_encoder.get_encoding(), Compressed(encoding, data), client_options, width, height, 0, 24
