@@ -226,11 +226,14 @@ def read_xpra_defaults():
     dirs = [get_default_conf_dir(), get_system_conf_dir(), get_user_conf_dir()]
     defaults = {}
     for d in dirs:
-        if not d or not os.path.exists(d):
-            debug("read_xpra_defaults: skipping %s", d)
+        if not d:
             continue
-        defaults.update(read_xpra_conf(d))
-        debug("read_xpra_defaults: updated defaults with %s", d)
+        ad = os.path.expanduser(d)
+        if not os.path.exists(ad):
+            debug("read_xpra_defaults: skipping %s", ad)
+            continue
+        defaults.update(read_xpra_conf(ad))
+        debug("read_xpra_defaults: updated defaults with %s", ad)
     return defaults
 
 
