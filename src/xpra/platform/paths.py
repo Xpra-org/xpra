@@ -132,11 +132,11 @@ platform_import(globals(), "paths", False,
 def get_info():
     return {
             "default_conf.dir"  : get_default_conf_dir(),
-            "system_conf_dir"   : get_system_conf_dir(),
-            "user_conf_dir"     : get_user_conf_dir(),
+            "system_conf.dir"   : get_system_conf_dir(),
+            "user_conf.dir"     : get_user_conf_dir(),
             "socket"            : get_default_socket_dir(),
-            "app"               : get_app_dir(),
-            "app.default"       : default_get_app_dir(),
+            "app.dir"           : get_app_dir(),
+            "app.default.dir"   : default_get_app_dir(),
             "resources"         : get_resources_dir(),
             "icons"             : get_icon_dir()
             }
