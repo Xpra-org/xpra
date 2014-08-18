@@ -142,7 +142,8 @@ ERROR_TO_NAME = {
         }
 
 def get_version():
-    version = WebPGetDecoderVersion()
+    cdef int version = WebPGetDecoderVersion()
+    log("WebPGetDecoderVersion()=%#x", version)
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff
 
 def webp_check(int ret):

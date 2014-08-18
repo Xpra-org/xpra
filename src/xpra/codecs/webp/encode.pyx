@@ -272,7 +272,8 @@ def get_encodings():
     return ["webp"]
 
 def get_version():
-    version = WebPGetEncoderVersion()
+    cdef int version = WebPGetEncoderVersion()
+    log("WebPGetEncoderVersion()=%#x", version)
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff
 
 def webp_check(int ret):
