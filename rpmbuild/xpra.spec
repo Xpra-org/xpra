@@ -8,35 +8,24 @@
 %if 0%{?build_no} == 0
 %define build_no 0
 %endif
-%define include_egg 1
-%define old_xdg 0
 
 #the only build option we specify:
 %define dummy --with-Xdummy
 
 #some of these dependencies may get turned off (empty) on some platforms:
 %define requires_lzo , python-lzo
-%define requires_lz4 , python-lz4
 #OpenGL bits:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext, numpy
 #Anything extra (distro specific):
-%define requires_extra %{nil}
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils
 #This would add support for mp3, but is not in the default repositories:
 #gstreamer-plugins-ugly
-%define requires_xim , gtk2-immodule-xim
 
-#Vfb (Xvfb or Xdummy):
-%define xorg_deps xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %define libwebp libwebp
 %define libvpx libvpx
-#we cannot depend on 'avahi-ui-tools' which we need for mdns support
-#(it provides the avahi python bindings)
-#because Fedora and CentOS bring in some insane dependencies with it (vnc)
-%define mdns_deps netifaces
 
 # any centos / rhel supported:
-%if 0%{?el5}%{?el6}%{?el7}
+%if 0%{?el6}%{?el7}
 #not available:
 %define requires_lzo %{nil}
 #do not disable sound support, but do not declare deps for it either
@@ -64,25 +53,6 @@
 %endif
 %endif
 
-%if 0%{?el5}
-#distro version is too old replace with our private libraries
-%define libvpx libvpx-xpra
-%define libwebp libwebp-xpra
-#does not build against python24:
-%define requires_lz4 %{nil}
-%define dummy --without-Xdummy
-#not available:
-%define requires_opengl %{nil}
-%define requires_xim %{nil}
-%define no_sound 1
-%define no_pulseaudio 1
-%define old_xdg 1
-#uuidgen is in e2fsprogs! (no we don't do any fs stuff)
-%define requires_extra , e2fsprogs, python-ctypes
-%define xorg_deps xorg-x11-server-utils, xorg-x11-server-Xvfb, xorg-x11-xauth, libXfont
-%define include_egg 0
-%endif
-
 
 %if 0%{?no_sound}
 %define requires_sound %{nil}
@@ -103,14 +73,19 @@ Vendor: http://xpra.org/
 Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
-Requires: python %{requires_extra} %{requires_opengl} %{requires_sound} %{requires_lz4} %{requires_lzo} %{requires_xim}
+Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo}
+Requires: python-lz4
 Requires: pygtk2
 Requires: python-imaging
 Requires: dbus-python
 Requires: python-crypto
-Requires: %{mdns_deps}
+#we cannot depend on 'avahi-ui-tools' which we need for mdns support
+#(it provides the avahi python bindings)
+#because Fedora and CentOS bring in some insane dependencies with it (vnc)
+Requires: netifaces
 Requires: libfakeXinerama
-Requires: %{xorg_deps}
+Requires: gtk2-immodule-xim
+Requires: xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 Requires: %{libvpx}
 Requires: %{libwebp}
 Requires: x264-xpra
@@ -135,9 +110,6 @@ BuildRequires: desktop-file-utils
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 
-### Patches ###
-Patch12: old-xdg-desktop.patch
-
 
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -149,16 +121,6 @@ So basically it's screen for remote X apps.
 rm -rf $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
 cd xpra-%{version}
-
-%if 0%{?no_pulseaudio}
-(sed -e -i s'/sound_ENABLED = True/sound_ENABLED = False/g' setup.py)
-(echo "setup.py" >> %{S:ignored_changed_files.txt})
-(echo "etc/*/xpra.conf" >> %{S:ignored_changed_files.txt})
-%endif
-
-%if 0%{?old_xdg}
-%patch12 -p1
-%endif
 
 
 %debug_package
@@ -199,9 +161,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_bindir}/xpra*
 %{python_sitearch}/xpra
-%if %{include_egg}
 %{python_sitearch}/xpra-*.egg-info
-%endif
 %{_datadir}/xpra
 %{_datadir}/man/man1/xpra*
 %{_datadir}/applications/xpra_launcher.desktop
