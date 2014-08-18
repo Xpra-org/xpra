@@ -122,7 +122,8 @@ class WindowSource(object):
         self.fullscreen = window.get_property("fullscreen")
         self.scaling = None
         self.maximized = False          #set by the client!
-        window.connect("notify::fullscreen", self._fullscreen_changed)
+        if "fullscreen" in window.get_dynamic_property_names():
+            window.connect("notify::fullscreen", self._fullscreen_changed)
 
         #for deciding between small regions and full screen updates:
         self.max_small_regions = 40

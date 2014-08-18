@@ -323,6 +323,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def get_property_names(self):
         return self.property_names
 
+    def get_dynamic_property_names(self):
+        return ("title", "size-hints", "fullscreen", "maximized", "opacity")
+
+
     def managed_connect(self, detailed_signal, handler, *args):
         """ connects a signal handler and makes sure we will clean it up on unmanage() """
         handler_id = self.connect(detailed_signal, handler, *args)

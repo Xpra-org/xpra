@@ -48,6 +48,10 @@ class RootWindowModel(object):
     def get_property_names(self):
         return ("title", "client-machine", "window-type", "size-hints")
 
+    def get_dynamic_property_names(self):
+        #nothing changes
+        return ()
+
     def get_property(self, prop):
         if prop=="title":
             return prettify_plug_name(self.window.get_screen().get_display().get_name())
@@ -69,7 +73,7 @@ class RootWindowModel(object):
         return None
 
     def connect(self, *args):
-        log("ignoring signal connect request: %s", args)
+        log.warn("ignoring signal connect request: %s", args)
 
     def get_dimensions(self):
         return self.window.get_size()

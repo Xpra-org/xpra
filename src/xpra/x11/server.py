@@ -395,10 +395,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         window.managed_connect("ungrab", self._window_ungrab)
         return wid
 
-    _window_export_properties = ("title", "size-hints", "fullscreen", "maximized", "opacity")
     def _add_new_window(self, window):
         self._add_new_window_common(window)
-        for prop in self._window_export_properties:
+        for prop in self.get_dynamic_property_names():
             window.connect("notify::%s" % prop, self._update_metadata)
         _, _, w, h, _ = window.get_property("client-window").get_geometry()
         x, y, _, _, _ = window.corral_window.get_geometry()
