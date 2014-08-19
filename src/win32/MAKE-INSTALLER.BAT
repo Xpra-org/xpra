@@ -150,8 +150,8 @@ FOR %%a in (setup.py add_build_info.py MANIFEST.in README NEWS COPYING) DO (
 )
 cd Temp
 ECHO using 2to3 to convert to py3k syntax:
-ECHO %PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n . 2^> 2to3.log
-%PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n . 2> 2to3.log
+ECHO %PYTHON%\Python.exe %PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n . 2^> 2to3.log
+%PYTHON%\Python.exe %PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n . 2> 2to3.log
 
 ECHO %PYTHON_EXE% -OO setup.py install_exe ^> cx_freeze-xpra.log
 %PYTHON_EXE% -OO setup.py install_exe -d %SOURCE_DIRECTORY%\dist > cx_freeze-install.log
