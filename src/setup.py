@@ -175,7 +175,7 @@ verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
 
 #allow some of these flags to be modified on the command line:
-SWITCHES = ("enc_x264", "x264_static",
+SWITCHES = ["enc_x264", "x264_static",
             "enc_x265", "x265_static",
             "nvenc",
             "dec_avcodec2", "avcodec2_static",
@@ -189,12 +189,12 @@ SWITCHES = ("enc_x264", "x264_static",
             "server", "client", "x11", "gtk_x11",
             "gtk2", "gtk3", "qt4", "html5",
             "sound", "cyxor", "cymaths", "opengl", "argb",
-            "warn", "strict", "shadow", "debug", "PIC", "Xdummy", "verbose", "bundle_tests")
+            "warn", "strict", "shadow", "debug", "PIC", "Xdummy", "verbose", "bundle_tests"]
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
     print("Xpra specific build and install switches:")
-    for x in sorted(SWITCHES):
+    for x in SWITCHES:
         d = vars()["%s_ENABLED" % x]
         with_str = "  --with-%s" % x
         without_str = "  --without-%s" % x
@@ -229,7 +229,7 @@ if "clean" not in sys.argv:
     for x in SWITCHES:
         switches_info[x] = vars()["%s_ENABLED" % x]
     print("build switches:")
-    for k in sorted(switches_info.keys()):
+    for k in SWITCHES:
         v = switches_info[k]
         print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
 
