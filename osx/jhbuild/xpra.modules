@@ -19,7 +19,6 @@
   <repository type="tarball" name="www.mpfr.org" href="http://www.mpfr.org"/>
   <repository type="tarball" name="pypi.python.org" href="http://pypi.python.org"/>
   <repository type="tarball" name="pypi.douban.com" href="http://pypi.douban.com/"/>
-  <repository type="tarball" name="curl.haxx.se" href="http://curl.haxx.se"/>
   <repository type="tarball" name="download.oracle.com" href="http://download.oracle.com"/>
   <repository type="tarball" name="www.eu.apache.org" href="http://www.eu.apache.org"/>
   <repository type="tarball" name="serf.googlecode.com" href="http://serf.googlecode.com"/>
@@ -28,21 +27,17 @@
   <repository type="tarball" name="osgeo.org" href="http://download.osgeo.org"/>
   <repository type="tarball" name="xpra.org" href="http://xpra.org"/>
 
-  <autotools id="curl" autogenargs="" autogen-sh="configure">
-    <branch module="/download/curl-7.37.0.tar.gz"
-			version="7.37.0"
-            repo="curl.haxx.se"/>
-  </autotools>
-
   <autotools id="yasm" autogenargs="--build=i386-darwin CC='gcc -arch i386' CXX='g++ -arch i386'" autogen-sh="configure">
     <branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
 			version="1.3.0"
+                        hash="md5:fc9e586751ff789b34b1f21d572d96af"
             repo="www.tortall.net"/>
   </autotools>
 
   <autotools id="nasm" autogenargs="" autogen-sh="configure">
     <branch module="/pub/nasm/releasebuilds/2.11.05/nasm-2.11.05.tar.bz2"
 			version="2.11.04"
+                        hash="md5:f6b1db2858cad82bbb0c8c6f3e2b0fb2"
             repo="www.nasm.us">
     <patch file="nasm-makefile-destdir.patch" strip="0" />
     </branch>
@@ -51,72 +46,84 @@
   <autotools id="orc" autogenargs="" autogen-sh="configure">
     <branch module="/data/src/orc/orc-0.4.21.tar.xz"
 			version="0.4.21"
+                        hash="md5:6c17d4570f4b54ac18ee9fd7760dc915"
             repo="gstreamer.freedesktop.org"/>
   </autotools>
 
   <autotools id="libogg" autogenargs="" autogen-sh="configure">
     <branch module="/releases/ogg/libogg-1.3.2.tar.xz"
 			version="1.3.2"
+                        hash="md5:5c3a34309d8b98640827e5d0991a4015"
             repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="libtheora" autogenargs="--disable-examples" autogen-sh="configure">
     <branch module="/releases/theora/libtheora-1.1.1.tar.bz2"
 			version="1.1.1"
+                        hash="md5:292ab65cedd5021d6b7ddd117e07cd8e"
             repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="libvorbis" autogenargs="" autogen-sh="configure">
     <branch module="/releases/vorbis/libvorbis-1.3.4.tar.xz"
 			version="1.3.4"
+                        hash="md5:55f2288055e44754275a17c9a2497391"
             repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="lame" autogenargs="" autogen-sh="configure">
     <branch module="/src/lame-3.99.5.tar.gz"
 			version="3.99.5"
+                        hash="md5:84835b313d4a8b68f5349816d33e07ce"
             repo="winswitch.org"/>
   </autotools>
 
   <autotools id="twolame" autogenargs="" autogen-sh="configure">
     <branch module="/src/twolame-0.3.13.tar.gz"
 			version="0.3.13"
+                        hash="md5:4113d8aa80194459b45b83d4dbde8ddb"
             repo="winswitch.org"/>
   </autotools>
 
   <autotools id="libmad" autogenargs="--build=i386-darwin" autogen-sh="configure">
     <branch module="/src/libmad-0.15.1b.tar.gz"
 			version="0.15.1b"
+                        hash="md5:1be543bc30c56fb6bea1d7bf6a64e66c"
             repo="winswitch.org"/>
   </autotools>
 
   <autotools id="faac" autogenargs="" autogen-sh="configure">
     <branch module="/src/faac-1.28.tar.bz2"
 			version="1.28"
+                        hash="md5:c5dde68840cefe46532089c9392d1df0"
             repo="winswitch.org"/>
   </autotools>
 
   <autotools id="faad2" autogenargs="" autogen-sh="configure">
     <branch module="/src/faad2-2.7.tar.bz2"
 			version="2.7"
+                        hash="md5:4c332fa23febc0e4648064685a3d4332"
             repo="winswitch.org"/>
   </autotools>
 
   <autotools id="flac" autogenargs="--disable-asm-optimizations" autogen-sh="configure">
     <branch module="/releases/flac/flac-1.3.0.tar.xz"
 			version="1.3.0"
+                        hash="md5:13b5c214cee8373464d3d65dee362cdd"
             repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="speex" autogenargs="" autogen-sh="configure">
     <branch module="/releases/speex/speex-1.2rc1.tar.gz"
 			version="1.2rc1"
+                        hash="md5:c4438b22c08e5811ff10e2b06ee9b9ae"
             repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="wavpack" autogenargs="" autogen-sh="configure">
     <branch module="/wavpack-4.70.0.tar.bz2"
 			version="4.70.0"
+                        hash="md5:4c0186ef0dc8367ce5cd7cc0f398b714"
             repo="wavpack.com"/>
   </autotools>
 
@@ -126,6 +133,7 @@
              autogen-sh="configure">
     <branch module="/files/libvpx-v1.3.0.tar.bz2"
 			version="1.3.0"
+                        hash="md5:14783a148872f2d08629ff7c694eb31f"
             repo="webm.googlecode.com"/>
   </autotools>
 
@@ -135,12 +143,14 @@
              autogen-sh="configure">
     <branch module="/pub/x264/snapshots/x264-snapshot-20140805-2245-stable.tar.bz2"
 			version="20140805-2245-stable"
+                        hash="md5:e7f549e131660b025977e87f80daa106"
             repo="download.videolan.org"/>
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
     <branch module="/releases/webp/libwebp-0.4.1.tar.gz"
 			version="0.4.1"
+                        hash="md5:42bc79613ec5ee5b0e68ba97839c981e"
             repo="downloads.webmproject.org"/>
   </autotools>
 
@@ -166,24 +176,28 @@
   <autotools id="sdl" autogenargs="" autogen-sh="configure">
     <branch module="/release/SDL-1.2.15.tar.gz"
 			version="1.2.15"
+                        hash="md5:9d96df8417572a2afb781a7c4c811a85"
             repo="www.libsdl.org"/>
   </autotools>
 
   <autotools id="gst-plugins-bad-xpra" autogenargs="--enable-introspection=no --disable-sdl" autogen-sh="configure">
     <branch module="/src/gst-plugins-bad/gst-plugins-bad-0.10.22.tar.bz2"
 			version="0.10.22"
+                        hash="md5:9a2acee1f386f71247003d0d7090fb1c"
             repo="gstreamer.freedesktop.org"/>
   </autotools>
 
   <autotools id="gst-plugins-ugly-xpra" autogenargs="--enable-introspection=no" autogen-sh="configure">
     <branch module="/src/gst-plugins-ugly/gst-plugins-ugly-0.10.18.tar.bz2"
 			version="0.10.18"
+                        hash="md5:04a7009a4efea2844075949c111f5e4d"
             repo="gstreamer.freedesktop.org"/>
   </autotools>
 
   <autotools id="gst-python" autogenargs="" autogen-sh="configure">
     <branch module="/src/gst-python/gst-python-0.10.22.tar.bz2"
 			version="0.10.22"
+                        hash="md5:937152fe896241f827689f4b53e79b22"
             repo="gstreamer.freedesktop.org"/>
   </autotools>
 
@@ -200,12 +214,14 @@
   <autotools id="gmplib" autogenargs="--build=i386-darwin" autogen-sh="configure">
     <branch module="/pub/gmp-6.0.0/gmp-6.0.0a.tar.xz"
 			version="6.0.0a"
+                        hash="md5:1e6da4e434553d2811437aa42c7f7c76"
                         checkoutdir="gmp-6.0.0"
             repo="ftp.gmplib.org"/>
   </autotools>
 
   <autotools id="mpfr" autogenargs="--build=i386-darwin" autogen-sh="configure">
     <branch module="/mpfr-current/mpfr-3.1.2.tar.bz2"
+                        hash="md5:ee2c3ac63bf0c2359bf08fc3ee094c19"
 			version="3.1.2" repo="www.mpfr.org">
     </branch>
     <dependencies>
@@ -336,36 +352,42 @@
 
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
     <branch module="/berkeley-db/db-6.0.30.tar.gz"
+                        hash="md5:ad28eb86ad3203b5422844db179c585b"
 			version="6.0.30"
             repo="download.oracle.com"/>
   </autotools>
 
   <autotools id="apr" autogenargs="" autogen-sh="configure">
     <branch module="/dist/apr/apr-1.5.1.tar.bz2"
+                        hash="md5:5486180ec5a23efb5cae6d4292b300ab"
 			version="1.5.1"
             repo="www.eu.apache.org"/>
   </autotools>
 
   <autotools id="apr-util" autogenargs="--with-berkeley-db --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config" autogen-sh="configure">
     <branch module="/dist/apr/apr-util-1.5.3.tar.bz2"
+                        hash="md5:6f3417691c7a27090f36e7cf4d94b36e"
 			version="1.5.3"
             repo="www.eu.apache.org"/>
   </autotools>
 
   <autotools id="serf" autogenargs="" autogen-sh="configure">
     <branch module="/files/serf-1.2.1.tar.bz2"
+                        hash="md5:4f8e76c9c6567aee1d66aba49f76a58b"
 			version="1.2.1"
             repo="serf.googlecode.com"/>
   </autotools>
 
   <autotools id="sqlite" autogenargs="" autogen-sh="configure">
     <branch module="/2014/sqlite-autoconf-3080500.tar.gz"
+                        hash="md5:0544ef6d7afd8ca797935ccc2685a9ed"
 			version="3080500"
             repo="sqlite.org"/>
   </autotools>
 
   <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
     <branch module="/dist/subversion/subversion-1.8.10.tar.bz2"
+                        hash="md5:bd495517a760ddd764ce449a891971db"
 			version="1.8.10"
             repo="www.eu.apache.org"/>
      <dependencies>
