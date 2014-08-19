@@ -194,7 +194,7 @@ HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
     print("Xpra specific build and install switches:")
-    for x in SWITCHES:
+    for x in sorted(SWITCHES):
         d = vars()["%s_ENABLED" % x]
         with_str = "  --with-%s" % x
         without_str = "  --without-%s" % x
