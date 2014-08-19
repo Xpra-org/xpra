@@ -670,6 +670,7 @@ class ServerCore(object):
         up("network",   get_network_caps())
         up("server",    get_server_info())
         up("threads",   get_thread_info(proto))
+        up("env",       os.environ)
         up("server", {
                 "mode"              : self.get_server_mode(),
                 "type"              : "Python",

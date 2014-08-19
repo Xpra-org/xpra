@@ -120,6 +120,7 @@ class BugReport(object):
                     "paths"         : get_path_info(),
                     "gtk"           : get_gtk_version_info(),
                     "user"          : get_user_info(),
+                    "env"           : os.environ,
                     }.items():
                 updict(d, k, v)
             return d
