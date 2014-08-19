@@ -1226,7 +1226,7 @@ if WIN32:
         if not PYTHON3:
             #these need porting..
             add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
-            add_console_exe("xpra/client/gtk_base/bug_report.py", "bugs.ico",       "Bug_Report")
+            add_gui_exe("xpra/client/gtk_base/bug_report.py",   "bugs.ico",         "Bug_Report")
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
 
