@@ -676,6 +676,10 @@ class ServerCore(object):
                 "type"              : "Python",
                 "start_time"        : int(self.start_time),
                 "authenticator"     : str((self.auth_class or str)("")),
+                "argv"              : sys.argv,
+                "path"              : sys.path,
+                "exec_prefix"       : sys.exec_prefix,
+                "executable"        : sys.executable,
                 })
         if self.session_name:
             info["session.name"] = self.session_name

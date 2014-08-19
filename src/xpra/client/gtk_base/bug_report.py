@@ -111,7 +111,12 @@ class BugReport(object):
         from xpra.platform.paths import get_info as get_path_info
         from xpra.version_util import get_version_info, get_platform_info, get_host_info
         def get_sys_info():
-            d = {}
+            d = {
+                    "argv"          : sys.argv,
+                    "path"          : sys.path,
+                    "exec_prefix"   : sys.exec_prefix,
+                    "executable"    : sys.executable,
+                 }
             for k,v in {
                     "version"       : get_version_info(),
                     "platform"      : get_platform_info(),
