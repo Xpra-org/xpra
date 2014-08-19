@@ -83,6 +83,8 @@ if is_gtk3():
     PROPERTY_CHANGE_MASK = gdk.EventMask.PROPERTY_CHANGE_MASK
     ACCEL_LOCKED = gtk.AccelFlags.LOCKED
     ACCEL_VISIBLE = gtk.AccelFlags.VISIBLE
+    JUSTIFY_LEFT    = gtk.Justification.LEFT
+    JUSTIFY_RIGHT   = gtk.Justification.RIGHT
 
     SHIFT_MASK      = gdk.ModifierType.SHIFT_MASK
     LOCK_MASK       = gdk.ModifierType.LOCK_MASK
@@ -164,6 +166,8 @@ else:
     PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
     ACCEL_LOCKED = gtk.ACCEL_LOCKED
     ACCEL_VISIBLE = gtk.ACCEL_VISIBLE
+    JUSTIFY_LEFT    = gtk.JUSTIFY_LEFT
+    JUSTIFY_RIGHT   = gtk.JUSTIFY_RIGHT
 
     SHIFT_MASK      = gtk.gdk.SHIFT_MASK
     LOCK_MASK       = gtk.gdk.LOCK_MASK
