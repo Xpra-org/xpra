@@ -13,10 +13,10 @@ import pycuda
 from pycuda import driver
 from pycuda.compiler import compile
 
-from xpra.util import AtomicInteger
+from xpra.util import AtomicInteger, updict
 from xpra.deque import maxdeque
-from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, device_info, reset_state, get_CUDA_function, \
-                record_device_failure, record_device_success
+from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, get_pycuda_info, device_info, reset_state, \
+                get_CUDA_function, record_device_failure, record_device_success
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvenc.CUDA_rgb2yuv444p import BGRA2Y_kernel, BGRA2U_kernel, BGRA2V_kernel
@@ -1273,6 +1273,7 @@ cdef class Encoder:
     #PyCUDA:
     cdef object driver
     cdef int cuda_device_id
+    cdef object cuda_info
     cdef object cuda_device_info
     cdef object cuda_device
     cdef object cuda_context
@@ -1400,6 +1401,7 @@ cdef class Encoder:
             log("init_cuda cuda_device=%s (%s)", d, device_info(d))
             self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
             log("init_cuda cuda_context=%s", self.cuda_context)
+            self.cuda_info = get_pycuda_info()
             self.cuda_device_info = {
                 "device.name"       : d.name(),
                 "device.pci_bus_id" : d.pci_bus_id(),
@@ -1552,26 +1554,30 @@ cdef class Encoder:
                 "input_width"       : self.input_width,
                 "input_height"      : self.input_height,
                 "scaling"           : self.scaling})
-        info.update(self.cuda_device_info)
+        updict(info, "cuda", self.cuda_device_info)
+        updict(info, "cuda", self.cuda_info)
         if self.src_format:
             info["src_format"] = self.src_format
         if self.pixel_format:
             info["pixel_format"] = self.pixel_format
-        if self.bytes_in>0 and self.bytes_out>0:
+        cdef unsigned long long b = self.bytes_in
+        if b>0 and self.bytes_out>0:
             info.update({
                 "bytes_in"  : self.bytes_in,
                 "bytes_out" : self.bytes_out,
-                "ratio_pct" : int(100.0 * self.bytes_out / self.bytes_in)})
+                "ratio_pct" : int(100.0 * self.bytes_out / b)})
         if self.preset_name:
             info["preset"] = self.preset_name
-        if self.frames>0 and self.time>0:
-            pps = float(self.width) * float(self.height) * float(self.frames) / self.time
+        cdef double t = self.time
+        if self.frames>0 and t>0:
+            pps = float(self.width) * float(self.height) * float(self.frames) / t
             info["total_time_ms"] = int(self.time*1000.0)
             info["pixels_per_second"] = int(pps)
-        if self.total_memory>0:
+        t = self.total_memory
+        if t>0:
             info["free_memory"] = int(self.free_memory)
             info["total_memory"] = int(self.total_memory)
-            info["free_memory_pct"] = int(100.0*self.free_memory/self.total_memory)
+            info["free_memory_pct"] = int(100.0*self.free_memory/t)
         #calculate fps:
         cdef int f = 0
         cdef double now = time.time()
@@ -1621,6 +1627,7 @@ cdef class Encoder:
         #PyCUDA:
         self.driver = 0
         self.cuda_device_id = -1
+        self.cuda_info = None
         self.cuda_device_info = None
         self.cuda_device = None
         self.kernels = None
@@ -2184,7 +2191,7 @@ def init_module():
     else:
         #we got license key error(s)
         if len(failed_keys)>0:
-            raise Exception("invalid license keys specified")
+            raise Exception("invalid license %s specified" % (["key", "keys"][len(failed_keys)>1]))
         else:
             raise Exception("you must provide a license key")
     log.info("NVENC version %s successfully initialized", ".".join([str(x) for x in PRETTY_VERSION]))
