@@ -21,7 +21,6 @@ pango = import_pango()
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, \
                                     WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
 from xpra.client.gtk_base.about import about
-from xpra.client.client_base import SIGNAMES
 from xpra.platform.paths import get_icon_dir
 from xpra.platform.info import get_user_info
 from xpra.util import nonl, updict
@@ -299,6 +298,7 @@ class BugReport(object):
 
 
 def main():
+    from xpra.os_util import SIGNAMES
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     gtk_main_quit_on_fatal_exceptions_enable()
 
