@@ -1,0 +1,37 @@
+From 5bb0a78e183a0fa7d4e03903497077b6478d1ced Mon Sep 17 00:00:00 2001
+From: Josep Torra <josep@fluendo.com>
+Date: Fri, 22 Nov 2013 12:01:45 +0100
+Subject: [PATCH 1/1] quartz: fix fullscreen with dual monitors
+
+---
+ gdk/quartz/gdkwindow-quartz.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/gdk/quartz/gdkwindow-quartz.c b/gdk/quartz/gdkwindow-quartz.c
+index 093274a..a3dda32 100644
+--- a/gdk/quartz/gdkwindow-quartz.c
++++ b/gdk/quartz/gdkwindow-quartz.c
+@@ -2964,6 +2964,7 @@ gdk_window_fullscreen (GdkWindow *window)
+   GdkWindowObject *private = (GdkWindowObject *) window;
+   GdkWindowImplQuartz *impl = GDK_WINDOW_IMPL_QUARTZ (private->impl);
+   NSRect frame;
++  gint ox, oy;
+ 
+   if (GDK_WINDOW_DESTROYED (window) ||
+       !WINDOW_IS_TOPLEVEL (window))
+@@ -2989,8 +2990,11 @@ gdk_window_fullscreen (GdkWindow *window)
+       gdk_window_set_decorations (window, 0);
+ 
+       frame = [[impl->toplevel screen] frame];
++       _gdk_quartz_window_xy_to_gdk_xy (frame.origin.x,
++                                        frame.origin.y + frame.size.height,
++                                        &ox, &oy);
+       move_resize_window_internal (window,
+-                                   0, 0, 
++                                   ox, oy,
+                                    frame.size.width, frame.size.height);
+       [impl->toplevel setContentSize:frame.size];
+       [impl->toplevel makeKeyAndOrderFront:impl->toplevel];
+-- 
+1.8.3.4 (Apple Git-47)
+
