@@ -131,6 +131,14 @@ if is_gtk3():
     import signal
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+    def gtk_main():
+        gdk.threads_init()
+        try:
+            gdk.threads_enter()
+            gtk.main()
+        finally:
+            gdk.threads_leave()
+
 else:
     #gtk2:
     if hasattr(gtk, "image_new_from_pixbuf"):
@@ -183,6 +191,17 @@ else:
 
     def GetClipboard(selection):
         return gtk.Clipboard(selection=selection)
+
+    def gtk_main():
+        if gtk.main_level()==0:
+            gdk.threads_init()
+            try:
+                gdk.threads_enter()
+                gtk.main()
+            finally:
+                gdk.threads_leave()
+
+
 
 def get_gtk_version_info(new_namespace=True):
     #update props given:

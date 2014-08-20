@@ -16,8 +16,7 @@ log = Logger("server", "gtk")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.server.server_base import ServerBase
-from xpra.gtk_common.gtk_util import get_gtk_version_info
-from xpra.gtk_common.gtk2common import gtk2main
+from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main
 from xpra.util import updict
 
 
@@ -47,8 +46,8 @@ class GTKServerBase(ServerBase):
 
     def do_run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
-        log("do_run() calling %s", gtk2main)
-        gtk2main()
+        log("do_run() calling %s", gtk_main)
+        gtk_main()
         log("do_run() end of gtk.main()")
 
     def add_listen_socket(self, socktype, sock):

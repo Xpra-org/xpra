@@ -18,7 +18,7 @@ gobject.threads_init()
 pango = import_pango()
 
 
-from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, \
+from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, \
                                     JUSTIFY_LEFT, WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
 from xpra.scripts.config import read_xpra_defaults
 from xpra.client.gtk_base.about import about
@@ -217,9 +217,8 @@ class BugReport(object):
 
     def run(self):
         log("run()")
-        from xpra.gtk_common.gtk2common import gtk2main
-        gtk2main()
-        log("run() gtk2main done")
+        gtk_main()
+        log("run() gtk_main done")
 
     def quit(self, *args):
         log("quit%s", args)

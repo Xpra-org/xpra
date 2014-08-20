@@ -26,7 +26,7 @@ pango = import_pango()
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, ENCRYPTION_CIPHERS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
-from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, is_gtk3, \
+from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, is_gtk3, \
                                     OptionMenu, choose_file, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
@@ -344,8 +344,7 @@ class ApplicationWindow:
         self.window.present()
 
     def run(self):
-        from xpra.gtk_common.gtk2common import gtk2main
-        gtk2main()
+        gtk_main()
 
     def get_icon(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
