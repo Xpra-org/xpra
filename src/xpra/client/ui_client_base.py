@@ -1057,7 +1057,7 @@ class UIXpraClient(XpraClientBase):
                     return False
                 return True
             self.redraw_spinners()
-            self.timeout_add(100, timer_redraw)
+            self.timeout_add(250, timer_redraw)
         return False
 
     def redraw_spinners(self):

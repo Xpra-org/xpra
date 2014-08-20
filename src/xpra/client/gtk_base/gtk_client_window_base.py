@@ -316,7 +316,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         context.set_line_cap(cairo.LINE_CAP_ROUND)
         context.translate(w/2, h/2)
         from xpra.gtk_common.gtk_spinner import cv
-        count = int(time.time()*5.0)
+        count = int(time.time()*4.0)
         for i in range(8):      #8 lines
             context.set_source_rgba(0, 0, 0, cv.trs[count%8][i])
             context.move_to(0.0, -dim/4.0)
