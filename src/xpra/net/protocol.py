@@ -352,7 +352,7 @@ class Protocol(object):
     def enable_encoder_from_caps(self, caps):
         opts = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
         for e in opts:
-            if caps.boolget("rencode"):
+            if caps.boolget(e):
                 self.enable_encoder(e)
                 return True
         log.error("no matching packet encoder found!")
