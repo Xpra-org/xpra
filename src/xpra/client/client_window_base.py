@@ -311,8 +311,9 @@ class ClientWindowBase(ClientWidgetBase):
         if self._client.readonly:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
-        mouselog("do_motion_notify_event(%s) wid=%s, pointer=%s, modifiers=%s, buttons=%s", event, self._id, pointer, modifiers, buttons)
-        self._client.send_mouse_position(["pointer-position", self._id,
+        wid = self._client._focused or self._id
+        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s, pointer=%s, modifiers=%s, buttons=%s", event, self._id, self._client._focused, pointer, modifiers, buttons)
+        self._client.send_mouse_position(["pointer-position", wid,
                                           pointer, modifiers, buttons])
 
     def _button_action(self, button, event, depressed):
