@@ -5,6 +5,7 @@
 
 import subprocess
 
+from xpra.util import nonl
 from xpra.log import Logger
 log = Logger("util")
 
@@ -15,6 +16,6 @@ def safe_exec(cmd, stdin=None, log_errors=True):
     l=log.debug
     if code!=0 and log_errors:
         l=log.error
-    l("signal_safe_exec(%s,%s) stdout='%s'", cmd, stdin, out)
-    l("signal_safe_exec(%s,%s) stderr='%s'", cmd, stdin, err)
+    l("signal_safe_exec(%s,%s) stdout='%s'", cmd, stdin, nonl(out))
+    l("signal_safe_exec(%s,%s) stderr='%s'", cmd, stdin, nonl(err))
     return  code, out, err
