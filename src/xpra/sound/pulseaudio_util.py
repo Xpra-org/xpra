@@ -44,18 +44,21 @@ def get_pactl_bin():
             pactl_bin = which("pactl")
     return pactl_bin
 
-def pactl_output(*pactl_args):
+def pactl_output(log_errors=True, *pactl_args):
     pactl_bin = get_pactl_bin()
     if not pactl_bin:
         return -1, None
     #ie: "pactl list"
     cmd = [pactl_bin] + list(pactl_args)
     try:
-        code, out, _ = safe_exec(cmd)
+        code, out, _ = safe_exec(cmd, log_errors=log_errors)
         log("pactl_output%s returned %s", pactl_args, code)
         return  code, out
     except Exception, e:
-        log.error("failed to execute %s: %s", cmd, e)
+        if log_errors:
+            log.error("failed to execute %s: %s", cmd, e)
+        else:
+            log("failed to execute %s: %s", cmd, e)
         return  -1, None
 
 def get_x11_property(atom_name):
@@ -94,14 +97,14 @@ def has_pa():
 
 
 def set_source_mute(device, mute=False):
-    code, out = pactl_output("set-source-mute", device, str(int(mute)))
+    code, out = pactl_output(True, "set-source-mute", device, str(int(mute)))
     log("set_source_mute: output=%s", out)
     return code==0
 
 def get_pactl_stat_line(prefix):
     if not has_pa():
         return ""
-    code, out = pactl_output("stat")
+    code, out = pactl_output(True, "stat")
     if code!=0:
         return    ""
     stat = ""
@@ -141,7 +144,7 @@ def add_audio_tagging_env(icon_path=None):
         os.environ["PULSE_PROP_application.icon_name"] = icon_path
 
 
-def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"]):
+def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"], log_errors=True):
     """
     Finds the list of devices, monitors=False allows us to filter out monitors
     (which could create sound loops if we use them)
@@ -153,7 +156,7 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
     """
     if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
         return {}
-    status, out = pactl_output("list")
+    status, out = pactl_output(False, "list")
     if status!=0 or not out:
         return  {}
     device_class = None
@@ -199,8 +202,7 @@ def get_info():
     i = 0
     for monitors in (True, False):
         for io in (True, False):
-            devices = get_pa_device_options(monitors, io)
-            #info[""]
+            devices = get_pa_device_options(monitors, io, log_errors=False)
             for d,name in devices.items():
                 info["device.%s" % d] = name
             i += 1
