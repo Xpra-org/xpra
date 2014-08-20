@@ -837,12 +837,11 @@ class WindowSource(object):
             so figure out if we want to send them all or if we
             just send one full window update instead.
         """
-        if self.is_cancelled():
-            return
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
         window.acknowledge_changes()
-        self.do_send_delayed_regions(damage_time, window, regions, coding, options)
+        if not self.is_cancelled():
+            self.do_send_delayed_regions(damage_time, window, regions, coding, options)
 
     def do_send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, get_best_encoding=None):
         ww,wh = window.get_dimensions()
