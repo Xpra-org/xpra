@@ -269,7 +269,8 @@ class WindowSource(object):
                 "pixel_boost"           : self._lossless_threshold_pixel_boost})
         info["encoding.rgb_threshold"] = self._rgb_auto_threshold
         try:
-            info["encoding.selection"] = self.get_best_encoding.__name__
+            #ie: get_strict_encoding -> "strict_encoding"
+            info["encoding.selection"] = self.get_best_encoding.__name__.replace("get_", "")
         except:
             pass
         up("property",  self.get_property_info())
