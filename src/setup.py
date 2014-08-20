@@ -1204,6 +1204,7 @@ if WIN32:
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
         add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
+        add_gui_exe("xpra/client/gtk_base/bug_report.py",   "bugs.ico",         "Bug_Report")
         if not PYTHON3:
             #these need porting..
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
@@ -1226,7 +1227,6 @@ if WIN32:
         if not PYTHON3:
             #these need porting..
             add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
-            add_gui_exe("xpra/client/gtk_base/bug_report.py",   "bugs.ico",         "Bug_Report")
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
 

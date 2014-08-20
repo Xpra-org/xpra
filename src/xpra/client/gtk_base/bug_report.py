@@ -9,7 +9,7 @@ import os.path
 import sys
 import signal
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango, is_gtk3
 
 gtk = import_gtk()
 gdk = import_gdk()
@@ -182,8 +182,9 @@ class BugReport(object):
             hbox.pack_start(btn)
             return btn
 
-        #Copy:
-        btn("Copy to clipboard", "Copy all data to clipboard", self.copy_clicked, "clipboard.png")
+        if not is_gtk3():
+            #clipboard does not work in gtk3..
+            btn("Copy to clipboard", "Copy all data to clipboard", self.copy_clicked, "clipboard.png")
         btn("Save", "Save Bug Report", self.save_clicked, "download.png")
         btn("Cancel", "", self.close, "quit.png")
 
