@@ -276,7 +276,7 @@ def do_parse_cmdline(cmdline, defaults):
         parser.add_option_group(group)
     if supports_server:
         group.add_option("--start-child", action="append",
-                          dest="start_child", metavar="CMD", default=defaults.start_child,
+                          dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
                           help="program to spawn in new server (may be repeated) (default: %default)")
         group.add_option("--exit-with-children", action="store_true",
                           dest="exit_with_children", default=defaults.exit_with_children,
@@ -332,7 +332,7 @@ def do_parse_cmdline(cmdline, defaults):
         hidden_options["fake_xinerama"] = False
     if supports_server or supports_shadow:
         group.add_option("--bind-tcp", action="append",
-                          dest="bind_tcp", default=defaults.bind_tcp,
+                          dest="bind_tcp", default=list(defaults.bind_tcp or []),
                           metavar="[HOST]:PORT",
                           help="Listen for connections over TCP (use --password-file to secure it)."
                             + " You may specify this option multiple times with different host and port combinations")
@@ -443,7 +443,7 @@ def do_parse_cmdline(cmdline, defaults):
     Use the special value 'help' to get a list of options.
     When unspecified, all the available codecs are allowed and the first one is used."""
         group.add_option("--speaker-codec", action="append",
-                          dest="speaker_codec", default=defaults.speaker_codec,
+                          dest="speaker_codec", default=list(defaults.speaker_codec or []),
                           help=CODEC_HELP % "speaker")
         group.add_option("--microphone", action="store_true",
                           dest="microphone", default=defaults.microphone,
@@ -452,7 +452,7 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="microphone", default=defaults.microphone,
                           help="Disable forwarding of sound input to the server (default: %s)" % enabled_str(defaults.microphone))
         group.add_option("--microphone-codec", action="append",
-                          dest="microphone_codec", default=defaults.microphone_codec,
+                          dest="microphone_codec", default=list(defaults.microphone_codec or []),
                           help=CODEC_HELP % "microphone")
     else:
         hidden_options["speaker"] = False
@@ -564,7 +564,7 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="tray_icon", default=defaults.tray_icon,
                           help="Path to the image which will be used as icon for the system-tray or dock")
     group.add_option("--key-shortcut", action="append",
-                      dest="key_shortcut", type="str", default=defaults.key_shortcut,
+                      dest="key_shortcut", type="str", default=list(defaults.key_shortcut or []),
                       help="Define key shortcuts that will trigger specific actions."
                       + "If no shortcuts are defined, it defaults to '%s'" % (",".join(defaults.key_shortcut or [])))
     group.add_option("--keyboard-sync", action="store_true",
