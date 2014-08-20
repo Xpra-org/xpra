@@ -103,6 +103,7 @@ def get_enabled_encoders(order=ALL_ENCODERS):
                 "bencode"               : use_bencode,
                 "yaml"                  : use_yaml,
                 }.items() if b]
+    log("get_enabled_encoders(%s) enabled=%s", order, enabled)
     #order them:
     return [x for x in order if x in enabled]
 

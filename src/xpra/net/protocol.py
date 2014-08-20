@@ -351,8 +351,9 @@ class Protocol(object):
 
     def enable_encoder_from_caps(self, caps):
         opts = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
+        log("enable_encoder_from_caps(..) options=%s", opts)
         for e in opts:
-            if caps.boolget(e):
+            if caps.boolget(e, e=="bencode"):
                 self.enable_encoder(e)
                 return True
         log.error("no matching packet encoder found!")
@@ -361,6 +362,7 @@ class Protocol(object):
     def enable_encoder(self, e):
         self._encoder = packet_encoding.get_encoder(e)
         self.encoder = e
+        log("enable_encoder(%s): %s", e, self._encoder)
 
 
     def enable_default_compressor(self):
@@ -375,6 +377,7 @@ class Protocol(object):
             self.enable_compressor("none")
             return
         opts = compression.get_enabled_compressors(order=compression.PERFORMANCE_ORDER)
+        log("enable_compressor_from_caps(..) options=%s", opts)
         for c in opts:      #ie: [zlib, lz4, lzo]
             if caps.boolget(c):
                 self.enable_compressor(c)
