@@ -367,7 +367,9 @@ class WindowVideoSource(WindowSource):
             if "png" in options:
                 return "png"
         #we failed to find a good match, default to the first of the options..
-        return options[0]
+        if options:
+            return options[0]
+        return None #can happen during cleanup!
 
 
     def unmap(self):
