@@ -169,10 +169,13 @@ def make_argb32_window_icon(pixel_data, pixel_format, stride, w, h):
 
 class ServerSource(object):
     """
-    A ServerSource mediates between the server (which only knows about windows)
-    and the WindowSource (which only knows about window ids) instances
-    which manage damage data processing.
-    It sends damage pixels to the client via its 'protocol' instance (network connection).
+    A ServerSource represents a client connection.
+    It mediates between the server class (which only knows about actual window objects and display server events)
+    and the client specific WindowSource instances (which only know about window ids 
+    and manage window pixel compression).
+    It sends messages to the client via its 'protocol' instance (the network connection),
+    directly for a number of cases (cursor, sound, notifications, etc)
+    or on behalf of the window sources for pixel data. 
 
     Strategy: if we have 'ordinary_packets' to send, send those.
     When we don't, then send packets from the 'packet_queue'. (compressed pixels or clipboard data)
@@ -180,7 +183,7 @@ class ServerSource(object):
 
     The UI thread calls damage(), which goes into WindowSource and eventually (batching may be involved)
     adds the damage pixels ready for processing to the compression_work_queue,
-    items are picked off by the separate 'encode' thread (see )
+    items are picked off by the separate 'encode' thread (see 'encode_loop')
     and added to the damage_packet_queue.
     """
 
