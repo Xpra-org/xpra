@@ -89,7 +89,7 @@ def get_packet_encoding_caps():
 ALL_ENCODERS = ["bencode", "rencode", "yaml"]
 
 #order for performance:
-PERFORMANCE_ORDER = ["rencode", "bencoder", "yaml"]
+PERFORMANCE_ORDER = ["rencode", "bencode", "yaml"]
 
 _ENCODERS = {
         "rencode"   : do_rencode,
