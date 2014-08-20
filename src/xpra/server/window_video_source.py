@@ -474,9 +474,8 @@ class WindowVideoSource(WindowSource):
         """
         #overrides the default method for finding the encoding of a region
         #so we can ensure we don't use the video encoder when we don't want to:
-
-        def send_nonvideo(regions=regions, encoding=coding, exclude_region=None):
-            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=self.get_best_nonvideo_encoding)
+        def send_nonvideo(regions=regions, encoding=coding, exclude_region=None, get_best_encoding=self.get_best_nonvideo_encoding):
+            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
@@ -484,7 +483,8 @@ class WindowVideoSource(WindowSource):
 
         if coding not in self.video_encodings:
             sublog("not a video encoding")
-            return send_nonvideo()
+            #keep current encoding selection function
+            return send_nonvideo(get_best_encoding=self.get_best_encoding)
 
         vr = self.video_subregion.rectangle
         if not vr:
