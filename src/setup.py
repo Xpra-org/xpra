@@ -135,6 +135,7 @@ cymaths_ENABLED         = True
 cyxor_ENABLED           = True
 clipboard_ENABLED       = not PYTHON3
 Xdummy_ENABLED          = None          #None means auto-detect
+Xdummy_wrapper_ENABLED  = None          #None means auto-detect
 if WIN32 or OSX:
     Xdummy_ENABLED = False
 sound_ENABLED           = True
@@ -189,7 +190,8 @@ SWITCHES = ["enc_x264", "x264_static",
             "server", "client", "x11", "gtk_x11",
             "gtk2", "gtk3", "qt4", "html5",
             "sound", "cyxor", "cymaths", "opengl", "argb",
-            "warn", "strict", "shadow", "debug", "PIC", "Xdummy", "verbose", "bundle_tests"]
+            "warn", "strict", "shadow", "debug", "PIC",
+            "Xdummy", "Xdummy_wrapper", "verbose", "bundle_tests"]
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
@@ -207,10 +209,6 @@ if HELP:
 
 filtered_args = []
 for arg in sys.argv:
-    #deprecated flag:
-    if arg == "--enable-Xdummy":
-        Xdummy_ENABLED = True
-        continue
     matched = False
     for x in SWITCHES:
         if arg=="--with-%s" % x:
@@ -703,15 +701,25 @@ def detect_xorg_setup():
             #ie: /usr/local/etc/xpra/xorg.conf
             xorg_conf = os.path.join(sys.prefix, xorg_conf)
         Xorg_args = "-dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config %s" % xorg_conf
-        if not xorg_bin:
+
+        if Xdummy_wrapper_ENABLED is not None:
+            #honour what was specified:
+            use_wrapper = Xdummy_wrapper_ENABLED
+        elif not xorg_bin:
             print("Xorg binary not found, assuming the wrapper is needed!")
-            return ("xpra_Xdummy "+Xorg_args, has_displayfd, True)
-        xorg_stat = os.stat(xorg_bin)
-        if (xorg_stat.st_mode & stat.S_ISUID)!=0:
-            if (xorg_stat.st_mode & stat.S_IROTH)==0:
-                print("Xorg is suid and not readable, Xdummy support unavailable")
-                return Xvfb()
-            print("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
+            use_wrapper = True
+        else:
+            #auto-detect
+            xorg_stat = os.stat(xorg_bin)
+            if (xorg_stat.st_mode & stat.S_ISUID)!=0:
+                if (xorg_stat.st_mode & stat.S_IROTH)==0:
+                    print("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
+                    return Xvfb()
+                print("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
+                use_wrapper = True
+            else:
+                use_wrapper = False
+        if use_wrapper:
             return ("xpra_Xdummy "+Xorg_args, has_displayfd, True)
         else:
             print("using Xdummy directly")
@@ -720,7 +728,6 @@ def detect_xorg_setup():
     if Xdummy_ENABLED is False:
         return Xvfb()
     elif Xdummy_ENABLED is True:
-        print("Xdummy support specified as 'enabled', will detect if we need the suid wrapper")
         return Xorg_suid_check()
     else:
         print("Xdummy support unspecified, will try to detect")
