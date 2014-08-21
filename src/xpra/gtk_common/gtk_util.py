@@ -141,14 +141,10 @@ if is_gtk3():
 
 else:
     #gtk2:
-    if hasattr(gtk, "image_new_from_pixbuf"):
-        #not available in centos5
-        image_new_from_pixbuf   = gtk.image_new_from_pixbuf
-    else:
-        def image_new_from_pixbuf(pixbuf):
-            i = gtk.Image()
-            i.set_from_pixbuf(pixbuf)
-            return i
+    if gtk.pygtk_version<(2,18):
+        raise Exception("your version of PyGTK is too old: %s" % str(gtk.pygtk_version))
+
+    image_new_from_pixbuf   = gtk.image_new_from_pixbuf
     pixbuf_new_from_file    = gdk.pixbuf_new_from_file
     pixbuf_new_from_data    = gdk.pixbuf_new_from_data
     get_default_keymap      = gdk.keymap_get_default

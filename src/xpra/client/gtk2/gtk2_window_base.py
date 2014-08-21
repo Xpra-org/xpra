@@ -141,12 +141,12 @@ class GTK2WindowBase(GTKClientWindowBase):
         return GTKClientWindowBase.xget_u32_property(self, target, name)
 
     def get_desktop_workspace(self):
-        window = self.gdk_window()
+        window = self.get_window()
         root = window.get_screen().get_root_window()
         return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
 
     def get_window_workspace(self):
-        return self.do_get_workspace(self.gdk_window(), "_NET_WM_DESKTOP")
+        return self.do_get_workspace(self.get_window(), "_NET_WM_DESKTOP")
 
     def do_get_workspace(self, target, prop):
         if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
@@ -164,14 +164,8 @@ class GTK2WindowBase(GTKClientWindowBase):
     def is_mapped(self):
         return self.window is not None and self.window.is_visible()
 
-    def gdk_window(self):
-        if gtk.gtk_version>=(2,14):
-            return self.get_window()
-        else:
-            return self.window
-
     def get_window_geometry(self):
-        gdkwindow = self.gdk_window()
+        gdkwindow = self.get_window()
         x, y = gdkwindow.get_origin()
         _, _, w, h, _ = gdkwindow.get_geometry()
         return x, y, w, h
@@ -180,7 +174,7 @@ class GTK2WindowBase(GTKClientWindowBase):
         self.set_geometry_hints(None, **hints)
 
     def queue_draw(self, x, y, width, height):
-        window = self.gdk_window()
+        window = self.get_window()
         if window:
             window.invalidate_rect(gdk.Rectangle(x, y, width, height), False)
         else:

@@ -186,7 +186,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 if xid.startswith("0x") and xid.endswith("L"):
                     xid = xid[:-1]
                 iid = int(xid, 16)
-                self.xset_u32_property(self.gdk_window(), "XID", iid)
+                self.xset_u32_property(self.get_window(), "XID", iid)
             except Exception, e:
                 log("%s.set_xid(%s) error parsing/setting xid: %s", self, xid, e)
                 return
@@ -260,7 +260,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def set_workspace(self):
         if not self._can_set_workspace:
             return -1
-        root = self.gdk_window().get_screen().get_root_window()
+        root = self.get_window().get_screen().get_root_window()
         ndesktops = self.get_workspace_count()
         workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, self._window_workspace, ndesktops)
         if ndesktops is None or ndesktops<=1 or self._window_workspace<0:
@@ -271,7 +271,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         def send():
             from xpra.gtk_common.gobject_compat import get_xid
             root_xid = get_xid(root)
-            xwin = get_xid(self.gdk_window())
+            xwin = get_xid(self.get_window())
             X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_DESKTOP",
                   workspace, CurrentTime, 0, 0, 0)
         trap.call_synced(send)
@@ -288,10 +288,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if wid==-1:
             #root is a gdk window, so we need to ensure we have one
             #backing our gtk window to be able to call set_transient_for on it
-            log("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s", self, wid, self.gdk_window(), self.is_mapped())
-            if self.gdk_window() is None:
+            log("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s", self, wid, self.get_window(), self.is_mapped())
+            if self.get_window() is None:
                 self.realize()
-            self.gdk_window().set_transient_for(gtk.gdk.get_default_root_window())
+            self.get_window().set_transient_for(gtk.gdk.get_default_root_window())
         else:
             #gtk window is easier:
             window = self._client._id_to_window.get(wid)
@@ -413,7 +413,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         w = max(1, w)
         h = max(1, h)
         self._resize_counter = resize_counter
-        window = self.gdk_window()
+        window = self.get_window()
         if window.get_position()==(x, y):
             #same location, just resize:
             if self._size!=(w, h):

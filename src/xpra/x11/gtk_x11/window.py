@@ -45,9 +45,6 @@ log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
 grablog = Logger("x11", "window", "grab")
 
-if gtk.pygtk_version<(2,17):
-    log.error("your version of PyGTK is too old - expect some bugs")
-
 
 XNone = constants["XNone"]
 CWX = constants["CWX"]

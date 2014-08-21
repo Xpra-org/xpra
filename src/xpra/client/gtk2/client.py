@@ -405,9 +405,9 @@ class XpraClient(GTKXpraClient):
 
     def window_grab(self, window):
         mask = gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK | gtk.gdk.POINTER_MOTION_MASK  | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.ENTER_NOTIFY_MASK | gtk.gdk.LEAVE_NOTIFY_MASK
-        gtk.gdk.pointer_grab(window.gdk_window(), owner_events=True, event_mask=mask)
+        gtk.gdk.pointer_grab(window.get_window(), owner_events=True, event_mask=mask)
         #also grab the keyboard so the user won't Alt-Tab away:
-        gtk.gdk.keyboard_grab(window.gdk_window(), owner_events=False)
+        gtk.gdk.keyboard_grab(window.get_window(), owner_events=False)
 
     def window_ungrab(self):
         gtk.gdk.pointer_ungrab()
@@ -464,7 +464,7 @@ class XpraClient(GTKXpraClient):
         if wid>0:
             client_window = self._id_to_window.get(wid)
             if client_window:
-                gdk_window = client_window.gdk_window()
+                gdk_window = client_window.get_window()
                 if gdk_window:
                     return gdk_window
         pid = metadata.intget("pid", -1)
