@@ -375,7 +375,7 @@ class XpraClient(GTKXpraClient):
             y = int(y/ratio)
         return gdk.Cursor(gdk.display_get_default(), pixbuf, x, y)
 
-    def set_windows_cursor(self, gtkwindows, cursor_data):
+    def set_windows_cursor(self, windows, cursor_data):
         cursor = None
         if cursor_data:
             try:
@@ -385,11 +385,8 @@ class XpraClient(GTKXpraClient):
             if cursor is None:
                 #use default:
                 cursor = gdk.Cursor(gtk.gdk.X_CURSOR)
-        for gtkwindow in gtkwindows:
-            if gtk.gtk_version>=(2,14):
-                gdkwin = gtkwindow.get_window()
-            else:
-                gdkwin = gtkwindow.window
+        for w in windows:
+            gdkwin = w.get_window()
             #trays don't have a gdk window
             if gdkwin:
                 gdkwin.set_cursor(cursor)
