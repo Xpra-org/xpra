@@ -12,8 +12,6 @@ import stat
 import time
 import sys
 
-o0700 = 448     #0o700
-
 
 class ServerSockInUse(Exception):
     pass
@@ -31,9 +29,9 @@ class DotXpra(object):
         self._confdir = osexpand(confdir or get_user_conf_dir(), actual_username)
         self._sockdir = osexpand(sockdir or get_default_socket_dir(), actual_username)
         if not os.path.exists(self._confdir):
-            os.mkdir(self._confdir, o0700)
+            os.mkdir(self._confdir, 0o700)
         if not os.path.exists(self._sockdir):
-            os.mkdir(self._sockdir, o0700)
+            os.mkdir(self._sockdir, 0o700)
         hostname = os.environ.get("XPRA_SOCKET_HOSTNAME", socket.gethostname())
         self._prefix = "%s-" % (hostname,)
 

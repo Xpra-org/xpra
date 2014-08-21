@@ -22,10 +22,6 @@ import traceback
 from xpra.scripts.main import TCP_NODELAY, warn
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
-o0117 = 79
-o0177 = 127
-o0666 = 438
-o0700 = 448
 
 _cleanups = []
 def run_cleanups():
@@ -253,9 +249,9 @@ def write_runner_shell_script(dotxpra, contents, overwrite=True):
     umask = os.umask(0)
     os.umask(umask)
     if hasattr(os, "fchmod"):
-        os.fchmod(scriptfile.fileno(), o0700 & ~umask)
+        os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
     else:
-        os.chmod(scriptpath, o0700 & ~umask)
+        os.chmod(scriptpath, 0o700 & ~umask)
     scriptfile.write(contents)
     scriptfile.close()
 
@@ -307,9 +303,9 @@ def create_unix_domain_socket(sockpath, mmap_group):
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     #bind the socket, using umask to set the correct permissions
     if mmap_group:
-        orig_umask = os.umask(o0117) #660
+        orig_umask = os.umask(0o117) #660
     else:
-        orig_umask = os.umask(o0177) #600
+        orig_umask = os.umask(0o177) #600
     listener.bind(sockpath)
     os.umask(orig_umask)
     return listener
@@ -412,7 +408,7 @@ def open_log_file(logpath):
     """
     if os.path.exists(logpath):
         os.rename(logpath, logpath + ".old")
-    return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, o0666)
+    return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o666)
 
 def select_log_file(dotxpra, log_file, display_name):
     """ returns the log file path we should be using given the parameters,
