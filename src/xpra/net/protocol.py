@@ -20,7 +20,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 debug = log.debug
 from xpra.os_util import Queue, strtobytes
-from xpra.util import repr_ellipsized
+from xpra.util import repr_ellipsized, updict
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net import packet_encoding
@@ -190,17 +190,17 @@ class Protocol(object):
 
     def get_info(self):
         info = {
-            "input.count"           : self.input_stats,
             "input.packetcount"     : self.input_packetcount,
             "input.raw_packetcount" : self.input_raw_packetcount,
             "input.cipher"          : self.cipher_in_name or "",
-            "output.count"          : self.output_stats,
             "output.packetcount"    : self.output_packetcount,
             "output.raw_packetcount": self.output_raw_packetcount,
             "output.cipher"         : self.cipher_out_name or "",
             "large_packets"         : self.large_packets,
             "compression_level"     : self.compression_level,
             "max_packet_size"       : self.max_packet_size}
+        updict(info, "input.count", self.input_stats)
+        updict(info, "output.count", self.output_stats)
         c = self._compress
         if c:
             info["compressor"] = compression.get_compressor_name(self._compress)
