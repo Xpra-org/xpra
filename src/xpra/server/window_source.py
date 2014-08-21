@@ -383,6 +383,9 @@ class WindowSource(object):
         #now we have the real list of encodings we can use:
         #"rgb32" and "rgb24" encodings are both aliased to "rgb"
         common_encodings = [x for x in self._encoders.keys() if x in self.core_encodings]
+        #"rgb" is a pseudo encoding and needs special code:
+        if "rgb24" in  common_encodings or "rgb32" in common_encodings:
+            common_encodings.append("rgb")
         if self.webp_leaks and "webp" in common_encodings:
             common_encodings.remove("webp")
         self.common_encodings = [x for x in PREFERED_ENCODING_ORDER if x in common_encodings]
@@ -438,6 +441,12 @@ class WindowSource(object):
                 return self.get_strict_encoding
             #choose an alpha encoding and keep it?
             return self.get_transparent_encoding
+        elif self.encoding=="rgb":
+            #if we're here we don't need alpha, so try rgb24 first:
+            if "rgb24" in self.common_encodings:
+                return self.encoding_is_rgb24
+            elif "rgb32" in self.common_encodings:
+                return self.encoding_is_rgb32
         #stick to what is specified or use rgb for small regions:
         return self.get_current_or_rgb
 
