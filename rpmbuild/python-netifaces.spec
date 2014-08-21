@@ -6,7 +6,7 @@
 
 Summary: Getting network addresses from Python
 Vendor: http://alastairs-place.net/netifaces/
-Name: netifaces
+Name: python-netifaces
 Version: 0.10.4
 Release: 1%{?dist}
 License: GPL3
@@ -17,6 +17,7 @@ URL: http://winswitch.org/
 Source: netifaces-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: python-devel, python-setuptools
+Provides: netifaces
 
 
 %description
@@ -43,7 +44,7 @@ Getting network addresses from Python
 
 
 %prep
-%setup -q
+%setup -q -n netifaces-%{version}
 
 %build
 %{__python} setup.py build

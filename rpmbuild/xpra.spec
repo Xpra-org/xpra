@@ -82,7 +82,7 @@ Requires: python-crypto
 #we cannot depend on 'avahi-ui-tools' which we need for mdns support
 #(it provides the avahi python bindings)
 #because Fedora and CentOS bring in some insane dependencies with it (vnc)
-Requires: netifaces
+Requires: python-netifaces
 Requires: libfakeXinerama
 Requires: gtk2-immodule-xim
 Requires: xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
