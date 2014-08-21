@@ -765,6 +765,8 @@ def build_xpra_conf(build_base):
     f_in = open("etc/xpra/xpra.conf.in", "r")
     template  = f_in.read()
     f_in.close()
+    if not os.path.exists(build_base):
+        os.makedirs(build_base)
     f_out = open(build_base + "/xpra.conf", "w")
     f_out.write(template % {'xvfb_command'  : xvfb_command,
                             'has_displayfd' : ["no", "yes"][int(has_displayfd)]})
@@ -1243,14 +1245,11 @@ if WIN32:
     add_data_files('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*'))
     if "install" in sys.argv or "install_exe" in sys.argv or "py2exe" in sys.argv:
         #a bit naughty here: we copy directly to the output dir:
-        dist = "dist"
         try:
             #more uglyness: locate -d DISTDIR in command line:
             dist = sys.argv[sys.argv.index("-d")+1]
         except:
-            pass
-        if not os.path.exists(dist):
-            os.mkdir(dist)
+            dist = "dist"
         build_xpra_conf(dist)
 
 
@@ -1431,10 +1430,13 @@ else:
             install_root = "/"
             if "--user" in sys.argv:
                 install_root = ""
-            dst_xpra_conf = os.path.join(self.install_dir.rstrip("/usr") or install_root, "etc/xpra/xpra.conf")
+            dst_dir = os.path.join(self.install_dir.rstrip("/usr") or install_root, "etc", "xpra")
+            dst_xpra_conf = os.path.join(dst_dir, "xpra.conf")
             src_xpra_conf = os.path.join(self.distribution.command_obj['build'].build_base, "xpra.conf")
 
             assert os.path.exists(src_xpra_conf), "cannot find '%s' from build step" % src_xpra_conf
+            if not os.path.exists(dst_dir):
+                os.makedirs(dst_dir)
             shutil.copyfile(src_xpra_conf, dst_xpra_conf)
 
     # add build_conf to build step
