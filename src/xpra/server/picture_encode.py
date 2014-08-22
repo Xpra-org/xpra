@@ -39,10 +39,17 @@ def warn_encoding_once(key, message):
         encoding_warnings.add(key)
 
 
-def webp_encode(coding, image, supports_transparency, quality, speed, options):
+def webp_encode(coding, image, rgb_formats, supports_transparency, quality, speed, options):
+    pixel_format = image.get_pixel_format()
+    #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
+    if pixel_format not in rgb_formats:
+        if not rgb_reformat(image, rgb_formats, supports_transparency):
+            raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))
+        #get the new format:
+        pixel_format = image.get_pixel_format()
     stride = image.get_rowstride()
     enc_webp = get_codec("enc_webp")
-    if enc_webp and stride>0 and stride%4==0 and image.get_pixel_format() in ("BGRA", "BGRX"):
+    if enc_webp and stride>0 and stride%4==0 and image.get_pixel_format() in ("BGRA", "BGRX", "RGBA", "RGBX"):
         #prefer Cython module:
         alpha = supports_transparency and image.get_pixel_format().find("A")>=0
         w = image.get_width()

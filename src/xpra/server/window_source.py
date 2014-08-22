@@ -1331,7 +1331,7 @@ class WindowSource(object):
     def webp_encode(self, coding, image, options):
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
-        return webp_encode(coding, image, self.supports_transparency, q, s, options)
+        return webp_encode(coding, image, self.rgb_formats, self.supports_transparency, q, s, options)
 
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self._current_speed
