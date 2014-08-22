@@ -31,8 +31,8 @@ log = Logger("util")
 
 class BugReport(object):
 
-    def init(self, show_about=True, xpra_info=None, opengl_info=None, includes={}):
-        self.xpra_info = xpra_info
+    def init(self, show_about=True, get_server_info=None, opengl_info=None, includes={}):
+        self.get_server_info = get_server_info
         self.includes = includes
         self.window = gtk.Window()
         self.window.connect("destroy", self.close)
@@ -157,7 +157,7 @@ class BugReport(object):
                    ("opengl",       "txt",  "OpenGL",           get_gl_info,    "OpenGL driver and features"),
                    ("sound",        "txt",  "Sound",            get_sound_info, "Sound codecs and GStreamer version information"),
                    ("keyboard",     "txt",  "Keyboard Mapping", get_gtk_keymap, "Keyboard layout and key mapping"),
-                   ("xpra-info",    "txt",  "Server Info",      self.xpra_info, "Full server information from 'xpra info'"),
+                   ("xpra-info",    "txt",  "Server Info",      self.get_server_info, "Full server information from 'xpra info'"),
                    ("screenshot",   "png",  "Screenshot",       get_screenshot, ""),
                    )
         for name, _, title, value_cb, tooltip in self.toggles:
@@ -260,8 +260,8 @@ class BugReport(object):
                     value = e
                     dtype = "txt"
             if value is None:
-                continue
-            if type(value)==dict:
+                value = "not available"
+            elif type(value)==dict:
                 s = os.linesep.join("%s : %s" % (k.ljust(32), nonl(str(v))) for k,v in sorted(value.items()))
             elif type(value) in (list, tuple):
                 s = os.linesep.join(str(x) for x in value)
