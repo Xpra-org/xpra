@@ -141,7 +141,7 @@ if is_gtk3():
 
 else:
     #gtk2:
-    if gtk.pygtk_version<(2,18):
+    if gtk.gtk_version<(2,18):
         raise Exception("your version of PyGTK is too old: %s" % str(gtk.pygtk_version))
 
     image_new_from_pixbuf   = gtk.image_new_from_pixbuf
