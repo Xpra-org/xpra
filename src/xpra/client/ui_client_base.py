@@ -590,14 +590,24 @@ class UIXpraClient(XpraClientBase):
                 modifiers = self.get_current_modifiers()
                 buttons = []
                 self.send_mouse_position(["pointer-position", wid, pointer, modifiers, buttons])
-        def tray_geometry(*args):
+        def do_tray_geometry(*args):
             #tell the "ClientTray" where it now lives
             #which should also update the location on the server if it has changed
             tray = self._id_to_window.get(wid)
-            geom = tray_widget.get_geometry()
-            traylog("tray_geometry(%s) geometry=%s tray=%s", args, geom, tray)
+            if tray_widget:
+                geom = tray_widget.get_geometry()
+            else:
+                geom = None
+            traylog("tray_geometry(%s) widget=%s, geometry=%s tray=%s", args, tray_widget, geom, tray)
             if tray and geom:
                 tray.move_resize(*geom)
+        def tray_geometry(*args):
+            #the tray widget may still be None if we haven't returned from make_system_tray yet,
+            #in which case we will check the geometry a little bit later:
+            if tray_widget:
+                do_tray_geometry(*args)
+            else:
+                self.idle_add(do_tray_geometry, *args)
         def tray_exit(*args):
             traylog("tray_exit(%s)", args)
         tray_widget = self.make_system_tray(None, title, None, tray_geometry, tray_click, tray_mouseover, tray_exit)
