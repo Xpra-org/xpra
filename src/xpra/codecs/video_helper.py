@@ -413,8 +413,8 @@ def getVideoHelper():
 
 def main():
     from xpra.codecs.loader import log as loader_log
-    loader_log.enable_debug()
     if "-v" in sys.argv or "--verbose" in sys.argv:
+        loader_log.enable_debug()
         log.enable_debug()
     vh = getVideoHelper()
     vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
