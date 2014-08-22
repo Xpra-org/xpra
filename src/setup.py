@@ -164,7 +164,7 @@ avcodec2_static_ENABLED = False
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
-nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc3")       #or os.path.exists("C:\\nvenc_3.0_windows_sdk")
+nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc4")       #or os.path.exists("C:\\nvenc_3.0_windows_sdk")
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = PYTHON3
 
@@ -1652,7 +1652,7 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc", "xpra.codecs.cuda_common")
 if nvenc_ENABLED:
     make_constants("xpra", "codecs", "nvenc", "constants", NV_WINDOWS=int(sys.platform.startswith("win")))
-    nvenc_pkgconfig = pkgconfig("nvenc3", "cuda", ignored_flags=["-l", "-L"])
+    nvenc_pkgconfig = pkgconfig("nvenc", "cuda", ignored_flags=["-l", "-L"])
     #don't link against libnvidia-encode, we load it dynamically:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:

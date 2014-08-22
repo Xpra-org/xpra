@@ -317,10 +317,11 @@ cdef extern from "nvEncodeAPI.h":
 
     #Encode Codec GUIDS supported by the NvEncodeAPI interface.
     GUID NV_ENC_CODEC_H264_GUID
-    GUID NV_ENC_CODEC_MPEG2_GUID
-    GUID NV_ENC_CODEC_VC1_GUID
-    GUID NV_ENC_CODEC_JPEG_GUID
-    GUID NV_ENC_CODEC_VP8_GUID
+    #removed in nvenc v4:
+    #GUID NV_ENC_CODEC_MPEG2_GUID
+    #GUID NV_ENC_CODEC_VC1_GUID
+    #GUID NV_ENC_CODEC_JPEG_GUID
+    #GUID NV_ENC_CODEC_VP8_GUID
 
     #Profiles:
     GUID NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID
@@ -1020,11 +1021,14 @@ if CLIENT_KEYS_STR:
 
 CODEC_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID)     : "H264",
-    guidstr(NV_ENC_CODEC_MPEG2_GUID)    : "MPEG2",
-    guidstr(NV_ENC_CODEC_VC1_GUID)      : "VC1",
-    guidstr(NV_ENC_CODEC_JPEG_GUID)     : "JPEG",
-    guidstr(NV_ENC_CODEC_VP8_GUID)      : "VP8",
     }
+    #removed in nvenc v4:
+    #CODEC_GUIDS.update({
+    #    guidstr(NV_ENC_CODEC_MPEG2_GUID)    : "MPEG2",
+    #    guidstr(NV_ENC_CODEC_VC1_GUID)      : "VC1",
+    #    guidstr(NV_ENC_CODEC_JPEG_GUID)     : "JPEG",
+    #    guidstr(NV_ENC_CODEC_VP8_GUID)      : "VP8",
+    #})
 
 CODEC_PROFILES_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID) : {
@@ -1036,26 +1040,29 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY): "temporal",
         guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)  : "constrained-high",
         },
-    guidstr(NV_ENC_CODEC_MPEG2_GUID) : {
-        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
-        guidstr(NV_ENC_MPEG2_PROFILE_SIMPLE_GUID)           : "simple",
-        guidstr(NV_ENC_MPEG2_PROFILE_MAIN_GUID)             : "main",
-        guidstr(NV_ENC_MPEG2_PROFILE_HIGH_GUID)             : "high",
-        },
-    guidstr(NV_ENC_CODEC_VC1_GUID) : {
-        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
-        guidstr(NV_ENC_VC1_PROFILE_SIMPLE_GUID)             : "simple",
-        guidstr(NV_ENC_VC1_PROFILE_MAIN_GUID)               : "main",
-        guidstr(NV_ENC_VC1_PROFILE_ADVANCED_GUID)           : "advanced",
-        },
-    guidstr(NV_ENC_CODEC_JPEG_GUID) : {
-        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
-        guidstr(NV_ENC_JPEG_PROFILE_BASELINE_GUID)          : "baseline"
-        },
-    guidstr(NV_ENC_CODEC_VP8_GUID) : {
-        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
-        },
     }
+    #removed in nvenc v4:
+    #CODEC_PROFILES_GUIDS.update({
+    #guidstr(NV_ENC_CODEC_MPEG2_GUID) : {
+    #    guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+    #    guidstr(NV_ENC_MPEG2_PROFILE_SIMPLE_GUID)           : "simple",
+    #    guidstr(NV_ENC_MPEG2_PROFILE_MAIN_GUID)             : "main",
+    #    guidstr(NV_ENC_MPEG2_PROFILE_HIGH_GUID)             : "high",
+    #    },
+    #guidstr(NV_ENC_CODEC_VC1_GUID) : {
+    #    guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+    #    guidstr(NV_ENC_VC1_PROFILE_SIMPLE_GUID)             : "simple",
+    #    guidstr(NV_ENC_VC1_PROFILE_MAIN_GUID)               : "main",
+    #    guidstr(NV_ENC_VC1_PROFILE_ADVANCED_GUID)           : "advanced",
+    #    },
+    #guidstr(NV_ENC_CODEC_JPEG_GUID) : {
+    #    guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+    #    guidstr(NV_ENC_JPEG_PROFILE_BASELINE_GUID)          : "baseline"
+    #    },
+    #guidstr(NV_ENC_CODEC_VP8_GUID) : {
+    #    guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+    #    },
+    #})
 
 
 CODEC_PRESETS_GUIDS = {
