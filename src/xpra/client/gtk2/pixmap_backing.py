@@ -78,7 +78,7 @@ class PixmapBacking(GTK2WindowBacking):
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
-        #log.info("do_paint_rgb32(%s bytes, %s, %s, %s, %s, %s, %s, %s) backing depth=%s", len(img_data), x, y, width, height, rowstride, options, callbacks, self._backing.get_depth())
+        #log.info("do_paint_rgb32(%s bytes, %s, %s, %s, %s, %s, %s) backing depth=%s", len(img_data), x, y, width, height, rowstride, options, self._backing.get_depth())
         #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
         rgba = self.unpremultiply(img_data)
         pixbuf = gdk.pixbuf_new_from_data(rgba, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
