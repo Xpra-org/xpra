@@ -9,11 +9,16 @@ export LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
 %:
 	dh $@ --with python2 --with quilt
 
+BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper
+
+override_dh_auto_build:
+	dh_auto_build -- $(BUILDOPTS)
+
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
 
 override_dh_auto_install:
-	dh_auto_install --destdir=$(CURDIR)/debian/tmp
+	dh_auto_install --destdir=$(CURDIR)/debian/tmp -- $(BUILDOPTS)
 
 ## gracefully handle stripping if -dbg packages are (un-)commented in debian/control
 override_dh_strip:
