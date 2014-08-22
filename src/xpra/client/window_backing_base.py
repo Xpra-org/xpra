@@ -143,7 +143,7 @@ class WindowBackingBase(object):
         if not self._alpha_enabled:
             target_rgb_modes = [x for x in target_rgb_modes if x.find("A")<0]
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
-        log("full csc modes (%s)=%s", target_rgb_modes, full_csc_modes)
+        log("_get_full_csc_modes(%s)=%s (target_rgb_modes=%s)", rgb_modes, full_csc_modes, target_rgb_modes)
         return full_csc_modes
 
     def _get_csc_modes(self, rgb_modes):
@@ -256,7 +256,11 @@ class WindowBackingBase(object):
         dec_webp = get_codec("dec_webp")
         has_alpha = options.get("has_alpha", False)
         buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha)
-        options["rgb_format"] = rgb_format
+        if "rgb_format" in options:
+            rgb_format = options.get("rgb_format")
+        else:
+            #older versions didn't specify, use the guess:
+            options["rgb_format"] = rgb_format
         def free_buffer(*args):
             buffer_wrapper.free()
         callbacks.append(free_buffer)

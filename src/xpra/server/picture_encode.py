@@ -49,6 +49,7 @@ def webp_encode(coding, image, rgb_formats, supports_transparency, quality, spee
         pixel_format = image.get_pixel_format()
     stride = image.get_rowstride()
     enc_webp = get_codec("enc_webp")
+    #log("webp_encode%s stride=%s, enc_webp=%s", (coding, image, rgb_formats, supports_transparency, quality, speed, options), stride, enc_webp)
     if enc_webp and stride>0 and stride%4==0 and image.get_pixel_format() in ("BGRA", "BGRX", "RGBA", "RGBX"):
         #prefer Cython module:
         alpha = supports_transparency and image.get_pixel_format().find("A")>=0
@@ -63,7 +64,8 @@ def webp_encode(coding, image, rgb_formats, supports_transparency, quality, spee
             speed = int(sqrt(speed) * 10)
         speed = max(0, min(100, speed))
         cdata = enc_webp.compress(image.get_pixels(), w, h, stride=stride/4, quality=quality, speed=speed, has_alpha=alpha)
-        client_options = {"speed" : speed}
+        client_options = {"speed"       : speed,
+                          "rgb_format"  : pixel_format}
         if quality>=0 and quality<=100:
             client_options["quality"] = quality
         if alpha:
