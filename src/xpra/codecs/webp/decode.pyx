@@ -195,9 +195,11 @@ def decompress(data, has_alpha):
 
     cdef int stride = 4 * config.input.width
     if has_alpha:
+        #this is just a guess, the actual rgb_format may actually be different... like RGBA
         rgb_format = "BGRA"
         config.output.colorspace = MODE_bgrA
     else:
+        #this is just a guess, actual rgb_format may actually be different... like BGR
         rgb_format = "RGB"
         config.output.colorspace = MODE_RGB
     cdef size_t size = stride * config.input.height
