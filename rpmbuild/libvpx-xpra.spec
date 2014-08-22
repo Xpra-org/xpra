@@ -53,7 +53,7 @@ make install DESTDIR=%{buildroot}
 # dirty hack because configure does not provide includedir flag
 mkdir %{buildroot}/%{_includedir}/xpra
 mv %{buildroot}/%{_includedir}/vpx %{buildroot}/%{_includedir}/xpra
-sed -i 's,/include,/include/xpra,' %{buildroot}/%{_libdir}/xpra/pkgconfig/vpx.pc 
+sed -i 's,/include,/include/xpra,' %{buildroot}/%{_libdir}/xpra/pkgconfig/vpx.pc
 
 %clean
 rm -rf %{buildroot}
@@ -74,4 +74,4 @@ rm -rf %{buildroot}
 
 %changelog
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>
-- initial package 
+- initial package

@@ -270,7 +270,7 @@ fi
 - fix Xorg version detection for Fedora rawhide
 
 * Sat Jun 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.5-3
-- re-fix opengl compatibility 
+- re-fix opengl compatibility
 
 * Fri Jun 13 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.5-1
 - fix use correct dimensions when evaluating video

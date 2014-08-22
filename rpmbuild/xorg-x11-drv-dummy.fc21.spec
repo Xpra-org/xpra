@@ -22,7 +22,7 @@ BuildRequires: autoconf automake libtool
 Requires: Xorg %(xserver-sdk-abi-requires ansic)
 Requires: Xorg %(xserver-sdk-abi-requires videodrv)
 
-%description 
+%description
 X.Org X11 dummy video driver.
 
 %prep

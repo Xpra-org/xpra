@@ -22,7 +22,7 @@ BuildRequires: autoconf automake libtool
 Requires: Xorg %(xserver-sdk-abi-requires ansic)
 Requires: Xorg %(xserver-sdk-abi-requires videodrv)
 
-%description 
+%description
 X.Org X11 dummy video driver.
 
 %prep
@@ -53,8 +53,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Sun Jul 20 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-15.xpra1
-- Add DPI override via root window property 
-- Add "ConstantDPI" support 
+- Add DPI override via root window property
+- Add "ConstantDPI" support
 
 * Wed Jan 15 2014 Adam Jackson <ajax@redhat.com> - 0.3.6-15
 - 1.15 ABI rebuild

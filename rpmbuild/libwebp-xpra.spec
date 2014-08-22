@@ -73,4 +73,4 @@ rm -rf %{buildroot}
 - configure doesn't support --enable-pic
 
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>
-- initial package 
+- initial package

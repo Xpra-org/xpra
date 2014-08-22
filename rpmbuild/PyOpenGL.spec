@@ -29,7 +29,7 @@ includes support for dozens of extensions (where supported in the underlying
 implementation).
 
 PyOpenGL is interoperable with a large number of external GUI libraries
-for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt). 
+for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
 
 
 %package Tk

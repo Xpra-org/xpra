@@ -142,4 +142,4 @@ rm -rf %{buildroot}
 - version bump
 
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>
-- initial package 
+- initial package

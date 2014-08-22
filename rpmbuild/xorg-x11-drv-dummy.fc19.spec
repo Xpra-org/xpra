@@ -22,7 +22,7 @@ BuildRequires: autoconf automake libtool
 Requires: Xorg %(xserver-sdk-abi-requires ansic)
 Requires: Xorg %(xserver-sdk-abi-requires videodrv)
 
-%description 
+%description
 X.Org X11 dummy video driver.
 
 %prep
@@ -52,11 +52,11 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/dummy_drv.so
 
 %changelog
-* Fri Apr 18 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-13 
+* Fri Apr 18 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-13
 - Add DPI override via root window property
 
-* Wed Apr 16 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-12 
-- Add "ConstantDPI" support 
+* Wed Apr 16 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-12
+- Add "ConstantDPI" support
 
 * Tue Mar 19 2013 Adam Jackson <ajax@redhat.com> 0.3.6-10
 - Less RHEL customization

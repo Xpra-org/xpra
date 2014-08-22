@@ -12,7 +12,7 @@ Group:     User Interface/X Hardware Support
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Source0:   ftp://ftp.x.org/pub/individual/driver/%{tarball}-%{version}.tar.bz2
-Patch0:    0002-Constant-DPI.patch 
+Patch0:    0002-Constant-DPI.patch
 
 ExcludeArch: s390 s390x
 
@@ -22,7 +22,7 @@ Requires:  hwdata
 Requires:  Xorg %(xserver-sdk-abi-requires ansic)
 Requires:  Xorg %(xserver-sdk-abi-requires videodrv)
 
-%description 
+%description
 X.Org X11 dummy video driver.
 
 %prep

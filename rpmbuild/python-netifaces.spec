@@ -48,7 +48,7 @@ Getting network addresses from Python
 
 %build
 %{__python} setup.py build
- 
+
 %install
 rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install -O1 --prefix /usr --root %{buildroot}
