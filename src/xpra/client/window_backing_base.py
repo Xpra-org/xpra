@@ -255,12 +255,9 @@ class WindowBackingBase(object):
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         dec_webp = get_codec("dec_webp")
         has_alpha = options.get("has_alpha", False)
-        buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha)
-        if "rgb_format" in options:
-            rgb_format = options.get("rgb_format")
-        else:
-            #older versions didn't specify, use the guess:
-            options["rgb_format"] = rgb_format
+        buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha, options.get("rgb_format"))
+        #replace with the actual rgb format we get from the decoder:
+        options["rgb_format"] = rgb_format
         def free_buffer(*args):
             buffer_wrapper.free()
         callbacks.append(free_buffer)
