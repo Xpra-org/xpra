@@ -1,7 +1,7 @@
 Name:	     libwebp-xpra
 Version:     0.4.1
 Release:     1%{?dist}
-Summary:     WebP library and conversion tools
+Summary:     WebP library and conversion tools for xpra
 
 Group:       Applications/Multimedia
 License:     BSD
