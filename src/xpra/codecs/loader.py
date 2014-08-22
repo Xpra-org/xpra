@@ -116,15 +116,9 @@ def load_codecs():
     codec_import_check("csc_opencl", "OpenCL colorspace conversion", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
     add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter")
 
-    #ffmpeg v1:
-    codec_import_check("dec_avcodec", "avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder")
-    add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder")
-
-    #ffmpeg v2:
     codec_import_check("dec_avcodec2", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
     add_codec_version("avcodec2", "xpra.codecs.dec_avcodec2.decoder")
 
-    #webp via cython:
     codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
     add_codec_version("enc_webp", "xpra.codecs.webp.encode")
 
