@@ -261,7 +261,7 @@ class WindowBackingBase(object):
             buffer_wrapper.free()
         callbacks.append(free_buffer)
         data = buffer_wrapper.get_pixels()
-        if has_alpha:
+        if len(rgb_format)==4:
             return self.paint_rgb32(data, x, y, width, height, stride, options, callbacks)
         else:
             return self.paint_rgb24(data, x, y, width, height, stride, options, callbacks)
