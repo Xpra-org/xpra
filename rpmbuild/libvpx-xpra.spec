@@ -1,7 +1,7 @@
 Name:	     libvpx-xpra	
 Version:     1.3.0
 Release:     1%{?dist}
-Summary:     vpx library for xpra	
+Summary:     vpx library for xpra
 
 Group:       Applications/Multimedia
 License:     BSD
