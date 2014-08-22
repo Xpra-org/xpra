@@ -188,7 +188,7 @@ class ServerSource(object):
     """
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 get_transient_for, get_focus,
+                 get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  supports_mmap,
                  core_encodings, encodings, default_encoding,
@@ -214,6 +214,7 @@ class ServerSource(object):
         self.source_remove = source_remove
         self.get_transient_for = get_transient_for
         self.get_focus = get_focus
+        self.get_cursor_data_cb = get_cursor_data_cb
         self.get_window_id = get_window_id
         # mmap:
         self.supports_mmap = supports_mmap
@@ -1238,12 +1239,12 @@ class ServerSource(object):
         #we can't compress, so at least avoid warnings in the protocol layer:
         return Compressed("raw %s" % datatype, data, can_inline=True)
 
-    def send_cursor(self, get_cursor_data_cb):
+    def send_cursor(self):
         if not self.send_cursors or self.suspended:
             return
         def do_send_cursor():
             self.send_cursor_pending = False
-            cursor_data, cursor_sizes = get_cursor_data_cb()
+            cursor_data, cursor_sizes = self.get_cursor_data_cb()
             if cursor_data:
                 if self.last_cursor_sent and self.last_cursor_sent==cursor_data[:8]:
                     cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")

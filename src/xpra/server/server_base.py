@@ -550,7 +550,7 @@ class ServerBase(ServerCore):
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
-                          self.get_transient_for, self.get_focus,
+                          self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.supports_mmap,
                           self.core_encodings, self.encodings, self.default_encoding,

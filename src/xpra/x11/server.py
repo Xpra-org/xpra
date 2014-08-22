@@ -374,7 +374,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         display = gtk.gdk.display_get_default()
         self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
         cursorlog("cursor_sizes=%s", self.cursor_sizes)
-        ss.send_cursor(self.get_cursor_data)
+        ss.send_cursor()
 
 
     def _new_window_signaled(self, wm, window):
@@ -490,7 +490,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         cursorlog("cursor_event: %s", event)
         self.last_cursor_serial = event.cursor_serial
         for ss in self._server_sources.values():
-            ss.send_cursor(self.get_cursor_data)
+            ss.send_cursor()
         return False
 
     def get_cursor_data(self):
