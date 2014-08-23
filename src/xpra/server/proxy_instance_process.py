@@ -350,7 +350,7 @@ class ProxyInstanceProcess(Process):
         return d
 
     def filter_client_caps(self, caps):
-        fc = self.filter_caps(caps, ("cipher", "digest", "aliases", "compression", "lz4"))
+        fc = self.filter_caps(caps, ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib"))
         #update with options provided via config if any:
         fc.update(self.session_options)
         #add video proxies if any:
@@ -360,10 +360,7 @@ class ProxyInstanceProcess(Process):
         return fc
 
     def filter_server_caps(self, caps):
-        if caps.get("rencode", False):
-            self.server_protocol.enable_rencode()
-        elif caps.get("yaml", False):
-            self.server_protocol.enable_yaml()
+        self.server_protocol.enable_encoder_from_caps(caps)
         return self.filter_caps(caps, ("aliases", ))
 
     def filter_caps(self, caps, prefixes):
