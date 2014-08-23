@@ -200,8 +200,8 @@ def decompress(data, has_alpha, rgb_format):
             rgb_format = "BGRA"
         config.output.colorspace = MODE_bgrA
     else:
-        #always use default:
         if len(rgb_format or "")!=3:
+            #use default if the format given is not valid:
             rgb_format = "RGB"
         config.output.colorspace = MODE_RGB
     cdef size_t size = stride * config.input.height
