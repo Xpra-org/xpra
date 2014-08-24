@@ -278,13 +278,8 @@ class KeyboardHelper(object):
 
 
     def update_hash(self):
-        try:
-            import hashlib
-            h = hashlib.sha1()
-        except:
-            #try python2.4 variant:
-            import sha
-            h = sha.new()
+        import hashlib
+        h = hashlib.sha1()
         def hashadd(v):
             h.update(("/%s" % str(v)).encode("utf8"))
         for x in (self.xkbmap_print, self.xkbmap_query, \
