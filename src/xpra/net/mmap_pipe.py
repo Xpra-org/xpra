@@ -56,10 +56,9 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
         unit = max(4096, mmap.PAGESIZE)
         mmap_size = roundup(size, unit)
         log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
-        SEEK_SET = 0        #os.SEEK_SET==0 but this is not available in python2.4
-        os.lseek(fd, mmap_size-1, SEEK_SET)
+        os.lseek(fd, mmap_size-1, os.SEEK_SET)
         assert os.write(fd, strtobytes('\x00'))
-        os.lseek(fd, 0, SEEK_SET)
+        os.lseek(fd, 0, os.SEEK_SET)
         mmap_area = mmap.mmap(fd, length=mmap_size)
         write_mmap_token(mmap_area, token)
         return True, mmap_area, mmap_size, mmap_temp_file, mmap_filename
