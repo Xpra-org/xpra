@@ -156,13 +156,8 @@ def get_user_uuid():
         Try to generate a uuid string which is unique to this user.
         (relies on get_machine_id to uniquely identify a machine)
     """
-    try:
-        import hashlib
-        u = hashlib.sha1()
-    except:
-        #try python2.4 variant:
-        import sha
-        u = sha.new()
+    import hashlib
+    u = hashlib.sha1()
     def uupdate(ustr):
         u.update(ustr.encode("utf-8"))
     uupdate(get_machine_id())
