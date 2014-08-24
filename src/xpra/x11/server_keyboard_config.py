@@ -129,13 +129,8 @@ class KeyboardConfig(KeyboardConfigBase):
         """
             This hash will be different whenever the keyboard configuration changes.
         """
-        try:
-            import hashlib
-            m = hashlib.sha1()
-        except:
-            #try python2.4 variant:
-            import sha
-            m = sha.new()
+        import hashlib
+        m = hashlib.sha1()
         m.update(KeyboardConfigBase.get_hash(self))
         for x in (self.xkbmap_print, self.xkbmap_query, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
