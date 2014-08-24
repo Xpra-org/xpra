@@ -979,7 +979,7 @@ class WindowSource(object):
             return
 
         now = time.time()
-        log("process_damage_regions: wid=%s, adding %s pixel data to queue, elapsed time: %.1f ms, request rgb time: %.1f ms",
+        log("process_damage_regions: wid=%s, adding %s pixel data to queue, elapsed time: %.1f ms, request time: %.1f ms",
                 self.wid, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         self.queue_damage(self.make_data_packet_cb, window, damage_time, now, self.wid, image, coding, sequence, options)
