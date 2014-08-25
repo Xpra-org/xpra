@@ -187,16 +187,18 @@ def main():
     from xpra.platform import init, clean
     init("Sound-Record")
     try:
+        args = sys.argv
+        log.enable_debug()
         import os.path
-        if len(sys.argv) not in (2, 3):
-            print("usage: %s filename [codec]" % sys.argv[0])
+        if len(args) not in (2, 3):
+            print("usage: %s [-v|--verbose] filename [codec]" % sys.argv[0])
             return 1
-        filename = sys.argv[1]
+        filename = args[1]
         if not os.path.exists(filename):
             print("file %s does not exist" % filename)
             return 2
-        if len(sys.argv)==3:
-            codec = sys.argv[2]
+        if len(args)==3:
+            codec = args[2]
             if codec not in CODECS:
                 print("invalid codec: %s" % codec)
                 return 2
