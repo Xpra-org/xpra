@@ -34,11 +34,6 @@
 %define requires_sound %{nil}
 %endif
 
-%if 0%{?el7}
-#OpenGL cannot be used because pygtkglext is missing from centos7
-%define requires_opengl %{nil}
-%endif
-
 %if 0%{?el6}
 #distro version is too old replace with our private libraries
 %define libvpx libvpx-xpra
