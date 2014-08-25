@@ -152,7 +152,7 @@ class SoundSink(SoundPipeline):
             return
         buf = gst.new_buffer(data)
         d = 10*MS_TO_NS
-        if metadata and False:
+        if metadata:
             ts = metadata.get("timestamp")
             if ts is not None:
                 buf.timestamp = ts
