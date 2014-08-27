@@ -154,6 +154,7 @@ class UIXpraClient(XpraClientBase):
         self.mmap_filename = None
         self.mmap_size = 0
         self.mmap_group = None
+        self.mmap_tempfile = None
 
         #features:
         self.opengl_enabled = False
@@ -686,6 +687,13 @@ class UIXpraClient(XpraClientBase):
 
     def clean_mmap(self):
         log("XpraClient.clean_mmap() mmap_filename=%s", self.mmap_filename)
+        if self.mmap_tempfile:
+            try:
+                self.mmap_tempfile.close()
+            except Exception as e:
+                log("clean_mmap error closing file %s: %s", self.mmap_tempfile, e)
+            self.mmap_tempfile = None
+        #this should be redundant: closing the tempfile should get it deleted
         if self.mmap_filename and os.path.exists(self.mmap_filename):
             os.unlink(self.mmap_filename)
             self.mmap_filename = None
