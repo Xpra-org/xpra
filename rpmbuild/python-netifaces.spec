@@ -18,6 +18,7 @@ Source: netifaces-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: python-devel, python-setuptools
 Provides: netifaces
+Obsoletes: netifaces
 
 
 %description
