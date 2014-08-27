@@ -28,3 +28,6 @@ class Authenticator(SysAuthenticator):
 
     def authenticate(self, challenge_response, client_salt):
         return True
+
+    def __repr__(self):
+        return "None Authenticator"

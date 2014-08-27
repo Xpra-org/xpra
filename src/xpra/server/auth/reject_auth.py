@@ -34,3 +34,6 @@ class Authenticator(object):
 
     def get_sessions(self):
         return None
+
+    def __repr__(self):
+        return "Reject Authenticator"

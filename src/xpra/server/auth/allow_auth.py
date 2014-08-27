@@ -11,6 +11,9 @@ def init(opts):
 
 class Authenticator(SysAuthenticator):
 
+    def __repr__(self):
+        return "Allow Authenticator"
+
     def get_challenge(self):
         return get_hex_uuid(), "hmac"
 
