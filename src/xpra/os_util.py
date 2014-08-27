@@ -9,6 +9,7 @@ import re
 import os
 import sys
 import signal
+import uuid
 
 #hide some ugly python3 compat:
 try:
@@ -106,30 +107,11 @@ def os_info(sys_platform, platform_release, platform_platform, platform_linux_di
     return s
 
 
-try:
-    if os.environ.get("XPRA_TEST_UUID_WRAPPER", "0")=="1":
-        raise ImportError("testing uuidgen codepath")
-    import uuid
+def get_hex_uuid():
+    return uuid.uuid4().hex
 
-    def get_hex_uuid():
-        return uuid.uuid4().hex
-
-    def get_int_uuid():
-        return uuid.uuid4().int
-
-except ImportError:
-    #fallback to using the 'uuidgen' command:
-    def get_hex_uuid():
-        from commands import getstatusoutput
-        s, o = getstatusoutput('uuidgen')
-        if s!=0:
-            raise Exception("no uuid module and 'uuidgen' failed!")
-        return o.replace("-", "")
-
-    def get_int_uuid():
-        hex_uuid = get_hex_uuid()
-        return int(hex_uuid, 16)
-
+def get_int_uuid():
+    return uuid.uuid4().int
 
 def get_machine_id():
     """
