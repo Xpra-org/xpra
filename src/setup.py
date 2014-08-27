@@ -23,12 +23,7 @@ import shutil
 if sys.version<'2.6':
     raise Exception("xpra no longer supports Python versions older than 2.6")
 
-try:
-    from hashlib import md5         #@UnusedImport
-    new_md5 = md5
-except:
-    import md5                      #@Reimport
-    new_md5 = md5.new
+from hashlib import md5         #@UnusedImport
 
 print(" ".join(sys.argv))
 
@@ -83,8 +78,7 @@ def get_status_output(*args, **kwargs):
     kwargs["stderr"] = subprocess.PIPE
     try:
         p = subprocess.Popen(*args, **kwargs)
-    except:
-        e = sys.exc_info()[1]
+    except Exception as e:
         print("error running %s,%s: %s" % (args, kwargs, e))
         return -1, "", ""
     stdout, stderr = p.communicate()
@@ -380,7 +374,7 @@ def check_md5sums(md5sums):
         f = open(filename, mode='rb')
         data = f.read()
         f.close()
-        m = new_md5()
+        m = md5()
         m.update(data)
         digest = m.hexdigest()
         assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (filename, md5sum, digest)
@@ -404,8 +398,7 @@ def print_dict(d):
 def cython_version_check(min_version):
     try:
         from Cython.Compiler.Version import version as cython_version
-    except ImportError:
-        e = sys.exc_info()[1]
+    except ImportError as e:
         sys.exit("ERROR: Cannot find Cython: %s" % e)
     from distutils.version import LooseVersion
     if LooseVersion(cython_version) < LooseVersion(".".join([str(x) for x in min_version])):
@@ -1391,8 +1384,7 @@ if WIN32:
                     module_dir, os.path.join("dist", module_name),
                     ignore = shutil.ignore_patterns("Tk", "EGL", "GLX", "GLX.*", "_GLX.*", "GLE", "GLES1", "GLES2", "GLES3")
                 )
-            except:
-                e = sys.exc_info()[1]
+            except Exception as e:
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
 
