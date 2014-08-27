@@ -387,8 +387,7 @@ def dumps(x, float_bits=DEFAULT_FLOAT_BITS):
 
     Here float_bits is either 32 or 64.
     """
-    lock.acquire()
-    try:
+    with lock:
         if float_bits == 32:
             encode_func[float] = encode_float32
         elif float_bits == 64:
@@ -397,9 +396,6 @@ def dumps(x, float_bits=DEFAULT_FLOAT_BITS):
             raise ValueError('Float bits (%d) is not 32 or 64' % float_bits)
         r = []
         encode_func[type(x)](x, r)
-    finally:
-        lock.release()
-
     return b('').join(r)
 
 def test():

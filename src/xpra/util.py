@@ -85,18 +85,14 @@ class AtomicInteger(object):
         self.lock = threading.RLock()
 
     def increase(self, inc = 1):
-        self.lock.acquire()
-        self.counter = self.counter + inc
-        v = self.counter
-        self.lock.release()
-        return v
+        with self.lock:
+            self.counter = self.counter + inc
+            return self.counter
 
     def decrease(self, dec = 1):
-        self.lock.acquire()
-        self.counter = self.counter - dec
-        v = self.counter
-        self.lock.release()
-        return v
+        with self.lock:
+            self.counter = self.counter - dec
+            return self.counter
 
     def get(self):
         return self.counter

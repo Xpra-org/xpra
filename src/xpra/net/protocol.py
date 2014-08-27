@@ -265,13 +265,10 @@ class Protocol(object):
             return
         log("add_packet_to_queue(%s ...)", packet[0])
         chunks, proto_flags = self.encode(packet)
-        try:
-            self._write_lock.acquire()
+        with self._write_lock:
             if self._closed:
                 return
             self._add_chunks_to_queue(chunks, proto_flags, start_send_cb, end_send_cb)
-        finally:
-            self._write_lock.release()
 
     def _add_chunks_to_queue(self, chunks, proto_flags, start_send_cb=None, end_send_cb=None):
         """ the write_lock must be held when calling this function """

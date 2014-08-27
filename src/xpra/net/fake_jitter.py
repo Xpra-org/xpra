@@ -30,23 +30,17 @@ class FakeJitter(object):
 
     def flush(self):
         log.info("FakeJitter.flush() processing %s delayed packets", len(self.pending))
-        try:
-            self.lock.acquire()
+        with self.lock:
             for proto, packet in self.pending:
                 self.real_process_packet_cb(proto, packet)
             self.pending = []
             self.delaying = False
-        finally:
-            self.lock.release()
         self.timeout_add(self.ok_delay, self.start_buffering)
         log.info("FakeJitter.flush() will start buffering again in %s ms", self.ok_delay)
 
     def process_packet_cb(self, proto, packet):
-        try:
-            self.lock.acquire()
+        with self.lock:
             if self.delaying:
                 self.pending.append((proto, packet))
             else:
                 self.real_process_packet_cb(proto, packet)
-        finally:
-            self.lock.release()

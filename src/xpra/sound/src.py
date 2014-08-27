@@ -191,12 +191,9 @@ def main():
         lock = Lock()
         def new_buffer(ss, data, metadata):
             log.info("new buffer: %s bytes, metadata=%s" % (len(data), metadata))
-            try:
-                lock.acquire()
+            with lock:
                 if f:
                     f.write(data)
-            finally:
-                lock.release()
         ss.connect("new-buffer", new_buffer)
         ss.start()
 
@@ -213,12 +210,9 @@ def main():
 
         f.flush()
         log.info("wrote %s bytes to %s", f.tell(), filename)
-        try:
-            lock.acquire()
+        with lock:
             f.close()
             f = None
-        finally:
-            lock.release()
         return 0
     finally:
         clean()

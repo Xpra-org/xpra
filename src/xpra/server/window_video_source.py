@@ -208,12 +208,9 @@ class WindowVideoSource(WindowSource):
         """
         if self._csc_encoder is None and self._video_encoder is None:
             return
-        try:
-            self._lock.acquire()
+        with self._lock:
             self.do_csc_encoder_cleanup()
             self.do_video_encoder_cleanup()
-        finally:
-            self._lock.release()
 
     def do_csc_encoder_cleanup(self):
         #MUST be called with video lock held!
@@ -639,8 +636,7 @@ class WindowVideoSource(WindowSource):
                 return checknovideo("out of bounds: %sx%s (min %sx%s, max %sx%s)", w, h, self.min_w, self.min_h, self.max_w, self.max_h)
             if time.time()-self.statistics.last_resized<0.500:
                 return checknovideo("resized just %.1f seconds ago", time.time()-self.statistics.last_resized)
-        try:
-            self._lock.acquire()
+        with self._lock:
             ve = self._video_encoder
             if not ve or ve.is_closed():
                 #could have been freed since we got the lock!
@@ -685,9 +681,7 @@ class WindowVideoSource(WindowSource):
             else:
                 self._video_encoder.set_encoding_speed(self._current_speed)
                 self._video_encoder.set_encoding_quality(self._current_quality)
-        finally:
-            self._last_pipeline_check = time.time()
-            self._lock.release()
+        self._last_pipeline_check = time.time()
 
 
     def get_video_pipeline_options(self, encoding, width, height, src_format):
@@ -1131,8 +1125,7 @@ class WindowVideoSource(WindowSource):
         x, y, w, h = image.get_geometry()[:4]
         assert self.supports_video_subregion or (x==0 and y==0), "invalid position: %s,%s" % (x,y)
         src_format = image.get_pixel_format()
-        try:
-            self._lock.acquire()
+        with self._lock:
             if not self.check_pipeline(encoding, w, h, src_format):
                 #find one that is not video:
                 fallback_encodings = set(self._encoders.keys()) - set(self.video_encodings) - set(["mmap"])
@@ -1174,8 +1167,6 @@ class WindowVideoSource(WindowSource):
             log("video_encode encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                                 encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
             return self._video_encoder.get_encoding(), Compressed(encoding, data), client_options, width, height, 0, 24
-        finally:
-            self._lock.release()
 
     def csc_image(self, image, width, height):
         """
