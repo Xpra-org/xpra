@@ -71,11 +71,7 @@ def data_to_buffer(in_data):
     if sys.version>='3':
         data = bytearray(in_data.encode("latin1"))
     else:
-        try:
-            data = bytearray(in_data)
-        except:
-            #old python without bytearray:
-            data = str(in_data)
+        data = bytearray(in_data)
     return BytesIOClass(data)
 
 def platform_name(sys_platform, release):

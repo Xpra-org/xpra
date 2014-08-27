@@ -12,7 +12,6 @@ log = Logger("csc", "cuda")
 
 import os
 import time
-assert bytearray
 import pycuda
 from pycuda import driver
 from pycuda import tools

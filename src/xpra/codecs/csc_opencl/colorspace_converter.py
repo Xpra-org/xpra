@@ -10,7 +10,6 @@ import time
 import os
 import warnings
 import numpy
-assert bytearray
 import pyopencl             #@UnresolvedImport
 from pyopencl import mem_flags  #@UnresolvedImport
 

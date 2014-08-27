@@ -13,34 +13,19 @@ cdef extern from "../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
     int    object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
-from xpra.os_util import builtins
 
 import struct
 try:
     import numpy
-except:
-    numpy = None
-if numpy:
     def make_byte_buffer(len):
         return numpy.empty(len, dtype=numpy.byte)
     def byte_buffer_to_buffer(x):
         return x.tostring()
-else:
-    #test for availability of bytearray
-    #in a way that does not cause Cython to fail to compile:
-    _bytearray =  builtins.__dict__.get("bytearray")
-    if _bytearray is not None:
-        def make_byte_buffer(len):          #@DuplicatedSignature
-            return _bytearray(len)
-        def byte_buffer_to_buffer(x):       #@DuplicatedSignature
-            return str(x)
-    else:
-        #python 2.4 and older do not have bytearray, use array:
-        import array
-        def make_byte_buffer(len):          #@DuplicatedSignature
-            return array.array('B', '\0' * len)
-        def byte_buffer_to_buffer(x):       #@DuplicatedSignature
-            return x.tostring()
+except:
+    def make_byte_buffer(len):          #@DuplicatedSignature
+        return bytearray(len)
+    def byte_buffer_to_buffer(x):       #@DuplicatedSignature
+        return str(x)
 
 
 def argb_to_rgba(buf):
