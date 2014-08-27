@@ -26,7 +26,7 @@ from xpra.net import compression
 from xpra.net import packet_encoding
 from xpra.net.compression import get_compression_caps, decompress, InvalidCompressionException, Compressed, LevelCompressed, Uncompressed
 from xpra.net.packet_encoding import get_packet_encoding_caps, decode, InvalidPacketEncodingException
-from xpra.net.header import unpack_header, pack_header, pack_header_and_data, FLAGS_CIPHER, FLAGS_NOHEADER
+from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER
 from xpra.net.crypto import get_crypto_caps, get_cipher
 
 
@@ -300,10 +300,10 @@ class Protocol(object):
             if proto_flags & FLAGS_NOHEADER:
                 #for plain/text packets (ie: gibberish response)
                 items.append((data, scb, ecb))
-            elif pack_header_and_data is not None and actual_size<PACKET_JOIN_SIZE:
-                if type(data)==unicode:
+            elif actual_size<PACKET_JOIN_SIZE:
+                if type(data)!=str:
                     data = str(data)
-                header_and_data = pack_header_and_data(actual_size, proto_flags, level, index, payload_size, data)
+                header_and_data = pack_header(proto_flags, level, index, payload_size) + data
                 items.append((header_and_data, scb, ecb))
             else:
                 header = pack_header(proto_flags, level, index, payload_size)

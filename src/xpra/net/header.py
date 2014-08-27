@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import struct
 
 
@@ -23,12 +22,6 @@ def unpack_header(buf):
 
 #'P' + protocol-flags + compression_level + packet_index + data_size
 _header_pack_struct = struct.Struct('!BBBBL')
+assert ord("P") == 80
 def pack_header(proto_flags, level, index, payload_size):
-    return _header_pack_struct.pack(ord("P"), proto_flags, level, index, payload_size)
-
-if sys.version_info[0]<3:
-    #before v3, python does the right thing without hassle:
-    def pack_header_and_data(actual_size, proto_flags, level, index, payload_size, data):
-        return struct.pack('!BBBBL%ss' % actual_size, ord("P"), proto_flags, level, index, payload_size, data)
-else:
-    pack_header_and_data = None
+    return _header_pack_struct.pack(80, proto_flags, level, index, payload_size)
