@@ -337,7 +337,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def call_setup(self):
         try:
             self._geometry = trap.call_synced(X11Window.geometry_with_border, self.client_window.xid)
-        except XError, e:
+        except XError as e:
             raise Unmanageable(e)
         add_event_receiver(self.client_window, self)
         # Keith Packard says that composite state is undefined following a
@@ -345,7 +345,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         # before we reparent, actually works... let's wait and see.
         try:
             trap.call_synced(self._composite.setup)
-        except XError, e:
+        except XError as e:
             remove_event_receiver(self.client_window, self)
             log("window %#x does not support compositing: %s", self.client_window.xid, e)
             trap.swallow_synced(self._composite.destroy)
@@ -355,10 +355,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._managed = True
         try:
             trap.call_synced(self.setup)
-        except XError, e:
+        except XError as e:
             try:
                 trap.call_synced(self.setup_failed, e)
-            except Exception, ex:
+            except Exception as ex:
                 log.error("error in cleanup handler: %s", ex)
             raise Unmanageable(e)
         self._setup_done = True
@@ -557,7 +557,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 #logger("get_image(..) XShm image: %s", shm_image)
                 if shm_image:
                     return shm_image
-        except Exception, e:
+        except Exception as e:
             if type(e)==XError and e.msg=="BadMatch":
                 logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
@@ -569,7 +569,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             if w!=width or h!=height:
                 logger("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
             return trap.call_synced(handle.get_image, x, y, w, h)
-        except Exception, e:
+        except Exception as e:
             if type(e)==XError and e.msg=="BadMatch":
                 logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
@@ -1100,7 +1100,7 @@ class WindowModel(BaseWindowModel):
             #workaround applications whose windows disappear from underneath us:
             if trap.call_synced(self.resize_corral_window, event.x, event.y, event.width, event.height, event.border_width):
                 self.notify("geometry")
-        except XError, e:
+        except XError as e:
             log.warn("failed to resize corral window: %s", e)
 
     def resize_corral_window(self, x, y, w, h, border):

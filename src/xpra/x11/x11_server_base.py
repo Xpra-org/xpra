@@ -356,7 +356,7 @@ class X11ServerBase(GTKServerBase):
                     log.info("DPI set to %s x %s (wanted %s x %s)", actual_xdpi, actual_ydpi, xdpi, ydpi)
             #show dpi via idle_add so server has time to change the screen size (mm)
             self.idle_add(show_dpi)
-        except Exception, e:
+        except Exception as e:
             log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         return  root_w, root_h
 
@@ -375,7 +375,7 @@ class X11ServerBase(GTKServerBase):
                 if os.path.exists(f) and os.path.isfile(f):
                     try:
                         os.unlink(f)
-                    except Exception, e:
+                    except Exception as e:
                         log.warn("failed to delete fake xinerama file %s: %s", f, e)
             oldconf = self.current_xinerama_config
             self.current_xinerama_config = None
@@ -424,7 +424,7 @@ class X11ServerBase(GTKServerBase):
                 try:
                     f = open(filename, 'wb')
                     f.write(contents)
-                except Exception, e:
+                except Exception as e:
                     log.warn("error writing fake xinerama file %s: %s", filename, e)
                     pass
             finally:

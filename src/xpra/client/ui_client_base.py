@@ -126,7 +126,7 @@ class UIXpraClient(XpraClientBase):
             if has_gst:
                 soundlog("speaker_allowed=%s, speaker_codecs=%s", self.speaker_allowed, self.speaker_codecs)
                 soundlog("microphone_allowed=%s, microphone_codecs=%s", self.microphone_allowed, self.microphone_codecs)
-        except Exception, e:
+        except Exception as e:
             soundlog("sound support unavailable: %s", e)
             has_gst = False
         #sound state:
@@ -289,7 +289,7 @@ class UIXpraClient(XpraClientBase):
             try:
                 from xpra.sound.pulseaudio_util import add_audio_tagging_env
                 add_audio_tagging_env(tray_icon_filename)
-            except ImportError, e:
+            except ImportError as e:
                 log("failed to set pulseaudio audio tagging: %s", e)
 
         if ClientExtras is not None:
@@ -721,7 +721,7 @@ class UIXpraClient(XpraClientBase):
         if window_icon and os.path.exists(window_icon):
             try:
                 self.do_set_window_icon(window_icon)
-            except Exception, e:
+            except Exception as e:
                 windowlog.error("failed to set window icon %s: %s", window_icon, e)
 
 
@@ -1016,7 +1016,7 @@ class UIXpraClient(XpraClientBase):
                 from xpra.sound.gstreamer_util import has_gst, get_info as get_gst_info
                 sound_caps.update(get_gst_info(receive=self.speaker_allowed, send=self.microphone_allowed,
                                      receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
-            except Exception, e:
+            except Exception as e:
                 log.error("failed to setup sound: %s", e, exc_info=True)
                 self.speaker_allowed = False
                 self.microphone_allowed = False
@@ -1027,12 +1027,12 @@ class UIXpraClient(XpraClientBase):
                     sound_caps.update(get_pa_info())
                     sound_caps.update(get_gst_info(receive=self.speaker_allowed, send=self.microphone_allowed,
                                          receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
-                except Exception, e:
+                except Exception:
                     pass
             from xpra.util import updict
             updict(capabilities, "sound", sound_caps)
             soundlog("sound capabilities: %s", sound_caps)
-        except ImportError, e:
+        except ImportError as e:
             soundlog.warn("sound support not available: %s", e)
         #batch options:
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
@@ -1379,7 +1379,7 @@ class UIXpraClient(XpraClientBase):
         dbuslog("calling %s callback %s(%s)", ctype, rh, args)
         try:
             rh(*args)
-        except Exception, e:
+        except Exception as e:
             dbuslog.warn("error processing rpc reply handler %s(%s) : %s", rh, args, e)
 
 
@@ -1447,7 +1447,7 @@ class UIXpraClient(XpraClientBase):
             self.sound_source.start()
             soundlog("start_sound_source() sound source %s started", self.sound_source)
             return True
-        except Exception, e:
+        except Exception as e:
             log.error("error setting up sound: %s", e)
             return False
 

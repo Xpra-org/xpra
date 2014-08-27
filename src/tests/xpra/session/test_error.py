@@ -27,7 +27,7 @@ class TestError(TestWithSession):
         assert trap.call(lambda: 1) == 1
         try:
             trap.call(self.cause_badwindow)
-        except XError, e:
+        except XError as e:
             assert e.args == (constants["BadWindow"],)
 
     def test_swallow(self):

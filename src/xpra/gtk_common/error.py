@@ -67,7 +67,7 @@ def get_X_error(xerror):
             return xerror_to_name.get(xerror)
         from xpra.x11.bindings.core_bindings import X11CoreBindings     #@UnresolvedImport
         return X11CoreBindings().get_error_text(xerror)
-    except Exception, e:
+    except Exception as e:
         log.error("get_X_error(%s) %s", xerror, e, exc_info=True)
     return xerror
 
@@ -108,12 +108,12 @@ class _ErrorManager(object):
         try:
             self._enter()
             value = fun(*args, **kwargs)
-        except Exception, e:
+        except Exception as e:
             elog("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e, exc_info=True)
             log("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e)
             try:
                 self._exit(need_sync)
-            except XError, ee:
+            except XError as ee:
                 log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
             raise e
         self._exit(need_sync)
@@ -134,7 +134,7 @@ class _ErrorManager(object):
         try:
             self.call_unsynced(fun, *args, **kwargs)
             return True
-        except XError, e:
+        except XError as e:
             log("Ignoring X error: %s on %s", XErrorInfo(e.msg), fun)
             return False
 
@@ -142,7 +142,7 @@ class _ErrorManager(object):
         try:
             self.call_synced(fun, *args, **kwargs)
             return True
-        except XError, e:
+        except XError as e:
             log("Ignoring X error: %s on %s", XErrorInfo(e.msg), fun)
             return False
 

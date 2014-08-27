@@ -54,7 +54,7 @@ def load_auth_file():
     ptime = 0
     try:
         ptime = os.stat(password_file).st_mtime
-    except Exception, e:
+    except Exception as e:
         log.error("error accessing password file time: %s", e)
     if auth_data is None or ptime!=auth_data_time:
         auth_data = {}
@@ -67,7 +67,7 @@ def load_auth_file():
             finally:
                 if f:
                     f.close()
-        except Exception, e:
+        except Exception as e:
             log.error("error loading %s: %s", password_file, e)
             data = ""
         i = 0

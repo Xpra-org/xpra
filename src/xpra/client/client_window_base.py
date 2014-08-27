@@ -136,7 +136,7 @@ class ClientWindowBase(ClientWidgetBase):
                         return value
                     title = re.sub("@[\w\-]*@", metadata_replace, title)
                 utf8_title = title.encode("utf-8")
-            except Exception, e:
+            except Exception as e:
                 log.error("error parsing window title: %s", e)
                 utf8_title = ""
             self.set_title(utf8_title)

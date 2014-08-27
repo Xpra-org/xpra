@@ -93,7 +93,7 @@ def init_all_devices():
                 log.info("  + %s (memory: %s%% free, compute: %s.%s)", device_info(device), 100*free/total, SMmajor, SMminor)
             finally:
                 context.pop()
-        except Exception, e:
+        except Exception as e:
             log.error("error on device %s: %s", (device or i), e)
     return DEVICES
 

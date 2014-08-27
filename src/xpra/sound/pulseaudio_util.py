@@ -54,7 +54,7 @@ def pactl_output(log_errors=True, *pactl_args):
         code, out, _ = safe_exec(cmd, log_errors=log_errors)
         log("pactl_output%s returned %s", pactl_args, code)
         return  code, out
-    except Exception, e:
+    except Exception as e:
         if log_errors:
             log.error("failed to execute %s: %s", cmd, e)
         else:

@@ -190,7 +190,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         listening.append(win)
                         win = get_parent(win)
                     handle = XImage.get_xcomposite_pixmap(self._window.xid)
-                except Exception, e:
+                except Exception as e:
                     try:
                         self._cleanup_listening(listening)
                     except:

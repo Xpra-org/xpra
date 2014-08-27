@@ -94,7 +94,7 @@ class Keyboard(KeyboardBase):
                 log("unknown keyboard layout for kbid: %s", kbid)
             else:
                 layouts.append(layout)
-        except Exception, e:
+        except Exception as e:
             log.error("failed to detect keyboard layout: %s", e)
         return layout,layouts,variant,variants
 
@@ -112,7 +112,7 @@ class Keyboard(KeyboardBase):
             speed = int(1000/(2.5+27.5*_speed/31))
             log.debug("keyboard repeat speed(%s)=%s, delay(%s)=%s", _speed, speed, _delay, delay)
             return  delay,speed
-        except Exception, e:
+        except Exception as e:
             log.error("failed to get keyboard rate: %s", e)
         return None
 

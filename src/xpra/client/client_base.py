@@ -465,7 +465,7 @@ class XpraClientBase(object):
             self.server_capabilities = typedict(packet[1])
             log("processing hello from server: %s", self.server_capabilities)
             self.server_connection_established()
-        except Exception, e:
+        except Exception as e:
             log.info("error in hello packet", exc_info=True)
             self.warn_and_quit(EXIT_FAILURE, "error processing hello packet from server: %s" % e)
 

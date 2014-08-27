@@ -853,7 +853,7 @@ cdef object _gw(display, Window xwin):
         win = gtk.gdk.window_foreign_new_for_display(disp, xwin)
         gtk.gdk.flush()
         error = gtk.gdk.error_trap_pop()
-    except Exception, e:
+    except Exception as e:
         verbose("cannot get gdk window for %s, %s: %s", display, xwin, e)
         error = gtk.gdk.error_trap_pop()
         if error:
@@ -1043,7 +1043,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.delivered_to = pyev.window
                     pyev.window_model = None
                     pyev.bell_name = get_pyatom(d, bell_e.name)
-            except XError, ex:
+            except XError as ex:
                 if ex.msg==BadWindow:
                     if e.type == DestroyNotify:
                         #happens too often, don't bother with the debug message

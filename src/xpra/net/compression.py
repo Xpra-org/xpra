@@ -51,7 +51,7 @@ try:
                     #ie: (0, 7, 0)
                     lz4_version = tuple(tmpv)
                     assert lz4_version>=(0, 7), "versions older than 0.7.0 are vulnerable and should not be used, see CVE-2014-4715"
-except Exception, e:
+except Exception as e:
     log("lz4 not found: %s", e)
     LZ4_uncompress = None
     has_lz4 = False
@@ -70,7 +70,7 @@ try:
             packet = packet.tobytes()
         return level | LZO_FLAG, lzo.compress(packet)
     LZO_decompress = lzo.decompress
-except Exception, e:
+except Exception as e:
     log("lzo not found: %s", e)
     LZO_decompress = None
     has_lzo = False

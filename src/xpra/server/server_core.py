@@ -181,11 +181,11 @@ class ServerCore(object):
             raise Exception("invalid auth module: %s" % auth)
         try:
             auth_module.init(opts)
-        except Exception, e:
+        except Exception as e:
             raise Exception("failed to initialize %s module: %s" % (auth_module, e))
         try:
             self.auth_class = getattr(auth_module, "Authenticator")
-        except Exception, e:
+        except Exception as e:
             raise Exception("Authenticator class not found in %s" % auth_module)
 
     def init_sockets(self, sockets):
@@ -280,7 +280,7 @@ class ServerCore(object):
             for x in self._when_ready:
                 try:
                     x()
-                except Exception, e:
+                except Exception as e:
                     log.error("error on %s: %s", x, e)
         self.idle_add(start_ready_callbacks)
         def print_ready():
@@ -457,10 +457,10 @@ class ServerCore(object):
             #continue processing hello packet:
             try:
                 self.hello_oked(proto, packet, c, auth_caps)
-            except ClientException, e:
+            except ClientException as e:
                 log.error("error setting up connection for %s: %s", proto, e)
                 self.disconnect_client(proto, SERVER_ERROR, str(e))
-            except Exception, e:
+            except Exception as e:
                 #log full stack trace at debug level,
                 #log exception as error
                 #but don't disclose internal details to the client
@@ -490,7 +490,7 @@ class ServerCore(object):
         if proto.authenticator is None and self.auth_class:
             try:
                 proto.authenticator = self.auth_class(username)
-            except Exception, e:
+            except Exception as e:
                 log.warn("error instantiating %s: %s", self.auth_class, e)
                 auth_failed("authentication failed")
                 return False
@@ -585,7 +585,7 @@ class ServerCore(object):
                 response = "invalid command"
             else:
                 error, response = self.do_handle_command_request(command, args[1:])
-        except Exception, e:
+        except Exception as e:
             commandlog.error("error processing command %s", command, exc_info=True)
             error = 127
             response = "error processing command: %s" % e
@@ -652,7 +652,7 @@ class ServerCore(object):
             try:
                 info = self.get_info(proto, *args)
                 ui_info.update(info)
-            except Exception, e:
+            except Exception as e:
                 log.error("error during info collection: %s", e, exc_info=True)
             callback(proto, ui_info)
         thread.start_new_thread(in_thread, ())

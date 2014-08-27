@@ -130,7 +130,7 @@ class ClientWindow(GTKClientWindowBase):
                     return  None
                 log("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
                 return prop[2][0]
-        except Exception, e:
+        except Exception as e:
             log.error("xget_u32_property error on %s / %s: %s", target, name, e)
         return GTKClientWindowBase.xget_u32_property(self, target, name)
 

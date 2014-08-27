@@ -62,7 +62,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
         mmap_area = mmap.mmap(fd, length=mmap_size)
         write_mmap_token(mmap_area, token)
         return True, mmap_area, mmap_size, mmap_temp_file, mmap_filename
-    except Exception, e:
+    except Exception as e:
         log.error("failed to setup mmap: %s", e, exc_info=True)
         clean_mmap(mmap_filename)
         return False, None, 0, None, None
@@ -104,7 +104,7 @@ def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
         return None, 0
     try:
         f = open(mmap_filename, "r+b")
-    except Exception, e:
+    except Exception as e:
         log.error("cannot access mmap file '%s' (see mmap-group option?)", mmap_filename)
         log.error("  %s", e)
         return None, 0
@@ -126,7 +126,7 @@ def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
             if new_mmap_token:
                 write_mmap_token(mmap_area, new_mmap_token)
         return mmap_area, mmap_size
-    except Exception, e:
+    except Exception as e:
         log.error("cannot use mmap file '%s': %s", mmap_filename, e, exc_info=True)
         if mmap_area:
             mmap_area.close()

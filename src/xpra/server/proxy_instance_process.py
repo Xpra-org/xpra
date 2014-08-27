@@ -174,7 +174,7 @@ class ProxyInstanceProcess(Process):
         try:
             try:
                 self.run_queue()
-            except KeyboardInterrupt, e:
+            except KeyboardInterrupt as e:
                 self.stop(str(e))
         finally:
             log("ProxyProcess.run() ending %s", os.getpid())
@@ -232,7 +232,7 @@ class ProxyInstanceProcess(Process):
         try:
             sock = create_unix_domain_socket(sockpath, None)
             sock.listen(5)
-        except Exception, e:
+        except Exception as e:
             log.warn("failed to setup control socket %s: %s", sockpath, e)
             return False
         self.control_socket = sock
@@ -276,7 +276,7 @@ class ProxyInstanceProcess(Process):
     def process_control_packet(self, proto, packet):
         try:
             self.do_process_control_packet(proto, packet)
-        except Exception, e:
+        except Exception as e:
             log.error("error processing control packet", exc_info=True)
             self.send_disconnect(proto, CONTROL_COMMAND_ERROR, str(e))
 
@@ -345,7 +345,7 @@ class ProxyInstanceProcess(Process):
                 log("trying to add %s=%s using %s", k, v, parser)
                 try:
                     d[k] = parser(k, v)
-                except Exception, e:
+                except Exception as e:
                     log.warn("failed to parse value %s for %s using %s: %s", v, k, parser, e)
         return d
 

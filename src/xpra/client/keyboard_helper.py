@@ -117,7 +117,7 @@ class KeyboardHelper(object):
                         else:
                             args.append(int(x))
                     args = tuple(args)
-                except Exception, e:
+                except Exception as e:
                     log.warn("failed to parse arguments of shortcut '%s': %s", s, e)
                     continue
 
@@ -157,15 +157,13 @@ class KeyboardHelper(object):
         try:
             method = getattr(window, action)
             log("key_handled_as_shortcut(%s,%s,%s,%s) found shortcut=%s, will call %s%s", window, key_name, modifiers, depressed, shortcut, method, args)
-        except AttributeError, e:
+        except AttributeError as e:
             log.error("key dropped, invalid method name in shortcut %s: %s", action, e)
             return  True
         try:
             method(*args)
             log("key_handled_as_shortcut(%s,%s,%s,%s) has been handled: %s", window, key_name, modifiers, depressed, method)
-        except KeyboardInterrupt:
-            raise
-        except Exception, e:
+        except Exception as e:
             log.error("key_handled_as_shortcut(%s,%s,%s,%s) failed to execute shortcut=%s: %s", window, key_name, modifiers, depressed, shortcut, e)
         return  True
 

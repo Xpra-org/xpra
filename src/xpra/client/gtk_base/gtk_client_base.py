@@ -150,7 +150,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         try:
             from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
             tray_list.append(GTKStatusIconTray)
-        except Exception, e:
+        except Exception as e:
             log.warn("failed to load StatusIcon tray: %s" % e)
         return tray_list
 

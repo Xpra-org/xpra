@@ -68,7 +68,7 @@ def get_version_info():
                     "local_modifications"  : LOCAL_MODIFICATIONS,
                     "revision"             : REVISION,
                   })
-    except Exception, e:
+    except Exception as e:
         log.warn("missing some source information: %s", e)
     try:
         from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU, \
@@ -85,7 +85,7 @@ def get_version_info():
                     "python"               : PYTHON_VERSION,
                     "cython"               : CYTHON_VERSION,
                   })
-    except Exception, e:
+    except Exception as e:
         log.warn("missing some build information: %s", e)
     return props
 

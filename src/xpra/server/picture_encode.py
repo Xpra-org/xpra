@@ -13,7 +13,7 @@ log = Logger("window", "encoding")
 from xpra.net import compression
 try:
     from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
-except Exception, e:
+except Exception as e:
     log("cannot load argb module: %s", e)
     bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
 from xpra.os_util import StringIOClass
@@ -188,7 +188,7 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
             im = im.convert("RGB")
             rgb = "RGB"
             bpp = 24
-    except Exception, e:
+    except Exception as e:
         log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride()), rgb, exc_info=True)
         raise e
     buf = StringIOClass()

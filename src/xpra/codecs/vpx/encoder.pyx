@@ -270,7 +270,7 @@ cdef class Encoder:
         self.pixfmt = get_vpx_colorspace(self.src_format)
         try:
             self.max_threads = max(0, min(32, int(options.get("threads", VPX_THREADS))))
-        except Exception, e:
+        except Exception as e:
             log.warn("error parsing number of threads: %s", e)
             self.max_threads =2
 

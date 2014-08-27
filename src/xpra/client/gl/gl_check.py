@@ -273,10 +273,10 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             try:
                 from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE
                 rect_texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE)
-            except ImportError, e:
+            except ImportError as e:
                 log("OpenGL: %s", e)
                 log("using GL_MAX_TEXTURE_SIZE=%s as default", texture_size)
-        except Exception, e:
+        except Exception as e:
             emsg = str(e)
             if hasattr(e, "description"):
                 emsg = e.description
@@ -367,7 +367,7 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
     display_mode = get_DISPLAY_MODE()
     try:
         glconfig = gtk.gdkgl.Config(mode=display_mode)
-    except gtk.gdkgl.NoMatches, e:
+    except gtk.gdkgl.NoMatches as e:
         log("no match: %s, toggling double-buffering", e)
         display_mode &= ~gtk.gdkgl.MODE_DOUBLE
         glconfig = gtk.gdkgl.Config(mode=display_mode)

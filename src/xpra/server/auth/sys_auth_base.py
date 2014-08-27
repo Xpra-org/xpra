@@ -70,7 +70,7 @@ class SysAuthenticator(object):
         try :
             if not self.check(password):
                 return False
-        except Exception, e:
+        except Exception as e:
             log.error("authentication error: %s", e)
             return False
         return True
@@ -82,7 +82,7 @@ class SysAuthenticator(object):
             sockdir = DotXpra(socket_dir, actual_username=self.username)
             results = sockdir.sockets(check_uid=uid)
             displays = [display for state, display in results if state==DotXpra.LIVE]
-        except Exception, e:
+        except Exception as e:
             log.error("cannot get socker directory for %s: %s", self.username, e)
             displays = []
         return uid, gid, displays, {}, {}

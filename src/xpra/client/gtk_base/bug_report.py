@@ -256,7 +256,7 @@ class BugReport(object):
                     log.error("error on %s", value_cb, exc_info=True)
                     value = str(value_cb)
                     dtype = "txt"
-                except Exception, e:
+                except Exception as e:
                     value = e
                     dtype = "txt"
             if value is None:

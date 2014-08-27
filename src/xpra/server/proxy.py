@@ -58,7 +58,7 @@ class XpraProxy(object):
                     log("%s: writing %s bytes", log_name, len(buf))
                     written = untilConcludes(self.is_active, to_conn.write, buf)
                     buf = buf[written:]
-        except Exception, e:
+        except Exception as e:
             log("%s: %s", log_name, e)
             self.quit()
 

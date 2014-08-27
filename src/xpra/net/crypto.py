@@ -13,7 +13,7 @@ from xpra.os_util import get_hex_uuid
 try:
     from Crypto.Cipher import AES
     from Crypto.Protocol.KDF import PBKDF2
-except Exception, e:
+except Exception as e:
     AES, PBKDF2 = None, None
     log("pycrypto is missing: %s", e)
 

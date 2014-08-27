@@ -165,7 +165,7 @@ class SessionInfo(gtk.Window):
         cl_gst_v, cl_pygst_v = "", ""
         try:
             from xpra.sound.gstreamer_util import gst_version as cl_gst_v, pygst_version as cl_pygst_v
-        except Exception, e:
+        except Exception as e:
             log("cannot load gstreamer: %s", e)
         tb.new_row("GStreamer", label(make_version_str(cl_gst_v)), label(server_version_info("sound.gst.version", "gst_version")))
         tb.new_row("pygst", label(make_version_str(cl_pygst_v)), label(server_version_info("sound.pygst.version", "pygst_version")))

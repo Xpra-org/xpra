@@ -15,7 +15,7 @@ log = Logger("keyboard", "posix")
 try:
     from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
     keyboard_bindings = X11KeyboardBindings()
-except Exception, e:
+except Exception as e:
     log.warn("failed load posix keyboard bindings: %s", e)
     keyboard_bindings = None
 
@@ -30,7 +30,7 @@ class Keyboard(KeyboardBase):
             if returncode==0:
                 return out.decode('utf-8')
             log.error("'%s' failed with exit code %s", cmd, returncode)
-        except Exception, e:
+        except Exception as e:
             log.error("error running '%s': %s", cmd, e)
         return None
 
@@ -46,7 +46,7 @@ class Keyboard(KeyboardBase):
                         for _,keyname in keys:
                             meanings[keyname] = modifier
                     return  meanings, [], []
-            except Exception, e:
+            except Exception as e:
                 log.error("failed to use native get_modifier_mappings: %s", e, exc_info=True)
         return self.modifiers_fallback()
 
@@ -74,7 +74,7 @@ class Keyboard(KeyboardBase):
         if keyboard_bindings:
             try:
                 return keyboard_bindings.get_keycode_mappings()
-            except Exception, e:
+            except Exception as e:
                 log.error("failed to use raw x11 keymap: %s", e)
         return  {}
 
@@ -145,7 +145,7 @@ class Keyboard(KeyboardBase):
             try:
                 delay, interval = keyboard_bindings.get_key_repeat_rate()
                 return delay,interval
-            except Exception, e:
+            except Exception as e:
                 log.error("failed to get keyboard repeat rate: %s", e)
         return None
 

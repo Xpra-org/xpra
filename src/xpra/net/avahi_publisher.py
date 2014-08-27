@@ -107,7 +107,7 @@ class AvahiPublisher:
 			log.info("you may want to disable mdns support to avoid this warning")			
 		try:
 			bus = dbus.SystemBus()
-		except Exception, e:
+		except Exception as e:
 			log.warn("failed to connect to system dbus: %s", e)
 			helpmsg()
 			return
@@ -115,7 +115,7 @@ class AvahiPublisher:
 		try:
 			server = dbus.Interface(bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER), avahi.DBUS_INTERFACE_SERVER)
 			g = dbus.Interface(bus.get_object(avahi.DBUS_NAME, server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
-		except Exception, e:
+		except Exception as e:
 			log.warn("failed to connect to avahi's dbus interface: %s", e)
 			helpmsg()
 			return
@@ -129,7 +129,7 @@ class AvahiPublisher:
 			g.Commit()
 			self.group = g
 			log("dbus service added")
-		except DBusException, e:
+		except DBusException as e:
 			#use try+except as older versions may not have those modules?
 			message = e.get_dbus_message()
 			dbus_error_name = e.get_dbus_name()
@@ -145,7 +145,7 @@ class AvahiPublisher:
 			try:
 				self.group.Reset()
 				self.group = None
-			except Exception, e:
+			except Exception as e:
 				log.error("error stopping publisher %s: %s", self, e)
 
 

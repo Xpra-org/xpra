@@ -100,7 +100,7 @@ try:
 
     log("end: same=%s, diff=%s, zeroes=%s", same, diff, zeroes)
 
-except Exception, e:
+except Exception as e:
     log("exception: %s" % e)
     import traceback
     traceback.print_stack()

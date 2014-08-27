@@ -24,7 +24,7 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
     try:
         try:
             __import__(top_module, {}, {}, [])
-        except ImportError, e:
+        except ImportError as e:
             log(" cannot import %s (%s): %s", name, description, e)
             log("", exc_info=True)
             codec_errors[name] = e
@@ -38,14 +38,14 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                 log(" found %s : %s", name, ic)
                 codecs[name] = ic
                 return ic
-        except ImportError, e:
+        except ImportError as e:
             codec_errors[name] = e
             l = log.warn
             if name in NOWARN:
                 l = log.debug
             l(" cannot import %s (%s): %s", name, description, e)
             log("", exc_info=True)
-    except Exception, e:
+    except Exception as e:
         codec_errors[name] = e
         log.warn(" cannot load %s (%s): %s missing from %s: %s", name, description, classname, class_module, e)
         log("", exc_info=True)
@@ -74,11 +74,11 @@ def add_codec_version(name, top_module, version="get_version()", alt_version=Non
             log.warn(" cannot find %s in %s", " or ".join(fieldnames), module)
         else:
             log(" no version information for missing codec %s", name)
-    except ImportError, e:
+    except ImportError as e:
         #not present
         log(" cannot import %s: %s", name, e)
         log("", exc_info=True)
-    except Exception, e:
+    except Exception as e:
         log.warn("error during codec import: %s", e)
         log("", exc_info=True)
     return None

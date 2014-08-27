@@ -67,7 +67,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def release(self):
         try:
             self.bus.release_name(BUS_NAME)
-        except Exception, e:
+        except Exception as e:
             log.error("failed to release dbus notification forwarder: %s", e)
 
     def __str__(self):

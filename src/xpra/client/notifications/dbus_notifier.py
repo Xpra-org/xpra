@@ -13,7 +13,7 @@ import dbus.exceptions
 def DBUS_Notifier_factory():
     try:
         return DBUS_Notifier()
-    except Exception, e:
+    except Exception as e:
         log.error("failed to instantiate the dbus notification handler: %s", e)
         log.warn("disable notifications to avoid this error")
         return None

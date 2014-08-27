@@ -103,7 +103,7 @@ def setup_watcher(get_change_count):
             for x in change_callbacks:
                 try:
                     x()
-                except Exception, e:
+                except Exception as e:
                     log("error in change callback %s: %s", x, e)
 
     from xpra.platform.ui_thread_watcher import get_UI_watcher

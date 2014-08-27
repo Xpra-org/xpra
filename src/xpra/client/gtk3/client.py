@@ -52,7 +52,7 @@ class XpraClient(GTKXpraClient):
             try:
                 from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
                 ncs.append(GTK3_Notifier)
-            except Exception, e:
+            except Exception as e:
                 log("failed to load the GTK3 notification class: %s", e)
         return ncs
 

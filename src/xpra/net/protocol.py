@@ -458,7 +458,7 @@ class Protocol(object):
             packet[0] = self.send_aliases[packet_type]
         try:
             main_packet, proto_version = self._encoder(packet)
-        except Exception, e:
+        except Exception as e:
             if self._closed:
                 return [], 0
             log.error("failed to encode packet: %s", packet, exc_info=True)
@@ -488,12 +488,10 @@ class Protocol(object):
             while not self._closed:
                 callback()
             log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
-        except KeyboardInterrupt, e:
-            raise e
-        except ConnectionClosedException, e:
+        except ConnectionClosedException as e:
             if not self._closed:
                 self._internal_error("%s connection %s closed: %s" % (name, self._conn, e))
-        except (OSError, IOError, socket_error), e:
+        except (OSError, IOError, socket_error) as e:
             if not self._closed:
                 self._internal_error("%s connection %s reset: %s" % (name, self._conn, e), exc_info=e.args[0] not in ABORT)
         except:
@@ -697,10 +695,10 @@ class Protocol(object):
                 if compression_level>0:
                     try:
                         data = decompress(data, compression_level)
-                    except InvalidCompressionException, e:
+                    except InvalidCompressionException as e:
                         self.invalid("invalid compression: %s" % e, data)
                         return
-                    except Exception, e:
+                    except Exception as e:
                         ctype = compression.get_compression_type(compression_level)
                         log("%s packet decompression failed", ctype, exc_info=True)
                         msg = "%s packet decompression failed" % ctype
@@ -727,10 +725,10 @@ class Protocol(object):
                 #final packet (packet_index==0), decode it:
                 try:
                     packet = decode(data, protocol_flags)
-                except InvalidPacketEncodingException, e:
+                except InvalidPacketEncodingException as e:
                     self.invalid("invalid packet encoding: %s" % e, data)
                     return
-                except ValueError, e:
+                except ValueError as e:
                     etype = packet_encoding.get_packet_encoding_type(protocol_flags)
                     log.error("failed to parse %s packet: %s", etype, e, exc_info=not self._closed)
                     if self._closed:

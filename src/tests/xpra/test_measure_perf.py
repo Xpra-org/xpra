@@ -17,7 +17,7 @@ HOME = os.path.expanduser("~/")
 def getoutput(cmd, env=None):
     try:
         process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env, close_fds=True)
-    except Exception, e:
+    except Exception as e:
         print("error running %s: %s" % (cmd, e))
         raise e
     (out,err) = process.communicate()
@@ -304,13 +304,13 @@ def try_to_stop(process, grace=0):
     if is_process_alive(process, grace):
         try:
             process.terminate()
-        except Exception, e:
+        except Exception as e:
             print("could not stop process %s: %s" % (process, e))
 def try_to_kill(process, grace=0):
     if is_process_alive(process, grace):
         try:
             process.kill()
-        except Exception, e:
+        except Exception as e:
             print("could not stop process %s: %s" % (process, e))
 
 def find_matching_lines(out, pattern):
@@ -372,7 +372,7 @@ def get_stderr(command):
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         _,err = process.communicate()
         return err
-    except Exception, e:
+    except Exception as e:
         print("error running %s: %s" % (DETECT_XVNC_VERSION_CMD, e))
 
 err = get_stderr(DETECT_XVNC_VERSION_CMD)
@@ -653,7 +653,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                             }
                     data.update(measure_client(server_pid, name, client_cmd, get_stats_cb))
                     results.append([data.get(x, "") for x in HEADERS])
-                except Exception, e:
+                except Exception as e:
                     import traceback
                     traceback.print_exc()
                     errors += 1
@@ -674,11 +674,11 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                         try:
                             stop_process = subprocess.Popen(s, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                             stop_process.wait()
-                        except Exception, e:
+                        except Exception as e:
                             print("error: %s" % e)
                     try_to_kill(server_process, 5)
                 time.sleep(1)
-        except KeyboardInterrupt, e:
+        except KeyboardInterrupt as e:
             print("caught %s: stopping this series of tests" % e)
             break
     return results
@@ -1013,7 +1013,7 @@ def get_vnc_stats(initial_stats=None, all_stats=[]):
             print("tcbench starting: %s, logging to %s" % (command, TCBENCH_LOG))
             proc = subprocess.Popen(command, stdin=None, stdout=tcbench_log, stderr=tcbench_log)
             return {"tcbench" : proc}
-        except Exception, e:
+        except Exception as e:
             import traceback
             traceback.print_exc()
             print("error running %s: %s" % (command, e))

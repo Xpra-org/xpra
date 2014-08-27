@@ -39,7 +39,7 @@ from xpra.server.stats.maths import time_weighted_average
 from xpra.server.region import rectangle, add_rectangle, remove_rectangle
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
-except Exception, e:
+except Exception as e:
     log("cannot load xor module: %s", e)
     xor_str = None
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send

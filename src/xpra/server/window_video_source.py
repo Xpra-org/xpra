@@ -1101,7 +1101,7 @@ class WindowVideoSource(WindowSource):
                         self._video_encoder, self._video_encoder.get_info(), (enc_end-enc_start)*1000.0)
                 scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
                 return  True
-            except TransientCodecException, e:
+            except TransientCodecException as e:
                 log.warn("setup_pipeline failed for %s: %s", option, e)
                 self.cleanup_codecs()
             except:

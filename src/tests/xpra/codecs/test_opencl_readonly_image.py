@@ -71,7 +71,7 @@ def test_buffer(buf):
     try:
         do_test(buf)
         print("OK:  %s buffer" % type(buf))
-    except Exception, e:
+    except Exception as e:
         print("ERR: %s buffer fails:       %s" % (type(buf), e))
 
 def do_test(buf):

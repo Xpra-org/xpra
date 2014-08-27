@@ -139,7 +139,7 @@ class ProxyServer(ServerCore):
             self.send_disconnect(client_proto, reason, *extras)
         try:
             sessions = client_proto.authenticator.get_sessions()
-        except Exception, e:
+        except Exception as e:
             log.error("failed to get the list of sessions: %s", e)
             disconnect(AUTHENTICATION_ERROR)
             return
@@ -181,7 +181,7 @@ class ProxyServer(ServerCore):
         log("display description(%s) = %s", display, disp_desc)
         try:
             server_conn = connect_to(disp_desc)
-        except Exception, e:
+        except Exception as e:
             log.error("cannot start proxy connection to %s: %s", disp_desc, e, exc_info=True)
             disconnect(SESSION_NOT_FOUND, "failed to connect to display")
             return

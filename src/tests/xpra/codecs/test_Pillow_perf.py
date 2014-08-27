@@ -68,7 +68,7 @@ def test_files(filenames, extensions=[".png", ".jpg"], recurse=True):
             assert len(rgb_data)==w*h*len(img.mode)
             print("testing with file: %s (%sx%s)" % (x, w, h))
             do_test_encode(rgb_data, w, h, has_alpha=has_alpha)
-        except Exception, e:
+        except Exception as e:
             print("error on %s: %s" % (x, e))
 
 def test_encode():

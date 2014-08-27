@@ -279,7 +279,7 @@ MDNS_WARNING = False
 def mdns_publish(display_name, mode, listen_on, text_dict={}):
     try:
         from xpra.net.avahi_publisher import AvahiPublishers
-    except Exception, e:
+    except Exception as e:
         global MDNS_WARNING
         if not MDNS_WARNING:
             MDNS_WARNING = True
@@ -364,7 +364,7 @@ def setup_local_socket(dotxpra, display_name, clobber, mmap_group):
         raise Exception("You already have an xpra server running at %s\n"
                      "  (did you want 'xpra upgrade'?)"
                      % (display_name,))
-    except Exception, e:
+    except Exception as e:
         raise Exception("socket path error: %s" % e)
     sock = create_unix_domain_socket(sockpath, mmap_group)
     def cleanup_socket():
@@ -539,7 +539,7 @@ def start_Xvfb(xvfb_str, display_name):
     if not os.path.exists(xauthority):
         try:
             open(xauthority, 'wa').close()
-        except Exception, e:
+        except Exception as e:
             #trying to continue anyway!
             sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
 
@@ -634,7 +634,7 @@ def start_Xvfb(xvfb_str, display_name):
         code = subprocess.call(xauth_cmd)
         if code != 0:
             raise OSError("non-zero exit code: %s" % code)
-    except OSError, e:
+    except OSError as e:
         #trying to continue anyway!
         sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
     return xvfb, display_name
@@ -661,7 +661,7 @@ def verify_display_ready(xvfb, display_name, shadowing):
     # starting.  First wait for it to start up:
     try:
         wait_for_x_server(display_name, 3) # 3s timeout
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write("%s\n" % e)
         return  None
     # Now we can safely load gtk and connect:
@@ -729,7 +729,7 @@ def start_children(child_reaper, commands, fake_xinerama):
             proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
             child_reaper.add_process(proc, child_cmd)
             log.info("started child '%s' with pid %s", child_cmd, proc.pid)
-        except OSError, e:
+        except OSError as e:
             sys.stderr.write("Error spawning child '%s': %s\n" % (child_cmd, e))
 
 
@@ -839,7 +839,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             sockets.append(socket)
         if opts.mdns:
             mdns_recs.append(("tcp", bind_tcp))
-    except Exception, e:
+    except Exception as e:
         log.error("cannot start server: failed to setup sockets: %s", e)
         return 1
 
@@ -855,7 +855,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     if not shadowing and not proxying and not clobber:
         try:
             xvfb, display_name = start_Xvfb(opts.xvfb, display_name)
-        except OSError, e:
+        except OSError as e:
             log.error("Error starting Xvfb: %s\n", e)
             return  1
         xvfb_pid = xvfb.pid
@@ -917,7 +917,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         app = ProxyServer()
         try:
             app.init(opts)
-        except Exception, e:
+        except Exception as e:
             log.error("Error: cannot start the proxy server")
             log.error(str(e))
             log.info("")
@@ -944,7 +944,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             from xpra.x11.server import XpraServer
             from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
             X11Window = X11WindowBindings()
-        except ImportError, e:
+        except ImportError as e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
             return 1
         if not X11Window.displayHasXComposite():
@@ -992,7 +992,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     except KeyboardInterrupt:
         log.info("stopping on KeyboardInterrupt")
         e = 0
-    except Exception, e:
+    except Exception as e:
         log.error("server error", exc_info=True)
         e = -128
     if e>0:

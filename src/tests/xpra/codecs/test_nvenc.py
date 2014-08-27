@@ -87,14 +87,14 @@ def test_context_limits():
                     encoders.append(e)
                     try:
                         e.init_context(w, h, src_format, encoding, 20, 0, options)
-                    except Exception, e:
+                    except Exception as e:
                         log("failed to created context %s on %s: %s" % (i, device_info, e))
                         break
                 log("device %s managed %s contexts at %sx%s" % (device_info, len(encoders)-1, w, h))
                 for encoder in encoders:
                     try:
                         encoder.clean()
-                    except Exception, e:
+                    except Exception as e:
                         log("encoder cleanup error: %s" % e)
     log("")
 

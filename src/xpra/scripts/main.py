@@ -687,7 +687,7 @@ def do_parse_cmdline(cmdline, defaults):
 
     try:
         int(options.dpi)
-    except Exception, e:
+    except Exception as e:
         raise InitException("invalid dpi: %s" % e)
     if options.encryption:
         assert len(ENCRYPTION_CIPHERS)>0, "cannot use encryption: no ciphers available"
@@ -864,7 +864,7 @@ def parse_display_name(error_cb, opts, display_name):
                     desc["password"] = passwordFile.read()
                 finally:
                     passwordFile.close()
-            except Exception, e:
+            except Exception as e:
                 print("failed to read password file %s: %s", opts.password_file, e)
         return desc
     elif display_name.startswith(":"):
@@ -944,7 +944,7 @@ def _socket_connect(sock, endpoint, description, dtype):
 def connect_or_fail(display_desc):
     try:
         return connect_to(display_desc)
-    except Exception, e:
+    except Exception as e:
         raise InitException("connection failed: %s" % e)
 
 def ssh_connect_failed(message):
@@ -978,7 +978,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                 debug_cb("starting %s tunnel" % str(cmd[0]))
                 #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
-        except OSError, e:
+        except OSError as e:
             raise Exception("Error running ssh program '%s': %s" % (cmd, e))
         def abort_test(action):
             """ if ssh dies, we don't need to try to read/write from its sockets """
@@ -1010,7 +1010,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                     try:
                         if fd:
                             fd.close()
-                    except Exception, e:
+                    except Exception as e:
                         print("error closing ssh tunnel %s: %s" % (name, e))
                 if not display_desc.get("exit_ssh", False):
                     #leave it running
@@ -1024,7 +1024,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                         os.kill(child.pid, signal.SIGTERM)
                     else:
                         raise Exception("cannot find function to kill subprocess")
-            except Exception, e:
+            except Exception as e:
                 print("error trying to stop ssh tunnel process: %s" % e)
         conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
         conn.timeout = 0            #taken care of by abort_test

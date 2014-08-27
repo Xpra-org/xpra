@@ -76,12 +76,12 @@ class Session(object):
         # Just in case it's a zombie, reap it; otherwise, do nothing.
         try:
             os.waitpid(pid, os.WNOHANG)
-        except OSError, e:
+        except OSError as e:
             pass
         # Then use the old SIG 0 trick.
         try:
             os.kill(pid, 0)
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 return False
         return True

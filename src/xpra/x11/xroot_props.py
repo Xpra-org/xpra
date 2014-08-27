@@ -38,11 +38,11 @@ class XRootPropWatcher(gobject.GObject):
             #only remove the x11 filter if we initialized it (ie: when running in client)
             try:
                 trap.call_synced(cleanup_x11_filter)
-            except Exception, e:
+            except Exception as e:
                 log.error("failed to remove x11 event filter: %s", e)
             try:
                 trap.call_synced(cleanup_all_event_receivers)
-            except Exception, e:
+            except Exception as e:
                 log.error("failed to remove event receivers: %s", e)
 
     def do_xpra_property_notify_event(self, event):

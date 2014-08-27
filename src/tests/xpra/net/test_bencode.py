@@ -266,7 +266,7 @@ def get_test_data_dict():
         from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings        #@UnresolvedImport
         keyboard_bindings = X11KeyboardBindings()
         return keyboard_bindings.get_keycode_mappings()
-    except ImportError, e:
+    except ImportError as e:
         log("cannot use X11 keyboard data as test data: %s" % e);
         return {"foo" : "bar"}
 test_dict = get_test_data_dict()

@@ -299,7 +299,7 @@ class Wm(gobject.GObject):
         try:
             if gdkwindow not in self._windows:
                 trap.call_synced(self.do_manage_client, gdkwindow)
-        except Exception, e:
+        except Exception as e:
             log("failed to manage client %s: %s", gdkwindow, e)
 
     def do_manage_client(self, gdkwindow):

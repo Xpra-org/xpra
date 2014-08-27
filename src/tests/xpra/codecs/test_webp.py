@@ -84,7 +84,7 @@ def test_files(filenames=[], d="", extensions=[".png", ".jpg"], recurse=True):
             print("testing with file: %s (%sx%s)" % (p, w, h))
             do_test_encode(rgb_data, w, h, N=1, Q=[0, 50, 99, 100], S=[0, 2, 4, 6], has_alpha=has_alpha)
             print("")
-        except Exception, e:
+        except Exception as e:
             print("error on %s: %s" % (x, e))
 
 def main():

@@ -37,7 +37,7 @@ def untilConcludes(is_active_cb, f, *a, **kw):
             return f(*a, **kw)
         except socket.timeout:
             continue
-        except (IOError, OSError), e:
+        except (IOError, OSError) as e:
             if e.args[0] in CONTINUE:
                 continue
             raise

@@ -255,7 +255,7 @@ def test_csc_roundtrip(csc_module):
                 try:
                     do_test_csc_roundtrip(csc_module, src_format, dst_format, w, h)
                     #print("rountrip %s/%s @ %sx%s passed" % (src_format, dst_format, w, h))
-                except Exception, e:
+                except Exception as e:
                     print("FAILED %s/%s @ %sx%s: %s" % (src_format, dst_format, w, h, e))
                     raise
 

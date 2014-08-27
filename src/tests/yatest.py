@@ -147,7 +147,7 @@ class Runner(object):
         # __import__("foo.bar.baz") returns the foo module object:
         try:
             mod = __import__(module_name)
-        except (ImportError, SyntaxError), e:
+        except (ImportError, SyntaxError) as e:
             sys.stderr.write("Error loading module %s; skipping\n"
                              "(error was: %s)\n"
                              % (module_name, e))
@@ -183,7 +183,7 @@ class Runner(object):
         if hasattr(cls, "preForkClassSetUp"):
             try:
                 cls.preForkClassSetUp()
-            except Exception, e:
+            except Exception as e:
                 sys.stderr.write("Error in preForkClassSetUp: %s; skipping %s\n"
                                  % (e, cls))
                 return

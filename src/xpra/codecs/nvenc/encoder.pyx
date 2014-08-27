@@ -898,7 +898,7 @@ def identify_nvidia_module_version():
         numver = [int(x) for x in v.split(".")]
         log.info("nvenc: found nvidia kernel module version %s", v)
         return numver
-    except Exception, e:
+    except Exception as e:
         log.warn("failed to parse nvidia kernel module version '%s': %s", v, e)
     return []
 
@@ -926,7 +926,7 @@ def init_nvencode_library():
     try:
         x = ctypes.cdll.LoadLibrary(cuda_libname)
         log("init_nvencode_library() %s=%s", cuda_libname, x)
-    except Exception, e:
+    except Exception as e:
         raise Exception("nvenc: the required library %s cannot be loaded: %s" % (cuda_libname, e))
     cuCtxGetCurrent = x.cuCtxGetCurrent
     cuCtxGetCurrent.restype = ctypes.c_int          # CUresult == int
@@ -937,7 +937,7 @@ def init_nvencode_library():
     try:
         x = ctypes.cdll.LoadLibrary(nvenc_libname)
         log("init_nvencode_library() %s=%s", nvenc_libname, x)
-    except Exception, e:
+    except Exception as e:
         raise Exception("nvenc: the required library %s cannot be loaded: %s" % (nvenc_libname, e))
     NvEncodeAPICreateInstance = x.NvEncodeAPICreateInstance
     NvEncodeAPICreateInstance.restype = ctypes.c_int
@@ -1015,7 +1015,7 @@ if CLIENT_KEYS_STR:
             try:
                 CLIENT_KEY_GUID = c_parseguid(x)
                 validated.append(x)
-            except Exception, e:
+            except Exception as e:
                 log.error("invalid nvenc client key specified: '%s' (%s)", x, e)
     CLIENT_KEYS_STR = validated
 
@@ -1387,7 +1387,7 @@ cdef class Encoder:
         try:
             self.init_cuda()
             record_device_success(self.cuda_device_id)
-        except Exception, e:
+        except Exception as e:
             log("init_cuda failed", exc_info=True)
             record_device_failure(self.cuda_device_id)
             raise e
@@ -1414,7 +1414,7 @@ cdef class Encoder:
                 "device.pci_bus_id" : d.pci_bus_id(),
                 "device.memory"     : d.total_memory()/1024/1024,
                 "api_version"       : self.cuda_context.get_api_version()}
-        except driver.MemoryError, e:
+        except driver.MemoryError as e:
             last_context_failure = time.time()
             log("init_cuda %s", e)
             raise TransientCodecException("could not initialize cuda: %s" % e)
@@ -1745,7 +1745,7 @@ cdef class Encoder:
                 return self.do_compress_image(image, options)
             finally:
                 self.cuda_context.pop()
-        except driver.LogicError, e:
+        except driver.LogicError as e:
             if retry>0:
                 raise e
             log.warn("PyCUDA error: %s", e)
@@ -2172,7 +2172,7 @@ def init_module():
                     if client_key:
                         log("the license key '%s' is valid", client_key)
                         valid_keys.append(client_key)
-                except NVENCException, e:
+                except NVENCException as e:
                     #special handling for license key issues:
                     if e.code==NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY:
                         if client_key:

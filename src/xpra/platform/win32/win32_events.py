@@ -121,7 +121,7 @@ class Win32EventListener(object):
             win32ts.WTSRegisterSessionNotification(self.hwnd, win32ts.NOTIFY_FOR_THIS_SESSION)
             #catch all events: http://wiki.wxpython.org/HookingTheWndProc
             self.old_win32_proc = win32gui.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, self.MyWndProc)
-        except Exception, e:
+        except Exception as e:
             log.error("failed to hook session notifications: %s", e)
 
     def MyWndProc(self, hWnd, msg, wParam, lParam):
@@ -146,5 +146,5 @@ class Win32EventListener(object):
         # Pass all messages to the original WndProc
         try:
             return win32gui.CallWindowProc(self.old_win32_proc, hWnd, msg, wParam, lParam)
-        except Exception, e:
+        except Exception as e:
             log.error("error delegating call for %s: %s", event_name, e)

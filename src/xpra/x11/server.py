@@ -316,7 +316,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if system_tray:
             try:
                 self._tray = SystemTray()
-            except Exception, e:
+            except Exception as e:
                 log.error("cannot setup tray forwarding: %s", e, exc_info=True)
 
         ### Create our window managing data structures:
@@ -457,7 +457,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 window.call_setup()
                 window.connect("notify::geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)
-        except Unmanageable, e:
+        except Unmanageable as e:
             if window:
                 windowlog("window %s is not manageable: %s", window, e)
                 #if window is set, we failed after instantiating it,

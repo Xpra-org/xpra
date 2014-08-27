@@ -108,7 +108,7 @@ class XpraClient(GTKXpraClient):
                 color_str = "red"
         try:
             color = gtk.gdk.color_parse(color_str)
-        except Exception, e:
+        except Exception as e:
             log.warn("invalid border color specified: '%s' (%s)", color_str, e)
             border_help()
             color = gtk.gdk.Color("red")
@@ -118,7 +118,7 @@ class XpraClient(GTKXpraClient):
             size_str = parts[1]
             try:
                 size = int(size_str)
-            except Exception, e:
+            except Exception as e:
                 log.warn("invalid size specified: %s (%s)", size_str, e)
             if size<=0:
                 log("border size is %s, disabling it", size)
@@ -146,7 +146,7 @@ class XpraClient(GTKXpraClient):
         try:
             from xpra.client.gtk2.gtk2_notifier import GTK2_Notifier
             ncs.append(GTK2_Notifier)
-        except Exception, e:
+        except Exception as e:
             log.warn("cannot load GTK2 notifier: %s", e)
         return ncs
 
@@ -380,7 +380,7 @@ class XpraClient(GTKXpraClient):
         if cursor_data:
             try:
                 cursor = self.make_cursor(cursor_data)
-            except Exception, e:
+            except Exception as e:
                 cursorlog.warn("error creating cursor: %s (using default)", e, exc_info=True)
             if cursor is None:
                 #use default:
@@ -448,11 +448,11 @@ class XpraClient(GTKXpraClient):
             self.GLClientWindowClass = gl_client_window.GLClientWindow
             self.client_supports_opengl = True
             self.opengl_enabled = True
-        except ImportError, e:
+        except ImportError as e:
             log.warn("OpenGL support could not be enabled:")
             log.warn(" %s", e)
             self.opengl_props["info"] = str(e)
-        except Exception, e:
+        except Exception as e:
             log.error("Error loading OpenGL support:")
             log.error(" %s", e, exc_info=True)
             self.opengl_props["info"] = str(e)

@@ -423,7 +423,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         try:
             self.ensure_XComposite_support()
             return  True
-        except Exception, e:
+        except Exception as e:
             log.error("%s", e)
         return False
 

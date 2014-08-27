@@ -438,7 +438,7 @@ class ApplicationWindow:
     def do_connect(self):
         try:
             self.connect_builtin()
-        except Exception, e:
+        except Exception as e:
             log.error("cannot connect:", exc_info=True)
             self.handle_exception(e)
 
@@ -510,7 +510,7 @@ class ApplicationWindow:
         self.set_sensitive(False)
         try:
             conn = connect_to(params, self.set_info_text, ssh_fail_cb=self.ssh_failed)
-        except Exception, e:
+        except Exception as e:
             log.error("failed to connect", exc_info=True)
             self.handle_exception(e)
             return
@@ -520,7 +520,7 @@ class ApplicationWindow:
     def start_XpraClient(self, conn):
         try:
             self.do_start_XpraClient(conn)
-        except Exception, e:
+        except Exception as e:
             log.error("failed to start client", exc_info=True)
             self.handle_exception(e)
 

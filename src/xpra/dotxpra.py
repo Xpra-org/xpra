@@ -74,7 +74,7 @@ class DotXpra(object):
         sock.settimeout(timeout)
         try:
             sock.connect(socket_path)
-        except socket.error, e:
+        except socket.error as e:
             err = e.args[0]
             if err==errno.ECONNREFUSED:
                 #could be the server is starting up

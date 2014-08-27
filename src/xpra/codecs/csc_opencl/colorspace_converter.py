@@ -155,7 +155,7 @@ def select_device():
                     selected_device_setup_cost = 20
                 log("device is a %s, using CPU cost=%s, GPU cost=%s", device_type(d), selected_device_cpu_cost, selected_device_gpu_cost)
                 return
-            except Exception, e:
+            except Exception as e:
                 log.warn(" failed to use %s", platform_info(p))
                 log.warn(" with %s device %s", device_type(d), device_info(d))
                 log.warn(" Error: %s", e)
@@ -430,7 +430,7 @@ def build_kernels():
             program = pyopencl.Program(context, "\n".join(NAMES_TO_KERNELS.values()))
             program.build()
             dump_warnings(log.debug)
-        except Exception, e:
+        except Exception as e:
             log.error("cannot build the OpenCL program: %s", e, exc_info=True)
             dump_warnings(log.warn)
             raise ImportError("cannot build the OpenCL program: %s" % e)
@@ -669,7 +669,7 @@ class ColorspaceConverter(object):
             self.init_with_device()
         try:
             return self.do_convert_image(image)
-        except pyopencl.LogicError, e:
+        except pyopencl.LogicError as e:
             if retry>0:
                 raise e
             log.warn("OpenCL error: %s", e)

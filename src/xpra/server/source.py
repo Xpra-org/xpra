@@ -725,7 +725,7 @@ class ServerSource(object):
                                "sequence"           : self.sound_source_sequence})
                 self.sound_source.connect("new-buffer", self.new_sound_buffer)
                 self.sound_source.start()
-        except Exception, e:
+        except Exception as e:
             log.error("error setting up sound: %s", e)
 
     def stop_sending_sound(self):
@@ -854,7 +854,7 @@ class ServerSource(object):
                 self.sound_sink.connect("overrun", sound_sink_overrun)
                 self.sound_sink.start()
                 soundlog("sound_data(..) sound sink started")
-            except Exception, e:
+            except Exception as e:
                 log.error("failed to setup sound: %s", e)
                 return
         self.sound_sink.add_data(data, metadata)
@@ -1016,14 +1016,14 @@ class ServerSource(object):
                                  receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
             except ImportError:
                 pass
-            except Exception, e:
+            except Exception as e:
                 log.error("failed to setup sound: %s", e)
             try:
                 from xpra.sound.pulseaudio_util import get_info as get_pa_info
                 sound_caps.update(get_pa_info())
             except ImportError:
                 pass
-            except Exception, e:
+            except Exception as e:
                 log.error("failed to setup sound: %s", e)
             if self.namespace:
                 updict(capabilities, "sound", sound_caps)
@@ -1619,6 +1619,6 @@ class ServerSource(object):
                 return              #empty marker
             try:
                 fn_and_args[0](*fn_and_args[1:])
-            except Exception, e:
+            except Exception as e:
                 log.error("error processing damage data: %s", e, exc_info=True)
             NOYIELD or time.sleep(0)

@@ -44,9 +44,9 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
             root = gtk.gdk.get_default_root_window()
             supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
             CAN_SET_WORKSPACE = bool(supported) and "_NET_WM_DESKTOP" in supported
-        except Exception, e:
+        except Exception as e:
             log.info("failed to setup workspace hooks: %s", e)
-    except ImportError, e:
+    except ImportError:
         pass
 
 #optional module providing faster handling of premultiplied argb:
@@ -187,7 +187,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     xid = xid[:-1]
                 iid = int(xid, 16)
                 self.xset_u32_property(self.get_window(), "XID", iid)
-            except Exception, e:
+            except Exception as e:
                 log("%s.set_xid(%s) error parsing/setting xid: %s", self, xid, e)
                 return
 

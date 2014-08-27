@@ -172,7 +172,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         client_keycodes.append((client_keycode, keyname))
                 self.modifier_client_keycodes[modifier] = client_keycodes
             log("compute_client_modifier_keycodes() mappings=%s", self.modifier_client_keycodes)
-        except Exception, e:
+        except Exception as e:
             log.error("do_set_keymap: %s" % e, exc_info=True)
 
     def compute_modifier_map(self):

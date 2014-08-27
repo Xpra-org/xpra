@@ -129,7 +129,7 @@ try:
     import PyObjCTools.AppHelper as AppHelper   #@UnresolvedImport
     NSObject = Foundation.NSObject
     NSWorkspace = AppKit.NSWorkspace
-except Exception, e:
+except Exception as e:
     log.warn("failed to load critical modules for sleep notification support: %s", e)
     NSObject = object
     NSWorkspace = None

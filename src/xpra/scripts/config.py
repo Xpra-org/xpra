@@ -69,7 +69,7 @@ def OpenGL_safety_check():
             if f:
                 f.close()
                 return True, "VirtualBox is present (VBoxMiniRdrDN)"
-    except Exception, e:
+    except Exception as e:
         import errno
         if e.args[0]==errno.EACCES:
             return True, "VirtualBox is present (VBoxMiniRdrDN)"
@@ -93,7 +93,7 @@ def get_build_info():
             info.append("revision %s" % REVISION)
         else:
             info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
-    except Exception, e:
+    except Exception as e:
         warn("Error: could not find the source information: %s" % e)
     try:
         from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, CYTHON_VERSION, COMPILER_VERSION    #@UnresolvedImport
@@ -106,7 +106,7 @@ def get_build_info():
             info.append("built with Cython %s" % CYTHON_VERSION)
         if COMPILER_VERSION!="unknown":
             info.append(COMPILER_VERSION)
-    except Exception, e:
+    except Exception as e:
         warn("Error: could not find the build information: %s" % e)
     return info
 
@@ -447,7 +447,7 @@ def parse_number(numtype, k, v, auto=0):
         return auto
     try:
         return numtype(v)
-    except Exception, e:
+    except Exception as e:
         warn("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
         return None
 

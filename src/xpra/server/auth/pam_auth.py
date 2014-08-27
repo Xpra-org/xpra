@@ -34,7 +34,7 @@ try:
                         resp.append(('', 0))
                     else:
                         log.error("pam_conf_password unknown type: '%s'", pam_type)
-            except Exception, e:
+            except Exception as e:
                 log.error("pam_conv_password error: %s", e)
             return    resp
 
@@ -49,13 +49,13 @@ try:
             auth.authenticate()
             return    True
             #auth.acct_mgmt()
-        except PAM.error, resp:
+        except PAM.error as resp:
             log.error("PAM.authenticate() error: %s", resp)
             return    False
-        except Exception, e:
+        except Exception as e:
             log.error("PAM.authenticate() internal error: %s", e)
             return    False
-except Exception, e:
+except Exception as e:
     log("PAM module not available: %s", e)
 
 try:

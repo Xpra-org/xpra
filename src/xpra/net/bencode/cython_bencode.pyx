@@ -87,7 +87,7 @@ cdef decode_dict(const char *x, int f, int l):
         v, f = decode(x, f, l, "dictionary value")
         try:
             r[k] = v
-        except TypeError, e:
+        except TypeError as e:
             raise ValueError("failed to set dictionary key %s: %s" % (k, e))
     return (r, f + 1)
 

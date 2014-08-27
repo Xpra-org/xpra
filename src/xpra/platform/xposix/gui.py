@@ -18,12 +18,12 @@ def get_native_notifier_classes():
     try:
         from xpra.client.notifications.dbus_notifier import DBUS_Notifier_factory
         ncs.append(DBUS_Notifier_factory)
-    except Exception, e:
+    except Exception as e:
         log("cannot load dbus notifier: %s", e)
     try:
         from xpra.client.notifications.pynotify_notifier import PyNotify_Notifier
         ncs.append(PyNotify_Notifier)
-    except Exception, e:
+    except Exception as e:
         log("cannot load pynotify notifier: %s", e)
     return ncs
 
@@ -32,7 +32,7 @@ def get_native_tray_classes():
         from xpra.platform.xposix.appindicator_tray import AppindicatorTray, can_use_appindicator
         if can_use_appindicator():
             return [AppindicatorTray]
-    except Exception, e:
+    except Exception as e:
         log("cannot load appindicator tray: %s", e)
     return []
 
@@ -56,7 +56,7 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
     try:
         trap.call_synced(x11_bell)
         return  True
-    except XError, e:
+    except XError as e:
         log.error("error using device_bell: %s, switching native X11 bell support off", e)
         device_bell = False
         return False
@@ -109,7 +109,7 @@ class ClientExtras(object):
             bus = init_system_bus()
             self.system_bus = bus
             log("setup_dbus_signals() system bus=%s", bus)
-        except Exception, e:
+        except Exception as e:
             log.warn("dbus setup error: %s", e)
             return
 
@@ -121,7 +121,7 @@ class ClientExtras(object):
             self.upower_resuming_match = bus.add_signal_receiver(self.resuming_callback, 'Resuming', iface_name, bus_name)
             self.upower_sleeping_match = bus.add_signal_receiver(self.sleeping_callback, 'Sleeping', iface_name, bus_name)
             eventlog("listening for 'Resuming' and 'Sleeping' signals on %s", iface_name)
-        except Exception, e:
+        except Exception as e:
             eventlog("failed to setup UPower event listener: %s", e)
 
         #the "logind" signals:
@@ -136,7 +136,7 @@ class ClientExtras(object):
             iface_name  = 'org.freedesktop.login1.Manager'
             self.login1_match = bus.add_signal_receiver(sleep_event_handler, 'PrepareForSleep', iface_name, bus_name)
             eventlog("listening for 'PrepareForSleep' signal on %s", iface_name)
-        except Exception, e:
+        except Exception as e:
             eventlog("failed to setup login1 event listener: %s", e)
 
     def setup_xprops(self):
@@ -161,7 +161,7 @@ class ClientExtras(object):
                 self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
                 #ensure we get the initial value:
                 self._root_props_watcher.do_notify("RESOURCE_MANAGER")
-        except ImportError, e:
+        except ImportError as e:
             log.error("failed to load X11 properties/settings bindings: %s - root window properties will not be propagated", e)
 
     def _handle_xsettings_changed(self, *args):

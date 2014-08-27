@@ -232,7 +232,7 @@ class ServerBase(ServerCore):
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
                 if self.notifications_forwarder:
                     log.info("using notification forwarder: %s", self.notifications_forwarder)
-            except Exception, e:
+            except Exception as e:
                 log.error("error loading or registering our dbus notifications forwarder:")
                 log.error("  %s", e)
                 log.info("  if you do not have a dedicated dbus session for this xpra instance,")
@@ -242,7 +242,7 @@ class ServerBase(ServerCore):
     def init_sound(self, speaker, speaker_codec, microphone, microphone_codec):
         try:
             from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
-        except Exception, e:
+        except Exception as e:
             log("cannot load gstreamer: %s", e)
             has_gst = False
         log("init_sound(%s, %s, %s, %s) has_gst=%s", speaker, speaker_codec, microphone, microphone_codec, has_gst)
@@ -259,7 +259,7 @@ class ServerBase(ServerCore):
         try:
             from xpra.sound.pulseaudio_util import add_audio_tagging_env
             add_audio_tagging_env()
-        except Exception, e:
+        except Exception as e:
             log("failed to set pulseaudio audio tagging: %s", e)
 
     def init_clipboard(self, clipboard_enabled, clipboard_filter_file):
@@ -291,7 +291,7 @@ class ServerBase(ServerCore):
             from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
             self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, CLIPBOARDS, clipboard_filter_res)
             self._clipboards = CLIPBOARDS
-        except Exception, e:
+        except Exception as e:
             log.error("failed to setup clipboard helper: %s" % e)
 
     def init_keyboard(self):
@@ -321,7 +321,7 @@ class ServerBase(ServerCore):
         try:
             from xpra.x11.dbus_helper import DBusHelper
             self.dbus_helper = DBusHelper()
-        except Exception, e:
+        except Exception as e:
             log.warn("cannot load dbus helper: %s", e)
             self.supports_dbus_proxy = False
 
@@ -995,7 +995,7 @@ class ServerBase(ServerCore):
                 return
             proto.send_now(packet)
             self.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
-        except Exception, e:
+        except Exception as e:
             log.error("failed to capture screenshot", exc_info=True)
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 

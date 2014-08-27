@@ -206,7 +206,7 @@ def _read_image(disp, stream):
         if len(data) < width * height * 4:
             log.warn("Corrupt _NET_WM_ICON")
             return None
-    except Exception, e:
+    except Exception as e:
         log.warn("Weird corruption in _NET_WM_ICON: %s", e)
         return None
     # Cairo wants a native-endian array here, and since the icon is

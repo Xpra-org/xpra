@@ -31,7 +31,7 @@ def has_codec_module(module_name):
         __import__(top_module, {}, {}, [])
         log("codec module %s is installed", module_name)
         return True
-    except Exception, e:
+    except Exception as e:
         log("codec module %s cannot be loaded: %s", module_name, e)
         return False
 
@@ -260,7 +260,7 @@ class VideoHelper(object):
         try:
             encoder_module.init_module()
             self._cleanup_modules.append(encoder_module)
-        except Exception, e:
+        except Exception as e:
             log("exception in %s module initialization %s: %s", encoder_type, encoder_module.init_module, e, exc_info=True)
             log.warn("Warning: %s video encoder failed: %s", encoder_type, e)
             return
@@ -303,7 +303,7 @@ class VideoHelper(object):
         try:
             csc_module.init_module()
             self._cleanup_modules.append(csc_module)
-        except Exception, e:
+        except Exception as e:
             log("exception in %s module initialization %s: %s", csc_type, csc_module.init_module, e, exc_info=True)
             log.warn("cannot use %s module %s: %s", csc_type, csc_module, e)
             return
@@ -339,7 +339,7 @@ class VideoHelper(object):
         try:
             decoder_module.init_module()
             self._cleanup_modules.append(decoder_module)
-        except Exception, e:
+        except Exception as e:
             log("exception in %s module initialization %s: %s", encoder_type, decoder_module.init_module, e, exc_info=True)
             log.warn("cannot use %s module %s: %s", encoder_type, decoder_module, e, exc_info=True)
             return
@@ -354,7 +354,7 @@ class VideoHelper(object):
                 try:
                     assert decoder_module.Decoder
                     self.add_decoder(encoding, colorspace, decoder_name, decoder_module)
-                except Exception, e:
+                except Exception as e:
                     log.warn("failed to add decoder %s: %s", decoder_module, e)
 
     def add_decoder(self, encoding, colorspace, decoder_name, decoder_module):

@@ -39,7 +39,7 @@ class DBusHelper(object):
                         "reply_handler"         : ok_cb,
                         "error_handler"         : err_cb}
             fn.call_async(*args, **keywords)
-        except Exception, e:
+        except Exception as e:
             msg = "error invoking %s on %s: %s" % (function, obj, e)
             log("DBusHelper: %s", msg)
             err_cb(msg)

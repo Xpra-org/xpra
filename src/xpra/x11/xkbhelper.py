@@ -37,7 +37,7 @@ def exec_keymap_command(args, stdin=None):
         else:
             log.error("%s with stdin=%s, failed with exit code %s", args, logstdin(), returncode)
         return returncode
-    except Exception, e:
+    except Exception as e:
         log.error("error calling '%s': %s" % (str(args), e))
         return -1
 
@@ -108,7 +108,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
                     log.info("guessing keyboard layout='%s'" % layout)
                     exec_keymap_command(["setxkbmap", layout])
                     break
-        except Exception, e:
+        except Exception as e:
             log.info("error setting keymap: %s" % e)
     else:
         layout = xkbmap_layout or "us"
