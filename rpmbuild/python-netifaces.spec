@@ -8,7 +8,7 @@ Summary: Getting network addresses from Python
 Vendor: http://alastairs-place.net/netifaces/
 Name: python-netifaces
 Version: 0.10.4
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPL3
 Requires: python
 Group: Networking
@@ -26,6 +26,9 @@ Getting network addresses from Python
 
 
 %changelog
+* Wed Aug 27 2014 Antoine Martin <antoine@nagafix.co.uk> 0.10.4-2
+- Rebuild with obsoletes tag
+
 * Thu Feb 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.10.4-1
 - Updated to 0.10.4
 
