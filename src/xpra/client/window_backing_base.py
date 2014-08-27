@@ -108,10 +108,12 @@ class WindowBackingBase(object):
     def close_decoder(self, blocking=False):
         if self._decoder_lock is None or not self._decoder_lock.acquire(blocking):
             return False
-        with self._decoder_lock:
+        try:
             self.do_clean_video_decoder()
             self.do_clean_csc_decoder()
             return True
+        finally:
+            self._decoder_lock.release()
 
     def do_clean_video_decoder(self):
         if self._video_decoder:
