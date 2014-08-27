@@ -55,7 +55,7 @@ def get_thread_info(proto=None):
     #threads:
     info_threads = proto.get_threads()
     info = {
-            "count"        : threading.activeCount() - len(info_threads),
+            "count"        : threading.active_count() - len(info_threads),
             "info.count"   : len(info_threads)
             }
     i = 0

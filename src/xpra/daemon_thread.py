@@ -13,5 +13,5 @@ This is used by the pycallgraph test wrapper.
 
 def make_daemon_thread(target, name):
     daemon_thread = Thread(target=target, name=name)
-    daemon_thread.setDaemon(True)
+    daemon_thread.daemon = True
     return daemon_thread
