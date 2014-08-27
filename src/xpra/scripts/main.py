@@ -1017,13 +1017,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                     return
             try:
                 if child.poll() is None:
-                    #only supported on win32 since Python 2.7
-                    if hasattr(child, "terminate"):
-                        child.terminate()
-                    elif hasattr(os, "kill"):
-                        os.kill(child.pid, signal.SIGTERM)
-                    else:
-                        raise Exception("cannot find function to kill subprocess")
+                    child.terminate()
             except Exception as e:
                 print("error trying to stop ssh tunnel process: %s" % e)
         conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
