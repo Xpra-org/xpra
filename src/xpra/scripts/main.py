@@ -1153,10 +1153,9 @@ def make_client(error_cb, opts):
 
 def do_run_client(app):
     try:
-        try:
-            return app.run()
-        except KeyboardInterrupt:
-            return -signal.SIGINT
+        return app.run()
+    except KeyboardInterrupt:
+        return -signal.SIGINT
     finally:
         app.cleanup()
 
