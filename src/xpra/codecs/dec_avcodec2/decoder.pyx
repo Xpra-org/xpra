@@ -17,8 +17,6 @@ from xpra.codecs.image_wrapper import ImageWrapper
 ctypedef unsigned long size_t
 ctypedef unsigned char uint8_t
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
 
 cdef extern from "../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)

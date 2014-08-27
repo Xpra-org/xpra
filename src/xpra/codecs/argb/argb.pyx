@@ -6,8 +6,6 @@
 
 #cython: boundscheck=False, wraparound=False, cdivision=True
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
 
 cdef extern from "../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)

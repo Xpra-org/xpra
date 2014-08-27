@@ -22,8 +22,6 @@ cdef extern from "string.h":
     void *memset(void *ptr, int value, size_t num) nogil
     void free(void *ptr) nogil
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
 
 cdef extern from "../buffers/memalign.h":
     void *xmemalign(size_t size)

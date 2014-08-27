@@ -16,8 +16,6 @@ from xpra.codecs.image_wrapper import ImageWrapper
 
 include "constants.pxi"
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
 
 cdef extern from "../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)

@@ -19,9 +19,6 @@ ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
-
 cdef extern from "../../codecs/buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)

@@ -24,7 +24,6 @@ verbose = Logger("x11", "bindings", "gtk", "verbose")
 # Headers, python magic
 ###################################
 cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
     ctypedef object PyObject
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1

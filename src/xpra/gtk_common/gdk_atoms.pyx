@@ -29,7 +29,6 @@ init_pygtk()
 # Now all the macros in those header files will work.
 
 cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
     int PyObject_AsReadBuffer(object obj,
                               void ** buffer,
                               Py_ssize_t * buffer_len) except -1

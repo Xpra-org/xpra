@@ -15,8 +15,6 @@ cdef extern from *:
 cdef extern from "stdlib.h":
     void free(void *ptr)
 
-cdef extern from "Python.h":
-    ctypedef int Py_ssize_t
 
 cdef extern from "../buffers/memalign.h":
     void *xmemalign(size_t size)
