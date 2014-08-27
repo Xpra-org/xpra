@@ -38,7 +38,6 @@ from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
 from xpra.gtk_common.error import trap, XError
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.composite import CompositeHelper
-from xpra.os_util import ImmutableSet
 
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -1288,9 +1287,9 @@ class WindowModel(BaseWindowModel):
         # WM_HINTS and _NET_WM_STATE handling become intertangled.
         net_wm_state = pget("_NET_WM_STATE", ["atom"])
         if net_wm_state:
-            self._internal_set_property("state", ImmutableSet(net_wm_state))
+            self._internal_set_property("state", frozenset(net_wm_state))
         else:
-            self._internal_set_property("state", ImmutableSet())
+            self._internal_set_property("state", frozenset())
         modal = (net_wm_state is not None) and ("_NET_WM_STATE_MODAL" in net_wm_state)
         self._internal_set_property("modal", modal)
 
@@ -1337,7 +1336,7 @@ class WindowModel(BaseWindowModel):
         curr = set(self.get_property("state"))
         if state_name not in curr:
             curr.add(state_name)
-            self._internal_set_property("state", ImmutableSet(curr))
+            self._internal_set_property("state", frozenset(curr))
             if state_name in self._state_properties_reversed:
                 self.notify(self._state_properties_reversed[state_name])
 
@@ -1345,7 +1344,7 @@ class WindowModel(BaseWindowModel):
         curr = set(self.get_property("state"))
         if state_name in curr:
             curr.discard(state_name)
-            self._internal_set_property("state", ImmutableSet(curr))
+            self._internal_set_property("state", frozenset(curr))
             if state_name in self._state_properties_reversed:
                 self.notify(self._state_properties_reversed[state_name])
 

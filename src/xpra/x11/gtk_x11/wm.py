@@ -7,14 +7,6 @@
 import gtk
 import gobject
 
-# Maintain compatibility with old versions of Python, while avoiding a
-# deprecation warning on new versions:
-import sys
-if sys.version_info < (2, 6):
-    from sets import ImmutableSet
-else:
-    ImmutableSet = frozenset
-
 from xpra.gtk_common.error import trap
 import xpra.x11.gtk_x11.selection
 from xpra.x11.gtk_x11.world_window import WorldWindow
@@ -295,7 +287,7 @@ class Wm(gobject.GObject):
 
     def do_get_property(self, pspec):
         if pspec.name == "windows":
-            return ImmutableSet(self._windows.itervalues())
+            return frozenset(self._windows.itervalues())
         elif pspec.name == "toplevel":
             return self._world_window
         else:

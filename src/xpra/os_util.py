@@ -50,12 +50,6 @@ except:
         from io import StringIO as StringIOClass        #@Reimport @UnusedImport
 
 
-if sys.version_info < (2, 6):
-    from sets import ImmutableSet
-else:
-    ImmutableSet = frozenset
-
-
 if sys.version < '3':
     def strtobytes(x):
         return x
