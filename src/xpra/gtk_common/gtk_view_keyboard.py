@@ -5,13 +5,13 @@
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_gobject
 from xpra.gtk_common.gtk_util import SHIFT_MASK, LOCK_MASK, CONTROL_MASK, MOD1_MASK, MOD2_MASK, MOD3_MASK, MOD4_MASK, MOD5_MASK
 import sys
+from collections import deque
 
 gtk = import_gtk()
 gdk = import_gdk()
 pango = import_pango()
 gobject = import_gobject()
 
-from xpra.deque import maxdeque
 from xpra.platform.paths import get_icon
 from xpra.gtk_common import gtk_util
 assert gtk_util, "cannot load compat class"
@@ -69,7 +69,7 @@ class KeyboardStateInfoWindow:
         self.window.show_all()
         gobject.timeout_add(100, self.populate_modifiers)
 
-        self.key_events = maxdeque(maxlen=35)
+        self.key_events = deque(maxlen=35)
         self.window.connect("key-press-event", self.key_press)
         self.window.connect("key-release-event", self.key_release)
         if not is_gtk3():

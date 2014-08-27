@@ -18,7 +18,7 @@ from math import sqrt
 from xpra.log import Logger
 log = Logger("stats")
 
-from xpra.deque import maxdeque
+from collections import deque
 from xpra.simple_stats import add_list_stats, add_weighted_list_stats
 from xpra.server.stats.maths import logp, \
     calculate_time_weighted_average, calculate_timesize_weighted_average, \
@@ -38,23 +38,23 @@ class WindowPerformanceStatistics(object):
     DEFAULT_TARGET_LATENCY = 0.1
 
     def reset(self):
-        self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames:
-                                                        #(ack_time, no of pixels, decoding_time*1000*1000)
-        self.encoding_stats = maxdeque(NRECS)           #encoding: (coding, pixels, bpp, compressed_size, encoding_time)
+        self.client_decode_time = deque(maxlen=NRECS)       #records how long it took the client to decode frames:
+                                                            #(ack_time, no of pixels, decoding_time*1000*1000)
+        self.encoding_stats = deque(maxlen=NRECS)           #encoding: (coding, pixels, bpp, compressed_size, encoding_time)
         # statistics:
-        self.damage_in_latency = maxdeque(NRECS)        #records how long it took for a damage request to be sent
-                                                        #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_out_latency = maxdeque(NRECS)       #records how long it took for a damage request to be processed
-                                                        #last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_send_speed = maxdeque(NRECS)        #how long it took to send damage packets (this is not a sustained speed)
-                                                        #last NRECS: (sent_time, no_of_pixels, elapsed_time)
-        self.damage_ack_pending = {}                    #records when damage packets are sent
-                                                        #so we can calculate the "client_latency" when the client sends
-                                                        #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
-        self.encoding_totals = {}                       #for each encoding, how many frames we sent and how many pixels in total
-        self.encoding_pending = {}                      #damage regions waiting to be picked up by the encoding thread:
-                                                        #for each sequence no: (damage_time, w, h)
-        self.last_damage_events = maxdeque(4*NRECS)     #every time we get a damage event, we record: time,x,y,w,h
+        self.damage_in_latency = deque(maxlen=NRECS)        #records how long it took for a damage request to be sent
+                                                            #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
+        self.damage_out_latency = deque(maxlen=NRECS)       #records how long it took for a damage request to be processed
+                                                            #last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
+        self.damage_send_speed = deque(maxlen=NRECS)        #how long it took to send damage packets (this is not a sustained speed)
+                                                            #last NRECS: (sent_time, no_of_pixels, elapsed_time)
+        self.damage_ack_pending = {}                        #records when damage packets are sent
+                                                            #so we can calculate the "client_latency" when the client sends
+                                                            #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
+        self.encoding_totals = {}                           #for each encoding, how many frames we sent and how many pixels in total
+        self.encoding_pending = {}                          #damage regions waiting to be picked up by the encoding thread:
+                                                            #for each sequence no: (damage_time, w, h)
+        self.last_damage_events = deque(maxlen=4*NRECS)     #every time we get a damage event, we record: time,x,y,w,h
         self.last_damage_event_time = None
         self.damage_events_count = 0
         self.packet_count = 0

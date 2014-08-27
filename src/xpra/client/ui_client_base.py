@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import datetime
+from collections import deque
 
 from xpra.log import Logger
 log = Logger("client")
@@ -24,7 +25,6 @@ grablog = Logger("client", "grab")
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
@@ -90,10 +90,10 @@ class UIXpraClient(XpraClientBase):
         self.server_max_desktop_size = None
         self.server_display = None
         self.server_randr = False
-        self.pixel_counter = maxdeque(maxlen=1000)
-        self.server_ping_latency = maxdeque(maxlen=1000)
+        self.pixel_counter = deque(maxlen=1000)
+        self.server_ping_latency = deque(maxlen=1000)
         self.server_load = None
-        self.client_ping_latency = maxdeque(maxlen=1000)
+        self.client_ping_latency = deque(maxlen=1000)
         self._server_ok = True
         self.last_ping_echoed_time = 0
         self.server_info_request = False

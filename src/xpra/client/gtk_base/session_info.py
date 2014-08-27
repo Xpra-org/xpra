@@ -15,7 +15,7 @@ import datetime
 
 from xpra.os_util import os_info, bytestostr
 from xpra.gtk_common.graph import make_graph_pixmap
-from xpra.deque import maxdeque
+from collections import deque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from xpra.scripts.config import python_platform
 from xpra.log import Logger
@@ -368,9 +368,9 @@ class SessionInfo(gtk.Window):
             self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
             self.connect("realize", self.populate_graphs)
             self.latency_graph = self.add_graph_button(None, self.save_graphs)
-        self.pixel_in_data = maxdeque(N_SAMPLES+4)
-        self.net_in_bytecount = maxdeque(N_SAMPLES+4)
-        self.net_out_bytecount = maxdeque(N_SAMPLES+4)
+        self.pixel_in_data = deque(maxlen=N_SAMPLES+4)
+        self.net_in_bytecount = deque(maxlen=N_SAMPLES+4)
+        self.net_out_bytecount = deque(maxlen=N_SAMPLES+4)
 
         self.set_border_width(15)
         self.add(self.tab_box)
@@ -551,11 +551,11 @@ class SessionInfo(gtk.Window):
         return not self.is_closed
 
     def init_counters(self):
-        self.avg_batch_delay = maxdeque(N_SAMPLES+4)
-        self.avg_damage_out_latency = maxdeque(N_SAMPLES+4)
-        self.avg_ping_latency = maxdeque(N_SAMPLES+4)
-        self.avg_decoding_latency = maxdeque(N_SAMPLES+4)
-        self.avg_total = maxdeque(N_SAMPLES+4)
+        self.avg_batch_delay = deque(maxlen=N_SAMPLES+4)
+        self.avg_damage_out_latency = deque(maxlen=N_SAMPLES+4)
+        self.avg_ping_latency = deque(maxlen=N_SAMPLES+4)
+        self.avg_decoding_latency = deque(maxlen=N_SAMPLES+4)
+        self.avg_total = deque(maxlen=N_SAMPLES+4)
 
     def populate_tab(self, *args):
         if self.is_closed:

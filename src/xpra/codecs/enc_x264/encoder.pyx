@@ -11,7 +11,8 @@ log = Logger("encoder", "x264")
 X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 
 from xpra.codecs.codec_constants import get_subsampling_divs, video_codec_spec
-from xpra.deque import maxdeque
+from collections import deque
+
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
@@ -292,7 +293,7 @@ cdef class Encoder:
         self.src_format = src_format
         self.colorspace = cs_info[0]
         self.frames = 0
-        self.last_frame_times = maxdeque(200)
+        self.last_frame_times = deque(maxlen=200)
         self.time = 0
         self.first_frame_timestamp = 0
         self.profile = self._get_profile(options, self.src_format)

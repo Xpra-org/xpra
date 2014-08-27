@@ -8,6 +8,7 @@
 
 import time
 import os
+from collections import deque
 
 from xpra.log import Logger
 log = Logger("window", "encoding")
@@ -30,7 +31,6 @@ FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
 STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
 
 
-from xpra.deque import maxdeque
 from xpra.util import updict
 from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
@@ -137,8 +137,8 @@ class WindowSource(object):
             self.small_packet_cost = 4096
 
         # general encoding tunables (mostly used by video encoders):
-        self._encoding_quality = maxdeque(100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
-        self._encoding_speed = maxdeque(100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
+        self._encoding_quality = deque(maxlen=100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
+        self._encoding_speed = deque(maxlen=100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
         # they may have fixed values:
         self._fixed_quality = default_encoding_options.get("quality", 0)
         self._fixed_min_quality = default_encoding_options.get("min-quality", 0)

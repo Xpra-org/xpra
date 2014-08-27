@@ -9,7 +9,7 @@ from xpra.log import Logger
 log = Logger("encoder", "proxy")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.deque import maxdeque
+from collections import deque
 
 
 def get_version():
@@ -46,7 +46,7 @@ class Encoder(object):
         self.scaling = scaling
         self.src_format = src_format
         self.dst_formats = dst_formats
-        self.last_frame_times = maxdeque(200)
+        self.last_frame_times = deque(maxlen=200)
         self.frames = 0
         self.time = 0
         self.first_frame_timestamp = 0

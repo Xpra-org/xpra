@@ -9,7 +9,7 @@ import datetime
 import gtk
 import gobject
 from xpra.client.gtk2.topbar_client_window import TopBarClientWindow
-from xpra.deque import maxdeque
+from collections import deque
 
 from xpra.log import Logger
 log = Logger("window")
@@ -24,7 +24,7 @@ class DebugInfoClientWindow(TopBarClientWindow):
         log.info("DebugInfoClientWindow.__init__(%s)", args)
         TopBarClientWindow.__init__(self, *args)
         if self._has_custom_decorations:
-            self.log_buffer = maxdeque(100)
+            self.log_buffer = deque(maxlen=100)
             self.capture_log = True
             self.debug = lambda *x : self._add_log_event("debug", *x)
             self.info = lambda *x : self._add_log_event("info", *x)

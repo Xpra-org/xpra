@@ -8,7 +8,7 @@ import os.path
 
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
-from xpra.deque import maxdeque
+from collections import deque
 log = Logger("tray")
 
 
@@ -30,7 +30,7 @@ class TrayBase(object):
         self.default_icon_name = "xpra.png"
         #some implementations need this for guessing the geometry (see recalculate_geometry):
         self.geometry_guess = None
-        self.tray_event_locations = maxdeque(512)
+        self.tray_event_locations = deque(maxlen=512)
 
     def cleanup(self):
         if self.tray_widget:

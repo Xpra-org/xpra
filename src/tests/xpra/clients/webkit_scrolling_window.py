@@ -16,10 +16,10 @@ from browser import WebBrowser, vscroll_listeners, hscroll_listeners
 from xpra.log import Logger
 log = Logger()
 
-from xpra.deque import maxdeque
 from xpra.dotxpra import DotXpra
 from xpra.client.gobject_client_base import CommandConnectClient
 from xpra.net.bytestreams import SocketConnection
+from collections import deque
 
 
 class gobject_loop_adapter(object):
@@ -82,8 +82,8 @@ class XpraBrowser(object):
         log.info("successfully created our socket connection: %s", conn)
         self.server = ServerMessenger(conn, opts)
 
-        self.vscroll_events = maxdeque(1000)
-        self.hscroll_events = maxdeque(1000)
+        self.vscroll_events = deque(maxlen=1000)
+        self.hscroll_events = deque(maxlen=1000)
 
         browser = WebBrowser()
         #hook some events:

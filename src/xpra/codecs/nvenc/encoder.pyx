@@ -8,13 +8,13 @@ import time
 import os
 import numpy
 import array
+from collections import deque
 
 import pycuda
 from pycuda import driver
 from pycuda.compiler import compile
 
 from xpra.util import AtomicInteger, updict
-from xpra.deque import maxdeque
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, get_pycuda_info, device_info, reset_state, \
                 get_CUDA_function, record_device_failure, record_device_success
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
@@ -1369,7 +1369,7 @@ cdef class Encoder:
         self.cuda_context = None
         self.separate_plane = options.get("video_separateplane", False)
         self.pixel_format = ""
-        self.last_frame_times = maxdeque(200)
+        self.last_frame_times = deque(maxlen=200)
         self.update_bitrate()
         start = time.time()
 

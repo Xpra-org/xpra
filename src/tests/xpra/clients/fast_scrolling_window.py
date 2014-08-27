@@ -11,6 +11,8 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.client.gobject_client_base import CommandConnectClient
+from collections import deque
+
 
 class gobject_loop_adapter(object):
 
@@ -110,9 +112,8 @@ def main():
     app = ServerMessenger(conn, opts)
     window = ScrolledWindowExample()
 
-    from xpra.deque import maxdeque
-    vscroll_events = maxdeque(1000)
-    hscroll_events = maxdeque(1000)
+    vscroll_events = deque(maxlen=1000)
+    hscroll_events = deque(maxlen=1000)
     def vscroll(scrollbar, scrolltype, value):
         #print("vscroll(%s) n=%s" % ((scrollbar, scrolltype, value), len(vscroll_events)))
         now = time.time()

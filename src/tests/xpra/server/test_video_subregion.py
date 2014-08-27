@@ -9,7 +9,7 @@ import time
 import gobject
 gobject.threads_init()
 
-from xpra.deque import maxdeque
+from collections import deque
 from xpra.server.video_subregion import VideoSubregion, log, sslog, MIN_EVENTS
 from xpra.server.region import rectangle, merge_all
 
@@ -57,7 +57,7 @@ def main():
     assert r.rectangle is None
 
     log.info("* checking that regions covering the whole window give the same result")
-    last_damage_events = maxdeque(150)
+    last_damage_events = deque(maxlen=150)
     for x in range(4):
         for y in range(4):
             vr = (time.time(), ww*x/4, wh*y/4, ww/4, wh/4)
@@ -77,7 +77,7 @@ def main():
     log.info("* info=%s", r.get_info())
 
     log.info("* checking that two video regions with the same characteristics get merged")
-    last_damage_events = maxdeque(150)
+    last_damage_events = deque(maxlen=150)
     r.reset()
     v1 = (time.time(), 100, 100, 320, 240)
     v2 = (time.time(), 500, 500, 320, 240)
@@ -89,7 +89,7 @@ def main():
     assert r.rectangle==m, "expected %s but got %s" % (m, r.rectangle)
 
     log.info("* but not if they are too far apart")
-    last_damage_events = maxdeque(150)
+    last_damage_events = deque(maxlen=150)
     r.reset()
     v1 = (time.time(), 20, 20, 320, 240)
     v2 = (time.time(), ww-20-320, wh-240-20, 320, 240)

@@ -8,11 +8,11 @@
 
 from math import sqrt
 import time
+from collections import deque
 
 from xpra.log import Logger
 log = Logger("stats")
 
-from xpra.deque import maxdeque
 from xpra.server.stats.maths import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect
 from xpra.simple_stats import add_list_stats
 
@@ -33,25 +33,25 @@ class GlobalPerformanceStatistics(object):
         # mmap state:
         self.mmap_size = 0
         self.mmap_bytes_sent = 0
-        self.mmap_free_size = 0                         #how much of the mmap space is left (may be negative if we failed to write the last chunk)
+        self.mmap_free_size = 0                             #how much of the mmap space is left (may be negative if we failed to write the last chunk)
         # queue statistics:
-        self.compression_work_qsizes = maxdeque(NRECS)  #size of the compression_work_queue before we add a new record to it
-                                                        #(event_time, size)
-        self.packet_qsizes = maxdeque(NRECS)            #size of the packet_queue before we add a new packet to it
-                                                        #(event_time, size)
-        self.damage_packet_qpixels = maxdeque(NRECS)    #number of pixels waiting in the packet_queue for a specific window,
-                                                        #before we add a new packet to it
-                                                        #(event_time, wid, size)
-        self.damage_last_events = maxdeque(NRECS)       #records the x11 damage requests as they are received:
-                                                        #(wid, event time, no of pixels)
-        self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames:
-                                                        #(wid, event_time, no of pixels, decoding_time*1000*1000)
-        self.client_latency = maxdeque(NRECS)           #how long it took for a packet to get to the client and get the echo back.
-                                                        #(wid, event_time, no of pixels, client_latency)
-        self.client_ping_latency = maxdeque(NRECS)      #time it took to get a ping_echo back from the client:
-                                                        #(event_time, elapsed_time_in_seconds)
-        self.server_ping_latency = maxdeque(NRECS)      #time it took for the client to get a ping_echo back from us:
-                                                        #(event_time, elapsed_time_in_seconds)
+        self.compression_work_qsizes = deque(maxlen=NRECS)  #size of the compression_work_queue before we add a new record to it
+                                                            #(event_time, size)
+        self.packet_qsizes = deque(maxlen=NRECS)            #size of the packet_queue before we add a new packet to it
+                                                            #(event_time, size)
+        self.damage_packet_qpixels = deque(maxlen=NRECS)    #number of pixels waiting in the packet_queue for a specific window,
+                                                            #before we add a new packet to it
+                                                            #(event_time, wid, size)
+        self.damage_last_events = deque(maxlen=NRECS)       #records the x11 damage requests as they are received:
+                                                            #(wid, event time, no of pixels)
+        self.client_decode_time = deque(maxlen=NRECS)       #records how long it took the client to decode frames:
+                                                            #(wid, event_time, no of pixels, decoding_time*1000*1000)
+        self.client_latency = deque(maxlen=NRECS)           #how long it took for a packet to get to the client and get the echo back.
+                                                            #(wid, event_time, no of pixels, client_latency)
+        self.client_ping_latency = deque(maxlen=NRECS)      #time it took to get a ping_echo back from the client:
+                                                            #(event_time, elapsed_time_in_seconds)
+        self.server_ping_latency = deque(maxlen=NRECS)      #time it took for the client to get a ping_echo back from us:
+                                                            #(event_time, elapsed_time_in_seconds)
         self.client_load = None
         self.damage_events_count = 0
         self.packet_count = 0

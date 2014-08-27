@@ -4,6 +4,8 @@
 
 import re
 import sys
+from collections import deque
+
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_gobject
 
 gtk = import_gtk()
@@ -11,7 +13,6 @@ gdk = import_gdk()
 pango = import_pango()
 gobject = import_gobject()
 
-from xpra.deque import maxdeque
 from xpra.gtk_common.gtk_util import TableBuilder, label, GetClipboard
 from xpra.platform.paths import get_icon
 from xpra.platform.features import CLIPBOARDS
@@ -187,7 +188,7 @@ class ClipboardStateInfoWindow(object):
         vbox = gtk.VBox(False, 0)
         vbox.set_spacing(15)
 
-        self.log = maxdeque(maxlen=25)
+        self.log = deque(maxlen=25)
         for x in range(25):
             self.log.append("")
         self.events = gtk.Label()

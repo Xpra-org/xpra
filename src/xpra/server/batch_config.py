@@ -11,7 +11,7 @@
 #(cannot be lower than DamageBatchConfig.MAX_EVENTS)
 NRECS = 100
 
-from xpra.deque import maxdeque
+from collections import deque
 from xpra.simple_stats import add_list_stats
 
 
@@ -40,8 +40,8 @@ class DamageBatchConfig(object):
         self.timeout_delay = self.TIMEOUT_DELAY
         self.delay = self.START_DELAY
         self.locked = False                             #to force a specific delay
-        self.last_delays = maxdeque(64)                 #the delays we have tried to use (milliseconds)
-        self.last_actual_delays = maxdeque(64)          #the delays we actually used (milliseconds)
+        self.last_delays = deque(maxlen=64)             #the delays we have tried to use (milliseconds)
+        self.last_actual_delays = deque(maxlen=64)      #the delays we actually used (milliseconds)
         self.last_updated = 0
         self.wid = 0
         #the metrics derived from statistics which we use for calculating the new batch delay:
