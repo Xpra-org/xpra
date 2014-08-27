@@ -503,8 +503,6 @@ class WindowVideoSource(WindowSource):
                 #merge all regions into one:
                 in_region = None
                 for i in inter:
-                    if i is None:
-                        continue
                     if in_region is None:
                         in_region = i
                     else:
