@@ -215,9 +215,8 @@ def main():
                 codec = MP3
 
         log.enable_debug()
-        f = open(filename, "rb")
-        data = f.read()
-        f.close()
+        with open(filename, "rb") as f:
+            data = f.read()
         print("loaded %s bytes from %s" % (len(data), filename))
         #force no leak since we push all the data at once
         global QUEUE_LEAK, GST_QUEUE_NO_LEAK, QUEUE_SILENT

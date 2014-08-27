@@ -12,9 +12,8 @@ def test_screenshot():
     print("screenshot %sx%s %s encoding, rowstride=%s" % (w, h, encoding, rowstride))
     print("got %s bytes" % len(data))
     filename = "screenshot.png"
-    f = open(filename, "wb")
-    f.write(data)
-    f.close()
+    with open(filename, "wb") as f:
+        f.write(data)
     print("saved to %s" % filename)
 
 def main():

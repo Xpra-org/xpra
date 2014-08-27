@@ -250,12 +250,9 @@ if TEST_SOUND:
 
 XPRA_USE_PASSWORD = True
 password_filename = "./test-password.txt"
-try:
-    import uuid
-    f = open(password_filename, 'wb')
+import uuid
+with open(password_filename, 'wb') as f:
     f.write(uuid.uuid4().hex)
-finally:
-    f.close()
 
 
 check = [TRICKLE_BIN]
@@ -425,21 +422,19 @@ def zero_iptables():
         #print("output(%s)=%s" % (cmd, out))
 
 def update_proc_stat():
-    proc_stat = open("/proc/stat", "rU")
-    time_total = 0
-    for line in proc_stat:
-        values = line.split()
-        if values[0]=="cpu":
-            time_total = sum([int(x) for x in values[1:]])
-            #print("time_total=%s" % time_total)
-            break
-    proc_stat.close()
+    with open("/proc/stat", "rU") as proc_stat:
+        time_total = 0
+        for line in proc_stat:
+            values = line.split()
+            if values[0]=="cpu":
+                time_total = sum([int(x) for x in values[1:]])
+                #print("time_total=%s" % time_total)
+                break
     return time_total
 
 def update_pidstat(pid):
-    stat_file = open("/proc/%s/stat" % pid, "rU")
-    data = stat_file.read()
-    stat_file.close()
+    with open("/proc/%s/stat" % pid, "rU") as stat_file:
+        data = stat_file.read()
     pid_stat = data.split()
     #print("update_pidstat(%s): %s" % (pid, pid_stat))
     return pid_stat
@@ -1029,9 +1024,8 @@ def get_vnc_stats(initial_stats=None, all_stats=[]):
             try_to_stop(process)
             try_to_kill(process, 2)
         else:
-            f = open(TCBENCH_LOG, mode='rb')
-            out = f.read()
-            f.close()
+            with open(TCBENCH_LOG, mode='rb') as f:
+                out = f.read()
             #print("get_vnc_stats(%s) tcbench output=%s" % (last_record, out))
             for line in out.splitlines():
                 if not line.find("Frames/sec:")>=0:

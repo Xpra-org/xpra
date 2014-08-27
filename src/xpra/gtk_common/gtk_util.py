@@ -240,11 +240,8 @@ def get_icon_from_file(filename):
         if not os.path.exists(filename):
             log.warn("%s does not exist", filename)
             return    None
-        f = open(filename, mode='rb')
-        try:
+        with open(filename, mode='rb') as f:
             data = f.read()
-        finally:
-            f.close()
         loader = PixbufLoader()
         loader.write(data)
         loader.close()

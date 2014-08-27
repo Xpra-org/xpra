@@ -277,13 +277,10 @@ class ServerBase(ServerCore):
                 log.error("invalid clipboard filter file: '%s' does not exist - clipboard disabled!", clipboard_filter_file)
                 return
             try:
-                f = open(clipboard_filter_file, "r" )
-                try:
+                with open(clipboard_filter_file, "r" ) as f:
                     for line in f:
                         clipboard_filter_res.append(line.strip())
                     log("loaded %s regular expressions from clipboard filter file %s", len(clipboard_filter_res), clipboard_filter_file)
-                finally:
-                    f.close()
             except:
                 log.error("error reading clipboard filter file %s - clipboard disabled!", clipboard_filter_file, exc_info=True)
                 return

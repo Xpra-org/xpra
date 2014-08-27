@@ -859,11 +859,8 @@ def parse_display_name(error_cb, opts, display_name):
         desc["remote_xpra"] = remote_xpra
         if desc.get("password") is None and opts.password_file and os.path.exists(opts.password_file):
             try:
-                try:
-                    passwordFile = open(opts.password_file, "rb")
-                    desc["password"] = passwordFile.read()
-                finally:
-                    passwordFile.close()
+                with open(opts.password_file, "rb") as f:
+                    desc["password"] = f.read()
             except Exception as e:
                 print("failed to read password file %s: %s", opts.password_file, e)
         return desc

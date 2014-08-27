@@ -61,12 +61,8 @@ def load_auth_file():
         auth_data_time = ptime
         f = None
         try:
-            try:
-                f = open(password_file, mode='rb')
+            with open(password_file, mode='rb') as f:
                 data = f.read()
-            finally:
-                if f:
-                    f.close()
         except Exception as e:
             log.error("error loading %s: %s", password_file, e)
             data = ""

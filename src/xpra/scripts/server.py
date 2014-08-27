@@ -244,13 +244,12 @@ def write_runner_shell_script(dotxpra, contents, overwrite=True):
         return
     # Write out a shell-script so that we can start our proxy in a clean
     # environment:
-    scriptfile = open(scriptpath, "w")
-    # Unix is a little silly sometimes:
-    umask = os.umask(0)
-    os.umask(umask)
-    os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
-    scriptfile.write(contents)
-    scriptfile.close()
+    with open(scriptpath, "w") as scriptfile:
+        # Unix is a little silly sometimes:
+        umask = os.umask(0)
+        os.umask(umask)
+        os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
+        scriptfile.write(contents)
 
 
 def display_name_check(display_name):

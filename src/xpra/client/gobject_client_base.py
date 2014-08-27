@@ -155,9 +155,8 @@ class ScreenshotXpraClient(CommandConnectClient):
         if len(img_data)==0:
             self.warn_and_quit(EXIT_OK, "screenshot is empty and has not been saved (maybe there are no windows or they are not currently shown)")
             return
-        f = open(self.screenshot_filename, 'wb')
-        f.write(img_data)
-        f.close()
+        with open(self.screenshot_filename, 'wb') as f:
+            f.write(img_data)
         self.warn_and_quit(EXIT_OK, "screenshot %sx%s saved to: %s" % (w, h, self.screenshot_filename))
 
     def init_packet_handlers(self):

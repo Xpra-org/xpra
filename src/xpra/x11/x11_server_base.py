@@ -420,16 +420,10 @@ class X11ServerBase(GTKServerBase):
         contents = "\n".join(data)
         for filename in xinerama_files:
             try:
-                f = None
-                try:
-                    f = open(filename, 'wb')
+                with open(filename, 'wb') as f:
                     f.write(contents)
-                except Exception as e:
-                    log.warn("error writing fake xinerama file %s: %s", filename, e)
-                    pass
-            finally:
-                if f:
-                    f.close()
+            except Exception as e:
+                log.warn("error writing fake xinerama file %s: %s", filename, e)
         log("saved %s monitors to fake xinerama files: %s", len(monitors), xinerama_files)
         oldconf = self.current_xinerama_config
         self.current_xinerama_config = config

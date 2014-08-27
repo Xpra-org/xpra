@@ -27,11 +27,10 @@ def save_properties(props, filename):
             os.unlink(filename)
         except:
             print("WARNING: failed to delete %s" % filename)
-    f = open(filename, mode='w')
-    for name,value in props.items():
-        s = str(value).replace("'", "\\'")
-        f.write("%s='%s'\n" % (name, s))
-    f.close()
+    with open(filename, mode='w') as f:
+        for name,value in props.items():
+            s = str(value).replace("'", "\\'")
+            f.write("%s='%s'\n" % (name, s))
     print("updated %s with:" % filename)
     for k in sorted(props.keys()):
         print("* %s = %s" % (str(k).ljust(20), props[k]))
@@ -39,8 +38,7 @@ def save_properties(props, filename):
 def get_properties(filename):
     props = dict()
     if os.path.exists(filename):
-        try:
-            f = open(filename, "rU")
+        with open(filename, "rU") as f:
             for line in f:
                 s = line.strip()
                 if len(s)==0:
@@ -53,23 +51,17 @@ def get_properties(filename):
                 if value[0]!="'" or value[-1]!="'":
                     continue
                 props[name]= value[1:-1]
-        finally:
-            f.close()
     return props
 
 
 def get_cpuinfo():
     if platform.uname()[5]:
         return platform.uname()[5]
-    try:
-        if os.path.exists("/proc/cpuinfo"):
-            f = open("/proc/cpuinfo", "rU")
+    if os.path.exists("/proc/cpuinfo"):
+        with open("/proc/cpuinfo", "rU") as f:
             for line in f:
                 if line.startswith("model name"):
                     return line.split(": ")[1].replace("\n", "").replace("\r", "")
-            f.close()
-    finally:
-        pass
     return "unknown"
 
 def get_first_line_output(commands):
@@ -114,9 +106,8 @@ def get_platform_name():
     #better version info than standard python platform:
     if sys.platform.startswith("sun"):
         #couldn't find a better way to distinguish opensolaris from solaris...
-        f = open("/etc/release")
-        data = f.read()
-        f.close()
+        with open("/etc/release") as f:
+            data = f.read()
         if data and str(data).lower().find("opensolaris"):
             return "OpenSolaris"
         return "Solaris"
@@ -173,9 +164,7 @@ def record_build_info(is_build=True):
 
 def load_ignored_changed_files():
     ignored = []
-    f = None
-    try:
-        f = open("./ignored_changed_files.txt", "rU")
+    with open("./ignored_changed_files.txt", "rU") as f:
         for line in f:
             s = line.strip()
             if len(s)==0:
@@ -183,9 +172,6 @@ def load_ignored_changed_files():
             if s[0] in ('!', '#'):
                 continue
             ignored.append(s)
-    finally:
-        if f:
-            f.close()
     return ignored
 
 def get_svn_props():

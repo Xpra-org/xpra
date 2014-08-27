@@ -34,12 +34,8 @@ def load_license():
         from xpra.platform.paths import get_resources_dir
         gpl2_file = os.path.join(get_resources_dir(), "COPYING")
         if os.path.exists(gpl2_file):
-            try:
-                f = open(gpl2_file, mode='rb')
+            with open(gpl2_file, mode='rb') as f:
                 GPL2 = f.read().decode('latin1')
-            finally:
-                if f:
-                    f.close()
     return GPL2
 
 

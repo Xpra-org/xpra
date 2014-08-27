@@ -152,13 +152,9 @@ def is_Ubuntu():
 def load_binary_file(filename):
     if not os.path.exists(filename):
         return None
-    f = None
     try:
-        f = open(filename, "rb")
-        try:
+        with open(filename, "rb") as f:
             return f.read()
-        finally:
-            f.close()
     except:
         return None
 

@@ -112,18 +112,17 @@ def get_build_info():
 
 
 def save_config(conf_file, config, keys, extras_types={}):
-    f = open(conf_file, "w")
-    option_types = OPTION_TYPES.copy()
-    option_types.update(extras_types)
-    saved = {}
-    for key in keys:
-        assert key in option_types, "invalid configuration key: %s" % key
-        fn = key.replace("-", "_")
-        v = getattr(config, fn)
-        saved[key] = v
-        f.write("%s=%s%s" % (key, v, os.linesep))
-    debug("save_config: saved %s to %s", saved, conf_file)
-    f.close()
+    with open(conf_file, "w") as f:
+        option_types = OPTION_TYPES.copy()
+        option_types.update(extras_types)
+        saved = {}
+        for key in keys:
+            assert key in option_types, "invalid configuration key: %s" % key
+            fn = key.replace("-", "_")
+            v = getattr(config, fn)
+            saved[key] = v
+            f.write("%s=%s%s" % (key, v, os.linesep))
+        debug("save_config: saved %s to %s", saved, conf_file)
 
 def read_config(conf_file):
     """
@@ -135,21 +134,20 @@ def read_config(conf_file):
     if not os.path.isfile(conf_file):
         debug("read_config(%s) is not a file!", conf_file)
         return d
-    f = open(conf_file, "rU")
-    lines = []
-    no = 0
-    for line in f:
-        sline = line.strip().rstrip('\r\n').strip()
-        no += 1
-        if len(sline) == 0:
-            debug("%4s empty line", no)
-            continue
-        if sline[0] in ( '!', '#' ):
-            debug("%4s skipping comments   : %s", no, sline[:16]+"..")
-            continue
-        debug("%4s loaded              : %s", no, sline)
-        lines.append(sline)
-    f.close()
+    with open(conf_file, "rU") as f:
+        lines = []
+        no = 0
+        for line in f:
+            sline = line.strip().rstrip('\r\n').strip()
+            no += 1
+            if len(sline) == 0:
+                debug("%4s empty line", no)
+                continue
+            if sline[0] in ( '!', '#' ):
+                debug("%4s skipping comments   : %s", no, sline[:16]+"..")
+                continue
+            debug("%4s loaded              : %s", no, sline)
+            lines.append(sline)
     debug("loaded %s lines", len(lines))
     #aggregate any lines with trailing backslash
     agg_lines = []

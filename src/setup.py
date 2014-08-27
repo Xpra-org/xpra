@@ -371,9 +371,8 @@ def check_md5sums(md5sums):
         if not os.path.exists(filename) or not os.path.isfile(filename):
             sys.exit("ERROR: file %s is missing or not a file!" % filename)
         sys.stdout.write("* %s: " % str(filename).ljust(52))
-        f = open(filename, mode='rb')
-        data = f.read()
-        f.close()
+        with open(filename, mode='rb') as f:
+            data = f.read()
         m = md5()
         m.update(data)
         digest = m.hexdigest()
@@ -457,46 +456,48 @@ def get_gcc_version():
 
 def make_constants_pxi(constants_path, pxi_path, **kwargs):
     constants = []
-    for line in open(constants_path):
-        data = line.split("#", 1)[0].strip()
-        # data can be empty ''...
-        if not data:
-            continue
-        # or a pair like 'cFoo "Foo"'...
-        elif len(data.split()) == 2:
-            (pyname, cname) = data.split()
-            constants.append((pyname, cname))
-        # or just a simple token 'Foo'
-        else:
-            constants.append(data)
-    out = open(pxi_path, "w")
-    out.write("cdef extern from *:\n")
-    ### Apparently you can't use | on enum's?!
-    # out.write("    enum MagicNumbers:\n")
-    # for const in constants:
-    #     if isinstance(const, tuple):
-    #         out.write('        %s %s\n' % const)
-    #     else:
-    #         out.write('        %s\n' % (const,))
-    for const in constants:
-        if isinstance(const, tuple):
-            out.write('    unsigned int %s %s\n' % const)
-        else:
-            out.write('    unsigned int %s\n' % (const,))
+    with open(constants_path) as f:
+        for line in f:
+            data = line.split("#", 1)[0].strip()
+            # data can be empty ''...
+            if not data:
+                continue
+            # or a pair like 'cFoo "Foo"'...
+            elif len(data.split()) == 2:
+                (pyname, cname) = data.split()
+                constants.append((pyname, cname))
+            # or just a simple token 'Foo'
+            else:
+                constants.append(data)
 
-    out.write("constants = {\n")
-    for const in constants:
-        if isinstance(const, tuple):
-            pyname = const[0]
-        else:
-            pyname = const
-        out.write('    "%s": %s,\n' % (pyname, pyname))
-    out.write("}\n")
+    with open(pxi_path, "w") as out:
+        out.write("cdef extern from *:\n")
+        ### Apparently you can't use | on enum's?!
+        # out.write("    enum MagicNumbers:\n")
+        # for const in constants:
+        #     if isinstance(const, tuple):
+        #         out.write('        %s %s\n' % const)
+        #     else:
+        #         out.write('        %s\n' % (const,))
+        for const in constants:
+            if isinstance(const, tuple):
+                out.write('    unsigned int %s %s\n' % const)
+            else:
+                out.write('    unsigned int %s\n' % (const,))
 
-    if kwargs:
-        out.write("\n\n")
-        for k, v in kwargs.items():
-            out.write('DEF %s = %s\n' % (k, v))
+        out.write("constants = {\n")
+        for const in constants:
+            if isinstance(const, tuple):
+                pyname = const[0]
+            else:
+                pyname = const
+            out.write('    "%s": %s,\n' % (pyname, pyname))
+        out.write("}\n")
+
+        if kwargs:
+            out.write("\n\n")
+            for k, v in kwargs.items():
+                out.write('DEF %s = %s\n' % (k, v))
 
 
 def make_constants(*paths, **kwargs):
@@ -755,15 +756,13 @@ def detect_xorg_setup():
 def build_xpra_conf(build_base):
     #generates an actual config file from the template
     xvfb_command, has_displayfd, _ = detect_xorg_setup()
-    f_in = open("etc/xpra/xpra.conf.in", "r")
-    template  = f_in.read()
-    f_in.close()
+    with open("etc/xpra/xpra.conf.in", "r") as f_in:
+        template  = f_in.read()
     if not os.path.exists(build_base):
         os.makedirs(build_base)
-    f_out = open(build_base + "/xpra.conf", "w")
-    f_out.write(template % {'xvfb_command'  : xvfb_command,
-                            'has_displayfd' : ["no", "yes"][int(has_displayfd)]})
-    f_out.close()
+    with open(build_base + "/xpra.conf", "w") as f_out:
+        f_out.write(template % {'xvfb_command'  : xvfb_command,
+                                'has_displayfd' : ["no", "yes"][int(has_displayfd)]})
 
 
 #*******************************************************************************
