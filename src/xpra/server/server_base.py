@@ -563,24 +563,24 @@ class ServerBase(ServerCore):
             ss.close()
             raise
         self._server_sources[proto] = ss
+        #process ui half in ui thread:
+        send_ui = ui_client and not is_request
+        self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
+    def parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #process screen size (if needed)
         dw, dh = None, None
-        if ui_client and ss.desktop_size and not is_request:
-            try:
-                dw, dh = ss.desktop_size
-                if not ss.screen_sizes:
-                    log.info("client root window size is %sx%s", dw, dh)
-                else:
-                    log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
-                    log_screen_sizes(dw, dh, ss.screen_sizes)
-            except:
-                dw, dh = None, None
-
-        if is_request or not ui_client:
-            root_w, root_h = self.get_root_window_size()
-            key_repeat = (0, 0)
-        else:
+        if send_ui:
+            if ss.desktop_size:
+                try:
+                    dw, dh = ss.desktop_size
+                    if not ss.screen_sizes:
+                        log.info("client root window size is %sx%s", dw, dh)
+                    else:
+                        log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
+                        log_screen_sizes(dw, dh, ss.screen_sizes)
+                except:
+                    dw, dh = None, None
             root_w, root_h = self.set_best_screen_size()
             self.calculate_workarea()
             self.set_desktop_geometry(dw or root_w, dh or root_h)
@@ -615,11 +615,14 @@ class ServerBase(ServerCore):
             #always clear modifiers before setting a new keymap
             ss.make_keymask_match(c.strlistget("modifiers", []))
             self.set_keymap(ss)
+        else:
+            root_w, root_h = self.get_root_window_size()
+            key_repeat = (0, 0)
 
         #send_hello will take care of sending the current and max screen resolutions
         self.send_hello(ss, root_w, root_h, key_repeat, auth_caps)
 
-        if not is_request and ui_client:
+        if send_ui:
             # now we can set the modifiers to match the client
             self.send_windows_and_cursors(ss, share_count>0)
 
