@@ -62,7 +62,7 @@ def get_generic_window_type(window, strip_net=True):
     return wts
 
 
-def make_window_metadata(window, propname, generic_window_types=False, client_supports_png=False, get_transient_for=None, get_window_id=None):
+def make_window_metadata(window, propname, client_supports_png=False, get_transient_for=None, get_window_id=None):
     if propname in ("title", "icon-title"):
         v = window.get_property(propname)
         if v is None:
@@ -102,7 +102,7 @@ def make_window_metadata(window, propname, generic_window_types=False, client_su
             return {"transient-for" : wid}
         return {}
     elif propname == "window-type":
-        wts = get_generic_window_type(window, strip_net=generic_window_types)
+        wts = get_generic_window_type(window)
         return {"window-type" : wts}
     elif propname in ("has-alpha", "override-redirect", "tray", "modal", "fullscreen", "maximized"):
         return {propname : window.get_property(propname)}
@@ -319,10 +319,8 @@ class ServerSource(object):
         self.share = False
         self.desktop_size = None
         self.screen_sizes = []
-        self.raw_window_icons = False
         self.namespace = False
         self.system_tray = False
-        self.generic_window_types = False
         self.notify_startup_complete = False
         self.control_commands = []
         self.supports_transparency = False
@@ -542,9 +540,7 @@ class ServerSource(object):
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
         self.share = c.boolget("share")
         self.named_cursors = c.boolget("named_cursors")
-        self.raw_window_icons = c.boolget("raw_window_icons")
         self.system_tray = c.boolget("system_tray")
-        self.generic_window_types = c.boolget("generic_window_types")
         self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.namespace = c.boolget("namespace")
         self.control_commands = c.strlistget("control_commands")
@@ -867,7 +863,6 @@ class ServerSource(object):
     # xpra window metadata values that depend on that property
     def _make_metadata(self, wid, window, propname):
         return make_window_metadata(window, propname,
-                                        generic_window_types=self.generic_window_types,
                                         client_supports_png=("png" in self.encodings),
                                         get_transient_for=self.get_transient_for,
                                         get_window_id=self.get_window_id)
@@ -1094,7 +1089,7 @@ class ServerSource(object):
         def battr(k, name):
             info[k] = bool(getattr(self, name))
         for prop in ("named_cursors", "server_window_resize", "share", "randr_notify",
-                     "clipboard_notifications", "raw_window_icons", "system_tray", "generic_window_types",
+                     "clipboard_notifications", "system_tray",
                      "notify_startup_complete", "namespace", "lz4", "lzo"):
             battr(prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
@@ -1357,7 +1352,7 @@ class ServerSource(object):
     def window_metadata(self, wid, window, prop):
         if not self.can_send_window(window):
             return
-        if prop=="icon" and self.raw_window_icons:
+        if prop=="icon":
             self.send_window_icon(window, wid)
         else:
             metadata = self._make_metadata(wid, window, prop)
@@ -1385,7 +1380,7 @@ class ServerSource(object):
         if not self.can_send_window(window):
             return
         send_props = list(window.get_property_names())
-        send_raw_icon = self.raw_window_icons and "icon" in send_props
+        send_raw_icon = "icon" in send_props
         if send_raw_icon:
             send_props.remove("icon")
         metadata = {}
