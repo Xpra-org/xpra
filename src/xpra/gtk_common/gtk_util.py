@@ -199,16 +199,10 @@ else:
 
 
 
-def get_gtk_version_info(new_namespace=True):
+def get_gtk_version_info():
     #update props given:
     global GTK_VERSION_INFO
-    if new_namespace:
-        return GTK_VERSION_INFO.copy()
-    info = {}
-    for k,v in GTK_VERSION_INFO.items():
-        k = k.replace(".", "_")
-        info[k] = v
-    return info
+    return GTK_VERSION_INFO.copy()
 
 
 def get_preferred_size(widget):

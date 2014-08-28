@@ -1087,12 +1087,7 @@ class ServerBase(ServerCore):
         return self._clipboard_helper.get_info()
 
     def do_get_info(self, proto, server_sources=None, window_ids=None):
-        if proto in self._server_sources and self._server_sources.get(proto).namespace:
-            #new namespace:
-            k = "server.python.version"
-        else:
-            k = "python_version"
-        info = { k : python_platform.python_version() }
+        info = {"server.python.version" : python_platform.python_version()}
 
         def up(prefix, d, suffix=""):
             updict(info, prefix, d, suffix)

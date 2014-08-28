@@ -303,7 +303,6 @@ class ServerSource(object):
         self.client_proxy = False
         self.auto_refresh_delay = 0
         self.server_window_moveresize = False
-        self.server_window_resize = False
         self.server_resize_counter = False
         self.send_cursors = False
         self.send_bell = False
@@ -319,9 +318,7 @@ class ServerSource(object):
         self.share = False
         self.desktop_size = None
         self.screen_sizes = []
-        self.namespace = False
         self.system_tray = False
-        self.notify_startup_complete = False
         self.control_commands = []
         self.supports_transparency = False
         #what we send back in hello packet:
@@ -529,7 +526,6 @@ class ServerSource(object):
         self.window_raise = c.boolget("window.raise")
         self.pointer_grabs = c.boolget("pointer.grabs")
         self.server_window_moveresize = c.boolget("server-window-move-resize")
-        self.server_window_resize = c.boolget("server-window-resize")
         self.server_resize_counter = c.boolget("window.resize-counter")
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.send_bell = c.boolget("bell")
@@ -541,8 +537,6 @@ class ServerSource(object):
         self.share = c.boolget("share")
         self.named_cursors = c.boolget("named_cursors")
         self.system_tray = c.boolget("system_tray")
-        self.notify_startup_complete = c.boolget("notify-startup-complete")
-        self.namespace = c.boolget("namespace")
         self.control_commands = c.strlistget("control_commands")
         self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
 
@@ -692,8 +686,7 @@ class ServerSource(object):
 
     def startup_complete(self):
         log("startup_complete()")
-        if self.notify_startup_complete:
-            self.send("startup-complete")
+        self.send("startup-complete")
 
     def start_sending_sound(self, codec, volume=1.0):
         soundlog("start_sending_sound(%s)", codec)
@@ -1020,10 +1013,7 @@ class ServerSource(object):
                 pass
             except Exception as e:
                 log.error("failed to setup sound: %s", e)
-            if self.namespace:
-                updict(capabilities, "sound", sound_caps)
-            else:
-                capabilities.update(sound_caps)
+            updict(capabilities, "sound", sound_caps)
             log("sound capabilities: %s", sound_caps)
         if self.wants_encodings or self.send_windows:
             assert self.encoding, "cannot send windows/encodings without an encoding!"
@@ -1088,9 +1078,9 @@ class ServerSource(object):
         info = {}
         def battr(k, name):
             info[k] = bool(getattr(self, name))
-        for prop in ("named_cursors", "server_window_resize", "share", "randr_notify",
+        for prop in ("named_cursors", "share", "randr_notify",
                      "clipboard_notifications", "system_tray",
-                     "notify_startup_complete", "namespace", "lz4", "lzo"):
+                     "lz4", "lzo"):
             battr(prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
                            "send_windows"       : "windows",
@@ -1417,13 +1407,10 @@ class ServerSource(object):
             return
         if self.server_window_moveresize:
             packet = ("window-move-resize", wid, x, y, ww, wh, resize_counter)
-        elif self.server_window_resize:
+        else:
             packet = ["window-resized", wid, ww, wh]
             if self.server_resize_counter:
                 packet.append(resize_counter)
-        else:
-            #not supported!
-            return
         self.send(*packet)
 
     def cancel_damage(self, wid, window):
