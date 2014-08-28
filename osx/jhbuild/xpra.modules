@@ -44,9 +44,9 @@
   </autotools>
 
   <autotools id="orc" autogenargs="" autogen-sh="configure">
-    <branch module="/data/src/orc/orc-0.4.21.tar.xz"
-			version="0.4.21"
-                        hash="md5:6c17d4570f4b54ac18ee9fd7760dc915"
+    <branch module="/data/src/orc/orc-0.4.22.tar.xz"
+			version="0.4.22"
+                        hash="md5:eecd4788688a95aae97adf1125585cbf"
             repo="gstreamer.freedesktop.org"/>
   </autotools>
 
@@ -201,14 +201,27 @@
             repo="gstreamer.freedesktop.org"/>
   </autotools>
 
-  <autotools id="gtkglext" autogenargs="--enable-gtk-doc" autogen-sh="configure">
-    <branch module="/trac/raw-attachment/ticket/533/gtkglext-8c13cc4-20110529.tar.bz2"
-			version="8c13cc4-20110529"
+  <!-- HACK: patch after autoreconf is run -->
+  <autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s">
+    <branch module="/trac/raw-attachment/ticket/533/gtkglext-1.2.0.tar.bz2"
+			version="1.2.0"
                         checkoutdir="gtkglext-1.2.0"
             repo="xpra.org">
-    <patch file="xpra-gtkglext.patch" />
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra-gtkglext.patch" strip="1"/>
     </branch>
+  </autotools>
 
+  <autotools id="pygtkglext" autogenargs="" autogen-sh="autogen.sh">
+    <branch module="/src/pygtkglext-896582f-20100112.tar.bz2"
+			version="896582f-20100112"
+                        hash="md5:e831e0b84ece7180985b11032bc3706d"
+                        checkoutdir="pygtkglext"
+            repo="xpra.org">
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/pygtkglext-osx-v4.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="gtkglext"/>
+    </dependencies>
   </autotools>
 
   <autotools id="gmplib" autogenargs="--build=i386-darwin" autogen-sh="configure">
@@ -264,9 +277,9 @@
 
   <distutils id="python-pillow">
      <branch repo="pypi.python.org"
-	     module="/packages/source/P/Pillow/Pillow-2.5.1.zip"
-             hash="md5:cf42c695fab68116af2c8ef816fca0d9"
-	     version="2.5.1"/>
+	     module="/packages/source/P/Pillow/Pillow-2.5.3.zip"
+             hash="md5:9879437c28ee0ad6ea04b93d0be2c2d7"
+	     version="2.5.3"/>
   </distutils>
 
   <distutils id="python-py2app">
@@ -444,7 +457,8 @@
       <dep package="python-pyobjc-core"/>
       <dep package="python-pyobjc-framework-cocoa"/>
       <dep package="python-pyobjc-framework-quartz"/>
-      <!--dep package="gtkglext"/-->
+      <dep package="gtkglext"/>
+      <dep package="pygtkglext"/>
     </dependencies>
   </metamodule>
 
