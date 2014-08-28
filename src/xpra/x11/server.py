@@ -495,7 +495,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def get_cursor_data(self):
         #must be called from the UI thread!
-        cursor_data = X11Keyboard.get_cursor_image()
+        cursor_data = trap.call(X11Keyboard.get_cursor_image)
         if cursor_data is None:
             cursorlog("get_cursor_data() failed to get cursor image")
             return None, []
