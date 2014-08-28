@@ -980,7 +980,6 @@ class ServerBase(ServerCore):
                     source.send_client_command(*client_command)
                 else:
                     commandlog.warn("client %s does not support client command %s", source, client_command[0])
-            csource.send_client_command(*client_command)
             return 0, "client control command '%s' forwarded to %s clients" % (client_command[0], count)
         else:
             return ServerCore.do_handle_command_request(self, command, args)
