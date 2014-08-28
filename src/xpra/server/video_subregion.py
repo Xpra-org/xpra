@@ -66,9 +66,12 @@ class VideoSubregion(object):
                 "time"      : self.time,
                 "non_waited": self.non_waited,
                 "non_max_wait" :  self.non_max_wait}
-        rr = self.refresh_regions
+        rr = list(self.refresh_regions)
         if rr:
-            info["refresh_regions"] = self.refresh_regions
+            i = 0
+            for r in rr:
+                info["refresh_region[%s]" % i] = (r.x, r.y, r.width, r.height)
+                i += 1
         return info
 
 
