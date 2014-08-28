@@ -302,13 +302,10 @@ class ServerSource(object):
         self.client_release = None
         self.client_proxy = False
         self.auto_refresh_delay = 0
-        self.server_window_moveresize = False
-        self.server_resize_counter = False
         self.send_cursors = False
         self.send_bell = False
         self.send_notifications = False
         self.send_windows = True
-        self.window_raise = False
         self.pointer_grabs = False
         self.randr_notify = False
         self.named_cursors = False
@@ -523,10 +520,7 @@ class ServerSource(object):
         self.lz4 = c.boolget("lz4", False) and compression.use_lz4
         self.lzo = c.boolget("lzo", False) and compression.use_lzo
         self.send_windows = self.ui_client and c.boolget("windows", True)
-        self.window_raise = c.boolget("window.raise")
         self.pointer_grabs = c.boolget("pointer.grabs")
-        self.server_window_moveresize = c.boolget("server-window-move-resize")
-        self.server_resize_counter = c.boolget("window.resize-counter")
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.send_bell = c.boolget("bell")
         self.send_notifications = c.boolget("notifications")
@@ -1405,13 +1399,7 @@ class ServerSource(object):
         """
         if not self.can_send_window(window):
             return
-        if self.server_window_moveresize:
-            packet = ("window-move-resize", wid, x, y, ww, wh, resize_counter)
-        else:
-            packet = ["window-resized", wid, ww, wh]
-            if self.server_resize_counter:
-                packet.append(resize_counter)
-        self.send(*packet)
+        self.send("window-move-resize", wid, x, y, ww, wh, resize_counter)
 
     def cancel_damage(self, wid, window):
         """
@@ -1430,8 +1418,7 @@ class ServerSource(object):
             ws.unmap()
 
     def raise_window(self, wid, window):
-        if self.window_raise:
-            self.send("raise-window", wid)
+        self.send("raise-window", wid)
 
     def remove_window(self, wid, window):
         """ The given window is gone, ensure we free all the related resources """
