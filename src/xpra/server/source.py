@@ -316,6 +316,7 @@ class ServerSource(object):
         self.desktop_size = None
         self.screen_sizes = []
         self.system_tray = False
+        self.notify_startup_complete = False
         self.control_commands = []
         self.supports_transparency = False
         #what we send back in hello packet:
@@ -531,6 +532,7 @@ class ServerSource(object):
         self.share = c.boolget("share")
         self.named_cursors = c.boolget("named_cursors")
         self.system_tray = c.boolget("system_tray")
+        self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.control_commands = c.strlistget("control_commands")
         self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
 
@@ -680,7 +682,8 @@ class ServerSource(object):
 
     def startup_complete(self):
         log("startup_complete()")
-        self.send("startup-complete")
+        if self.notify_startup_complete:
+            self.send("startup-complete")
 
     def start_sending_sound(self, codec, volume=1.0):
         soundlog("start_sending_sound(%s)", codec)
