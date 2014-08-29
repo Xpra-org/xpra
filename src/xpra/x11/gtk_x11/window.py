@@ -1120,6 +1120,7 @@ class WindowModel(BaseWindowModel):
             if (x, y) != (0, 0):
                 log("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
+                self.client_window.move(0, 0)
                 cox, coy, cow, coh = x, y, w, h
             else:
                 #just resize:
@@ -1127,19 +1128,20 @@ class WindowModel(BaseWindowModel):
                 self.corral_window.resize(w, h)
                 cow, coh = w, h
             modded = True
-        #these two should be using geometry rather than duplicating it?
-        if self.get_property("actual-size")!=(w, h):
-            self._internal_set_property("actual-size", (w, h))
-            modded = True
-        if self.get_property("user-friendly-size")!=(wvis, hvis):
-            self._internal_set_property("user-friendly-size", (wvis, hvis))
-            modded = True
         #just position change:
         elif (x, y) != (0, 0):
             log("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
             self.corral_window.move(x, y)
             self.client_window.move(0, 0)
             cox, coy = x, y
+            modded = True
+
+        #these two should be using geometry rather than duplicating it?
+        if self.get_property("actual-size")!=(w, h):
+            self._internal_set_property("actual-size", (w, h))
+            modded = True
+        if self.get_property("user-friendly-size")!=(wvis, hvis):
+            self._internal_set_property("user-friendly-size", (wvis, hvis))
             modded = True
 
         if modded:
