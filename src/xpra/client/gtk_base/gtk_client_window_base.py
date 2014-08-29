@@ -139,7 +139,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #this will create the backing:
         ClientWindowBase.setup_window(self)
 
-        self.move(*self._pos)
+        #honour the initial position if the flag is set
+        #(or just if non zero, for older servers)
+        if self._pos!=(0, 0) or self._set_initial_position:
+            self.move(*self._pos)
         self.set_default_size(*self._size)
 
     def show(self):

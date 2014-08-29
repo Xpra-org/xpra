@@ -35,6 +35,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._pos = (x, y)
         self._size = (w, h)
         self._client_properties = client_properties
+        self._set_initial_position = False
         self.border = border
         self.button_state = {}
 
@@ -147,6 +148,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "size-constraints" in metadata:
             size_metadata = typedict(metadata.dictget("size-constraints"))
+            self._set_initial_position = size_metadata.get("set-initial-position")
             hints = {}
             for (a, h1, h2) in [
                 ("maximum-size", "max_width", "max_height"),

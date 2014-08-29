@@ -42,6 +42,8 @@ if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
 
+USPosition      = constants["USPosition"]
+PPosition       = constants["PPosition"]
 PMaxSize        = constants["PMaxSize"]
 PMinSize        = constants["PMinSize"]
 PBaseSize       = constants["PBaseSize"]
@@ -114,6 +116,7 @@ class WMSizeHints(object):
             self.win_gravity = win_gravity
         else:
             self.win_gravity = -1
+        self.set_initial_position = bool((flags & USPosition) or (flags & PPosition))
 
     def to_dict(self, include_none=False):
         d = {}
@@ -124,6 +127,7 @@ class WMSizeHints(object):
             ("resize_inc", "increment"),
             ("min_aspect_ratio", "minimum-aspect-ratio"),
             ("max_aspect_ratio", "maximum-aspect-ratio"),
+            ("set_initial_position", "set-initial-position")
             ]:
             v = getattr(self, attr)
             if v is not None or include_none:
@@ -139,7 +143,9 @@ class WMSizeHints(object):
                                     "max_aspect": self.max_aspect,
                                     "min_aspect_ratio"  : self.min_aspect_ratio,
                                     "max_aspect_ratio"  : self.max_aspect_ratio,
-                                    "win_gravity"       : self.win_gravity}
+                                    "win_gravity"       : self.win_gravity,
+                                    "set_initial_position"  : self.set_initial_position}
+
 
 class WMHints(object):
     def __init__(self, disp, data):
