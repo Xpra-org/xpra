@@ -126,7 +126,6 @@ bencode_ENABLED         = True
 cython_bencode_ENABLED  = True
 rencode_ENABLED         = True
 cymaths_ENABLED         = True
-cyxor_ENABLED           = True
 clipboard_ENABLED       = not PYTHON3
 Xdummy_ENABLED          = None          #None means auto-detect
 Xdummy_wrapper_ENABLED  = None          #None means auto-detect
@@ -183,7 +182,7 @@ SWITCHES = ["enc_x264", "x264_static",
             "clipboard",
             "server", "client", "x11", "gtk_x11",
             "gtk2", "gtk3", "qt4", "html5",
-            "sound", "cyxor", "cymaths", "opengl", "argb",
+            "sound", "cymaths", "opengl", "argb",
             "warn", "strict", "shadow", "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "bundle_tests"]
 HELP = "-h" in sys.argv or "--help" in sys.argv
@@ -1351,7 +1350,7 @@ if WIN32:
                     #this is a mac osx thing:
                     "ctypes.macholib")
 
-    if not cyxor_ENABLED or opengl_ENABLED:
+    if opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
         external_includes.append("numpy")
     else:
@@ -1626,10 +1625,9 @@ if clipboard_ENABLED:
                 **pkgconfig(*PYGTK_PACKAGES)
                 ))
 
-if cyxor_ENABLED:
-    cython_add(Extension("xpra.codecs.xor.cyxor",
-                ["xpra/codecs/xor/cyxor.pyx", buffers_c],
-                **pkgconfig()))
+cython_add(Extension("xpra.codecs.xor.cyxor",
+            ["xpra/codecs/xor/cyxor.pyx", buffers_c],
+            **pkgconfig()))
 
 if cymaths_ENABLED:
     cython_add(Extension("xpra.server.stats.cymaths",
