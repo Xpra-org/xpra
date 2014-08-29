@@ -105,10 +105,14 @@ def make_window_metadata(window, propname, client_supports_png=False, get_transi
         wts = get_generic_window_type(window)
         return {"window-type" : wts}
     elif propname in ("has-alpha", "override-redirect", "tray", "modal", "fullscreen", "maximized"):
-        return {propname : window.get_property(propname)}
+        v = window.get_property(propname)
+        if v is False:
+            #save space: all these properties are assumed false if unspecified
+            return {}
+        return {propname : v}
     elif propname in ("role", "opacity"):
         v = window.get_property(propname)
-        if v is None:
+        if v is None or v=="":
             return {}
         return {propname : v}
     elif propname == "xid":
