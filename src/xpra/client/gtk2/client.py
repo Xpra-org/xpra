@@ -22,7 +22,7 @@ from xpra.platform.ui_thread_watcher import get_UI_watcher
 UI_watcher = get_UI_watcher(gobject.timeout_add)
 
 from xpra.gtk_common.gtk_util import gtk_main
-from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
+from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.client.window_border import WindowBorder
@@ -304,8 +304,7 @@ class XpraClient(GTKXpraClient):
 
     def make_hello(self):
         capabilities = GTKXpraClient.make_hello(self)
-        if xor_str is not None:
-            capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()]
+        capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()]
         capabilities["pointer.grabs"] = True
         return capabilities
 

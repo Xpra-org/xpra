@@ -25,10 +25,6 @@ from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import system_bell
-try:
-    from xpra.codecs.xor import xor_str        #@UnresolvedImport
-except:
-    xor_str = None
 
 
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):

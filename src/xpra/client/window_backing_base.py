@@ -16,10 +16,8 @@ from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr, builtins
 _memoryview = builtins.__dict__.get("memoryview")
-try:
-    from xpra.codecs.xor import xor_str
-except:
-    xor_str = None
+from xpra.codecs.xor.cyxor import xor_str
+
 #for alpha unpremultiply utility function
 #(subclasses should ensure argb is present before calling it!)
 try:
@@ -192,8 +190,6 @@ class WindowBackingBase(object):
         if delta>=0:
             if not self._last_pixmap_data:
                 raise Exception("delta region references pixmap data we do not have!")
-            if xor_str is None:
-                raise Exception("received a delta region but we do not support delta encoding!")
             lwidth, lheight, store, ldata = self._last_pixmap_data
             assert width==lwidth and height==lheight and delta==store
             rgb_data = xor_str(img_data, ldata)
