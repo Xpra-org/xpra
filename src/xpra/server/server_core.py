@@ -461,9 +461,7 @@ class ServerCore(object):
                 log.error("error setting up connection for %s: %s", proto, e)
                 self.disconnect_client(proto, SERVER_ERROR, str(e))
             except Exception as e:
-                #log full stack trace at debug level,
-                #log exception as error
-                #but don't disclose internal details to the client
+                #log exception but don't disclose internal details to the client
                 log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
                 self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
 

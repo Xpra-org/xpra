@@ -19,7 +19,7 @@ commandlog = Logger("command")
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
 from xpra.os_util import thread, get_hex_uuid
-from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE
+from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE
 from xpra.scripts.config import python_platform
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, codec_versions, has_codec, get_codec
 from xpra.codecs.codec_constants import get_PIL_encodings
@@ -568,6 +568,17 @@ class ServerBase(ServerCore):
         self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
     def parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
+        #adds try:except around parse hello ui code:
+        try:
+            self.do_parse_hello_ui(ss, c, auth_caps, send_ui, share_count)
+        except Exception as e:
+            #log exception but don't disclose internal details to the client
+            p = ss.protocol
+            log.error("server error processing new connection from %s: %s", p or ss, e, exc_info=True)
+            if p:
+                self.disconnect_client(p, SERVER_ERROR, "error accepting new connection")
+
+    def do_parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #process screen size (if needed)
         dw, dh = None, None
         if send_ui:
