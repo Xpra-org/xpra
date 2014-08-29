@@ -1121,15 +1121,13 @@ class ServerBase(ServerCore):
             up("client", ss.get_info())
             info.update(ss.get_window_info(window_ids))
         elif n>1:
-            i = 0
-            for ss in server_sources:
+            for i, ss in enumerate(server_sources):
                 up("client[%i]" % i, ss.get_info())
                 wi = ss.get_window_info(window_ids)
                 up("client[%i]" % i, wi)
                 #this means that the last source overrides previous ones
                 #(bad decision was made on the namespace for this..)
                 info.update(wi)
-                i += 1
         return info
 
     def add_windows_info(self, info, window_ids):

@@ -261,9 +261,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 #log position if not (0, 0)
                 info.append("at %sx%s" % (work_x, work_y))
         log.info("  "+" ".join(info))
-        i = 0
-        for m in monitors:
-            i += 1
+        for i, m in enumerate(monitors, start=1):
             if len(m)<7:
                 log.info("    %s", m)
                 continue
@@ -284,8 +282,7 @@ def get_screen_info(screen_sizes):
     info = {
             "screens" : len(screen_sizes)
             }
-    i = 0
-    for x in screen_sizes:
+    for i, x in enumerate(screen_sizes):
         if type(x) not in (tuple, list):
             #legacy clients:
             info["screen[%s]" % i] = str(x)
@@ -297,8 +294,7 @@ def get_screen_info(screen_sizes):
             info["screen[%s].size_mm" % i] = x[3], x[4]
         if len(x)>=6:
             monitors = x[5]
-            j = 0
-            for monitor in monitors:
+            for j, monitor in enumerate(monitors):
                 if len(monitor)>=7:
                     for k,v in {
                                 "name"      : monitor[0],
@@ -306,10 +302,8 @@ def get_screen_info(screen_sizes):
                                 "size_mm"   : monitor[5:7],
                                 }.items():
                         info["screen[%s].monitor[%s].%s" % (i, j, k)] = v
-                j += 1
         if len(x)>=10:
             info["screen[%s].workarea" % i] = x[6:10]
-        i += 1
     return info
 
 

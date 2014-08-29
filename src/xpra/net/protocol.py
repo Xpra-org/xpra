@@ -331,10 +331,8 @@ class Protocol(object):
         if packet is None:
             return err("None value")
         if type(packet)==list:
-            i = 0
-            for x in packet:
+            for i, x in enumerate(packet):
                 self.do_verify_packet(new_tree("[%s]" % i), x)
-                i += 1
         elif type(packet)==dict:
             for k,v in packet.items():
                 self.do_verify_packet(new_tree("key for value='%s'" % str(v)), k)

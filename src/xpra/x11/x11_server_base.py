@@ -407,15 +407,13 @@ class X11ServerBase(GTKServerBase):
                 "%s" % len(monitors)]
         #the new config (numeric values only)
         config = [len(monitors)]
-        i = 0
-        for m in monitors:
+        for i, m in enumerate(monitors):
             if len(m)<7:
                 return delfile("cannot save fake xinerama settings: incomplete monitor data for monitor: %s" % m)
             plug_name, x, y, width, height, wmm, hmm = m[:8]
             data.append("# %s (%smm x %smm)" % (prettify_plug_name(plug_name, "monitor %s" % i), wmm, hmm))
             data.append("%s %s %s %s" % (x, y, width, height))
             config.append((x, y, width, height))
-            i += 1
         data.append("")
         contents = "\n".join(data)
         for filename in xinerama_files:

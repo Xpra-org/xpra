@@ -148,14 +148,12 @@ class ChildReaper(object):
         info = {"children"          : len(d),
                 "children.dead"     : len(self._dead_pids),
                 "children.ignored"  : len(self._ignored_pids)}
-        i = 0
-        for pid in sorted(d.keys()):
+        for i, pid in enumerate(sorted(d.keys())):
             proc = d[pid]
             info["child[%i].live" % i]  = pid not in self._dead_pids
             info["child[%i].pid" % i]   = pid
             info["child[%i].command" % i]   = proc.command
             info["child[%i].ignored" % i] = pid in self._ignored_pids
-            i += 1
         return info
 
 

@@ -239,12 +239,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         else:
             info["cursor.is_default"] = bool(self.default_cursor_data and len(self.default_cursor_data)>=8 and len(cd)>=8 and cd[7]==cd[7])
             #all but pixels:
-            i = 0
-            for x in ("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name"):
+            for i, x in enumerate(("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name")):
                 if x:
                     v = cd[i] or ""
                     info["cursor." + x] = v
-                i += 1
         return info
 
     def get_ui_info(self, proto, wids, *args):

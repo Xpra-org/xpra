@@ -58,17 +58,12 @@ def get_thread_info(proto=None):
             "count"        : threading.active_count() - len(info_threads),
             "info.count"   : len(info_threads)
             }
-    i = 0
     #threads used by the "info" client:
-    for t in info_threads:
+    for i, t in enumerate(info_threads):
         info["info[%s]" % i] = t.getName()
-        i += 1
-    i = 0
     #all non-info threads:
-    for t in threading.enumerate():
-        if t not in info_threads:
-            info[str(i)] = t.getName()
-            i += 1
+    for i, t in enumerate((x for x in threading.enumerate() if x not in info_threads)):
+        info[str(i)] = t.getName()
     #platform specific bits:
     try:
         from xpra.platform.info import get_sys_info

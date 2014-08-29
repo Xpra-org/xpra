@@ -148,8 +148,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
     encodings_submenu.index_to_encoding = {}
     encodings_submenu.encoding_to_index = {}
     NAME_TO_ENCODING = {}
-    i = 0
-    for encoding in encodings:
+    for i, encoding in enumerate(encodings):
         name = ENCODINGS_TO_NAME.get(encoding, encoding)
         descr = ENCODINGS_HELP.get(encoding)
         NAME_TO_ENCODING[name] = encoding
@@ -173,7 +172,6 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
         encodings_submenu.append(encoding_item)
         encodings_submenu.index_to_encoding[i] = encoding
         encodings_submenu.encoding_to_index[encoding] = i
-        i += 1
     encodings_submenu.show_all()
 
 

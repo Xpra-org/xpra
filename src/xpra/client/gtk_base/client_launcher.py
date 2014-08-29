@@ -82,12 +82,10 @@ white   = gdk.color_parse("white")
 
 
 def get_active_item_index(optionmenu):
-    i = 0
     menu = optionmenu.get_menu()
-    for x in menu.get_children():
+    for i, x in enumerate(menu.get_children()):
         if hasattr(x, "get_active") and x.get_active():
             return i
-        i += 1
     return -1
 
 def set_history_from_active(optionmenu):

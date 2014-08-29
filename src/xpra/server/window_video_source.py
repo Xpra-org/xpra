@@ -160,10 +160,8 @@ class WindowVideoSource(WindowSource):
         up("encoding.pipeline_param", self.get_pipeline_info())
         lps = self.last_pipeline_scores
         if lps:
-            i = 0
-            for lp in lps:
+            for i, lp in enumerate(lps):
                 up("encoding.pipeline_option[%s]" % i, self.get_pipeline_score_info(*lp))
-                i += 1
         return info
 
     def get_pipeline_info(self):
