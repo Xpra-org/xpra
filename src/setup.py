@@ -124,7 +124,6 @@ html5_ENABLED = not WIN32 and not OSX
 bencode_ENABLED         = True
 cython_bencode_ENABLED  = True
 rencode_ENABLED         = True
-cymaths_ENABLED         = True
 clipboard_ENABLED       = not PYTHON3
 Xdummy_ENABLED          = None          #None means auto-detect
 Xdummy_wrapper_ENABLED  = None          #None means auto-detect
@@ -181,7 +180,7 @@ SWITCHES = ["enc_x264", "x264_static",
             "clipboard",
             "server", "client", "x11", "gtk_x11",
             "gtk2", "gtk3", "qt4", "html5",
-            "sound", "cymaths", "opengl",
+            "sound", "opengl",
             "warn", "strict", "shadow", "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "bundle_tests"]
 HELP = "-h" in sys.argv or "--help" in sys.argv
@@ -233,9 +232,6 @@ if "clean" not in sys.argv:
     if shadow_ENABLED and not server_ENABLED:
         print("Warning: shadow requires server to be enabled!")
         shadow_ENABLED = False
-    if cymaths_ENABLED and not server_ENABLED:
-        print("Warning: cymaths requires server to be enabled!")
-        cymaths_ENABLED = False
     if x11_ENABLED and WIN32:
         print("Warning: enabling x11 on MS Windows is unlikely to work!")
     if gtk_x11_ENABLED and not x11_ENABLED:
@@ -1624,7 +1620,8 @@ cython_add(Extension("xpra.codecs.xor.cyxor",
             ["xpra/codecs/xor/cyxor.pyx", buffers_c],
             **pkgconfig()))
 
-if cymaths_ENABLED:
+if server_ENABLED:
+    add_modules("xpra.server.stats")
     cython_add(Extension("xpra.server.stats.cymaths",
                 ["xpra/server/stats/cymaths.pyx"],
                 **pkgconfig()))
