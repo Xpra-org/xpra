@@ -20,7 +20,7 @@ log = Logger("paint")
 # - on MS Windows: not supported
 # - on OSX: only with gtk3
 DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and (not sys.platform.startswith("darwin") or is_gtk3())
-GTK_ALPHA_SUPPORTED = (unpremultiply_argb is not None) and os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
+GTK_ALPHA_SUPPORTED = os.environ.get("XPRA_ALPHA", DEFAULT_HAS_ALPHA) in (True, "1")
 
 
 """

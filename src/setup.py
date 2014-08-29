@@ -115,7 +115,6 @@ client_ENABLED = True
 
 x11_ENABLED = not WIN32 and not OSX
 gtk_x11_ENABLED = not WIN32 and not OSX
-argb_ENABLED = True
 gtk2_ENABLED = client_ENABLED and not PYTHON3
 gtk3_ENABLED = PYTHON3
 qt4_ENABLED = False
@@ -182,7 +181,7 @@ SWITCHES = ["enc_x264", "x264_static",
             "clipboard",
             "server", "client", "x11", "gtk_x11",
             "gtk2", "gtk3", "qt4", "html5",
-            "sound", "cymaths", "opengl", "argb",
+            "sound", "cymaths", "opengl",
             "warn", "strict", "shadow", "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "bundle_tests"]
 HELP = "-h" in sys.argv or "--help" in sys.argv
@@ -244,9 +243,6 @@ if "clean" not in sys.argv:
         exit(1)
     if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED and not qt4_ENABLED:
         print("Warning: client is enabled but none of the client toolkits are!?")
-    if not argb_ENABLED and (x11_ENABLED or OSX):
-        print("Error: argb is required for x11 and osx builds!")
-        exit(1)
     if not client_ENABLED and not server_ENABLED:
         print("Error: you must build at least the client or server!")
         exit(1)
@@ -1594,10 +1590,9 @@ if gtk_x11_ENABLED:
                     ))
 
 
-toggle_packages(argb_ENABLED, "xpra.codecs.argb")
-if argb_ENABLED:
-    cython_add(Extension("xpra.codecs.argb.argb",
-                ["xpra/codecs/argb/argb.pyx", buffers_c]))
+add_packages("xpra.codecs.argb")
+cython_add(Extension("xpra.codecs.argb.argb",
+            ["xpra/codecs/argb/argb.pyx", buffers_c]))
 
 
 if bundle_tests_ENABLED:

@@ -11,11 +11,7 @@ from xpra.log import Logger
 log = Logger("window", "encoding")
 
 from xpra.net import compression
-try:
-    from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
-except Exception as e:
-    log("cannot load argb module: %s", e)
-    bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba = (None,)*4
+from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
 from xpra.os_util import StringIOClass
 from xpra.codecs.loader import get_codec, get_codec_version
 from xpra.os_util import builtins
@@ -261,10 +257,6 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
 def argb_swap(image, rgb_formats, supports_transparency):
     """ use the argb codec to do the RGB byte swapping """
     pixel_format = image.get_pixel_format()
-    if None in (bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba):
-        warn_encoding_once("argb-module-missing", "no argb module, cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
-        return False
-
     #try to fallback to argb module
     #if we have one of the target pixel formats:
     pixels = image.get_pixels()

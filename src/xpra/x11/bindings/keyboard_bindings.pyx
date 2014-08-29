@@ -10,11 +10,7 @@ import time
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
-try:
-    from xpra.codecs.argb.argb import make_byte_buffer, byte_buffer_to_buffer
-except:
-    make_byte_buffer = None
-    byte_buffer_to_buffer = None
+from xpra.codecs.argb.argb import make_byte_buffer, byte_buffer_to_buffer
 
 
 ###################################
@@ -727,9 +723,6 @@ cdef class X11KeyboardBindings(X11CoreBindings):
 
 
     def get_cursor_image(self):
-        if make_byte_buffer is None or byte_buffer_to_buffer is None:
-            #no argb module, no cursors!
-            return None
         cdef XFixesCursorImage* image = NULL
         cdef int n, i = 0
         cdef unsigned char r, g, b, a

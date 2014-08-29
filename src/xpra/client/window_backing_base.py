@@ -17,14 +17,7 @@ from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr, builtins
 _memoryview = builtins.__dict__.get("memoryview")
 from xpra.codecs.xor.cyxor import xor_str
-
-#for alpha unpremultiply utility function
-#(subclasses should ensure argb is present before calling it!)
-try:
-    from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
-except:
-    log.warn("argb module is missing, cannot support alpha channels")
-    unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer  = None, None, None
+from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
 
 PIL = get_codec("PIL")
 
@@ -161,10 +154,8 @@ class WindowBackingBase(object):
     def unpremultiply(self, img_data):
         if type(img_data)==str:
             #cannot do in-place:
-            assert unpremultiply_argb is not None, "missing argb.unpremultiply_argb"
             return byte_buffer_to_buffer(unpremultiply_argb(img_data))
         #assume this is a writeable buffer (ie: ctypes from mmap):
-        assert unpremultiply_argb_in_place is not None, "missing argb.unpremultiply_argb_in_place"
         unpremultiply_argb_in_place(img_data)
         return img_data
 

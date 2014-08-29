@@ -20,6 +20,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo,
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
+from xpra.codecs.argb.argb import unpremultiply_argb, byte_buffer_to_buffer   #@UnresolvedImport
 gtk     = import_gtk()
 gdk     = import_gdk()
 cairo   = import_cairo()
@@ -48,12 +49,6 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
             log.info("failed to setup workspace hooks: %s", e)
     except ImportError:
         pass
-
-#optional module providing faster handling of premultiplied argb:
-try:
-    from xpra.codecs.argb.argb import unpremultiply_argb, byte_buffer_to_buffer   #@UnresolvedImport
-except:
-    unpremultiply_argb, byte_buffer_to_buffer  = None, None
 
 
 #window types we map to POPUP rather than TOPLEVEL
@@ -509,12 +504,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def update_icon(self, width, height, coding, data):
         log("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
         coding = bytestostr(coding)
-        if coding == "premult_argb32":
-            if unpremultiply_argb is None:
-                #we could use PIL here with mode 'RGBa'
-                log.warn("cannot process premult_argb32 icon without the argb module")
-                return
-            #we usually cannot do in-place and this is not performance critical
+        if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
             data = byte_buffer_to_buffer(unpremultiply_argb(data))
             pixbuf = pixbuf_new_from_data(data, COLORSPACE_RGB, True, 8, width, height, width*4)
         else:
