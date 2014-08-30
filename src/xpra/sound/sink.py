@@ -112,25 +112,11 @@ class SoundSink(SoundPipeline):
     def queue_underrun(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
         log("sound sink queue underrun: level=%s", ltime)
-        if self.queue_state != "underrun":
-            self.queue_state = "underrun"
-            mtt = self.queue.get_property("min-threshold-time")
-            if mtt==0:
-                #raise mtt to ensure the queue is not drained:
-                self.queue.set_property("min-threshold-time", QUEUE_TIME/2)
-                #reset threshold after 2 seconds:
-                def reset_mtt(*args):
-                    self.queue.set_property("min-threshold-time", 0)
-                gobject.timeout_add(2*1000, reset_mtt)
+        self.queue_state = "underrun"
 
     def queue_overrun(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
         self.queue_state = "overrun"
-        mtt = self.queue.get_property("min-threshold-time")
-        if mtt>0:
-            log("overrun following underrun... clearing min-threshold-time and ignoring it")
-            self.queue.set_property("min-threshold-time", 0)
-            return
         #no overruns for the first 2 seconds:
         elapsed = time.time()-self.start_time
         if elapsed<2.0 or ltime<(QUEUE_TIME/MS_TO_NS/2*75/100):
