@@ -17,7 +17,7 @@ popd
 cp -apr src ${DIR}
 pushd "${DIR}"
 rm -fr "dist" "build" "install" "MANIFEST"
-./setup.py clean
+python ./setup.py clean
 popd
 find ${DIR} -name ".svn" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"
 find ${DIR} -name ".pyc" -exec rm -fr {} \;
