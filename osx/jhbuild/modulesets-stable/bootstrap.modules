@@ -171,9 +171,6 @@
 	    hash="sha256:5d934d012ee08edd1585544792efa80da271652587ba5b843d2cea8e8b80ee3e"/>
     <dependencies>
       <dep package="gtk-osx-docbook"/>
-      <dep package="python"/>
-      <dep package="libxml2"/>
-      <dep package="itstool"/>
     </dependencies>
   </autotools>
 
@@ -208,6 +205,9 @@
       <dep package="perl-xml-parser"/>
       <dep package="perl-xml-simple"/>
       <dep package="gtk-osx-docbook"/>
+      <dep package="python"/>
+      <dep package="libxml2"/>
+      <dep package="itstool"/>
       <dep package="gtk-doc"/>
       <dep package="gnome-common"/>
       <dep package="intltool"/>
