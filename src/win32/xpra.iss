@@ -16,6 +16,7 @@ VersionInfoDescription=screen for X
 WizardImageFile=win32\xpra-logo.bmp
 WizardSmallImageFile=win32\xpra.bmp
 LicenseFile=COPYING
+UninstallDisplayIcon={app}\Xpra-Launcher.exe
 
 [Dirs]
 Name: {app}; Flags: uninsalwaysuninstall;
