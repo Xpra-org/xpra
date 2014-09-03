@@ -11,6 +11,7 @@ Summary:        Python wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
 Source:        	http://pypi.python.org/pypi/cuda/%{version}/pycuda-%{version}.tar.gz
+Patch0:			old-pytools-compat.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 Requires:       python-decorator
@@ -30,6 +31,7 @@ PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 
 %prep
 %setup -q -n pycuda-%{version}
+%patch0 -p0
 
 %build
 ./configure.py \

@@ -1,0 +1,17 @@
+--- pycuda/compiler.py	2014-09-03 12:26:41.875376796 +0700
++++ pycuda/compiler.py	2014-09-03 12:28:14.255945862 +0700
+@@ -4,7 +4,13 @@
+ from tempfile import mkstemp
+ from os import unlink
+ 
+-from pytools.prefork import call_capture_output
++try:
++    from pytools.prefork import call_capture_output
++except:
++    from pytools.prefork import call_capture_stdout
++    def call_capture_output(*args):
++        stdout = call_capture_stdout(*args)
++        return 0, stdout, ""
+ 
+ 
+ @memoize
