@@ -3,7 +3,7 @@
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %endif
 
-Name:           python-cuda
+Name:           python-pycuda
 Version:        2014.1
 Release:        1
 Url:            http://mathema.tician.de/software/pycuda
