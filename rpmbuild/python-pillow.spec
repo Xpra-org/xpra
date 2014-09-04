@@ -3,6 +3,7 @@
 
 %global name3 python3-pillow
 
+%global lcms lcms
 # none of these RHEL versions have python 3
 %if 0%{?el6}
 	%global with_python3 0
@@ -13,10 +14,15 @@
 	%global with_python3 0
 	%global with_filter 1
 	%global with_webp 1
+	%global lcms lcms2
 %endif
 %if 0%{?fedora}
 	%global with_python3 1
-	%global with_filter 1
+	%if 0%{?fedora} > 19
+		%global with_filter 1
+	%else
+		%global with_filter 0
+	%endif
 	%global with_webp 1
 %endif
 
@@ -54,7 +60,7 @@ BuildRequires:  tk-devel
 BuildRequires:  libjpeg-devel
 BuildRequires:  zlib-devel
 BuildRequires:  freetype-devel
-BuildRequires:  lcms-devel
+BuildRequires:  %{lcms}-devel
 BuildRequires:  sane-backends-devel
 %if %{with_webp} > 0
 BuildRequires:  libwebp-devel
