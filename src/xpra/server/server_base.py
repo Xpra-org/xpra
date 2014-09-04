@@ -306,7 +306,7 @@ class ServerBase(ServerCore):
         self.keys_pressed = {}
         self.keys_timedout = {}
         #timers for cancelling key repeat when we get jitter
-        self.keys_repeat_timers = {}
+        self.key_repeat_timer = None
         self.watch_keymap_changes()
 
     def watch_keymap_changes(self):
@@ -1554,22 +1554,20 @@ class ServerBase(ServerCore):
 
     def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
         """ Schedules/cancels the key repeat timeouts """
-        timer = self.keys_repeat_timers.get(keycode, None)
-        if timer:
-            del self.keys_repeat_timers[keycode]
-            keylog("cancelling key repeat timer: %s for %s / %s", timer, keyname, keycode)
-            self.source_remove(timer)
+        if self.key_repeat_timer:
+            self.source_remove(self.key_repeat_timer)
+            self.key_repeat_timer = None
         if pressed:
             delay_ms = min(1500, max(250, delay_ms))
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             def _key_repeat_timeout(when):
-                del self.keys_repeat_timers[keycode]
+                self.key_repeat_timer = None
                 now = time.time()
                 keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
                 self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
                 self.keys_timedout[keycode] = now
             now = time.time()
-            self.keys_repeat_timers[keycode] = self.timeout_add(delay_ms, _key_repeat_timeout, now)
+            self.key_repeat_timer = self.timeout_add(delay_ms, _key_repeat_timeout, now)
 
     def _process_key_repeat(self, proto, packet):
         wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
