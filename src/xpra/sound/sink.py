@@ -27,6 +27,11 @@ elif sys.platform.startswith("win"):
 if os.name=="posix":
     SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
 
+SINK_DEFAULT_ATTRIBUTES = {
+                           "alsasink"   : {"sync" : False},
+                           "pulsesink"  : {"client" : "Xpra"}
+                           }
+
 GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1
 GST_QUEUE_LEAK_DOWNSTREAM     = 2
@@ -87,7 +92,8 @@ class SoundSink(SoundPipeline):
         if QUEUE_SILENT:
             queue_el.append("silent=%s" % QUEUE_SILENT)
         pipeline_els.append(" ".join(queue_el))
-        pipeline_els.append(sink_type)
+        sink_str = plugin_str(sink_type, SINK_DEFAULT_ATTRIBUTES.get(sink_type))
+        pipeline_els.append(sink_str)
         self.setup_pipeline_and_bus(pipeline_els)
         self.src = self.pipeline.get_by_name("src")
         self.queue = self.pipeline.get_by_name("queue")
