@@ -212,11 +212,8 @@ class X11ServerBase(GTKServerBase):
 
     def _clear_keys_pressed(self):
         keylog("_clear_keys_pressed()")
-        #make sure the timers don't fire and interfere:
-        if len(self.keys_repeat_timers)>0:
-            for timer in self.keys_repeat_timers.values():
-                gobject.source_remove(timer)
-            self.keys_repeat_timers = {}
+        #make sure the timer doesn't fire and interfere:
+        self.cancel_key_repeat_timer()
         #clear all the keys we know about:
         if len(self.keys_pressed)>0:
             log("clearing keys pressed: %s", self.keys_pressed)

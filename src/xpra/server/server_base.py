@@ -1552,11 +1552,14 @@ class ServerBase(ServerCore):
         if not is_mod and self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
 
-    def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
-        """ Schedules/cancels the key repeat timeouts """
+    def cancel_key_repeat_timer(self):
         if self.key_repeat_timer:
             self.source_remove(self.key_repeat_timer)
             self.key_repeat_timer = None
+
+    def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
+        """ Schedules/cancels the key repeat timeouts """
+        self.cancel_key_repeat_timer()
         if pressed:
             delay_ms = min(1500, max(250, delay_ms))
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
