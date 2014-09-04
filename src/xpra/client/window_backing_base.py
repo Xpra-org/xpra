@@ -152,12 +152,11 @@ class WindowBackingBase(object):
         return img_data
 
     def unpremultiply(self, img_data):
-        if type(img_data)==str:
-            #cannot do in-place:
+        try:
+            unpremultiply_argb_in_place(img_data)
+            return img_data
+        except:
             return byte_buffer_to_buffer(unpremultiply_argb(img_data))
-        #assume this is a writeable buffer (ie: ctypes from mmap):
-        unpremultiply_argb_in_place(img_data)
-        return img_data
 
 
     def process_delta(self, raw_data, width, height, rowstride, options):
