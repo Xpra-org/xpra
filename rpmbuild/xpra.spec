@@ -78,6 +78,7 @@ Requires: python-crypto
 #(it provides the avahi python bindings)
 #because Fedora and CentOS bring in some insane dependencies with it (vnc)
 Requires: python-netifaces
+Requires: python-pillow
 Requires: libfakeXinerama
 Requires: gtk2-immodule-xim
 Requires: xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
