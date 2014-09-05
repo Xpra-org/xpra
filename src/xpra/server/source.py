@@ -613,16 +613,31 @@ class ServerSource(object):
         #or because we want to pass default values (zlib/lz4):
         for k,ek in {"initial_quality"          : "initial_quality",
                      "quality"                  : "quality",
-                     "zlib"                     : "rgb_zlib",
+                     }.items():
+            if k in c:
+                self.encoding_options[ek] = c.intget(k)
+        for k,ek in {"zlib"                     : "rgb_zlib",
                      "lz4"                      : "rgb_lz4",
                      }.items():
             if k in c:
-                self.encoding_options[ek] = c.get(k)
+                self.encoding_options[ek] = c.boolget(k)
         #2: standardized encoding options:
-        for k, v in c.items():
+        for k in c.keys():
             if k.startswith("encoding."):
-                k = k[len("encoding."):]
-                self.encoding_options[k] = v
+                stripped_k = k[len("encoding."):]
+                if stripped_k in ("transparency", "csc_atoms", "client_options",
+                                  "video_separateplane", "generic",
+                                  "rgb_zlib", "rgb_lz4", "rgb_lzo",
+                                  "webp_leaks", "video_subregion", "uses_swscale",
+                                  "video_scaling", "video_reinit"):
+                    v = c.boolget(k)
+                elif stripped_k in ("initial_quality", "initial_speed",
+                                    "min-quality", "quality",
+                                    "min-speed", "speed"):
+                    v = c.intget(k)
+                else:
+                    v = c.get(k)
+                self.encoding_options[stripped_k] = v
         elog("encoding options: %s", self.encoding_options)
 
         #handle proxy video: add proxy codec to video helper:
