@@ -1401,7 +1401,11 @@ else:
 
     class build_conf(build):
         def run(self):
-            build_xpra_conf(self.build_base)
+            try:
+                build_base = self.distribution.command_obj['build'].build_base
+            except:
+                build_base = self.build_base
+            build_xpra_conf(build_base)
 
     class install_data_override(install_data):
         def run(self):
