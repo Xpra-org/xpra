@@ -730,7 +730,15 @@ class WindowSource(object):
         self.expire_timer = self.timeout_add(delay, self.expire_delayed_region, delay)
 
     def must_batch(self, delay):
-        return FORCE_BATCH or self.batch_config.always or delay>self.batch_config.min_delay
+        if FORCE_BATCH or self.batch_config.always or delay>self.batch_config.min_delay:
+            return True
+        try:
+            t, _ = self.batch_config.last_delays[-5]
+            #do batch if we got more than 5 damage events in the last 10 milliseconds:
+            return time.time()-t<0.010
+        except:
+            #probably not enough events to grab -10
+            return False
 
 
     def expire_delayed_region(self, delay):
