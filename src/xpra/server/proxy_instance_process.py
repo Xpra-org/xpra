@@ -18,6 +18,7 @@ log = Logger("proxy")
 
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
+from xpra.net import compression
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol import Protocol, get_network_caps
 from xpra.net.crypto import new_cipher_caps
@@ -519,9 +520,9 @@ class ProxyInstanceProcess(Process):
                     packet[8] = str(pixels)
                 else:
                     #FIXME: this is ugly and not generic!
-                    zlib = self.caps.get("zlib", True)
-                    lz4 = self.caps.get("lz4", False)
-                    lzo = self.caps.get("lzo", False)
+                    zlib = compression.use_zlib and self.caps.get("zlib", True) 
+                    lz4 = compression.use_lz4 and self.caps.get("lz4", False) 
+                    lzo = compression.use_lzo and self.caps.get("lzo", False)
                     if zlib or lz4 or lzo:
                         packet[8] = compressed_wrapper("cursor", pixels, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
                     else:
