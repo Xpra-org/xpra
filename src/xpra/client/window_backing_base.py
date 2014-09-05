@@ -16,7 +16,7 @@ from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr, builtins
 _memoryview = builtins.__dict__.get("memoryview")
-from xpra.codecs.xor.cyxor import xor_str
+from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
 
 PIL = get_codec("PIL")
