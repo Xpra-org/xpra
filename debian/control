@@ -36,8 +36,16 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-numpy
 # for PNG and JPEG support:
         ,python-imaging
+#depend on lz4 for those that have it, lzo otherwise:
+#wheezy:	,python-lzo
+#jessie:	,python-lz4
+#sid:		,python-lz4
+#trusty:	,python-lzo
+#utopic:	,python-lzo
 #if you use Ubuntu, you will "want" this mess:
-#		,python-appindicator
+#precise:	,python-appindicator
+#trusty:	,python-appindicator
+#utopic:	,python-appindicator
 Recommends:
         libswscale2
 #version specific values (sigh), uncomment the one you need:
@@ -65,10 +73,12 @@ Recommends:
         ,python-gst0.10
         ,openssh-client
         ,ssh-askpass
-# hopefully this will motivate someone to package it (trivial too):
-		,python-lz4
-# this is not as good as lz4, but it exists today and is still better than zlib:
-		,python-lzo
+#recommend the alternative (those that recommend lz4 usually don't have it available at all):
+#wheezy:	,python-lz4
+#jessie:	,python-lzo
+#sid:		,python-lzo
+#trusty:	,python-lz4
+#utopic:	,python-lz4
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server
