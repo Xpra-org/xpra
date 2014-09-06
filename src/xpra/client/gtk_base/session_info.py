@@ -153,13 +153,18 @@ class SessionInfo(gtk.Window):
         def client_vinfo(prop, fallback="unknown"):
             k = "%s.version" % prop
             return label(make_version_str(gtk_version_info.get(k, fallback)))
-        tb.new_row("Glib",      client_vinfo("glib"),       label(server_version_info("glib.version")))
-        tb.new_row("Gobject",   client_vinfo("gobject"),    label(server_version_info("gobject.version", "pygtk_version")))
-        tb.new_row("PyGTK",     client_vinfo("pygtk", ""),  label(server_version_info("pygtk.version", "pygtk_version")))
-        tb.new_row("GTK",       client_vinfo("gtk"),        label(server_version_info("gtk.version", "gtk_version")))
-        tb.new_row("GDK",       client_vinfo("gdk"),        label(server_version_info("gdk.version", "gdk_version")))
-        tb.new_row("Cairo",     client_vinfo("cairo"),      label(server_version_info("cairo.version", "cairo_version")))
-        tb.new_row("Pango",     client_vinfo("pango"),      label(server_version_info("pango.version", "cairo_version")))
+        def server_vinfo(prop):
+            k = "%s.version" % prop
+            fk = "%s_version" % prop
+            return label(server_version_info(k, fk))
+        tb.new_row("Glib",      client_vinfo("glib"),       server_vinfo("glib"))
+        tb.new_row("PyGlib",    client_vinfo("pyglib"),     server_vinfo("pyglib"))
+        tb.new_row("Gobject",   client_vinfo("gobject"),    server_vinfo("gobject"))
+        tb.new_row("PyGTK",     client_vinfo("pygtk", ""),  server_vinfo("pygtk"))
+        tb.new_row("GTK",       client_vinfo("gtk"),        server_vinfo("gtk"))
+        tb.new_row("GDK",       client_vinfo("gdk"),        server_vinfo("gdk"))
+        tb.new_row("Cairo",     client_vinfo("cairo"),      server_vinfo("cairo"))
+        tb.new_row("Pango",     client_vinfo("pango"),      server_vinfo("pango"))
         tb.new_row("Python", label(python_platform.python_version()), label(server_version_info("server.python.version", "python_version", "python.version")))
 
         cl_gst_v, cl_pygst_v = "", ""

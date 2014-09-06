@@ -50,6 +50,7 @@ if hasattr(pango, "version_string"):
 try:
     import glib
     GTK_VERSION_INFO["glib.version"] = glib.glib_version
+    GTK_VERSION_INFO["pyglib.version"] = glib.pyglib_version
 except:
     pass
 
