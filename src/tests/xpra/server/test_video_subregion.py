@@ -10,14 +10,14 @@ import gobject
 gobject.threads_init()
 
 from collections import deque
-from xpra.server.video_subregion import VideoSubregion, log, sslog, MIN_EVENTS
+from xpra.server.video_subregion import VideoSubregion, MIN_EVENTS
+from xpra.server.video_subregion import sslog as log
 from xpra.server.region import rectangle, merge_all
 
 
 def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
-        sslog.enable_debug()
 
     log("main()")
     def refresh_cb(window, regions):
