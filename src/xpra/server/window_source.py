@@ -37,7 +37,7 @@ from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.stats.maths import time_weighted_average
 from xpra.server.region import rectangle, add_rectangle, remove_rectangle
-from xpra.codecs.xor.cyxor import xor_str
+from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
 from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
