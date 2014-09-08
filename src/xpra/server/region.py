@@ -130,23 +130,31 @@ def contains_rect(regions, region):
     return contains(regions, region.x, region.y, region.width, region.height)
 
 def add_rectangle(regions, region):
-    if contains(regions, region.x, region.y, region.width, region.height):
+    x = region.x
+    y = region.y
+    width = region.width
+    height = region.height
+    if contains(regions, x, y, width, height):
         #we already have this region within another region
         return False
     for r in list(regions):
-        if r.intersects_rect(region):
+        if r.intersects(x, y, width, height):
             #only keep the parts
             #that do not intersect with the new region we add:
             regions.remove(r)
-            regions += r.substract_rect(region)
+            regions += r.substract(x, y, width, height)
     regions.append(region)
     return True
 
 def remove_rectangle(regions, region):
     copy = regions[:]
     regions[:] = []
+    x = region.x
+    y = region.y
+    width = region.width
+    height = region.height
     for r in copy:
-        regions += r.substract_rect(region)
+        regions += r.substract(x, y, width, height)
 
 def merge_all(rectangles):
     rx = min((r.x for r in rectangles))
