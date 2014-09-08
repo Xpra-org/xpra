@@ -158,6 +158,8 @@ class WindowVideoSource(WindowSource):
             info["encoder"] = ve.get_type()
             up("encoder", ve.get_info())
         up("encoding.pipeline_param", self.get_pipeline_info())
+        if self._last_pipeline_check>0:
+            info["encoding.pipeline_last_check"] = int(1000*(time.time()-self._last_pipeline_check))
         lps = self.last_pipeline_scores
         if lps:
             for i, lp in enumerate(lps):
