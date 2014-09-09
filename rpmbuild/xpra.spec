@@ -138,12 +138,6 @@ cd xpra-%{version}
 %{__python} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
 
 
-%if 0%{?opengl}
-#included by default
-%else
-rm -fr ${RPM_BUILD_ROOT}/%{python_sitearch}/xpra/client/gl
-%endif
-
 %if 0%{?no_sound}
 rm -fr ${RPM_BUILD_ROOT}/%{python_sitearch}/xpra/sound
 %endif
