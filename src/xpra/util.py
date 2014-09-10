@@ -414,7 +414,7 @@ def updict(todict, prefix, d, suffix=""):
     for k,v in d.items():
         if v is not None:
             if k:
-                k = prefix+"."+k
+                k = prefix+"."+str(k)
             else:
                 k = prefix
             if suffix:
