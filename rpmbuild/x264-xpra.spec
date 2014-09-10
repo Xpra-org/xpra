@@ -71,6 +71,9 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
+* Wed Sep 10 2014 Antoine Martin <antoine@devloop.org.uk> 20140909
+- version bump
+
 * Sun Jul 20 2014 Antoine Martin <antoine@devloop.org.uk> 20140719
 - version bump
 
