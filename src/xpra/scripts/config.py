@@ -48,7 +48,7 @@ def OpenGL_safety_check():
         try:
             rnum = [int(x) for x in ur.split(".")]  #ie: [12, 4]
             if rnum<=[12, 4]:
-                return False, "Ubuntu %s is too buggy" % ur
+                return "Ubuntu %s is too buggy" % ur
         except:
             pass
     #try to detect VirtualBox:
@@ -58,7 +58,7 @@ def OpenGL_safety_check():
     try:
         from ctypes import cdll
         if cdll.LoadLibrary("VBoxHook.dll"):
-            return True, "VirtualBox is present (VBoxHook.dll)"
+            return "VirtualBox is present (VBoxHook.dll)"
     except:
         pass
     try:
@@ -72,13 +72,11 @@ def OpenGL_safety_check():
     except Exception as e:
         import errno
         if e.args[0]==errno.EACCES:
-            return True, "VirtualBox is present (VBoxMiniRdrDN)"
-    return True, None
+            return "VirtualBox is present (VBoxMiniRdrDN)"
+    return None
 OPENGL_DEFAULT = None       #will auto-detect by probing
-if not OpenGL_safety_check()[0]:
+if OpenGL_safety_check() is not None:
     OPENGL_DEFAULT = False
-
-
 
 
 def get_build_info():

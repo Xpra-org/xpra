@@ -419,21 +419,19 @@ class XpraClient(GTKXpraClient):
         self.opengl_enabled = False
         self.GLClientWindowClass = None
         self.opengl_props = {}
-        from xpra.scripts.config import OpenGL_safety_check
-        use_gl, warning = OpenGL_safety_check()
-        if not use_gl:
-            log.warn("OpenGL disabled: %s", warning)
-            return
-        elif warning:
-            if enable_opengl is True:
-                log.warn("OpenGL loading despite: %s", warning)
-            else:
-                self.opengl_props["info"] = "disabled: %s" % warning
-                log.warn("OpenGL disabled: %s", warning)
-                return
         if enable_opengl is False:
             self.opengl_props["info"] = "disabled by configuration"
             return
+        from xpra.scripts.config import OpenGL_safety_check
+        warning = OpenGL_safety_check()
+        if warning:
+            if enable_opengl is True:
+                log.warn("OpenGL safety warning (enabled at your own risk): %s", warning)
+                self.opengl_props["info"] = "forced enabled despite: %s" % warning
+            else:
+                log.warn("OpenGL disabled: %s", warning)
+                self.opengl_props["info"] = "disabled: %s" % warning
+                return
         self.opengl_props["info"] = ""
         try:
             __import__("xpra.client.gl", {}, {}, [])
