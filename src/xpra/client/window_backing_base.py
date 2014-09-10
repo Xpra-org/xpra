@@ -223,7 +223,9 @@ class WindowBackingBase(object):
             else:
                 img = img.convert("RGB")
 
-        raw_data = img.tostring("raw", img.mode)
+        #use tobytes() if present, fallback to tostring():
+        data_fn = getattr(img, "tobytes", getattr(img, "tostring"))
+        raw_data = data_fn("raw", img.mode)
         paint_options = typedict(options)
         if img.mode=="RGB":
             #PIL flattens the data to a continuous straightforward RGB format:
