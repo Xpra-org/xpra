@@ -114,7 +114,7 @@ class VideoSubregion(object):
                 #(the window source code doesn't know about the video region,
                 # and would decide to do many overlapping refreshes)
                 if len(regions)>=2 and rect:
-                    regions = [self.rectangle]
+                    regions = [rect]
                 refreshlog("refresh() calling %s with regions=%s", self.refresh_cb, regions)
                 self.refresh_cb(window, regions)
             self.refresh_timer = self.timeout_add(delay, refresh)
