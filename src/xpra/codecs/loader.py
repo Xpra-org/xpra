@@ -253,6 +253,11 @@ def main():
                         for c in list(cs):
                             cs += list(mod.get_output_colorspaces(c))
                         print("                         %s" % ", ".join(list(set(cs))))
+                    try:
+                        i = mod.get_info()
+                        print("                         %s" % i)
+                    except:
+                        pass
                 except:
                     e = sys.exc_info()[1]
                     print("error getting extra information on %s: %s" % (name, e))
