@@ -31,9 +31,11 @@ from xpra.net.crypto import get_crypto_caps, get_cipher
 
 
 #stupid python version breakage:
+JOIN_TYPES = (str, bytes)
 if sys.version > '3':
     long = int              #@ReservedAssignment
     unicode = str           #@ReservedAssignment
+    JOIN_TYPES = (bytes, )
 
 
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
@@ -301,8 +303,8 @@ class Protocol(object):
                 #for plain/text packets (ie: gibberish response)
                 items.append((data, scb, ecb))
             elif actual_size<PACKET_JOIN_SIZE:
-                if type(data)!=str:
-                    data = str(data)
+                if type(data) not in JOIN_TYPES:
+                    data = bytes(data)
                 header_and_data = pack_header(proto_flags, level, index, payload_size) + data
                 items.append((header_and_data, scb, ecb))
             else:

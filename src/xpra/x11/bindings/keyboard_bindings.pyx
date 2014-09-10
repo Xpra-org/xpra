@@ -212,16 +212,16 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             return v
         v = {}
         if len(tmp)>0:
-            v["rules"] = tmp[:]
+            v["rules"] = str(tmp[:])
             XFree(tmp)
         if vd.model:
-            v["model"]  = vd.model[:]
+            v["model"]  = str(vd.model[:])
             XFree(vd.model)
         if vd.layout:
-            v["layout"] = vd.layout[:]
+            v["layout"] = str(vd.layout[:])
             XFree(vd.layout)
         if vd.options!=NULL:
-            v["options"] = vd.options.split("\0")
+            v["options"] = str(vd.options).split("\0")
             XFree(vd.options)
         #log("vd.num_extra=%s", vd.num_extra)
         if vd.extra_names:

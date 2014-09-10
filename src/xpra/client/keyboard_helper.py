@@ -251,7 +251,7 @@ class KeyboardHelper(object):
         self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()
         self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self.keyboard.get_keymap_modifiers()
         self.update_hash()
-        log("layout=%s, variant=%s", self.xkbmap_layout, self.xkbmap_variant)
+        log("layout=%s, variant=%s, variants=%s", self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants)
         log("print=%s, query=%s, struct=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query), nonl(self.xkbmap_query_struct))
         log("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
         log("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
