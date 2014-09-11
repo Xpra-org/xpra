@@ -99,19 +99,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def setup_window(self):
         self.set_app_paintable(True)
         self.add_events(self.WINDOW_EVENT_MASK)
-
-        #try to enable alpha on this window if needed,
-        #and if the backing class can support it:
-        bc = self.get_backing_class()
-        log("setup_window() has_alpha=%s, %s.HAS_ALPHA=%s", self._has_alpha, bc, bc.HAS_ALPHA)
-        if self._has_alpha and bc.HAS_ALPHA:
-            screen = self.get_screen()
-            rgba = screen.get_rgba_colormap()
-            if rgba is None:
-                log.error("cannot handle window transparency on screen %s", screen)
-            else:
-                self.set_colormap(rgba)
-                self._window_alpha = True
+        self.set_alpha()
 
         if self._override_redirect:
             transient_for = self.get_transient_for()
@@ -139,6 +127,26 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if self._pos!=(0, 0) or self._set_initial_position:
             self.move(*self._pos)
         self.set_default_size(*self._size)
+
+    def set_alpha(self):
+        #try to enable alpha on this window if needed,
+        #and if the backing class can support it:
+        bc = self.get_backing_class()
+        log("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s", self._has_alpha, bc, bc.HAS_ALPHA, self.is_realized())
+        #by default, only RGB (no transparency):
+        #rgb_formats = list(BACKING_CLASS.RGB_MODES)
+        self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
+        if not self._has_alpha:
+            self._client_properties["encoding.transparency"] = False
+            return
+        if self._has_alpha and not self.is_realized():
+            if self.enable_alpha():
+                self._client_properties["encodings.rgb_formats"] = ["RGBA", "RGB", "RGBX"]
+                self._window_alpha = True
+            else:
+                self._has_alpha = False
+                self._client_properties["encoding.transparency"] = False
+
 
     def show(self):
         if self.group_leader:

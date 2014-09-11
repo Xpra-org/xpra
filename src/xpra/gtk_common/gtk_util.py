@@ -66,6 +66,7 @@ if is_gtk3():
         return GdkPixbuf.Pixbuf.new_from_data(*args)
     get_default_keymap      = gdk.Keymap.get_default
     display_get_default     = gdk.Display.get_default
+    screen_get_default      = gdk.Screen.get_default
     cairo_set_source_pixbuf = gdk.cairo_set_source_pixbuf
     COLORSPACE_RGB          = GdkPixbuf.Colorspace.RGB
     INTERP_HYPER    = GdkPixbuf.InterpType.HYPER
@@ -150,6 +151,7 @@ else:
     pixbuf_new_from_data    = gdk.pixbuf_new_from_data
     get_default_keymap      = gdk.keymap_get_default
     display_get_default     = gdk.display_get_default
+    screen_get_default      = gdk.screen_get_default
     def gdk_cairo_context(cairo_context):
         return gdk.CairoContext(cairo_context)
     def cairo_set_source_pixbuf(cr, pixbuf, x, y):

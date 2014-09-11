@@ -120,6 +120,17 @@ class ClientWindow(GTKClientWindowBase):
     def get_backing_class(self):
         return CairoBacking
 
+    def enable_alpha(self):
+        screen = self.get_screen()
+        visual = screen.get_rgba_visual()
+        if visual is None or not screen.is_composited():
+            log.error("enable_alpha() cannot handle window transparency on screen %s", screen)
+            return False
+        log("enable_alpha() using rgba visual %s for wid %s", visual, self._id)
+        self.set_visual(visual)
+        return True
+
+
     def xget_u32_property(self, target, name):
         try:
             if not HAS_X11_BINDINGS:

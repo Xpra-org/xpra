@@ -102,24 +102,15 @@ class GTK2WindowBase(GTKClientWindowBase):
                     self.set_screen(screen)
         GTKClientWindowBase.setup_window(self)
 
-    def set_alpha(self):
-        #by default, only RGB (no transparency):
-        #rgb_formats = list(BACKING_CLASS.RGB_MODES)
-        self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
-        if not self._has_alpha:
-            self._client_properties["encoding.transparency"] = False
-            return
-        if self._has_alpha and not self.is_realized():
-            screen = self.get_screen()
-            rgba = screen.get_rgba_colormap()
-            if rgba is None:
-                self._has_alpha = False
-                self._client_properties["encoding.transparency"] = False
-                log.error("cannot handle window transparency on screen %s", screen)
-            else:
-                log("set_alpha() using rgba colormap for %s, realized=%s", self._id, self.is_realized())
-                self.set_colormap(rgba)
-                self._client_properties["encodings.rgb_formats"] = ["RGBA", "RGB", "RGBX"]
+    def enable_alpha(self):
+        screen = self.get_screen()
+        rgba = screen.get_rgba_colormap()
+        if rgba is None:
+            log.error("enable_alpha() cannot handle window transparency on screen %s", screen)
+            return  False
+        log("enable_alpha() using rgba colormap %s for wid %s", rgba, self._id)
+        self.set_colormap(rgba)
+        return True
 
     def set_modal(self, modal):
         #with gtk2 setting the window as modal would prevent

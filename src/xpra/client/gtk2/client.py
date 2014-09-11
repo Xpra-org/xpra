@@ -172,9 +172,6 @@ class XpraClient(GTKXpraClient):
             add(x)
         return encodings
 
-    def has_transparency(self):
-        return gdk.screen_get_default().get_rgba_visual() is not None
-
 
     def _startup_complete(self, *args):
         GTKXpraClient._startup_complete(self, *args)
