@@ -49,6 +49,7 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %{_bindir}/cython
+%{_bindir}/cythonize
 #cygdb is not built with python 2.4 or 2.3.
 %if 0%{?fedora} || 0%{?rhel} >= 6
 %{_bindir}/cygdb
