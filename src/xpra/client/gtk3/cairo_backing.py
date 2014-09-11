@@ -12,10 +12,8 @@ from xpra.client.gtk_base.cairo_backing_base import CairoBackingBase
 from xpra.os_util import BytesIOClass
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
-from xpra.os_util import builtins
-_memoryview = builtins.__dict__.get("memoryview")
 
-from xpra.client.gtk3.cairo_workaround import set_image_surface_data
+from xpra.client.gtk3.cairo_workaround import set_image_surface_data    #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("paint", "cairo")
@@ -74,10 +72,6 @@ class CairoBacking(CairoBackingBase):
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
         """ must be called from UI thread """
         log("cairo._do_paint_rgb(%s, %s, %s bytes,%s,%s,%s,%s,%s,%s)", cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, options)
-        if _memoryview and isinstance(img_data, _memoryview):
-            #Pixbuf cannot use the memoryview directly:
-            img_data = img_data.tobytes()
-
         rgb_format = options.strget("rgb_format", "RGB")
         #this format we can handle with the workaround:
         if format==cairo.FORMAT_RGB24 and rgb_format=="RGB":

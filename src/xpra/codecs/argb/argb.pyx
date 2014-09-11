@@ -13,10 +13,6 @@ cdef extern from "../buffers/buffers.h":
 
 
 import struct
-def make_byte_buffer(len):          #@DuplicatedSignature
-    return bytearray(len)
-def byte_buffer_to_buffer(x):       #@DuplicatedSignature
-    return str(x)
 
 
 def argb_to_rgba(buf):
@@ -31,7 +27,7 @@ cdef argbdata_to_rgba(const unsigned char* argb, int argb_len):
     if argb_len <= 0:
         return None
     assert argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
-    rgba = make_byte_buffer(argb_len)
+    rgba = bytearray(argb_len)
     #number of pixels:
     cdef int i = 0
     while i < argb_len:
@@ -57,7 +53,7 @@ cdef argbdata_to_rgb(const unsigned char *argb, int argb_len):
     #number of pixels:
     cdef int mi = argb_len/4                #@DuplicateSignature
     #3 bytes per pixel:
-    rgb = make_byte_buffer(mi*3)
+    rgb = bytearray(mi*3)
     cdef int i = 0                          #@DuplicateSignature
     while i < argb_len:
         rgb[di]   = argb[i+1]               #R
@@ -83,7 +79,7 @@ cdef bgradata_to_rgb(const unsigned char* bgra, int bgra_len):
     #number of pixels:
     cdef int mi = bgra_len/4                #@DuplicateSignature
     #3 bytes per pixel:
-    rgb = make_byte_buffer(mi*3)
+    rgb = bytearray(mi*3)
     cdef int di = 0                         #@DuplicateSignature
     cdef int si = 0                         #@DuplicateSignature
     while si < bgra_len:
@@ -108,7 +104,7 @@ cdef bgradata_to_rgba(const unsigned char* bgra, int bgra_len):
         return None
     assert bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
     #same number of bytes:
-    rgba = make_byte_buffer(bgra_len)
+    rgba = bytearray(bgra_len)
     cdef int i = 0                      #@DuplicateSignature
     while i < bgra_len:
         rgba[i]   = bgra[i+2]           #R
@@ -202,7 +198,7 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     cdef unsigned int argb                      #@DuplicateSignature
     assert sizeof(int) == 4
     assert argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
-    argb_out = make_byte_buffer(argb_len)
+    argb_out = bytearray(argb_len)
     cdef int i                                  #@DuplicateSignature
     for 0 <= i < argb_len / 4:
         argb = argb_in[i]

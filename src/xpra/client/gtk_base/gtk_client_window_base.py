@@ -20,7 +20,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo,
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
-from xpra.codecs.argb.argb import unpremultiply_argb, byte_buffer_to_buffer   #@UnresolvedImport
+from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
 gtk     = import_gtk()
 gdk     = import_gdk()
 cairo   = import_cairo()
@@ -513,7 +513,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         log("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
         coding = bytestostr(coding)
         if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
-            data = byte_buffer_to_buffer(unpremultiply_argb(data))
+            data = str(unpremultiply_argb(data))
             pixbuf = pixbuf_new_from_data(data, COLORSPACE_RGB, True, 8, width, height, width*4)
         else:
             loader = PixbufLoader()

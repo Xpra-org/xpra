@@ -15,7 +15,6 @@ from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.codecs.loader import get_codec
 from xpra.os_util import BytesIOClass
 from xpra.os_util import builtins
-_memoryview = builtins.__dict__.get("memoryview")
 
 
 from xpra.log import Logger

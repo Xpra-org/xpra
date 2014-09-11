@@ -12,6 +12,7 @@ from xpra.log import Logger
 log = Logger("paint")
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
+from xpra.os_util import memoryview_to_bytes
 
 
 """
@@ -72,7 +73,7 @@ class PixmapBacking(GTK2WindowBacking):
             cr.fill()
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
-        img_data = self.img_data_tobytes(img_data)
+        img_data = memoryview_to_bytes(img_data)
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         return True

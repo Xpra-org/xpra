@@ -14,8 +14,7 @@ from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
 from xpra.os_util import StringIOClass
 from xpra.codecs.loader import get_codec, get_codec_version
-from xpra.os_util import builtins
-_memoryview = builtins.__dict__.get("memoryview")
+from xpra.os_util import memoryview_to_bytes
 try:
     from xpra.net.mmap_pipe import mmap_write
 except:
@@ -172,13 +171,11 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
     bpp = 32
     #remove transparency if it cannot be handled:
     try:
+        #PIL cannot use the memoryview directly:
+        pixels = memoryview_to_bytes(image.get_pixels())
         #it is safe to use frombuffer() here since the convert()
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image
-        pixels = image.get_pixels()
-        if _memoryview and isinstance(pixels, _memoryview):
-            #PIL cannot use the memoryview directly:
-            pixels = pixels.tobytes()
         im = PIL.Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
         if coding.startswith("png") and not supports_transparency and rgb=="RGBA":
             im = im.convert("RGB")
@@ -328,9 +325,8 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     start = time.time()
     w = image.get_width()
     h = image.get_height()
-    if _memoryview and isinstance(pixels, _memoryview):
-        #PIL cannot use the memoryview directly:
-        pixels = pixels.tobytes()
+    #PIL cannot use the memoryview directly:
+    pixels = memoryview_to_bytes(pixels)
     img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
     rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
     data = img.tostring("raw", target_format)

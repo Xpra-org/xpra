@@ -11,13 +11,13 @@ from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
 from xpra.util import typedict
+from xpra.os_util import memoryview_to_bytes
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum, get_PIL_decodings
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
-from xpra.os_util import BytesIOClass, bytestostr, builtins
-_memoryview = builtins.__dict__.get("memoryview")
+from xpra.os_util import BytesIOClass, bytestostr
 from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
-from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place, byte_buffer_to_buffer   #@UnresolvedImport
+from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place   #@UnresolvedImport
 
 PIL = get_codec("PIL")
 
@@ -146,17 +146,12 @@ class WindowBackingBase(object):
         return csc_modes
 
 
-    def img_data_tobytes(self, img_data):
-        if _memoryview and isinstance(img_data, _memoryview):
-            return img_data.tobytes()
-        return img_data
-
     def unpremultiply(self, img_data):
         try:
             unpremultiply_argb_in_place(img_data)
             return img_data
         except:
-            return byte_buffer_to_buffer(unpremultiply_argb(img_data))
+            return str(unpremultiply_argb(img_data))
 
 
     def process_delta(self, raw_data, width, height, rowstride, options):
@@ -460,7 +455,6 @@ class WindowBackingBase(object):
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
         """ dispatches the paint to one of the paint_XXXX methods """
         log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
-        img_data = self.img_data_tobytes(img_data)
         coding = bytestostr(coding)
         if coding == "mmap":
             self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)

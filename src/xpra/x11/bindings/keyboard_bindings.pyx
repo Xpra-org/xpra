@@ -10,8 +10,6 @@ import time
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
-from xpra.codecs.argb.argb import make_byte_buffer, byte_buffer_to_buffer
-
 
 ###################################
 # Headers, python magic
@@ -734,7 +732,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             n = image.width*image.height
             #Warning: we need to iterate over the input one *long* at a time
             #(even though only 4 bytes are set - and longs are 8 bytes on 64-bit..)
-            pixels = make_byte_buffer(n*4)
+            pixels = bytearray(n*4)
             while i<n:
                 argb = image.pixels[i] & 0xffffffff
                 a = (argb >> 24)   & 0xff
@@ -748,7 +746,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                 i += 1
             name = str(image.name)
             return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
-                image.cursor_serial, byte_buffer_to_buffer(pixels), name]
+                image.cursor_serial, str(pixels), name]
         finally:
             if image:
                 XFree(image)

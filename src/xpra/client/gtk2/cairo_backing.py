@@ -8,8 +8,7 @@ import cairo
 
 from xpra.client.gtk_base.cairo_backing_base import CairoBackingBase
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB
-from xpra.os_util import builtins
-_memoryview = builtins.__dict__.get("memoryview")
+from xpra.os_util import memoryview_to_bytes
 
 from xpra.log import Logger
 log = Logger("paint", "cairo")
@@ -35,9 +34,6 @@ class CairoBacking(CairoBackingBase):
         """ must be called from UI thread """
         log("cairo._do_paint_rgb(%s, %s, %s bytes,%s,%s,%s,%s,%s,%s)", cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, options)
         rgb_format = options.strget("rgb_format", "RGB")
-        if _memoryview and isinstance(img_data, _memoryview):
-            #Pixbuf cannot use the memoryview directly:
-            img_data = img_data.tobytes()
 
         if rgb_format in ("ARGB", "XRGB"):
             #the pixel format is also what cairo expects
@@ -52,6 +48,9 @@ class CairoBacking(CairoBackingBase):
             if rgb_format=="RGBA":
                 #we have to unpremultiply for pixbuf!
                 img_data = self.unpremultiply(img_data)
+            else:
+                #Pixbuf cannot use the memoryview directly:
+                img_data = memoryview_to_bytes(img_data)
             pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, has_alpha, 8, width, height, rowstride)
             return self.cairo_paint_pixbuf(pixbuf, x, y)
 

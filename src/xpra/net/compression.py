@@ -11,19 +11,16 @@ import zlib
 from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
-from xpra.os_util import builtins
+from xpra.os_util import memoryview_to_bytes
 
 
 lz4_version = None
 try:
-    _memoryview = builtins.__dict__.get("memoryview")
     import lz4
     from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
     def lz4_compress(packet, level):
-        if _memoryview and isinstance(packet, _memoryview):
-            packet = packet.tobytes()
-        return level | LZ4_FLAG, LZ4_compress(packet)
+        return level | LZ4_FLAG, LZ4_compress(memoryview_to_bytes(packet))
     #try to figure out the version number:
     if hasattr(lz4, "VERSION"):
         lz4_version = lz4.VERSION
@@ -61,14 +58,11 @@ except Exception as e:
 
 lzo_version = None
 try:
-    _memoryview = builtins.__dict__.get("memoryview")
     import lzo
     has_lzo = True
     lzo_version = lzo.LZO_VERSION_STRING
     def lzo_compress(packet, level):
-        if _memoryview and isinstance(packet, _memoryview):
-            packet = packet.tobytes()
-        return level | LZO_FLAG, lzo.compress(packet)
+        return level | LZO_FLAG, lzo.compress(memoryview_to_bytes(packet))
     LZO_decompress = lzo.decompress
 except Exception as e:
     log("lzo not found: %s", e)
