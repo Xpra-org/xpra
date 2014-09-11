@@ -15,10 +15,14 @@ from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.codecs.loader import get_codec
 from xpra.os_util import BytesIOClass
 
-
 from xpra.log import Logger
 log = Logger("paint", "cairo")
 
+
+FORMATS = {-1   : "INVALID"}
+for x in (f for f in dir(cairo) if f.startswith("FORMAT_")):
+    FORMATS[getattr(cairo, x)] = x.replace("FORMAT_", "")
+        
 
 """
 Superclass for gtk2 and gtk3 cairo implementations.

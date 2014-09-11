@@ -8,7 +8,7 @@ import cairo
 from gi.repository import GObject           #@UnresolvedImport
 from gi.repository import GdkPixbuf         #@UnresolvedImport
 
-from xpra.client.gtk_base.cairo_backing_base import CairoBackingBase
+from xpra.client.gtk_base.cairo_backing_base import CairoBackingBase, FORMATS
 from xpra.os_util import BytesIOClass
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
@@ -77,10 +77,10 @@ class CairoBacking(CairoBackingBase):
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
         """ must be called from UI thread """
-        log("cairo._do_paint_rgb(%s, %s, %s bytes,%s,%s,%s,%s,%s,%s)", cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, options)
+        log("cairo._do_paint_rgb(%s, %s, %s bytes,%s,%s,%s,%s,%s,%s)", FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data), x, y, width, height, rowstride, options)
         rgb_format = options.strget("rgb_format", "RGB")
         #this format we can handle with the workaround:
-        if format==cairo.FORMAT_RGB24 and rgb_format=="RGB" and set_image_surface_data:
+        if cairo_format==cairo.FORMAT_RGB24 and rgb_format=="RGB" and set_image_surface_data:
             img_surface = cairo.ImageSurface(cairo_format, width, height)
             set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
             return self.cairo_paint_surface(img_surface, x, y)
