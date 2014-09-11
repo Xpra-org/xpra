@@ -140,6 +140,10 @@ class GLPixmapBacking(GTK2WindowBacking):
     HAS_ALPHA = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid, w, h, window_alpha):
+        #initialize those early as we use them in __repr__
+        self.wid = wid
+        self.size = 0, 0
+        self.pixel_format = None
         alpha = GL_ALPHA_SUPPORTED and window_alpha
         display_mode = get_DISPLAY_MODE(want_alpha=alpha)
         try:
@@ -190,7 +194,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.draw_needs_refresh = False
         self.offscreen_fbo = None
 
-    def __str__(self):
+    def __repr__(self):
         return "GLPixmapBacking(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
 
     def init(self, w, h):
