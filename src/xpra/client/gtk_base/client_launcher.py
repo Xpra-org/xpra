@@ -579,7 +579,7 @@ class ApplicationWindow:
         self.client.quit = quit_override
         try:
             self.client.run()
-        except Exception, e:
+        except Exception as e:
             log.error("client error", exc_info=True)
             self.handle_exception(e)
 

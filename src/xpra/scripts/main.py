@@ -778,7 +778,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         else:
             error_cb("invalid mode '%s'" % mode)
             return 1
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         sys.stderr.write("\ncaught %s, exiting\n" % repr(e))
         return 128+signal.SIGINT
 
