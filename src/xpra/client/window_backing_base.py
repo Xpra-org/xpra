@@ -11,7 +11,6 @@ from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
 from xpra.util import typedict
-from xpra.os_util import memoryview_to_bytes
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum, get_PIL_decodings
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper

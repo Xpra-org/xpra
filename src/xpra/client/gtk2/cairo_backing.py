@@ -55,3 +55,4 @@ class CairoBacking(CairoBackingBase):
             return self.cairo_paint_pixbuf(pixbuf, x, y)
 
         self.nasty_rgb_via_png_paint(cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format)
+        return True
