@@ -412,7 +412,7 @@ def remove_from_keywords(kw, key, value):
 def checkdirs(*dirs):
     for d in dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
-            raise Exception("cannot find a directory which is required for building: %s" % d)
+            raise Exception("cannot find a directory which is required for building: '%s'" % d)
 
 PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
 
@@ -519,7 +519,7 @@ def is_msvc():
     return os.environ.get("VCINSTALLDIR") is not None
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
-def pkgconfig(*pkgs_options, **ekw):
+def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
     static = kw.get("static", None)
     if static is not None:
@@ -608,6 +608,7 @@ def pkgconfig(*pkgs_options, **ekw):
     if verbose_ENABLED:
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
     return kw
+pkgconfig = exec_pkgconfig
 
 
 #*******************************************************************************
@@ -1320,9 +1321,19 @@ if WIN32:
         return kw
 
     if not has_pkg_config:
+        #use the hardcoded version above:
+        pkgconfig = VC_pkgconfig
+    else:
+        #FIXME: ugly workaround for building the ugly pycairo workaround on win32:
+        #the win32 py-gi installers don't have development headers for pycairo
+        #so we hardcode them here instead...
+        #(until someone fixes the win32 builds properly)
         def pkgconfig(*pkgs_options, **ekw):
-            #default to VC for now:
-            return VC_pkgconfig(*pkgs_options, **ekw)
+            if "pycairo" in pkgs_options:
+                kw = exec_pkgconfig("cairo", **ekw)
+                add_to_keywords(kw, 'include_dirs', "C:\\pycairo-1.10.0")
+                return kw
+            return exec_pkgconfig(*pkgs_options, **ekw)
 
 
     remove_packages(*external_excludes)
@@ -1568,11 +1579,6 @@ if gtk_x11_ENABLED:
                     ["xpra/x11/gtk3_x11/gdk_display_source.pyx"],
                     **pkgconfig("gtk+-3.0")
                     ))
-        #cairo workaround:
-        cython_add(Extension("xpra.client.gtk3.cairo_workaround",
-                    ["xpra/client/gtk3/cairo_workaround.pyx", buffers_c],
-                    **pkgconfig("pycairo")
-                    ))
     else:
         #below uses gtk/gdk:
         cython_add(Extension("xpra.x11.gtk_x11.gdk_display_source",
@@ -1585,6 +1591,12 @@ if gtk_x11_ENABLED:
                     **pkgconfig(*GDK_BINDINGS_PACKAGES)
                     ))
 
+if client_ENABLED and PYTHON3:
+    #cairo workaround:
+    cython_add(Extension("xpra.client.gtk3.cairo_workaround",
+                ["xpra/client/gtk3/cairo_workaround.pyx", buffers_c],
+                **pkgconfig("pycairo")
+                ))
 
 add_packages("xpra.codecs.argb")
 cython_add(Extension("xpra.codecs.argb.argb",
