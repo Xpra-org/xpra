@@ -45,6 +45,7 @@ import os.path
 import traceback
 import signal
 import tempfile
+import collections
 from cPickle import dump, load
 from types import ClassType
 from optparse import OptionParser
@@ -175,7 +176,7 @@ class Runner(object):
     def run_test_class(self, class_name, cls, test_names):
         for key, val in cls.__dict__.iteritems():
             if (self.thing_looks_testy(key, val)
-                and callable(val)
+                and isinstance(val, collections.Callable)
                 and self.method_matches_names(".".join([class_name, key]), test_names)):
                 self.run_test_method(class_name, cls, key)
 
