@@ -1023,7 +1023,7 @@ if WIN32:
                     print("some DLLs could not be found in '%s':" % include_dll_path)
                     for x in dll_names:
                         print(" - lib%s*.dll" % x)
-                    sys.exit(0)
+                    sys.exit(1)
                 add_data_files("", [os.path.join(include_dll_path, dll) for dll in dll_files])
 
 
