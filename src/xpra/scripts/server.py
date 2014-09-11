@@ -815,9 +815,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         logfd = open_log_file(log_filename0)
         assert logfd > 2
         stdout, stderr = daemonize(logfd)
-        stderr.write("Entering daemon mode; "
+        try:
+            stderr.write("Entering daemon mode; "
                  + "any further errors will be reported to:\n"
                  + ("  %s\n" % log_filename0))
+        except:
+            #this can happen if stderr is closed by the caller already
+            pass
 
     # Write out a shell-script so that we can start our proxy in a clean
     # environment:
