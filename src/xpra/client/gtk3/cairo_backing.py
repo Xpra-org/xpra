@@ -12,13 +12,17 @@ from xpra.client.gtk_base.cairo_backing_base import CairoBackingBase
 from xpra.os_util import BytesIOClass
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
-try:
-    from xpra.client.gtk3.cairo_workaround import set_image_surface_data    #@UnresolvedImport
-except:
-    set_image_surface_data = None
 
 from xpra.log import Logger
 log = Logger("paint", "cairo")
+
+try:
+    from xpra.client.gtk3.cairo_workaround import set_image_surface_data    #@UnresolvedImport
+except ImportError as e:
+    log.warn("failed to load the gtk3 cairo workaround: %s", e)
+    log.warn("rendering will be slow!")
+    set_image_surface_data = None
+
 
 
 """
