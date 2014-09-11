@@ -55,6 +55,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def new_backing(self, w, h):
         backing_class = self.get_backing_class()
+        log("new_backing(%s, %s) backing_class=%s", w, h, backing_class)
         assert backing_class is not None
         self._backing = self.make_new_backing(backing_class, w, h)
         self._backing.border = self.border

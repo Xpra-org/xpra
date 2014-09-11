@@ -14,7 +14,7 @@ log = Logger("opengl", "window")
 
 USE_CAIRO = os.environ.get("XPRA_USE_CAIRO_BACKING", "0")=="1"
 if USE_CAIRO:
-    from xpra.client.gtk_base.cairo_backing import CairoBacking
+    from xpra.client.gtk2.cairo_backing import CairoBacking
     BACKING_CLASS = CairoBacking
 else:
     from xpra.client.gtk2.pixmap_backing import PixmapBacking

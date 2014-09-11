@@ -11,7 +11,7 @@ from gi.repository import Gtk                   #@UnresolvedImport @UnusedImport
 from gi.repository import Gdk                   #@UnresolvedImport @UnusedImport
 from gi.repository import GdkPixbuf             #@UnresolvedImport @UnusedImport
 
-from xpra.client.gtk_base.cairo_backing import CairoBacking
+from xpra.client.gtk3.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.log import Logger
 log = Logger("gtk", "window")

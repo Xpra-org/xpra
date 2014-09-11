@@ -1577,6 +1577,11 @@ if gtk_x11_ENABLED:
                     ["xpra/x11/gtk3_x11/gdk_display_source.pyx"],
                     **pkgconfig("gtk+-3.0")
                     ))
+        #cairo workaround:
+        cython_add(Extension("xpra.client.gtk3.cairo_workaround",
+                    ["xpra/client/gtk3/cairo_workaround.pyx", buffers_c],
+                    **pkgconfig("pycairo")
+                    ))
     else:
         #below uses gtk/gdk:
         cython_add(Extension("xpra.x11.gtk_x11.gdk_display_source",

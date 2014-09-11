@@ -60,6 +60,8 @@ class XpraClient(GTKXpraClient):
         for x in ("webp", ):
             if x in cencs:
                 cencs.remove(x)
+        #for some reason, the cairo_workaround does not work for ARGB32
+        #cencs.append("rgb32")
         return cencs
 
 
