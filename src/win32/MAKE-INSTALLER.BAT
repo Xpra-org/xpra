@@ -134,30 +134,10 @@ GOTO MAKEINSTALLER
 
 :PYTHON3
 SET EXTRA_VERSION=-GTK3-py%PYTHON_MAJOR_VERSION%%PYTHON_MINOR_VERSION%
-REM cx_freeze and lib2to3 build_py overrides don't get on..
-REM so we have to run the build in a temporary directory
-REM where we can run 2to3 before cx_freeze:
-set SOURCE_DIRECTORY=%cd%
-MKDIR Temp
-ECHO ***************************************************************
-ECHO ****** PYTHON3: copying source into Temp
-FOR %%a in (etc html5 icons scripts tests win32 xpra) DO (
-	echo|set /p=* %%a : 
-	XCOPY /I /Y /S /Q %%a Temp\%%a\
-)
-FOR %%a in (setup.py add_build_info.py MANIFEST.in README NEWS COPYING) DO (
-	COPY /Y %%a Temp\ > NUL
-)
-cd Temp
-ECHO using 2to3 to convert to py3k syntax:
-ECHO %PYTHON%\Python.exe %PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n . 2^> 2to3.log
-%PYTHON%\Python.exe %PYTHON%\Tools\Scripts\2to3.py --no-diffs -x all -f except -w -n . 2> 2to3.log
-
-ECHO %PYTHON_EXE% -OO setup.py install_exe ^> cx_freeze-xpra.log
-%PYTHON_EXE% -OO setup.py install_exe -d %SOURCE_DIRECTORY%\dist > cx_freeze-install.log
-cd %SOURCE_DIRECTORY%
+ECHO %PYTHON_EXE% -OO setup.py install_exe ^> cx_freeze-install.log
+%PYTHON_EXE% -OO setup.py install_exe -d dist > cx_freeze-install.log
 if %errorlevel% NEQ 0 (
-	ECHO "cx_freeze error, see cx_freeze-xpra.log"
+	ECHO "cx_freeze error, see cx_freeze-install.log"
 	GOTO ERROR
 )
 
