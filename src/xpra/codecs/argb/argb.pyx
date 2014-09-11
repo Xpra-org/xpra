@@ -13,17 +13,10 @@ cdef extern from "../buffers/buffers.h":
 
 
 import struct
-try:
-    import numpy
-    def make_byte_buffer(len):
-        return numpy.empty(len, dtype=numpy.byte)
-    def byte_buffer_to_buffer(x):
-        return x.tostring()
-except:
-    def make_byte_buffer(len):          #@DuplicatedSignature
-        return bytearray(len)
-    def byte_buffer_to_buffer(x):       #@DuplicatedSignature
-        return str(x)
+def make_byte_buffer(len):          #@DuplicatedSignature
+    return bytearray(len)
+def byte_buffer_to_buffer(x):       #@DuplicatedSignature
+    return str(x)
 
 
 def argb_to_rgba(buf):
