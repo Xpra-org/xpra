@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_pixbufloader, import_cairo, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_pixbufloader, import_cairo
 gdk             = import_gdk()
 gobject         = import_gobject()
 cairo           = import_cairo()
@@ -28,8 +28,6 @@ class CairoBackingBase(GTKWindowBacking):
 
     def __init__(self, wid, w, h, has_alpha):
         GTKWindowBacking.__init__(self, wid, has_alpha)
-        #can someone explain this to me?:
-        self.draw_needs_refresh = is_gtk3()
 
     def init(self, w, h):
         old_backing = self._backing
