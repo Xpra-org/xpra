@@ -563,6 +563,8 @@ def start_Xvfb(xvfb_str, display_name):
             os.setsid()
 
     xvfb_cmd = xvfb_str.split()
+    if not xvfb_cmd:
+        raise Exception("cannot start Xvfb, command definition is missing!")
     xvfb_executable = xvfb_cmd[0]
     if display_name[0]=='S':
         # 'S' means that we allocate the display automatically
