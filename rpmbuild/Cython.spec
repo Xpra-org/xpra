@@ -2,7 +2,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name:		Cython
-Version:	0.20.2
+Version:	0.21
 Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 
@@ -61,6 +61,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Sep 11 2014 Antoine Martin <antoine@devloop.org.uk> - 0.21-1
+- Update to 0.21
+
 * Thu Jul 31 2014 Antoine Martin <antoine@devloop.org.uk> - 0.20.2-2
 - Removed EPEL bits that get in the way, fix (guess) date in changelog
 
