@@ -82,7 +82,6 @@ CAIRO_FORMAT = {
         }
 
 def set_image_surface_data(object image_surface, rgb_format, object pixel_data, int width, int height, int stride):
-    print("set_image_surface_data%s" % str((image_surface, rgb_format, len(pixel_data), width, height, stride)))
     #convert pixel_data to a C buffer:
     cdef const unsigned char * cbuf = <unsigned char *> 0
     cdef Py_ssize_t cbuf_len = 0

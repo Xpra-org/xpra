@@ -99,9 +99,6 @@ class XpraClient(GTKXpraClient):
             w, h = 1920, 1080
         return w, h
 
-    def set_windows_cursor(self, gtkwindows, new_cursor):
-        pass
-
     def init_opengl(self, enable_opengl):
         self.opengl_enabled = False
         self.opengl_props = {"info" : "GTK3 does not support OpenGL"}

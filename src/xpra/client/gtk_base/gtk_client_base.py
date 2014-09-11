@@ -14,17 +14,21 @@ gdk = import_gdk()
 
 from xpra.log import Logger
 log = Logger("gtk", "main")
+cursorlog = Logger("gtk", "client", "cursor")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.gtk_common.cursor_names import cursor_names
-from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, pixbuf_new_from_file, display_get_default, screen_get_default
+from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, new_Cursor, new_Cursor_from_pixbuf, \
+            pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, INTERP_BILINEAR
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import system_bell
+
+missing_cursor_names = set()
 
 
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
@@ -161,9 +165,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #always True: we can always use gtk.StatusIcon as fallback
         return True
 
-    def set_windows_cursor(self, gtkwindows, new_cursor):
-        raise Exception("override me!")
-
 
     def get_root_window(self):
         raise Exception("override me!")
@@ -228,6 +229,64 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             screen_sizes.append(item)
             i += 1
         return screen_sizes
+
+    def set_windows_cursor(self, windows, cursor_data):
+        cursorlog("set_windows_cursor(%s, ..)", windows)
+        cursor = None
+        if cursor_data:
+            try:
+                cursor = self.make_cursor(cursor_data)
+                cursorlog("make_cursor(..)=%s", cursor)
+            except Exception as e:
+                log.warn("error creating cursor: %s (using default)", e, exc_info=True)
+            if cursor is None:
+                #use default:
+                cursor = default_Cursor
+        for w in windows:
+            gdkwin = w.get_window()
+            #trays don't have a gdk window
+            if gdkwin:
+                gdkwin.set_cursor(cursor)
+
+    def make_cursor(self, cursor_data):
+        #if present, try cursor ny name:
+        if len(cursor_data)>=9 and cursor_names:
+            cursor_name = cursor_data[8]
+            if cursor_name:
+                gdk_cursor = cursor_names.get(cursor_name.upper())
+                if gdk_cursor is not None:
+                    cursorlog("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
+                    return new_Cursor(gdk_cursor)
+                else:
+                    global missing_cursor_names
+                    if cursor_name not in missing_cursor_names:
+                        cursorlog("cursor name '%s' not found", cursor_name)
+                        missing_cursor_names.add(cursor_name)
+        #create cursor from the pixel data:
+        w, h, xhot, yhot, serial, pixels = cursor_data[2:8]
+        if len(pixels)<w*h*4:
+            import binascii
+            cursorlog.warn("not enough pixels provided in cursor data: %s needed and only %s bytes found (%s)", w*h*4, len(pixels), binascii.hexlify(pixels)[:100])
+            return
+        pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
+        x = max(0, min(xhot, w-1))
+        y = max(0, min(yhot, h-1))
+        display = display_get_default()
+        csize = display.get_default_cursor_size()
+        cmaxw, cmaxh = display.get_maximal_cursor_size()
+        if len(cursor_data)>=11:
+            ssize = cursor_data[9]
+            smax = cursor_data[10]
+            cursorlog("server cursor sizes: default=%s, max=%s", ssize, smax)
+        cursorlog("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", xhot,yhot, serial, w,h, len(pixels), csize, (cmaxw, cmaxh))
+        ratio = 1
+        if w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
+            ratio = max(float(w)/cmaxw, float(h)/cmaxh, float(max(w,h))/csize)
+            cursorlog("downscaling cursor by %.2f", ratio)
+            pixbuf = pixbuf.scale_simple(int(w/ratio), int(h/ratio), INTERP_BILINEAR)
+            x = int(x/ratio)
+            y = int(y/ratio)
+        return new_Cursor_from_pixbuf(display_get_default(), pixbuf, x, y)
 
 
     def process_ui_capabilities(self):
