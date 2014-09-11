@@ -157,7 +157,7 @@ ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"
 
 ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
             "csc_swscale", "csc_cython", "csc_opencl", \
-            "dec_avcodec", "dec_avcodec2", \
+            "dec_avcodec2", \
             "enc_webp", \
             "dec_webp"
 
