@@ -102,11 +102,12 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
     assert istride>=iwidth*4, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
     #just deal with the formats we care about:
     if format==CAIRO_FORMAT_RGB24 and rgb_format=="RGB":
-        for x in range(width):
-            for y in range(height):
-                data[x*4 + 0 + y*istride] = cbuf[x*3 + 0 + y*stride]    #R
+        #cairo's RGB24 format is actually stored as BGR!
+        for y in range(height):
+            for x in range(width):
+                data[x*4 + 0 + y*istride] = cbuf[x*3 + 2 + y*stride]    #B
                 data[x*4 + 1 + y*istride] = cbuf[x*3 + 1 + y*stride]    #G
-                data[x*4 + 2 + y*istride] = cbuf[x*3 + 2 + y*stride]    #B
+                data[x*4 + 2 + y*istride] = cbuf[x*3 + 0 + y*stride]    #R
                 data[x*4 + 3 + y*istride] = 255                         #X
         return
     #note: this one is currently unused because it doesn't work
