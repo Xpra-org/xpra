@@ -12,7 +12,7 @@ from xpra.gtk_common.gobject_compat import import_gobject, import_cairo, is_gtk3
 gobject = import_gobject()
 cairo   = import_cairo()
 
-from xpra.client.window_backing_base import WindowBackingBase, unpremultiply_argb
+from xpra.client.window_backing_base import WindowBackingBase
 from xpra.log import Logger
 log = Logger("paint")
 
