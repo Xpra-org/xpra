@@ -216,9 +216,6 @@ if "clean" not in sys.argv:
     if clipboard_ENABLED and not server_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
         print("Warning: clipboard can only be used with the server or one of the gtk clients!")
         clipboard_ENABLED = False
-    if opengl_ENABLED and not gtk2_ENABLED:
-        print("Warning: opengl can only be used with the gtk2 clients")
-        opengl_ENABLED = False
     if shadow_ENABLED and not server_ENABLED:
         print("Warning: shadow requires server to be enabled!")
         shadow_ENABLED = False
@@ -1619,7 +1616,7 @@ toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "gi")
 toggle_packages(client_ENABLED and qt4_ENABLED, "xpra.client.qt4", "PyQt4")
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(sound_ENABLED, "xpra.sound")
-toggle_packages(client_ENABLED and gtk2_ENABLED and opengl_ENABLED, "xpra.client.gl")
+toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:

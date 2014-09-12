@@ -32,25 +32,26 @@ if sys.platform.startswith("win"):
     DEFAULT_DOUBLE_BUFFERED = 1
 DOUBLE_BUFFERED = os.environ.get("XPRA_OPENGL_DOUBLE_BUFFERED", str(DEFAULT_DOUBLE_BUFFERED))=="1"
 
+
 def get_visual_name(visual):
-    import gtk.gdk
+    from xpra.gtk_common.gtk_util import STATIC_GRAY, GRAYSCALE, STATIC_COLOR, PSEUDO_COLOR, TRUE_COLOR, DIRECT_COLOR
     if not visual:
         return ""
     return {
-           gtk.gdk.VISUAL_STATIC_GRAY   : "STATIC_GRAY",
-           gtk.gdk.VISUAL_GRAYSCALE     : "GRAYSCALE",
-           gtk.gdk.VISUAL_STATIC_COLOR  : "STATIC_COLOR",
-           gtk.gdk.VISUAL_PSEUDO_COLOR  : "PSEUDO_COLOR",
-           gtk.gdk.VISUAL_TRUE_COLOR    : "TRUE_COLOR",
-           gtk.gdk.VISUAL_DIRECT_COLOR  : "DIRECT_COLOR"}.get(visual.type, "unknown")
+           STATIC_GRAY      : "STATIC_GRAY",
+           GRAYSCALE        : "GRAYSCALE",
+           STATIC_COLOR     : "STATIC_COLOR",
+           PSEUDO_COLOR     : "PSEUDO_COLOR",
+           TRUE_COLOR       : "TRUE_COLOR",
+           DIRECT_COLOR     : "DIRECT_COLOR"}.get(visual.type, "unknown")
 
 def get_visual_byte_order(visual):
-    import gtk.gdk
+    from xpra.gtk_common.gtk_util import LSB_FIRST, MSB_FIRST
     if not visual:
         return ""
     return {
-            gtk.gdk.LSB_FIRST   : "LSB",
-            gtk.gdk.MSB_FIRST   : "MSB"}.get(visual.byte_order, "unknown")
+            LSB_FIRST   : "LSB",
+            MSB_FIRST   : "MSB"}.get(visual.byte_order, "unknown")
 
 def visual_to_str(visual):
     if not visual:
@@ -62,30 +63,29 @@ def visual_to_str(visual):
     return str(d)
 
 def get_DISPLAY_MODE(want_alpha=GL_ALPHA_SUPPORTED):
-    import gtk.gdkgl
-    #gtk.gdkgl.MODE_DEPTH
-    mode = 0
+    from xpra.client.gl.gtk_compat import MODE_RGBA, MODE_ALPHA, MODE_RGB, MODE_DOUBLE, MODE_SINGLE
+    #MODE_DEPTH
     if want_alpha:
-        mode = mode | gtk.gdkgl.MODE_RGBA | gtk.gdkgl.MODE_ALPHA
+        mode = MODE_RGBA | MODE_ALPHA
     else:
-        mode = mode | gtk.gdkgl.MODE_RGB
+        mode = MODE_RGB
     if DOUBLE_BUFFERED:
-        mode = mode | gtk.gdkgl.MODE_DOUBLE
+        mode = mode | MODE_DOUBLE
     else:
-        mode = mode | gtk.gdkgl.MODE_SINGLE
+        mode = mode | MODE_SINGLE
     return mode
 
 def get_MODE_names(mode):
-    import gtk.gdkgl
-    friendly_mode_names = {gtk.gdkgl.MODE_RGB       : "RGB",
-                           gtk.gdkgl.MODE_RGBA      : "RGBA",
-                           gtk.gdkgl.MODE_ALPHA     : "ALPHA",
-                           gtk.gdkgl.MODE_DEPTH     : "DEPTH",
-                           gtk.gdkgl.MODE_DOUBLE    : "DOUBLE",
-                           gtk.gdkgl.MODE_SINGLE    : "SINGLE"}
+    from xpra.client.gl.gtk_compat import MODE_RGB, MODE_RGBA, MODE_ALPHA, MODE_DEPTH, MODE_DOUBLE, MODE_SINGLE
+    friendly_mode_names = {MODE_RGB         : "RGB",
+                           MODE_RGBA        : "RGBA",
+                           MODE_ALPHA       : "ALPHA",
+                           MODE_DEPTH       : "DEPTH",
+                           MODE_DOUBLE      : "DOUBLE",
+                           MODE_SINGLE      : "SINGLE"}
     friendly_modes = [v for k,v in friendly_mode_names.items() if k>0 and (k&mode)==k]
     #special case for single (value is zero!)
-    if not (mode&gtk.gdkgl.MODE_DOUBLE==gtk.gdkgl.MODE_DOUBLE):
+    if not (mode&MODE_DOUBLE==MODE_DOUBLE):
         friendly_modes.append("SINGLE")
     return friendly_modes
 
@@ -113,10 +113,21 @@ def check_functions(*functions):
     else:
         log("All the required OpenGL functions are available: %s " % (", ".join(available)))
 
+
 #sanity checks: OpenGL version and fragment program support:
-def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=False):
-    if not gldrawable.gl_begin(glcontext):
-        raise ImportError("gl_begin failed on %s" % gldrawable)
+def check_GL_support(widget, min_texture_size=0, force_enable=False):
+    from xpra.client.gl.gtk_compat import begin_gl, end_gl
+    try:
+        if not begin_gl(widget):
+            raise ImportError("failed to get an opengl context")
+    except Exception as e:
+        raise ImportError("error getting an opengl context: %s" % e)
+    try:
+        return do_check_GL_support(min_texture_size, force_enable)
+    finally:
+        end_gl(widget)
+
+def do_check_GL_support(min_texture_size, force_enable):
     props = {}
     try:
         #log redirection:
@@ -152,8 +163,9 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         else:
             log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
         try:
-            extensions = glGetString(GL_EXTENSIONS).split(" ")
+            extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
         except:
+            log("error querying extensions", exc_info=True)
             extensions = []
             gl_check_error("OpenGL could not find the list of GL extensions - does the graphics driver support OpenGL?")
         log("OpenGL extensions found: %s", ", ".join(extensions))
@@ -171,6 +183,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
                           ("shading language version", GL_SHADING_LANGUAGE_VERSION, False)):
             try:
                 v = glGetString(s)
+                v = v.decode()
                 log("%s: %s", d, v)
             except:
                 if fatal:
@@ -183,6 +196,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
         for d,s in {"GLU version": GLU_VERSION, "GLU extensions":GLU_EXTENSIONS}.items():
             v = gluGetString(s)
+            v = v.decode()
             log("%s: %s", d, v)
             props[d] = v
 
@@ -344,7 +358,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         restore_logger(alogger)
         restore_logger(arlogger)
         restore_logger(clogger)
-        gldrawable.gl_end()
+
 
 def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
     #platform checks:
@@ -354,29 +368,26 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
         gl_check_error(warning)
 
     props = {}
-    import gtk.gdk
-    import gtk.gdkgl, gtk.gtkgl
-    assert gtk.gdkgl is not None and gtk.gtkgl is not None
-    log("pygdkglext version=%s", gtk.gdkgl.pygdkglext_version)
-    props["pygdkglext_version"] = gtk.gdkgl.pygdkglext_version
-    log("gtkglext_version=%s", gtk.gdkgl.gdkglext_version)
-    props["gdkglext_version"] = gtk.gdkgl.gdkglext_version
-    log("pygdkglext OpenGL version=%s", gtk.gdkgl.query_version())
-    props["gdkgl_version"] = gtk.gdkgl.query_version()
+    #this will import gtk.gtkgl / gdkgl or gi.repository.GtkGLExt / GdkGLExt:
+    from xpra.client.gl.gtk_compat import get_info, gtkgl, gdkgl, Config_new_by_mode, MODE_DOUBLE, RGBA_TYPE
+    props.update(get_info())
     display_mode = get_DISPLAY_MODE()
-    try:
-        glconfig = gtk.gdkgl.Config(mode=display_mode)
-    except gtk.gdkgl.NoMatches as e:
-        log("no match: %s, toggling double-buffering", e)
-        display_mode &= ~gtk.gdkgl.MODE_DOUBLE
-        glconfig = gtk.gdkgl.Config(mode=display_mode)
+    glconfig = Config_new_by_mode(display_mode)
+    if glconfig is None:
+        log("trying to toggle double-buffering")
+        display_mode &= ~MODE_DOUBLE
+        glconfig = Config_new_by_mode(display_mode)
+        if not glconfig:
+            raise Exception("cannot setup an OpenGL context")
     props["display_mode"] = get_MODE_names(display_mode)
     props["glconfig"] = glconfig
     props["has_alpha"] = glconfig.has_alpha()
     props["rgba"] = glconfig.is_rgba()
     log("GL props=%s", props)
-    assert gtk.gdkgl.query_extension()
-    glcontext, gldrawable, glext, w = None, None, None, None
+    from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
+    gtk = import_gtk()
+    assert gdkgl.query_extension()
+    glext, w = None, None
     try:
         #ugly code for win32 and others (virtualbox broken GL drivers)
         #for getting a GL drawable and context: we must use a window...
@@ -389,7 +400,9 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
         w = gtk.Window()
         w.set_decorated(False)
         vbox = gtk.VBox()
-        glarea = gtk.gtkgl.DrawingArea(glconfig)
+        glarea = gtk.DrawingArea()
+        # Set OpenGL-capability to the widget
+        gtkgl.widget_set_gl_capability(glarea, glconfig, None, True, RGBA_TYPE)
         glarea.set_size_request(32, 32)
         vbox.add(glarea)
         vbox.show_all()
@@ -397,25 +410,26 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
         #we don't need to actually show the window!
         #w.show_all()
         glarea.realize()
-        gtk.gdk.window_process_all_updates()
-        gldrawable = glarea.get_gl_drawable()
-        glcontext = glarea.get_gl_context()
+        gdk_window_process_all_updates()
 
-        gl_props = check_GL_support(gldrawable, glcontext, min_texture_size, force_enable)
+        gl_props = check_GL_support(glarea, min_texture_size, force_enable)
 
         if check_colormap:
-            rgb_visual = w.get_screen().get_rgb_visual()
-            rgba_visual = w.get_screen().get_rgba_visual()
-            gl_props["rgb_visual"] = visual_to_str(rgb_visual)
-            gl_props["rgba_visual"] = visual_to_str(rgba_visual)
+            s = w.get_screen()
+            for x in ("rgb_visual", "rgba_visual", "system_visual"):
+                try:
+                    visual = getattr(s, "get_%s" % x)()
+                    gl_props[x] = visual_to_str(visual)
+                except:
+                    pass
             #i = 0
-            #for v in w.get_screen().list_visuals():
+            #for v in s.list_visuals():
             #    gl_props["visual[%s]" % i] = visual_to_str(v)
             #    i += 1
     finally:
         if w:
             w.destroy()
-        del glcontext, gldrawable, glext, glconfig
+        del glext, glconfig
     props.update(gl_props)
     return props
 
@@ -428,6 +442,8 @@ def main():
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
             log.enable_debug()
+            from xpra.client.gl.gtk_compat import log as clog
+            clog.enable_debug()
         #replace ImportError with a log message:
         global gl_check_error
         errors = []

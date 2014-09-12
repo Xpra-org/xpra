@@ -90,6 +90,15 @@ if is_gtk3():
     JUSTIFY_LEFT    = gtk.Justification.LEFT
     JUSTIFY_RIGHT   = gtk.Justification.RIGHT
 
+    LSB_FIRST       = gdk.ByteOrder.LSB_FIRST
+    MSB_FIRST       = gdk.ByteOrder.MSB_FIRST
+    STATIC_GRAY     = gdk.VisualType.STATIC_GRAY
+    GRAYSCALE       = gdk.VisualType.GRAYSCALE
+    STATIC_COLOR    = gdk.VisualType.STATIC_COLOR
+    PSEUDO_COLOR    = gdk.VisualType.PSEUDO_COLOR
+    TRUE_COLOR      = gdk.VisualType.TRUE_COLOR
+    DIRECT_COLOR    = gdk.VisualType.DIRECT_COLOR
+
     SHIFT_MASK      = gdk.ModifierType.SHIFT_MASK
     LOCK_MASK       = gdk.ModifierType.LOCK_MASK
     META_MASK       = gdk.ModifierType.META_MASK
@@ -135,6 +144,7 @@ if is_gtk3():
     import signal
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+    gdk_window_process_all_updates = gdk.Window.process_all_updates
     def gtk_main():
         gdk.threads_init()
         try:
@@ -181,6 +191,15 @@ else:
     JUSTIFY_LEFT    = gtk.JUSTIFY_LEFT
     JUSTIFY_RIGHT   = gtk.JUSTIFY_RIGHT
 
+    LSB_FIRST       = gtk.gdk.LSB_FIRST
+    MSB_FIRST       = gtk.gdk.MSB_FIRST
+    STATIC_GRAY     = gtk.gdk.VISUAL_STATIC_GRAY
+    GRAYSCALE       = gtk.gdk.VISUAL_GRAYSCALE
+    STATIC_COLOR    = gtk.gdk.VISUAL_STATIC_COLOR
+    PSEUDO_COLOR    = gtk.gdk.VISUAL_PSEUDO_COLOR
+    TRUE_COLOR      = gtk.gdk.VISUAL_TRUE_COLOR
+    DIRECT_COLOR    = gtk.gdk.VISUAL_DIRECT_COLOR
+
     SHIFT_MASK      = gtk.gdk.SHIFT_MASK
     LOCK_MASK       = gtk.gdk.LOCK_MASK
     META_MASK       = gdk.META_MASK
@@ -196,6 +215,7 @@ else:
     def GetClipboard(selection):
         return gtk.Clipboard(selection=selection)
 
+    gdk_window_process_all_updates = gdk.window_process_all_updates
     def gtk_main():
         if gtk.main_level()==0:
             gdk.threads_init()

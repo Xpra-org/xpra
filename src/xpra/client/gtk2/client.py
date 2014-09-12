@@ -372,8 +372,7 @@ class XpraClient(GTKXpraClient):
         self.opengl_props["info"] = ""
         try:
             __import__("xpra.client.gl", {}, {}, [])
-            __import__("gtk.gdkgl", {}, {}, [])
-            __import__("gtk.gtkgl", {}, {}, [])
+            __import__("xpra.client.gl.gtk_compat", {}, {}, [])
             gl_check = __import__("xpra.client.gl.gl_check", {}, {}, ["check_support"])
             w, h = self.get_root_size()
             min_texture_size = max(w, h)
