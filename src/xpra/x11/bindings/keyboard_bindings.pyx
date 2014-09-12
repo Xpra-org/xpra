@@ -209,17 +209,22 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             log.warn("XkbRF_GetNamesProp failed, returning defaults: %s", v)
             return v
         v = {}
+        def s(v):
+            try:
+                return v.decode()
+            except:
+                return str(v)
         if len(tmp)>0:
-            v["rules"] = str(tmp[:])
+            v["rules"] = s(tmp[:])
             XFree(tmp)
         if vd.model:
-            v["model"]  = str(vd.model[:])
+            v["model"]  = s(vd.model[:])
             XFree(vd.model)
         if vd.layout:
-            v["layout"] = str(vd.layout[:])
+            v["layout"] = s(vd.layout[:])
             XFree(vd.layout)
         if vd.options!=NULL:
-            v["options"] = str(vd.options).split("\0")
+            v["options"] = s(vd.options).split("\0")
             XFree(vd.options)
         #log("vd.num_extra=%s", vd.num_extra)
         if vd.extra_names:
