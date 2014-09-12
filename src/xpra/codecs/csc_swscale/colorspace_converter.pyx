@@ -222,7 +222,7 @@ if (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO
         log.warn("cowardly refusing to use it to avoid problems, set the environment variable:")
         log.warn("XPRA_FORCE_SWSCALE=1")
         log.warn("to use it anyway, at your own risk")
-        raise ImportError("unsupported Ubuntu swscale version: %s" % str(get_version()))
+        COLORSPACES = []
 
 
 cdef class CSCImage:
