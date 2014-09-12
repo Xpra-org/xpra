@@ -475,3 +475,23 @@ def choose_file(parent_window, title, action, action_button, callback, file_filt
         return
     filename = filenames[0]
     callback(filename)
+
+
+def main():
+    from xpra.util import nonl, pver
+    def print_dict(d):
+        for k in sorted(d.keys()):
+            v = d[k]
+            print("* %s : %s" % (str(k).replace(".version", "").ljust(12), nonl(pver(v))))
+    from xpra.platform import init, clean
+    try:
+        init("GTK-Version-Info", "GTK Version Info")
+        print("GTK Version:")
+        print_dict(GTK_VERSION_INFO)
+    finally:
+        clean()
+
+
+if __name__ == "__main__":
+    main()
+    sys.exit(0)
