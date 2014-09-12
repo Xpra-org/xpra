@@ -154,6 +154,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         try:
             extensions = glGetString(GL_EXTENSIONS).split(" ")
         except:
+            extensions = []
             gl_check_error("OpenGL could not find the list of GL extensions - does the graphics driver support OpenGL?")
         log("OpenGL extensions found: %s", ", ".join(extensions))
         props["extensions"] = extensions
