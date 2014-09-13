@@ -94,9 +94,10 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def add_full_menu(self):
         log("OSXMenuHelper.add_full_menu()")
         assert self.client
-        _, info_menu = self.menus.get("Info")
-        info_menu.append(self.make_sessioninfomenuitem())
-        info_menu.append(self.make_bugreportmenuitem())
+        if SHOW_ABOUT_XPRA:
+            _, info_menu = self.menus.get("Info")
+            info_menu.append(self.make_sessioninfomenuitem())
+            info_menu.append(self.make_bugreportmenuitem())
         features_menu = self.make_osxmenu("Features")
         features_menu.add(self.make_bellmenuitem())
         features_menu.add(self.make_cursorsmenuitem())
