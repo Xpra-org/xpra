@@ -23,5 +23,5 @@ if not os.path.exists(filename):
 cwd = os.getcwd()
 if cwd not in sys.path:
     sys.path.append(cwd)
-execfile(filename)
+exec(open(filename).read())
 ret(0)
