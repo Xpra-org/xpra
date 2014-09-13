@@ -552,7 +552,8 @@ class UIXpraClient(XpraClientBase):
             traylog("xpra_tray_exit(%s)", args)
             self.disconnect_and_quit(0, CLIENT_EXIT)
         def xpra_tray_geometry(*args):
-            traylog("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())
+            if tray:
+                traylog("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())
         menu = None
         if self.menu_helper:
             menu = self.menu_helper.build()
