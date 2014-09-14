@@ -394,7 +394,7 @@ def cython_add(extension, min_version=(0, 19)):
     from Cython.Distutils import build_ext
     ext_modules.append(extension)
     global cmdclass
-    cmdclass = {'build_ext': build_ext}
+    cmdclass['build_ext'] = build_ext
 
 def add_to_keywords(kw, key, *args):
     values = kw.setdefault(key, [])
