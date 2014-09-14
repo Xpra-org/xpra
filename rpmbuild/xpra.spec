@@ -4,7 +4,11 @@
 # later version. See the file COPYING for details.
 
 %define version 0.15.0
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%if 0%{?rhel} && 0%{?rhel} <= 6
+%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%endif
+
 %if 0%{?build_no} == 0
 %define build_no 0
 %endif
@@ -20,6 +24,7 @@
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils
 #This would add support for mp3, but is not in the default repositories:
 #gstreamer-plugins-ugly
+%define py3k 1
 
 %define libwebp libwebp
 %define libvpx libvpx
@@ -32,6 +37,8 @@
 #(so it can be installed if desired):
 %define no_sound 0
 %define requires_sound %{nil}
+#don't have python3 by default:
+%define py3k 0
 %endif
 
 %if 0%{?el6}
@@ -106,6 +113,13 @@ BuildRequires: desktop-file-utils
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 
+%if %{py3k}
+BuildRequires: python3-devel
+BuildRequires: gtk3-devel
+#BuildRequires: pygobject3-devel
+BuildRequires: gobject-introspection-devel
+%endif
+
 
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -114,32 +128,47 @@ So basically it's screen for remote X apps.
 
 
 %prep
-rm -rf $RPM_BUILD_DIR/xpra-%{version}
+rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
-cd xpra-%{version}
+mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
+rm -rf $RPM_BUILD_DIR/xpra-%{version}-python3 $RPM_BUILD_DIR/xpra-%{version}
+bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
+mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
 
 
 %debug_package
 
 
 %build
-cd xpra-%{version}
+pushd xpra-%{version}-python3
 rm -rf build install
-
 # set pkg_config_path for xpra video libs
 PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%{_libdir}/xpra/pkgconfig
 export PKG_CONFIG_PATH
+CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python3} setup.py build %{dummy}
+popd
 
-CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra python setup.py build %{dummy}
+pushd xpra-%{version}-python2
+rm -rf build install
+# set pkg_config_path for xpra video libs
+PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%{_libdir}/xpra/pkgconfig
+export PKG_CONFIG_PATH
+CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python2} setup.py build %{dummy}
+popd
+
 
 %install
 rm -rf $RPM_BUILD_ROOT
-cd xpra-%{version}
-%{__python} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
-
+pushd xpra-%{version}-python3
+%{__python3} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
+popd
+pushd xpra-%{version}-python2
+%{__python2} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
+popd
 
 %if 0%{?no_sound}
-rm -fr ${RPM_BUILD_ROOT}/%{python_sitearch}/xpra/sound
+rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/xpra/sound
+rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/xpra/sound
 %endif
 
 
@@ -150,8 +179,10 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %{_bindir}/xpra*
-%{python_sitearch}/xpra
-%{python_sitearch}/xpra-*.egg-info
+%{python2_sitearch}/xpra
+%{python2_sitearch}/xpra-*.egg-info
+%{python3_sitearch}/xpra
+%{python3_sitearch}/xpra-*.egg-info
 %{_datadir}/xpra
 %{_datadir}/man/man1/xpra*
 %{_datadir}/applications/xpra_launcher.desktop
