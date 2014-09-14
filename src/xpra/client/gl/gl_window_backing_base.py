@@ -382,7 +382,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         #   change fragment program
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
-    def present_fbo(self):
+    def present_fbo(self, x, y, w, h):
         if not self.paint_screen:
             return
         self.gl_marker("Presenting FBO on screen")
@@ -398,7 +398,11 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         # Draw FBO texture on screen
         self.set_rgb_paint_state()
-        w, h = self.size
+        ww, wh = self.size
+        if self.glconfig.is_double_buffered():
+            #refresh the whole window:
+            x, y = 0, 0
+            w, h = ww, wh
 
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
         if self._alpha_enabled:
@@ -406,19 +410,20 @@ class GLWindowBackingBase(GTKWindowBacking):
             glEnablei(GL_BLEND, self.textures[TEX_FBO])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glBegin(GL_QUADS)
-        glTexCoord2i(0, h)
-        glVertex2i(0, 0)
-        glTexCoord2i(0, 0)
-        glVertex2i(0, h)
-        glTexCoord2i(w, 0)
-        glVertex2i(w, h)
-        glTexCoord2i(w, h)
-        glVertex2i(w, 0)
+        #note how we invert coordinates..
+        glTexCoord2i(x, wh-y)
+        glVertex2i(x, y)            #top-left of window viewport
+        glTexCoord2i(x, wh-y-h)
+        glVertex2i(x, y+h)          #bottom-left of window viewport
+        glTexCoord2i(x+w, wh-y-h)
+        glVertex2i(x+w, y+h)        #bottom-right of window viewport
+        glTexCoord2i(x+w, wh-y)
+        glVertex2i(x+w, y)          #top-right of window viewport
         glEnd()
+        glDisable(GL_TEXTURE_RECTANGLE_ARB)
 
         #if desired, paint window border
         if self.border and self.border.shown:
-            glDisable(GL_TEXTURE_RECTANGLE_ARB)
             #double size since half the line will be off-screen
             glLineWidth(self.border.size*2)
             glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)
@@ -441,13 +446,14 @@ class GLWindowBackingBase(GTKWindowBacking):
     def gl_show(self):
         if self.glconfig.is_double_buffered():
             # Show the backbuffer on screen
-            log("%s.present_fbo() swapping buffers now", self)
+            log("%s.gl_show() swapping buffers now", self)
             gldrawable = self.get_gl_drawable()
             gldrawable.swap_buffers()
             # Clear the new backbuffer to illustrate that its contents are undefined
             glClear(GL_COLOR_BUFFER_BIT)
         else:
             #just ensure stuff gets painted:
+            log("%s.gl_show() flushing", self)
             glFlush()
 
 
@@ -529,7 +535,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glEnd()
 
             # Present update to screen
-            self.present_fbo()
+            self.present_fbo(x, y, width, height)
             # present_fbo has reset state already
         return True
 
@@ -582,7 +588,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                     y_scale = float(height)/enc_height
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
                 # Present it on screen
-                self.present_fbo()
+                self.present_fbo(x, y, enc_width, enc_height)
             fire_paint_callbacks(callbacks, True)
         except Exception as e:
             log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
