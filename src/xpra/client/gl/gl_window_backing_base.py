@@ -463,8 +463,6 @@ class GLWindowBackingBase(GTKWindowBacking):
             log("%s.gl_show() swapping buffers now", self)
             gldrawable = self.get_gl_drawable()
             gldrawable.swap_buffers()
-            # Clear the new backbuffer to illustrate that its contents are undefined
-            glClear(GL_COLOR_BUFFER_BIT)
         else:
             #just ensure stuff gets painted:
             log("%s.gl_show() flushing", self)
