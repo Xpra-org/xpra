@@ -33,6 +33,8 @@ from OpenGL.GL import \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_2D, \
+    GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
+    glHint, \
     glBlendFunc, \
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
@@ -305,6 +307,10 @@ class GLWindowBackingBase(GTKWindowBacking):
             glLoadIdentity()
             glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
             glMatrixMode(GL_MODELVIEW)
+            # Mesa docs claim: this hint can improve the speed of texturing
+            #when perspective-correct texture coordinate interpolation isn't needed,
+            #such as when using a glOrtho() projection:
+            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
             # Could be more optimal to use vertex arrays:
             # glEnableClientState(GL_VERTEX_ARRAY)
             # glEnableClientState(GL_TEXTURE_COORD_ARRAY)
