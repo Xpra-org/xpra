@@ -1425,9 +1425,11 @@ else:
             shutil.copyfile(src_xpra_conf, dst_xpra_conf)
 
     # add build_conf to build step
-    cmdclass['build'] = build_override
-    cmdclass['build_conf'] = build_conf
-    cmdclass['install_data'] = install_data_override
+    cmdclass.update({
+             'build'        : build_override,
+             'build_conf'   : build_conf,
+             'install_data' : install_data_override,
+             })
 
     if OSX:
         #pyobjc needs email.parser
