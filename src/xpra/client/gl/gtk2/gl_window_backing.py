@@ -37,4 +37,5 @@ class GLPixmapBacking(GLWindowBackingBase):
             return
         with context:
             self.gl_init()
-            self.present_fbo()
+            w, h = self.size
+            self.present_fbo(0, 0, w, h)
