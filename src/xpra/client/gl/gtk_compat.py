@@ -27,8 +27,8 @@ if is_gtk3():
 
     def get_info():
         return {
-                "gdkgl_version"         : GdkGLExt._version,
-                "gtkgl_version"         : GtkGLExt._version,
+                "gdkgl.version"         : GdkGLExt._version,
+                "gtkgl.version"         : GtkGLExt._version,
                 }
     gdkgl = GdkGLExt
     gtkgl = GtkGLExt
@@ -73,10 +73,10 @@ else:
 
     def get_info():
         return {
-                 "pygdkglext_version"   : gdkgl.pygdkglext_version,
-                 "gtkglext_version"     : gtkgl.gtkglext_version,
-                 "gdkglext_version"     : gdkgl.gdkglext_version,
-                 "gdkgl_version"        : gdkgl.query_version()
+                 "pygdkglext.version"   : gdkgl.pygdkglext_version,
+                 "gtkglext.version"     : gtkgl.gtkglext_version,
+                 "gdkglext.version"     : gdkgl.gdkglext_version,
+                 "gdkgl.version"        : gdkgl.query_version()
                  }
 
     class GLContextManager(object):
