@@ -10,6 +10,7 @@ import os
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
+OPENGL_PAINT_BOX = os.environ.get("XPRA_OPENGL_PAINT_BOX", "0")=="1"
 
 from xpra.gtk_common.gtk_util import import_gobject
 idle_add = import_gobject().idle_add
@@ -422,6 +423,15 @@ class GLWindowBackingBase(GTKWindowBacking):
         glEnd()
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
 
+        #show region being painted:
+        if OPENGL_PAINT_BOX:
+            glLineWidth(1)
+            glColor4f(0.8, 0.4, 0.4, 0.3)   #red-ish
+            glBegin(GL_LINE_LOOP)
+            for x,y in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
+                glVertex2i(x, y)
+            glEnd()
+
         #if desired, paint window border
         if self.border and self.border.shown:
             #double size since half the line will be off-screen
@@ -431,8 +441,6 @@ class GLWindowBackingBase(GTKWindowBacking):
             for x,y in ((0, 0), (w, 0), (w, h), (0, h)):
                 glVertex2i(x, y)
             glEnd()
-            #reset color to default
-            glColor4f(1.0, 1.0, 1.0, 1.0)
 
         # Show the backbuffer on screen
         self.gl_show()
