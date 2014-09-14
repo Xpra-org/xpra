@@ -1615,8 +1615,14 @@ toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "gi")
 toggle_packages(client_ENABLED and qt4_ENABLED, "xpra.client.qt4", "PyQt4")
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
+toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client.gl.gtk2")
+toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
+#we can't just include "xpra.client.gl" because cx_freeze and py2exe then do the wrong thing
+#and try to include both gtk3 and gtk2, and fail hard..
+for x in ("gl_check", "gl_colorspace_conversions", "gl_window_backing_base", "gtk_compat"):
+    toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl.%s" % x)
+
 toggle_packages(sound_ENABLED, "xpra.sound")
-toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:

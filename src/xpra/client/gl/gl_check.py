@@ -23,13 +23,14 @@ if False:
     BLACKLIST["vendor"].append("Intel Inc.")
     WHITELIST["renderer"] = ["Intel HD Graphics 4000 OpenGL Engine"]
 
-
-DEFAULT_ALPHA = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
+#alpha requires gtk3 or *nix only for gtk2:
+DEFAULT_ALPHA = sys.version>'3' or (not sys.platform.startswith("win") and not sys.platform.startswith("darwin"))
 GL_ALPHA_SUPPORTED = os.environ.get("XPRA_ALPHA", DEFAULT_ALPHA) in (True, "1")
 DEFAULT_DOUBLE_BUFFERED = 0
-if sys.platform.startswith("win"):
-    #needed on win32?
-    DEFAULT_DOUBLE_BUFFERED = 1
+#not working with gtk3 yet?
+CAN_DOUBLE_BUFFER = True
+#needed on win32?:
+DEFAULT_DOUBLE_BUFFERED = sys.platform.startswith("win") and CAN_DOUBLE_BUFFER
 DOUBLE_BUFFERED = os.environ.get("XPRA_OPENGL_DOUBLE_BUFFERED", str(DEFAULT_DOUBLE_BUFFERED))=="1"
 
 
@@ -116,16 +117,9 @@ def check_functions(*functions):
 
 #sanity checks: OpenGL version and fragment program support:
 def check_GL_support(widget, min_texture_size=0, force_enable=False):
-    from xpra.client.gl.gtk_compat import begin_gl, end_gl
-    try:
-        if not begin_gl(widget):
-            raise ImportError("failed to get an opengl context")
-    except Exception as e:
-        raise ImportError("error getting an opengl context: %s" % e)
-    try:
+    from xpra.client.gl.gtk_compat import GLContextManager
+    with GLContextManager(widget):
         return do_check_GL_support(min_texture_size, force_enable)
-    finally:
-        end_gl(widget)
 
 def do_check_GL_support(min_texture_size, force_enable):
     props = {}
@@ -369,16 +363,16 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
 
     props = {}
     #this will import gtk.gtkgl / gdkgl or gi.repository.GtkGLExt / GdkGLExt:
-    from xpra.client.gl.gtk_compat import get_info, gtkgl, gdkgl, Config_new_by_mode, MODE_DOUBLE, RGBA_TYPE
+    from xpra.client.gl.gtk_compat import get_info, gdkgl, Config_new_by_mode, MODE_DOUBLE, GLDrawingArea
     props.update(get_info())
     display_mode = get_DISPLAY_MODE()
     glconfig = Config_new_by_mode(display_mode)
-    if glconfig is None:
+    if glconfig is None and CAN_DOUBLE_BUFFER:
         log("trying to toggle double-buffering")
         display_mode &= ~MODE_DOUBLE
         glconfig = Config_new_by_mode(display_mode)
-        if not glconfig:
-            raise Exception("cannot setup an OpenGL context")
+    if not glconfig:
+        raise Exception("cannot setup an OpenGL context")
     props["display_mode"] = get_MODE_names(display_mode)
     props["glconfig"] = glconfig
     props["has_alpha"] = glconfig.has_alpha()
@@ -400,9 +394,7 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
         w = gtk.Window()
         w.set_decorated(False)
         vbox = gtk.VBox()
-        glarea = gtk.DrawingArea()
-        # Set OpenGL-capability to the widget
-        gtkgl.widget_set_gl_capability(glarea, glconfig, None, True, RGBA_TYPE)
+        glarea = GLDrawingArea(glconfig)
         glarea.set_size_request(32, 32)
         vbox.add(glarea)
         vbox.show_all()

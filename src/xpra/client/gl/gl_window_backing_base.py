@@ -4,23 +4,22 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#only works with gtk2:
 import sys
 import os
-from gtk import gdk
-assert gdk
-import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
-assert gtk.gdkgl is not None and gtk.gtkgl is not None
-import gobject
 
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 
+from xpra.gtk_common.gtk_util import import_gobject
+idle_add = import_gobject().idle_add
+
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED
+from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
+from xpra.client.gl.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GLContextManager, GLDrawingArea
+from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
-from xpra.client.gtk2.window_backing import GTK2WindowBacking, fire_paint_callbacks
 from OpenGL import version as OpenGL_version
 from OpenGL.GL import \
     GL_PROJECTION, GL_MODELVIEW, \
@@ -104,6 +103,11 @@ from ctypes import c_char_p
 memoryview_type = None
 if sys.version_info[:2]>=(2,7) and OpenGL_version.__version__.split('.')[:2]>=['3','1']:
     memoryview_type = memoryview
+try:
+    buffer_type = buffer
+except:
+    #not defined in py3k..
+    buffer_type = None
 
 
 # Texture number assignment
@@ -125,7 +129,6 @@ YUV2RGB_SHADER = 0
 RGBP2RGB_SHADER = 1
 
 """
-This is the gtk2 + OpenGL version.
 The logic is as follows:
 
 We create an OpenGL framebuffer object, which will be always up-to-date with the latest windows contents.
@@ -134,29 +137,57 @@ textured quad when requested, that is: after each YUV or RGB painting operation,
 The use of a intermediate framebuffer object is the only way to guarantee that the client keeps an always fully up-to-date
 window image, which is critical because of backbuffer content losses upon buffer swaps or offscreen window movement.
 """
-class GLPixmapBacking(GTK2WindowBacking):
+class GLWindowBackingBase(GTKWindowBacking):
 
     RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"]
     HAS_ALPHA = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid, w, h, window_alpha):
-        #initialize those early as we use them in __repr__
         self.wid = wid
         self.size = 0, 0
         self.pixel_format = None
+        self.texture_pixel_format = None
+        #this is the pixel format we are currently updating the fbo with
+        #can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
+        self.pixel_format = None
+        self.textures = None # OpenGL texture IDs
+        self.shaders = None
+        self.size = 0, 0
+        self.texture_size = 0, 0
+        self.gl_setup = False
+        self.debug_setup = False
+        self.border = None
+        self.paint_screen = False
+        self.draw_needs_refresh = False
+        self.offscreen_fbo = None
+
+        GTKWindowBacking.__init__(self, wid, window_alpha)
+        self.init_gl_config(window_alpha)
+        self.init_backing()
+        #this is how many bpp we keep in the texture
+        #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
+        if self._alpha_enabled:
+            self.texture_pixel_format = GL_RGBA
+        else:
+            self.texture_pixel_format = GL_RGB
+        self._backing.show()
+
+    def init_gl_config(self, window_alpha):
+        #setup gl config:
         alpha = GL_ALPHA_SUPPORTED and window_alpha
         display_mode = get_DISPLAY_MODE(want_alpha=alpha)
-        try:
-            self.glconfig = gtk.gdkgl.Config(mode=display_mode)
-        except gtk.gdkgl.NoMatches:
-            #toggle double buffering and try again:
-            display_mode &= ~gtk.gdkgl.MODE_DOUBLE
-            log.warn("failed to initialize gl context: trying again %s double buffering", (bool(display_mode & gtk.gdkgl.MODE_DOUBLE) and "with") or "without")
-            self.glconfig = gtk.gdkgl.Config(mode=display_mode)
-        GTK2WindowBacking.__init__(self, wid, alpha and self.glconfig.has_alpha())
-        self._backing = gtk.gtkgl.DrawingArea(self.glconfig)
-        #restoring missed masks:
-        self._backing.set_events(self._backing.get_events() | gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK)
+        self.glconfig = Config_new_by_mode(display_mode)
+        if self.glconfig is None and CAN_DOUBLE_BUFFER:
+            log("trying to toggle double-buffering")
+            display_mode &= ~MODE_DOUBLE
+            self.glconfig = Config_new_by_mode(display_mode)
+        if not self.glconfig:
+            raise Exception("cannot setup an OpenGL context")
+
+    def init_backing(self):
+        self._backing = GLDrawingArea(self.glconfig)
+        #must be overriden in subclasses to setup self._backing
+        assert self._backing
         if self._alpha_enabled:
             assert GL_ALPHA_SUPPORTED, "BUG: cannot enable alpha if GL backing does not support it!"
             screen = self._backing.get_screen()
@@ -171,31 +202,10 @@ class GLPixmapBacking(GTK2WindowBacking):
             else:
                 log.warn("failed to enable transparency on screen %s", screen)
                 self._alpha_enabled = False
-        #this is how many bpp we keep in the texture
-        #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
-        if self._alpha_enabled:
-            self.texture_pixel_format = GL_RGBA
-        else:
-            self.texture_pixel_format = GL_RGB
-        #this is the pixel format we are currently updating the fbo with
-        #can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
-        self.pixel_format = None
-        self._backing.show()
-        self._backing.connect("expose_event", self.gl_expose_event)
-        self.textures = None # OpenGL texture IDs
-        self.shaders = None
-        self.size = 0, 0
-        self.texture_size = 0, 0
-        self.gl_setup = False
-        self.debug_setup = False
-        self.border = None
-        self.paint_screen = False
-        self._video_use_swscale = False
-        self.draw_needs_refresh = False
-        self.offscreen_fbo = None
+
 
     def __repr__(self):
-        return "GLPixmapBacking(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
+        return "GLWindowBacking(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
 
     def init(self, w, h):
         #re-init gl projection with new dimensions
@@ -270,18 +280,23 @@ class GLPixmapBacking(GTK2WindowBacking):
                 #FIXME: maybe we should do something else here?
                 log.error(err)
 
-    def gl_init(self):
-        drawable = self.gl_begin()
+    def gl_context(self):
+        if not self._backing:
+            return None
         w, h = self.size
-        log("%s.gl_init() GL Pixmap backing size: %d x %d, drawable=%s", self, w, h, drawable)
-        if not drawable:
-            return  None
+        context = GLContextManager(self._backing)
+        log("%s.gl_context() GL Pixmap backing size: %d x %d, context=%s", self, w, h, context)
+        return context
 
+    def gl_init(self):
+        #must be called within a context!
+        #performs init if needed
         if not self.debug_setup:
             self.debug_setup = True
             self.gl_init_debug()
 
         if not self.gl_setup:
+            w, h = self.size
             self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))
             # Initialize viewport and matrices for 2D rendering
             glViewport(0, 0, w, h)
@@ -325,7 +340,6 @@ class GLPixmapBacking(GTK2WindowBacking):
             # Bind program 0 for YUV painting by default
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
             self.gl_setup = True
-        return drawable
 
     def close(self):
         #This seems to cause problems, so we rely
@@ -338,21 +352,8 @@ class GLPixmapBacking(GTK2WindowBacking):
         #    self.textures = None
         if self._backing:
             self._backing.destroy()
-        GTK2WindowBacking.close(self)
+            self._backing = None
         self.glconfig = None
-
-    def gl_begin(self):
-        if self._backing is None:
-            return None     #closed already
-        drawable = self._backing.get_gl_drawable()
-        context = self._backing.get_gl_context()
-        if drawable is None or context is None:
-            log.error("%s.gl_begin() no drawable or context!", self)
-            return None
-        if not drawable.gl_begin(context):
-            log.error("%s.gl_begin() cannot create rendering context!", self)
-            return None
-        return drawable
 
     def set_rgb_paint_state(self):
         # Set GL state for RGB painting:
@@ -381,11 +382,10 @@ class GLPixmapBacking(GTK2WindowBacking):
         #   change fragment program
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
-    def present_fbo(self, drawable):
+    def present_fbo(self):
         if not self.paint_screen:
             return
-        self.gl_marker("Presenting FBO on screen for drawable %s" % drawable)
-        assert drawable
+        self.gl_marker("Presenting FBO on screen")
         # Change state to target screen instead of our FBO
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
@@ -430,28 +430,26 @@ class GLPixmapBacking(GTK2WindowBacking):
             glColor4f(1.0, 1.0, 1.0, 1.0)
 
         # Show the backbuffer on screen
-        if drawable.is_double_buffered():
-            log("%s.present_fbo() swapping buffers now", self)
-            drawable.swap_buffers()
-            # Clear the new backbuffer to illustrate that its contents are undefined
-            glClear(GL_COLOR_BUFFER_BIT)
-        else:
-            glFlush()
+        self.gl_show()
         self.gl_frame_terminator()
 
         self.unset_rgb_paint_state()
+        log("%s(%s, %s)", glBindFramebuffer, GL_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
         log("%s.present_fbo() done", self)
 
-    def gl_expose_event(self, glarea, event):
-        log("%s.gl_expose_event(%s, %s)", self, glarea, event)
-        drawable = self.gl_init()
-        if not drawable:
-            return
-        try:
-            self.present_fbo(drawable)
-        finally:
-            drawable.gl_end()
+    def gl_show(self):
+        if self.glconfig.is_double_buffered():
+            # Show the backbuffer on screen
+            log("%s.present_fbo() swapping buffers now", self)
+            gldrawable = self.get_gl_drawable()
+            gldrawable.swap_buffers()
+            # Clear the new backbuffer to illustrate that its contents are undefined
+            glClear(GL_COLOR_BUFFER_BIT)
+        else:
+            #just ensure stuff gets painted:
+            glFlush()
+
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         return self._do_paint_rgb(32, img_data, x, y, width, height, rowstride, options)
@@ -460,23 +458,23 @@ class GLPixmapBacking(GTK2WindowBacking):
         return self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options)
 
     def _do_paint_rgb(self, bpp, img_data, x, y, width, height, rowstride, options):
-        log("%s._do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d)", self, bpp, len(img_data), x, y, width, height, rowstride)
-        drawable = self.gl_init()
-        if not drawable:
-            log("%s._do_paint_rgb(..) drawable is not set!", self)
-            return False
-
+        log("%s._do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)", self, bpp, len(img_data), x, y, width, height, rowstride, options)
         #deal with buffers uploads by wrapping them if we can, or copy to a string:
-        if type(img_data)==buffer:
+        if type(img_data)==buffer_type:
             if memoryview_type is not None:
                 img_data = memoryview_type(img_data)
             else:
                 img_data = str(img_data)
 
-        try:
+        context = self.gl_context()
+        if not context:
+            log("%s._do_paint_rgb(..) no context!", self)
+            return False
+        with context:
+            self.gl_init()
             self.set_rgb_paint_state()
 
-            rgb_format = options.get("rgb_format")
+            rgb_format = options.get(b"rgb_format")
             if not rgb_format:
                 #Older servers may not tell us the pixel format, so we must infer it:
                 if bpp==24:
@@ -484,8 +482,11 @@ class GLPixmapBacking(GTK2WindowBacking):
                 else:
                     assert bpp==32
                     rgb_format = "RGBA"
+            else:
+                rgb_format = rgb_format.decode()
             #convert it to a GL constant:
             pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)
+            log("pixel format(%s)=%s", rgb_format, pformat)
             assert pformat is not None, "could not find pixel format for %s (bpp=%s)" % (rgb_format, bpp)
 
             bytes_per_pixel = len(rgb_format)       #ie: BGRX -> 4
@@ -500,7 +501,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             # then we also have to set row_length
             # Otherwise it remains at 0 (= width implicitely)
             if (rowstride - width * bytes_per_pixel) >= alignment:
-                row_length = width + (rowstride - width * bytes_per_pixel) / bytes_per_pixel
+                row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
 
             self.gl_marker("%s %sbpp update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL upload format=%s" % (rgb_format, bpp, x, y, width, height, len(img_data), rowstride, row_length, alignment, CONSTANT_TO_PIXEL_FORMAT.get(pformat)))
 
@@ -528,10 +529,8 @@ class GLPixmapBacking(GTK2WindowBacking):
             glEnd()
 
             # Present update to screen
-            self.present_fbo(drawable)
+            self.present_fbo()
             # present_fbo has reset state already
-        finally:
-            drawable.gl_end()
         return True
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
@@ -547,7 +546,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                 plane_type = plane_types[0]
                 if plane_type==memoryview_type:
                     clone = False
-                elif plane_type in (str, buffer):
+                elif plane_type in (str, buffer_type):
                     #wrap with a memoryview that pyopengl can use:
                     views = []
                     for i in range(3):
@@ -557,7 +556,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         if clone:
             #copy so the data will be usable (usually a str)
             img.clone_pixel_data()
-        gobject.idle_add(self.gl_paint_planar, img, x, y, enc_width, enc_height, width, height, callbacks)
+        idle_add(self.gl_paint_planar, img, x, y, enc_width, enc_height, width, height, callbacks)
 
     def gl_paint_planar(self, img, x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
@@ -565,12 +564,14 @@ class GLPixmapBacking(GTK2WindowBacking):
         try:
             pixel_format = img.get_pixel_format()
             assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
-            drawable = self.gl_init()
-            if not drawable:
-                log("%s.gl_paint_planar() drawable is not set!", self)
+
+            context = self.gl_context()
+            if not context:
+                log("%s._do_paint_rgb(..) not context!", self)
                 fire_paint_callbacks(callbacks, False)
                 return
-            try:
+            with context:
+                self.gl_init()
                 self.update_planar_textures(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
                 img.free()
 
@@ -581,9 +582,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                     y_scale = float(height)/enc_height
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
                 # Present it on screen
-                self.present_fbo(drawable)
-            finally:
-                drawable.gl_end()
+                self.present_fbo()
             fire_paint_callbacks(callbacks, True)
         except Exception as e:
             log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)

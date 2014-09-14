@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
@@ -14,6 +14,7 @@ gdk = import_gdk()
 
 from xpra.log import Logger
 log = Logger("gtk", "main")
+opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
@@ -34,11 +35,18 @@ missing_cursor_names = set()
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     __gsignals__ = UIXpraClient.__gsignals__
 
+    ClientWindowClass = None
+    GLClientWindowClass = None
+
     def __init__(self):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
         self.session_info = None
         self.bug_report = None
+        #opengl bits:
+        self.client_supports_opengl = False
+        self.opengl_enabled = False
+        self.opengl_props = {}
 
     def init(self, opts):
         GObjectXpraClient.init(self, opts)
@@ -310,3 +318,113 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if not system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name):
             #fallback to simple beep:
             gdk.beep()
+
+
+    #OpenGL bits:
+    def init_opengl(self, enable_opengl):
+        opengllog("init_opengl(%s)", enable_opengl)
+        #enable_opengl can be True, False or None (auto-detect)
+        if enable_opengl is False:
+            self.opengl_props["info"] = "disabled by configuration"
+            return
+        from xpra.scripts.config import OpenGL_safety_check
+        warning = OpenGL_safety_check()
+        if warning:
+            if enable_opengl is True:
+                opengllog.warn("OpenGL safety warning (enabled at your own risk): %s", warning)
+                self.opengl_props["info"] = "forced enabled despite: %s" % warning
+            else:
+                opengllog.warn("OpenGL disabled: %s", warning)
+                self.opengl_props["info"] = "disabled: %s" % warning
+                return
+        self.opengl_props["info"] = ""
+        try:
+            opengllog("init_opengl: going to import xpra.client.gl")
+            __import__("xpra.client.gl", {}, {}, [])
+            __import__("xpra.client.gl.gtk_compat", {}, {}, [])
+            gl_check = __import__("xpra.client.gl.gl_check", {}, {}, ["check_support"])
+            opengllog("init_opengl: gl_check=%s", gl_check)
+            w, h = self.get_root_size()
+            min_texture_size = max(w, h)
+            self.opengl_props = gl_check.check_support(min_texture_size, force_enable=(enable_opengl is True))
+            GTK_GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk%s.gl_client_window" % (2+int(is_gtk3()))
+            opengllog("init_opengl: trying to load GL client window module '%s'", GTK_GL_CLIENT_WINDOW_MODULE)
+            gl_client_window = __import__(GTK_GL_CLIENT_WINDOW_MODULE, {}, {}, ["GLClientWindow"])
+            self.GLClientWindowClass = gl_client_window.GLClientWindow
+            self.client_supports_opengl = True
+            self.opengl_enabled = True
+        except ImportError as e:
+            opengllog.warn("OpenGL support could not be enabled:")
+            opengllog.warn(" %s", e)
+            self.opengl_props["info"] = str(e)
+        except Exception as e:
+            opengllog.error("Error loading OpenGL support:")
+            opengllog.error(" %s", e, exc_info=True)
+            self.opengl_props["info"] = str(e)
+
+    def get_client_window_classes(self, metadata, override_redirect):
+        log("get_client_window_class(%s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s", metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, self.encoding)
+        if self.GLClientWindowClass is None or not self.opengl_enabled:
+            return [self.ClientWindowClass]
+        return [self.GLClientWindowClass, self.ClientWindowClass]
+
+    def toggle_opengl(self, *args):
+        assert self.window_unmap, "server support for 'window_unmap' is required for toggling opengl at runtime"
+        self.opengl_enabled = not self.opengl_enabled
+        opengllog("opengl_toggled: %s", self.opengl_enabled)
+        def fake_send(*args):
+            opengllog("fake_send(%s)", args)
+        #now replace all the windows with new ones:
+        for wid, window in self._id_to_window.items():
+            if window.is_tray():
+                #trays are never GL enabled, so don't bother re-creating them
+                #(might cause problems anyway if we did)
+                continue
+            #ignore packets from old window:
+            window.send = fake_send
+            #copy attributes:
+            x, y = window._pos
+            w, h = window._size
+            client_properties = window._client_properties
+            metadata = window._metadata
+            override_redirect = window._override_redirect
+            backing = window._backing
+            video_decoder = None
+            csc_decoder = None
+            decoder_lock = None
+            try:
+                if backing:
+                    video_decoder = backing._video_decoder
+                    csc_decoder = backing._csc_decoder
+                    decoder_lock = backing._decoder_lock
+                    if decoder_lock:
+                        decoder_lock.acquire()
+                        opengllog("toggle_opengl() will preserve video=%s and csc=%s for %s", video_decoder, csc_decoder, wid)
+                        backing._video_decoder = None
+                        backing._csc_decoder = None
+                        backing._decoder_lock = None
+
+                #now we can unmap it:
+                self.destroy_window(wid, window)
+                #explicitly tell the server we have unmapped it:
+                #(so it will reset the video encoders, etc)
+                self.send("unmap-window", wid)
+                try:
+                    del self._id_to_window[wid]
+                except:
+                    pass
+                try:
+                    del self._window_to_id[window]
+                except:
+                    pass
+                #create the new window, which should honour the new state of the opengl_enabled flag:
+                window = self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
+                if video_decoder or csc_decoder:
+                    backing = window._backing
+                    backing._video_decoder = video_decoder
+                    backing._csc_decoder = csc_decoder
+                    backing._decoder_lock = decoder_lock
+            finally:
+                if decoder_lock:
+                    decoder_lock.release()
+        opengllog("replaced all the windows with opengl=%s: %s", self.opengl_enabled, self._id_to_window)

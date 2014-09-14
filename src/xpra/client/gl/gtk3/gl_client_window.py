@@ -7,18 +7,15 @@
 from xpra.log import Logger
 log = Logger("opengl", "window")
 
-from gtk import gdk
-import gobject
-
-from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase
-from xpra.client.gl.gl_window_backing import GLPixmapBacking
+from xpra.client.gtk3.client_window import ClientWindow
+from xpra.client.gl.gtk3.gl_window_backing import GLPixmapBacking
 
 
-class GLClientWindow(GTK2WindowBase):
+class GLClientWindow(ClientWindow):
 
     def __init__(self, *args):
         log("GLClientWindow(..)")
-        GTK2WindowBase.__init__(self, *args)
+        ClientWindow.__init__(self, *args)
         self.add(self._backing._backing)
 
     def get_backing_class(self):
@@ -26,7 +23,7 @@ class GLClientWindow(GTK2WindowBase):
 
     def setup_window(self):
         self._client_properties["encoding.uses_swscale"] = False
-        GTK2WindowBase.setup_window(self)
+        ClientWindow.setup_window(self)
 
 
     def __str__(self):
@@ -36,7 +33,7 @@ class GLClientWindow(GTK2WindowBase):
         return True
 
     def set_alpha(self):
-        GTK2WindowBase.set_alpha(self)
+        ClientWindow.set_alpha(self)
         rgb_formats = self._client_properties.get("encodings.rgb_formats", [])
         #gl_window_backing supports BGR(A) too:
         if "RGBA" in rgb_formats:
@@ -47,33 +44,24 @@ class GLClientWindow(GTK2WindowBase):
             #rgb_formats.append("BGRX")
 
     def spinner(self, ok):
-        if not self._backing.paint_screen or not self._backing._backing or not self.can_have_spinner():
-            return
-        w, h = self.get_size()
-        if ok:
-            self._backing.gl_expose_event(self._backing._backing, "spinner: fake event")
-            self.queue_draw(0, 0, w, h)
-        else:
-            self._backing.gl_expose_event(self._backing._backing, "spinner: fake event")
-            window = self._backing._backing.get_window()
-            context = window.cairo_create()
-            self.paint_spinner(context, gdk.Rectangle(0, 0, w, h))
+        #TODO
+        pass
 
     def do_expose_event(self, event):
         log("GL do_expose_event(%s)", event)
 
     def do_configure_event(self, event):
         log("GL do_configure_event(%s)", event)
-        GTK2WindowBase.do_configure_event(self, event)
+        ClientWindow.do_configure_event(self, event)
         self._backing.paint_screen = True
 
     def destroy(self):
         self._backing.paint_screen = False
-        GTK2WindowBase.destroy(self)
+        ClientWindow.destroy(self)
 
     def magic_key(self, *args):
         if self.border:
             self.border.shown = (not self.border.shown)
             self.queue_draw(0, 0, *self._size)
 
-gobject.type_register(GLClientWindow)
+#gobject.type_register(GLClientWindow)

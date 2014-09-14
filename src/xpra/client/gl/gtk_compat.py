@@ -12,7 +12,10 @@ log = Logger("gtk", "util", "opengl")
 
 
 if is_gtk3():
-    from gi.repository import GdkGLExt, GtkGLExt    #@UnresolvedImport
+    from gi.repository import Gtk, GdkGLExt, GtkGLExt    #@UnresolvedImport
+    gtk = Gtk
+    GdkGLExt.init_check(0, "")
+    GtkGLExt.init_check(0, "")
     MODE_DEPTH  = GdkGLExt.ConfigMode.DEPTH
     MODE_RGBA   = GdkGLExt.ConfigMode.RGBA
     MODE_ALPHA  = GdkGLExt.ConfigMode.ALPHA
@@ -23,7 +26,8 @@ if is_gtk3():
     RGBA_TYPE   = GdkGLExt.RenderType.RGBA_TYPE
 
     def get_info():
-        return {"gdkgl_version"         : GdkGLExt._version,
+        return {
+                "gdkgl_version"         : GdkGLExt._version,
                 "gtkgl_version"         : GtkGLExt._version,
                 }
     gdkgl = GdkGLExt
@@ -35,13 +39,21 @@ if is_gtk3():
             log("no configuration for mode: %s", e)
         return None
 
-    def begin_gl(widget):
-        return GtkGLExt.widget_begin_gl(widget)
+    class GLContextManager(object):
 
-    def end_gl(widget):
-        GtkGLExt.widget_end_gl(widget, False)
+        def __init__(self, widget):
+            self.widget = widget
+        def __enter__(self):
+            #self.context = GtkGLExt.widget_create_gl_context(self.widget)
+            assert GtkGLExt.widget_begin_gl(self.widget)
+            #log("dir(%s)=%s", self.widget, dir(self.widget))
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            #doing this crashes!
+            #GtkGLExt.widget_end_gl(self.widget, False)
+            pass
 
 else:
+    import gtk
     from gtk import gdkgl, gtkgl
     MODE_DEPTH  = gdkgl.MODE_DEPTH
     MODE_RGBA   = gdkgl.MODE_RGBA
@@ -67,11 +79,20 @@ else:
                  "gdkgl_version"        : gdkgl.query_version()
                  }
 
-    def begin_gl(widget):
-        gldrawable = gtkgl.widget_get_gl_drawable(widget)
-        glcontext = gtkgl.widget_get_gl_context(widget)
-        return gldrawable.gl_begin(glcontext)
+    class GLContextManager(object):
 
-    def end_gl(widget):
-        gldrawable = gtkgl.widget_get_gl_drawable(widget)
-        gldrawable.gl_end()
+        def __init__(self, widget):
+            self.widget = widget
+        def __enter__(self):
+            gldrawable = gtkgl.widget_get_gl_drawable(self.widget)
+            glcontext = gtkgl.widget_get_gl_context(self.widget)
+            assert gldrawable.gl_begin(glcontext)
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            gldrawable = gtkgl.widget_get_gl_drawable(self.widget)
+            gldrawable.gl_end()
+
+def GLDrawingArea(glconfig):
+    glarea = gtk.DrawingArea()
+    # Set OpenGL-capability to the widget
+    gtkgl.widget_set_gl_capability(glarea, glconfig, None, True, RGBA_TYPE)
+    return glarea
