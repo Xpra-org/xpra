@@ -157,7 +157,6 @@ cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
     raise Exception("unsupported encoding: %s" % encoding)
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
-    assert colorspace in COLORSPACES
     return VPX_IMG_FMT_I420
 
 
@@ -203,6 +202,7 @@ cdef class Decoder:
     def init_context(self, encoding, width, height, colorspace):
         assert encoding in CODECS
         assert colorspace=="YUV420P"
+        assert colorspace in COLORSPACES
         cdef int flags = 0
         cdef const vpx_codec_iface_t *codec_iface = make_codec_dx(encoding)
         self.encoding = encoding
@@ -239,7 +239,7 @@ cdef class Decoder:
                 }
 
     def get_colorspace(self):
-        return self.dst_format
+        return self.dst_format.decode()
 
     def get_width(self):
         return self.width
