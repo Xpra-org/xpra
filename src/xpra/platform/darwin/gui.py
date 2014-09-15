@@ -72,6 +72,24 @@ def system_bell(*args):
     Snd.SysBeep(1)
     return True
 
+#if there is an easier way of doing this, I couldn't find it:
+try:
+    import ctypes
+    Carbon_ctypes = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
+except:
+    Carbon_ctypes = None
+
+def get_double_click_time():
+    try:
+        #what are ticks? just an Apple retarded way of measuring elapsed time.
+        #They must have considered gigaparsecs divided by teapot too, which is just as useful.
+        #(but still call it "Time" you see)
+        MS_PER_TICK = 1000/60
+        return int(Carbon_ctypes.GetDblTime() * MS_PER_TICK)   
+    except:
+        return -1
+
+
 try:
     import Quartz.CoreGraphics as CG    #@UnresolvedImport
     ALPHA = {
