@@ -36,6 +36,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-system\-tray\fP]
 [\fB\-\-bell\fP]
 [\fB\-\-no\-bell\fP]
+[\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
 [\fB\-\-speaker\fP]
 [\fB\-\-no\-speaker\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
@@ -78,6 +79,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-keyboard\-sync\fP]
 [\fB\-\-tray\fP]
 [\fB\-\-no\-tray\fP]
+[\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
 [\fB\-\-speaker\fP]
 [\fB\-\-no\-speaker\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
@@ -123,6 +125,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-notifications\fP]
 [\fB\-\-bell\fP]
 [\fB\-\-no\-bell\fP]
+[\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
 [\fB\-\-speaker\fP]
 [\fB\-\-no\-speaker\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
@@ -799,6 +802,14 @@ as they occur so that the server can maintain a consistent keyboard state.
 Disabling synchronization can prevent keys from repeating unexpectedly on
 high latency links but it may also disrupt applications which access
 the keyboard directly (games, etc.).
+.TP
+\fB\-\-sound\-source\fP=\fPLUGIN\fP
+Specifies the GStreamer sound plugin used for capturing the sound stream.
+This affects "speaker forwarding" on the server, and "microphone" forwarding
+on the client.
+To get a list of options use the special value 'help'.
+It is also possible to specify plugin options using the form:
+\fI--sound-source=pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo\fP
 .TP
 \fB\-\-speaker\fP or \fB\-\-no\-speaker\fP
 Enable or disable sound output forwarding support.  When disabled,

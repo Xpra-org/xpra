@@ -105,6 +105,7 @@ class UIXpraClient(XpraClientBase):
         self.encoding = None
 
         #sound:
+        self.sound_source_plugin = None
         self.speaker_allowed = False
         self.speaker_enabled = False
         self.speaker_codecs = []
@@ -229,6 +230,7 @@ class UIXpraClient(XpraClientBase):
             from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
         except:
             has_gst = False
+        self.sound_source_plugin = opts.sound_source
         self.speaker_allowed = bool(opts.speaker) and has_gst
         self.microphone_allowed = bool(opts.microphone) and has_gst
         self.speaker_codecs = opts.speaker_codec
@@ -1449,7 +1451,7 @@ class UIXpraClient(XpraClientBase):
             self.emit("microphone-changed")
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
-            self.sound_source = start_sending_sound(None, 1.0, self.server_sound_decoders, self.microphone_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
+            self.sound_source = start_sending_sound(self.sound_source_plugin, None, 1.0, self.server_sound_decoders, self.microphone_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
             if not self.sound_source:
                 return False
             self.sound_source.connect("new-buffer", self.new_sound_buffer)

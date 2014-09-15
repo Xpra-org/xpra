@@ -145,7 +145,7 @@ class ServerBase(ServerCore):
         log("starting component init")
         self.init_clipboard(self.supports_clipboard, opts.clipboard_filter_file)
         self.init_keyboard()
-        self.init_sound(opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
+        self.init_sound(opts.sound_source, opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
         self.init_notification_forwarder(opts.notifications)
         self.init_dbus_helper()
 
@@ -242,13 +242,14 @@ class ServerBase(ServerCore):
                 log.info("  you should use the '--no-notifications' flag")
                 log.info("")
 
-    def init_sound(self, speaker, speaker_codec, microphone, microphone_codec):
+    def init_sound(self, sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
         try:
             from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
         except Exception as e:
             log("cannot load gstreamer: %s", e)
             has_gst = False
-        log("init_sound(%s, %s, %s, %s) has_gst=%s", speaker, speaker_codec, microphone, microphone_codec, has_gst)
+        log("init_sound%s has_gst=%s", (sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec), has_gst)
+        self.sound_source_plugin = sound_source_plugin
         self.supports_speaker = bool(speaker) and has_gst
         self.supports_microphone = bool(microphone) and has_gst
         self.speaker_codecs = speaker_codec
@@ -567,6 +568,7 @@ class ServerBase(ServerCore):
                           get_window_id,
                           self.supports_mmap,
                           self.core_encodings, self.encodings, self.default_encoding,
+                          self.sound_source_plugin,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
                           self.default_quality, self.default_min_quality,

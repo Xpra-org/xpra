@@ -263,6 +263,7 @@ OPTION_TYPES = {
                     "tcp-proxy"         : str,
                     "debug"             : str,
                     "input-method"      : str,
+                    "sound-source"      : str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -356,6 +357,7 @@ def get_defaults():
                     "tcp-proxy"         : "",
                     "debug"             : "",
                     "input-method"      : "none",
+                    "sound-source"      : "",
                     "quality"           : 0,
                     "min-quality"       : 30,
                     "speed"             : 0,

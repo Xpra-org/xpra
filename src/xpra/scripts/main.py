@@ -453,6 +453,9 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--microphone-codec", action="append",
                           dest="microphone_codec", default=list(defaults.microphone_codec or []),
                           help=CODEC_HELP % "microphone")
+        group.add_option("--sound-source", action="store",
+                          dest="sound_source", default=defaults.sound_source,
+                          help="Specifies which sound system to use to capture the sound stream (use 'help' for options)")
     else:
         hidden_options["speaker"] = False
         hidden_options["speaker_codec"] = []
@@ -649,6 +652,19 @@ def do_parse_cmdline(cmdline, defaults):
         for cat in categories:
             if cat=="help":
                 raise InitInfo("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
+    if options.sound_source=="help":
+        try:
+            #NOTE: this will import GTK, so we have to exit
+            #(we cannot start the server after this for example)
+            from xpra.sound.gstreamer_util import get_available_source_plugins, SRC_TO_NAME_PLUGIN, NAME_TO_INFO_PLUGIN
+            source_plugins = [SRC_TO_NAME_PLUGIN[p] for p in get_available_source_plugins()]
+        except Exception as e:
+            raise InitInfo(e)
+            source_plugins = []
+        if source_plugins:
+            raise InitInfo("The following sound source plugins may be used (default: %s):\n" % source_plugins[0]+
+                           "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
+        raise InitInfo("No sound source plugins found!")
 
     #special case for things stored as lists, but command line option is a CSV string:
     #and may have "none" or "all" special values

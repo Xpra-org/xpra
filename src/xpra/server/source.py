@@ -196,6 +196,7 @@ class ServerSource(object):
                  get_window_id,
                  supports_mmap,
                  core_encodings, encodings, default_encoding,
+                 sound_source_plugin,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
@@ -205,6 +206,7 @@ class ServerSource(object):
                  get_window_id,
                  supports_mmap,
                  core_encodings, encodings, default_encoding,
+                 sound_source_plugin,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
@@ -226,6 +228,7 @@ class ServerSource(object):
         self.mmap_size = 0
         self.mmap_client_token = None                   #the token we write that the client may check
         # sound:
+        self.sound_source_plugin = sound_source_plugin
         self.supports_speaker = supports_speaker
         self.speaker_codecs = speaker_codecs
         self.supports_microphone = supports_microphone
@@ -723,7 +726,7 @@ class ServerSource(object):
             assert self.supports_speaker, "cannot send sound: support not enabled on the server"
             assert self.sound_source is None, "a sound source already exists"
             assert self.sound_receive, "cannot send sound: support is not enabled on the client"
-            self.sound_source = start_sending_sound(codec, volume, self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
+            self.sound_source = start_sending_sound(self.sound_source_plugin, codec, volume, self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
             soundlog("start_sending_sound() sound source=%s", self.sound_source)
             if self.sound_source:
                 if self.server_driven:

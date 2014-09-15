@@ -7,11 +7,42 @@
 import sys
 import os
 
+from xpra.util import AdHocStruct
 from xpra.log import Logger
 log = Logger("sound")
 
-SOUND_TEST_MODE = os.environ.get("XPRA_SOUND_TEST", "0")!="0"
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
+
+
+NAME_TO_SRC_PLUGIN = {
+    "auto"          : "autoaudiosrc",
+    "alsa"          : "alsasrc",
+    "oss"           : "osssrc",
+    "oss4"          : "oss4src",
+    "jack"          : "jackaudiosrc",
+    "osx"           : "osxaudiosrc",
+    "test"          : "audiotestsrc",
+    "pulse"         : "pulsesrc",
+    "direct"        : "directsoundsrc",
+    }
+SRC_TO_NAME_PLUGIN = {}
+for k,v in NAME_TO_SRC_PLUGIN.items():
+    SRC_TO_NAME_PLUGIN[v] = k
+PLUGIN_TO_DESCRIPTION = {
+    "pulsesrc"      : "Pulseaudio",
+    "jacksrc"       : "JACK Audio Connection Kit",
+    }
+NAME_TO_INFO_PLUGIN = {
+    "auto"          : "Wrapper audio source for automatically detected audio source",
+    "alsa"          : "Read from a sound card via ALSA",
+    "oss"           : "Capture from a sound card via OSS",
+    "oss4"          : "Capture from a sound card via OSS version 4",
+    "jack"          : "Captures audio from a JACK server",
+    "osx"           : "Input from a sound card in OS X",
+    "test"          : "Creates audio test signals of given frequency and volume",
+    "pulse"         : "Captures audio from a PulseAudio server",
+    "direct"        : "directsoundsrc",
+    }
 
 
 VORBIS = "vorbis"
@@ -273,10 +304,166 @@ def plugin_str(plugin, options):
     return s
 
 
+def get_source_plugins():
+    sources = []
+    from xpra.sound.pulseaudio_util import has_pa
+    #we have to put pulsesrc first if pulseaudio is installed
+    #because using autoaudiosource does not work properly for us:
+    #it may still choose pulse, but without choosing the right device.
+    if has_pa():
+        sources.append("pulsesrc")
+    sources.append("autoaudiosrc")
+    if sys.platform.startswith("darwin"):
+        sources.append("osxaudiosrc")
+    elif sys.platform.startswith("win"):
+        sources.append("directsoundsrc")
+    if os.name=="posix":
+        sources += ["alsasrc", "jackaudiosrc",
+                    "osssrc", "oss4src",
+                    "osxaudiosrc", "jackaudiosrc"]
+    sources.append("audiotestsrc")
+    return sources
+
+def get_available_source_plugins():
+    return [x for x in get_source_plugins() if has_plugins(x)]
+
+def get_test_defaults(remote):
+    return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
+
 WARNED_MULTIPLE_DEVICES = False
-def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
+def get_pulse_defaults(remote):
+    """
+        choose the device to use
+    """
+    from xpra.sound.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink
+    from xpra.sound.pulseaudio_util import get_pulse_server, get_pulse_id, set_source_mute
+    if not has_pa():
+        log.warn("pulseaudio is not available!")
+        return    None
+    pa_server = get_pulse_server()
+    log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote.pulseaudio_server, pa_server)
+    #only worth comparing if we have a real server string
+    #one that starts with {UUID}unix:/..
+    if pa_server and pa_server.startswith("{") and \
+        remote.pulseaudio_server and remote.pulseaudio_server==pa_server:
+        log.error("identical Pulseaudio server, refusing to create a sound loop - sound disabled")
+        return    None
+    pa_id = get_pulse_id()
+    log("start sound, client id=%s, server id=%s", remote.pulseaudio_id, pa_id)
+    if remote.pulseaudio_id and remote.pulseaudio_id==pa_id:
+        log.error("identical Pulseaudio ID, refusing to create a sound loop - sound disabled")
+        return    None
+    monitor_devices = get_pa_device_options(True, False)
+    log("found pulseaudio monitor devices: %s", monitor_devices)
+    if len(monitor_devices)==0:
+        log.error("could not detect any Pulseaudio monitor devices - sound forwarding is disabled")
+        return    None
+    #default to first one:
+    monitor_device, monitor_device_name = monitor_devices.items()[0]
+    if len(monitor_devices)>1:
+        default_sink = get_default_sink()
+        default_monitor = default_sink+".monitor"
+        global WARNED_MULTIPLE_DEVICES
+        if not WARNED_MULTIPLE_DEVICES:
+            WARNED_MULTIPLE_DEVICES = True
+            log.warn("found more than one audio monitor device:")
+            for k,v in monitor_devices.items():
+                log.warn(" * %s (\"%s\")", v, k)
+        if default_monitor in monitor_devices:
+            monitor_device = default_monitor
+            monitor_device_name = monitor_devices.get(default_monitor)
+            if not WARNED_MULTIPLE_DEVICES:
+                log.warn("using monitor of default sink: %s", monitor_device_name)
+        else:
+            if not WARNED_MULTIPLE_DEVICES:
+                log.warn("using the first device")
+    log.info("using Pulseaudio device '%s'", monitor_device_name)
+    #make sure it is not muted:
+    set_source_mute(monitor_device, mute=False)
+    return {"device" : monitor_device}
+
+#a list of functions to call to get the plugin options
+#at runtime (so we can perform runtime checks on remote data,
+# to avoid sound loops for example)
+DEFAULT_SRC_PLUGIN_OPTIONS = {
+    "test"                  : get_test_defaults,
+    "pulse"                 : get_pulse_defaults,
+    }
+
+def get_sound_source_options(plugin, options_str, remote):
+    """
+        Given a plugin (short name), options string and remote info,
+        return the options for the plugin given,
+        using the dynamic defaults (which may use remote info)
+        and applying the options string on top.
+    """
+    #ie: get_sound_source_options("audiotestsrc", "wave=4,freq=220", {remote_pulseaudio_server=XYZ}):
+    #use the defaults as starting point:
+    defaults_fn = DEFAULT_SRC_PLUGIN_OPTIONS.get(plugin)
+    if defaults_fn:
+        options = defaults_fn(remote)
+        if options is None:
+            #means failure
+            return None
+    else:
+        options = {} 
+    #parse the options string and add the pairs:
+    for s in options_str.split(","):
+        if not s:
+            continue
+        try:
+            k,v = s.split("=", 1)
+            options[k] = v
+        except Exception as e:
+            log.warn("failed to parse plugin option '%s': %s", s, e)
+    return options
+
+def parse_sound_source(sound_source_plugin, remote):
+    #format: PLUGINNAME:options
+    #ie: test:wave=2,freq=110,volume=0.4
+    #ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo
+    plugin = sound_source_plugin.split(":")[0]
+    options_str = (sound_source_plugin+":").split(":",1)[1]
+    simple_str = (plugin).lower().strip()
+    if not simple_str:
+        #choose the first one from 
+        options = get_available_source_plugins()
+        if not options:
+            log.error("no source plugins available")
+            return None
+        log("parse_sound_source: no plugin specified, using default: %s", options[0])
+        simple_str = options[0]
+    for s in ("src", "sound", "audio"):
+        if simple_str.endswith(s):
+            simple_str = simple_str[:-len(s)]
+    gst_sound_source_plugin = NAME_TO_SRC_PLUGIN.get(simple_str)
+    if not gst_sound_source_plugin:
+        log.error("unknown source plugin: '%s' / '%s'", simple_str, sound_source_plugin)
+        return  None, {}
+    log("parse_sound_source(%s, %s) plugin=%s", sound_source_plugin, remote, gst_sound_source_plugin)
+    options = get_sound_source_options(simple_str, options_str, remote)
+    log("get_sound_source_options%s=%s", (simple_str, options_str, remote), options)
+    if options is None:
+        #means error
+        return None, {}
+    return gst_sound_source_plugin, options
+
+
+def start_sending_sound(sound_source_plugin, codec, volume, remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
     assert has_gst
     try:
+        #info about the remote end:
+        remote = AdHocStruct()
+        remote.pulseaudio_server = remote_pulseaudio_server
+        remote.pulseaudio_id = remote_pulseaudio_id
+        remote.remote_decoders = remote_decoders
+        plugin, options = parse_sound_source(sound_source_plugin, remote)
+        if not plugin:
+            log.error("failed to setup '%s' sound stream source", (sound_source_plugin or "auto"))
+            return  None
+        log("parsed '%s':", sound_source_plugin)
+        log("plugin=%s", plugin)
+        log("options=%s", options)
         matching_codecs = [x for x in remote_decoders if x in local_decoders]
         ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
         if len(ordered_codecs)==0:
@@ -289,57 +476,8 @@ def start_sending_sound(codec, volume, remote_decoders, local_decoders, remote_p
             codec = ordered_codecs[0]
         log("using sound codec %s", codec)
         from xpra.sound.src import SoundSource
-        if SOUND_TEST_MODE:
-            sound_source = SoundSource("audiotestsrc", {"wave":2, "freq":110, "volume":0.4}, codec, volume, {})
-            log.info("using test sound source")
-        else:
-            from xpra.sound.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink
-            from xpra.sound.pulseaudio_util import get_pulse_server, get_pulse_id, set_source_mute
-            if not has_pa():
-                log.error("pulseaudio not supported - sound disabled")
-                return    None
-            pa_server = get_pulse_server()
-            log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote_pulseaudio_server, pa_server)
-            #only worth comparing if we have a real server string
-            #one that starts with {UUID}unix:/..
-            if pa_server and pa_server.startswith("{") and \
-                remote_pulseaudio_server and remote_pulseaudio_server==pa_server:
-                log.error("identical pulseaudio server, refusing to create a sound loop - sound disabled")
-                return    None
-            pa_id = get_pulse_id()
-            log("start sound, client id=%s, server id=%s", remote_pulseaudio_id, pa_id)
-            if remote_pulseaudio_id and remote_pulseaudio_id==pa_id:
-                log.error("identical pulseaudio ID, refusing to create a sound loop - sound disabled")
-                return    None
-            monitor_devices = get_pa_device_options(True, False)
-            log("found pulseaudio monitor devices: %s", monitor_devices)
-            if len(monitor_devices)==0:
-                log.error("could not detect any pulseaudio monitor devices - sound forwarding is disabled")
-                return    None
-            #default to first one:
-            monitor_device, monitor_device_name = monitor_devices.items()[0]
-            if len(monitor_devices)>1:
-                default_sink = get_default_sink()
-                default_monitor = default_sink+".monitor"
-                global WARNED_MULTIPLE_DEVICES
-                if not WARNED_MULTIPLE_DEVICES:
-                    WARNED_MULTIPLE_DEVICES = True
-                    log.warn("found more than one audio monitor device:")
-                    for k,v in monitor_devices.items():
-                        log.warn(" * %s (\"%s\")", v, k)
-                if default_monitor in monitor_devices:
-                    monitor_device = default_monitor
-                    monitor_device_name = monitor_devices.get(default_monitor)
-                    if not WARNED_MULTIPLE_DEVICES:
-                        log.warn("using monitor of default sink: %s", monitor_device_name)
-                else:
-                    if not WARNED_MULTIPLE_DEVICES:
-                        log.warn("using the first device")
-            #make sure it is not muted:
-            set_source_mute(monitor_device, mute=False)
-            sound_source = SoundSource("pulsesrc", {"device" : monitor_device}, codec, volume, {})
-            log.info("starting sound capture using pulseaudio device: %s", monitor_device_name)
-        return sound_source
+        log.info("starting sound stream capture using %s source", PLUGIN_TO_DESCRIPTION.get(plugin, plugin))
+        return SoundSource(plugin, options, codec, volume, {})
     except:
         e = sys.exc_info()[1]
         log.error("error setting up sound: %s", e, exc_info=True)

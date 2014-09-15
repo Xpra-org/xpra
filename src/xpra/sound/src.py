@@ -4,34 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os
+import sys
 
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, MP3, CODECS
+from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, MP3, CODECS
 from xpra.log import Logger
 log = Logger("sound")
-
-
-SOURCES = ["autoaudiosrc"]
-if has_pa():
-    SOURCES.append("pulsesrc")
-if sys.platform.startswith("darwin"):
-    SOURCES.append("osxaudiosrc")
-elif sys.platform.startswith("win"):
-    SOURCES.append("directsoundsrc")
-if os.name=="posix":
-    SOURCES += ["alsasrc", "jackaudiosrc",
-                "osssrc", "oss4src",
-                "osxaudiosrc", "jackaudiosrc"]
-SOURCES.append("audiotestsrc")
-
-
-DEFAULT_SRC = os.environ.get("XPRA_SOUND_DEFAULT_SRC", SOURCES[0])
-if DEFAULT_SRC not in SOURCES:
-    log.error("invalid default sound source: '%s' is not in %s, using %s instead", DEFAULT_SRC, SOURCES, SOURCES[0])
-    DEFAULT_SRC = SOURCES[0]
 
 
 AUDIOCONVERT = True
@@ -45,8 +24,8 @@ class SoundSource(SoundPipeline):
         "new-buffer"    : n_arg_signal(2),
         })
 
-    def __init__(self, src_type=DEFAULT_SRC, src_options={}, codec=MP3, volume=1.0, encoder_options={}):
-        assert src_type in SOURCES
+    def __init__(self, src_type, src_options={}, codec=MP3, volume=1.0, encoder_options={}):
+        assert src_type in get_source_plugins(), "invalid source plugin '%s'" % src_type
         encoder, fmt = get_encoder_formatter(codec)
         SoundPipeline.__init__(self, codec)
         self.src_type = src_type
