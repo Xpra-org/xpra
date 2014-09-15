@@ -290,10 +290,12 @@ def do_check_GL_support(min_texture_size, force_enable):
             gl_check_error("unable to query max texture size: %s" % emsg)
             return props
 
-        if min_texture_size>texture_size or min_texture_size>rect_texture_size:
-            gl_check_error("The texture size is too small: %s" % texture_size)
+        if min_texture_size>texture_size:
+            gl_check_error("The texture size is too small: %s (%s required)" % (texture_size, min_texture_size))
+        elif min_texture_size>rect_texture_size:
+            gl_check_error("The rectangle texture size is too small: %s (%s required)" % (rect_texture_size, min_texture_size))
         else:
-            log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
+            log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
         return props
     finally:
         for x in alogger.handlers[0].records:
