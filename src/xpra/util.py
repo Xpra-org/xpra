@@ -241,6 +241,10 @@ def do_log_screen_sizes(root_w, root_h, sizes):
     #old format, used by some clients (android):
     if len(sizes)==2 and type(sizes[0])==int and type(sizes[1])==int:
         return
+    def dpi(size_pixels, size_mm):
+        if size_mm==0:
+            return 0
+        return int(size_pixels * 254 / size_mm / 10)
     for s in sizes:
         if len(s)<10:
             log.info(" %s", s)
@@ -260,6 +264,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             if work_x!=0 or work_y!=0:
                 #log position if not (0, 0)
                 info.append("at %sx%s" % (work_x, work_y))
+            info.append(" - DPI: %sx%s" % (dpi(width, width_mm), dpi(height, height_mm)))
         log.info("  "+" ".join(info))
         for i, m in enumerate(monitors, start=1):
             if len(m)<7:
@@ -272,7 +277,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 if plug_x!=0 or plug_y!=0:
                     info.append("at %sx%s" % (plug_x, plug_y))
             if (plug_width_mm!=width_mm or plug_height_mm!=height_mm) and (plug_width_mm>0 or plug_height_mm>0):
-                info.append("(%sx%s mm)" % (plug_width_mm, plug_height_mm))
+                info.append("(%sx%s mm - DPI: %sx%s)" % (plug_width_mm, plug_height_mm, dpi(plug_width, plug_width_mm), dpi(plug_height, plug_height_mm)))
             log.info("    "+" ".join(info))
 
 def get_screen_info(screen_sizes):
