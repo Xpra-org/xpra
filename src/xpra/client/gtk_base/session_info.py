@@ -730,8 +730,8 @@ class SessionInfo(gtk.Window):
             return ""
         altv = ""
         if alt:
-            altv = self.client.server_last_info.get(alt+"."+suffix, "")
-        return self.client.server_last_info.get(prefix+"."+suffix, altv)
+            altv = self.client.server_last_info.get((alt+"."+suffix).encode(), "")
+        return self.client.server_last_info.get((prefix+"."+suffix).encode(), altv)
 
     def values_from_info(self, prefix, alt=None):
         def getv(suffix):
