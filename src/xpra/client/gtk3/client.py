@@ -73,6 +73,11 @@ class XpraClient(GTKXpraClient):
     def make_clipboard_helper(self):
         return None
 
+    def set_windows_cursor(self, windows, cursor_data):
+        #avoid buggy win32 version:
+        if not sys.platform.startswith("win"):
+            GTKXpraClient.set_windows_cursor(self, windows, cursor_data)
+
 
     def get_root_window(self):
         return Gdk.Screen.get_default().get_root_window()
