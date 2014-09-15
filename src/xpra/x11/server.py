@@ -814,15 +814,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
             settingslog("ignoring xsettings update: %s", settings)
             return
         if reset:
+            #FIXME: preserve serial? (what happens when we change values which had the same serial?)
             self.reset_settings()
             self._settings = self.default_xsettings or {}
         old_settings = dict(self._settings)
         settingslog("server_settings: old=%s, updating with=%s", nonl(old_settings), nonl(settings))
+        settingslog("overrides: dpi=%s, double click time=%s, double click distance=%s", self.dpi, self.double_click_time, self.double_click_distance)
         self._settings.update(settings)
         root = gtk.gdk.get_default_root_window()
         for k, v in settings.items():
             #cook the "resource-manager" value to add the DPI:
-            if k == "resource-manager" and self.dpi>0:
+            if k=="resource-manager" and self.dpi>0:
                 value = v.decode("utf-8")
                 #parse the resources into a dict:
                 values={}
@@ -844,6 +846,21 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 #record the actual value used
                 self._settings["resource-manager"] = value
                 v = value.encode("utf-8")
+
+            #cook xsettings to add double-click settings:
+            #(as those may not be present in xsettings on some platforms.. like win32 and osx)
+            if k=="xsettings-blob" and (self.double_click_time>0 or self.double_click_distance>0):
+                from xpra.x11.xsettings_prop import XSettingsTypeInteger
+                def set_xsettings_int(name, value):
+                    #remove existing one, if any:
+                    serial, values = v
+                    new_values = [(_t,_n,_v,_s) for (_t,_n,_v,_s) in values if _n!=name]
+                    new_values.append((XSettingsTypeInteger, name, value, 0))
+                    return serial, new_values
+                if self.double_click_time>0:
+                    v = set_xsettings_int("Net/DoubleClickTime", self.double_click_time)
+                if self.double_click_distance>0:
+                    v = set_xsettings_int("Net/DoubleClickDistance", self.double_click_distance)
 
             if k not in old_settings or v != old_settings[k]:
                 def root_set(p):

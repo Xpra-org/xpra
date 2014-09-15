@@ -59,6 +59,13 @@ def gl_check():
         return "disabled when running under wine"
     return None
 
+def get_double_click_time():
+    try:
+        import win32gui                     #@UnresolvedImport
+        return win32gui.GetDoubleClickTime()
+    except:
+        return 0
+
 
 class ClientExtras(object):
     def __init__(self, client, opts):

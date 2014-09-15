@@ -69,6 +69,9 @@ class ServerBase(ServerCore):
         self.cursors = False
         self.default_dpi = 96
         self.dpi = 96
+        #duplicated from Server Source...
+        self.double_click_time  = -1
+        self.double_click_distance = -1
         self.supports_clipboard = False
         self.supports_dbus_proxy = False
         self.dbus_helper = None
@@ -520,7 +523,8 @@ class ServerBase(ServerCore):
                 elif not ss.share:
                     self.disconnect_client(p, NEW_CLIENT, "this client had not enabled sharing")
                     disconnected += 1
-            share_count += 1
+                else:
+                    share_count += 1
 
         if detach_request:
             self.disconnect_client(proto, DONE, "%i other clients have been disconnected" % disconnected)
@@ -529,11 +533,23 @@ class ServerBase(ServerCore):
         if not is_request and ui_client:
             if share_count>0:
                 log.info("sharing with %s other client(s)", share_count)
-            self.dpi = c.intget("dpi", self.default_dpi)
+                self.dpi = self.default_dpi
+                self.double_click_time = -1
+                self.double_click_distance = -1
+            else:
+                self.dpi = c.intget("dpi", self.default_dpi)
+                self.double_click_time = c.intget("double_click.time", -1)
+                self.double_click_distance = c.intget("double_click.distance", -1)
+            #if we're not sharing, reset all the settings:
+            reset = share_count==0
+            #some non-posix clients never send us 'resource-manager' settings
+            #so just use a fake one to ensure the dpi gets applied:
             if self.dpi>0:
-                #some non-posix clients never send us 'resource-manager' settings
-                #so just use a fake one to ensure the dpi gets applied:
-                self.update_server_settings({'resource-manager' : ""}, reset=(share_count==0))
+                self.update_server_settings({'resource-manager' : ""}, reset=reset)
+            #same for xsettings and double click settings:
+            #fake an empty xsettings update
+            if self.double_click_time>0 or self.double_click_distance>0:
+                self.update_server_settings({"xsettings-blob" : (0, [])}, reset=reset)
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.send_aliases = c.dictget("aliases")

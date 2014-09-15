@@ -30,7 +30,7 @@ from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_application_name
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
-from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
+from xpra.platform.gui import init as gui_init, ready as gui_ready, get_double_click_time, get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
 from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
@@ -910,6 +910,8 @@ class UIXpraClient(XpraClientBase):
             "notifications"             : self.client_supports_notifications,
             "cursors"                   : self.client_supports_cursors,
             "bell"                      : self.client_supports_bell,
+            "double_click.time"         : get_double_click_time(),
+            "double_click.distance"     : get_double_click_distance(),
             "sound.server_driven"       : True,
             "encoding.client_options"   : True,
             "encoding_client_options"   : True,

@@ -323,6 +323,8 @@ class ServerSource(object):
         self.notify_startup_complete = False
         self.control_commands = []
         self.supports_transparency = False
+        self.double_click_time  = -1
+        self.double_click_distance = -1
         #what we send back in hello packet:
         self.ui_client = True
         self.wants_aliases = True
@@ -539,6 +541,8 @@ class ServerSource(object):
         self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.control_commands = c.strlistget("control_commands")
         self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
+        self.double_click_time = c.intget("double_click.time")
+        self.double_click_distance = c.intget("double_click.distance")
 
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
@@ -1099,6 +1103,8 @@ class ServerSource(object):
                      "lz4", "lzo"):
             battr(prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
+                           "double_click_time"  : "double_click.time",
+                           "double_click_distance" : "double_click.distance",
                            "send_windows"       : "windows",
                            "send_cursors"       : "cursors",
                            "send_notifications" : "notifications",

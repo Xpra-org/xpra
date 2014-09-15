@@ -41,6 +41,33 @@ def get_native_system_tray_classes():
     return get_native_tray_classes()
 
 
+def _get_xsettings():
+    try:
+        from xpra.x11.xsettings import XSettingsHelper
+        xsh = XSettingsHelper()
+        return xsh.get_settings()
+    except Exception as e:
+        log("_get_xsettings error: %s", e)
+    return None
+
+def _get_xsettings_int(name, default_value):
+    s = _get_xsettings()
+    if not s:
+        return default_value
+    from xpra.x11.xsettings_prop import XSettingsTypeInteger
+    _, values = s
+    for setting_type, prop_name, value, _ in values:
+        if setting_type==XSettingsTypeInteger and prop_name==name:
+            return value
+    return default_value
+
+def get_double_click_time():
+    return _get_xsettings_int("Net/DoubleClickTime", -1)
+
+def get_double_click_distance():
+    return _get_xsettings_int("Net/DoubleClickDistance", -1)
+
+
 def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
     global device_bell
     if device_bell is False:
@@ -60,6 +87,18 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
         log.error("error using device_bell: %s, switching native X11 bell support off", e)
         device_bell = False
         return False
+
+
+def get_info():
+    from xpra.platform.gui import get_info_base
+    i = get_info_base()
+    s = _get_xsettings()
+    if s:
+        serial, values = s
+        i["xsettings.serial"] = serial
+        for _,name,value,_ in values:
+            i["xsettings.%s" % name] = value
+    return i
 
 
 class ClientExtras(object):

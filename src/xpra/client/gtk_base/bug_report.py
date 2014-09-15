@@ -110,6 +110,7 @@ class BugReport(object):
                 get_gl_info = None
         from xpra.net.net_util import get_info as get_net_info
         from xpra.platform.paths import get_info as get_path_info
+        from xpra.platform.gui import get_info as get_gui_info
         from xpra.version_util import get_version_info, get_platform_info, get_host_info
         def get_sys_info():
             d = {
@@ -124,6 +125,7 @@ class BugReport(object):
                     "host"          : get_host_info(),
                     "paths"         : get_path_info(),
                     "gtk"           : get_gtk_version_info(),
+                    "gui"           : get_gui_info(),
                     "user"          : get_user_info(),
                     "env"           : os.environ,
                     "config"        : read_xpra_defaults(),

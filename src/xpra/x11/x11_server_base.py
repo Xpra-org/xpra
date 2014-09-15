@@ -427,6 +427,7 @@ class X11ServerBase(GTKServerBase):
 
     def _process_server_settings(self, proto, packet):
         settings = packet[1]
+        log("process_server_settings: %s", settings)
         self.update_server_settings(settings)
 
     def update_server_settings(self, settings, reset=False):
