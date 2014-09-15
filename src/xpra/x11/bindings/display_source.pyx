@@ -23,7 +23,9 @@ cdef Display* get_display():
 cdef void set_display(Display *d):
     global display
     if display!=NULL:
-        raise Exception("display is already set!")
+        print("display is already set!")
+        import traceback
+        traceback.print_stack()
     display = d
 
 def get_display_name():
