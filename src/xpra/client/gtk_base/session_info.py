@@ -439,8 +439,7 @@ class SessionInfo(gtk.Window):
         window = self.get_window()
         if window:
             alloc = self.get_allocation()
-            rect = gtk.gdk.Rectangle(alloc.x, alloc.y, alloc.width, alloc.height) 
-            self.window.invalidate_rect(rect, True)
+            window.invalidate_rect(alloc, True)
 
     def set_args(self, *args):
         #this is a generic way for keyboard shortcuts or remote commands
