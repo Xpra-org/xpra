@@ -58,6 +58,7 @@ def gtk_main_quit_on_fatal_exceptions_enable():
         if issubclass(etype, (KeyboardInterrupt, SystemExit)):
             print("Shutting down main-loop")
             gtk_main_quit_really()
+            return
         if issubclass(etype, RuntimeError) and "recursion" in val.message:
             # We weren't getting tracebacks from this -- maybe calling oldhook
             # was hitting the limit again or something? -- so try this
