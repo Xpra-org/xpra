@@ -435,7 +435,12 @@ class SessionInfo(gtk.Window):
                 self.tab_box.remove(x)
         self.tab_box.pack_start(table, expand=True, fill=True, padding=0)
         table.show_all()
-
+        #ensure we re-draw the whole window:
+        window = self.get_window()
+        if window:
+            alloc = self.get_allocation()
+            rect = gtk.gdk.Rectangle(alloc.x, alloc.y, alloc.width, alloc.height) 
+            self.window.invalidate_rect(rect, True)
 
     def set_args(self, *args):
         #this is a generic way for keyboard shortcuts or remote commands
