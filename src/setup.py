@@ -1371,7 +1371,7 @@ if WIN32:
             try:
                 shutil.copytree(
                     module_dir, os.path.join("dist", module_name),
-                    ignore = shutil.ignore_patterns("Tk", "EGL", "GLX", "GLX.*", "_GLX.*", "GLE", "GLES1", "GLES2", "GLES3")
+                    ignore = shutil.ignore_patterns("Tk", "AGL", "EGL", "GLX", "GLX.*", "_GLX.*", "GLE", "GLES1", "GLES2", "GLES3")
                 )
             except Exception as e:
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
