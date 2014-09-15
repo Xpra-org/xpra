@@ -20,7 +20,8 @@ cursorlog = Logger("gtk", "client", "cursor")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.gtk_common.cursor_names import cursor_names
-from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, new_Cursor, new_Cursor_from_pixbuf, \
+from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, \
+            new_Cursor_for_display, new_Cursor_from_pixbuf, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, INTERP_BILINEAR
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
@@ -258,13 +259,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def make_cursor(self, cursor_data):
         #if present, try cursor ny name:
+        display = display_get_default()
         if len(cursor_data)>=9 and cursor_names:
             cursor_name = cursor_data[8]
             if cursor_name:
                 gdk_cursor = cursor_names.get(cursor_name.upper())
                 if gdk_cursor is not None:
                     cursorlog("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
-                    return new_Cursor(gdk_cursor)
+                    return new_Cursor_for_display(display, gdk_cursor)
                 else:
                     global missing_cursor_names
                     if cursor_name not in missing_cursor_names:
@@ -279,7 +281,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
         x = max(0, min(xhot, w-1))
         y = max(0, min(yhot, h-1))
-        display = display_get_default()
         csize = display.get_default_cursor_size()
         cmaxw, cmaxh = display.get_maximal_cursor_size()
         if len(cursor_data)>=11:

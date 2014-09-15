@@ -56,7 +56,7 @@ except:
 
 if is_gtk3():
     default_Cursor          = gdk.Cursor.new(gdk.CursorType.X_CURSOR)
-    new_Cursor              = gdk.Cursor.new
+    new_Cursor_for_display  = gdk.Cursor.new_for_display
     new_Cursor_from_pixbuf  = gdk.Cursor.new_from_pixbuf
     from gi.repository import GdkPixbuf     #@UnresolvedImport
     image_new_from_pixbuf   = gtk.Image.new_from_pixbuf
@@ -159,7 +159,7 @@ else:
         raise Exception("your version of PyGTK is too old: %s" % str(gtk.pygtk_version))
 
     default_Cursor          = gdk.Cursor(gdk.X_CURSOR)
-    new_Cursor              = gdk.Cursor
+    new_Cursor_for_display  = gdk.Cursor
     new_Cursor_from_pixbuf  = gdk.Cursor
     image_new_from_pixbuf   = gtk.image_new_from_pixbuf
     pixbuf_new_from_file    = gdk.pixbuf_new_from_file
