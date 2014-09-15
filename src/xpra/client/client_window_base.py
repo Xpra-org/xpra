@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import re
-import sys
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.util import typedict, bytestostr
@@ -15,14 +14,6 @@ log = Logger("window")
 plog = Logger("paint")
 focuslog = Logger("focus")
 mouselog = Logger("mouse")
-
-if sys.version < '3':
-    import codecs
-    def u(x):
-        return codecs.unicode_escape_decode(x)[0]
-else:
-    def u(x):
-        return x
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -107,6 +98,7 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def update_metadata(self, metadata):
+        log("update_metadata(%s)", metadata)
         #normalize window-type:
         window_type = metadata.strlistget("window-type")
         if window_type is not None:
@@ -121,17 +113,18 @@ class ClientWindowBase(ClientWidgetBase):
         self.set_metadata(metadata)
 
     def set_metadata(self, metadata):
+        log("set_metadata(%s)", metadata)
         if b"title" in metadata:
             try:
-                title = u(self._client.title)
+                title = bytestostr(self._client.title)
                 if title.find("@")>=0:
                     #perform metadata variable substitutions:
-                    default_values = {"title"           : bytestostr("<untitled window>"),
-                                      "client-machine"  : bytestostr("<unknown machine>")}
+                    default_values = {"title"           : "<untitled window>",
+                                      "client-machine"  : "<unknown machine>"}
                     def metadata_replace(match):
                         atvar = match.group(0)          #ie: '@title@'
                         var = atvar[1:len(atvar)-1]     #ie: 'title'
-                        default_value = default_values.get(var, u("<unknown %s>") % var)
+                        default_value = default_values.get(var, "<unknown %s>" % var)
                         value = self._metadata.strget(var, default_value)
                         return value
                     title = re.sub("@[\w\-]*@", metadata_replace, title)
