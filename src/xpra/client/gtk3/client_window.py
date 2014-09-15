@@ -191,8 +191,9 @@ class ClientWindow(GTKClientWindowBase):
                 field = ASPECT_FIELDS.get(k)
                 setattr(geom, field, float(v))
                 mask |= int(name_to_hint.get(k, 0))
-        hints = Gdk.WindowHints(mask)
-        self.set_geometry_hints(None, geom, hints)
+        gdk_hints = Gdk.WindowHints(mask)
+        log("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
+        self.set_geometry_hints(None, geom, gdk_hints)
 
 
     def queue_draw(self, x, y, width, height):
