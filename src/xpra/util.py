@@ -257,14 +257,13 @@ def do_log_screen_sizes(root_w, root_h, sizes):
         if width!=root_w or height!=root_h:
             #log plug dimensions if not the same as display (root):
             info.append("%sx%s" % (width, height))
-        info.append("(%sx%s mm)" % (width_mm, height_mm))
+        info.append("(%sx%s mm - DPI: %sx%s)" % (width_mm, height_mm, dpi(width, width_mm), dpi(height, height_mm)))
         if work_width!=width or work_height!=height or work_x!=0 or work_y!=0:
             #log workarea if not the same as plug size:
             info.append("workarea: %sx%s" % (work_width, work_height))
             if work_x!=0 or work_y!=0:
                 #log position if not (0, 0)
                 info.append("at %sx%s" % (work_x, work_y))
-            info.append(" - DPI: %sx%s" % (dpi(width, width_mm), dpi(height, height_mm)))
         log.info("  "+" ".join(info))
         for i, m in enumerate(monitors, start=1):
             if len(m)<7:
