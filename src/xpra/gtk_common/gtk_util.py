@@ -141,9 +141,6 @@ if is_gtk3():
     class OptionMenu(gtk.MenuButton):
         pass
 
-    import signal
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-
     gdk_window_process_all_updates = gdk.Window.process_all_updates
     def gtk_main():
         gdk.threads_init()

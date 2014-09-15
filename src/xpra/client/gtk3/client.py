@@ -29,10 +29,6 @@ class XpraClient(GTKXpraClient):
     def gtk_main(self):
         Gtk.main()
 
-    def install_signal_handlers(self):
-        #doing so interferes with gtk..
-        pass
-
     def make_hello(self):
         capabilities = GTKXpraClient.make_hello(self)
         capabilities["encoding.supports_delta"] = [x for x in ("rgb24", "rgb32") if x in self.get_core_encodings()]
