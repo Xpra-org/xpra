@@ -9,7 +9,7 @@ import re
 import sys
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.util import typedict
+from xpra.util import typedict, bytestostr
 from xpra.log import Logger
 log = Logger("window")
 plog = Logger("paint")
@@ -121,33 +121,30 @@ class ClientWindowBase(ClientWidgetBase):
         self.set_metadata(metadata)
 
     def set_metadata(self, metadata):
-        if "title" in metadata:
+        if b"title" in metadata:
             try:
                 title = u(self._client.title)
                 if title.find("@")>=0:
                     #perform metadata variable substitutions:
-                    default_values = {"title" : u("<untitled window>"),
-                                      "client-machine" : u("<unknown machine>")}
+                    default_values = {"title"           : bytestostr("<untitled window>"),
+                                      "client-machine"  : bytestostr("<unknown machine>")}
                     def metadata_replace(match):
                         atvar = match.group(0)          #ie: '@title@'
                         var = atvar[1:len(atvar)-1]     #ie: 'title'
                         default_value = default_values.get(var, u("<unknown %s>") % var)
                         value = self._metadata.strget(var, default_value)
-                        if sys.version<'3':
-                            value = value.decode("utf-8")
                         return value
                     title = re.sub("@[\w\-]*@", metadata_replace, title)
-                utf8_title = title.encode("utf-8")
             except Exception as e:
                 log.error("error parsing window title: %s", e)
-                utf8_title = ""
-            self.set_title(utf8_title)
+                title = ""
+            self.set_title(title)
 
-        if "icon-title" in metadata:
+        if b"icon-title" in metadata:
             icon_title = metadata.strget("icon-title")
             self.set_icon_name(icon_title)
 
-        if "size-constraints" in metadata:
+        if b"size-constraints" in metadata:
             size_metadata = typedict(metadata.dictget("size-constraints"))
             self._set_initial_position = size_metadata.get("set-initial-position")
             hints = {}
@@ -176,33 +173,33 @@ class ClientWindowBase(ClientWidgetBase):
             #TODO: handle gravity
             #gravity = size_metadata.get("gravity")
 
-        if "icon" in metadata:
+        if b"icon" in metadata:
             width, height, coding, data = metadata.listget("icon")
             self.update_icon(width, height, coding, data)
 
-        if "transient-for" in metadata:
-            wid = metadata.get("transient-for", -1)
+        if b"transient-for" in metadata:
+            wid = metadata.intget("transient-for", -1)
             self.apply_transient_for(wid)
 
-        if "modal" in metadata:
+        if b"modal" in metadata:
             modal = metadata.boolget("modal")
             self.set_modal(modal)
 
         #apply window-type hint if window has not been mapped yet:
-        if "window-type" in metadata and not self.is_mapped():
+        if b"window-type" in metadata and not self.is_mapped():
             window_types = metadata.strlistget("window-type")
             self.set_window_type(window_types)
 
-        if "role" in metadata:
+        if b"role" in metadata:
             role = metadata.strget("role")
             self.set_role(role)
 
-        if "xid" in metadata:
+        if b"xid" in metadata:
             xid = metadata.strget("xid")
             self.set_xid(xid)
 
-        if "opacity" in metadata:
-            opacity = metadata.intget("opacity")
+        if b"opacity" in metadata:
+            opacity = metadata.intget("opacity", -1)
             if opacity<0:
                 opacity = 1
             else:
@@ -211,20 +208,20 @@ class ClientWindowBase(ClientWidgetBase):
             if hasattr(self, "set_opacity"):
                 self.set_opacity(opacity)
 
-        if "has-alpha" in metadata:
+        if b"has-alpha" in metadata:
             new_alpha = metadata.boolget("has-alpha")
             if new_alpha!=self._has_alpha:
                 log.warn("window %s changed its alpha flag from %s to %s (unsupported)", self._id, self._has_alpha, new_alpha)
                 self._has_alpha = new_alpha
 
-        if "maximized" in metadata:
+        if b"maximized" in metadata:
             maximized = metadata.boolget("maximized")
             if maximized:
                 self.maximize()
             else:
                 self.unmaximize()
 
-        if "fullscreen" in metadata:
+        if b"fullscreen" in metadata:
             fullscreen = metadata.boolget("fullscreen")
             self.set_fullscreen(fullscreen)
 

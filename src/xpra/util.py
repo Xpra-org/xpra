@@ -170,7 +170,7 @@ class typedict(dict):
         v = self.capsget(k, default)
         if v is None:
             return None
-        return str(v)
+        return bytestostr(v)
 
     def intget(self, k, d=0):
         return int(self.capsget(k, d))
