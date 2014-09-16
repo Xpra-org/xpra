@@ -11,10 +11,12 @@
   <repository type="tarball" name="entropywave"
 	      href="http://code.entropywave.com/download/"/>
 
-  <!--FIXME: this used to work i'm not sure what changed-->
+  <!--Not sure what changed here to break it. Used patch from https://github.com/GNOME/frogr/tree/master/osx/jhbuild/patches-->
   <autotools id="liboil" autogen-template="autoreconf -fis &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s"
 	     makeargs=' CFLAGS="$CFLAGS -DHAVE_SYMBOL_UNDERSCORE"'>
-    <branch repo="liboil" module="liboil-0.3.17.tar.gz" version="0.3.17" />
+    <branch repo="liboil" module="liboil-0.3.17.tar.gz" version="0.3.17">
+        <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/liboil-use-ac-config-headers-macro.patch" strip="1" />
+    </branch>
   </autotools>
 
   <autotools id="liborc" autogen-sh="configure">
