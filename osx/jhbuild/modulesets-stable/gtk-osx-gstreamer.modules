@@ -48,7 +48,7 @@
   </autotools>
 
 <!-- This doesn't build: see https://bugzilla.gnome.org/show_bug.cgi?id=660302-->
-  <autotools id="gst-plugins-base" autogenargs="-- --disable-tests --disable-x --disable-xvideo" supports-non-srcdir-builds="no"
+  <autotools id="gst-plugins-base" autogenargs="-- --disable-tests " supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-base/0.10/gst-plugins-base-0.10.35.tar.bz2"
             version="0.10.15" hash="sha256:cd24f01bb5258a1f400bc4f2c212bb7cee9ee23c9ffb80d537a24ef366d17103"/>
@@ -60,7 +60,7 @@
     </after>
   </autotools>
 
-  <autotools id="gst-plugins-base-1.0" autogenargs="--disable-tests --disable-x --disable-xvideo" supports-non-srcdir-builds="no"
+  <autotools id="gst-plugins-base-1.0" autogenargs="--disable-tests " supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-base/1.0/gst-plugins-base-1.0.2.tar.xz"
             version="1.0.2" hash="sha256:7ce2c4462ff89f62a82b4503a3788ce2e5077f886e535796fecc223397acf78d"/>
@@ -72,7 +72,7 @@
     </after>
   </autotools>
 
-  <autotools id="gst-plugins-good" autogenargs="-- --disable-tests --disable-x --disable-xvideo --disable-osx-video" supports-non-srcdir-builds="no"
+  <autotools id="gst-plugins-good" autogenargs="-- --disable-tests  --disable-osx-video" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-good/0.10/gst-plugins-good-0.10.30.tar.bz2"
             version="0.10.30" hash="sha256:b12cba90b27d8423cd0a808939098d19db3996cfb9bf528507c6321782e095f6"/>
@@ -82,7 +82,7 @@
     </dependencies>
   </autotools>
 
-  <autotools id="gst-plugins-good-1.0" autogenargs="-- --disable-tests --disable-x --disable-xvideo --disable-osx-video" supports-non-srcdir-builds="no"
+  <autotools id="gst-plugins-good-1.0" autogenargs="-- --disable-tests  --disable-osx-video" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-good/1.0/gst-plugins-good-1.0.2.tar.xz"
             version="1.0.2" hash="sha256:34762dbd1462dd31b6ca2a01cf6477843c9dc7112e5819cc9d6dd7396b79244c"/>
