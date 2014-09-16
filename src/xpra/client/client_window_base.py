@@ -223,8 +223,15 @@ class ClientWindowBase(ClientWidgetBase):
         #apply max-size override if needed:
         w,h = max_window_size
         if w>0 and h>0 and not self._fullscreen:
-            hints["max_width"] = max(w, hints.get("max_width", 0))
-            hints["max_height"] = max(h, hints.get("max_height", 0))
+            #get the min size, if there is one:
+            minw = hints.get("min_width", 0)
+            minh = hints.get("min_height", 0)
+            #the actual max size is:
+            # * greater than the min-size
+            # * the lowest of the max-size set by the application and the one we have
+            #TODO: if there are size increments, honour them
+            hints["max_width"] = max(minw, min(w, hints.get("max_width", 32768)))
+            hints["max_height"] = max(minh, min(h, hints.get("max_height", 32768)))
         try:
             log("calling: %s(%s)", self.apply_geometry_hints, hints)
             #save them so the window hooks can use the last value used:
