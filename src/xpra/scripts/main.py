@@ -547,6 +547,10 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="window_layout", default=defaults.window_layout,
                       help="The type of window layout to use, each client toolkit may provide different layouts."
                         "use the value 'help' to get a list of possible layouts. Default: %default")
+    group.add_option("--max-size", action="store", 
+                      dest="max_size", default=defaults.max_size, 
+                      metavar="MAX_SIZE", 
+                      help="The maximum size for all windows (ie: 800x600) Default: %default.")
     group.add_option("--border", action="store",
                       dest="border", default=defaults.border,
                       help="The border to draw inside xpra windows to distinguish them from local windows."
@@ -704,6 +708,13 @@ def do_parse_cmdline(cmdline, defaults):
         int(options.dpi)
     except Exception as e:
         raise InitException("invalid dpi: %s" % e)
+    if options.max_size:
+        try:
+            w,h = [int(x.strip()) for x in options.max_size.split("x", 1)]
+            assert w>=0 and h>0 and w<32768 and h<32768
+        except:
+            raise InitException("invalid max-size: %s" % options.max_size)
+        options.max_size = "%sx%s" % (w, h)
     if options.encryption:
         assert len(ENCRYPTION_CIPHERS)>0, "cannot use encryption: no ciphers available"
         if options.encryption not in ENCRYPTION_CIPHERS:

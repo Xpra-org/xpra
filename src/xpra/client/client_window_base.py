@@ -18,8 +18,8 @@ mouselog = Logger("mouse")
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, border):
-        log("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties))
+    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, border, max_window_size):
+        log("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, max_window_size))
         ClientWidgetBase.__init__(self, client, wid, metadata.boolget("has-alpha"))
         self._override_redirect = override_redirect
         self.group_leader = group_leader
@@ -29,6 +29,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._set_initial_position = False
         self.geometry_hints = None
         self.border = border
+        self.max_window_size = max_window_size
         self.button_state = {}
 
         self.init_window(metadata)
@@ -160,6 +161,11 @@ class ClientWindowBase(ClientWidgetBase):
                 if v:
                     v1, v2 = v
                     hints[h] = float(v1)/float(v2)
+            #apply max-size override if needed:
+            w,h = self.max_window_size
+            if w>0 and h>0:
+                hints["max_width"] = max(w, hints.get("max_width", 0))
+                hints["max_height"] = max(h, hints.get("max_height", 0))
             try:
                 log("calling: %s(%s)", self.apply_geometry_hints, hints)
                 #save them so the window hooks can use the last value used:

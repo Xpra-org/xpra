@@ -77,6 +77,7 @@ class UIXpraClient(XpraClientBase):
         self.title = ""
         self.session_name = ""
         self.auto_refresh_delay = -1
+        self.max_window_size = 0, 0
         self.dpi = 96
 
         #draw thread:
@@ -221,6 +222,12 @@ class UIXpraClient(XpraClientBase):
         self.title = opts.title
         self.session_name = opts.session_name
         self.auto_refresh_delay = opts.auto_refresh_delay
+        if opts.max_size:
+            try:
+                self.max_window_size = [int(x.strip()) for x in opts.max_size.split("x", 1)]
+            except:
+                pass
+        self.max_size = opts.max_size
         self.dpi = int(opts.dpi)
         self.xsettings_enabled = opts.xsettings
         self.supports_mmap = MMAP_SUPPORTED and opts.mmap
@@ -1742,7 +1749,7 @@ class UIXpraClient(XpraClientBase):
         windowlog("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, self.border)
+                window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, self.border, self.max_window_size)
                 break
             except:
                 windowlog.warn("failed to instantiate %s", cwc, exc_info=True)
