@@ -13,6 +13,7 @@ from xpra.log import Logger
 log = Logger("window")
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
+from xpra.platform.gui import add_window_hooks, remove_window_hooks
 
 
 GTK2_WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK \
@@ -101,6 +102,18 @@ class GTK2WindowBase(GTKClientWindowBase):
                 if screen:
                     self.set_screen(screen)
         GTKClientWindowBase.setup_window(self)
+        #add platform hooks
+        self.connect("realize", self.on_realize)
+        self.connect('unrealize', self.on_unrealize)
+
+    def on_realize(self, widget):
+        log("on_realize(%s)", widget)
+        add_window_hooks(self)
+
+    def on_unrealize(self, widget):
+        log("on_unrealize(%s)", widget)
+        remove_window_hooks(self)
+
 
     def enable_alpha(self):
         screen = self.get_screen()

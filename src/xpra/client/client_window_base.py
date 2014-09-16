@@ -27,6 +27,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._size = (w, h)
         self._client_properties = client_properties
         self._set_initial_position = False
+        self.geometry_hints = None
         self.border = border
         self.button_state = {}
 
@@ -160,6 +161,9 @@ class ClientWindowBase(ClientWidgetBase):
                     v1, v2 = v
                     hints[h] = float(v1)/float(v2)
             try:
+                log("calling: %s(%s)", self.apply_geometry_hints, hints)
+                #save them so the window hooks can use the last value used:
+                self.geometry_hints = hints
                 self.apply_geometry_hints(hints)
             except:
                 log.error("with hints=%s", hints, exc_info=True)

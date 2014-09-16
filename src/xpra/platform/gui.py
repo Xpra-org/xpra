@@ -46,11 +46,20 @@ def system_bell(*args):
 def get_native_notifier_classes():
     return []
 
+
 def get_double_click_time():
     return -1
 
 def get_double_click_distance():
     return -1
+
+
+def add_window_hooks(window):
+    pass
+
+def remove_window_hooks(window):
+    pass
+
 
 def gl_check():
     return None     #no problem
@@ -91,6 +100,7 @@ platform_import(globals(), "gui", False,
                 "get_native_system_tray_classes",
                 "get_native_notifier_classes",
                 "get_double_click_time", "get_double_click_distance",
+                "add_window_hooks", "remove_window_hooks",
                 "system_bell",
                 "get_info")
 

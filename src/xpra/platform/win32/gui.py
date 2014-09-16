@@ -11,6 +11,7 @@ log = Logger("win32")
 grablog = Logger("win32", "grab")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
+from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct
 
 
@@ -58,6 +59,52 @@ def gl_check():
     if is_wine():
         return "disabled when running under wine"
     return None
+
+
+def add_window_hooks(window):
+    #gtk2 to window handle:
+    try:
+        handle = window.get_window().handle
+    except:
+        return
+    #glue code for gtk to win32 APIs:
+    #add even hook class:
+    win32hooks = Win32Hooks(handle)
+    log("add_window_hooks(%s) added hooks for hwnd %#x: %s", window, handle, win32hooks)
+    window.win32hooks = win32hooks
+    window.win32hooks.max_size = 1024,600
+    #save original geometry function:
+    window.__apply_geometry_hints = window.apply_geometry_hints
+    #our function for taking gdk window hints and passing them to the win32 hooks class:
+    def apply_maxsize_hints(window, hints):
+        maxw = hints.get("max_width", 0)
+        maxh = hints.get("max_height", 0)
+        log("apply_maxsize_hints(%s, %s) found max: %sx%s", window, hints, maxw, maxh)
+        if maxw>0 or maxh>0:
+            window.win32hooks.max_size = (maxw or 32000), (maxh or 32000)
+        elif window.win32hooks.max_size:
+            #was set, clear it
+            window.win32hooks.max_size = None
+    #our monkey patching method, which calls the function above:
+    def apply_geometry_hints(window, hints):
+        apply_maxsize_hints(window, hints)
+        return window.__apply_geometry_hints(hints)
+    window.apply_geometry_hints = apply_geometry_hints
+    #apply current geometry hints, if any:
+    if window.geometry_hints:
+        apply_maxsize_hints(window, window.geometry_hints)
+
+def remove_window_hooks(window):
+    try:
+        if hasattr(window, "win32hooks"):
+            win32hooks = window.win32hooks
+            log("remove_window_hooks(%s) found %s", window, win32hooks)
+            if win32hooks:
+                win32hooks.cleanup()
+                window.win32hooks = None
+    except:
+        log.error("remove_window_hooks(%s)", exc_info=True)
+
 
 def get_double_click_time():
     try:
