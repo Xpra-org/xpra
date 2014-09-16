@@ -60,14 +60,18 @@ class GTKStatusIconTray(TrayBase):
 
     def hide(self, *args):
         log("%s.set_visible(False)", self.tray_widget)
-        self.tray_widget.set_visible(False)
+        if self.tray_widget:
+            self.tray_widget.set_visible(False)
 
     def show(self, *args):
         log("%s.set_visible(True)", self.tray_widget)
-        self.tray_widget.set_visible(True)
+        if self.tray_widget:
+            self.tray_widget.set_visible(True)
 
 
     def get_screen(self):
+        if not self.tray_widget:
+            return -1
         ag = self.tray_widget.get_geometry()
         if ag is None:
             return -1
@@ -77,6 +81,8 @@ class GTKStatusIconTray(TrayBase):
         return screen.get_number()
 
     def get_orientation(self):
+        if not self.tray_widget:
+            return None
         ag = self.tray_widget.get_geometry()
         if ag is None:
             return None
@@ -84,6 +90,7 @@ class GTKStatusIconTray(TrayBase):
         return ORIENTATION.get(gtk_orientation)
 
     def get_geometry(self):
+        assert self.tray_widget
         ag = self.tray_widget.get_geometry()
         log("GTKStatusIconTray.get_geometry() %s.get_geometry()=%s", self.tray_widget, ag)
         if ag is None:
