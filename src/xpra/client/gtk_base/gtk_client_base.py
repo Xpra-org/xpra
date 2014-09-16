@@ -19,6 +19,7 @@ cursorlog = Logger("gtk", "client", "cursor")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
+from xpra.util import bytestostr
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, \
@@ -261,7 +262,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #if present, try cursor ny name:
         display = display_get_default()
         if len(cursor_data)>=9 and cursor_names:
-            cursor_name = cursor_data[8]
+            cursor_name = bytestostr(cursor_data[8])
             if cursor_name:
                 gdk_cursor = cursor_names.get(cursor_name.upper())
                 if gdk_cursor is not None:
