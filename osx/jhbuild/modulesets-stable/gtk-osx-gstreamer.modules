@@ -11,7 +11,9 @@
   <repository type="tarball" name="entropywave"
 	      href="http://code.entropywave.com/download/"/>
 
-  <autotools id="liboil" autogen-sh="configure">
+  <!--FIXME: this used to work i'm not sure what changed-->
+  <autotools id="liboil" autogen-template="autoreconf -fis &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s"
+	     makeargs=' CFLAGS="$CFLAGS -DHAVE_SYMBOL_UNDERSCORE"'>
     <branch repo="liboil" module="liboil-0.3.17.tar.gz" version="0.3.17" />
   </autotools>
 
