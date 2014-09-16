@@ -280,14 +280,16 @@ class UIXpraClient(XpraClientBase):
             self.tray = self.setup_xpra_tray(opts.tray_icon)
             if self.tray:
                 tray_icon_filename = self.tray.get_tray_icon_filename(tray_icon_filename)
+                #keep tray widget hidden until:
+                self.tray.hide()
                 if opts.delay_tray:
-                    self.tray.hide()
                     def show_tray(*args):
                         traylog("first ui received, showing tray %s", self.tray)
                         self.tray.show()
                     self.connect("first-ui-received", show_tray)
                 else:
-                    self.tray.show()
+                    #show when the main loop is running:
+                    self.idle_add(self.tray.show)
 
         if self.client_supports_notifications:
             self.notifier = self.make_notifier()
