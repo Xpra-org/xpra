@@ -8,9 +8,6 @@
 import os
 from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase
 
-from xpra.log import Logger
-log = Logger("opengl", "window")
-
 
 USE_CAIRO = os.environ.get("XPRA_USE_CAIRO_BACKING", "0")=="1"
 if USE_CAIRO:
