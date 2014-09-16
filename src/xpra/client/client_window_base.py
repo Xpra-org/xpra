@@ -27,7 +27,9 @@ class ClientWindowBase(ClientWidgetBase):
         self._size = (w, h)
         self._client_properties = client_properties
         self._set_initial_position = False
+        self.size_constraints = typedict()
         self.geometry_hints = None
+        self._fullscreen = None
         self.border = border
         self.max_window_size = max_window_size
         self.button_state = {}
@@ -140,41 +142,9 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_icon_name(icon_title)
 
         if b"size-constraints" in metadata:
-            size_metadata = typedict(metadata.dictget("size-constraints"))
-            self._set_initial_position = size_metadata.get("set-initial-position")
-            hints = {}
-            for (a, h1, h2) in [
-                ("maximum-size", "max_width", "max_height"),
-                ("minimum-size", "min_width", "min_height"),
-                ("base-size", "base_width", "base_height"),
-                ("increment", "width_inc", "height_inc"),
-                ]:
-                v = size_metadata.intlistget(a)
-                if v:
-                    v1, v2 = v
-                    hints[h1], hints[h2] = int(v1), int(v2)
-            for (a, h) in [
-                ("minimum-aspect-ratio", "min_aspect"),
-                ("maximum-aspect-ratio", "max_aspect"),
-                ]:
-                v = size_metadata.intlistget(a)
-                if v:
-                    v1, v2 = v
-                    hints[h] = float(v1)/float(v2)
-            #apply max-size override if needed:
-            w,h = self.max_window_size
-            if w>0 and h>0:
-                hints["max_width"] = max(w, hints.get("max_width", 0))
-                hints["max_height"] = max(h, hints.get("max_height", 0))
-            try:
-                log("calling: %s(%s)", self.apply_geometry_hints, hints)
-                #save them so the window hooks can use the last value used:
-                self.geometry_hints = hints
-                self.apply_geometry_hints(hints)
-            except:
-                log.error("with hints=%s", hints, exc_info=True)
-            #TODO: handle gravity
-            #gravity = size_metadata.get("gravity")
+            self.size_constraints = typedict(metadata.dictget("size-constraints"))
+            self._set_initial_position = self.size_constraints.get("set-initial-position")
+            self.set_size_constraints(self.size_constraints, self.max_window_size)
 
         if b"icon" in metadata:
             width, height, coding, data = metadata.listget("icon")
@@ -228,6 +198,42 @@ class ClientWindowBase(ClientWidgetBase):
             fullscreen = metadata.boolget("fullscreen")
             self.set_fullscreen(fullscreen)
 
+
+    def set_size_constraints(self, size_constraints, max_window_size):
+        self._set_initial_position = size_constraints.get("set-initial-position")
+        hints = {}
+        for (a, h1, h2) in [
+            ("maximum-size", "max_width", "max_height"),
+            ("minimum-size", "min_width", "min_height"),
+            ("base-size", "base_width", "base_height"),
+            ("increment", "width_inc", "height_inc"),
+            ]:
+            v = size_constraints.intlistget(a)
+            if v:
+                v1, v2 = v
+                hints[h1], hints[h2] = int(v1), int(v2)
+        for (a, h) in [
+            ("minimum-aspect-ratio", "min_aspect"),
+            ("maximum-aspect-ratio", "max_aspect"),
+            ]:
+            v = size_constraints.intlistget(a)
+            if v:
+                v1, v2 = v
+                hints[h] = float(v1)/float(v2)
+        #apply max-size override if needed:
+        w,h = max_window_size
+        if w>0 and h>0 and not self._fullscreen:
+            hints["max_width"] = max(w, hints.get("max_width", 0))
+            hints["max_height"] = max(h, hints.get("max_height", 0))
+        try:
+            log("calling: %s(%s)", self.apply_geometry_hints, hints)
+            #save them so the window hooks can use the last value used:
+            self.geometry_hints = hints
+            self.apply_geometry_hints(hints)
+        except:
+            log.error("with hints=%s", hints, exc_info=True)
+        #TODO: handle gravity
+        #gravity = size_metadata.get("gravity")
 
     def set_window_type(self, window_types):
         hints = 0
