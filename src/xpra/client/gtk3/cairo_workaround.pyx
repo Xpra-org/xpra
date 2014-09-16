@@ -28,17 +28,11 @@ cdef extern from "../../codecs/buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "Python.h":
-    ctypedef object PyObject
+    ctypedef struct PyObject:
+        pass
+    void * PyCapsule_Import(const char *name, int no_block)
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
-
-    #void * PyCObject_Import(char *, char *) except NULL
-    ctypedef struct PyTypeObject:
-        pass
-    ctypedef struct PyObject:
-        Py_ssize_t ob_refcnt
-        PyTypeObject *ob_type
-    void * PyCapsule_Import(const char *name, int no_block)
 
 cdef extern from "cairo/cairo.h":
     ctypedef struct cairo_surface_t:
@@ -64,7 +58,7 @@ cdef extern from "cairo/cairo.h":
 
 cdef extern from "pycairo/pycairo.h":
     ctypedef struct Pycairo_CAPI_t:
-        PyTypeObject *ImageSurface_Type
+        pass
     ctypedef struct PycairoSurface:
         #PyObject_HEAD
         cairo_surface_t *surface
