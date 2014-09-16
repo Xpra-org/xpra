@@ -1,0 +1,11 @@
+--- a/configure.ac	2014-06-04 23:41:48.000000000 +0100
++++ b/configure.ac	2014-06-04 23:39:49.000000000 +0100
+@@ -11,7 +11,7 @@
+ #LIBOIL_MAJORMINOR=0.3
+ #AC_SUBST(LIBOIL_MAJORMINOR)
+ 
+-AM_CONFIG_HEADER(config.h)
++AC_CONFIG_HEADERS([config.h])
+ 
+ dnl CURRENT, REVISION, AGE
+ dnl - library source changed -> increment REVISION
