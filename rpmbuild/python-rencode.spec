@@ -1,9 +1,14 @@
 # Remove private provides from .so files in the python_sitearch directory
 %global __provides_exclude_from ^%{python_sitearch}/.*\\.so$
 
+%if 0%{?rhel} && 0%{?rhel} <= 6
+%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%endif
+
 #this spec file is for both Fedora and CentOS
 #only Fedora has Python3 at present:
-%if 0%{?fedora} == 0
+%if 0%{?fedora}
 %define with_python3 1
 %endif
 
@@ -17,7 +22,7 @@ Source0:        rencode-%{version}.tar.xz
 
 BuildRequires:  python2-devel
 BuildRequires:  Cython
-%if 0%{?with_python3} == 0
+%if 0%{?with_python3}
 BuildRequires:  python3-devel
 BuildRequires:  python3-Cython
 %endif
@@ -28,7 +33,7 @@ BitTorrent project.  For complex, heterogeneous data structures with
 many small elements, r-encodings take up significantly less space than
 b-encodings.
 
-%if 0%{?with_python3} == 0
+%if 0%{?with_python3}
 %package -n python3-rencode
 Summary:    Web safe object pickling/unpickling
 
@@ -42,46 +47,43 @@ b-encodings.
 %prep
 %setup -qn rencode-%{version}
 
-%if 0%{?with_python3} == 0
+%if 0%{?with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
-find %{py3dir} -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
 %endif
 
-find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python}|'
-
 %build
-CFLAGS="%{optflags}" %{__python} setup.py build
+CFLAGS="%{optflags}" %{__python2} setup.py build
 
-%if 0%{?with_python3} == 0
+%if 0%{?with_python3}
 pushd %{py3dir}
 CFLAGS="%{optflags}" %{__python3} setup.py build
 popd
 %endif
 
 %install
-%if 0%{?with_python3} == 0
+%if 0%{?with_python3}
 pushd %{py3dir}
 %{__python3} setup.py install --skip-build --root %{buildroot}
 popd
 %endif
 
-%{__python} setup.py install -O1 --skip-build --root %{buildroot}
+%{__python2} setup.py install -O1 --skip-build --root %{buildroot}
 
 #fix permissions on shared objects
-chmod 0755 %{buildroot}%{python_sitearch}/rencode/_rencode.so
-%if 0%{?with_python3} == 0
+chmod 0755 %{buildroot}%{python2_sitearch}/rencode/_rencode.so
+%if 0%{?with_python3}
 chmod 0755 %{buildroot}%{python3_sitearch}/rencode/_rencode.cpython-*.so
 %endif
 
 %check
 pushd tests
-ln -sf %{buildroot}%{python_sitearch}/rencode rencode
-%{__python} test_rencode.py
-%{__python} timetest.py
+ln -sf %{buildroot}%{python2_sitearch}/rencode rencode
+%{__python2} test_rencode.py
+%{__python2} timetest.py
 popd
 
-%if 0%{?with_python3} == 0
+%if 0%{?with_python3}
 pushd %{py3dir}/tests
 ln -sf %{buildroot}%{python3_sitearch}/rencode rencode
 %{__python3} test_rencode.py
@@ -90,11 +92,11 @@ popd
 %endif
 
 %files
-%{python_sitearch}/rencode
-%{python_sitearch}/rencode*.egg-info
+%{python2_sitearch}/rencode
+%{python2_sitearch}/rencode*.egg-info
 %doc COPYING README
 
-%if 0%{?with_python3} == 0
+%if 0%{?with_python3}
 %files -n python3-rencode
 %{python3_sitearch}/rencode
 %{python3_sitearch}/rencode*.egg-info

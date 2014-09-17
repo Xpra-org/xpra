@@ -1,14 +1,23 @@
 #
 # rpm spec for netifaces
 #
+%if 0%{?rhel} && 0%{?rhel} <= 6
+%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%endif
 
+#this spec file is for both Fedora and CentOS
+#only Fedora has Python3 at present:
+%if 0%{?fedora}
+%define with_python3 1
+%endif
 
 
 Summary: Getting network addresses from Python
 Vendor: http://alastairs-place.net/netifaces/
 Name: python-netifaces
 Version: 0.10.4
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPL3
 Requires: python
 Group: Networking
@@ -20,12 +29,62 @@ BuildRequires: python-devel, python-setuptools
 Provides: netifaces
 Obsoletes: netifaces
 
-
 %description
 Getting network addresses from Python
 
+%if 0%{?with_python3}
+%package -n python3-netifaces
+Summary: Getting network addresses from Python
+Group: Networking
+
+%description -n python3-netifaces
+Getting network addresses from Python3
+%endif
+
+
+%prep
+%setup -q -n netifaces-%{version}
+
+%if 0%{?with_python3}
+rm -rf %{py3dir}
+cp -a . %{py3dir}
+%endif
+
+%build
+%{__python2} setup.py build
+
+%if 0%{?with_python3}
+pushd %{py3dir}
+%{__python3} setup.py build
+popd
+%endif
+
+%install
+%{__python2} setup.py install --root %{buildroot}
+
+%if 0%{?with_python3}
+%{__python3} setup.py install --root %{buildroot}
+%endif
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root)
+%doc README.rst
+%{python2_sitearch}/netifaces*
+
+%if 0%{?with_python3}
+%files -n python3-netifaces
+%defattr(-,root,root)
+%{python3_sitearch}/netifaces*
+%endif
+
 
 %changelog
+* Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> 0.10.4-3
+- Add Python3 package
+
 * Wed Aug 27 2014 Antoine Martin <antoine@nagafix.co.uk> 0.10.4-2
 - Rebuild with obsoletes tag
 
@@ -45,26 +104,3 @@ Getting network addresses from Python
 
 * Sat May 01 2010 Antoine Martin <antoine@nagafix.co.uk> 0.5.0-1
 - First attempt at making RPMs
-
-
-%prep
-%setup -q -n netifaces-%{version}
-
-%build
-%{__python} setup.py build
-
-%install
-rm -rf $RPM_BUILD_ROOT
-%{__python} setup.py install -O1 --prefix /usr --root %{buildroot}
-
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-%files
-%defattr(-,root,root)
-%doc  README.rst
-%{_libdir}/python*/site-packages/netifaces*
-
-###
-### eof
-###

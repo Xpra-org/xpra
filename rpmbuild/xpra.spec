@@ -18,10 +18,13 @@
 
 #some of these dependencies may get turned off (empty) on some platforms:
 %define requires_lzo , python-lzo
+%define py3requires_lzo %{nil}
 #OpenGL bits:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext, numpy
+%define py3requires_opengl , python3-PyOpenGL, python3-PyOpenGL-accelerate, numpy
 #Anything extra (distro specific):
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils
+%define py3requires_sound , gstreamer1, gstreamer1-plugins-base, gstreamer-plugins1-good, gstreamer-python, pulseaudio, pulseaudio-utils
 #This would add support for mp3, but is not in the default repositories:
 #gstreamer-plugins-ugly
 %define with_python3 1
@@ -37,6 +40,7 @@
 #(so it can be installed if desired):
 %define no_sound 0
 %define requires_sound %{nil}
+%define py3requires_sound %{nil}
 #don't have python3 by default:
 %define with_python3 0
 %endif
@@ -58,6 +62,7 @@
 
 %if 0%{?no_sound}
 %define requires_sound %{nil}
+%define py3requires_sound %{nil}
 %endif
 
 
@@ -140,14 +145,14 @@ This package contains the files which are common to both the Python 2 and Python
 %package -n python3-xpra
 Summary: Xpra gives you "persistent remote applications" for X.
 Group: Networking
-Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo}
+Requires: python %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo}
+Requires: python3-lz4
 Requires: python3-gobject
 Requires: python3-pillow
 Requires: python3-crypto
 #TODO:
-#Requires: python3-netifaces
-#Requires: python-lz4
 #Requires: dbus-python
+Requires: python3-netifaces
 Requires: python3-rencode
 Requires: python3-pillow
 Requires: libfakeXinerama
@@ -163,7 +168,6 @@ Requires: xpra-common
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
 
 So basically it's screen for remote X apps.
-
 %endif
 
 
