@@ -24,9 +24,8 @@
 
 import sys
 
-py3 = False
-if sys.version_info[0] >= 3:
-    py3 = True
+py3 = sys.version_info[0] >= 3
+if py3:
     unicode = str
 
 from cpython cimport bool
