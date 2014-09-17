@@ -204,11 +204,6 @@
       <dep package="expat"/>
       <dep package="perl-xml-parser"/>
       <dep package="perl-xml-simple"/>
-      <dep package="gtk-osx-docbook"/>
-      <dep package="python"/>
-      <dep package="libxml2"/>
-      <dep package="itstool"/>
-      <dep package="gtk-doc"/>
       <dep package="gnome-common"/>
       <dep package="intltool"/>
    </dependencies>
