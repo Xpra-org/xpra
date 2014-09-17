@@ -24,7 +24,7 @@
 
 import sys
 
-py3 = sys.version_info[0] >= 3
+py3 = sys.version >= '3'
 if py3:
     unicode = str
 

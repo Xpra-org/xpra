@@ -85,6 +85,7 @@ Requires: python-crypto
 #(it provides the avahi python bindings)
 #because Fedora and CentOS bring in some insane dependencies with it (vnc)
 Requires: python-netifaces
+Requires: python-rencode
 Requires: python-pillow
 Requires: libfakeXinerama
 Requires: gtk2-immodule-xim

@@ -113,7 +113,6 @@ html5_ENABLED = not WIN32 and not OSX
 
 bencode_ENABLED         = True
 cython_bencode_ENABLED  = True
-rencode_ENABLED         = True
 clipboard_ENABLED       = not PYTHON3
 Xdummy_ENABLED          = None          #None means auto-detect
 Xdummy_wrapper_ENABLED  = None          #None means auto-detect
@@ -166,7 +165,7 @@ SWITCHES = ["enc_x264", "x264_static",
             "vpx", "vpx_static",
             "webp", "webp_static",
             "memoryview",
-            "rencode", "bencode", "cython_bencode",
+            "bencode", "cython_bencode",
             "clipboard",
             "server", "client", "x11", "gtk_x11",
             "gtk2", "gtk3", "qt4", "html5",
@@ -769,7 +768,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/bindings/randr_bindings.c",
                    "xpra/x11/bindings/core_bindings.c",
                    "xpra/x11/bindings/ximage.c",
-                   "xpra/net/rencode/rencode.c",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
@@ -1715,14 +1713,6 @@ if vpx_ENABLED:
     cython_add(Extension("xpra.codecs.vpx.decoder",
                 ["xpra/codecs/vpx/decoder.pyx"]+membuffers_c,
                 **vpx_pkgconfig))
-
-
-toggle_packages(rencode_ENABLED, "xpra.net.rencode")
-if rencode_ENABLED:
-    rencode_pkgconfig = pkgconfig(optimize=not debug_ENABLED)
-    cython_add(Extension("xpra.net.rencode.rencode",
-                ["xpra/net/rencode/rencode.pyx"],
-                **rencode_pkgconfig))
 
 
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")

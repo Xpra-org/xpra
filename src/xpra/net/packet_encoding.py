@@ -16,9 +16,14 @@ from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML   #, FLAGS_BENCODE
 rencode_dumps, rencode_loads, rencode_version = None, None, None
 try:
     try:
-        from xpra.net.rencode import dumps as rencode_dumps  #@UnresolvedImport
-        from xpra.net.rencode import loads as rencode_loads  #@UnresolvedImport
-        from xpra.net.rencode import __version__ as rencode_version
+        import rencode
+        rencode_dumps = rencode.dumps
+        rencode_loads = rencode.loads
+        try:
+            log("loaded rencode version %s from %s", rencode.__version__, rencode.__file__)
+        except:
+            log.warn("rencode at '%s' lacks versioning information", rencode.__file__)
+            rencode_version = "unknown"
     except ImportError as e:
         log.warn("rencode import error: %s", e)
 except Exception as e:

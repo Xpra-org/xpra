@@ -64,7 +64,7 @@ __all__ = ['dumps', 'loads']
 
 import sys
 
-py3 = sys.version_info.major >= 3
+py3 = sys.version >= '3'
 if py3:
     long = int          #@ReservedAssignment
     unicode = str       #@ReservedAssignment
