@@ -54,7 +54,7 @@
   <autotools id="gst-plugins-base" autogenargs="-- --disable-tests " supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-base/0.10/gst-plugins-base-0.10.35.tar.bz2"
-            version="0.10.15" hash="sha256:cd24f01bb5258a1f400bc4f2c212bb7cee9ee23c9ffb80d537a24ef366d17103"/>
+            version="0.10.35" hash="sha256:cd24f01bb5258a1f400bc4f2c212bb7cee9ee23c9ffb80d537a24ef366d17103"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="liboil"/>
