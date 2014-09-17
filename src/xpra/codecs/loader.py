@@ -51,17 +51,17 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
         log("", exc_info=True)
     return None
 codec_versions = {}
-def add_codec_version(name, top_module, version="get_version()", alt_version=None):
+def add_codec_version(name, top_module, version="get_version()", alt_version="__version__"):
     try:
         fieldnames = [x for x in (version, alt_version) if x is not None]
         for fieldname in fieldnames:
-            if version.endswith("()"):
+            if fieldname.endswith("()"):
                 fieldname = version[:-2]
             module = __import__(top_module, {}, {}, [fieldname])
             if not hasattr(module, fieldname):
                 continue
             v = getattr(module, fieldname)
-            if version.endswith("()") and v:
+            if fieldname.endswith("()") and v:
                 v = v()
             global codec_versions
             codec_versions[name] = v
