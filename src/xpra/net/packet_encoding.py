@@ -20,7 +20,8 @@ try:
         rencode_dumps = rencode.dumps
         rencode_loads = rencode.loads
         try:
-            log("loaded rencode version %s from %s", rencode.__version__, rencode.__file__)
+            rencode_version = rencode.__version__
+            log("loaded rencode version %s from %s", rencode_version, rencode.__file__)
         except:
             log.warn("rencode at '%s' lacks versioning information", rencode.__file__)
             rencode_version = "unknown"
