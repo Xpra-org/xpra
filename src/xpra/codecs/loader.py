@@ -249,14 +249,14 @@ def main():
                         print("                         ENCODE: %s" % ", ".join(e))
                         d = get_PIL_decodings(mod)
                         print("                         DECODE: %s" % ", ".join(d))
-                    elif name.find("enc")>=0 or name.find("dec")>=0:
-                        encodings = mod.get_encodings()
-                        print("                         %s" % ", ".join(encodings))
                     elif name.find("csc")>=0:
                         cs = list(mod.get_input_colorspaces())
                         for c in list(cs):
                             cs += list(mod.get_output_colorspaces(c))
                         print("                         %s" % ", ".join(list(set(cs))))
+                    elif name.find("enc")>=0 or name.find("dec")>=0:
+                        encodings = mod.get_encodings()
+                        print("                         %s" % ", ".join(encodings))
                     try:
                         i = mod.get_info()
                         print("                         %s" % i)
