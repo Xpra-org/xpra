@@ -24,7 +24,7 @@
 %define py3requires_opengl , python3-PyOpenGL, python3-PyOpenGL-accelerate, numpy
 #Anything extra (distro specific):
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils
-%define py3requires_sound , gstreamer1, gstreamer1-plugins-base, gstreamer-plugins1-good, gstreamer-python, pulseaudio, pulseaudio-utils
+%define py3requires_sound , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils
 #This would add support for mp3, but is not in the default repositories:
 #gstreamer-plugins-ugly
 %define with_python3 1
