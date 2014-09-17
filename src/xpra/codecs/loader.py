@@ -125,6 +125,9 @@ def load_codecs():
     codec_import_check("dec_webp", "webp decoder", "xpra.codecs.webp", "xpra.codecs.webp.decode", "decompress")
     add_codec_version("dec_webp", "xpra.codecs.webp.decode")
 
+    #not really a codec, but gets used by codecs:
+    add_codec_version("numpy", "numpy")
+
     log("done loading codecs")
     log("found:")
     #print("codec_status=%s" % codecs)
