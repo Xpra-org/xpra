@@ -124,8 +124,6 @@ cdef class SWSFlags:
 
 
 #keeping this array in scope ensures the strings don't go away!
-def b(x):
-    return x.encode("latin1")
 FLAGS_OPTIONS = [
             (30, ("SWS_BICUBIC", ), []),
             (40, ("SWS_BICUBLIN", ), []),
@@ -144,7 +142,7 @@ for speed, flags_strs, bin_flags in FLAGS_OPTIONS:
         log("%s=%s", flags_str, flag_val)
         flags |= flag_val
         for flag in flags_strs:
-            bin_flags.append(b(flag))
+            bin_flags.append(flag.encode())
     log("%s=%s", flags_strs, flags)
     FLAGS.append((speed, SWSFlags(flags, bin_flags)))
 log("swscale flags: %s", FLAGS)

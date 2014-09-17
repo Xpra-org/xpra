@@ -11,23 +11,6 @@ import traceback
 import threading
 import sys
 
-#stupid python3 breakage:
-if sys.version < '3':
-    def b(x):
-        return x
-    def ss(x):
-        return str(x)
-else:
-    def b(x):
-        return bytes(x, 'latin1')
-    def ss(x):
-        if type(x)==str:
-            return x
-        elif type(x)==bytes:
-            return str(x, "latin1")
-        else:
-            return str(x)
-
 
 #constants shared between client and server:
 #(do not modify the values, see also disconnect_is_an_error)
