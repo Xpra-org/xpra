@@ -24,7 +24,7 @@
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils
 #This would add support for mp3, but is not in the default repositories:
 #gstreamer-plugins-ugly
-%define py3k 1
+%define with_python3 1
 
 %define libwebp libwebp
 %define libvpx libvpx
@@ -38,7 +38,7 @@
 %define no_sound 0
 %define requires_sound %{nil}
 #don't have python3 by default:
-%define py3k 0
+%define with_python3 0
 %endif
 
 %if 0%{?el6}
@@ -78,7 +78,6 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo}
 Requires: python-lz4
 Requires: pygtk2
-Requires: python-imaging
 Requires: dbus-python
 Requires: python-crypto
 #we cannot depend on 'avahi-ui-tools' which we need for mdns support
@@ -94,6 +93,7 @@ Requires: %{libvpx}
 Requires: %{libwebp}
 Requires: x264-xpra
 Requires: ffmpeg-xpra
+Requires: xpra-common
 
 BuildRequires: pkgconfig
 BuildRequires: Cython
@@ -114,7 +114,7 @@ BuildRequires: desktop-file-utils
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 
-%if %{py3k}
+%if %{with_python3}
 BuildRequires: python3-devel
 BuildRequires: gtk3-devel
 #BuildRequires: pygobject3-devel
@@ -127,20 +127,62 @@ Xpra gives you "persistent remote applications" for X. That is, unlike normal X 
 
 So basically it's screen for remote X apps.
 
+#package containing the common bits:
+%package common
+Summary: Common files for xpra packages
+Group: Networking
+BuildArch: noarch
+%description common
+This package contains the files which are common to both the Python 2 and Python 3 xpra packages.
+
+#optional python3 package:
+%if %{with_python3}
+%package -n python3-xpra
+Summary: Xpra gives you "persistent remote applications" for X.
+Group: Networking
+Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo}
+Requires: python3-gobject
+Requires: python3-pillow
+Requires: python3-crypto
+#TODO:
+#Requires: python3-netifaces
+#Requires: python-lz4
+#Requires: dbus-python
+Requires: python3-rencode
+Requires: python3-pillow
+Requires: libfakeXinerama
+Requires: gtk3-immodule-xim
+Requires: xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
+Requires: %{libvpx}
+Requires: %{libwebp}
+Requires: x264-xpra
+Requires: ffmpeg-xpra
+Requires: xpra-common
+
+%description -n python3-xpra
+Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
+
+So basically it's screen for remote X apps.
+
+%endif
+
 
 %prep
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
 mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
+%if %{with_python3}
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python3 $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
 mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
+%endif
 
 
 %debug_package
 
 
 %build
+%if %{with_python3}
 pushd xpra-%{version}-python3
 rm -rf build install
 # set pkg_config_path for xpra video libs
@@ -148,6 +190,7 @@ PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%{_libdir}/xpra/pkgconfig
 export PKG_CONFIG_PATH
 CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python3} setup.py build %{dummy}
 popd
+%endif
 
 pushd xpra-%{version}-python2
 rm -rf build install
@@ -160,9 +203,11 @@ popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
+%if %{with_python3}
 pushd xpra-%{version}-python3
 %{__python3} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
 popd
+%endif
 pushd xpra-%{version}-python2
 %{__python2} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
 popd
@@ -177,13 +222,9 @@ rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/xpra/sound
 rm -rf $RPM_BUILD_ROOT
 
 
-%files
+%files common
 %defattr(-,root,root)
 %{_bindir}/xpra*
-%{python2_sitearch}/xpra
-%{python2_sitearch}/xpra-*.egg-info
-%{python3_sitearch}/xpra
-%{python3_sitearch}/xpra-*.egg-info
 %{_datadir}/xpra
 %{_datadir}/man/man1/xpra*
 %{_datadir}/applications/xpra_launcher.desktop
@@ -192,6 +233,16 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_sysconfdir}/xpra
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config(noreplace) %{_sysconfdir}/xpra/xpra.conf
+
+%files
+%{python2_sitearch}/xpra
+%{python2_sitearch}/xpra-*.egg-info
+
+%if %{with_python3}
+%files -n python3-xpra
+%{python3_sitearch}/xpra
+%{python3_sitearch}/xpra-*.egg-info
+%endif
 
 
 %check
@@ -217,7 +268,7 @@ fi
 
 
 %changelog
-* Sun Aug 17 2014 Antoine Martin <antoine@devloop.org.uk> 0.15.0-1
+* Wed Sep 17 2014 Antoine Martin <antoine@devloop.org.uk> 0.15.0-1
 - TODO
 
 * Thu Aug 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.14.0-1
