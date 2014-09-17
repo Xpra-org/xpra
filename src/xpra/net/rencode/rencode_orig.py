@@ -19,7 +19,7 @@ rencode module versions, so you should check that you are using the
 same rencode version throughout your project.
 """
 
-__version__ = ("Python", 1, 0, 2)
+__version__ = ("Python", 1, 0, 3)
 __all__ = ['dumps', 'loads']
 
 # Original bencode module by Petru Paler, et al.

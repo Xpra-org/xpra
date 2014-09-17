@@ -32,9 +32,10 @@ from cpython cimport bool
 from libc.stdlib cimport realloc, malloc, free
 from libc.string cimport memcpy
 
-__version__ = ("Cython", 1, 0, 2)
+__version__ = ("Cython", 1, 0, 3)
 
 cdef long long data_length = 0
+cdef bool _decode_utf8 = False
 
 # Determine host byte-order
 cdef bool big_endian = False
@@ -478,9 +479,13 @@ cdef decode(char *data, int *pos):
         return decode_float64(data, pos)
     elif STR_FIXED_START <= typecode < STR_FIXED_START + STR_FIXED_COUNT:
         s = decode_fixed_str(data, pos)
+        if _decode_utf8:
+            s = s.decode("utf8")
         return s
     elif 49 <= typecode <= 57:
         s = decode_str(data, pos)
+        if _decode_utf8:
+            s = s.decode("utf8")
         return s
     elif typecode == CHR_NONE:
         pos[0] += 1
@@ -500,15 +505,20 @@ cdef decode(char *data, int *pos):
     elif typecode == CHR_DICT:
         return decode_dict(data, pos)
 
-def loads(data):
+def loads(data, decode_utf8=False):
     """
     Decodes the string into an object
 
     :param data: the string to decode
     :type data: string
+    :param decode_utf8: if True, will attempt to decode all str into unicode
+                        objects using utf8
+    :type decode_utf8: bool
 
     """
     cdef int pos = 0        #@DuplicatedSignature
     global data_length
     data_length = len(data)
+    global _decode_utf8
+    _decode_utf8=decode_utf8
     return decode(data, &pos)
