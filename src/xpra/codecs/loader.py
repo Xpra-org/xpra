@@ -55,12 +55,13 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
     try:
         fieldnames = [x for x in (version, alt_version) if x is not None]
         for fieldname in fieldnames:
-            if fieldname.endswith("()"):
-                fieldname = version[:-2]
-            module = __import__(top_module, {}, {}, [fieldname])
-            if not hasattr(module, fieldname):
+            f = fieldname
+            if f.endswith("()"):
+                f = version[:-2]
+            module = __import__(top_module, {}, {}, [f])
+            if not hasattr(module, f):
                 continue
-            v = getattr(module, fieldname)
+            v = getattr(module, f)
             if fieldname.endswith("()") and v:
                 v = v()
             global codec_versions
