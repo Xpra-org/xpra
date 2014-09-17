@@ -434,8 +434,8 @@ XpraWindow.prototype.handle_resized = function(e) {
 	// remote resize will call this.resize()
 	// need to update the internal geometry
 	if(e) {
-		this.w = e.size.width - this.leftoffset - this.rightoffset;
-		this.h = e.size.height - this.topoffset - this.bottomoffset;
+		this.w = Math.round(e.size.width) - this.leftoffset - this.rightoffset;
+		this.h = Math.round(e.size.height) - this.topoffset - this.bottomoffset;
 	}
 	// then update CSS and redraw backing
 	this.updateCSSGeometry();
@@ -452,8 +452,8 @@ XpraWindow.prototype.handle_moved = function(e) {
 	"use strict";
 	// add on padding to the event position so that
 	// it reflects the internal geometry of the canvas
-	this.x = e.position.left + this.leftoffset;
-	this.y = e.position.top + this.topoffset;
+	this.x = Math.round(e.position.left) + this.leftoffset;
+	this.y = Math.round(e.position.top) + this.topoffset;
 	// make sure we are visible after move
 	this.ensure_visible();
 	// tell remote we have moved window
