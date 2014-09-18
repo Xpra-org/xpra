@@ -154,6 +154,7 @@ PIC_ENABLED             = not WIN32     #ming32 moans that it is always enabled 
 debug_ENABLED           = False
 verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
+tests_ENABLED           = False
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "x264_static",
@@ -171,7 +172,7 @@ SWITCHES = ["enc_x264", "x264_static",
             "gtk2", "gtk3", "qt4", "html5",
             "sound", "opengl",
             "warn", "strict", "shadow", "debug", "PIC",
-            "Xdummy", "Xdummy_wrapper", "verbose", "bundle_tests"]
+            "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests"]
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
@@ -1598,6 +1599,10 @@ if client_ENABLED and PYTHON3:
 add_packages("xpra.codecs.argb")
 cython_add(Extension("xpra.codecs.argb.argb",
             ["xpra/codecs/argb/argb.pyx", buffers_c]))
+
+
+#build tests, but don't install them:
+toggle_packages(tests_ENABLED, "tests/unit")
 
 
 if bundle_tests_ENABLED:

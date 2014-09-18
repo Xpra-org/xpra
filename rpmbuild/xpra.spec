@@ -192,7 +192,7 @@ rm -rf build install
 # set pkg_config_path for xpra video libs
 PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%{_libdir}/xpra/pkgconfig
 export PKG_CONFIG_PATH
-CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python3} setup.py build %{dummy}
+CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python3} setup.py build %{dummy} --with-tests
 popd
 %endif
 
@@ -201,7 +201,7 @@ rm -rf build install
 # set pkg_config_path for xpra video libs
 PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%{_libdir}/xpra/pkgconfig
 export PKG_CONFIG_PATH
-CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python2} setup.py build %{dummy}
+CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python2} setup.py build %{dummy} --with-tests
 popd
 
 
@@ -215,6 +215,11 @@ popd
 pushd xpra-%{version}-python2
 %{__python2} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
 popd
+
+#remove the tests, not meant to be installed in the first place
+#(but I can't get distutils to play nice: I want them built, not installed)
+rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/tests
+rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/tests
 
 %if 0%{?no_sound}
 rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/xpra/sound
@@ -252,6 +257,16 @@ rm -rf $RPM_BUILD_ROOT
 %check
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
+
+pushd xpra-%{version}-python2/tests
+%{__python2} unit/run.py
+popd
+
+%if 0%{?with_python3}
+pushd xpra-%{version}-python3/tests
+%{__python3} unit/run.py
+popd
+%endif
 
 
 %post
