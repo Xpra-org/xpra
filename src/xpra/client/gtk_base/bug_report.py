@@ -24,7 +24,7 @@ from xpra.scripts.config import read_xpra_defaults
 from xpra.client.gtk_base.about import about
 from xpra.platform.paths import get_icon_dir
 from xpra.platform.info import get_user_info
-from xpra.util import nonl, updict
+from xpra.util import nonl, updict, strtobytes
 from xpra.log import Logger, enable_debug_for
 log = Logger("util")
 
@@ -239,7 +239,7 @@ class BugReport(object):
     def get_text_data(self):
         data = []
         tb = self.description.get_buffer()
-        buf = tb.get_text(*tb.get_bounds())
+        buf = tb.get_text(*tb.get_bounds(), include_hidden_chars=False)
         if len(buf):
             data.append(("Description", "", "txt", buf))
         for name, dtype, title, value_cb, tooltip in self.toggles:
@@ -300,7 +300,7 @@ class BugReport(object):
                 info.compress_type = zipfile.ZIP_DEFLATED
                 #very poorly documented:
                 info.external_attr = 0o644 << 16
-                info.comment = tooltip
+                info.comment = strtobytes(tooltip)
                 zf.writestr(info, s, compress_type=zipfile.ZIP_DEFLATED)
         finally:
             zf.close()
