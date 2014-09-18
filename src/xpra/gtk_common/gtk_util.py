@@ -461,7 +461,7 @@ def choose_file(parent_window, title, action, action_button, callback, file_filt
                                 parent=parent_window, action=action,
                                 buttons=(gtk.STOCK_CANCEL, RESPONSE_CANCEL, action_button, RESPONSE_OK))
     chooser.set_select_multiple(False)
-    chooser.set_default_response(gtk.RESPONSE_OK)
+    chooser.set_default_response(RESPONSE_OK)
     if file_filter:
         chooser.add_filter(file_filter)
     response = chooser.run()
