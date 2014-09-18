@@ -22,7 +22,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
 from xpra.util import bytestostr
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, \
-            new_Cursor_for_display, new_Cursor_from_pixbuf, \
+            new_Cursor_for_display, new_Cursor_from_pixbuf, window_set_default_icon, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, INTERP_BILINEAR
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
@@ -53,6 +53,12 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def init(self, opts):
         GObjectXpraClient.init(self, opts)
         UIXpraClient.init(self, opts)
+
+    def init_ui(self, opts, extra_args=[]):
+        UIXpraClient.init_ui(self, opts, extra_args)
+        icon = self.get_pixbuf("xpra.png")
+        if icon:
+            window_set_default_icon(icon)
 
     def run(self):
         UIXpraClient.run(self)
