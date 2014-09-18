@@ -1431,8 +1431,8 @@ class UIXpraClient(XpraClientBase):
     def start_sending_sound(self):
         """ (re)start a sound source and emit client signal """
         soundlog("start_sending_sound()")
-        assert self.microphone_allowed
-        assert self.server_sound_receive
+        assert self.microphone_allowed, "microphone forwarding is disabled"
+        assert self.server_sound_receive, "client support for receiving sound is disabled"
         from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP
         if self._remote_machine_id and self._remote_machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
             #looks like we're on the same machine, verify it's a different user:
@@ -1585,7 +1585,7 @@ class UIXpraClient(XpraClientBase):
 
     def start_sound_sink(self, codec):
         soundlog("start_sound_sink(%s)", codec)
-        assert self.sound_sink is None
+        assert self.sound_sink is None, "sound sink already exists!"
         try:
             soundlog("starting %s sound sink", codec)
             from xpra.sound.sink import SoundSink
