@@ -551,12 +551,14 @@ class XpraClientBase(object):
     def _process_gibberish(self, packet):
         (_, message, data) = packet
         p = self._protocol
-        if (p and p.input_packetcount>0) or len([c for c in data if c not in string.printable])>0:
+        show_as_text = p and p.input_packetcount==0 and all(c in string.printable for c in bytestostr(data))
+        if show_as_text:
+            #looks like the first packet back is just text, print it:
+            data = bytestostr(data)
+            log.info("Failed to connect, received: %s", repr_ellipsized(data.strip("\n").strip("\r")))
+        else:
             log.info("Received uninterpretable nonsense: %s", message)
             log.info(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
-        else:
-            #looks like the first packet back is just text, print it:
-            log.info("Failed to connect: %s", repr_ellipsized(data.strip("\n").strip("\r")))
         if str(data).find("assword")>0:
             self.warn_and_quit(EXIT_SSH_FAILURE,
                               "Your ssh program appears to be asking for a password."
