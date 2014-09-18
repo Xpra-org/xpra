@@ -24,8 +24,9 @@ from xpra.util import repr_ellipsized, updict
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net import packet_encoding
-from xpra.net.compression import get_compression_caps, decompress, InvalidCompressionException, Compressed, LevelCompressed, Uncompressed
-from xpra.net.packet_encoding import get_packet_encoding_caps, decode, InvalidPacketEncodingException
+from xpra.net.compression import get_compression_caps, decompress, sanity_checks as compression_sanity_checks,\
+        InvalidCompressionException, Compressed, LevelCompressed, Uncompressed
+from xpra.net.packet_encoding import get_packet_encoding_caps, decode, sanity_checks as packet_encoding_sanity_checks, InvalidPacketEncodingException
 from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER
 from xpra.net.crypto import get_crypto_caps, get_cipher
 
@@ -71,6 +72,11 @@ def get_network_caps(legacy=True):
     caps.update(get_compression_caps())
     caps.update(get_packet_encoding_caps())
     return caps
+
+def sanity_checks():
+    """ warns the user if important modules are missing """
+    compression_sanity_checks()
+    packet_encoding_sanity_checks()
 
 
 class ConnectionClosedException(Exception):

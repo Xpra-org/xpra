@@ -16,7 +16,7 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger("client")
 
-from xpra.net.protocol import Protocol, get_network_caps
+from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, local_version
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
@@ -94,6 +94,7 @@ class XpraClientBase(object):
         self._remote_platform_linux_distribution = None
         self.uuid = get_user_uuid()
         self.init_packet_handlers()
+        sanity_checks()
 
     def init(self, opts):
         self.compression_level = opts.compression_level

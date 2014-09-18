@@ -142,6 +142,16 @@ def get_compressor_name(c):
     raise Exception("impossible bug!")
 
 
+def sanity_checks():
+    if not use_lzo and not use_lz4:
+        if not use_zlib:
+            log.warn("Warning: all the compressors are disabled,")
+            log.warn(" unless you have a gigabit connection or better, performance will suffer")
+        else:
+            log.warn("Warning: zlib is the only compressor enabled")
+            log.warn(" install and enable lzo or lz4 support for better performance")
+
+
 class Compressed(object):
     def __init__(self, datatype, data, can_inline=False):
         self.datatype = datatype
