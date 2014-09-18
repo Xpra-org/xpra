@@ -386,7 +386,7 @@ class Protocol(object):
                 self.enable_compressor(c)
                 return
         log.warn("compression disabled: no matching compressor found")
-        self.enable_nocompress()
+        self.enable_compressor("none")
 
     def enable_compressor(self, compressor):
         self._compress = compression.get_compressor(compressor)
