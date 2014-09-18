@@ -83,7 +83,7 @@
   </autotools>
 
   <autotools id="python3" autogenargs="--enable-shared" autogen-sh="configure">
-    <branch repo="python" module="3.3.2/Python-3.3.2.tar.xz" version="3.3.2"/>
+    <branch repo="python" module="3.4.1/Python-3.4.1.tar.xz" version="3.4.1"/>
     <dependencies>
       <dep package="gettext-runtime"/>
       <dep package='readline'/>
@@ -169,8 +169,7 @@
   </autotools>
 
    <autotools id="pygobject3" autogen-sh="configure" >
-    <branch version="3.10.0" module="pygobject/3.10/pygobject-3.10.0.tar.xz"
-            hash="sha256:8aaa1f83fdb2e30bae77405a63a8be600b311a04a4cdc952b2ab62ee81aad077"/>
+    <branch version="3.12.2" module="pygobject/3.12/pygobject-3.12.2.tar.xz" />
     <dependencies>
       <dep package="meta-gtk-osx-gtk3"/>
     </dependencies>

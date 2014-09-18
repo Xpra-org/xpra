@@ -26,16 +26,16 @@
   </autotools>
 
   <autotools id="xz" autogen-sh="configure">
-    <branch repo="tukaani.org" module="xz/xz-5.0.4.tar.bz2" version="5.0.4"/>
+    <branch repo="tukaani.org" module="xz/xz-5.0.6.tar.bz2" version="5.0.6"/>
   </autotools>
 
   <autotools id="apr">
-    <branch repo="apache.org" module="apr/apr-1.4.5.tar.bz2" version="1.4.5"/>
+    <branch repo="apache.org" module="apr/apr-1.5.1.tar.bz2" version="1.5.1"/>
   </autotools>
 
   <autotools id="apr-util" autogenargs="--with-apr=$PREFIX/bin/apr-1-config">
-    <branch repo="apache.org" module="apr/apr-util-1.3.12.tar.bz2"
-	    version="1.3.12"/>
+    <branch repo="apache.org" module="apr/apr-util-1.5.3.tar.bz2"
+	    version="1.5.3"/>
     <dependencies>
       <dep package="apr"/>
     </dependencies>
@@ -52,9 +52,8 @@
   <autotools id="gettext-tools" autogen-sh="configure"
 	     autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp --with-included-glib">
     <branch repo="ftp.gnu.org" source-subdir="gettext-tools"
-	    module="gettext/gettext-0.18.1.1.tar.gz" version="0.18.1.1"
-            size="15139737" md5sum="3dd55b952826d2b32f51308f2f91aa89">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gettext-bug33999-stpncpy.patch" strip="1"/>
+	    module="gettext/gettext-0.19.2.tar.gz" version="0.0.19.2">
+      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gettext-bug33999-stpncpy.patch" strip="1"/-->
     </branch>
   </autotools>
 
@@ -104,9 +103,9 @@
 
 <!-- Pkg-config 0.26 and later requires glib, which requires
      pkg-config, which, well, you get the idea. -->
-  <autotools id="pkg-config" autogen-sh="configure">
+  <autotools id="pkg-config" autogen-sh="configure" autogenargs="--with-internal-glib">
     <branch repo="pkgconfig"
-            module="pkg-config-0.25.tar.gz" version="0.25"/>
+            module="pkg-config-0.28.tar.gz" version="0.28"/>
   </autotools>
 
   <!-- 10.4 has 1.28 which is too old, 10.5 & 10.6 have 2.3 which is OK. -->

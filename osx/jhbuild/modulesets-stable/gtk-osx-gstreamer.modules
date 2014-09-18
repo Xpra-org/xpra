@@ -32,8 +32,8 @@
 
   <autotools id="gstreamer" autogenargs="--disable-tests" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gstreamer/0.10/gstreamer-0.10.35.tar.bz2" version="0.10.35"
-            hash="sha256:817bfea2cd46e2487b97e2ed9218f0299b32a3de1e5e80b4c7868d17e9089786">
+    <branch module="gstreamer/0.10/gstreamer-0.10.36.tar.xz version="0.10.36"
+            hash="sha256:9fd61d198a52a0d515e9034774b73315914ddf392c618315dea4a694aeb521e3">
     </branch>
     <after>
       <dep package="glib"/>
@@ -53,8 +53,8 @@
 <!-- This doesn't build: see https://bugzilla.gnome.org/show_bug.cgi?id=660302-->
   <autotools id="gst-plugins-base" autogenargs="-- --disable-tests " supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-base/0.10/gst-plugins-base-0.10.35.tar.bz2"
-            version="0.10.35" hash="sha256:cd24f01bb5258a1f400bc4f2c212bb7cee9ee23c9ffb80d537a24ef366d17103"/>
+    <branch module="gst-plugins-base/0.10/gst-plugins-base-0.10.36.tar.bz2"
+            version="0.10.36" />
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="liboil"/>
@@ -77,8 +77,8 @@
 
   <autotools id="gst-plugins-good" autogenargs="-- --disable-tests  --disable-osx-video" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-good/0.10/gst-plugins-good-0.10.30.tar.bz2"
-            version="0.10.30" hash="sha256:b12cba90b27d8423cd0a808939098d19db3996cfb9bf528507c6321782e095f6"/>
+    <branch module="gst-plugins-good/0.10/gst-plugins-good-0.10.31.tar.bz2"
+            version="0.10.31" />
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>

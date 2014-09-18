@@ -101,9 +101,8 @@
   </autotools>
 
   <autotools id="gobject-introspection" autogen-sh="configure">
-    <branch module="gobject-introspection/1.38/gobject-introspection-1.38.0.tar.xz"
-            version="1.38.0"
-            hash="sha256:3575e5d353c17a567fdf7ffaaa7aebe9347b5b0eee8e69d612ba56a9def67d73">
+    <branch module="gobject-introspection/1.41/gobject-introspection-1.41.4.tar.xz"
+            version="1.41.4" >
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
     </branch>
     <dependencies>
@@ -116,9 +115,8 @@
   </autotools>
 
  <autotools id="pango"  autogen-sh="autoreconf">
-    <branch version="1.36.0" module="pango/1.36/pango-1.36.5.tar.xz"
-            hash="sha256:be0e94b2e5c7459f0b6db21efab6253556c8f443837200b8736d697071276ac8">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/pango_gir_cflags.patch" strip="1"/>
+    <branch version="1.36.7" module="pango/1.36/pango-1.36.7.tar.xz">
+      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/pango_gir_cflags.patch" strip="1"/-->
     </branch>
     <dependencies>
       <dep package="cairo"/>
@@ -132,8 +130,7 @@
   </autotools>
 
  <autotools id="atk" autogen-sh="configure">
-    <branch module="atk/2.10/atk-2.10.0.tar.xz" version="2.10.0"
-            hash="sha256:636917a5036bc851d8491194645d284798ec118919a828be5e713b6ecc5b50b0"/>
+    <branch module="atk/2.12/atk-2.12.0.tar.xz" version="2.12.0"/>
     <dependencies>
     </dependencies>
     <after>
@@ -175,8 +172,7 @@
 
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.10/gtk+-3.10.7.tar.xz" version="3.10.7"
-            hash="sha256:b7e9de15385031cff43897e7e59f6692eaabf500f36eef80e6b9d6486ad49427">
+    <branch module="gtk+/3.12/gtk+-3.12.2.tar.xz" version="3.12.2">
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-gtk3-gtkselection-return-value.patch" strip="1"/>
     </branch>
     <dependencies>
@@ -192,9 +188,8 @@
   </autotools>
 
   <autotools id="pixman" autogenargs="--disable-gtk" autogen-sh="configure">
-    <branch version="0.30.2" module="pixman-0.30.2.tar.gz"
-            repo="cairographics"
-            hash="sha1:59cc9cd91a2394b7c0aa90ffc7c141f06d75f066"/>
+    <branch version="0.32.6" module="pixman-0.32.6.tar.gz"
+            repo="cairographics" />
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>

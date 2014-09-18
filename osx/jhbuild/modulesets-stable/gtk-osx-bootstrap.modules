@@ -36,7 +36,7 @@
   </autotools>
 
   <autotools id="libpng" autogenargs="--enable-shared" autogen-sh="configure">
-    <branch version="1.6.12" module="project/libpng/libpng16/1.6.12/libpng-1.6.12.tar.gz"
+    <branch version="1.6.13" module="project/libpng/libpng16/1.6.13/libpng-1.6.13.tar.xz"
 	    repo="sourceforge"/>
   </autotools>
 
@@ -62,9 +62,9 @@
        needs libxml2's python module. -->
 
   <autotools id="libxml2" autogen-sh="configure" autogenargs="--with-python">
-    <branch version="2.9.0" module="libxml2-2.9.0.tar.gz"
+    <branch version="2.9.1" module="libxml2-2.9.1.tar.gz"
 	    repo="xmlsoft.org">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libxml2-Bug-686118-pthreads_once_init.patch" strip="1"/>
+      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libxml2-Bug-686118-pthreads_once_init.patch" strip="1"/-->
     </branch>
     <after>
       <dep package="python"/>
@@ -73,7 +73,7 @@
   </autotools>
 
   <autotools id="libxslt" autogen-sh="configure">
-    <branch version="1.1.27" module="libxslt-1.1.27.tar.gz"
+    <branch version="1.1.28" module="libxslt-1.1.28.tar.gz"
 	    repo="xmlsoft.org"/>
     <dependencies>
       <dep package="libxml2"/>
@@ -116,7 +116,7 @@
 
   <autotools id="freetype" autogen-sh="configure" skip-autogen="never"
 	     autogenargs="--without-bzip2">
-    <branch module="freetype/freetype-2.5.2.tar.gz" version="2.5.2"
+    <branch module="freetype/freetype-2.5.3.tar.gz" version="2.5.3"
             repo="sourceforge">
     </branch>
     <dependencies>
@@ -126,7 +126,7 @@
 
   <autotools id="fontconfig" autogen-sh="autoreconf"
 	     autogenargs="--disable-docs">
-    <branch repo="fontconfig" version="2.11.0" module="fontconfig-2.11.0.tar.gz"/>
+    <branch repo="fontconfig" version="2.11.1" module="fontconfig-2.11.1.tar.gz"/>
     <dependencies>
       <dep package="freetype"/>
     </dependencies>
@@ -135,8 +135,8 @@
 <!-- Another one that won't build in a separate directory -->
   <autotools id="hicolor-icon-theme" autogen-sh="configure"
 	     supports-non-srcdir-builds="no">
-    <branch module="hicolor-icon-theme-0.11.tar.gz" repo="icon-theme"
-	    version="0.11" />
+    <branch module="hicolor-icon-theme-0.13.tar.gz" repo="icon-theme"
+	    version="0.13" />
 
   </autotools>
 
