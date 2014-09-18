@@ -23,9 +23,12 @@ def main():
         #ie: "unit.version_util_test"
         name = p[len(root)+1:-3].replace(os.path.sep, ".")
         print("running %s" % name)
-        proc = subprocess.Popen(p)
-        assert proc.wait()==0
-        return
+        try:
+            proc = subprocess.Popen(p)
+        except:
+            print("failed to execute %s" % p)
+            sys.exit(1)
+        assert proc.wait()==0, "failure on %s" % name
     def add_recursive(d):
         paths = os.listdir(d)
         for path in paths:
