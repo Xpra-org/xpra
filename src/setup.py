@@ -144,7 +144,13 @@ avcodec2_static_ENABLED = False
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
-nvenc_ENABLED           = pkg_config_ok("--exists", "nvenc4")       #or os.path.exists("C:\\nvenc_3.0_windows_sdk")
+nvenc_ENABLED           = False
+if pkg_config_ok("--exists", "nvenc4"):
+    nvenc_ENABLED = "nvenc4"
+elif pkg_config_ok("--exists", "nvenc3"):
+    nvenc_ENABLED = "nvenc4"
+#elif os.path.exists("C:\\nvenc_3.0_windows_sdk")
+#...
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = PYTHON3
 
@@ -192,11 +198,17 @@ filtered_args = []
 for arg in sys.argv:
     matched = False
     for x in SWITCHES:
-        if arg=="--with-%s" % x:
+        with_str = "--with-%s" % x
+        without_str = "--without-%s" % x
+        if arg.startswith(with_str+"="):
+            vars()["%s_ENABLED" % x] = arg[len(with_str)+1:]
+            matched = True
+            break
+        elif arg==with_str:
             vars()["%s_ENABLED" % x] = True
             matched = True
             break
-        elif arg=="--without-%s" % x:
+        elif arg==without_str:
             vars()["%s_ENABLED" % x] = False
             matched = True
             break
@@ -1652,8 +1664,12 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc", "xpra.codecs.cuda_common")
 if nvenc_ENABLED:
+    try:
+        nvenc = "nvenc%s" % int(nvenc_ENABLED)
+    except:
+        nvenc = "nvenc"
     make_constants("xpra", "codecs", "nvenc", "constants", NV_WINDOWS=int(sys.platform.startswith("win")))
-    nvenc_pkgconfig = pkgconfig("nvenc", "cuda", ignored_flags=["-l", "-L"])
+    nvenc_pkgconfig = pkgconfig(nvenc, "cuda", ignored_flags=["-l", "-L"])
     #don't link against libnvidia-encode, we load it dynamically:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
