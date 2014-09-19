@@ -146,10 +146,6 @@ class ClientWindowBase(ClientWidgetBase):
             self._set_initial_position = self.size_constraints.get("set-initial-position")
             self.set_size_constraints(self.size_constraints, self.max_window_size)
 
-        if b"icon" in metadata:
-            width, height, coding, data = metadata.listget("icon")
-            self.update_icon(width, height, coding, data)
-
         if b"transient-for" in metadata:
             wid = metadata.intget("transient-for", -1)
             self.apply_transient_for(wid)
