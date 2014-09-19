@@ -26,11 +26,21 @@ clipboard = yes
 # Enable forwarding of notifications:
 notifications = yes
 
+# Show Xpra's tray menu
+tray = yes
+
 # Enable forwarding of system tray icons:
 system-tray = yes
 
 # Forward sound output to clients:
-speaker = yes
+#speaker = off
+#speaker = disabled
+speaker = on
+
+# Forward sound input to server:
+# microphone = disabled
+# microphone = on
+microphone = off
 
 # Debugging:
 #debug =
@@ -118,9 +128,6 @@ dpi = 96
 #speaker-codec = wavpack
 #speaker-codec = speex
 #speaker-codec = opus
-
-# Forward sound input to server:
-# microphone = yes
 
 # Codec(s) to use for forwarding microphone sound:
 #microphone-codec = mp3

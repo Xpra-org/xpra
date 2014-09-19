@@ -61,9 +61,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-tray\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
-[\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
-[\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding\fP=\fIENCODING\fP]
@@ -101,9 +101,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
-[\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
-[\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
@@ -784,13 +784,11 @@ To get a list of options use the special value 'help'.
 It is also possible to specify plugin options using the form:
 \fI--sound-source=pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo\fP
 .TP
-\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP
-Enable or disable sound output forwarding support.  When disabled,
-application sound output will not be sent to the client(s).
-.TP
-\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP
-Enable or disable sound input forwarding support.
-Application sound input will not be sent from the client(s) to the server.
+\fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP and \fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP
+Sound input and output forwarding support: \fIon\fP will start the forwarding
+as soon as the connection is established, \fIoff\fP will require
+the user to enable it via the menu, \fIdisabled\fP will
+prevent it from being used and the menu entry will be disabled.
 .TP
 \fB\-\-speaker\-codec\fP=\fICODEC\fP and \fB\-\-microphone\-codec\fP=\fICODEC\fP
 Specify the codec(s) to use for sound output (speaker) or input (microphone).

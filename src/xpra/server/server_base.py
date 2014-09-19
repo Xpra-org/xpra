@@ -21,6 +21,7 @@ from xpra.server.server_core import ServerCore
 from xpra.os_util import thread, get_hex_uuid
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE
 from xpra.scripts.config import python_platform
+from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, codec_versions, has_codec, get_codec
 from xpra.codecs.codec_constants import get_PIL_encodings
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
@@ -250,8 +251,8 @@ class ServerBase(ServerCore):
             has_gst = False
         log("init_sound%s has_gst=%s", (sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec), has_gst)
         self.sound_source_plugin = sound_source_plugin
-        self.supports_speaker = bool(speaker) and has_gst
-        self.supports_microphone = bool(microphone) and has_gst
+        self.supports_speaker = sound_option(speaker) in ("on", "off") and has_gst
+        self.supports_microphone = sound_option(microphone) in ("on", "off") and has_gst
         self.speaker_codecs = speaker_codec
         if len(self.speaker_codecs)==0 and self.supports_speaker:
             self.speaker_codecs = get_sound_codecs(True, True)

@@ -34,6 +34,7 @@ from xpra.platform.gui import init as gui_init, ready as gui_ready, get_double_c
 from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
+from xpra.scripts.main import sound_option
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.daemon_thread import make_daemon_thread
@@ -238,14 +239,18 @@ class UIXpraClient(XpraClientBase):
         except:
             has_gst = False
         self.sound_source_plugin = opts.sound_source
-        self.speaker_allowed = bool(opts.speaker) and has_gst
-        self.microphone_allowed = bool(opts.microphone) and has_gst
+        self.speaker_allowed = sound_option(opts.speaker) in ("on", "off") and has_gst
+        self.speaker_enabled = sound_option(opts.speaker)=="on" and has_gst
+        self.microphone_allowed = sound_option(opts.microphone) in ("on", "off") and has_gst
+        self.microphone_enabled = sound_option(opts.microphone)=="on" and has_gst
         self.speaker_codecs = opts.speaker_codec
         if len(self.speaker_codecs)==0 and self.speaker_allowed:
+            assert has_gst
             self.speaker_codecs = get_sound_codecs(True, False)
             self.speaker_allowed = len(self.speaker_codecs)>0
         self.microphone_codecs = opts.microphone_codec
         if len(self.microphone_codecs)==0 and self.microphone_allowed:
+            assert has_gst
             self.microphone_codecs = get_sound_codecs(False, False)
             self.microphone_allowed = len(self.microphone_codecs)>0
 
@@ -1326,11 +1331,10 @@ class UIXpraClient(XpraClientBase):
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.server_pulseaudio_id, self.server_pulseaudio_server, self.server_sound_decoders,
                  self.server_sound_encoders, self.server_sound_receive, self.server_sound_send)
-        if self.server_sound_send and self.speaker_allowed:
+        if self.server_sound_send and self.speaker_enabled:
             self.start_receiving_sound()
-        #dont' send sound automatically, wait for user to request it:
-        #if self.server_sound_receive and self.microphone_allowed:
-        #    self.start_sending_sound()
+        if self.server_sound_receive and self.microphone_enabled:
+            self.start_sending_sound()
 
         self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1,-1))
         self.emit("handshake-complete")

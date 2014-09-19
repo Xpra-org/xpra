@@ -224,9 +224,9 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_encodingsmenuitem())
         menu.append(self.make_qualitymenuitem())
         menu.append(self.make_speedmenuitem())
-        if self.client.speaker_allowed and STARTSTOP_SOUND_MENU:
+        if STARTSTOP_SOUND_MENU:
             menu.append(self.make_speakermenuitem())
-        if self.client.microphone_allowed and STARTSTOP_SOUND_MENU:
+        if STARTSTOP_SOUND_MENU:
             menu.append(self.make_microphonemenuitem())
         if SHOW_COMPRESSION_MENU:
             menu.append(self.make_compressionmenu())
@@ -671,6 +671,10 @@ class GTKTrayMenuBase(object):
         def is_speaker_on(*args):
             return self.client.speaker_enabled
         def speaker_state(*args):
+            if not self.client.speaker_allowed:
+                speaker.set_sensitive(False)
+                set_tooltip_text(speaker, "Speaker forwarding has been disabled")
+                return
             if not self.client.server_sound_send:
                 speaker.set_sensitive(False)
                 set_tooltip_text(speaker, "Server does not support speaker forwarding")
@@ -692,6 +696,10 @@ class GTKTrayMenuBase(object):
         def is_microphone_on(*args):
             return self.client.microphone_enabled
         def microphone_state(*args):
+            if not self.client.microphone_allowed:
+                microphone.set_sensitive(False)
+                set_tooltip_text(microphone, "Microphone forwarding has been disabled")
+                return
             if not self.client.server_sound_receive:
                 microphone.set_sensitive(False)
                 set_tooltip_text(microphone, "Server does not support microphone forwarding")

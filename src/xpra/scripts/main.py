@@ -33,12 +33,21 @@ SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
 TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
 
 
-def enabled_str(v):
+def enabled_str(v, true_str="yes", false_str="no"):
     if v:
-        return "yes"
-    else:
-        return "no"
+        return true_str
+    return false_str
 
+def bool_or(v, other_value, true_str, false_str, other_str):
+    vs = str(v).lower()
+    if vs==other_value:
+        return other_str
+    bv = parse_bool("", v)
+    return enabled_str(bv, true_str, false_str)
+
+def sound_option(v):
+    #ensures we return only: "on", "off" or "disabled" given any value
+    return bool_or(v, "disabled", "on", "off", "disabled")    
 
 def warn(msg):
     #use this function to print warnings
@@ -423,9 +432,9 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Allow more than one client to connect to the same session. Default: %s." % enabled_str(defaults.sharing))
     if has_sound_support:
         legacy_bool_parse("speaker")
-        group.add_option("--speaker", action="store", metavar="yes|no",
+        group.add_option("--speaker", action="store", metavar="on|off|disabled",
                           dest="speaker", default=defaults.speaker,
-                          help="Forward sound output to the client(s). Default: %s." % enabled_str(defaults.speaker))
+                          help="Forward sound output to the client(s). Default: %s." % sound_option(defaults.speaker))
         CODEC_HELP = """Specify the codec(s) to use for forwarding the %s sound output.
     This parameter can be specified multiple times and the order in which the codecs
     are specified defines the preferred codec order.
@@ -435,9 +444,9 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="speaker_codec", default=list(defaults.speaker_codec or []),
                           help=CODEC_HELP % "speaker")
         legacy_bool_parse("microphone")
-        group.add_option("--microphone", action="store", metavar="yes|no",
+        group.add_option("--microphone", action="store", metavar="on|off|disabled",
                           dest="microphone", default=defaults.microphone,
-                          help="Forward sound input to the server. Default: %s." % enabled_str(defaults.microphone))
+                          help="Forward sound input to the server. Default: %s." % sound_option(defaults.microphone))
         group.add_option("--microphone-codec", action="append",
                           dest="microphone_codec", default=list(defaults.microphone_codec or []),
                           help=CODEC_HELP % "microphone")

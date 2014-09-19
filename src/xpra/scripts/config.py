@@ -266,6 +266,8 @@ OPTION_TYPES = {
                     "tcp-proxy"         : str,
                     "debug"             : str,
                     "input-method"      : str,
+                    "microphone"        : str,
+                    "speaker"           : str,
                     "sound-source"      : str,
                     #int options:
                     "quality"           : int,
@@ -288,8 +290,6 @@ OPTION_TYPES = {
                     "dbus-proxy"        : bool,
                     "mmap"              : bool,
                     "mmap-group"        : bool,
-                    "speaker"           : bool,
-                    "microphone"        : bool,
                     "readonly"          : bool,
                     "keyboard-sync"     : bool,
                     "pings"             : bool,
@@ -380,8 +380,8 @@ def get_defaults():
                     "dbus-proxy"        : os.name=="posix" and not sys.platform.startswith("darwin"),
                     "mmap"              : True,
                     "mmap-group"        : False,
-                    "speaker"           : has_sound_support,
-                    "microphone"        : has_sound_support,
+                    "speaker"           : ["disabled", "on"][has_sound_support],
+                    "microphone"        : ["disabled", "off"][has_sound_support],
                     "readonly"          : False,
                     "keyboard-sync"     : True,
                     "pings"             : False,
@@ -432,6 +432,7 @@ def parse_bool(k, v):
         return None
     else:
         warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
+        return None
 
 def print_bool(k, v, true_str='yes', false_str='no'):
     if type(v)==type(None):
