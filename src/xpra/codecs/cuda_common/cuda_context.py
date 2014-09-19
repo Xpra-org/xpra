@@ -148,7 +148,10 @@ def select_device(preferred_device_id=DEFAULT_CUDA_DEVICE_ID, preferred_device_n
                     context.pop()
                     context.detach()
         if selected_device_id>=0 and selected_device:
-            log("select device: %s / %s", device_id, device)
+            l = log
+            if len(devices)>1:
+                l = log.info
+            l("selected device %s: %s", device_id, device_info(device))
             return selected_device_id, selected_device
     return -1, None
 
