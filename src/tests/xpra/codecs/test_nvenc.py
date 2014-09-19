@@ -8,7 +8,7 @@ import sys
 import random
 import threading
 from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test_encoder, test_encoder_dimensions, test_performance
-from xpra.codecs.nvenc import encoder as encoder_module   #@UnresolvedImport
+from xpra.codecs.nvenc import encoder as encoder_module     #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("encoder", "test")
@@ -33,7 +33,7 @@ def test_memleak():
         if start_free_memory is None:
             start_free_memory, _ = driver.mem_get_info()
         free_memory, total_memory = driver.mem_get_info()
-        log.info("%s%% free_memory: %s MB" % (str(i).rjust(3), free_memory/1024/1024))
+        log.info("%s%% free_memory: %s MB, total_memory: %s MB", str(i).rjust(3), free_memory/1024/1024, total_memory/1024/1024)
         context.pop()
         context.detach()
         w = random.randint(16, 128)*8
@@ -78,7 +78,7 @@ def test_context_limits():
     for encoding in encoder_module.get_encodings():
         for w,h in TEST_DIMENSIONS:
             log("test_context_limits() %s @ %sx%s" % (encoding, w, h))
-            src_format = encoder_module.get_colorspaces()[0]
+            src_format = encoder_module.get_input_colorspaces()[0]
             for device_id, device_info in cuda_devices.items():
                 options = {"cuda_device" : device_id}
                 encoders = []

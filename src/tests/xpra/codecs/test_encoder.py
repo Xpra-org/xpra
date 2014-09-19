@@ -40,46 +40,52 @@ def log_output(args):
     log(args)
 
 def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=2, quality=20, speed=0):
-    log("test_encoder(%s, %s)" % (encoder_module, dimensions))
-    log("colorspaces=%s" % str(encoder_module.get_colorspaces()))
-    for encoding in encoder_module.get_encodings():
-        for c in encoder_module.get_colorspaces():
-            log("spec(%s)=%s" % (c, encoder_module.get_spec(encoding, c)))
+    encoder_module.init_module()
+    log("test_encoder(%s, %s)", encoder_module, dimensions)
+    ics = encoder_module.get_input_colorspaces()
+    log("input colorspaces=%s", ics)
+    for ic in ics:
+        for encoding in encoder_module.get_encodings():
+            ocs = encoder_module.get_output_colorspaces(ic)
+            for c in ocs:
+                log("spec(%s)=%s" % (c, encoder_module.get_spec(encoding, ic)))
     log("version=%s" % str(encoder_module.get_version()))
     log("type=%s" % encoder_module.get_type())
     ec = getattr(encoder_module, "Encoder")
     log("encoder class=%s" % ec)
 
     for encoding in encoder_module.get_encodings():
-        for src_format in encoder_module.get_colorspaces():
+        for src_format in ics:
             spec = encoder_module.get_spec(encoding, src_format)
             for w,h in dimensions:
-                log("%sx%s max: %sx%s" % (w, h, spec.max_w, spec.max_h))
-                if w<spec.min_w:
-                    log("not testing %sx%s (min width is %s)" % (w, h, spec.min_w))
-                    continue
-                if h<spec.min_h:
-                    log("not testing %sx%s (min height is %s)" % (w, h, spec.min_h))
-                    continue
-                if w>spec.max_w:
-                    log("not testing %sx%s (max width is %s)" % (w, h, spec.max_w))
-                    continue
-                if h>spec.max_h:
-                    log("not testing %sx%s (max height is %s)" % (w, h, spec.max_h))
-                    continue
-                actual_w = w & spec.width_mask
-                actual_h = h & spec.height_mask
-                log("* %s @ %sx%s to %s" % (src_format, w, h, encoding))
-                if actual_w!=w or actual_h!=h:
-                    log(" actual dimensions used: %sx%s" % (actual_w, actual_h))
-                e = ec()
-                log("instance=%s" % e)
-                e.init_context(actual_w, actual_h, src_format, encoding, quality, speed, (1, 1), options)
-                log("initialiazed instance=%s" % e)
-                images = gen_src_images(src_format, actual_w, actual_h, n_images)
-                log("test images generated - starting compression")
-                do_test_encoder(e, src_format, actual_w, actual_h, images, log=log)
-                e.clean()
+                for dst_format in ocs:
+                    log("%sx%s max: %sx%s" % (w, h, spec.max_w, spec.max_h))
+                    if w<spec.min_w:
+                        log("not testing %sx%s (min width is %s)" % (w, h, spec.min_w))
+                        continue
+                    if h<spec.min_h:
+                        log("not testing %sx%s (min height is %s)" % (w, h, spec.min_h))
+                        continue
+                    if w>spec.max_w:
+                        log("not testing %sx%s (max width is %s)" % (w, h, spec.max_w))
+                        continue
+                    if h>spec.max_h:
+                        log("not testing %sx%s (max height is %s)" % (w, h, spec.max_h))
+                        continue
+                    actual_w = w & spec.width_mask
+                    actual_h = h & spec.height_mask
+                    log("* %s @ %sx%s to %s" % (src_format, w, h, encoding))
+                    if actual_w!=w or actual_h!=h:
+                        log(" actual dimensions used: %sx%s" % (actual_w, actual_h))
+                    e = ec()
+                    log("instance=%s" % e)
+                    e.init_context(actual_w, actual_h, src_format, [dst_format], encoding, quality, speed, (1, 1), options)
+                    #init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):
+                    log("initialiazed instance=%s" % e)
+                    images = gen_src_images(src_format, actual_w, actual_h, n_images)
+                    log("test images generated - starting compression")
+                    do_test_encoder(e, src_format, actual_w, actual_h, images, log=log)
+                    e.clean()
 
 def gen_src_images(src_format, w, h, nframes):
     seed = 0
