@@ -109,6 +109,9 @@ def get_build_info():
     return info
 
 
+def name_to_field(name):
+    return name.replace("-", "_")
+
 def save_config(conf_file, config, keys, extras_types={}):
     with open(conf_file, "w") as f:
         option_types = OPTION_TYPES.copy()
@@ -116,8 +119,7 @@ def save_config(conf_file, config, keys, extras_types={}):
         saved = {}
         for key in keys:
             assert key in option_types, "invalid configuration key: %s" % key
-            fn = key.replace("-", "_")
-            v = getattr(config, fn)
+            v = getattr(config, name_to_field(key))
             saved[key] = v
             f.write("%s=%s%s" % (key, v, os.linesep))
         debug("save_config: saved %s to %s", saved, conf_file)
@@ -525,8 +527,7 @@ def dict_to_validated_config(d, extras_defaults={}, extras_types={}, extras_vali
             options[v] = options[k]
     config = AdHocStruct()
     for k,v in options.items():
-        attr_name = k.replace("-", "_")
-        setattr(config, attr_name, v)
+        setattr(config, name_to_field(k), v)
     return config
 
 
@@ -534,8 +535,7 @@ def main():
     from xpra.util import nonl
     def print_options(o):
         for k,ot in sorted(OPTION_TYPES.items()):
-            attr_name = k.replace("-", "_")
-            v = getattr(o, attr_name, "")
+            v = getattr(o, name_to_field(k), "")
             if ot==bool and v is None:
                 v = "Auto"
             if type(v)==list:

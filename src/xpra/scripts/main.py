@@ -26,7 +26,7 @@ from xpra.platform.paths import get_default_socket_dir
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.net.protocol import ConnectionClosedException
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
-    make_defaults_struct, parse_bool, print_bool, validate_config, has_sound_support
+    make_defaults_struct, parse_bool, print_bool, validate_config, has_sound_support, name_to_field
 
 
 SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
@@ -35,9 +35,9 @@ TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
 
 def enabled_str(v):
     if v:
-        return "enabled"
+        return "yes"
     else:
-        return "disabled"
+        return "no"
 
 
 def warn(msg):
@@ -222,6 +222,20 @@ def fixup_packetencoding(options):
     if not packet_encoding.get_enabled_encoders():
         raise InitException("at least one valid packet encoder must be enabled (not '%s')" % options.packet_encoders)
 
+def do_replace_option(cmdline, oldoption, newoption):
+    if oldoption in cmdline:
+        cmdline.remove(oldoption)
+        cmdline.append(newoption)
+def do_legacy_bool_parse(cmdline, optionname, newoptionname=None):
+    #find --no-XYZ or --XYZ
+    #and replace it with --XYZ=yes|no
+    no = "--no-%s" % optionname
+    yes = "--%s" % optionname
+    if newoptionname is None:
+        newoptionname = optionname
+    do_replace_option(cmdline, no, "--%s=no" % optionname)
+    do_replace_option(cmdline, yes, "--%s=yes" % optionname)
+
 
 def parse_cmdline(cmdline):
     defaults = make_defaults_struct()
@@ -269,6 +283,10 @@ def do_parse_cmdline(cmdline, defaults):
                           usage="\n" + "".join(command_options))
     hidden_options = {"display" : defaults.display,
                       "displayfd" : defaults.displayfd}
+    def replace_option(oldoption, newoption):
+        do_replace_option(cmdline, oldoption, newoption)
+    def legacy_bool_parse(optionname, newoptionname=None):
+        do_legacy_bool_parse(cmdline, optionname, newoptionname)
     group = optparse.OptionGroup(parser, "Server Options",
                 "These options are only relevant on the server when using the %s mode." %
                 " or ".join(["'%s'" % x for x in server_modes]))
@@ -276,10 +294,10 @@ def do_parse_cmdline(cmdline, defaults):
     #we support remote start, so we need those even if we don't have server support:
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
-                      help="program to spawn in new server (may be repeated) (default: %default)")
+                      help="program to spawn in new server (may be repeated). Default: %default")
     group.add_option("--exit-with-children", action="store_true",
                       dest="exit_with_children", default=defaults.exit_with_children,
-                      help="Terminate server when --start-child command(s) exit")
+                      help="Terminate the server when the last --start-child command(s) exit")
     if supports_server:
         group.add_option("--tcp-proxy", action="store",
                           dest="tcp_proxy", default=defaults.tcp_proxy,
@@ -288,12 +306,13 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         hidden_options["tcp_proxy"] = ""
     if (supports_server or supports_shadow) and CAN_DAEMONIZE:
-        group.add_option("--no-daemon", action="store_false",
-                          dest="daemon", default=True,
-                          help="Don't daemonize when running as a server")
+        legacy_bool_parse("daemon")
+        group.add_option("--daemon", action="store", metavar="yes|no",
+                          dest="daemon", default=defaults.daemon,
+                          help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
         group.add_option("--log-file", action="store",
                       dest="log_file", default=defaults.log_file,
-                      help="When daemonizing, this is where the log messages will go (default: %default)."
+                      help="When daemonizing, this is where the log messages will go. Default: '%default'."
                       + " If a relative filename is specified the it is relative to --socket-dir,"
                       + " the value of '$DISPLAY' will be substituted with the actual display used"
                       )
@@ -302,9 +321,10 @@ def do_parse_cmdline(cmdline, defaults):
         hidden_options["log_file"] = defaults.log_file
 
     if (supports_server or supports_shadow):
-        group.add_option("--exit-with-client", action="store_true",
-                          dest="exit_with_client", default=False,
-                          help="Terminate the server when the last client disconnects")
+        legacy_bool_parse("exit-with-client")
+        group.add_option("--exit-with-client", action="store", metavar="yes|no",
+                          dest="exit_with_client", default=defaults.exit_with_client,
+                          help="Terminate the server when the last client disconnects. Default: %s" % enabled_str(defaults.exit_with_client))
     else:
         hidden_options["exit_with_client"] = False
     if supports_server:
@@ -315,15 +335,12 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="xvfb",
                           default=defaults.xvfb,
                           metavar="CMD",
-                          help="How to run the headless X server (default: '%default')")
-        group.add_option("--fake-xinerama", action="store_true",
+                          help="How to run the headless X server. Default: '%default'.")
+        legacy_bool_parse("fake-xinerama")
+        group.add_option("--fake-xinerama", action="store", metavar="yes|no",
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
-                          help="Enable fake xinerama support (default: %s)" % enabled_str(defaults.fake_xinerama))
-        group.add_option("--no-fake-xinerama", action="store_false",
-                          dest="fake_xinerama",
-                          default=defaults.fake_xinerama,
-                          help="Disable fake xinerama support (default: %s)" % enabled_str(defaults.fake_xinerama))
+                          help="Setup fake xinerama support for the session. Default: %s." % enabled_str(defaults.fake_xinerama))
     else:
         hidden_options["use_display"] = False
         hidden_options["xvfb"] = ''
@@ -337,30 +354,24 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         hidden_options["bind_tcp"] = []
     if (supports_server or supports_shadow):
-        group.add_option("--mdns", action="store_true",
+        legacy_bool_parse("mdns")
+        group.add_option("--mdns", action="store", metavar="yes|no",
                           dest="mdns", default=defaults.mdns,
-                          help="Enable publishing of session information via mDNS (default: %s)" % enabled_str(defaults.mdns))
-        group.add_option("--no-mdns", action="store_false",
-                          dest="mdns", default=defaults.mdns,
-                          help="Disable publishing of session information via mDNS (default: %s)" % enabled_str(defaults.mdns))
+                          help="Publish the session information via mDNS. Default: %s." % enabled_str(defaults.mdns))
     else:
         hidden_options["mdns"] = False
     if supports_server:
-        group.add_option("--pulseaudio", action="store_true",
+        legacy_bool_parse("pulseaudio")
+        group.add_option("--pulseaudio", action="store", metavar="yes|no",
                       dest="pulseaudio", default=defaults.pulseaudio,
-                      help="Enable starting of a pulseaudio server for the session")
-        group.add_option("--no-pulseaudio", action="store_false",
-                      dest="pulseaudio", default=defaults.pulseaudio,
-                      help="Disable starting of a pulseaudio server for the session")
+                      help="Start a pulseaudio server for the session. Default: %s." % enabled_str(defaults.pulseaudio))
         group.add_option("--pulseaudio-command", action="store",
                       dest="pulseaudio_command", default=defaults.pulseaudio_command,
-                      help="The command used to start the pulseaudio server (default: '%default')")
-        group.add_option("--dbus-proxy", action="store_true",
+                      help="The command used to start the pulseaudio server. Default: '%default'.")
+        legacy_bool_parse("dbus-proxy")
+        group.add_option("--dbus-proxy", action="store", metavar="yes|no",
                       dest="dbus_proxy", default=defaults.dbus_proxy,
-                      help="Enable forwarding of dbus calls from the client (default: %s)" % enabled_str(defaults.dbus_proxy))
-        group.add_option("--no-dbus-proxy", action="store_false",
-                      dest="dbus_proxy", default=defaults.dbus_proxy,
-                      help="Disable forwarding of dbus calls from the client (default: %s)" % enabled_str(defaults.dbus_proxy))
+                      help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
     else:
         hidden_options["pulseaudio"] = False
         hidden_options["pulseaudio_command"] = ""
@@ -371,70 +382,50 @@ def do_parse_cmdline(cmdline, defaults):
                 "they can be specified on the client or on the server, "
                 "but the client cannot enable them if they are disabled on the server.")
     parser.add_option_group(group)
-    group.add_option("--clipboard", action="store_true",
+    legacy_bool_parse("clipboard")
+    group.add_option("--clipboard", action="store", metavar="yes|no",
                       dest="clipboard", default=defaults.clipboard,
-                      help="Enable clipboard support (default: %s)" % enabled_str(defaults.clipboard))
-    group.add_option("--no-clipboard", action="store_false",
-                      dest="clipboard", default=defaults.clipboard,
-                      help="Disable clipboard support (default: %s)" % enabled_str(defaults.clipboard))
-    group.add_option("--notifications", action="store_true",
+                      help="Enable clipboard support. Default: %s." % enabled_str(defaults.clipboard))
+    legacy_bool_parse("notifications")
+    group.add_option("--notifications", action="store", metavar="yes|no",
                       dest="notifications", default=defaults.notifications,
-                      help="Enable forwarding of system notifications (default: %s)" % enabled_str(defaults.notifications))
-    group.add_option("--no-notifications", action="store_false",
-                      dest="notifications", default=defaults.notifications,
-                      help="Disable forwarding of system notifications (default: %s)" % enabled_str(defaults.notifications))
-    group.add_option("--system-tray", action="store_true",
+                      help="Forwarding of system notifications. Default: %s." % enabled_str(defaults.notifications))
+    legacy_bool_parse("system-tray")
+    group.add_option("--system-tray", action="store", metavar="yes|no",
                       dest="system_tray", default=defaults.system_tray,
-                      help="Disable forwarding of system tray icons (default: %s)" % enabled_str(defaults.system_tray))
-    group.add_option("--no-system-tray", action="store_false",
-                      dest="system_tray", default=defaults.system_tray,
-                      help="Disable forwarding of system tray icons (default: %s)" % enabled_str(defaults.system_tray))
-    group.add_option("--cursors", action="store_true",
+                      help="Forward of system tray icons. Default: %s." % enabled_str(defaults.system_tray))
+    legacy_bool_parse("cursors")
+    group.add_option("--cursors", action="store", metavar="yes|no",
                       dest="cursors", default=defaults.cursors,
-                      help="Enable forwarding of custom application mouse cursors (default: %s)" % enabled_str(defaults.cursors))
-    group.add_option("--no-cursors", action="store_false",
-                      dest="cursors", default=defaults.cursors,
-                      help="Disable forwarding of custom application mouse cursors (default: %s)" % enabled_str(defaults.cursors))
-    group.add_option("--bell", action="store_true",
-                      dest="bell", default=defaults.bell,
-                      help="Enable forwarding of the system bell (default: %s)" % enabled_str(defaults.bell))
-    group.add_option("--no-bell", action="store_false",
-                      dest="bell", default=defaults.bell,
-                      help="Disable forwarding of the system bell (default: %s)" % enabled_str(defaults.bell))
+                      help="Forward custom application mouse cursors. Default: %s." % enabled_str(defaults.cursors))
+    legacy_bool_parse("cursors")
+    group.add_option("--bell", action="store",
+                      dest="bell", default=defaults.bell, metavar="yes|no",
+                      help="Forward the system bell. Default: %s." % enabled_str(defaults.bell))
     if os.name=="posix":
-        group.add_option("--xsettings", action="store_true",
+        legacy_bool_parse("xsettings")
+        group.add_option("--xsettings", action="store", metavar="yes|no",
                           dest="xsettings", default=defaults.xsettings,
-                          help="Enable xsettings synchronization (default: %s)" % enabled_str(defaults.xsettings))
-        group.add_option("--no-xsettings", action="store_false",
-                          dest="xsettings", default=defaults.xsettings,
-                          help="Disable xsettings synchronization (default: %s)" % enabled_str(defaults.xsettings))
+                          help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
     else:
         hidden_options["xsettings"] =  False
-    group.add_option("--mmap", action="store_true",
+    legacy_bool_parse("mmap")
+    group.add_option("--mmap", action="store", metavar="yes|no",
                       dest="mmap", default=defaults.mmap,
-                      help="Enable memory mapped transfers for local connections (default: %s)" % enabled_str(defaults.mmap))
-    group.add_option("--no-mmap", action="store_false",
-                      dest="mmap", default=defaults.mmap,
-                      help="Disable memory mapped transfers for local connections (default: %s)" % enabled_str(defaults.mmap))
-    group.add_option("--readwrite", action="store_false",
+                      help="Use memory mapped transfers for local connections. Default: %s." % enabled_str(defaults.mmap))
+    replace_option("--readwrite", "--readonly=no")
+    group.add_option("--readonly", action="store", metavar="yes|no",
                       dest="readonly", default=defaults.readonly,
-                      help="Enable keyboard input and mouse events from the clients")
-    group.add_option("--readonly", action="store_true",
-                      dest="readonly", default=defaults.readonly,
-                      help="Disable keyboard input and mouse events from the clients")
-    group.add_option("--sharing", action="store_true",
+                      help="Disable keyboard input and mouse events from the clients. Default: %s." % enabled_str(defaults.readonly))
+    legacy_bool_parse("sharing")
+    group.add_option("--sharing", action="store", metavar="yes|no",
                       dest="sharing", default=defaults.sharing,
-                      help="Allow more than one client to connect to the same session (default: %s)" % enabled_str(defaults.sharing))
-    group.add_option("--no-sharing", action="store_false",
-                      dest="sharing", default=defaults.sharing,
-                      help="Do not allow more than one client to connect to the same session (default: %s)" % enabled_str(defaults.sharing))
+                      help="Allow more than one client to connect to the same session. Default: %s." % enabled_str(defaults.sharing))
     if has_sound_support:
-        group.add_option("--speaker", action="store_true",
+        legacy_bool_parse("speaker")
+        group.add_option("--speaker", action="store", metavar="yes|no",
                           dest="speaker", default=defaults.speaker,
-                          help="Enable forwarding of sound output to the client(s) (default: %s)" % enabled_str(defaults.speaker))
-        group.add_option("--no-speaker", action="store_false",
-                          dest="speaker", default=defaults.speaker,
-                          help="Disable forwarding of sound output to the client(s) (default: %s)" % enabled_str(defaults.speaker))
+                          help="Forward sound output to the client(s). Default: %s." % enabled_str(defaults.speaker))
         CODEC_HELP = """Specify the codec(s) to use for forwarding the %s sound output.
     This parameter can be specified multiple times and the order in which the codecs
     are specified defines the preferred codec order.
@@ -443,12 +434,10 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--speaker-codec", action="append",
                           dest="speaker_codec", default=list(defaults.speaker_codec or []),
                           help=CODEC_HELP % "speaker")
-        group.add_option("--microphone", action="store_true",
+        legacy_bool_parse("microphone")
+        group.add_option("--microphone", action="store", metavar="yes|no",
                           dest="microphone", default=defaults.microphone,
-                          help="Enable forwarding of sound input to the server (default: %s)" % enabled_str(defaults.microphone))
-        group.add_option("--no-microphone", action="store_false",
-                          dest="microphone", default=defaults.microphone,
-                          help="Disable forwarding of sound input to the server (default: %s)" % enabled_str(defaults.microphone))
+                          help="Forward sound input to the server. Default: %s." % enabled_str(defaults.microphone))
         group.add_option("--microphone-codec", action="append",
                           dest="microphone_codec", default=list(defaults.microphone_codec or []),
                           help=CODEC_HELP % "microphone")
@@ -467,7 +456,7 @@ def do_parse_cmdline(cmdline, defaults):
     parser.add_option_group(group)
     group.add_option("--encodings", action="store",
                       dest="encodings", default=defaults.encodings,
-                      help="Specify which encodings are allowed (default: %default)")
+                      help="Specify which encodings are allowed. Default: %default.")
     group.add_option("--encoding", action="store",
                       metavar="ENCODING", default=defaults.encoding,
                       dest="encoding", type="str",
@@ -482,26 +471,26 @@ def do_parse_cmdline(cmdline, defaults):
         hidden_options["encoders"] = []
     group.add_option("--csc-modules", action="store",
                       dest="csc_modules", default=defaults.csc_modules,
-                      help="Specify which colourspace conversion modules to enable, to get a list of all the options specify 'help' (default: %default)")
+                      help="Specify which colourspace conversion modules to enable, to get a list of all the options specify 'help'. Default: %default.")
     group.add_option("--video-decoders", action="store",
                       dest="video_decoders", default=defaults.video_decoders,
                       help="Specify which video decoders to enable, to get a list of all the options specify 'help'")
     group.add_option("--min-quality", action="store",
                       metavar="MIN-LEVEL",
                       dest="min_quality", type="int", default=defaults.min_quality,
-                      help="Sets the minimum encoding quality allowed in automatic quality setting (from 1 to 100, 0 to leave unset). Default: %default.")
+                      help="Sets the minimum encoding quality allowed in automatic quality setting, from 1 to 100, 0 to leave unset. Default: %default.")
     group.add_option("--quality", action="store",
                       metavar="LEVEL",
                       dest="quality", type="int", default=defaults.quality,
-                      help="Use a fixed image compression quality - only relevant to lossy encodings (1-100, 0 to use automatic setting). Default: %default.")
+                      help="Use a fixed image compression quality - only relevant to lossy encodings, from 1 to 100, 0 to use automatic setting. Default: %default.")
     group.add_option("--min-speed", action="store",
                       metavar="SPEED",
                       dest="min_speed", type="int", default=defaults.min_speed,
-                      help="Sets the minimum encoding speed allowed in automatic speed setting (1-100, 0 to leave unset). Default: %default.")
+                      help="Sets the minimum encoding speed allowed in automatic speed setting, from 1 to 100, 0 to leave unset. Default: %default.")
     group.add_option("--speed", action="store",
                       metavar="SPEED",
                       dest="speed", type="int", default=defaults.speed,
-                      help="Use image compression with the given encoding speed (1-100, 0 to use automatic setting). Default: %default.")
+                      help="Use image compression with the given encoding speed, from 1 to 100, 0 to use automatic setting. Default: %default.")
     group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=defaults.auto_refresh_delay,
                       metavar="DELAY",
@@ -510,10 +499,10 @@ def do_parse_cmdline(cmdline, defaults):
                       + " Default: %default.")
     group.add_option("--compressors", action="store",
                       dest="compressors", default=", ".join(defaults.compressors),
-                      help="The packet compressors to enable (default: %default)")
+                      help="The packet compressors to enable. Default: %default.")
     group.add_option("--packet-encoders", action="store",
                       dest="packet_encoders", default=", ".join(defaults.packet_encoders),
-                      help="The packet encoders to enable (default: %default)")
+                      help="The packet encoders to enable. Default: %default.")
     group.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=defaults.compression_level,
                       metavar="LEVEL",
@@ -527,42 +516,41 @@ def do_parse_cmdline(cmdline, defaults):
     group = optparse.OptionGroup(parser, "Client Features Options",
                 "These options control client features that affect the appearance or the keyboard.")
     parser.add_option_group(group)
-    group.add_option("--opengl", action="store",
+    legacy_bool_parse("opengl")
+    group.add_option("--opengl", action="store", metavar="yes|no|auto",
                       dest="opengl", default=defaults.opengl,
-                      help="Use OpenGL accelerated rendering, options: yes,no,auto. Default: %s." % print_bool("opengl", defaults.opengl))
-    group.add_option("--windows", action="store_true",
+                      help="Use OpenGL accelerated rendering. Default: %s." % print_bool("opengl", defaults.opengl))
+    legacy_bool_parse("windows")
+    group.add_option("--windows", action="store", metavar="yes|no",
                       dest="windows", default=defaults.windows,
-                      help="Forward windows (default: %s)" % enabled_str(defaults.windows))
-    group.add_option("--no-windows", action="store_false",
-                      dest="windows", default=defaults.windows,
-                      help="Do not forward windows (default: %s)" % enabled_str(defaults.windows))
+                      help="Forward windows. Default: %s." % enabled_str(defaults.windows))
     group.add_option("--session-name", action="store",
                       dest="session_name", default=defaults.session_name,
-                      help="The name of this session, which may be used in notifications, menus, etc. Default: Xpra")
+                      help="The name of this session, which may be used in notifications, menus, etc. Default: 'Xpra'.")
     group.add_option("--client-toolkit", action="store",
                       dest="client_toolkit", default=defaults.client_toolkit,
-                      help="The type of client toolkit. Use the value 'help' to get a list of options. Default: %default")
+                      help="The type of client toolkit. Use the value 'help' to get a list of options. Default: %default.")
     group.add_option("--window-layout", action="store",
                       dest="window_layout", default=defaults.window_layout,
                       help="The type of window layout to use, each client toolkit may provide different layouts."
-                        "use the value 'help' to get a list of possible layouts. Default: %default")
+                        "use the value 'help' to get a list of possible layouts. Default: %default.")
     group.add_option("--max-size", action="store", 
                       dest="max_size", default=defaults.max_size, 
                       metavar="MAX_SIZE", 
-                      help="The maximum size for all windows (ie: 800x600) Default: %default.")
+                      help="The maximum size for all windows, ie: 800x600. Default: '%default'.")
     group.add_option("--border", action="store",
                       dest="border", default=defaults.border,
                       help="The border to draw inside xpra windows to distinguish them from local windows."
-                        "Format: color[,size]. Default: %default")
+                        "Format: color[,size]. Default: '%default'")
     group.add_option("--title", action="store",
                       dest="title", default=defaults.title,
-                      help="Text which is shown as window title, may use remote metadata variables (default: '%default')")
+                      help="Text which is shown as window title, may use remote metadata variables. Default: '%default'.")
     group.add_option("--window-icon", action="store",
                           dest="window_icon", default=defaults.window_icon,
                           help="Path to the default image which will be used for all windows (the application may override this)")
     # let the platform specific code add its own options:
     # adds "--no-tray" for platforms that support it
-    add_client_options(group, defaults)
+    add_client_options(cmdline, group, defaults)
     hidden_options["tray"] =  True
     hidden_options["delay_tray"] =  False
     group.add_option("--tray-icon", action="store",
@@ -572,53 +560,50 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="key_shortcut", type="str", default=list(defaults.key_shortcut or []),
                       help="Define key shortcuts that will trigger specific actions."
                       + "If no shortcuts are defined, it defaults to '%s'" % (",".join(defaults.key_shortcut or [])))
-    group.add_option("--keyboard-sync", action="store_true",
+    legacy_bool_parse("keyboard-sync")
+    group.add_option("--keyboard-sync", action="store", metavar="yes|no",
                       dest="keyboard_sync", default=defaults.keyboard_sync,
-                      help="Enable keyboard state synchronization (default: %s)" % enabled_str(defaults.keyboard_sync))
-    group.add_option("--no-keyboard-sync", action="store_false",
-                      dest="keyboard_sync", default=defaults.keyboard_sync,
-                      help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly (default: %s)" % enabled_str(defaults.keyboard_sync))
+                      help="Synchronize keyboard state. Default: %s." % enabled_str(defaults.keyboard_sync))
 
     group = optparse.OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
     parser.add_option_group(group)
     group.add_option("--password-file", action="store",
                       dest="password_file", default=defaults.password_file,
-                      help="The file containing the password required to connect (useful to secure TCP mode)")
+                      help="The file containing the password required to connect (useful to secure TCP mode). Default: '%default'.")
     group.add_option("--input-method", action="store",
                       dest="input_method", default=defaults.input_method,
-                      help="Which X11 input method to configure for client applications started with start-child (default: %default, options: none, keep, xim, IBus, SCIM, uim)")
+                      help="Which X11 input method to configure for client applications started with start-child (default: '%default', options: none, keep, xim, IBus, SCIM, uim)")
     group.add_option("--dpi", action="store",
                       dest="dpi", default=defaults.dpi,
-                      help="The 'dots per inch' value that client applications should try to honour (default: %default)")
+                      help="The 'dots per inch' value that client applications should try to honour. Default: %default.")
     default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or '~/.xpra'"
     group.add_option("--socket-dir", action="store",
                       dest="socket_dir", default=defaults.socket_dir,
-                      help="Directory to place/look for the socket files in (default: %s)" % default_socket_dir_str)
+                      help="Directory to place/look for the socket files in. Default: '%s'." % default_socket_dir_str)
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for (you can also use \"all\" or \"help\", default: '%default')")
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",
-                      help="How to run ssh (default: '%default')")
-    group.add_option("--exit-ssh", action="store_true",
+                      help="How to run ssh. Default: '%default'.")
+    legacy_bool_parse("exit-ssh")
+    group.add_option("--exit-ssh", action="store", metavar="yes|no|auto",
                       dest="exit_ssh", default=defaults.exit_ssh,
-                      help="Terminate SSH when disconnecting (default: %s)" % print_bool("exit_ssh", defaults.exit_ssh, 'terminate', 'do not terminate'))
-    group.add_option("--no-exit-ssh", action="store_false",
-                      dest="exit_ssh", default=defaults.exit_ssh,
-                      help="Do not terminate SSH when disconnecting, this may break password authentication on some platforms (default: %s)" % print_bool("exit_ssh", defaults.exit_ssh, 'terminate', 'do not terminate'))
+                      help="Terminate SSH when disconnecting. Default: %default.")
     group.add_option("--username", action="store",
                       dest="username", default=defaults.username,
-                      help="The username supplied by the client for authentication (default: '%default')")
+                      help="The username supplied by the client for authentication. Default: '%default'.")
     group.add_option("--auth", action="store",
                       dest="auth", default=defaults.auth,
                       help="The authentication module (default: '%default')")
     group.add_option("--mmap-group", action="store_true",
                       dest="mmap_group", default=defaults.mmap_group,
                       help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
-    group.add_option("--enable-pings", action="store_true",
+    legacy_bool_parse("enable-ping")
+    group.add_option("--pings", action="store", metavar="yes|no",
                       dest="pings", default=defaults.pings,
-                      help="Send ping packets every second to gather latency statistics (default: %s)" % enabled_str(defaults.pings))
+                      help="Send ping packets every second to gather latency statistics. Default: %s." % enabled_str(defaults.pings))
     group.add_option("--clipboard-filter-file", action="store",
                       dest="clipboard_filter_file", default=defaults.clipboard_filter_file,
                       help="Name of a file containing regular expressions of clipboard contents that must be filtered out")
@@ -646,6 +631,18 @@ def do_parse_cmdline(cmdline, defaults):
     for k,v in hidden_options.items():
         if not hasattr(options, k):
             setattr(options, k, v)
+
+    #deal with boolean fields by converting them to a boolean value:
+    for k,t in OPTION_TYPES.items():
+        if t==bool:
+            fieldname = name_to_field(k)
+            if not hasattr(options, fieldname):
+                #some fields may be missing if they're platform specific
+                continue
+            v = getattr(options, fieldname)
+            bv = parse_bool(fieldname, v)
+            if bv!=v:
+                setattr(options, fieldname, bv)
 
     #process "help" arguments early:
     from xpra.log import KNOWN_FILTERS

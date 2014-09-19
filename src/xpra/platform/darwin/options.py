@@ -3,10 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-def add_client_options(parser, defaults):
-    parser.add_option("--swap-keys", action="store_true",
+def add_client_options(cmdline, group, defaults):
+    from xpra.scripts.main import do_legacy_bool_parse, enabled_str
+    do_legacy_bool_parse(cmdline, "swap-keys")
+    group.add_option("--swap-keys", action="store", metavar="yes|no",
                           dest="swap_keys", default=defaults.swap_keys,
-                          help="Swaps the 'Command' and 'Control' keys (default: '%default')")
-    parser.add_option("--no-swap-keys", action="store_false",
-                          dest="swap_keys",
-                          help="Disables the swapping of the 'Command' and 'Control' keys")
+                          help="Swap the 'Command' and 'Control' keys. Default: %s" % enabled_str(defaults.swap_keys))

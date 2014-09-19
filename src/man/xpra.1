@@ -16,35 +16,26 @@ xpra \- viewer for remote, persistent X applications
 .HP \w'xpra\ 'u
 \fBxpra\fP \fBstart\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
-[\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
+[\fB\-\-exit\-with\-children\fP]
+[\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-use\-display\fP]
 [\fB\-\-xvfb\fP=\fICMD\fP]
 [\fB\-\-video\-encoders\fP=\fIENCODERS\fP]
 [\fB\-\-csc\-modules\fP=\fIMODULES\fP]
-[\fB\-\-pulseaudio\fP]
-[\fB\-\-no\-pulseaudio\fP]
+[\fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP]
-[\fB\-\-clipboard\fP]
-[\fB\-\-no\-clipboard\fP]
-[\fB\-\-cursors\fP]
-[\fB\-\-no\-cursors\fP]
-[\fB\-\-notifications\fP]
-[\fB\-\-no\-notifications\fP]
-[\fB\-\-xsettings\fP]
-[\fB\-\-no\-xsettings\fP]
-[\fB\-\-system\-tray\fP]
-[\fB\-\-no\-system\-tray\fP]
-[\fB\-\-bell\fP]
-[\fB\-\-no\-bell\fP]
+[\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
-[\fB\-\-speaker\fP]
-[\fB\-\-no\-speaker\fP]
+[\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
-[\fB\-\-microphone\fP]
-[\fB\-\-no\-microphone\fP]
+[\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
-[\fB\-\-sharing\fP]
-[\fB\-\-no\-sharing\fP]
+[\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
@@ -59,32 +50,20 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP | \fItcp:[USER@]HOST:PORT[:DISPLAY]\fP]
 [\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
-[\fB\-\-mmap\fP]
-[\fB\-\-no\-mmap\fP]
-[\fB\-\-windows\fP]
-[\fB\-\-no\-windows\fP]
-[\fB\-\-clipboard\fP]
-[\fB\-\-no\-clipboard\fP]
-[\fB\-\-cursors\fP]
-[\fB\-\-no\-cursors\fP]
-[\fB\-\-notifications\fP]
-[\fB\-\-no\-notifications\fP]
-[\fB\-\-xsettings\fP]
-[\fB\-\-no\-xsettings\fP]
-[\fB\-\-system\-tray\fP]
-[\fB\-\-no\-system\-tray\fP]
-[\fB\-\-bell\fP]
-[\fB\-\-no\-bell\fP]
-[\fB\-\-keyboard\-sync\fP]
-[\fB\-\-no\-keyboard\-sync\fP]
-[\fB\-\-tray\fP]
-[\fB\-\-no\-tray\fP]
+[\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-windows\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-tray\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
-[\fB\-\-speaker\fP]
-[\fB\-\-no\-speaker\fP]
+[\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
-[\fB\-\-microphone\fP]
-[\fB\-\-no\-microphone\fP]
+[\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding\fP=\fIENCODING\fP]
@@ -95,10 +74,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-min-speed\fP=\fIMIN-SPEED\fP]
 [\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
 [\fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP]
-[\fB\-\-readwrite\fP]
-[\fB\-\-readonly\fP]
-[\fB\-\-sharing\fP]
-[\fB\-\-no-sharing\fP]
+[\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-title\fP=\fIVALUE\fP]
 [\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP]
 [\fB\-\-border\fP=\fIBORDER\fP]
@@ -106,31 +83,27 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-tray\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-ssh\fP=\fICMD\fP]
-[\fB\-\-exit\-ssh\fP] [\fB\-\-no\-exit\-ssh]
+[\fB\-\-exit\-ssh\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-mmap\-group\fP]
-[\fB\-\-enable\-pings\fP]
+[\fB\-\-pings\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
 .HP
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
-[\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
-[\fB\-\-clipboard\fP]
-[\fB\-\-no\-clipboard\fP]
-[\fB\-\-notifications\fP]
-[\fB\-\-no\-notifications\fP]
-[\fB\-\-bell\fP]
-[\fB\-\-no\-bell\fP]
+[\fB\-\-exit\-with\-children\fP]
+[\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
-[\fB\-\-speaker\fP]
-[\fB\-\-no\-speaker\fP]
+[\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
-[\fB\-\-microphone\fP]
-[\fB\-\-no\-microphone\fP]
+[\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
@@ -193,7 +166,7 @@ X forwarding.
 Xpra can also be used to shadow an existing X11 display.
 .P
 By default the Xpra server announces available sessions (username and display
-number) via mDNS to the local network. Use \fB\-\-no\-mdns\fP to disable it.
+number) via mDNS to the local network. Use \fBmdns=no\fP to disable it.
 .\" --------------------------------------------------------------------
 .SH CONNECTION STRINGS
 Xpra supports 3 types of connection strings:
@@ -391,29 +364,29 @@ Displays a summary of command line usage.
 Enable debug logging.  The special value \fBall\fP enables all
 debugging.
 .TP
-\fB\-\-mmap\fP or \fB\-\-no\-mmap\fP
+\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP
 Enable or disable memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
 This method of data transfer offers much lower overheads
 and reduces both CPU consumption and local network traffic.
 .TP
-\fB\-\-windows\fP or \fB\-\-no\-windows\fP
+\fB\-\-windows\fP=\fIyes\fP|\fIno\fP
 Enable or disable the forwarding of windows. This is usually
 the primary use for xpra and should be enabled.
 .TP
-\fB\-\-clipboard\fP or \fB\-\-no\-clipboard\fP
+\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP
 Enable or disable clipboard synchronization.
 If used on the server, no clients will be able to use clipboard
 synchronization at all. If used on the client, only this particular
 connection will ignore clipboard data from the server.
 .TP
-\fB\-\-pulseaudio\fP or \fB\-\-no\-pulseaudio\fP
+\fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP
 Enable or disable the starting of a pulseaudio server with the session.
 .TP
 \fB\-\-pulseaudio\-command\fP=\fISERVER\-START\-COMMAND\fP
 Specifies the pulseaudio command to use to start the pulseaudio
-server, unless disabled with \fB\-\-no\-pulseaudio\fP.
+server, unless disabled with \fBpulseaudio=no\fP.
 .TP
 \fB\-\-session\-name\fP=\fIVALUE\fP
 Sets the name of this session. This value may be used in
@@ -492,12 +465,12 @@ mmap-group option to connect Xpra sessions across user accounts.
 
 .SS Options for start, upgrade, proxy and shadow
 .TP
-\fB\-\-no\-daemon\fP
+\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP
 By default, the xpra server puts itself into the background,
 i.e. 'daemonizes', and redirects its output to a log file.  This
 prevents that behavior (useful mostly for debugging).
 .TP
-\fB\-\-mdns\fP or \fB\-\-no\-mdns\fP
+\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
 Enable or disable the publication of new sessions via mDNS.
 .TP
 \fB\-\-auth\fP=\fIMODULE\fP
@@ -642,13 +615,13 @@ Many applications will only read this value when starting up,
 so connecting to an existing session started with a different DPI
 value may not have the desired effect.
 .TP
-\fB\-\-cursors\fP or \fB\-\-no\-cursors\fP
+\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of custom application mouse cursors.
 Client applications may change the mouse cursor at any time, which
 will cause the new cursor's pixels to be sent to the client each time.
 This disables the feature.
 .TP
-\fB\-\-notifications\fP or \fB\-\-no\-notifications\fP
+\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of system notifications.
 System notifications require the xpra server to have its own instance
 of a dbus daemon, if it is missing a warning will be printed on
@@ -682,16 +655,16 @@ Enables the Universal Input Method.
 Any other value will also be set up, but will trigger a warning.
 
 .TP
-\fB\-\-xsettings\fP or \fB\-\-no\-xsettings\fP
+\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP
 Enable or disable xsettings synchronization.  Xsettings are only forwarded
 from posix clients connecting to real posix servers (not shadows).
 .TP
-\fB\-\-system\-tray\fP or \fB\-\-no\-system\-tray\fP
+\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of system tray icons.
 This feature requires client support and may not be available on all
 platforms.
 .TP
-\fB\-\-bell\fP or \fB\-\-no\-bell\fP
+\fB\-\-bell\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of the system bell.
 
 .SS Options for attach
@@ -787,16 +760,16 @@ Force all windows to be refreshed.
 .PP
 
 .TP
-\fB\-\-readonly\fP or \fB\-\-readwrite\fP
+\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP
 Read only mode prevents all keyboard and mouse activity from being sent
 to the server.
 .TP
-\fB\-\-sharing\fP or \fB\-\-no\-sharing\fP
+\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP
 Sharing allows more than one client to connect to the same session.
 This must be enabled on both the server and all co-operating clients
 to function.
 .TP
-\fB\-\-keyboard\-sync\fP or \fB\-\-no\-keyboard\-sync\fP
+\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP
 Normally the key presses and key release events are sent to the server
 as they occur so that the server can maintain a consistent keyboard state.
 Disabling synchronization can prevent keys from repeating unexpectedly on
@@ -811,11 +784,11 @@ To get a list of options use the special value 'help'.
 It is also possible to specify plugin options using the form:
 \fI--sound-source=pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo\fP
 .TP
-\fB\-\-speaker\fP or \fB\-\-no\-speaker\fP
+\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP
 Enable or disable sound output forwarding support.  When disabled,
 application sound output will not be sent to the client(s).
 .TP
-\fB\-\-microphone\fP or \fB\-\-no\-microphone\fP
+\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP
 Enable or disable sound input forwarding support.
 Application sound input will not be sent from the client(s) to the server.
 .TP
@@ -873,7 +846,7 @@ This icon may be shown in the window's bar, its iconified
 state or task switchers.  This depends on the operating system,
 the window manage and the application may override this too.
 .TP
-\fB\-\-tray\fP or \fB\-\-no\-tray\fP
+\fB\-\-tray\fP=\fIyes\fP|\fIno\fP
 Enable or disable the system tray.  Not available on OSX since the dock
 icon is always shown.
 .TP
@@ -919,13 +892,13 @@ is redundant with xpra's own compression, and will just waste your
 CPU.  See also xpra's \fB\-\-compress\fP switch.
 .RE
 .TP
-\fB\-\-exit\-ssh\fP or \fB\-\-no\-exit\-ssh\fP
+\fB\-\-exit\-ssh\fP=\fIyes\fP|\fIno\fP
 Choose whether the SSH client process should be forcibly terminated
 when xpra disconnects from the server.
 If you are using SSH connection sharing, you may want to avoid
 stopping the SSH master process instance spawned by xpra as it may be
 used by other SSH sessions.
-Note: the \fB\-\-no\-exit\-ssh\fP detaches the SSH process from the
+Note: the \fBexit\-ssh=no\fP detaches the SSH process from the
 terminal which prevents the SSH process from interacting with
 the terminal input, this disables the keyboard interaction required
 for password input, host key verification, etc..
