@@ -291,6 +291,7 @@ class ServerSource(object):
         self.generic_encodings = False
         self.encoding_options = typedict()
         self.default_encoding_options = {}
+        self.theme_default_icons = []
 
         self.window_sources = {}                    #WindowSource for each Window ID
         self.suspended = False
@@ -593,6 +594,8 @@ class ServerSource(object):
 
         #keyboard is now injected into this class, default to undefined:
         self.keyboard_config = None
+
+        self.theme_default_icons = c.strlistget("theme.default.icons", [])
 
         #encodings:
         def getenclist(k, default_value=[]):
@@ -1395,6 +1398,7 @@ class ServerSource(object):
         if not self.can_send_window(window):
             return
         send_props = list(window.get_property_names())
+        log.info("new_window: send_props=%s", send_props)
         send_raw_icon = "icon" in send_props
         if send_raw_icon:
             send_props.remove("icon")
@@ -1409,6 +1413,21 @@ class ServerSource(object):
     def send_window_icon(self, wid, window):
         surf = window.get_property("icon")
         log("send_window_icon(%s,%s) icon=%s", window, wid, surf)
+        surf = None
+        if surf is None:
+            #FIXME: this is a bit dirty,
+            #we figure out if the client is likely to have an icon for this wmclass already,
+            #(assuming the window even has a 'class-instance'), and if not we send the default
+            try:
+                c_i = window.get_property("class-instance")
+            except:
+                c_i = None
+            if c_i and len(c_i)==2:
+                wm_class = c_i[0].encode("utf-8")
+                if False and wm_class in self.theme_default_icons:
+                    log.info("%s in client theme icons already", self.theme_default_icons)
+                else:
+                    surf = window.get_default_window_icon()
         if surf is not None:
             w, h, pixel_format, pixel_data = make_window_icon(surf, ("png" in self.encodings))
             assert pixel_format in ("premult_argb32", "png")

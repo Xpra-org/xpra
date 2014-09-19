@@ -389,6 +389,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def is_shadow(self):
         return False
 
+    def get_default_window_icon(self):
+        return None
+
 
     def _forward_contents_changed(self, obj, event):
         if self._managed:
@@ -1304,6 +1307,33 @@ class WindowModel(BaseWindowModel):
                 self._call_property_handler(mutable)
             except:
                 log.error("error reading initial property %s", mutable, exc_info=True)
+
+    def get_default_window_icon(self):
+        #return the icon which would be used from the wmclass
+        c_i = self.get_property("class-instance")
+        if not c_i or len(c_i)!=2:
+            return None
+        wmclass_name, wmclass_class = [x.encode("utf-8") for x in c_i]
+        log("get_default_window_icon() using %s", (wmclass_name, wmclass_class))
+        if not wmclass_name:
+            return None
+        it = gtk.icon_theme_get_default()
+        i = it.lookup_icon(wmclass_name, 48, 0)
+        log("%s.lookup_icon(%s)=%s", it, wmclass_name, i)
+        if not i:
+            return None
+        p = i.load_icon()
+        log("%s.load_icon()=%s", i, p)
+        if not p:
+            return None
+        #to make it consistent with the "icon" property,
+        #return a cairo surface..
+        surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, p.get_width(), p.get_height())
+        gc = gtk.gdk.CairoContext(cairo.Context(surf))
+        gc.set_source_pixbuf(p, 0, 0)
+        gc.paint()
+        log("get_default_window_icon()=%s", surf)
+        return surf
 
     ################################
     # Property setting

@@ -200,6 +200,22 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = len(cursor_names)>0
         capabilities.update(get_gtk_version_info())
+        #tell the server which icons GTK can use
+        #so it knows when it should supply one as fallback
+        it = gtk.icon_theme_get_default()
+        #this would add our bundled icon directory
+        #to the search path, but I don't think we have
+        #any extra icons that matter in there:
+        #from xpra.platform.paths import get_icon_dir
+        #d = get_icon_dir()
+        #if d not in it.get_search_path():
+        #    it.append_search_path(d)
+        #    it.rescan_if_needed()
+        log("default icon theme: %s", it)
+        log("icon search path: %s", it.get_search_path())
+        log("contexts: %s", it.list_contexts())
+        log("icons: %s", it.list_icons())
+        capabilities["theme.default.icons"] = it.list_icons()
         return capabilities
 
 

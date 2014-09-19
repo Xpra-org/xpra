@@ -39,6 +39,9 @@ class RootWindowModel(object):
     def is_shadow(self):
         return True
 
+    def get_default_window_icon(self):
+        return None
+
     def acknowledge_changes(self):
         pass
 
