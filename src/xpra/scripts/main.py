@@ -269,11 +269,10 @@ def do_parse_cmdline(cmdline, defaults):
                           usage="\n" + "".join(command_options))
     hidden_options = {"display" : defaults.display,
                       "displayfd" : defaults.displayfd}
-    if len(server_modes):
-        group = optparse.OptionGroup(parser, "Server Options",
-                    "These options are only relevant on the server when using the %s mode." %
-                    " or ".join(["'%s'" % x for x in server_modes]))
-        parser.add_option_group(group)
+    group = optparse.OptionGroup(parser, "Server Options",
+                "These options are only relevant on the server when using the %s mode." %
+                " or ".join(["'%s'" % x for x in server_modes]))
+    parser.add_option_group(group)
     #we support remote start, so we need those even if we don't have server support:
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
