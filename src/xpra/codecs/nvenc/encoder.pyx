@@ -1154,7 +1154,7 @@ def get_input_colorspaces():
     return get_COLORSPACES().keys()
 
 def get_output_colorspaces(input_colorspace):
-    assert input_colorspace in get_COLORSPACES()
+    assert input_colorspace in get_COLORSPACES(), "invalid input colorspace: %s (must be one of: %s)" % (input_colorspace, get_COLORSPACES())
     #the output will actually be in one of those two formats once decoded
     #because internally that's what we convert to before encoding
     #(well, NV12... which is equivallent to YUV420P here...)
@@ -1350,6 +1350,7 @@ cdef class Encoder:
 
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
         assert encoding in get_encodings(), "invalid encoding %s" % encoding
+        assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
         log("init_context%s", (width, height, src_format, encoding, quality, speed, scaling, options))
         self.width = width
         self.height = height
