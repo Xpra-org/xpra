@@ -92,6 +92,8 @@ if is_gtk3():
     ACCEL_VISIBLE = gtk.AccelFlags.VISIBLE
     JUSTIFY_LEFT    = gtk.Justification.LEFT
     JUSTIFY_RIGHT   = gtk.Justification.RIGHT
+    POINTER_MOTION_MASK         = gdk.EventMask.POINTER_MOTION_MASK 
+    POINTER_MOTION_HINT_MASK    = gdk.EventMask.POINTER_MOTION_HINT_MASK
 
     LSB_FIRST       = gdk.ByteOrder.LSB_FIRST
     MSB_FIRST       = gdk.ByteOrder.MSB_FIRST
@@ -193,6 +195,8 @@ else:
     ACCEL_VISIBLE = gtk.ACCEL_VISIBLE
     JUSTIFY_LEFT    = gtk.JUSTIFY_LEFT
     JUSTIFY_RIGHT   = gtk.JUSTIFY_RIGHT
+    POINTER_MOTION_MASK         = gdk.POINTER_MOTION_MASK 
+    POINTER_MOTION_HINT_MASK    = gdk.POINTER_MOTION_HINT_MASK
 
     LSB_FIRST       = gtk.gdk.LSB_FIRST
     MSB_FIRST       = gtk.gdk.MSB_FIRST

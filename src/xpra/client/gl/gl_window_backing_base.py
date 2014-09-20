@@ -17,6 +17,7 @@ idle_add = import_gobject().idle_add
 
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.gl.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GLContextManager, GLDrawingArea
 from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER
@@ -205,6 +206,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             else:
                 log.warn("failed to enable transparency on screen %s", screen)
                 self._alpha_enabled = False
+        self._backing.set_events(self._backing.get_events() | POINTER_MOTION_MASK | POINTER_MOTION_HINT_MASK)
 
 
     def __repr__(self):
