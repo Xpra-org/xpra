@@ -188,18 +188,18 @@ class ServerBase(ServerCore):
         #Pithon Imaging Libary:
         PIL = get_codec("PIL")
         if PIL:
-            add_encodings(get_PIL_encodings(PIL))
+            pil_encs = get_PIL_encodings(PIL)
+            add_encodings(pil_encs)
+            #Note: webp will only be enabled if we have a Python-PIL fallback
+            #(either "webp" or "png")
+            if has_codec("enc_webp") and ("webp" in pil_encs or "png" in pil_encs):
+                self.lossless_mode_encodings.append("webp")
+                self.lossless_encodings.append("webp")
         #now update the variables:
         self.encodings = encs
         self.core_encodings = core_encs
-        #Note: webp will only be enabled if PIL supports it,
-        #that's because "enc_webp" needs a fallback for odd strides and pixel formats
-        #(probably never gets used but difficult to predict for sure)
-        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb"))]
+        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb") or x=="webp")]
         self.lossless_mode_encodings = []
-        if has_codec("enc_webp"):
-            self.lossless_mode_encodings.append("webp")
-            self.lossless_encodings.append("webp")
         pref = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings]
         if pref:
             self.default_encoding = pref[0]

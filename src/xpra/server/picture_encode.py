@@ -14,6 +14,7 @@ from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
 from xpra.os_util import StringIOClass
 from xpra.codecs.loader import get_codec, get_codec_version
+from xpra.codecs.codec_constants import get_PIL_encodings
 from xpra.os_util import memoryview_to_bytes
 try:
     from xpra.net.mmap_pipe import mmap_write
@@ -67,7 +68,11 @@ def webp_encode(coding, image, rgb_formats, supports_transparency, quality, spee
             client_options["has_alpha"] = True
         return "webp", compression.Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
     #fallback to PIL
-    return PIL_encode(coding, image, quality, speed, supports_transparency)
+    encs = get_PIL_encodings()
+    for x in ("webp", "png"):
+        if x in encs:
+            return PIL_encode(coding, image, quality, speed, supports_transparency)
+    raise Exception("BUG: cannot use 'webp' encoding and none of the PIL fallbacks are available!")
 
 
 def roundup(n, m):
