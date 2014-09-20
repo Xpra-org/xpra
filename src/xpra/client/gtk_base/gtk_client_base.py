@@ -22,7 +22,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
 from xpra.util import bytestostr
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, \
-            new_Cursor_for_display, new_Cursor_from_pixbuf, window_set_default_icon, \
+            new_Cursor_for_display, new_Cursor_from_pixbuf, window_set_default_icon, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, INTERP_BILINEAR
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
@@ -202,7 +202,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         capabilities.update(get_gtk_version_info())
         #tell the server which icons GTK can use
         #so it knows when it should supply one as fallback
-        it = gtk.icon_theme_get_default()
+        it = icon_theme_get_default()
         #this would add our bundled icon directory
         #to the search path, but I don't think we have
         #any extra icons that matter in there:
@@ -214,8 +214,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         log("default icon theme: %s", it)
         log("icon search path: %s", it.get_search_path())
         log("contexts: %s", it.list_contexts())
-        log("icons: %s", it.list_icons())
-        capabilities["theme.default.icons"] = it.list_icons()
+        icons = []
+        for context in it.list_contexts():
+            icons += it.list_icons(context)
+        log("icons: %s", icons)
+        capabilities["theme.default.icons"] = list(set(icons))
         return capabilities
 
 
