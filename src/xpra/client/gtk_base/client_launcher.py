@@ -109,10 +109,6 @@ class ApplicationWindow:
         fixup_packetencoding(self.config)
         #what we save by default:
         self.config_keys = set(SAVED_FIELDS)
-        if is_gtk3():
-            self.config.client_toolkit = "gtk3"
-        else:
-            self.config.client_toolkit = "gtk2"
         def raise_exception(*args):
             raise Exception(*args)
         self.client = make_client(raise_exception, self.config)

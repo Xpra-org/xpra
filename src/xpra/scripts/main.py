@@ -536,9 +536,6 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--session-name", action="store",
                       dest="session_name", default=defaults.session_name,
                       help="The name of this session, which may be used in notifications, menus, etc. Default: 'Xpra'.")
-    group.add_option("--client-toolkit", action="store",
-                      dest="client_toolkit", default=defaults.client_toolkit,
-                      help="The type of client toolkit. Use the value 'help' to get a list of options. Default: %default.")
     group.add_option("--window-layout", action="store",
                       dest="window_layout", default=defaults.window_layout,
                       help="The type of window layout to use, each client toolkit may provide different layouts."
@@ -1142,17 +1139,6 @@ def run_client(error_cb, opts, extra_args, mode):
     return do_run_client(app)
 
 def make_client(error_cb, opts):
-    app = None
-    if not opts.client_toolkit:
-        from xpra.gtk_common.gobject_compat import import_gobject, is_gtk3
-        import_gobject()
-        if is_gtk3():
-            opts.client_toolkit = "gtk3"
-        else:
-            opts.client_toolkit = "gtk2"
-
-    ct = opts.client_toolkit.lower()
-    toolkits = {}
     def check_toolkit(*modules):
         try:
             for x in modules:
@@ -1161,19 +1147,10 @@ def make_client(error_cb, opts):
         except:
             return False
 
-    if check_toolkit("gtk.gdk", "xpra.client.gtk2"):
-        toolkits["gtk2"] = "xpra.client.gtk2.client"
-    elif check_toolkit("gi", "xpra.client.gtk3"):
-        toolkits["gtk3"] = "xpra.client.gtk3.client"
-
-    if len(toolkits)==0:
-        error_cb("no client toolkit found! (maybe this is a server-only installation?)")
-    if ct=="help":
-        error_cb("The following client toolkits are available: %s" % (", ".join(toolkits.keys())))
-    client_module = toolkits.get(ct)
-    if client_module is None:
-        error_cb("invalid client toolkit: %s, try one of: %s" % (
-                    opts.client_toolkit, ", ".join(toolkits.keys())))
+    if sys.version<'3':
+        client_module = "xpra.client.gtk2.client"
+    else:
+        client_module = "xpra.client.gtk3.client"
     toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
     if toolkit_module is None:
         error_cb("could not load %s" % client_module)
