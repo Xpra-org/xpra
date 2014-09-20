@@ -193,8 +193,8 @@ class ServerBase(ServerCore):
             #Note: webp will only be enabled if we have a Python-PIL fallback
             #(either "webp" or "png")
             if has_codec("enc_webp") and ("webp" in pil_encs or "png" in pil_encs):
+                add_encodings(["webp"])
                 self.lossless_mode_encodings.append("webp")
-                self.lossless_encodings.append("webp")
         #now update the variables:
         self.encodings = encs
         self.core_encodings = core_encs
