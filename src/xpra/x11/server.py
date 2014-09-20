@@ -491,22 +491,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
             ss.send_cursor()
         return False
 
-    def get_cursor_data(self):
-        #must be called from the UI thread!
-        cursor_data = trap.call(X11Keyboard.get_cursor_image)
-        if cursor_data is None:
-            cursorlog("get_cursor_data() failed to get cursor image")
-            return None, []
-        self.last_cursor_data = cursor_data
-        pixels = self.last_cursor_data[7]
-        cursorlog("get_cursor_data() cursor=%s", cursor_data[:7]+["%s bytes" % len(pixels)]+cursor_data[8:])
-        if self.default_cursor_data is not None and str(pixels)==str(self.default_cursor_data[7]):
-            cursorlog("get_cursor_data(): default cursor - clearing it")
-            cursor_data = None
-        display = gtk.gdk.display_get_default()
-        cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
-        return (cursor_data, cursor_sizes)
-
 
     def _bell_signaled(self, wm, event):
         log("bell signaled on window %s", event.window.xid)

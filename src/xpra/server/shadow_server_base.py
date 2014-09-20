@@ -115,6 +115,9 @@ class ShadowServerBase(object):
         return {"shadow" : True}
 
 
+    def get_cursor_data(self):
+        return None
+
     def watch_keymap_changes(self):
         pass
 
