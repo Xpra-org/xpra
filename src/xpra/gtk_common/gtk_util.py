@@ -260,10 +260,12 @@ def get_display_info():
         screen = display.get_screen(i)
         sk = "screen[%s]" % i
         info[sk+".name"] = screen.make_display_name()
-        info[sk+".width"] = screen.get_width()
-        info[sk+".height"] = screen.get_height()
-        info[sk+".width_mm"] = screen.get_width_mm()
-        info[sk+".height_mm"] = screen.get_height_mm()
+        for x in ("width", "height", "width_mm", "height_mm", "resolution", "primary_monitor"):
+            fn = getattr(screen, "get_"+x)
+            try:
+                info[sk+"."+x] = int(fn())
+            except:
+                pass
         info[sk+".monitors"] = screen.get_n_monitors()
         for j in range(screen.get_n_monitors()):
             mk = "screen[%s].monitor[%s]" % (i, j)
@@ -278,11 +280,19 @@ def get_display_info():
                 info[mk+".height_mm"] = screen.get_monitor_height_mm(j)
         #gtk3 only?
         try:
+            import cairo
             fo = screen.get_font_options()
+            print("font_options=%s" % fo)
             fk = sk+".fontoptions"
-            for x in ("antialias", "hint_metrics", "hint_style", "subpixel_order"):
+            for x,vdict in {
+                            "antialias"     : {cairo.ANTIALIAS_DEFAULT      : "default", cairo.ANTIALIAS_NONE       : "none",   cairo.ANTIALIAS_GRAY        : "gray",   cairo.ANTIALIAS_SUBPIXEL    : "subpixel"},
+                            "hint_metrics"  : {cairo.HINT_METRICS_DEFAULT   : "default", cairo.HINT_METRICS_OFF     : "off",    cairo.HINT_METRICS_ON       : "on"},
+                            "hint_style"    : {cairo.HINT_STYLE_DEFAULT     : "default", cairo.HINT_STYLE_NONE      : "none",   cairo.HINT_STYLE_SLIGHT     : "slight", cairo.HINT_STYLE_MEDIUM     : "medium", cairo.HINT_STYLE_FULL       : "full"},
+                            "subpixel_order": {cairo.SUBPIXEL_ORDER_DEFAULT : "default", cairo.SUBPIXEL_ORDER_RGB   : "RGB",    cairo.SUBPIXEL_ORDER_BGR    : "BGR",    cairo.SUBPIXEL_ORDER_VRGB   : "VRGB",   cairo.SUBPIXEL_ORDER_VBGR   : "VBGR"},
+                            }.items():
                 fn = getattr(fo, "get_"+x)
-                info[fk+"."+x] = fn()
+                val = fn()
+                info[fk+"."+x] = vdict.get(val, val)
         except:
             pass
         def visual(k, v):
