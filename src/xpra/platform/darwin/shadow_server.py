@@ -98,8 +98,8 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
             log("CG.CGPostScrollWheelEvent(%s, %s)", wheel, args)
             CG.CGPostScrollWheelEvent(wheel, *args)
 
-    def make_hello(self):
-        capabilities = GTKServerBase.make_hello(self)
+    def make_hello(self, source):
+        capabilities = GTKServerBase.make_hello(self, source)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/gtk2/osx-shadow"
         return capabilities

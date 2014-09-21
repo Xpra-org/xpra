@@ -74,8 +74,8 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         dwFlags, dwData = event
         win32api.mouse_event(dwFlags, x, y, dwData, 0)
 
-    def make_hello(self):
-        capabilities = GTKServerBase.make_hello(self)
+    def make_hello(self, source):
+        capabilities = GTKServerBase.make_hello(self, source)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/gtk2/win32-shadow"
         return capabilities
