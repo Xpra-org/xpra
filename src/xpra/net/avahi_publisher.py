@@ -77,8 +77,12 @@ class AvahiPublishers:
 
 	def start(self):
 		log("starting: %s", self.publishers)
+		all_err = True
 		for publisher in self.publishers:
-			publisher.start()
+			if publisher.start():
+				all_err = False
+		if all_err:
+			log.info("you may want to disable mdns support to avoid this")
 
 	def stop(self):
 		log("stopping: %s", self.publishers)
@@ -103,22 +107,18 @@ class AvahiPublisher:
 		return	"AvahiPublisher(%s %s:%s interface=%s)" % (self.name, self.host, self.port, self.interface)
 
 	def start(self):
-		def helpmsg():
-			log.info("you may want to disable mdns support to avoid this warning")			
 		try:
 			bus = dbus.SystemBus()
 		except Exception as e:
 			log.warn("failed to connect to system dbus: %s", e)
-			helpmsg()
-			return
+			return False
 
 		try:
 			server = dbus.Interface(bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER), avahi.DBUS_INTERFACE_SERVER)
 			g = dbus.Interface(bus.get_object(avahi.DBUS_NAME, server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
 		except Exception as e:
 			log.warn("failed to connect to avahi's dbus interface: %s", e)
-			helpmsg()
-			return
+			return False
 
 		try:
 			args = (self.interface, avahi.PROTO_UNSPEC,dbus.UInt32(0),
@@ -137,7 +137,8 @@ class AvahiPublisher:
 				log.error("error starting publisher %s: another instance already claims this dbus name: %s, message: %s", self, e, message)
 				return
 			log.warn("failed to start %s: %s", self, e)
-			helpmsg()
+			return False
+		return True
 
 	def stop(self):
 		log("%s.stop() group=%s", self, self.group)
