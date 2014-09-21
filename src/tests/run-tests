@@ -7,6 +7,4 @@
 #RUNNER="pydb --trace"
 RUNNER=python
 $RUNNER "-Wignore:could not open display" \
-  ./yatest.py -p install/lib/python/wimpiggy \
-              -p install/lib/python/xpra \
-              "$@"
+  ./yatest.py -p install/lib/python/xpra "$@"

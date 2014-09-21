@@ -3,15 +3,13 @@
 # Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
 
 import time
-import pygtk
-pygtk.require('2.0')
-import gtk.gdk
-
-from wimpiggy.lowlevel import get_keycodes_down		#@UnresolvedImport
+from xpra.x11.gtk_x11 import gdk_display_source			 #@UnusedImport
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings		#@UnresolvedImport
+keyboard_bindings = X11KeyboardBindings()
 
 def main():
 	while True:
-		down = get_keycodes_down(gtk.gdk.get_default_root_window())
+		down = keyboard_bindings.get_keycodes_down()
 		print("down=%s" % down)
 		time.sleep(1)
 
