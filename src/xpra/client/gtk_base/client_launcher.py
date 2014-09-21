@@ -26,7 +26,7 @@ pango = import_pango()
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, ENCRYPTION_CIPHERS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
-from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, is_gtk3, \
+from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, \
                                     OptionMenu, choose_file, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
@@ -225,20 +225,24 @@ class ApplicationWindow:
         # Username@Host:Port
         hbox = gtk.HBox(False, 0)
         hbox.set_spacing(5)
-        self.username_entry = gtk.Entry(max=128)
+        self.username_entry = gtk.Entry()
+        self.username_entry.set_max_length(128)
         self.username_entry.set_width_chars(16)
         self.username_entry.connect("changed", self.validate)
         set_tooltip_text(self.username_entry, "SSH username")
         self.username_label = gtk.Label("@")
-        self.host_entry = gtk.Entry(max=128)
+        self.host_entry = gtk.Entry()
+        self.host_entry.set_max_length(128)
         self.host_entry.set_width_chars(24)
         self.host_entry.connect("changed", self.validate)
         set_tooltip_text(self.host_entry, "hostname")
-        self.ssh_port_entry = gtk.Entry(max=5)
+        self.ssh_port_entry = gtk.Entry()
+        self.ssh_port_entry.set_max_length(5)
         self.ssh_port_entry.set_width_chars(5)
         self.ssh_port_entry.connect("changed", self.validate)
         set_tooltip_text(self.ssh_port_entry, "SSH port")
-        self.port_entry = gtk.Entry(max=5)
+        self.port_entry = gtk.Entry()
+        self.port_entry.set_max_length(5)
         self.port_entry.set_width_chars(5)
         self.port_entry.connect("changed", self.validate)
         set_tooltip_text(self.port_entry, "port/display")
@@ -254,7 +258,8 @@ class ApplicationWindow:
         # Password
         hbox = gtk.HBox(False, 0)
         hbox.set_spacing(20)
-        self.password_entry = gtk.Entry(max=128)
+        self.password_entry = gtk.Entry()
+        self.password_entry.set_max_length(128)
         self.password_entry.set_width_chars(30)
         self.password_entry.set_text("")
         self.password_entry.set_visibility(False)
