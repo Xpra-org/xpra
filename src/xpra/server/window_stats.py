@@ -20,9 +20,10 @@ log = Logger("stats")
 
 from collections import deque
 from xpra.simple_stats import add_list_stats, add_weighted_list_stats
-from xpra.server.stats.maths import logp, \
-    calculate_time_weighted_average, calculate_timesize_weighted_average, \
-    calculate_for_average
+from xpra.server.cystats import (logp,      #@UnresolvedImport
+    calculate_time_weighted_average,        #@UnresolvedImport
+    calculate_timesize_weighted_average,    #@UnresolvedImport 
+    calculate_for_average)                  #@UnresolvedImport
 
 
 class WindowPerformanceStatistics(object):

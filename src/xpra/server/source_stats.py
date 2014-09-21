@@ -13,7 +13,7 @@ from collections import deque
 from xpra.log import Logger
 log = Logger("stats")
 
-from xpra.server.stats.maths import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect
+from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect  #@UnresolvedImport
 from xpra.simple_stats import add_list_stats
 
 NRECS = 500

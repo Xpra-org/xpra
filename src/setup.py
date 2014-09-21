@@ -1542,7 +1542,7 @@ buffers_c = "xpra/codecs/buffers/%s_buffers.c" % bmod
 membuffers_c = ["xpra/codecs/buffers/memalign.c", "xpra/codecs/inline.c", buffers_c]
 
 
-toggle_packages(server_ENABLED, "xpra.server", "xpra.server.stats", "xpra.server.auth")
+toggle_packages(server_ENABLED, "xpra.server", "xpra.server.auth")
 toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
 
@@ -1654,8 +1654,8 @@ cython_add(Extension("xpra.codecs.xor.cyxor",
 
 if server_ENABLED:
     add_modules("xpra.server.stats")
-    cython_add(Extension("xpra.server.stats.cymaths",
-                ["xpra/server/stats/cymaths.pyx"],
+    cython_add(Extension("xpra.server.cystats",
+                ["xpra/server/cystats.pyx"],
                 **pkgconfig()))
 
 

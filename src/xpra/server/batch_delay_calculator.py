@@ -10,7 +10,7 @@ from math import log as mathlog, sqrt
 from xpra.log import Logger
 log = Logger("server", "stats")
 
-from xpra.server.stats.maths import queue_inspect, logp, time_weighted_average
+from xpra.server.cystats import queue_inspect, logp, time_weighted_average  #@UnresolvedImport
 
 
 def get_low_limit(mmap_enabled, window_dimensions):

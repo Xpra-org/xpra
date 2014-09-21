@@ -8,7 +8,7 @@ import unittest
 import random
 import time
 from xpra.simple_stats import values_to_diff_scaled_values
-from xpra.server.stats.maths import logp, calculate_time_weighted_average, calculate_timesize_weighted_average
+from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_timesize_weighted_average
 
 class TestSimpleStats(unittest.TestCase):
 
@@ -27,7 +27,7 @@ class TestSimpleStats(unittest.TestCase):
 				#[1, 2, 6, 40, 1, 11, 11, 8, 4, 4]
 				assert out_data[1] / out_data[0]==2		# 2/1
 				assert out_data[3] / out_data[4]==40	# 40/1
-	
+
 	def test_calculate_timesize_weighted_average(self):
 		#event_time, size, elapsed_time
 		now = time.time()
