@@ -46,3 +46,7 @@ class KeyboardConfigBase(object):
     def get_keycode(self, client_keycode, keyname, modifiers):
         log("%s does not implement get_keycode!", type(self))
         return -1
+
+    def is_modifier(self, keycode):
+        #should be overriden in subclass
+        return False
