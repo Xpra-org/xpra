@@ -92,7 +92,7 @@ if is_gtk3():
     ACCEL_VISIBLE = gtk.AccelFlags.VISIBLE
     JUSTIFY_LEFT    = gtk.Justification.LEFT
     JUSTIFY_RIGHT   = gtk.Justification.RIGHT
-    POINTER_MOTION_MASK         = gdk.EventMask.POINTER_MOTION_MASK 
+    POINTER_MOTION_MASK         = gdk.EventMask.POINTER_MOTION_MASK
     POINTER_MOTION_HINT_MASK    = gdk.EventMask.POINTER_MOTION_HINT_MASK
 
     LSB_FIRST       = gdk.ByteOrder.LSB_FIRST
@@ -195,7 +195,7 @@ else:
     ACCEL_VISIBLE = gtk.ACCEL_VISIBLE
     JUSTIFY_LEFT    = gtk.JUSTIFY_LEFT
     JUSTIFY_RIGHT   = gtk.JUSTIFY_RIGHT
-    POINTER_MOTION_MASK         = gdk.POINTER_MOTION_MASK 
+    POINTER_MOTION_MASK         = gdk.POINTER_MOTION_MASK
     POINTER_MOTION_HINT_MASK    = gdk.POINTER_MOTION_HINT_MASK
 
     LSB_FIRST       = gtk.gdk.LSB_FIRST
@@ -247,15 +247,15 @@ def get_display_info():
             "name"                  : display.get_name(),
             "pointer"               : display.get_pointer()[1:3],
             "devices"               : len(display.list_devices()),
-            "supports_composite"    : display.supports_composite(),
-            "supports_cursor_alpha" : display.supports_cursor_alpha(),
-            "supports_cursor_color" : display.supports_cursor_color(),
             "default_cursor_size"   : display.get_default_cursor_size(),
             "maximal_cursor_size"   : display.get_maximal_cursor_size(),
-            "supports_selection_notification"   : display.supports_selection_notification(),
-            "supports_clipboard_persistence"    : display.supports_clipboard_persistence(),
             "pointer_is_grabbed"    : display.pointer_is_grabbed(),
             }
+    for x in ("composite", "cursor_alpha", "cursor_color", "selection_notification", "clipboard_persistence", "shapes"):
+        f = "supports_"+x
+        if hasattr(display, f):
+            fn = getattr(display, f)
+            info[x]  = fn()
     for i in range(display.get_n_screens()):
         screen = display.get_screen(i)
         sk = "screen[%s]" % i
@@ -274,15 +274,21 @@ def get_display_info():
                 info[mk+"."+x] = getattr(geom, x)
             if hasattr(screen, "get_monitor_plug_name"):
                 info[mk+".plug_name"] = screen.get_monitor_plug_name(j) or ""
-            if hasattr(screen, "get_monitor_width_mm"):
-                info[mk+".width_mm"] = screen.get_monitor_width_mm(j)
-            if hasattr(screen, "get_monitor_height_mm"):
-                info[mk+".height_mm"] = screen.get_monitor_height_mm(j)
+            for x in ("scale_factor", "width_mm", "height_mm"):
+                try:
+                    fn = getattr(screen, "get_monitor_"+x)
+                    info[mk+"."+x] = int(fn(j))
+                except Exception as e:
+                    print(e)
+                    pass
+            if hasattr(screen, "get_monitor_workarea"): #GTK3.4:
+                rectangle = screen.get_monitor_workarea(j)
+                for x in ("x", "y", "width", "height"):
+                    info[mk+".workarea."+x] = getattr(rectangle, x)
         #gtk3 only?
         try:
             import cairo
             fo = screen.get_font_options()
-            print("font_options=%s" % fo)
             fk = sk+".fontoptions"
             for x,vdict in {
                             "antialias"     : {cairo.ANTIALIAS_DEFAULT      : "default", cairo.ANTIALIAS_NONE       : "none",   cairo.ANTIALIAS_GRAY        : "gray",   cairo.ANTIALIAS_SUBPIXEL    : "subpixel"},
@@ -299,18 +305,26 @@ def get_display_info():
             if not v:
                 return
             vk = sk+"."+k       #ie: screen[0].rgb
-            for x in ("bits_per_rgb", "byte_order", "colormap_size", "depth"):
+            for x, vdict in {"bits_per_rgb" : {},
+                             "byte_order"   : {LSB_FIRST    : "LSB", MSB_FIRST  : "MSB"},
+                             "colormap_size": {},
+                             "depth"        : {},
+                             "red_pixel_details"    : {},
+                             "green_pixel_details"  : {},
+                             "blue_pixel_details"   : {},
+                             "visual_type"  : {STATIC_GRAY : "STATIC_GRAY", GRAYSCALE : "GRAYSCALE",  STATIC_COLOR : "STATIC_COLOR", PSEUDO_COLOR : "PSEUDO_COLOR", TRUE_COLOR : "TRUE_COLOR", DIRECT_COLOR : "DIRECT_COLOR"},
+                             }.items():
                 val = None
                 try:
-                    val = getattr(v, x)
+                    val = getattr(v, x.replace("visual_"))  #ugly workaround for "visual_type" -> "type" for GTK2...
                 except:
                     try:
                         fn = getattr(v, "get_"+x)
                         val = fn()
                     except:
                         pass
-                if val:
-                    info[vk+"."+x] = val
+                if val is not None:
+                    info[vk+"."+x] = vdict.get(val, val)
         try:
             visual("rgb", screen.get_rgb_visual())
         except:
@@ -319,6 +333,22 @@ def get_display_info():
         visual("system_visual", screen.get_system_visual())
         visuals = screen.list_visuals()
         info[sk+".visuals"] = len(visuals)
+    if is_gtk3():
+        dm = display.get_device_manager()
+        for dt, name in {gdk.DeviceType.MASTER  : "master",
+                         gdk.DeviceType.SLAVE   : "slave",
+                         gdk.DeviceType.FLOATING: "floating"}.items():
+            dk = "devices.%s" % name
+            devices = dm.list_devices(dt)
+            info[dk] = len(devices)
+            for i, d in enumerate(devices):
+                info[dk+"[%s]" % i] = d.get_name()
+    else:
+        dk = "devices"
+        devices = display.list_devices()
+        info[dk] = len(devices)
+        for i, d in enumerate(devices):
+            info[dk+"[%s]" % i] = d.get_name()
     return info
 
 
