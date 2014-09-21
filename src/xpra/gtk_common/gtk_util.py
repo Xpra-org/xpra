@@ -240,6 +240,78 @@ def get_gtk_version_info():
     return GTK_VERSION_INFO.copy()
 
 
+def get_display_info():
+    display = display_get_default()
+    info = {
+            "screens"               : display.get_n_screens(),
+            "name"                  : display.get_name(),
+            "pointer"               : display.get_pointer()[1:3],
+            "devices"               : len(display.list_devices()),
+            "supports_composite"    : display.supports_composite(),
+            "supports_cursor_alpha" : display.supports_cursor_alpha(),
+            "supports_cursor_color" : display.supports_cursor_color(),
+            "default_cursor_size"   : display.get_default_cursor_size(),
+            "maximal_cursor_size"   : display.get_maximal_cursor_size(),
+            "supports_selection_notification"   : display.supports_selection_notification(),
+            "supports_clipboard_persistence"    : display.supports_clipboard_persistence(),
+            "pointer_is_grabbed"    : display.pointer_is_grabbed(),
+            }
+    for i in range(display.get_n_screens()):
+        screen = display.get_screen(i)
+        sk = "screen[%s]" % i
+        info[sk+".name"] = screen.make_display_name()
+        info[sk+".width"] = screen.get_width()
+        info[sk+".height"] = screen.get_height()
+        info[sk+".width_mm"] = screen.get_width_mm()
+        info[sk+".height_mm"] = screen.get_height_mm()
+        info[sk+".monitors"] = screen.get_n_monitors()
+        for j in range(screen.get_n_monitors()):
+            mk = "screen[%s].monitor[%s]" % (i, j)
+            geom = screen.get_monitor_geometry(j)
+            for x in ("x", "y", "width", "height"):
+                info[mk+"."+x] = getattr(geom, x)
+            if hasattr(screen, "get_monitor_plug_name"):
+                info[mk+".plug_name"] = screen.get_monitor_plug_name(j) or ""
+            if hasattr(screen, "get_monitor_width_mm"):
+                info[mk+".width_mm"] = screen.get_monitor_width_mm(j)
+            if hasattr(screen, "get_monitor_height_mm"):
+                info[mk+".height_mm"] = screen.get_monitor_height_mm(j)
+        #gtk3 only?
+        try:
+            fo = screen.get_font_options()
+            fk = sk+".fontoptions"
+            for x in ("antialias", "hint_metrics", "hint_style", "subpixel_order"):
+                fn = getattr(fo, "get_"+x)
+                info[fk+"."+x] = fn()
+        except:
+            pass
+        def visual(k, v):
+            if not v:
+                return
+            vk = sk+"."+k       #ie: screen[0].rgb
+            for x in ("bits_per_rgb", "byte_order", "colormap_size", "depth"):
+                val = None
+                try:
+                    val = getattr(v, x)
+                except:
+                    try:
+                        fn = getattr(v, "get_"+x)
+                        val = fn()
+                    except:
+                        pass
+                if val:
+                    info[vk+"."+x] = val
+        try:
+            visual("rgb", screen.get_rgb_visual())
+        except:
+            pass    #not in gtk3?
+        visual("rgba", screen.get_rgba_visual())
+        visual("system_visual", screen.get_system_visual())
+        visuals = screen.list_visuals()
+        info[sk+".visuals"] = len(visuals)
+    return info
+
+
 def get_preferred_size(widget):
     if is_gtk3():
         #ignore "min", we only care about "natural":
@@ -486,15 +558,17 @@ def choose_file(parent_window, title, action, action_button, callback, file_filt
 
 def main():
     from xpra.util import nonl, pver
-    def print_dict(d):
+    def print_dict(d, vformat=pver):
         for k in sorted(d.keys()):
             v = d[k]
-            print("* %s : %s" % (str(k).replace(".version", "").ljust(12), nonl(pver(v))))
+            print("* %s : %s" % (str(k).replace(".version", "").ljust(12), nonl(vformat(v))))
     from xpra.platform import init, clean
     try:
         init("GTK-Version-Info", "GTK Version Info")
         print("GTK Version:")
         print_dict(GTK_VERSION_INFO)
+        print("Display:")
+        print_dict(get_display_info(), vformat=str)
     finally:
         clean()
 
