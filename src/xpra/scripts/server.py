@@ -823,9 +823,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             #this can happen if stderr is closed by the caller already
             pass
 
-    # Write out a shell-script so that we can start our proxy in a clean
-    # environment:
-    write_runner_shell_script(dotxpra, script)
+    if os.name=="posix":
+        # Write out a shell-script so that we can start our proxy in a clean
+        # environment:
+        write_runner_shell_script(dotxpra, script)
 
     from xpra.log import Logger
     log = Logger("server")
