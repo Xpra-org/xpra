@@ -5,7 +5,6 @@ import xpra.scripts.main
 
 import cProfile
 def main():
-	print("hellO")
 	xpra.scripts.main.main(__file__, sys.argv)
 
 cProfile.run("main()", "profile.stats")

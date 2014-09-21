@@ -222,7 +222,9 @@ def do_log_screen_sizes(root_w, root_h, sizes):
     from xpra.log import Logger
     log = Logger()
     #old format, used by some clients (android):
-    if len(sizes)==2 and type(sizes[0])==int and type(sizes[1])==int:
+    if type(sizes) not in (tuple, list):
+        return
+    if any(True for x in sizes if type(x) not in (tuple, list)):
         return
     def dpi(size_pixels, size_mm):
         if size_mm==0:
