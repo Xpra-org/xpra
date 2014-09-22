@@ -28,13 +28,13 @@
 #clipboard = send-only
 clipboard = yes
 
-# Enable forwarding of notifications:
+# Forward notifications:
 notifications = yes
 
 # Show Xpra's tray menu
 tray = yes
 
-# Enable forwarding of system tray icons:
+# Forward system tray icons:
 system-tray = yes
 
 # Forward sound output to clients:
