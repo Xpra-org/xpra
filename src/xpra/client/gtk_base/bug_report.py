@@ -308,10 +308,6 @@ class BugReport(object):
 
 
 def main():
-    from xpra.os_util import SIGNAMES
-    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-    gtk_main_quit_on_fatal_exceptions_enable()
-
     from xpra.platform import init as platform_init
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     platform_init("Xpra-Bug-Report", "Xpra Bug Report")
@@ -321,12 +317,16 @@ def main():
     if "-v" in sys.argv:
         enable_debug_for("util")
 
+    from xpra.os_util import SIGNAMES
+    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
+    gtk_main_quit_on_fatal_exceptions_enable()
+
     app = BugReport()
     app.close = app.quit
     app.init(True)
     def app_signal(signum, frame):
         print("")
-        log("got signal %s" % SIGNAMES.get(signum, signum))
+        log.info("got signal %s", SIGNAMES.get(signum, signum))
         app.quit()
     signal.signal(signal.SIGINT, app_signal)
     signal.signal(signal.SIGTERM, app_signal)
