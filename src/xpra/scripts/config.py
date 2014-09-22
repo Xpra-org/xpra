@@ -360,6 +360,7 @@ def get_defaults():
                     "debug"             : "",
                     "input-method"      : "none",
                     "sound-source"      : "",
+                    "html"              : "",
                     "quality"           : 0,
                     "min-quality"       : 30,
                     "speed"             : 0,
@@ -417,13 +418,14 @@ CLONES = {}
 NO_FILE_OPTIONS = ["daemon"]
 
 
-
+TRUE_OPTIONS = ("yes", "true", "1", "on", True)
+FALSE_OPTIONS = ("no", "false", "0", "off", False)
 def parse_bool(k, v):
     if type(v)==str:
         v = v.lower()
-    if v in ["yes", "true", "1", "on", True]:
+    if v in TRUE_OPTIONS:
         return True
-    elif v in ["no", "false", "0", "off", False]:
+    elif v in FALSE_OPTIONS:
         return False
     elif v in ["auto", None]:
         #keep default - which may be None!

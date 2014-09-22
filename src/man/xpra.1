@@ -46,6 +46,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-input\-method\fP=\fIMETHOD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP]
+[\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fI[HOST]:PORT\fP]
 .HP
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP | \fItcp:[USER@]HOST:PORT[:DISPLAY]\fP]
@@ -110,6 +111,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-tcp\-proxy\fP=HOST:PORT\fP]
+[\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fI[HOST]:PORT\fP]
 .HP
 \fBxpra\fP \fBproxy\fP \fI:DISPLAY\fP
 .HP
@@ -560,6 +562,17 @@ TCP servers, usually a web server.
 xpra clients will connect as usual, but any client that does not
 speak the xpra protocol will be forwarded to the alternative
 server.
+
+.TP
+\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fI[HOST]:PORT\fP
+Takes care of setting up a web server for the html5 client.
+This automatically configures a \fBtcp-proxy\fP pointing
+to the web server it starts.
+If the port is not specified, one is chosen automatically.
+You may want to specify a port number or at least ensure that firewall
+restrictions are in place, though web servers are usually public.
+This requires \fBwebsockify\fP to be installed and a single
+tcp port to be configured using \fBbind-tcp\fP.
 
 .TP
 \fB\-\-video\-encoders\fP=\fIENCODERS\fP

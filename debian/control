@@ -79,6 +79,11 @@ Recommends:
 #sid:		,python-lzo
 #trusty:	,python-lz4
 #utopic:	,python-lz4
+#for html5 support:
+#jessie:	,websockify
+#sid:		,websockify
+#trusty:	,websockify
+#utopic:	,websockify
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server

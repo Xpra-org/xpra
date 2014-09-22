@@ -17,6 +17,7 @@
 %define dummy --with-Xdummy
 
 #some of these dependencies may get turned off (empty) on some platforms:
+%define requires_websockify , python-websockify
 %define requires_lzo , python-lzo
 %define py3requires_lzo %{nil}
 #OpenGL bits:
@@ -35,6 +36,7 @@
 # any centos / rhel supported:
 %if 0%{?el6}%{?el7}
 #not available:
+%define requires_websockify %{nil}
 %define requires_lzo %{nil}
 #do not disable sound support, but do not declare deps for it either
 #(so it can be installed if desired):
@@ -80,7 +82,7 @@ Vendor: http://xpra.org/
 Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
-Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo}
+Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify}
 Requires: python-lz4
 Requires: pygtk2
 Requires: dbus-python

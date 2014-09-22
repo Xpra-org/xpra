@@ -303,7 +303,7 @@ def do_parse_cmdline(cmdline, defaults):
     #we support remote start, so we need those even if we don't have server support:
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
-                      help="program to spawn in new server (may be repeated). Default: %default")
+                      help="program to spawn in new server (may be repeated). Default: %default.")
     group.add_option("--exit-with-children", action="store_true",
                       dest="exit_with_children", default=defaults.exit_with_children,
                       help="Terminate the server when the last --start-child command(s) exit")
@@ -311,9 +311,14 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--tcp-proxy", action="store",
                           dest="tcp_proxy", default=defaults.tcp_proxy,
                           metavar="HOST:PORT",
-                          help="The address to which non-xpra packets will be forwarded.")
+                          help="The address to which non-xpra packets will be forwarded. Default: '%default'.")
+        group.add_option("--html", action="store",
+                          dest="html", default=defaults.html,
+                          metavar="on|off|[HOST:]PORT",
+                          help="Enable the web server and the html5 client. Default: '%default'.")
     else:
         hidden_options["tcp_proxy"] = ""
+        hidden_options["html5"] = ""
     if (supports_server or supports_shadow) and CAN_DAEMONIZE:
         legacy_bool_parse("daemon")
         group.add_option("--daemon", action="store", metavar="yes|no",

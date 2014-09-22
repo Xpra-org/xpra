@@ -228,6 +228,12 @@ key-shortcut = Meta+Shift+F11:show_session_info
 # (can be used to share the port with a web server)
 #tcp-proxy = 127.0.0.1:80
 
+# Start an html proxy server (requires bind-tcp):
+#html = no
+#html = yes
+#html = :20000
+#html = 127.0.0.1:20000
+
 # Log file:
 log-file = $DISPLAY.log
 
