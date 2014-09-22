@@ -30,6 +30,19 @@ except:
     pass
 
 
+def do_init():
+    #tell win32 we handle dpi
+    try:
+        from ctypes import WINFUNCTYPE, windll
+        from ctypes.wintypes import BOOL
+        prototype = WINFUNCTYPE(BOOL)
+        SetProcessDPIAware = prototype(("SetProcessDPIAware", windll.user32))
+        dpi_set = SetProcessDPIAware()
+        log("SetProcessDPIAware()=%s", dpi_set)
+    except Exception as e:
+        log("failed to set DPI: %s", e)
+
+
 def get_native_notifier_classes():
     try:
         from xpra.platform.win32.win32_notifier import Win32_Notifier
