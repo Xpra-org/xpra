@@ -21,6 +21,11 @@
 # General Options
 
 # Enable clipboard forwarding:
+#clipboard = disabled
+#clipboard = on
+#clipboard = off
+#clipboard = receive-only
+#clipboard = send-only
 clipboard = yes
 
 # Enable forwarding of notifications:
@@ -227,7 +232,8 @@ key-shortcut = Meta+Shift+F11:show_session_info
 log-file = $DISPLAY.log
 
 # Publish sessions:
-mdns = yes
+#mdns = no
+#mdns = yes
 
 # Input methods
 # To disable input method completely:
