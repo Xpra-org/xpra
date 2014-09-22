@@ -25,6 +25,7 @@ Group:          Development/Languages/Python
 Source:         https://pypi.python.org/packages/source/l/lz4/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
+BuildRequires:  python-setuptools
 Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
 
 %description
