@@ -105,8 +105,7 @@ def main(script_file, cmdline):
             defaults = make_defaults_struct()
             options, args = do_parse_cmdline(cmdline, defaults)
             if not args:
-                print("xpra: need a mode")
-                return -1
+                raise InitExit(-1, "xpra: need a mode")
             mode = args.pop(0)
             def err(*args):
                 raise InitException(*args)
