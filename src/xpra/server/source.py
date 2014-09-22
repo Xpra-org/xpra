@@ -39,6 +39,8 @@ from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOU
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
+MAX_CLIPBOARD_PER_SECOND = 5
+
 
 def get_generic_window_type(window, strip_net=True):
     window_types = window.get_property("window-type")
@@ -267,6 +269,8 @@ class ServerSource(object):
         self.statistics = GlobalPerformanceStatistics()
         self.last_user_event = time.time()
         self.last_ping_echoed_time = 0
+
+        self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_PER_SECOND)
 
         self.init_vars()
 
@@ -1224,6 +1228,16 @@ class ServerSource(object):
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended:
             return
+        now = time.time()
+        self.clipboard_stats.append(now)
+        if len(self.clipboard_stats)>=MAX_CLIPBOARD_PER_SECOND:
+            elapsed = now-self.clipboard_stats[0]
+            if elapsed<1:
+                msg = "more than %s clipboard requests per second!" % MAX_CLIPBOARD_PER_SECOND
+                log.warn("clipboard disabled: %s", msg)
+                self.clipboard_enabled = False
+                self.send_clipboard_enabled(msg)
+                return
         #call compress_clibboard via the work queue:
         self.compression_work_queue.put((self.compress_clipboard, packet))
 
