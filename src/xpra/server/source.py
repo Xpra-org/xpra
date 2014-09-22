@@ -1398,7 +1398,6 @@ class ServerSource(object):
         if not self.can_send_window(window):
             return
         send_props = list(window.get_property_names())
-        log.info("new_window: send_props=%s", send_props)
         send_raw_icon = "icon" in send_props
         if send_raw_icon:
             send_props.remove("icon")
