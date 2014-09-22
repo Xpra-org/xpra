@@ -275,12 +275,9 @@ def get_display_info():
             if hasattr(screen, "get_monitor_plug_name"):
                 info[mk+".plug_name"] = screen.get_monitor_plug_name(j) or ""
             for x in ("scale_factor", "width_mm", "height_mm"):
-                try:
+                if hasattr(screen, "get_monitor_"+x):
                     fn = getattr(screen, "get_monitor_"+x)
                     info[mk+"."+x] = int(fn(j))
-                except Exception as e:
-                    print(e)
-                    pass
             if hasattr(screen, "get_monitor_workarea"): #GTK3.4:
                 rectangle = screen.get_monitor_workarea(j)
                 for x in ("x", "y", "width", "height"):
@@ -334,6 +331,32 @@ def get_display_info():
         visual("system_visual", screen.get_system_visual())
         visuals = screen.list_visuals()
         info[sk+".visuals"] = len(visuals)
+        #gtk.settings
+        if is_gtk3():
+            def get_setting(key):
+                #try string first, then int
+                for t in (gobject.TYPE_STRING, gobject.TYPE_INT):
+                    v = gobject.Value()
+                    v.init(t)
+                    if screen.get_setting(key, v):
+                        return v.get_value()
+                return None
+        else:
+            settings = gtk.settings_get_for_screen(screen)
+            def get_setting(key):
+                return settings.get_property(key)
+        try:
+            ssk = "%s.settings" % sk
+            for x in ("antialias", "dpi", "hinting", "hintstyle", "rgba"):
+                try:
+                    v = get_setting("gtk-xft-"+x)
+                except:
+                    continue
+                if v is None:
+                    v = ""
+                info[ssk+"."+x] = v
+        except:
+            pass
     if is_gtk3():
         dm = display.get_device_manager()
         for dt, name in {gdk.DeviceType.MASTER  : "master",
