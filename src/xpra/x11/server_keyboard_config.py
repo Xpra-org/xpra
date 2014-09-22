@@ -332,7 +332,7 @@ class KeyboardConfig(KeyboardConfigBase):
         if ignored_modifier_keynames is None:
             #this is not a keyboard event, ignore modifiers in "mod_pointermissing"
             def is_ignored(modifier, modifier_keynames):
-                m = modifier in self.xkbmap_mod_pointermissing
+                m = modifier in (self.xkbmap_mod_pointermissing or [])
                 log("is_ignored(%s, %s)=%s", modifier, modifier_keynames, m)
                 return m
         else:
