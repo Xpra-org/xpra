@@ -597,23 +597,27 @@ class ServerBase(ServerCore):
             if p:
                 self.disconnect_client(p, SERVER_ERROR, "error accepting new connection")
 
+    def do_parse_screen_info(self, ss):
+        dw, dh = None, None
+        if ss.desktop_size:
+            try:
+                dw, dh = ss.desktop_size
+                if not ss.screen_sizes:
+                    log.info("client root window size is %sx%s", dw, dh)
+                else:
+                    log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
+                    log_screen_sizes(dw, dh, ss.screen_sizes)
+            except:
+                dw, dh = None, None
+        root_w, root_h = self.set_best_screen_size()
+        self.calculate_workarea()
+        self.set_desktop_geometry(dw or root_w, dh or root_h)
+        return root_w, root_h
+
     def do_parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #process screen size (if needed)
-        dw, dh = None, None
         if send_ui:
-            if ss.desktop_size:
-                try:
-                    dw, dh = ss.desktop_size
-                    if not ss.screen_sizes:
-                        log.info("client root window size is %sx%s", dw, dh)
-                    else:
-                        log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
-                        log_screen_sizes(dw, dh, ss.screen_sizes)
-                except:
-                    dw, dh = None, None
-            root_w, root_h = self.set_best_screen_size()
-            self.calculate_workarea()
-            self.set_desktop_geometry(dw or root_w, dh or root_h)
+            root_w, root_h = self.do_parse_screen_info(ss)
             #take the clipboard if no-one else has yet:
             if ss.clipboard_enabled and self._clipboard_helper is not None and \
                 (self._clipboard_client is None or self._clipboard_client.is_closed()):

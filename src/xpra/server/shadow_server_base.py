@@ -121,9 +121,6 @@ class ShadowServerBase(object):
     def watch_keymap_changes(self):
         pass
 
-    def calculate_workarea(self):
-        pass
-
     def start_refresh(self, delay=DEFAULT_DELAY):
         self.timeout_add(delay, self.refresh)
 
@@ -152,13 +149,17 @@ class ShadowServerBase(object):
                 log.warn("This client is running within the Xpra server %s", server_uuid)
         return True
 
+    def do_parse_screen_info(self, ss):
+        try:
+            log.info("client root window size is %sx%s", *ss.desktop_size)
+        except:
+            log.info("unknown client desktop size")
+        return self.get_root_window_size()
+
+
     def set_keyboard_repeat(self, key_repeat):
         """ don't override the existing desktop """
         pass
-
-    def set_best_screen_size(self):
-        """ we don't change resolutions when shadowing """
-        return self.root_window_model.get_dimensions()
 
     def set_keymap(self, server_source, force=False):
         log.info("shadow server: setting default keymap translation")
@@ -219,7 +220,6 @@ class ShadowServerBase(object):
         self._damage(window, 0, 0, w, h)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, self.root_window_model, packet[6])
-
 
     def _process_close_window(self, proto, packet):
         wid = packet[1]
