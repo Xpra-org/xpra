@@ -1385,7 +1385,7 @@ class ServerSource(object):
         if not self.can_send_window(window):
             return
         if prop=="icon":
-            self.send_window_icon(window, wid)
+            self.send_window_icon(wid, window)
         else:
             metadata = self._make_metadata(wid, window, prop)
             if len(metadata)>0:
