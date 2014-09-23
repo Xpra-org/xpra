@@ -68,7 +68,8 @@ def webp_encode(coding, image, rgb_formats, supports_transparency, quality, spee
             client_options["has_alpha"] = True
         return "webp", compression.Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
     #fallback to PIL
-    encs = get_PIL_encodings()
+    log("using PIL fallback for webp: enc_webp=%s, stride=%s, pixel format=%s", enc_webp, stride, image.get_pixel_format())
+    encs = get_PIL_encodings(PIL)
     for x in ("webp", "png"):
         if x in encs:
             return PIL_encode(coding, image, quality, speed, supports_transparency)
