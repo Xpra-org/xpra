@@ -1380,7 +1380,8 @@ class ServerSource(object):
             self.send_window_icon(wid, window)
 
     def send_window_icon(self, wid, window):
-        ws = self.window_sources.get(wid)
+        #we may need to make a new source at this point:
+        ws = self.make_window_source(wid, window)
         if ws:
             ws.send_window_icon(window)
 
