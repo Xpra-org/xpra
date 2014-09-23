@@ -378,6 +378,10 @@ class WindowSource(object):
 
 
     def send_window_icon(self, window):
+        if self.suspended:
+            #TODO: should make a note that we missed an icon update
+            #so we can fire it again when we resume
+            return
         #this runs in the UI thread
         surf = window.get_property("icon")
         log("send_window_icon(%s) icon=%s", surf)
