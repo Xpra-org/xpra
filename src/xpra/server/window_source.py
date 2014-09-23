@@ -371,6 +371,7 @@ class WindowSource(object):
         self.statistics.reset()
         self.suspended = False
         self.refresh(window, {"quality" : 100})
+        self.send_window_icon(window)
 
     def refresh(self, window, options={}):
         w, h = window.get_dimensions()
@@ -379,8 +380,6 @@ class WindowSource(object):
 
     def send_window_icon(self, window):
         if self.suspended:
-            #TODO: should make a note that we missed an icon update
-            #so we can fire it again when we resume
             return
         #this runs in the UI thread
         surf = window.get_property("icon")
