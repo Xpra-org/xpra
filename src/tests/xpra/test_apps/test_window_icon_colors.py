@@ -11,7 +11,7 @@ class TestWindow(gtk.Window):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         self.set_size_request(128, 128)
         self.counter = 0
-        self.rotate = True
+        self.rotate = False
         def set_icon():
             #generate window icon image:
             if not self.rotate:

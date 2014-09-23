@@ -32,6 +32,7 @@ STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
 
 
 from xpra.util import updict
+from xpra.os_util import StringIOClass
 from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
@@ -39,9 +40,34 @@ from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
 from xpra.server.region import rectangle, add_rectangle, remove_rectangle
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
-from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
+from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec, has_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
 from xpra.net import compression
+
+
+def make_png_window_icon(pixel_data, stride, w, h):
+    PIL = get_codec("PIL")
+    img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
+    MAX_SIZE = 64
+    if w>MAX_SIZE or h>MAX_SIZE:
+        #scale icon down
+        if w>=h:
+            h = int(h*MAX_SIZE/w)
+            w = MAX_SIZE
+        else:
+            w = int(w*MAX_SIZE/h)
+            h = MAX_SIZE
+        log("scaling window icon down to %sx%s", w, h)
+        img = img.resize((w,h), PIL.Image.ANTIALIAS)
+    output = StringIOClass()
+    img.save(output, 'PNG')
+    raw_data = output.getvalue()
+    output.close()
+    return w, h, "png", str(raw_data)
+
+def make_argb32_window_icon(pixel_data, stride, w, h):
+    assert stride == 4 * w
+    return w, h, "premult_argb32", str(pixel_data)
 
 
 class WindowSource(object):
@@ -56,7 +82,8 @@ class WindowSource(object):
     _encoding_warnings = set()
 
     def __init__(self, idle_add, timeout_add, source_remove,
-                    queue_size, queue_damage, queue_packet, statistics,
+                    queue_size, queue_damage, queue_packet, compressed_wrapper,
+                    statistics,
                     wid, window, batch_config, auto_refresh_delay,
                     video_helper,
                     server_core_encodings, server_encodings,
@@ -77,6 +104,7 @@ class WindowSource(object):
         self.queue_size   = queue_size                  #callback to get the size of the damage queue
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
+        self.compressed_wrapper = compressed_wrapper    #callback utility for making compressed wrappers
         self.wid = wid
         self.global_statistics = statistics             #shared/global statistics from ServerSource
         self.statistics = WindowPerformanceStatistics()
@@ -131,6 +159,10 @@ class WindowSource(object):
             self.max_small_regions = 10
             self.max_bytes_percent = 25
             self.small_packet_cost = 4096
+
+        #for sending and batching window icon updates:
+        self.window_icon_data = None
+        self.send_window_icon_due = False
 
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = deque(maxlen=100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
@@ -282,6 +314,16 @@ class WindowSource(object):
                  "auto-refresh"         : self.client_refresh_encodings,
                  "rgb_formats"          : self.rgb_formats,
                  })
+        idata = self.window_icon_data
+        if idata:
+            pixel_data, stride, w, h = idata
+            up("icon", {
+                    "width"     : w,
+                    "height"    : h,
+                    "stride"    : stride,
+                    "bytes"     : len(pixel_data)
+                               })
+
         info.update(self.statistics.get_info())
         return info
 
@@ -333,6 +375,57 @@ class WindowSource(object):
     def refresh(self, window, options={}):
         w, h = window.get_dimensions()
         self.damage(window, 0, 0, w, h, options)
+
+
+    def send_window_icon(self, window):
+        #this runs in the UI thread
+        surf = window.get_property("icon")
+        if surf is None:
+            #FIXME: this is a bit dirty,
+            #we figure out if the client is likely to have an icon for this wmclass already,
+            #(assuming the window even has a 'class-instance'), and if not we send the default
+            try:
+                c_i = window.get_property("class-instance")
+            except:
+                c_i = None
+            if c_i and len(c_i)==2:
+                wm_class = c_i[0].encode("utf-8")
+                if False and wm_class in self.theme_default_icons:
+                    log.info("%s in client theme icons already", self.theme_default_icons)
+                else:
+                    surf = window.get_default_window_icon()
+        if surf is not None:
+            #extract the data from the cairo surface for processing in the work queue:
+            import cairo
+            assert surf.get_format() == cairo.FORMAT_ARGB32
+            self.window_icon_data = (surf.get_data(), surf.get_stride(), surf.get_width(), surf.get_height())
+            if not self.send_window_icon_due:
+                self.send_window_icon_due = True
+                #call compress_clibboard via the work queue
+                #and delay sending it by a bit to allow basic icon batching:
+                delay = max(50, self.batch_config.delay)
+                log("send_window_icon(%s) wid=%s, icon=%s, compression scheduled in %sms", window, self.wid, surf, delay)
+                self.timeout_add(delay, self.queue_damage, self.compress_and_send_window_icon)
+
+    def compress_and_send_window_icon(self):
+        #this runs in the work queue
+        self.send_window_icon_due = False
+        idata = self.window_icon_data
+        if not idata:
+            return
+        pixel_data, stride, w, h = idata
+        use_png = w*h>=4096 and ("png" in self.encodings) and has_codec("PIL")
+        log("compress_and_send_window_icon: %sx%s, sending as png=%s", w, h, use_png)
+        if use_png:
+            w, h, compressed_format, compressed_data = make_png_window_icon(pixel_data, stride, w, h)
+            wrapper = compression.Compressed("png", compressed_data)
+        else:
+            w, h, compressed_format, compressed_data = make_argb32_window_icon(pixel_data, stride, w, h)
+            wrapper = self.compressed_wrapper("premult_argb32", compressed_data)
+        assert compressed_format in ("premult_argb32", "png")
+        packet = ("window-icon", self.wid, w, h, compressed_format, wrapper)
+        log("queuing window icon update: %s", packet)
+        self.queue_packet(packet)
 
 
     def set_scaling(self, scaling):

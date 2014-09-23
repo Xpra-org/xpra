@@ -886,6 +886,9 @@ class WindowModel(BaseWindowModel):
         self.client_window.show_unraised()
         self.client_window.get_geometry()
 
+    def get_dynamic_property_names(self):
+        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title"]
+
 
     def is_OR(self):
         return  False
@@ -1200,6 +1203,7 @@ class WindowModel(BaseWindowModel):
             # may be None
             wm_icon_name = self.prop_get("WM_ICON_NAME", "latin1", True)
             self._internal_set_property("icon-title", wm_icon_name)
+        self.notify("icon-title")
 
     _property_handlers["WM_ICON_NAME"] = _handle_icon_title_change
     _property_handlers["_NET_WM_ICON_NAME"] = _handle_icon_title_change
@@ -1234,9 +1238,12 @@ class WindowModel(BaseWindowModel):
             cr.paint()
         else:
             pixmap = None
+        #FIXME: it would be more efficient to notify first,
+        #then get the icon pixels on demand and cache them..
         self._internal_set_property("icon", surf)
         self._internal_set_property("icon-pixmap", pixmap)
         log("icon is now %r", surf)
+        self.notify("icon")
     _property_handlers["_NET_WM_ICON"] = _handle_net_wm_icon
 
     def _read_initial_properties(self):

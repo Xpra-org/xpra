@@ -1168,7 +1168,6 @@ class ServerBase(ServerCore):
             if prop=="icon" or prop is None:
                 continue
             metadata = make_window_metadata(window, prop,
-                                            client_supports_png=False,
                                             get_transient_for=self.get_transient_for)
             info.update(metadata)
         if "size-constraints" in info:

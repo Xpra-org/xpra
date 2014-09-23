@@ -25,13 +25,13 @@ from xpra.server.window_source import WindowSource, HAS_ALPHA
 from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
-from xpra.codecs.loader import get_codec, has_codec, OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
+from xpra.codecs.loader import OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import codec_spec
 from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import platform_name, StringIOClass, thread, Queue, get_machine_id, get_user_uuid
+from xpra.os_util import platform_name, thread, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
 from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOUT
 
@@ -64,7 +64,7 @@ def get_generic_window_type(window, strip_net=True):
     return wts
 
 
-def make_window_metadata(window, propname, client_supports_png=False, get_transient_for=None, get_window_id=None):
+def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
     if propname in ("title", "icon-title"):
         v = window.get_property(propname)
         if v is None:
@@ -83,11 +83,6 @@ def make_window_metadata(window, propname, client_supports_png=False, get_transi
         if c_i is None:
             return {}
         return {"class-instance": [x.encode("utf-8") for x in c_i]}
-    elif propname == "icon":
-        surf = window.get_property("icon")
-        if surf is None:
-            return {}
-        return {"icon": make_window_icon(surf, client_supports_png)}
     elif propname == "client-machine":
         client_machine = window.get_property("client-machine")
         if client_machine is None:
@@ -133,44 +128,6 @@ def make_window_metadata(window, propname, client_supports_png=False, get_transi
                 p["group-leader-wid"] = glwid
         return p
     raise Exception("unhandled property name: %s" % propname)
-
-def make_window_icon(surf, client_supports_png):
-    pixel_data = surf.get_data()
-    pixel_format = surf.get_format()
-    stride = surf.get_stride()
-    w = surf.get_width()
-    h = surf.get_height()
-    use_png = client_supports_png and has_codec("PIL")
-    log("found new window icon: %sx%s, sending as png=%s", w, h, use_png)
-    if use_png:
-        return make_png_window_icon(client_supports_png, pixel_data, pixel_format, stride, w, h)
-    return make_argb32_window_icon(pixel_data, pixel_format, stride, w, h)
-
-def make_png_window_icon(client_supports_png, pixel_data, pixel_format, stride, w, h):
-    PIL = get_codec("PIL")
-    img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
-    MAX_SIZE = 64
-    if w>MAX_SIZE or h>MAX_SIZE:
-        #scale icon down
-        if w>=h:
-            h = int(h*MAX_SIZE/w)
-            w = MAX_SIZE
-        else:
-            w = int(w*MAX_SIZE/h)
-            h = MAX_SIZE
-        log("scaling window icon down to %sx%s", w, h)
-        img = img.resize((w,h), PIL.Image.ANTIALIAS)
-    output = StringIOClass()
-    img.save(output, 'PNG')
-    raw_data = output.getvalue()
-    output.close()
-    return w, h, "png", str(raw_data)
-
-def make_argb32_window_icon(pixel_data, pixel_format, stride, w, h):
-    import cairo
-    assert pixel_format == cairo.FORMAT_ARGB32
-    assert stride == 4 * w
-    return w, h, "premult_argb32", str(pixel_data)
 
 
 class ServerSource(object):
@@ -886,7 +843,6 @@ class ServerSource(object):
     # xpra window metadata values that depend on that property
     def _make_metadata(self, wid, window, propname):
         return make_window_metadata(window, propname,
-                                        client_supports_png=("png" in self.encodings),
                                         get_transient_for=self.get_transient_for,
                                         get_window_id=self.get_window_id)
 
@@ -1424,30 +1380,10 @@ class ServerSource(object):
             self.send_window_icon(wid, window)
 
     def send_window_icon(self, wid, window):
-        surf = window.get_property("icon")
-        log("send_window_icon(%s,%s) icon=%s", window, wid, surf)
-        if surf is None:
-            #FIXME: this is a bit dirty,
-            #we figure out if the client is likely to have an icon for this wmclass already,
-            #(assuming the window even has a 'class-instance'), and if not we send the default
-            try:
-                c_i = window.get_property("class-instance")
-            except:
-                c_i = None
-            if c_i and len(c_i)==2:
-                wm_class = c_i[0].encode("utf-8")
-                if False and wm_class in self.theme_default_icons:
-                    log.info("%s in client theme icons already", self.theme_default_icons)
-                else:
-                    surf = window.get_default_window_icon()
-        if surf is not None:
-            w, h, pixel_format, pixel_data = make_window_icon(surf, ("png" in self.encodings))
-            assert pixel_format in ("premult_argb32", "png")
-            if pixel_format=="premult_argb32":
-                data = self.compressed_wrapper("argb32", pixel_data)
-            else:
-                data = Compressed("png", pixel_data)
-            self.send("window-icon", wid, w, h, pixel_format, data)
+        ws = self.window_sources.get(wid)
+        if ws:
+            ws.send_window_icon(window)
+
 
     def lost_window(self, wid, window):
         if not self.can_send_window(window):
@@ -1560,7 +1496,7 @@ class ServerSource(object):
                     wclass = WindowVideoSource
 
             ws = wclass(self.idle_add, self.timeout_add, self.source_remove,
-                              self.queue_size, self.queue_damage, self.queue_packet,
+                              self.queue_size, self.queue_damage, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               self.video_helper,
