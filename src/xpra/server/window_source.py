@@ -380,6 +380,7 @@ class WindowSource(object):
     def send_window_icon(self, window):
         #this runs in the UI thread
         surf = window.get_property("icon")
+        log("send_window_icon(%s) icon=%s", surf)
         if surf is None:
             #FIXME: this is a bit dirty,
             #we figure out if the client is likely to have an icon for this wmclass already,
@@ -391,9 +392,10 @@ class WindowSource(object):
             if c_i and len(c_i)==2:
                 wm_class = c_i[0].encode("utf-8")
                 if wm_class in self.theme_default_icons:
-                    log("%s in client theme icons already", self.theme_default_icons)
-                else:
-                    surf = window.get_default_window_icon()
+                    log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
+                    return
+                surf = window.get_default_window_icon()
+                log("send_window_icon(%s) using default window icon=%s", surf)
         if surf is not None:
             #extract the data from the cairo surface for processing in the work queue:
             import cairo
@@ -403,7 +405,7 @@ class WindowSource(object):
                 self.send_window_icon_due = True
                 #call compress_clibboard via the work queue
                 #and delay sending it by a bit to allow basic icon batching:
-                delay = max(50, self.batch_config.delay)
+                delay = max(50, int(self.batch_config.delay))
                 log("send_window_icon(%s) wid=%s, icon=%s, compression scheduled in %sms", window, self.wid, surf, delay)
                 self.timeout_add(delay, self.queue_damage, self.compress_and_send_window_icon)
 
