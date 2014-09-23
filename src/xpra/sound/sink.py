@@ -8,7 +8,8 @@ import sys, os, time
 
 from xpra.sound.sound_pipeline import SoundPipeline, gobject, one_arg_signal
 from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, MP3, CODECS, gst
+from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, MP3, CODECS, gst, QUEUE_LEAK, MS_TO_NS
+
 from xpra.os_util import thread
 from xpra.log import Logger
 log = Logger("sound")
@@ -33,23 +34,12 @@ SINK_DEFAULT_ATTRIBUTES = {
                            "pulsesink"  : {"client" : "Xpra"}
                            }
 
-GST_QUEUE_NO_LEAK             = 0
-GST_QUEUE_LEAK_UPSTREAM       = 1
-GST_QUEUE_LEAK_DOWNSTREAM     = 2
-GST_QUEUE_LEAK_DEFAULT = GST_QUEUE_LEAK_DOWNSTREAM
-
-MS_TO_NS = 1000000
-QUEUE_LEAK = int(os.environ.get("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_LEAK_DEFAULT))
-if QUEUE_LEAK not in (GST_QUEUE_NO_LEAK, GST_QUEUE_LEAK_UPSTREAM, GST_QUEUE_LEAK_DOWNSTREAM):
-    log.error("invalid leak option %s", QUEUE_LEAK)
-    QUEUE_LEAK = GST_QUEUE_LEAK_DEFAULT
-QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "450"))*MS_TO_NS
-QUEUE_TIME = max(0, QUEUE_TIME)
 DEFAULT_SINK = os.environ.get("XPRA_SOUND_SINK", DEFAULT_SINK)
 if DEFAULT_SINK not in SINKS:
     log.error("invalid default sound sink: '%s' is not in %s, using %s instead", DEFAULT_SINK, SINKS, SINKS[0])
     DEFAULT_SINK = SINKS[0]
 QUEUE_SILENT = 0
+QUEUE_TIME = get_queue_time(450)
 
 
 def sink_has_device_attribute(sink):

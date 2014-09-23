@@ -11,6 +11,23 @@ from xpra.util import AdHocStruct
 from xpra.log import Logger
 log = Logger("sound")
 
+GST_QUEUE_NO_LEAK             = 0
+GST_QUEUE_LEAK_UPSTREAM       = 1
+GST_QUEUE_LEAK_DOWNSTREAM     = 2
+GST_QUEUE_LEAK_DEFAULT = GST_QUEUE_LEAK_DOWNSTREAM
+MS_TO_NS = 1000000
+
+QUEUE_LEAK = int(os.environ.get("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_LEAK_DEFAULT))
+if QUEUE_LEAK not in (GST_QUEUE_NO_LEAK, GST_QUEUE_LEAK_UPSTREAM, GST_QUEUE_LEAK_DOWNSTREAM):
+    log.error("invalid leak option %s", QUEUE_LEAK)
+    QUEUE_LEAK = GST_QUEUE_LEAK_DEFAULT
+
+def get_queue_time(default_value=450):
+    queue_time = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", default_value))*MS_TO_NS
+    queue_time = max(0, queue_time)
+    return queue_time
+
+
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 
 
