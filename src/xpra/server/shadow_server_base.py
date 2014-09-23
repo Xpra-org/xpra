@@ -49,7 +49,7 @@ class RootWindowModel(object):
         raise NotImplementedError()
 
     def get_property_names(self):
-        return ("title", "client-machine", "window-type", "size-hints")
+        return ("title", "client-machine", "window-type", "size-hints", "icon")
 
     def get_dynamic_property_names(self):
         #nothing changes
@@ -71,6 +71,35 @@ class RootWindowModel(object):
         elif prop=="size-hints":
             size = self.window.get_size()
             return RootSizeHints(size)
+        elif prop=="icon":
+            #convert it to a cairo surface..
+            #because that's what the property is expected to be
+            try:
+                import sys
+                import gtk.gdk
+                from xpra.platform.paths import get_icon
+                icon_name = "xpra"
+                for k,v in {"linux"     : "linux",
+                            "darwin"    : "osx",
+                            "win"       : "win32",
+                            "freebsd"   : "freebsd"}.items():
+                    if sys.platform.startswith(k):
+                        icon_name = v
+                        break
+                icon = get_icon("%s.png" % icon_name)
+                log("icon(%s)=%s", icon_name, icon)
+                if not icon:
+                    return None
+                import cairo
+                surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, icon.get_width(), icon.get_height())
+                gc = gtk.gdk.CairoContext(cairo.Context(surf))
+                gc.set_source_pixbuf(icon, 0, 0)
+                gc.paint()
+                log("icon=%s", surf)
+                return surf
+            except:
+                log("failed to return window icon")
+                return None
         else:
             raise Exception("invalid property: %s" % prop)
         return None
