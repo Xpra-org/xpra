@@ -85,7 +85,7 @@ def add_window_hooks(window):
     win32hooks = Win32Hooks(handle)
     log("add_window_hooks(%s) added hooks for hwnd %#x: %s", window, handle, win32hooks)
     window.win32hooks = win32hooks
-    window.win32hooks.max_size = 1024,600
+    window.win32hooks.max_size = None
     #save original geometry function:
     window.__apply_geometry_hints = window.apply_geometry_hints
     #our function for taking gdk window hints and passing them to the win32 hooks class:
