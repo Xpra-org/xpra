@@ -39,7 +39,7 @@ from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOU
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
-MAX_CLIPBOARD_PER_SECOND = 5
+MAX_CLIPBOARD_PER_SECOND = int(os.environ.get("XPRA_CLIPBOARD_LIMIT", "10"))
 
 
 def get_generic_window_type(window, strip_net=True):
