@@ -109,6 +109,19 @@ rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
 #we dont need the wrapper installed by distutils:
 rm "${MACOS_DIR}/Xpra_Launcher-bin"
 
+#ensure that every wrapper has a "python" executable to match:
+#(see PythonExecWrapper for why we need this "exec -a" workaround)
+python_executable="$RSCDIR/bin/python"
+for x in `ls "$HELPERS_DIR" | egrep -v "Python|SSH_ASKPASS|gst-plugin-scanner"`; do
+	#replace underscore with space in actual binary filename:
+	target="$RSCDIR/bin/`echo $x | sed 's+_+ +g'`"
+	if [ ! -e "$target" ]; then
+		#symlinks don't work for us here (osx uses the referent as program name)
+		#and hardlinks could cause problems, so we duplicate the file:
+		cp "$python_executable" "$target"
+	fi
+done
+
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
 cp ./Helpers/Xpra_Launcher ${MACOS_DIR}
 # Add the icon:

@@ -7,7 +7,7 @@
 # which is used on OSX as the default application name
 # as shown in the global menu.
 
-APPNAME=$1
+APPNAME=`echo "$1" | sed 's+_+ +g'`
 if [ -z "$APPNAME" ]; then
 	echo "usage $0 APPNAME [args ..]"
 	exit 1
@@ -44,9 +44,13 @@ export GST_PLUGIN_PATH="$bundle_lib/gstreamer-0.10"
 export GST_PLUGIN_SCANNER="$bundle_contents/Helpers/gst-plugin-scanner"
 
 #Set $PYTHON to point inside the bundle
-#This is not the real "python" but a copy of it named "xpra"
+#This is not the real "python" but a copy of it named "$APPNAME"
+#with underscores replaced by spaces
+#which is created by the build scripts because
+#some versions of Mac OSX (10.6 onwards?) do not seem to honour
+#the name we want to supply with "exec -a"
 #This is hacked together in make-app.sh
-export PYTHON="$bundle_bin/python"
+export PYTHON="$bundle_bin/$APPNAME"
 export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules
 PYTHONPATH="$bundle_lib:$PYTHONPATH"
@@ -81,4 +85,5 @@ if test -f "$bundle_res/environment.sh"; then
   source "$bundle_res/environment.sh"
 fi
 
-exec -a "$APPNAME" "$PYTHON" "$@"
+#'exec -a "$APPNAME" was used here before - see note above' 
+exec "$PYTHON" "$@"
