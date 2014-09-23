@@ -887,7 +887,7 @@ class WindowModel(BaseWindowModel):
         self.client_window.get_geometry()
 
     def get_dynamic_property_names(self):
-        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title"]
+        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints"]
 
 
     def is_OR(self):
@@ -1243,7 +1243,6 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("icon", surf)
         self._internal_set_property("icon-pixmap", pixmap)
         log("icon is now %r", surf)
-        self.notify("icon")
     _property_handlers["_NET_WM_ICON"] = _handle_net_wm_icon
 
     def _read_initial_properties(self):
