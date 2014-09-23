@@ -390,8 +390,8 @@ class WindowSource(object):
                 c_i = None
             if c_i and len(c_i)==2:
                 wm_class = c_i[0].encode("utf-8")
-                if False and wm_class in self.theme_default_icons:
-                    log.info("%s in client theme icons already", self.theme_default_icons)
+                if wm_class in self.theme_default_icons:
+                    log("%s in client theme icons already", self.theme_default_icons)
                 else:
                     surf = window.get_default_window_icon()
         if surf is not None:
