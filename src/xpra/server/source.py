@@ -1426,7 +1426,6 @@ class ServerSource(object):
     def send_window_icon(self, wid, window):
         surf = window.get_property("icon")
         log("send_window_icon(%s,%s) icon=%s", window, wid, surf)
-        surf = None
         if surf is None:
             #FIXME: this is a bit dirty,
             #we figure out if the client is likely to have an icon for this wmclass already,
