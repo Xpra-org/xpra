@@ -40,6 +40,7 @@ if sys.platform.startswith("win"):
         WSAENETDOWN         : "WSAENETDOWN",
         WSAENETUNREACH      : "WSAENETUNREACH",
         WSAENOTCONN         : "WSAENOTCONN",
+        WSAESHUTDOWN        : "WSAESHUTDOWN",
         })
     #on win32, we want to wait just a little while,
     #to prevent servers spinning wildly on non-blocking sockets:
