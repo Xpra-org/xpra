@@ -32,9 +32,6 @@ SET SHOW_DEPENDENCIES=0
 SET BUILD_ARGS=
 REM "IE:"
 REM SET BUILD_ARGS=%BUILD_ARGS% --with-debug
-SET CYTHON_ARGS=
-SET SOUND=1
-IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
 
 REM CLEAN
 %PYTHON_EXE% ./setup.py clean
@@ -71,8 +68,8 @@ if NOT "%VC%"=="" (
 
 ECHO ***************************************************************
 ECHO ****** build cython pyd files inplace
-ECHO %PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace ^> build-xpra.log
-%PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace > build-xpra.log
+ECHO %PYTHON_EXE% -OO setup.py build_ext --inplace ^> build-xpra.log
+%PYTHON_EXE% -OO setup.py build_ext --inplace > build-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "build error, see build-xpra.log"
 	GOTO ERROR
@@ -103,7 +100,6 @@ if %errorlevel% NEQ 0 (
 
 REM Delete all GStreamer DLLs and only add those we actually want
 DEL dist\gst*dll
-if %SOUND% NEQ 1 GOTO NOGSTREAMER
 ECHO ****** Adding GStreamer Main DLLs
 FOR %%a in (audio base controller dataprotocol fft interfaces net reamer app riff tag) DO (
 	COPY /B /Y /V "%GSTREAMER%\bin\libgst%%a*.dll" dist\
@@ -128,7 +124,6 @@ REM DEL dist\libdvd*dll
 REM "Overwrite the old version shipped with gstreamer - not sure why the PYTHONPATH order is not honoured.."
 ECHO ****** Fix GTK DLLs
 XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" dist\
-:NOGSTREAMER
 GOTO MAKEINSTALLER
 
 
