@@ -14,6 +14,7 @@ import time
 import datetime
 
 from xpra.os_util import os_info, bytestostr
+from xpra.util import prettify_plug_name
 from xpra.gtk_common.graph import make_graph_pixmap
 from collections import deque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
@@ -258,7 +259,7 @@ class SessionInfo(gtk.Window):
         tb, _ = self.table_tab("connect.png", "Connection", self.populate_connection)
         tb.new_row("Server Endpoint", label(self.connection.target))
         if self.client.server_display:
-            tb.new_row("Server Display", label(self.client.server_display))
+            tb.new_row("Server Display", label(prettify_plug_name(self.client.server_display)))
         hostname = scaps.strget("hostname")
         if hostname:
             tb.new_row("Server Hostname", label(hostname))
