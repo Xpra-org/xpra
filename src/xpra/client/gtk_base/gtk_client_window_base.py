@@ -14,6 +14,7 @@ focuslog = Logger("focus")
 workspacelog = Logger("workspace")
 log = Logger("window")
 keylog = Logger("keyboard")
+iconlog = Logger("icon")
 
 from xpra.util import AdHocStruct, bytestostr
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
@@ -518,7 +519,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def update_icon(self, width, height, coding, data):
-        log("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
+        iconlog("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
         coding = bytestostr(coding)
         if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
             data = unpremultiply_argb(data)
@@ -529,5 +530,5 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             loader.write(data)
             loader.close()
             pixbuf = loader.get_pixbuf()
-        log("%s.set_icon(%s)", self, pixbuf)
+        iconlog("%s.set_icon(%s)", self, pixbuf)
         self.set_icon(pixbuf)
