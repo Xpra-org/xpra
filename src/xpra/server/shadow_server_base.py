@@ -191,6 +191,12 @@ class ShadowServerBase(object):
             log.info("unknown client desktop size")
         return self.get_root_window_size()
 
+    def _process_desktop_size(self, proto, packet):
+        #just record the screen size info in the source
+        ss = self._server_sources.get(proto)
+        if ss and len(packet)>=4:
+            ss.set_screen_sizes(packet[3])
+
 
     def set_keyboard_repeat(self, key_repeat):
         """ don't override the existing desktop """
