@@ -163,6 +163,7 @@ class WindowSource(object):
         #for sending and batching window icon updates:
         self.window_icon_data = None
         self.send_window_icon_due = False
+        self.theme_default_icons = encoding_options.strlistget("theme.default.icons", [])
 
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = deque(maxlen=100)   #keep track of the target encoding_quality: (event time, info, encoding speed)

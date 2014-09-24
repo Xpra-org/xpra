@@ -252,7 +252,6 @@ class ServerSource(object):
         self.generic_encodings = False
         self.encoding_options = typedict()
         self.default_encoding_options = {}
-        self.theme_default_icons = []
 
         self.window_sources = {}                    #WindowSource for each Window ID
         self.suspended = False
@@ -556,8 +555,6 @@ class ServerSource(object):
         #keyboard is now injected into this class, default to undefined:
         self.keyboard_config = None
 
-        self.theme_default_icons = c.strlistget("theme.default.icons", [])
-
         #encodings:
         def getenclist(k, default_value=[]):
             #deals with old servers and substitute old encoding names for the new ones
@@ -594,7 +591,9 @@ class ServerSource(object):
                 self.encoding_options[ek] = c.boolget(k)
         #2: standardized encoding options:
         for k in c.keys():
-            if k.startswith("encoding."):
+            if k.startswith("theme."):
+                self.encoding_options[k] = c[k]
+            elif k.startswith("encoding."):
                 stripped_k = k[len("encoding."):]
                 if stripped_k in ("transparency", "csc_atoms", "client_options",
                                   "video_separateplane", "generic",
