@@ -9,6 +9,9 @@ import os
 import errno
 import socket
 
+from xpra.log import Logger
+log = Logger("network", "protocol")
+
 #on some platforms (ie: OpenBSD), reading and writing from sockets
 #raises an IOError but we should continue if the error code is EINTR
 #this wrapper takes care of it.
@@ -35,11 +38,14 @@ def untilConcludes(is_active_cb, f, *a, **kw):
     while is_active_cb():
         try:
             return f(*a, **kw)
-        except socket.timeout:
+        except socket.timeout as e:
+            log("untilConcludes(%s, %s, %s, %s) %s", is_active_cb, f, a, kw, e)
             continue
         except (IOError, OSError) as e:
             if e.args[0] in CONTINUE:
+                log("untilConcludes(%s, %s, %s, %s) %s (continue)", is_active_cb, f, a, kw, e)
                 continue
+            log("untilConcludes(%s, %s, %s, %s) %s (raised)", is_active_cb, f, a, kw, e)
             raise
 
 
