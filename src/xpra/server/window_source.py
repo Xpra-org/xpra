@@ -140,8 +140,9 @@ class WindowSource(object):
         self.window_icon_data = None
         self.send_window_icon_due = False
         self.theme_default_icons = encoding_options.strlistget("theme.default.icons", [])
-        self.window_icon_max_size = encoding_options.intpair("icons.max_size", (128, 128))
         self.window_icon_size = encoding_options.intpair("icons.size", (64, 64))
+        self.window_icon_max_size = encoding_options.intpair("icons.max_size", self.window_icon_size)
+        self.window_icon_max_size = max(self.window_icon_max_size[0], 16), max(self.window_icon_max_size[1], 16)
         self.window_icon_size = min(self.window_icon_size[0], self.window_icon_max_size[0]), min(self.window_icon_size[1], self.window_icon_max_size[1])
         self.window_icon_size = max(self.window_icon_size[0], 16), max(self.window_icon_size[1], 16)
         iconlog("client icon settings: size=%s, max_size=%s, theme_default_icons=%s", self.window_icon_size, self.window_icon_max_size, self.theme_default_icons)
