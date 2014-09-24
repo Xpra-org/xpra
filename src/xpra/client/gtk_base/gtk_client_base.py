@@ -219,6 +219,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             icons += it.list_icons(context)
         log("icons: %s", icons)
         capabilities["theme.default.icons"] = list(set(icons))
+        #window icon bits
+        capabilities["encoding.icons.size"] = 64, 64            #size we want
+        capabilities["encoding.icons.max_size"] = 128, 128      #limit
         return capabilities
 
 
