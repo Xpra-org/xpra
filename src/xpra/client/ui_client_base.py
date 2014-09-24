@@ -740,16 +740,6 @@ class UIXpraClient(XpraClientBase):
         return self.keyboard_helper.mask_to_names(mask)
 
 
-    def set_default_window_icon(self, window_icon):
-        if not window_icon:
-            window_icon = self.get_icon_filename("xpra.png")
-        if window_icon and os.path.exists(window_icon):
-            try:
-                self.do_set_window_icon(window_icon)
-            except Exception as e:
-                windowlog.error("failed to set window icon %s: %s", window_icon, e)
-
-
     def send_focus(self, wid):
         focuslog("send_focus(%s)", wid)
         self.send("focus", wid, self.get_current_modifiers())
