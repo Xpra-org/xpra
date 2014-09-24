@@ -112,8 +112,10 @@ class ClientWindowBase(ClientWidgetBase):
 
         self._metadata.update(metadata)
         if not self.is_realized():
-            self.set_wmclass(*self._metadata.strlistget("class-instance",
-                                                 ("xpra", "Xpra")))
+            #Warning: window managers may ignore the icons we try to set
+            #if the wm_class value is set and matches something somewhere undocumented
+            #(if the default is used, you cannot override the window icon)
+            self.set_wmclass(*self._metadata.strlistget("class-instance", ("xpra", "Xpra")))
         self.set_metadata(metadata)
 
     def set_metadata(self, metadata):

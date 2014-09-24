@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import socket
 
 from xpra.log import Logger
@@ -49,11 +50,20 @@ class RootWindowModel(object):
         raise NotImplementedError()
 
     def get_property_names(self):
-        return ("title", "client-machine", "window-type", "size-hints", "icon")
+        return ("title", "class-instance", "client-machine", "window-type", "size-hints", "icon")
 
     def get_dynamic_property_names(self):
         #nothing changes
         return ()
+
+    def get_generic_os_name(self):
+        for k,v in {"linux"     : "linux",
+                    "darwin"    : "osx",
+                    "win"       : "win32",
+                    "freebsd"   : "freebsd"}.items():
+            if sys.platform.startswith(k):
+                return v
+        return sys.platform
 
     def get_property(self, prop):
         if prop=="title":
@@ -71,22 +81,18 @@ class RootWindowModel(object):
         elif prop=="size-hints":
             size = self.window.get_size()
             return RootSizeHints(size)
+        elif prop=="class-instance":
+            osn = self.get_generic_os_name()
+            return ("xpra-%s" % osn, "Xpra-%s" % osn.upper())
         elif prop=="icon":
             #convert it to a cairo surface..
             #because that's what the property is expected to be
             try:
-                import sys
+                
                 import gtk.gdk
                 from xpra.platform.paths import get_icon
-                icon_name = "xpra"
-                for k,v in {"linux"     : "linux",
-                            "darwin"    : "osx",
-                            "win"       : "win32",
-                            "freebsd"   : "freebsd"}.items():
-                    if sys.platform.startswith(k):
-                        icon_name = v
-                        break
-                icon = get_icon("%s.png" % icon_name)
+                icon_name = self.get_generic_os_name()+".png"
+                icon = get_icon(icon_name)
                 log("icon(%s)=%s", icon_name, icon)
                 if not icon:
                     return None
