@@ -31,12 +31,13 @@ from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAM
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import new_cipher_caps
-from xpra.server.background_worker import stop_worker
+from xpra.server.background_worker import stop_worker, get_worker
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server.proxy import XpraProxy
 from xpra.util import typedict, updict, repr_ellipsized, \
         SERVER_SHUTDOWN, SERVER_EXIT, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, AUTHENTICATION_ERROR
 
+main_thread = threading.current_thread()
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
@@ -58,9 +59,18 @@ def get_thread_info(proto=None):
             "count"        : threading.active_count() - len(info_threads),
             "info.count"   : len(info_threads)
             }
+    thread_ident = {
+            threading.current_thread().ident    : "info",
+            main_thread.ident                   : "main",
+            }
+    w = get_worker(False)
+    if w:
+        thread_ident[w.ident] = "worker"
+
     #threads used by the "info" client:
     for i, t in enumerate(info_threads):
         info["info[%s]" % i] = t.getName()
+        thread_ident[t.ident] = t.getName()
     #all non-info threads:
     for i, t in enumerate((x for x in threading.enumerate() if x not in info_threads)):
         info[str(i)] = t.getName()
@@ -70,6 +80,16 @@ def get_thread_info(proto=None):
         info.update(get_sys_info())
     except:
         log.error("error getting system info", exc_info=True)
+    #extract frame info:
+    try:
+        import traceback
+        frames = sys._current_frames()
+        for i,frame_pair in enumerate(frames.items()):
+            stack = traceback.extract_stack(frame_pair[1])
+            info["frame[%s].thread" % i] = thread_ident.get(frame_pair[0], "unknown")
+            info["frame[%s].stack" % i] = stack
+    except Exception as e:
+        log.error("failed to get frame info: %s", e)
     return info
 
 
