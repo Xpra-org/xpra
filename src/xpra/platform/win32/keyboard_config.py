@@ -12,6 +12,22 @@ import win32api         #@UnresolvedImport
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 
 
+MAPVK_VK_TO_VSC = 0
+def fake_key(keycode, press):
+    if keycode<=0:
+        log.warn("no keycode found for %s", keycode)
+        return
+    #KEYEVENTF_SILENT = 0X4
+    flags = 0
+    if not press:
+        flags |= win32con.KEYEVENTF_KEYUP
+    #get the scancode:
+    scancode = win32api.MapVirtualKey(keycode, MAPVK_VK_TO_VSC)
+    #see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
+    log("fake_key(%s, %s) calling keybd_event(%s, %s, %s, 0)", keycode, press, keycode, scancode, flags)
+    win32api.keybd_event(keycode, scancode, flags, 0)
+
+
 class KeyboardConfig(KeyboardConfigBase):
 
     def __init__(self):
@@ -35,17 +51,51 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         log("make_keymask_match%s", (modifier_list, ignored_modifier_keycode, ignored_modifier_keynames))
-        mods = self.get_modifiers_state()
-        log("modifiers_state=%s", mods)
-        log("GetKeyboardState=%s", [int(x!=0) for x in win32api.GetKeyboardState()])
+        log("keys pressed=%s", ",".join(str(VK_NAMES.get(i, i)) for i in range(256) if win32api.GetAsyncKeyState(i)>0))
+        current = set(self.get_current_mask())
+        wanted = set(modifier_list or [])
+        log("make_keymask_match: current mask=%s, wanted=%s, ignoring=%s/%s", current, wanted, ignored_modifier_keycode, ignored_modifier_keynames)
+        if current==wanted:
+            return
+        def is_ignored(modifier):
+            if not ignored_modifier_keynames:
+                return False
+            for keyname in ignored_modifier_keynames:       #ie: ["Control_R"]
+                keycode = KEYCODES.get(keyname)             #ie: "Control_R" -> VK_RCONTROL
+                if keycode>0:
+                    key_mod = MOD_KEYS.get(keycode)         #ie: "control"
+                    if key_mod==modifier:
+                        return True
+            return False    #not found
 
+        def change_mask(modifiers, press, info):
+            for modifier in modifiers:
+                if is_ignored(modifier):
+                    log("change_mask: ignoring %s", modifier)
+                    continue
+                #find the keycode:
+                for k,v in MOD_KEYS.items():
+                    if ignored_modifier_keycode and ignored_modifier_keycode==k:
+                        log("change_mask: ignoring %s / %s", VK_NAMES.get(k, k), v)
+                        continue
+                    if v==modifier:
+                        #figure out if this is the one that needs toggling:
+                        is_pressed = win32api.GetAsyncKeyState(k)
+                        log("make_keymask_match: %s pressed=%s", k, is_pressed)
+                        if bool(is_pressed)!=press:
+                            log("make_keymask_match: using %s to %s %s", VK_NAMES.get(k, k), info, modifier)
+                            fake_key(k, press)
+                            break
+        change_mask(current.difference(wanted), False,  "remove")
+        change_mask(wanted.difference(current), True,   "add")
 
-    def get_modifiers_state(self):
+    def get_current_mask(self):
         mods = set()
         for vk, mod in MOD_KEYS.items():
             if win32api.GetAsyncKeyState(vk)!=0:
                 mods.add(mod)
         return list(mods)
+
 
 MOD_KEYS = {
     win32con.VK_LSHIFT      : "shift",
@@ -53,6 +103,10 @@ MOD_KEYS = {
     win32con.VK_LCONTROL    : "control",
     win32con.VK_RCONTROL    : "control",
     win32con.VK_CAPITAL     : "lock",
+    win32con.VK_LMENU       : "mod1",       #Alt_L
+    win32con.VK_RMENU       : "mod1",       #Alt_R
+    win32con.VK_CAPITAL     : "lock",
+    win32con.VK_NUMLOCK     : "num",
 }
 
 #we currently assume that all key events are sent using X11 names,
@@ -92,7 +146,9 @@ VIRTUAL_KEYS = {
     "OEM_ATTN"              : "Oem",
     "OEM_AUTO"              : "Auto",
     "OEM_AX"                : "Ax",
-    "OEM_BACKTAB"           : "BackSpace",
+    #"OEM_BACKTAB"           : "BackSpace",
+    "BACK"                  : "BackSpace",
+    "ESCAPE"                : "Escape",
     "OEM_CLEAR"             : "OemClr",
     "OEM_COMMA"             : "OEM_COMMA",
     "OEM_COPY"              : "Copy",
@@ -121,6 +177,7 @@ VIRTUAL_KEYS = {
     "SELECT"                : "Select",
     "SEPARATOR"             : "Separator",
     "SPACE"                 : "Space",
+    "SPACE"                 : "space",
     "SUBTRACT"              : "minus",
     "TAB"                   : "Tab",
     "ZOOM"                  : "Zoom",
@@ -258,6 +315,12 @@ DEFS = {
     "OEM_BACKTAB"           : 0xF5,
 }
 
+VK_NAMES = {}
+for name in dir(win32con):
+    if name.startswith("VK_"):
+        VK_NAMES[getattr(win32con, name)] = name
+log("VK_NAMES=%s", VK_NAMES)
+
 #lookup the constants:
 KEYCODES = {}
 for vk, name in VIRTUAL_KEYS.items():
@@ -269,9 +332,19 @@ for vk, name in VIRTUAL_KEYS.items():
         KEYCODES[name] = DEFS[vk]
     else:
         log.warn("missing key constant: %s", vk_name)
-for c in "abcdefghijklmnopqrstuvwxyz":
+KEYCODES.update({
+    "Shift_L"       : win32con.VK_LSHIFT,
+    "Shift_R"       : win32con.VK_RSHIFT,
+    "Control_L"     : win32con.VK_LCONTROL,
+    "Control_R"     : win32con.VK_RCONTROL,
+    "Caps_Lock"     : win32con.VK_CAPITAL,
+    "Num_Lock"      : win32con.VK_NUMLOCK,
+    "Scroll_Lock"   : win32con.VK_SCROLL,
+    })
+
+for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
     KEYCODES[c] = ord(c)
-    KEYCODES[c.upper()] = ord(c.upper())
+    KEYCODES[c.lower()] = ord(c)
 for c in "0123456789":
     KEYCODES[c] = ord(c)
 log("KEYCODES: %s", KEYCODES)

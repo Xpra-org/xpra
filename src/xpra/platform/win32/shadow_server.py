@@ -8,12 +8,14 @@ import win32api         #@UnresolvedImport
 import win32con         #@UnresolvedImport
 from xpra.log import Logger
 log = Logger("shadow", "win32")
+keylog = Logger("keyboard", "shadow", "win32")
 
 from xpra.server.gtk_root_window_model import GTKRootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase
-from xpra.platform.win32.keyboard_config import KeyboardConfig
+from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 
+NOEVENT = object()
 BUTTON_EVENTS = {
                  #(button,up-or-down)  : win-event-name
                  (1, True)  : (win32con.MOUSEEVENTF_LEFTDOWN,   0),
@@ -23,8 +25,11 @@ BUTTON_EVENTS = {
                  (3, True)  : (win32con.MOUSEEVENTF_RIGHTDOWN,  0),
                  (3, False) : (win32con.MOUSEEVENTF_RIGHTUP,    0),
                  (4, True)  : (win32con.MOUSEEVENTF_WHEEL,      win32con.WHEEL_DELTA),
+                 (4, False) : NOEVENT,
                  (5, True)  : (win32con.MOUSEEVENTF_WHEEL,      -win32con.WHEEL_DELTA),
+                 (5, False) : NOEVENT,
                  }
+
 
 class ShadowServer(ShadowServerBase, GTKServerBase):
 
@@ -48,19 +53,7 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         return KeyboardConfig()
 
     def fake_key(self, keycode, press):
-        if keycode<=0:
-            log.warn("no keycode found for %s", keycode)
-            return
-        #KEYEVENTF_SILENT = 0X4;
-        flags = 0   #KEYEVENTF_SILENT
-        if press:
-            flags |= win32con.KEYEVENTF_KEYUP
-        #get the scancode:
-        MAPVK_VK_TO_VSC = 0
-        scancode = win32api.MapVirtualKey(keycode, MAPVK_VK_TO_VSC)
-        #see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
-        log("fake_key(%s, %s) calling keybd_event(%s, %s, %s, 0)", keycode, press, keycode, scancode, flags)
-        win32api.keybd_event(keycode, scancode, flags, 0)
+        fake_key(keycode, press)
 
     def _process_button_action(self, proto, packet):
         wid, button, pressed, pointer, modifiers = packet[1:6]
@@ -69,6 +62,8 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         event = BUTTON_EVENTS.get((button, pressed))
         if event is None:
             log.warn("no matching event found for button=%s, pressed=%s", button, pressed)
+            return
+        elif event is NOEVENT:
             return
         x, y = pointer
         dwFlags, dwData = event
