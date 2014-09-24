@@ -18,7 +18,6 @@ from threading import Lock
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
-debug = log.debug
 from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized, updict
 from xpra.net.bytestreams import ABORT
