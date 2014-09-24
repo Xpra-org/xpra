@@ -9,7 +9,7 @@ def debug(*msg):
     """ delay import of logger to prevent cycles """
     from xpra.log import Logger
     log = Logger("util")
-    log.debug(*msg)
+    log(*msg)
     return None
 
 

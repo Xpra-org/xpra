@@ -332,7 +332,7 @@ class ApplicationWindow:
             self.set_widget_bg_color(w, e)
             if e:
                 err_text.append(text)
-        log.debug("validate(%s) err_text=%s, errs=%s", args, err_text, errs)
+        log("validate(%s) err_text=%s, errs=%s", args, err_text, errs)
         self.set_info_text(", ".join(err_text))
         self.set_info_color(len(err_text)>0)
         self.button.set_sensitive(len(err_text)==0)

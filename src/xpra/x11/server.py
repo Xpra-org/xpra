@@ -702,28 +702,27 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return None
 
     def do_make_screenshot_packet(self):
-        debug = log.debug
-        debug("grabbing screenshot")
+        log("grabbing screenshot")
         regions = []
         OR_regions = []
         for wid in reversed(sorted(self._id_to_window.keys())):
             window = self._id_to_window.get(wid)
-            debug("screenshot: window(%s)=%s", wid, window)
+            log("screenshot: window(%s)=%s", wid, window)
             if window is None:
                 continue
             if window.is_tray():
-                debug("screenshot: skipping tray window %s", wid)
+                log("screenshot: skipping tray window %s", wid)
                 continue
             if not window.is_managed():
-                debug("screenshot: window %s is not/no longer managed", wid)
+                log("screenshot: window %s is not/no longer managed", wid)
                 continue
             if window.is_OR():
                 x, y = window.get_property("geometry")[:2]
             else:
                 x, y = self._desktop_manager.window_geometry(window)[:2]
-            debug("screenshot: position(%s)=%s,%s", window, x, y)
+            log("screenshot: position(%s)=%s,%s", window, x, y)
             w, h = window.get_dimensions()
-            debug("screenshot: size(%s)=%sx%s", window, w, h)
+            log("screenshot: size(%s)=%sx%s", window, w, h)
             try:
                 img = trap.call_synced(window.get_image, 0, 0, w, h)
             except:
@@ -732,7 +731,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if img is None:
                 log.warn("screenshot: no pixels for window %s", wid)
                 continue
-            debug("screenshot: image=%s, size=%s", (img, img.get_size()))
+            log("screenshot: image=%s, size=%s", (img, img.get_size()))
             if img.get_pixel_format() not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
                 log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_pixel_format())
                 continue
@@ -746,9 +745,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 regions.append(item)
         all_regions = OR_regions+regions
         if len(all_regions)==0:
-            debug("screenshot: no regions found, returning empty 0x0 image!")
+            log("screenshot: no regions found, returning empty 0x0 image!")
             return ["screenshot", 0, 0, "png", -1, ""]
-        debug("screenshot: found regions=%s, OR_regions=%s", len(regions), len(OR_regions))
+        log("screenshot: found regions=%s, OR_regions=%s", len(regions), len(OR_regions))
         #in theory, we could run the rest in a non-UI thread since we're done with GTK..
         minx = min([x for (_,x,_,_) in all_regions])
         miny = min([y for (_,_,y,_) in all_regions])
@@ -756,7 +755,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         maxy = max([(y+img.get_height()) for (_,_,y,img) in all_regions])
         width = maxx-minx
         height = maxy-miny
-        debug("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
+        log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
         from PIL import Image                           #@UnresolvedImport
         screenshot = Image.new("RGBA", (width, height))
         for wid, x, y, img in reversed(all_regions):
@@ -778,7 +777,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         data = buf.getvalue()
         buf.close()
         packet = ["screenshot", width, height, "png", width*4, Compressed("png", data)]
-        debug("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
+        log("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
         return packet
 
 

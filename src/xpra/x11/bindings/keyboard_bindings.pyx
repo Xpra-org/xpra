@@ -259,12 +259,12 @@ cdef class X11KeyboardBindings(X11CoreBindings):
 
     cdef XModifierKeymap* get_keymap(self, load):
         if self.work_keymap==NULL and load:
-            log.debug("retrieving keymap")
+            log("retrieving keymap")
             self.work_keymap = XGetModifierMapping(self.display)
         return self.work_keymap
 
     cdef set_work_keymap(self, XModifierKeymap* new_keymap):
-        log.debug("setting new work keymap: %#x", <unsigned long> new_keymap)
+        log("setting new work keymap: %#x", <unsigned long> new_keymap)
         self.work_keymap = new_keymap
 
     cdef _parse_keysym(self, symbol):
@@ -332,23 +332,23 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         num_codes = 1+last_keycode-first_keycode
         MAX_KEYSYMS_PER_KEYCODE = 8
         keysyms_per_keycode = min(MAX_KEYSYMS_PER_KEYCODE, max([1]+[len(keysyms) for keysyms in keycodes.values()]))
-        log.debug("xmodmap_setkeycodes using %s keysyms_per_keycode", keysyms_per_keycode)
+        log("xmodmap_setkeycodes using %s keysyms_per_keycode", keysyms_per_keycode)
         ckeysyms = <KeySym*> malloc(sizeof(KeySym)*num_codes*keysyms_per_keycode)
         try:
             missing_keysyms = []
             for i in range(0, num_codes):
                 keycode = first_keycode+i
                 keysyms_strs = keycodes.get(keycode)
-                log.debug("setting keycode %s: %s", keycode, keysyms_strs)
+                log("setting keycode %s: %s", keycode, keysyms_strs)
                 if keysyms_strs is None:
                     if len(new_keysyms)>0:
                         #no keysyms for this keycode yet, assign one of the "new_keysyms"
                         keysyms = new_keysyms[:1]
                         new_keysyms = new_keysyms[1:]
-                        log.debug("assigned keycode %s to %s", keycode, keysyms[0])
+                        log("assigned keycode %s to %s", keycode, keysyms[0])
                     else:
                         keysyms = []
-                        log.debug("keycode %s is still free", keycode)
+                        log("keycode %s is still free", keycode)
                 else:
                     keysyms = []
                     for ks in keysyms_strs:
@@ -398,7 +398,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         cdef KeyCode keycode
         min_keycode,max_keycode = self._get_minmax_keycodes()
         keyboard_map = XGetKeyboardMapping(self.display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
-        log.debug("XGetKeyboardMapping keysyms_per_keycode=%s", keysyms_per_keycode)
+        log("XGetKeyboardMapping keysyms_per_keycode=%s", keysyms_per_keycode)
         mappings = {}
         i = 0
         keycode = min_keycode
@@ -543,7 +543,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         cdef XModifierKeymap* keymap                    #@DuplicatedSignature
         keymap = self.get_keymap(True)
         keycode = <KeyCode*> keymap.modifiermap
-        log.debug("clear modifier: clearing all %s for modifier=%s", keymap.max_keypermod, modifier)
+        log("clear modifier: clearing all %s for modifier=%s", keymap.max_keypermod, modifier)
         for i in range(0, keymap.max_keypermod):
             keycode[modifier*keymap.max_keypermod+i] = 0
 
@@ -553,12 +553,12 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         cdef KeySym keysym                              #@DuplicatedSignature
         keymap = self.get_keymap(True)
         success = True
-        log.debug("add modifier: modifier %s=%s", modifier, keysyms)
+        log("add modifier: modifier %s=%s", modifier, keysyms)
         for keysym_str in keysyms:
             keysym = XStringToKeysym(keysym_str)
-            log.debug("add modifier: keysym(%s)=%s", keysym_str, keysym)
+            log("add modifier: keysym(%s)=%s", keysym_str, keysym)
             keycodes = self.KeysymToKeycodes(keysym)
-            log.debug("add modifier: keycodes(%s)=%s", keysym, keycodes)
+            log("add modifier: keycodes(%s)=%s", keysym, keycodes)
             if len(keycodes)==0:
                 log.error("xmodmap_exec_add: no keycodes found for keysym %s/%s", keysym_str, keysym)
                 success = False
@@ -569,7 +569,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                         keymap = XInsertModifiermapEntry(keymap, keycode, modifier)
                         if keymap!=NULL:
                             self.set_work_keymap(keymap)
-                            log.debug("add modifier: added keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
+                            log("add modifier: added keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
                         else:
                             log.error("add modifier: failed keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
                             success = False
@@ -615,7 +615,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         new_keysyms = []
         try:
             for line in instructions:
-                log.debug("processing: %s", line)
+                log("processing: %s", line)
                 if not line:
                     continue
                 cmd = line[0]
@@ -647,18 +647,18 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                 log.error("native_xmodmap could not handle instruction: %s", line)
                 unhandled.append(line)
             if len(keycodes)>0:
-                log.debug("calling xmodmap_setkeycodes with %s", keycodes)
+                log("calling xmodmap_setkeycodes with %s", keycodes)
                 self.xmodmap_setkeycodes(keycodes, new_keysyms)
         finally:
             keymap = self.get_keymap(False)
             if keymap!=NULL:
                 self.set_work_keymap(NULL)
-                log.debug("saving modified keymap")
+                log("saving modified keymap")
                 if XSetModifierMapping(self.display, keymap)==MappingBusy:
                     log.error("cannot change keymap: mapping busy: %s" % self.get_keycodes_down())
                     unhandled = instructions
                 XFreeModifiermap(keymap)
-        log.debug("modify keymap: %s instructions, %s unprocessed", len(instructions), len(unhandled))
+        log("modify keymap: %s instructions, %s unprocessed", len(instructions), len(unhandled))
         return unhandled
 
     def set_xmodmap(self, xmodmap_data):

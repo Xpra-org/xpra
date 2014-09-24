@@ -206,7 +206,7 @@ class InfoXpraClient(CommandConnectClient):
 
     def make_hello(self):
         capabilities = GObjectXpraClient.make_hello(self)
-        log.debug("make_hello() adding info_request to %s", capabilities)
+        log("make_hello() adding info_request to %s", capabilities)
         capabilities["info_request"] = True
         return capabilities
 
@@ -237,7 +237,7 @@ class MonitorXpraClient(CommandConnectClient):
 
     def make_hello(self):
         capabilities = CommandConnectClient.make_hello(self)
-        log.debug("make_hello() adding info_request to %s", capabilities)
+        log("make_hello() adding info_request to %s", capabilities)
         capabilities["wants_features"]  = True      #so we can verify that the server supports monitor mode
         capabilities["wants_events"]    = True      #tell the server we do support server events
         capabilities["event_request"]   = True      #ask the server to enter this request mode (we're not a proper client)
@@ -261,7 +261,7 @@ class VersionXpraClient(CommandConnectClient):
 
     def make_hello(self):
         capabilities = GObjectXpraClient.make_hello(self)
-        log.debug("make_hello() adding version_request to %s", capabilities)
+        log("make_hello() adding version_request to %s", capabilities)
         capabilities["version_request"] = True
         return capabilities
 
@@ -289,7 +289,7 @@ class ControlXpraClient(CommandConnectClient):
 
     def make_hello(self):
         capabilities = GObjectXpraClient.make_hello(self)
-        log.debug("make_hello() adding command request '%s' to %s", self.command, capabilities)
+        log("make_hello() adding command request '%s' to %s", self.command, capabilities)
         capabilities["command_request"] = self.command
         return capabilities
 

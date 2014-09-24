@@ -345,11 +345,11 @@ class X11ServerBase(GTKServerBase):
                     tw, th = temp[k]
                     log.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
                     RandR.set_screen_size(tw, th)
-            log.debug("calling RandR.set_screen_size(%s, %s)", w, h)
+            log("calling RandR.set_screen_size(%s, %s)", w, h)
             trap.call_synced(RandR.set_screen_size, w, h)
-            log.debug("calling RandR.get_screen_size()")
+            log("calling RandR.get_screen_size()")
             root_w, root_h = RandR.get_screen_size()
-            log.debug("RandR.get_screen_size()=%s,%s", root_w, root_h)
+            log("RandR.get_screen_size()=%s,%s", root_w, root_h)
             if root_w!=w or root_h!=h:
                 log.error("odd, failed to set the new resolution, "
                           "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)

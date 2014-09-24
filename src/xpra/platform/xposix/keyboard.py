@@ -40,7 +40,7 @@ class Keyboard(KeyboardBase):
                 mod_mappings = keyboard_bindings.get_modifier_mappings()
                 if mod_mappings:
                     #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
-                    log.debug("modifier mappings=%s", mod_mappings)
+                    log("modifier mappings=%s", mod_mappings)
                     meanings = {}
                     for modifier,keys in mod_mappings.items():
                         for _,keyname in keys:
@@ -67,7 +67,7 @@ class Keyboard(KeyboardBase):
                 for x in nohex:
                     #ie: meanings['Shift_L']=shift
                     meanings[x] = parts[0]
-        log.debug("get_keymap_modifiers parsed: meanings=%s", meanings)
+        log("get_keymap_modifiers parsed: meanings=%s", meanings)
         return  meanings, [], []
 
     def get_x11_keymap(self):
@@ -155,4 +155,4 @@ class Keyboard(KeyboardBase):
             self.modifier_map = grok_modifier_map(display, xkbmap_mod_meanings)
         except ImportError:
             self.modifier_map = MODIFIER_MAP
-        log.debug("update_modifier_map(%s, %s) modifier_map=%s", display, xkbmap_mod_meanings, self.modifier_map)
+        log("update_modifier_map(%s, %s) modifier_map=%s", display, xkbmap_mod_meanings, self.modifier_map)

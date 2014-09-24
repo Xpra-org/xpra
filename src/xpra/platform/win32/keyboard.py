@@ -110,7 +110,7 @@ class Keyboard(KeyboardBase):
             #0=1000/30, 31=1000/2.5
             _speed = min(31, max(0, _speed))
             speed = int(1000/(2.5+27.5*_speed/31))
-            log.debug("keyboard repeat speed(%s)=%s, delay(%s)=%s", _speed, speed, _delay, delay)
+            log("keyboard repeat speed(%s)=%s, delay(%s)=%s", _speed, speed, _delay, delay)
             return  delay,speed
         except Exception as e:
             log.error("failed to get keyboard rate: %s", e)
