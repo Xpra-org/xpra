@@ -24,7 +24,7 @@ class TestWindow(gtk.Window):
             cr.fill()
             cr.set_operator(cairo.OPERATOR_SOURCE)
             v = (self.counter % 256 / 255.0)
-            self.counter += 1
+            self.counter += 10
             for i, color in enumerate([(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1), (v, v, v, v)]):
                 cr.set_source_rgba(*color)
                 cr.new_path()
@@ -39,8 +39,11 @@ class TestWindow(gtk.Window):
             pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, w, h)
             pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, w, h)
             self.set_icon(pixbuf)
+            print("set icon to %s" % int(255*v))
             return True
-        gobject.timeout_add(20, set_icon)
+        #how quickly we change the icon
+        DELAY = 100
+        gobject.timeout_add(DELAY, set_icon)
         self.connect("delete_event", self.quit_cb)
         self.set_events(gdk.KEY_PRESS_MASK)
         self.connect("key_press_event", self.on_key_press)
