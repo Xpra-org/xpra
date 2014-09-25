@@ -42,7 +42,7 @@ def parse_scaling_value(v):
     scalinglog("parse_scaling_value(%s)", v)
     if not v:
         return None
-    values = v.split(":", 1)
+    values = v.replace("/", ":").replace(",", ":").split(":", 1)
     values = [int(x) for x in values]
     for x in values:
         assert x>0, "invalid scaling value %s" % x
