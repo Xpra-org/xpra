@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+
+  <repository type="tarball" name="winswitch.org" href="http://winswitch.org"/>
+  <repository type="tarball" name="xpra.org" href="http://xpra.org"/>
+
+  <autotools id="rdesktop" autogen-sh="configure"
+             autogenargs="--disable-credssp --disable-smartcard">
+     <branch repo="winswitch.org" module="/src/rdesktop-1.8.1.tar.gz"
+             hash="md5:f5382c5c85b0d2cc88b9b1aa9bbf1356"
+             version="1.8.1"/>
+  </autotools>
+
+  <distutils id="xpra">
+     <branch repo="xpra.org"
+             module="/src/xpra-0.14.7.tar.xz"
+             version="0.14.7"/>
+  </distutils>
+
+  <metamodule id="osx-winswitch-deps">
+    <dependencies>
+      <dep package="rdesktop"/>
+    </dependencies>
+  </metamodule>
+
+</moduleset>
+
