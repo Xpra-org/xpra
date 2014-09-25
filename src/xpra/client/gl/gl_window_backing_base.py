@@ -602,7 +602,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                     y_scale = float(height)/enc_height
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
                 # Present it on screen
-                self.present_fbo(x, y, enc_width, enc_height)
+                self.present_fbo(x, y, width, height)
             fire_paint_callbacks(callbacks, True)
         except Exception as e:
             log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
