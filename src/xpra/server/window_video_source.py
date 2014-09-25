@@ -913,9 +913,22 @@ class WindowVideoSource(WindowSource):
         q = self._current_quality
         s = self._current_speed
         actual_scaling = self.scaling
+        def get_min_required_scaling():
+            if width<=max_w and height<=max_h:
+                return (1, 1)       #no problem
+            #most encoders can't deal with that!
+            TRY_SCALE = ((2, 3), (1, 2), (1, 3), (1, 4), (1, 8), (1, 10))
+            for op, d in TRY_SCALE:
+                if width*op/d<=max_w and height*op/d<=max_h:
+                    return (op, d)
+            raise Exception("BUG: failed to find a scaling value for window size %sx%s", width, height)
         if not SCALING or not self.supports_video_scaling:
-            #not supported by client or disabled by env:
+            #not supported by client or disabled by env
+            #FIXME: what to do if width>max_w or height>max_h?
             actual_scaling = 1, 1
+        elif self.scaling_control==0:
+            #only enable if we have to:
+            actual_scaling = get_min_required_scaling()
         elif SCALING_HARDCODED:
             actual_scaling = tuple(SCALING_HARDCODED)
             scalinglog("using hardcoded scaling: %s", actual_scaling)
@@ -943,10 +956,7 @@ class WindowVideoSource(WindowSource):
 
             if width>max_w or height>max_h:
                 #most encoders can't deal with that!
-                d = 2
-                while width/d>max_w or height/d>max_h:
-                    d += 1
-                actual_scaling = 1,d
+                actual_scaling = get_min_required_scaling()
             elif self.fullscreen and (qs or ffps>=max(2, 10-er*3)):
                 actual_scaling = 1,3
             elif self.maximized and (qs or ffps>=max(2, 10-er*3)):
