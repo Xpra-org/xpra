@@ -13,6 +13,14 @@
              version="1.8.1"/>
   </autotools>
 
+  <autotools id="tigervnc"
+             autogenargs="" 
+             autogen-template="%(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s &amp;&amp; sed -i -e 's+-lXext -lX11+-lXext -lX11 -lintl -lgettextlib -L/usr/X11/lib/+g' unix/vncviewer/Makefile">
+     <branch repo="winswitch.org" module="/src/tigervnc-1.1.0.tar.gz"
+             hash="md5:1a5598b4a2ac530fb51411438959e11e"
+             version="1.1.0"/>
+  </autotools>
+
   <distutils id="xpra">
      <branch repo="xpra.org"
              module="/src/xpra-0.14.7.tar.xz"
@@ -22,6 +30,7 @@
   <metamodule id="osx-winswitch-deps">
     <dependencies>
       <dep package="rdesktop"/>
+      <dep package="tigervnc"/>      
     </dependencies>
   </metamodule>
 
