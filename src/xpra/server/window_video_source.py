@@ -139,12 +139,18 @@ class WindowVideoSource(WindowSource):
             info["csc_modes.%s" % enc] = csc_modes
         return info
 
+    def get_property_info(self):
+        i = WindowSource.get_property_info(self)
+        i.update({
+                "scaling.control"       : self.scaling_control,
+                "scaling"               : self.scaling or (1, 1),
+                })
+        return i
+
     def get_info(self):
         info = WindowSource.get_info(self)
-
         def up(prefix, d):
             updict(info, prefix, d)
-
         sr = self.video_subregion
         if sr:
             up("video_subregion", sr.get_info())
@@ -247,11 +253,12 @@ class WindowVideoSource(WindowSource):
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
         self.supports_video_subregion = properties.boolget("encoding.video_subregion", self.supports_video_subregion)
         self.uses_swscale = properties.boolget("encoding.uses_swscale", self.uses_swscale)
+        self.scaling_control = max(0, min(100, properties.intget("scaling.control", self.scaling_control)))
         WindowSource.do_set_client_properties(self, properties)
         #encodings may have changed, so redo this:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
-        log("do_set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings)
+        log("do_set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s, scaling_control=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings, self.scaling_control)
 
     def get_best_encoding_impl(self):
         #if we're here, the window does not have any alpha (or the client does not support it)
@@ -903,6 +910,8 @@ class WindowVideoSource(WindowSource):
         return enc_width, enc_height
 
     def calculate_scaling(self, width, height, max_w=4096, max_h=4096):
+        q = self._current_quality
+        s = self._current_speed
         actual_scaling = self.scaling
         if not SCALING or not self.supports_video_scaling:
             #not supported by client or disabled by env:
@@ -912,8 +921,6 @@ class WindowVideoSource(WindowSource):
             scalinglog("using hardcoded scaling: %s", actual_scaling)
         elif actual_scaling is None and self.statistics.damage_events_count>50 and (time.time()-self.statistics.last_resized)>0.5:
             #no scaling window attribute defined, so use heuristics to enable:
-            q = self._current_quality
-            s = self._current_speed
             #full frames per second (measured in pixels vs window size):
             ffps = 0
             stime = time.time()-5           #only look at the last 5 seconds max
@@ -924,12 +931,15 @@ class WindowVideoSource(WindowSource):
                 pixels = sum(w*h for _,_,_,w,h in lde)
                 ffps = int(pixels/(width*height)/(time.time() - otime))
 
-            #edge resistance:
+            #edge resistance for changing the current scaling value:
             er = 0
             if self.actual_scaling!=(1, 1):
                 #if we are currently downscaling, stick with it a bit longer:
-                er = 1
+                #more so if we are downscaling a lot (1/3 -> er=1.5 + ..)
+                #and yet even more if scaling_control is high (scaling_control=100 -> er= .. + 1)
+                er = (0.5 * self.actual_scaling[1] / self.actual_scaling[0]) + self.scaling_control/100.0
             qs = s>(q-er*10) and q<(70+er*15)
+            #scalinglog("calculate_scaling: er=%.1f, qs=%s, ffps=%s", er, qs, ffps)
 
             if width>max_w or height>max_h:
                 #most encoders can't deal with that!
@@ -937,16 +947,18 @@ class WindowVideoSource(WindowSource):
                 while width/d>max_w or height/d>max_h:
                     d += 1
                 actual_scaling = 1,d
-            elif self.fullscreen and (qs or ffps>=(10-er*3)):
+            elif self.fullscreen and (qs or ffps>=max(2, 10-er*3)):
                 actual_scaling = 1,3
-            elif self.maximized and (qs or ffps>=(10-er*3)):
+            elif self.maximized and (qs or ffps>=max(2, 10-er*3)):
                 actual_scaling = 1,2
-            elif width*height>=(2560-er*768)*1600 and (qs or ffps>=(25-er*5)):
+            elif width*height>=(2560-er*768)*1600 and (qs or ffps>=max(4, 25-er*5)):
                 actual_scaling = 1,3
-            elif width*height>=(1920-er*384)*1200 and (qs or ffps>=(30-er*10)):
+            elif width*height>=(1920-er*384)*1200 and (qs or ffps>=max(5, 30-er*10)):
+                actual_scaling = 2,3
+            elif width*height>=(1200-er*256)*1024 and (qs or ffps>=max(10, 50-er*15)):
                 actual_scaling = 2,3
             if actual_scaling:
-                scalinglog("calculate_scaling enabled by heuristics er=%s, qs=%s, ffps=%s", er, qs, ffps)
+                scalinglog("calculate_scaling enabled by heuristics er=%.1f, qs=%s, ffps=%s", er, qs, ffps)
         if actual_scaling is None:
             actual_scaling = 1, 1
         v, u = actual_scaling
@@ -956,7 +968,7 @@ class WindowVideoSource(WindowSource):
         elif float(v)/float(u)<0.1:
             #don't downscale more than 10 times! (for each dimension - that's 100 times!)
             actual_scaling = 1, 10
-        scalinglog("calculate_scaling%s=%s", (width, height, max_w, max_h), actual_scaling)
+        scalinglog("calculate_scaling%s=%s (q=%s, s=%s, scaling_control=%s)", (width, height, max_w, max_h), actual_scaling, q, s, self.scaling_control)
         return actual_scaling
 
 

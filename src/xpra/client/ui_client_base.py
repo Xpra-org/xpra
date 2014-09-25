@@ -35,6 +35,7 @@ from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option
+from xpra.scripts.config import parse_bool_or_int
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.daemon_thread import make_daemon_thread
@@ -220,6 +221,7 @@ class UIXpraClient(XpraClientBase):
         """ initialize variables from configuration """
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
+        self.scaling = parse_bool_or_int("scaling", opts.scaling)
         self.title = opts.title
         self.session_name = opts.session_name
         self.auto_refresh_delay = opts.auto_refresh_delay
@@ -919,6 +921,7 @@ class UIXpraClient(XpraClientBase):
             "double_click.time"         : get_double_click_time(),
             "double_click.distance"     : get_double_click_distance(),
             "sound.server_driven"       : True,
+            "encoding.scaling.control"  : self.scaling,
             "encoding.client_options"   : True,
             "encoding_client_options"   : True,
             "encoding.csc_atoms"        : True,

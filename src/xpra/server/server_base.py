@@ -20,7 +20,7 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
 from xpra.os_util import thread, get_hex_uuid
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE
-from xpra.scripts.config import python_platform
+from xpra.scripts.config import python_platform, parse_bool_or_int
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, codec_versions, has_codec, get_codec
 from xpra.codecs.codec_constants import get_PIL_encodings
@@ -92,7 +92,7 @@ class ServerBase(ServerCore):
                     "quality", "min-quality", "speed", "min-speed",
                     "compression", "encoder", "refresh",
                     "sound-output",
-                    "scaling",
+                    "scaling", "scaling-control",
                     "suspend", "resume", "name", "ungrab",
                     "key", "focus",
                     "client"]
@@ -142,6 +142,7 @@ class ServerBase(ServerCore):
         self.supports_clipboard = opts.clipboard
         self.supports_dbus_proxy = opts.dbus_proxy
         self.send_pings = opts.pings
+        self.scaling_control = parse_bool_or_int("scaling", opts.scaling)
 
         log("starting component init")
         self.init_clipboard(self.supports_clipboard, opts.clipboard_filter_file)
@@ -568,7 +569,7 @@ class ServerBase(ServerCore):
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.supports_mmap,
-                          self.core_encodings, self.encodings, self.default_encoding,
+                          self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
                           self.sound_source_plugin,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
@@ -934,6 +935,20 @@ class ServerBase(ServerCore):
                 ws.full_quality_refresh(window, {})
             for_all_window_sources(wids, full_quality_refresh)
             return 0, "refreshed %s window for %s clients" % (len(wids), len(sources))
+        elif command=="scaling-control":
+            if len(args)==0:
+                return argn_err("2: scaling-control value and window ids (or '*')")
+            try:
+                scaling_control = int(args[0])
+                assert 0<=scaling_control<=100, "value must be between 0 and 100"
+            except Exception as e:
+                return 11, "invalid scaling value %s: %s" % (args[1], e)
+            wids = get_wids_from_args(args[1:])
+            def set_scaling_control(ws, wid, window):
+                ws.set_scaling_control(scaling_control)
+                ws.refresh(window)
+            for_all_window_sources(wids, set_scaling)
+            return 0, "scaling-control set to %s on window %s for %s clients" % (scaling_control, wids, len(sources))
         elif command=="scaling":
             if len(args)==0:
                 return argn_err("2: scaling value and window ids (or '*')")

@@ -120,6 +120,7 @@ class WindowSource(object):
         self.has_alpha = window.has_alpha()
         self.window_dimensions = 0, 0
         self.fullscreen = window.get_property("fullscreen")
+        self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ServerSource sets defaults with the client's scaling.control value
         self.scaling = None
         self.maximized = False          #set by the client!
         if "fullscreen" in window.get_dynamic_property_names():
@@ -223,6 +224,7 @@ class WindowSource(object):
         self.has_alpha = False
         self.window_dimensions = 0, 0
         self.fullscreen = False
+        self.scaling_control = 0
         self.scaling = None
         self.maximized = False
         #
@@ -333,7 +335,6 @@ class WindowSource(object):
 
     def get_property_info(self):
         return {
-                "scaling"               : self.scaling or (1, 1),
                 "fullscreen"            : self.fullscreen or False,
                 #speed / quality properties (not necessarily the same as the video encoder settings..):
                 "min_speed"             : self._fixed_min_speed,
@@ -438,6 +439,11 @@ class WindowSource(object):
     def set_scaling(self, scaling):
         scalinglog("set_scaling(%s)", scaling)
         self.scaling = scaling
+        self.reconfigure(True)
+
+    def set_scaling_control(self, scaling_control):
+        scalinglog("set_scaling_control(%s)", scaling_control)
+        self.scaling_control = max(0, min(100, scaling_control))
         self.reconfigure(True)
 
     def _fullscreen_changed(self, window, *args):

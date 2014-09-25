@@ -68,6 +68,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding\fP=\fIENCODING\fP]
+[\fB\-\-scaling\fP=\fIon\fP|\fIoff\fISCALING\fP]
 [\fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
 [\fB\-\-quality\fP=\fIQUALITY\fP]
 [\fB\-\-min\-quality\fP=\fIMIN\-QUALITY\fP]
@@ -444,8 +445,18 @@ as well as the xpra codec that uses them.
 Note: when selecting a video encoding (usually \fBh264\fP or \fBvp8\fP),
 some of the smaller screen updates will be sent using
 one of the other non-video encodings.
-
 .TP
+
+\fB\-\-scaling\fP=\fIon\fP|\fIoff\fISCALING\fP
+How much automatic window downscaling should be used,
+from 1 (rarely) to 100 (aggressively), 0 to disable.
+Window scaling is normally used with large windows
+(especially full screen windows) to try to maintain a decent framerate.
+Window downscaling negatively affects visual quality
+and will cause automatic refreshes (if enabled), it is most
+useful on video content where it saves a considerable amount of bandwidth.
+.TP
+
 \fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Use OpenGL accelerated rendering on the client.
 The default is to detect if the graphics card and drivers are

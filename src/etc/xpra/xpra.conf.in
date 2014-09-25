@@ -86,12 +86,20 @@ video-encoders = all
 # csc-modules = all
 csc-modules = all
 
-# Used the client for decoding:
+# Used by the client for decoding:
 # video-decoders = avcodec2, vpx
 # video-decoders = avcodec, vpx
 # video-decoders = none
 # video-decoders = all
 video-decoders = all
+
+# Automatic window downscaling:
+# scaling = 0		#same as off
+# scaling = off
+# scaling = on
+# scaling = 10		#mild automatic scaling
+# scaling = 100		#very aggressive scaling
+scaling = on
 
 # Use fixed quality
 # (value is a percentage or "auto"):

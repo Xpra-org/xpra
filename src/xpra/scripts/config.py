@@ -240,6 +240,7 @@ OPTIONS_VALIDATION = {}
 OPTION_TYPES = {
                     #string options:
                     "encoding"          : str,
+                    "scaling"           : str,
                     "title"             : str,
                     "username"          : str,
                     "auth"              : str,
@@ -442,6 +443,20 @@ def print_bool(k, v, true_str='yes', false_str='no'):
             return true_str
         return false_str
     warn("Warning: cannot print value '%s' for '%s' as a boolean" % (v, k))
+
+def parse_bool_or_int(k, v):
+    if type(v)==str:
+        v = v.lower()
+    if v in TRUE_OPTIONS:
+        return 1
+    elif v in FALSE_OPTIONS:
+        return 0
+    else:
+        try:
+            return int(v)
+        except:
+            warn("Warning: invalid value for %s: %s" % (k, v))
+
 
 def parse_number(numtype, k, v, auto=0):
     if type(v)==str:

@@ -154,7 +154,7 @@ class ServerSource(object):
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  supports_mmap,
-                 core_encodings, encodings, default_encoding,
+                 core_encodings, encodings, default_encoding, scaling_control,
                  sound_source_plugin,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
@@ -164,7 +164,7 @@ class ServerSource(object):
                  get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap,
-                 core_encodings, encodings, default_encoding,
+                 core_encodings, encodings, default_encoding, scaling_control,
                  sound_source_plugin,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
@@ -199,6 +199,7 @@ class ServerSource(object):
         self.server_core_encodings = core_encodings
         self.server_encodings = encodings
         self.default_encoding = default_encoding
+        self.scaling_control = scaling_control
 
         self.default_quality = default_quality      #default encoding quality for lossy encodings
         self.default_min_quality = default_min_quality #default minimum encoding quality
@@ -251,7 +252,7 @@ class ServerSource(object):
         self.generic_rgb_encodings = False
         self.generic_encodings = False
         self.encoding_options = typedict()
-        self.default_encoding_options = {}
+        self.default_encoding_options = typedict()
 
         self.window_sources = {}                    #WindowSource for each Window ID
         self.suspended = False
@@ -618,8 +619,8 @@ class ServerSource(object):
             except:
                 log.error("failed to parse proxy video", exc_info=True)
 
-        q = c.intget("jpeg", self.default_quality)  #pre 0.7 versions
-        q = self.encoding_options.intget("quality", q)         #0.7 onwards:
+        self.default_encoding_options["scaling.control"] = self.encoding_options.get("scaling.control", self.scaling_control)
+        q = self.encoding_options.intget("quality", self.default_quality)         #0.7 onwards:
         if q>0:
             self.default_encoding_options["quality"] = q
         mq = self.encoding_options.intget("min-quality", self.default_min_quality)
