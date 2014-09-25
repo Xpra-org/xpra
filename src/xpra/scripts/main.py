@@ -481,7 +481,7 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="video_encoders", default=defaults.video_encoders,
                           help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
     else:
-        hidden_options["encoders"] = []
+        hidden_options["video_encoders"] = []
     group.add_option("--csc-modules", action="store",
                       dest="csc_modules", default=defaults.csc_modules,
                       help="Specify which colourspace conversion modules to enable, to get a list of all the options specify 'help'. Default: %default.")
