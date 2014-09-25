@@ -179,6 +179,9 @@ SWITCHES = ["enc_x264", "x264_static",
             "sound", "opengl",
             "warn", "strict", "shadow", "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests"]
+if WIN32:
+    SWITCHES.append("zip")
+    zip_ENABLED = True
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
@@ -1101,7 +1104,7 @@ if WIN32:
                                 "include_files"     : data_files,
                                 "excludes"          : excludes,
                                 "include_msvcr"     : True,
-                                "create_shared_zip" : True,
+                                "create_shared_zip" : zip_ENABLED,
                                 }
             setup_options["options"] = {"build_exe" : cx_freeze_options}
             executables = []
@@ -1131,16 +1134,21 @@ if WIN32:
             EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"]
             py2exe.build_exe.EXCLUDED_DLLS = EXCLUDED_DLLS
             py2exe_options = {
-                              "skip_archive"   : False,
+                              "skip_archive"   : not zip_ENABLED,
                               "optimize"       : 0,    #WARNING: do not change - causes crashes
                               "unbuffered"     : True,
-                              "compressed"     : True,
-                              "skip_archive"   : False,
+                              "compressed"     : zip_ENABLED,
                               "packages"       : packages,
                               "includes"       : external_includes,
                               "excludes"       : excludes,
                               "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll"],
                              }
+            if not zip_ENABLED:
+                #the filename is actually ignored because we specify "skip_archive"
+                #this places the modules in library/
+                setup_options["zipfile"] = "library/foo.zip"
+            else:
+                setup_options["zipfile"] = "library.zip"
             setup_options["options"] = {"py2exe" : py2exe_options}
             windows = []
             setup_options["windows"] = windows
