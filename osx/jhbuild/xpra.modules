@@ -381,6 +381,13 @@
 	     version="3.0.1"/>
   </distutils>
 
+  <distutils id="python-rencode">
+     <branch repo="xpra.org"
+	     module="/src/rencode-1.0.3.tar.xz"
+             hash="md5:e7922adc800c440ec21d74506bad1767"
+	     version="1.0.3"/>
+  </distutils>
+
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
     <branch module="/berkeley-db/db-6.0.30.tar.gz"
                         hash="md5:ad28eb86ad3203b5422844db179c585b"
@@ -467,6 +474,7 @@
       <dep package="python-numpy"/>
       <dep package="python-twisted"/>
       <dep package="python-lz4"/>
+      <dep package="python-rencode"/>
       <dep package="python-macholib"/>
       <dep package="python-modulegraph"/>
       <dep package="python-altgraph"/>
