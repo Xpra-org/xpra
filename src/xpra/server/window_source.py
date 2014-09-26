@@ -210,6 +210,7 @@ class WindowSource(object):
         self.auto_refresh_delay = 0
         self.video_helper = None
         self.refresh_event_time = 0
+        self.refresh_target_time = 0
         self.refresh_timer = None
         self.refresh_regions = []
         self.timeout_timer = None
@@ -641,6 +642,7 @@ class WindowSource(object):
             self.source_remove(self.refresh_timer)
             self.refresh_timer = None
             self.refresh_event_time = 0
+            self.refresh_target_time = 0
 
     def cancel_timeout_timer(self):
         if self.timeout_timer:
@@ -1153,22 +1155,44 @@ class WindowSource(object):
                     msg = "covered all regions that needed a refresh, cancelling refresh"
                     self.cancel_refresh_timer()
                 else:
-                    msg = "removed rectangle from regions"
+                    msg = "removed rectangle from regions, keeping refresh"
         else:
+            #if we're here: the window is still valid and this was a lossy update,
+            #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
+            #so we probably need an auto-refresh (re-schedule it if one was due already)
+
             #try to add the rectangle to the refresh list:
-            if not self.add_refresh_region(window, region):
-                msg = "list of refresh regions unchanged"
+            pixels_modified = self.add_refresh_region(window, region)
+            #the target time is only set in this function and cleared when the refresh runs,
+            #copy it before we modify anything (as the refresh clears it from another thread)
+            target_time = self.refresh_target_time
+            if pixels_modified==0:
+                msg = "keeping existing timer (all pixels outside area)"
+                if self.refresh_regions and not target_time:
+                    #this should never happen:
+                    refreshlog.warn("refresh regions are pending but no refresh timer is due!")
             else:
-                #if we're here: the window is still valid and this was a lossy update,
-                #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
-                #so we need an auto-refresh (re-schedule it if one was due already)
-                if self.refresh_event_time>0:
-                    msg = "keeping existing timer"
-                else:
-                    msg = "scheduling refresh"
+                #some pixels were modified, and we do need to refresh them:
+                now = time.time()
+                #figure out the proportion of pixels updated:
+                pixels = region.width*region.height
+                ww, wh = window.get_dimensions()
+                pct = 100*pixels/(ww*wh)
+                #important: must check both, I think:
+                if target_time==0 or not self.refresh_timer:
+                    #this means we must schedule the refresh
                     self.refresh_event_time = time.time()
-                    sched_delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
-                    self.refresh_timer = self.timeout_add(sched_delay, self.schedule_auto_refresh, window, options)
+                    #delay in milliseconds: always at least the settings,
+                    #more if we have more than 50% of the window pixels to update:
+                    sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4))
+                    self.refresh_target_time = now + sched_delay/1000.0
+                    self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, window, options)
+                    msg = "scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)
+                else:
+                    #add to the target time, but this will not move it forwards for small updates following big ones:
+                    sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2))
+                    self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
+                    msg = "re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
         refreshlog("auto refresh: %5s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
 
     def remove_refresh_region(self, region):
@@ -1178,10 +1202,11 @@ class WindowSource(object):
 
     def add_refresh_region(self, window, region):
         #adds the given region to the refresh list
-        #returns True if the list was modified
+        #returns the number of pixels in the region update
         #(overriden in window video source to exclude the video region)
         #Note: this does not run in the UI thread!
-        return add_rectangle(self.refresh_regions, region)
+        add_rectangle(self.refresh_regions, region)
+        return region.width*region.height
 
     def can_refresh(self, window):
         #safe to call from any thread (does not call X11):
@@ -1193,9 +1218,12 @@ class WindowSource(object):
             return False
         return True
 
-    def schedule_auto_refresh(self, window, damage_options):
+    def refresh_timer_function(self, window, damage_options):
         """ Must be called from the UI thread:
-            this makes it easier to prevent races
+            this makes it easier to prevent races and we're allowed to use the window object.
+            And for that reason, it may re-schedule itself safely here too.
+            We figure out if now is the right time to do the refresh,
+            and if not re-schedule.
         """
         #timer is running now, clear so we don't try to cancel it somewhere else:
         self.refresh_timer = None
@@ -1206,33 +1234,22 @@ class WindowSource(object):
         ret = self.refresh_event_time
         if ret==0:
             return
-
-        #decide if now is the right time, or if we delay some more
-        #(the more pixels we have to refresh, the longer we wait)
-        pixels = sum(r.width*r.height for r in self.refresh_regions)
-        ww, wh = window.get_dimensions()
-        pct = 100*pixels/(ww*wh)
-        #target auto_refresh_delay, but double that if we have a full screen update:
-        target_delay = max(50, self.auto_refresh_delay * pct / 50)
-        elapsed = int(1000.0*(time.time()-ret))
-        if elapsed>=(target_delay-20):
-            #close enough to target, do it now:
-            refreshlog("schedule_auto_refresh: elapsed time %i with target=%i, refreshing now", elapsed, target_delay)
+        delta = self.refresh_target_time - time.time()
+        if delta<0.050:
+            #this is about right (due already or due shortly)
             self.timer_full_refresh(window)
-        else:
-            #delay a bit more:
-            delay = int(max(20, self.auto_refresh_delay, target_delay - elapsed))
-            refreshlog("schedule_auto_refresh: rescheduling auto refresh timer with extra delay %i (%i%% of window, refresh delay=%i, target=%i, elapsed=%i)", delay, pct, self.auto_refresh_delay, target_delay, elapsed)
-            self.refresh_timer = self.timeout_add(delay, self.timer_full_refresh, window)
-        return False
+            return
+        #re-schedule ourselves:
+        self.refresh_timer = self.timeout_add(int(delta*1000), self.refresh_timer_function, window, damage_options)
+        refreshlog("refresh_timer_function: rescheduling auto refresh timer with extra delay %ims", int(1000*delta))
 
     def timer_full_refresh(self, window):
+        #copy event time and list of regions (which may get modified by another thread)
         ret = self.refresh_event_time
-        self.refresh_timer = None
         self.refresh_event_time = 0
         regions = self.refresh_regions
         self.refresh_regions = []
-        if self.can_refresh(window) and regions:
+        if self.can_refresh(window) and regions and ret>0:
             now = time.time()
             refreshlog("timer_full_refresh() after %ims, regions=%s", 1000.0*(time.time()-ret), regions)
             #choose an encoding:

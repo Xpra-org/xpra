@@ -447,7 +447,7 @@ class WindowVideoSource(WindowSource):
 
     def add_refresh_region(self, window, region):
         #Note: this does not run in the UI thread!
-        #returns True if the list was modified
+        #returns the number of pixels in the region update
         #don't refresh the video region as part of normal refresh,
         #use subregion refresh for that
         vr = self.video_subregion.rectangle
@@ -457,7 +457,7 @@ class WindowVideoSource(WindowSource):
         if vr.contains_rect(region):
             #all of it is in the video region:
             self.video_subregion.add_video_refresh(window, region)
-            return False
+            return 0
         ir = vr.intersection_rect(region)
         if ir is None:
             #region is outside video region, normal code path:
@@ -466,10 +466,10 @@ class WindowVideoSource(WindowSource):
         self.video_subregion.add_video_refresh(window, ir)
         #add any rectangles not in the video region
         #(if any: keep track if we actually added anything)
-        mod = False
+        pixels_modified = 0
         for r in region.substract_rect(vr):
-            mod |= WindowSource.add_refresh_region(self, window, r)
-        return mod
+            pixels_modified += WindowSource.add_refresh_region(self, window, r)
+        return pixels_modified
 
 
     def do_send_delayed_regions(self, damage_time, window, regions, coding, options):
