@@ -265,6 +265,7 @@ class ProxyInstanceProcess(Process):
         protocol = Protocol(self, sc, self.process_control_packet)
         protocol.large_packets.append("info-response")
         self.potential_protocols.append(protocol)
+        protocol.enable_default_encoder()
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
         return True
