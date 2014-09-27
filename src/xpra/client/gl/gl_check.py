@@ -23,7 +23,6 @@ if False:
 if sys.platform.startswith("darwin"):
     #crashes were reported with the Intel driver on OSX
     BLACKLIST["vendor"].append("Intel Inc.")
-    WHITELIST["renderer"] = ["Intel HD Graphics 4000 OpenGL Engine"]
 
 #alpha requires gtk3 or *nix only for gtk2:
 DEFAULT_ALPHA = sys.version>'3' or (not sys.platform.startswith("win") and not sys.platform.startswith("darwin"))
