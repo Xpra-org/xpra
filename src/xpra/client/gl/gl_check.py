@@ -27,12 +27,11 @@ if sys.platform.startswith("darwin"):
 #alpha requires gtk3 or *nix only for gtk2:
 DEFAULT_ALPHA = sys.version>'3' or (not sys.platform.startswith("win") and not sys.platform.startswith("darwin"))
 GL_ALPHA_SUPPORTED = os.environ.get("XPRA_ALPHA", DEFAULT_ALPHA) in (True, "1")
-DEFAULT_DOUBLE_BUFFERED = 0
 #not working with gtk3 yet?
 CAN_DOUBLE_BUFFER = True
 #needed on win32?:
 DEFAULT_DOUBLE_BUFFERED = sys.platform.startswith("win") and CAN_DOUBLE_BUFFER
-DOUBLE_BUFFERED = os.environ.get("XPRA_OPENGL_DOUBLE_BUFFERED", str(DEFAULT_DOUBLE_BUFFERED))=="1"
+DOUBLE_BUFFERED = os.environ.get("XPRA_OPENGL_DOUBLE_BUFFERED", str(int(DEFAULT_DOUBLE_BUFFERED)))=="1"
 
 
 def get_visual_name(visual):
