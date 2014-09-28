@@ -275,9 +275,11 @@ def get_display_info():
             if hasattr(screen, "get_monitor_plug_name"):
                 info[mk+".plug_name"] = screen.get_monitor_plug_name(j) or ""
             for x in ("scale_factor", "width_mm", "height_mm"):
-                if hasattr(screen, "get_monitor_"+x):
+                try:
                     fn = getattr(screen, "get_monitor_"+x)
                     info[mk+"."+x] = int(fn(j))
+                except:
+                    pass
             if hasattr(screen, "get_monitor_workarea"): #GTK3.4:
                 rectangle = screen.get_monitor_workarea(j)
                 for x in ("x", "y", "width", "height"):
