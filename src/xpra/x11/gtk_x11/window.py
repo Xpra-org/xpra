@@ -885,6 +885,7 @@ class WindowModel(BaseWindowModel):
         self.corral_window.resize(nw, nh)
         self.client_window.show_unraised()
         self.client_window.get_geometry()
+        self._internal_set_property("actual-size", (nw, nh))
 
     def get_dynamic_property_names(self):
         return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints"]
