@@ -135,3 +135,47 @@ def set_settings(disp, d):
     v += '\0'                       #null terminated
     log("set_settings(%s)=%s", d, list(v))
     return  v
+
+
+def main():
+    from xpra.platform.gui import init as gui_init
+    from xpra.platform import init as platform_init,clean
+    try:
+        platform_init("XSettings")
+        gui_init()
+        verbose = "-v" in sys.argv or "--verbose" in sys.argv
+        if verbose:
+            from xpra.log import get_all_loggers
+            for x in get_all_loggers():
+                x.enable_debug()
+
+        import gtk, gobject
+
+        #naughty, but how else can I hook this up?
+        import os
+        if os.name=="posix":
+            try:
+                from xpra.x11.gtk_x11 import gdk_display_source
+                assert gdk_display_source
+            except:
+                from xpra.x11.gtk3_x11 import gdk_display_source    #@Reimport
+                assert gdk_display_source
+
+        from xpra.x11.xsettings import XSettingsHelper
+        xsh = XSettingsHelper()
+        def in_main_loop():
+            serial, settings = xsh.get_settings()
+            print("serial=%s" % serial)
+            print("%s settings:" % len(settings))
+            for s in settings:
+                print(s)
+            gtk.main_quit()
+        gobject.idle_add(in_main_loop)
+        gtk.main()
+        return 0
+    finally:
+        clean()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
