@@ -430,9 +430,11 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
 
 def main():
     from xpra.platform import init,clean
+    from xpra.platform.gui import init as gui_init
     from xpra.util import pver
     try:
         init("OpenGL-Check")
+        gui_init()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
             log.enable_debug()

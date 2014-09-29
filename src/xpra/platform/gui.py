@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,8 @@ import sys
 
 _init_done = False
 def init():
+    #warning: we currently call init() from multiple places to try
+    #to ensure we run it as early as possible..
     global _init_done
     if not _init_done:
         _init_done = True
