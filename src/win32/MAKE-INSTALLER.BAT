@@ -123,6 +123,18 @@ REM DEL dist\libdvd*dll
 REM "Overwrite the old version shipped with gstreamer - not sure why the PYTHONPATH order is not honoured.."
 ECHO ****** Fix GTK DLLs
 XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" dist\
+
+ECHO ****** Using MS-Windows theme
+MKDIR dist\etc
+MKDIR dist\etc\gtk-2.0
+XCOPY /I /Y win32\gtkrc dist\etc\gtk-2.0\
+MKDIR dist\lib
+MKDIR dist\lib\gtk-2.0
+MKDIR dist\lib\gtk-2.0\2.10.0
+MKDIR dist\lib\gtk-2.0\2.10.0\engines
+XCOPY /I /Y /S /Q "%GTK%\lib\gtk-2.0\2.10.0\engines\*.dll" dist\lib\gtk-2.0\2.10.0\engines
+
+
 GOTO MAKEINSTALLER
 
 

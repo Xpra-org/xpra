@@ -15,6 +15,7 @@ from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_ite
 from xpra.client.client_base import EXIT_OK
 from xpra.client.gtk_base.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
+from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 log = Logger("tray")
 
@@ -286,7 +287,8 @@ class GTKTrayMenuBase(object):
         """ Utility method for easily creating an ImageMenuItem """
         image = None
         if icon_name:
-            image = self.get_image(icon_name, 24)
+            icon_size = get_icon_size()
+            image = self.get_image(icon_name, icon_size)
         return menuitem(title, image, tooltip, cb)
 
     def checkitem(self, title, cb=None, active=False):

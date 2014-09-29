@@ -121,6 +121,26 @@ def remove_window_hooks(window):
         log.error("remove_window_hooks(%s)", exc_info=True)
 
 
+def get_icon_size():
+    try:
+        SystemParametersInfo = windll.user32.SystemParametersInfoA
+        dpiX = ctypes.c_uint32()
+        dpiY = ctypes.c_uint32()
+        if SystemParametersInfo(win32con.LOGPIXELSX, 0, byref(dpiX), 0) and \
+           SystemParametersInfo(win32con.LOGPIXELSY, 0, byref(dpiY), 0):
+            dpi = (dpiX.value + dpiY.value)/2
+            if dpi > 144:
+                return 48
+            elif dpi > 120:
+                return 32
+            elif dpi > 96:
+                return 24
+            else:
+                return 16
+    except Exception as e:
+        log.warn("failed to get icon size: %s", e)
+    return 24
+
 def get_antialias_info():
     info = {}
     try:
@@ -146,7 +166,7 @@ def get_antialias_info():
         def smoothing_type(v):
             #FE_FONTSMOOTHINGCLEARTYPE      0x0002 
             #FE_FONTSMOOTHINGDOCKING        0x8000 
-            return {0 : "normal",  2: "cleartype"}.get(v & 0x2, "unknown")
+            return {0 : "Normal",  2: "ClearType"}.get(v & 0x2, "unknown")
         add_param(0x200A, "type", smoothing_type)
         add_param(0x200A, "hinting", lambda v : bool(v & 0x2))
     except Exception as e:
