@@ -350,6 +350,7 @@ class X11ServerBase(GTKServerBase):
             log("calling RandR.get_screen_size()")
             root_w, root_h = RandR.get_screen_size()
             log("RandR.get_screen_size()=%s,%s", root_w, root_h)
+            log("RandR.get_vrefresh()=%s", RandR.get_vrefresh())
             if root_w!=w or root_h!=h:
                 log.error("odd, failed to set the new resolution, "
                           "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)

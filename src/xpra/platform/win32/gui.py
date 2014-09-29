@@ -26,8 +26,8 @@ try:
         if x.startswith("PBT_"):
             v = getattr(win32con, x)
             POWER_EVENTS[v] = x
-except:
-    pass
+except Exception as e:
+    log.warn("error loading win32con: %s", e)
 
 
 def do_init():
@@ -40,7 +40,7 @@ def do_init():
         dpi_set = SetProcessDPIAware()
         log("SetProcessDPIAware()=%s", dpi_set)
     except Exception as e:
-        log("failed to set DPI: %s", e)
+        log.warn("failed to set DPI: %s", e)
 
 
 def get_native_notifier_classes():
@@ -119,18 +119,38 @@ def remove_window_hooks(window):
         log.error("remove_window_hooks(%s)", exc_info=True)
 
 
+def _get_device_caps(constant):
+    dc = None
+    try:
+        import ctypes, win32gui             #@UnresolvedImport
+        gdi32 = ctypes.windll.gdi32
+        dc = win32gui.GetDC(None)
+        return gdi32.GetDeviceCaps(dc, constant)
+    finally:
+        if dc:
+            win32gui.ReleaseDC(None, dc)
+
+def get_vrefresh():
+    try:
+        return _get_device_caps(win32con.VREFRESH)
+    except Exception as e:
+        log.warn("failed to get VREFRESH: %s", e)
+        return -1
+
 def get_double_click_time():
     try:
         import win32gui                     #@UnresolvedImport
         return win32gui.GetDoubleClickTime()
-    except:
+    except Exception as e:
+        log.warn("failed to get double click time: %s", e)
         return 0
 
 def get_double_click_distance():
     try:
         import win32api                     #@UnresolvedImport
         return win32api.GetSystemMetrics(win32con.SM_CXDOUBLECLK), win32api.GetSystemMetrics(win32con.SM_CYDOUBLECLK)
-    except:
+    except Exception as e:
+        log.warn("failed to get double click distance: %s", e)
         return -1, -1
 
 

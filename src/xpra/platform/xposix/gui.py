@@ -41,6 +41,16 @@ def get_native_system_tray_classes():
     return get_native_tray_classes()
 
 
+def get_vrefresh():
+    try:
+        from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
+        randr = RandRBindings()
+        return randr.get_vrefresh()
+    except Exception as e:
+        log.warn("failed to get VREFRESH: %s", e)
+        return -1
+
+
 def _get_xsettings():
     try:
         from xpra.x11.xsettings import XSettingsHelper

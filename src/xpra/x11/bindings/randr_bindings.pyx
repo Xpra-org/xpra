@@ -70,6 +70,8 @@ cdef extern from "X11/extensions/Xrandr.h":
     int XDisplayWidthMM(Display *display, int screen_number)
     int XDisplayHeightMM(Display *display, int screen_number)
 
+    short XRRConfigCurrentRate(XRRScreenConfiguration *config)
+
 from core_bindings cimport X11CoreBindings
 
 
@@ -176,12 +178,21 @@ cdef class RandRBindings(X11CoreBindings):
         try:
             config = XRRGetScreenInfo(self.display, window)
             xrrs = XRRConfigSizes(config, &num_sizes)
-            #short original_rate = XRRConfigCurrentRate(config);
             size_id = XRRConfigCurrentConfiguration(config, &original_rotation);
 
             width = xrrs[size_id].width;
             height = xrrs[size_id].height;
             return int(width), int(height)
+        finally:
+            XRRFreeScreenConfigInfo(config)
+
+    def get_vrefresh(self):
+        cdef Window window                              #@DuplicatedSignature
+        window = XDefaultRootWindow(self.display)
+        cdef XRRScreenConfiguration *config             #@DuplicatedSignature
+        try:
+            config = XRRGetScreenInfo(self.display, window)
+            return XRRConfigCurrentRate(config)
         finally:
             XRRFreeScreenConfigInfo(config)
 

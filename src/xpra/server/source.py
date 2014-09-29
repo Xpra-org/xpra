@@ -288,6 +288,7 @@ class ServerSource(object):
         self.notify_startup_complete = False
         self.control_commands = []
         self.supports_transparency = False
+        self.vrefresh = -1
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
         #what we send back in hello packet:
@@ -506,6 +507,7 @@ class ServerSource(object):
         self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.control_commands = c.strlistget("control_commands")
         self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
+        self.vrefresh = c.intget("vrefresh", -1)
         self.double_click_time = c.intget("double_click.time")
         self.double_click_distance = c.intpair("double_click.distance")
 
@@ -1074,7 +1076,8 @@ class ServerSource(object):
                            "send_notifications" : "notifications",
                            "send_bell"          : "bell"}.items():
             battr(name, prop)
-        for prop, name in {"double_click_time"      : "double_click.time",
+        for prop, name in {"vrefresh"               : "vertical-refresh",
+                           "double_click_time"      : "double_click.time",
                            "double_click_distance"  : "double_click.distance"}.items():
             info[name] = getattr(self, prop)
         return info
