@@ -273,7 +273,8 @@ class ClientWindowBase(ClientWidgetBase):
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
         """ Note: this runs from the draw thread (not UI thread) """
-        if not self._backing:
+        backing = self._backing
+        if not backing:
             log("draw_region: window %s has no backing, gone?", self._id)
             from xpra.client.window_backing_base import fire_paint_callbacks
             fire_paint_callbacks(callbacks, False)
@@ -285,7 +286,9 @@ class ClientWindowBase(ClientWidgetBase):
             backing = self._backing
             if backing and backing.draw_needs_refresh:
                 self.queue_draw(x, y, width, height)
-        callbacks.append(after_draw_refresh)
+        #only register this callback if we actually need it:
+        if backing.draw_needs_refresh:
+            callbacks.append(after_draw_refresh)
         self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     def spinner(self, ok):
