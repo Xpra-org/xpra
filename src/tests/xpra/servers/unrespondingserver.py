@@ -80,9 +80,7 @@ def main():
     xvfb = start_Xvfb(opts.xvfb, display_name)
     assert check_xvfb_process(xvfb), "xvfb error"
 
-    from xpra.x11.gtk_x11 import gdk_display_source
-    assert gdk_display_source
-
+    from xpra.x11.bindings import posix_display_source      #@UnusedImport
     from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
     X11Window = X11WindowBindings()
     assert X11Window

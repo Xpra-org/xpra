@@ -135,13 +135,7 @@ def main():
         #naughty, but how else can I hook this up?
         import os
         if os.name=="posix":
-            try:
-                from xpra.x11.gtk_x11 import gdk_display_source
-                assert gdk_display_source
-            except:
-                from xpra.x11.gtk3_x11 import gdk_display_source    #@Reimport
-                assert gdk_display_source
-
+            from xpra.x11.bindings import posix_display_source      #@UnusedImport
         i = get_info()
         for k in sorted(i.keys()):
             v = i[k]

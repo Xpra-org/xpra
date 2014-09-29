@@ -3,7 +3,7 @@
 # Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
 
 import time
-from xpra.x11.gtk_x11 import gdk_display_source			 #@UnusedImport
+from xpra.x11.bindings import posix_display_source      #@UnusedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings		#@UnresolvedImport
 keyboard_bindings = X11KeyboardBindings()
 

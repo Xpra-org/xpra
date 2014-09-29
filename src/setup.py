@@ -783,6 +783,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/bindings/window_bindings.c",
                    "xpra/x11/bindings/randr_bindings.c",
                    "xpra/x11/bindings/core_bindings.c",
+                   "xpra/x11/bindings/posix_display_source.c",
                    "xpra/x11/bindings/ximage.c",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/codecs/vpx/encoder.c",
@@ -1572,6 +1573,11 @@ if x11_ENABLED:
                 ["xpra/x11/bindings/core_bindings.pyx"],
                 **pkgconfig("x11")
                 ))
+    cython_add(Extension("xpra.x11.bindings.posix_display_source",
+                ["xpra/x11/bindings/posix_display_source.pyx"],
+                **pkgconfig("x11")
+                ))
+
     cython_add(Extension("xpra.x11.bindings.randr_bindings",
                 ["xpra/x11/bindings/randr_bindings.pyx"],
                 **pkgconfig("x11", "xrandr")

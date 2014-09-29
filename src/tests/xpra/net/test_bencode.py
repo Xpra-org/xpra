@@ -262,7 +262,7 @@ def test_random():
 
 def get_test_data_dict():
     try:
-        from xpra.x11.gtk_x11 import gdk_display_source             #@UnusedImport
+        from xpra.x11.bindings import posix_display_source      #@UnusedImport
         from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings        #@UnresolvedImport
         keyboard_bindings = X11KeyboardBindings()
         return keyboard_bindings.get_keycode_mappings()

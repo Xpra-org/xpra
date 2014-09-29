@@ -149,29 +149,26 @@ def main():
             for x in get_all_loggers():
                 x.enable_debug()
 
-        import gtk, gobject
-
         #naughty, but how else can I hook this up?
         import os
-        if os.name=="posix":
-            try:
-                from xpra.x11.gtk_x11 import gdk_display_source
-                assert gdk_display_source
-            except:
-                from xpra.x11.gtk3_x11 import gdk_display_source    #@Reimport
-                assert gdk_display_source
+        if os.name!="posix":
+            print("xsettings require a posix OS")
+            return 1
 
-        from xpra.x11.xsettings import XSettingsHelper
-        xsh = XSettingsHelper()
-        def in_main_loop():
-            serial, settings = xsh.get_settings()
-            print("serial=%s" % serial)
-            print("%s settings:" % len(settings))
-            for s in settings:
-                print(s)
-            gtk.main_quit()
-        gobject.idle_add(in_main_loop)
-        gtk.main()
+        from xpra.x11.bindings import posix_display_source  #@UnresolvedImport - takes care of hooking up the display
+        assert posix_display_source
+        from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+        window_bindings = X11WindowBindings()
+        selection = "_XSETTINGS_S0"
+        owner = window_bindings.XGetSelectionOwner(selection)
+        print("owner(%s)=%#x" % (selection, owner))
+        XSETTINGS = "_XSETTINGS_SETTINGS"
+        data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
+        serial, settings = get_settings(None, data)
+        print("serial=%s" % serial)
+        print("%s settings:" % len(settings))
+        for s in settings:
+            print(s)
         return 0
     finally:
         clean()
