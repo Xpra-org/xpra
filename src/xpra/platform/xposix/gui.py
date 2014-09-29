@@ -51,7 +51,7 @@ def _get_X11_root_property(name, req_type):
         root = window_bindings.getDefaultRootWindow()
         try:
             prop = trap.call_synced(window_bindings.XGetWindowProperty, root, name, req_type)
-            log.info("_get_X11_root_property(%s, %s)=%s, len=%s", name, req_type, type(prop), len(prop))
+            log("_get_X11_root_property(%s, %s)=%s, len=%s", name, req_type, type(prop), len(prop))
             return prop
         except PropertyError as e:
             log("_get_X11_root_property(%s, %s): %s", name, req_type, e)
