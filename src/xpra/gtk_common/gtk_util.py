@@ -18,41 +18,48 @@ PixbufLoader = import_pixbufloader()
 from xpra.log import Logger
 log = Logger("gtk", "util")
 
+
 GTK_VERSION_INFO = {}
-if hasattr(gtk, "pygtk_version"):
-    GTK_VERSION_INFO["pygtk.version"] = gtk.pygtk_version
-if hasattr(gtk, "gtk_version"):
-    #GTK2:
-    GTK_VERSION_INFO["gtk.version"] = gtk.gtk_version
-elif hasattr(gtk, "_version"):
-    #GTK3:
-    GTK_VERSION_INFO["gtk.version"] = gtk._version
-if hasattr(gdk, "__version__"):
-    #GTK2:
-    GTK_VERSION_INFO["gdk.version"] = gdk.__version__
-elif hasattr(gdk, "_version"):
-    #GTK3:
-    GTK_VERSION_INFO["gdk.version"] = gdk._version
-if is_gtk3():
-    try:
-        import gi
-        GTK_VERSION_INFO["gi.version"] = gi.__version__
-    except:
-        pass
-if hasattr(gobject, "pygobject_version"):
-    GTK_VERSION_INFO["gobject.version"] = gobject.pygobject_version
-elif hasattr(gobject, "_version"):
-    GTK_VERSION_INFO["gobject.version"] = gobject._version
-if hasattr(cairo, "version"):
-    GTK_VERSION_INFO["cairo.version"] = cairo.version
-if hasattr(pango, "version_string"):
-    GTK_VERSION_INFO["pango.version"] = pango.version_string()
-try:
-    import glib
-    GTK_VERSION_INFO["glib.version"] = glib.glib_version
-    GTK_VERSION_INFO["pyglib.version"] = glib.pyglib_version
-except:
-    pass
+def get_gtk_version_info():
+    #update props given:
+    global GTK_VERSION_INFO
+    if not GTK_VERSION_INFO:
+        if hasattr(gtk, "pygtk_version"):
+            GTK_VERSION_INFO["pygtk.version"] = gtk.pygtk_version
+        if hasattr(gtk, "gtk_version"):
+            #GTK2:
+            GTK_VERSION_INFO["gtk.version"] = gtk.gtk_version
+        elif hasattr(gtk, "_version"):
+            #GTK3:
+            GTK_VERSION_INFO["gtk.version"] = gtk._version
+        if hasattr(gdk, "__version__"):
+            #GTK2:
+            GTK_VERSION_INFO["gdk.version"] = gdk.__version__
+        elif hasattr(gdk, "_version"):
+            #GTK3:
+            GTK_VERSION_INFO["gdk.version"] = gdk._version
+        if is_gtk3():
+            try:
+                import gi
+                GTK_VERSION_INFO["gi.version"] = gi.__version__
+            except:
+                pass
+        if hasattr(gobject, "pygobject_version"):
+            GTK_VERSION_INFO["gobject.version"] = gobject.pygobject_version
+        elif hasattr(gobject, "_version"):
+            GTK_VERSION_INFO["gobject.version"] = gobject._version
+        if hasattr(cairo, "version"):
+            GTK_VERSION_INFO["cairo.version"] = cairo.version
+        if hasattr(pango, "version_string"):
+            GTK_VERSION_INFO["pango.version"] = pango.version_string()
+        try:
+            import glib
+            GTK_VERSION_INFO["glib.version"] = glib.glib_version
+            GTK_VERSION_INFO["pyglib.version"] = glib.pyglib_version
+        except:
+            pass
+    return GTK_VERSION_INFO.copy()
+
 
 if is_gtk3():
     default_Cursor          = gdk.Cursor.new(gdk.CursorType.X_CURSOR)
@@ -231,13 +238,6 @@ else:
                 gtk.main()
             finally:
                 gdk.threads_leave()
-
-
-
-def get_gtk_version_info():
-    #update props given:
-    global GTK_VERSION_INFO
-    return GTK_VERSION_INFO.copy()
 
 
 def get_display_info():
@@ -632,7 +632,7 @@ def main():
     try:
         init("GTK-Version-Info", "GTK Version Info")
         print("GTK Version:")
-        print_dict(GTK_VERSION_INFO)
+        print_dict(get_gtk_version_info())
         print("Display:")
         print_dict(get_display_info(), vformat=str)
     finally:
