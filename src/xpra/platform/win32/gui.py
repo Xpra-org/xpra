@@ -121,25 +121,25 @@ def remove_window_hooks(window):
         log.error("remove_window_hooks(%s)", exc_info=True)
 
 
-def get_icon_size():
+def get_dpi():
     try:
-        SystemParametersInfo = windll.user32.SystemParametersInfoA
-        dpiX = ctypes.c_uint32()
-        dpiY = ctypes.c_uint32()
-        if SystemParametersInfo(win32con.LOGPIXELSX, 0, byref(dpiX), 0) and \
-           SystemParametersInfo(win32con.LOGPIXELSY, 0, byref(dpiY), 0):
-            dpi = (dpiX.value + dpiY.value)/2
-            if dpi > 144:
-                return 48
-            elif dpi > 120:
-                return 32
-            elif dpi > 96:
-                return 24
-            else:
-                return 16
+        dpiX = _get_device_caps(win32con.LOGPIXELSX)
+        dpiY = _get_device_caps(win32con.LOGPIXELSY)
+        return (dpiX + dpiY)//2
     except Exception as e:
-        log.warn("failed to get icon size: %s", e)
-    return 24
+        log.warn("failed to get dpi: %s", e)
+    return -1
+
+def get_icon_size():
+    dpi = get_dpi()
+    if dpi > 144:
+        return 48
+    elif dpi > 120:
+        return 32
+    elif dpi > 96:
+        return 24
+    else:
+        return 16
 
 def get_antialias_info():
     info = {}
