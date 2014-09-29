@@ -87,7 +87,8 @@ def get_antialias_info():
         if v:
             _, values = v
             for setting_type, prop_name, value, _ in values:
-                if setting_type==XSettingsTypeInteger:
+                #-1 means default, so we just don't specify it
+                if setting_type==XSettingsTypeInteger and value>=0:
                     if prop_name=="Xft/Antialias":
                         info["enabled"] = bool(value)
                     elif prop_name=="Xft/Hinting":
