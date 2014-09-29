@@ -126,6 +126,13 @@ def get_double_click_time():
     except:
         return 0
 
+def get_double_click_distance():
+    try:
+        import win32api                     #@UnresolvedImport
+        return win32api.GetSystemMetrics(win32con.SM_CXDOUBLECLK), win32api.GetSystemMetrics(win32con.SM_CYDOUBLECLK)
+    except:
+        return -1, -1
+
 
 class ClientExtras(object):
     def __init__(self, client, opts):

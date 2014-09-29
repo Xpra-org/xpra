@@ -289,7 +289,7 @@ class ServerSource(object):
         self.control_commands = []
         self.supports_transparency = False
         self.double_click_time  = -1
-        self.double_click_distance = -1
+        self.double_click_distance = -1, -1
         #what we send back in hello packet:
         self.ui_client = True
         self.wants_aliases = True
@@ -507,7 +507,7 @@ class ServerSource(object):
         self.control_commands = c.strlistget("control_commands")
         self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
         self.double_click_time = c.intget("double_click.time")
-        self.double_click_distance = c.intget("double_click.distance")
+        self.double_click_distance = c.intpair("double_click.distance")
 
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
@@ -1062,20 +1062,21 @@ class ServerSource(object):
 
     def get_features_info(self):
         info = {}
-        def battr(k, name):
-            info[k] = bool(getattr(self, name))
+        def battr(k, prop):
+            info[k] = bool(getattr(self, prop))
         for prop in ("named_cursors", "share", "randr_notify",
                      "clipboard_notifications", "system_tray",
                      "lz4", "lzo"):
             battr(prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
-                           "double_click_time"  : "double_click.time",
-                           "double_click_distance" : "double_click.distance",
                            "send_windows"       : "windows",
                            "send_cursors"       : "cursors",
                            "send_notifications" : "notifications",
                            "send_bell"          : "bell"}.items():
             battr(name, prop)
+        for prop, name in {"double_click_time"      : "double_click.time",
+                           "double_click_distance"  : "double_click.distance"}.items():
+            info[name] = getattr(self, prop)
         return info
 
     def get_sound_info(self):

@@ -65,7 +65,8 @@ def get_double_click_time():
     return _get_xsettings_int("Net/DoubleClickTime", -1)
 
 def get_double_click_distance():
-    return _get_xsettings_int("Net/DoubleClickDistance", -1)
+    v = _get_xsettings_int("Net/DoubleClickDistance", -1)
+    return v, v
 
 
 def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):

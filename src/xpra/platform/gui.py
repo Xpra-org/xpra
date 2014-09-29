@@ -53,7 +53,7 @@ def get_double_click_time():
     return -1
 
 def get_double_click_distance():
-    return -1
+    return -1, -1
 
 
 def add_window_hooks(window):

@@ -832,7 +832,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
             #cook xsettings to add double-click settings:
             #(as those may not be present in xsettings on some platforms.. like win32 and osx)
-            if k=="xsettings-blob" and (self.double_click_time>0 or self.double_click_distance>0):
+            if k=="xsettings-blob" and (self.double_click_time>0 or self.double_click_distance!=(-1, -1)):
                 from xpra.x11.xsettings_prop import XSettingsTypeInteger
                 def set_xsettings_int(name, value):
                     #remove existing one, if any:
@@ -842,8 +842,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     return serial, new_values
                 if self.double_click_time>0:
                     v = set_xsettings_int("Net/DoubleClickTime", self.double_click_time)
-                if self.double_click_distance>0:
-                    v = set_xsettings_int("Net/DoubleClickDistance", self.double_click_distance)
+                if self.double_click_distance!=(-1, -1):
+                    #some platforms give us a value for each axis,
+                    #but X11 only has one, so take the average
+                    try:
+                        x,y = self.double_click_distance
+                        if x>0 and y>0:
+                            d = (x+y)//2
+                            d = max(1, min(128, d))     #sanitize it a bit
+                            v = set_xsettings_int("Net/DoubleClickDistance", d)
+                    except Exception as e:
+                        log.warn("error setting double click distance from %s: %s", self.double_click_distance, e)
 
             if k not in old_settings or v != old_settings[k]:
                 def root_set(p):

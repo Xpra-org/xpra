@@ -175,7 +175,10 @@ class typedict(dict):
         if len(v)!=2:
             #"%s is not a pair of numbers: %s" % (k, len(v))
             return default_value
-        return v
+        try:
+            return int(v[0]), int(v[1])
+        except:
+            return default_value
 
     def strlistget(self, k, default_value=[]):
         return self.listget(k, default_value, str)
