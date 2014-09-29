@@ -132,6 +132,7 @@ def get_antialias_info():
         #SPI_GETFONTSMOOTHING:
         add_param(0x004A, "enabled", bool)
         #SPI_GETFONTSMOOTHINGCONTRAST
+        #"Valid contrast values are from 1000 to 2200. The default value is 1400."
         add_param(0x200C, "contrast", int)
         #SPI_GETFONTSMOOTHINGORIENTATION
         def orientation(v):
@@ -145,8 +146,9 @@ def get_antialias_info():
         def smoothing_type(v):
             #FE_FONTSMOOTHINGCLEARTYPE      0x0002 
             #FE_FONTSMOOTHINGDOCKING        0x8000 
-            return {0 : "normal",  2: "cleartype"}.get(v & 0x1, "unknown")
+            return {0 : "normal",  2: "cleartype"}.get(v & 0x2, "unknown")
         add_param(0x200A, "type", smoothing_type)
+        add_param(0x200A, "hinting", lambda v : bool(v & 0x2))
     except Exception as e:
         log.warn("failed to query antialias info: %s", e)
     return info

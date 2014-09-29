@@ -87,18 +87,21 @@ def get_info_base():
             return str(v)
     def fnames(l):
         return [fname(x) for x in l]
-    return {
+    info = {
             "native_tray_menu_helpers"      : fnames(get_native_tray_menu_helper_classes()),
             "native_trays"                  : fnames(get_native_tray_classes()),
             "native_system_trays"           : fnames(get_native_system_tray_classes()),
             "system_bell"                   : fname(system_bell),
             "native_notifiers"              : fnames(get_native_notifier_classes()),
             "workarea"                      : get_workarea() or "",
-            "antialias"                     : get_antialias_info(),
             "vertical-refresh"              : get_vrefresh(),
             "double_click.time"             : get_double_click_time(),
             "double_click.distance"         : get_double_click_distance(),
             }
+    from xpra.util import updict
+    updict(info, "antialias", get_antialias_info())
+    return info
+    
 get_info = get_info_base
 
 

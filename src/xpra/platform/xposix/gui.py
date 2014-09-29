@@ -60,8 +60,53 @@ def _get_X11_root_property(name, req_type):
     return None
 
 
+def _get_xsettings():
+    try:
+        from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+        window_bindings = X11WindowBindings()
+        selection = "_XSETTINGS_S0"
+        owner = window_bindings.XGetSelectionOwner(selection)
+        if not owner:
+            return None
+        XSETTINGS = "_XSETTINGS_SETTINGS"
+        data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
+        if not data:
+            return None
+        from xpra.x11.xsettings_prop import get_settings
+        return get_settings(None, data)
+    except Exception as e:
+        log("_get_xsettings error: %s", e)
+    return None
+
+
 def get_antialias_info():
     info = {}
+    try:
+        from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
+        v = _get_xsettings()
+        if v:
+            _, values = v
+            for setting_type, prop_name, value, _ in values:
+                if setting_type==XSettingsTypeInteger:
+                    if prop_name=="Xft/Antialias":
+                        info["enabled"] = bool(value)
+                    elif prop_name=="Xft/Hinting":
+                        info["hinting"] = bool(value)
+                if setting_type==XSettingsTypeString:
+                    if prop_name=="Xft/HintStyle":
+                        info["hintstyle"] = value
+                        #win32 API uses numerical values:
+                        #(this is my best guess at translating the X11 names)
+                        contrast = {"hintnone"      : 0,
+                                    "hintslight"    : 1000,
+                                    "hintmedium"    : 1600,
+                                    "hintfull"      : 2200}.get(value, -1)
+                        if contrast>=0:
+                            info["contrast"] = contrast
+                    elif prop_name=="Xft/RGBA":
+                        info["orientation"] = str(value).upper()
+    except Exception as e:
+        log.warn("failed to get antialias info from xsettings: %s", e)
     return info
 
 
@@ -104,15 +149,6 @@ def get_vrefresh():
         log.warn("failed to get VREFRESH: %s", e)
         return -1
 
-
-def _get_xsettings():
-    try:
-        from xpra.x11.xsettings import XSettingsHelper
-        xsh = XSettingsHelper()
-        return xsh.get_settings()
-    except Exception as e:
-        log("_get_xsettings error: %s", e)
-    return None
 
 def _get_xsettings_int(name, default_value):
     s = _get_xsettings()
