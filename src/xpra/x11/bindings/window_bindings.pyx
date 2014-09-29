@@ -350,6 +350,10 @@ cdef class X11WindowBindings(X11CoreBindings):
         string = str_or_int
         return XInternAtom(self.display, string, False)
 
+    def getDefaultRootWindow(self):
+        return XDefaultRootWindow(self.display)
+
+
     cpdef XGetAtomName(self, Atom atom):
         v = XGetAtomName(self.display, atom)
         return v[:]

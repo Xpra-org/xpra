@@ -119,6 +119,14 @@ def remove_window_hooks(window):
         log.error("remove_window_hooks(%s)", exc_info=True)
 
 
+def get_workarea():
+    from ctypes import windll, wintypes, byref
+    SystemParametersInfo = windll.user32.SystemParametersInfoA
+    workarea = wintypes.RECT()
+    if SystemParametersInfo(win32con.SPI_GETWORKAREA, 0, byref(workarea), 0):
+        return workarea.left, workarea.top, workarea.right, workarea.bottom
+    return None
+
 def _get_device_caps(constant):
     dc = None
     try:

@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import struct
 from xpra.log import Logger
 log = Logger("posix")
 eventlog = Logger("events", "posix")
@@ -39,6 +40,54 @@ def get_native_tray_classes():
 def get_native_system_tray_classes():
     #appindicator can be used for both
     return get_native_tray_classes()
+
+
+#we duplicate some of the code found in gtk_x11.prop ...
+#which is still better than having dependencies on that GTK2 code
+def _get_X11_root_property(name, req_type):
+    try:
+        from xpra.x11.bindings.window_bindings import X11WindowBindings, PropertyError #@UnresolvedImport
+        window_bindings = X11WindowBindings()
+        root = window_bindings.getDefaultRootWindow()
+        try:
+            prop = trap.call_synced(window_bindings.XGetWindowProperty, root, name, req_type)
+            log.info("_get_X11_root_property(%s, %s)=%s, len=%s", name, req_type, type(prop), len(prop))
+            return prop
+        except PropertyError as e:
+            log("_get_X11_root_property(%s, %s): %s", name, req_type, e)
+    except Exception as e:
+        log.warn("failed to get workarea: %s", e)
+    return None
+
+
+def get_current_desktop():
+    try:
+        d = _get_X11_root_property("_NET_CURRENT_DESKTOP", "CARDINAL")
+        v = struct.unpack("=I", d)[0]
+        log("get_current_desktop()=%s", v)
+        return v
+    except Exception as e:
+        log.warn("failed to get current desktop: %s", e)
+    return -1
+
+def get_workarea():
+    try:
+        d = get_current_desktop()
+        if d<0:
+            return None
+        workarea = _get_X11_root_property("_NET_WORKAREA", "CARDINAL")
+        log("get_workarea()=%s, len=%s", type(workarea), len(workarea))
+        #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
+        if len(workarea)<(d+1)*4*4:
+            log.warn("get_workarea() invalid _NET_WORKAREA value")
+        else:
+            cur_workarea = workarea[d*4*4:(d+1)*4*4]
+            v = struct.unpack("=IIII", cur_workarea)
+            log("get_workarea()=%s", v)
+            return v
+    except Exception as e:
+        log.warn("failed to get workarea: %s", e)
+    return None
 
 
 def get_vrefresh():

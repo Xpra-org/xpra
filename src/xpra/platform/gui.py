@@ -48,6 +48,9 @@ def system_bell(*args):
 def get_native_notifier_classes():
     return []
 
+def get_workarea():
+    return None
+
 def get_vrefresh():
     return -1
 
@@ -86,6 +89,8 @@ def get_info_base():
             "native_system_trays"           : fnames(get_native_system_tray_classes()),
             "system_bell"                   : fname(system_bell),
             "native_notifiers"              : fnames(get_native_notifier_classes()),
+            "workarea"                      : get_workarea() or "",
+            "vertical-refresh"              : get_vrefresh(),
             "double_click.time"             : get_double_click_time(),
             "double_click.distance"         : get_double_click_distance(),
             }
@@ -103,7 +108,7 @@ platform_import(globals(), "gui", False,
                 "get_native_tray_classes",
                 "get_native_system_tray_classes",
                 "get_native_notifier_classes",
-                "get_vrefresh",
+                "get_vrefresh", "get_workarea",
                 "get_double_click_time", "get_double_click_distance",
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",
@@ -112,7 +117,7 @@ platform_import(globals(), "gui", False,
 
 def main():
     from xpra.platform import init as platform_init,clean
-    from xpra.util import nonl, pver
+    from xpra.util import nonl
     try:
         platform_init("GUI-Properties")
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
@@ -134,7 +139,7 @@ def main():
         i = get_info()
         for k in sorted(i.keys()):
             v = i[k]
-            print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
+            print("* %s : %s" % (k.ljust(32), nonl(v)))
     finally:
         clean()
 

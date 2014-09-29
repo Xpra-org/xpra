@@ -29,7 +29,7 @@ from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import system_bell
+from xpra.platform.gui import system_bell, get_workarea
 
 missing_cursor_names = set()
 
@@ -253,13 +253,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 j += 1
             work_x, work_y = 0, 0
             work_width, work_height = screen.get_width(), screen.get_height()
-            if not sys.platform.startswith("win"):
-                try:
-                    p = gtk.gdk.atom_intern('_NET_WORKAREA')
-                    root = screen.get_root_window()
-                    work_x, work_y, work_width, work_height = root.property_get(p)[2][:4]
-                except:
-                    pass
+            workarea = get_workarea()
+            if workarea:
+                work_x, work_y, work_width, work_height = workarea
             item = (screen.make_display_name(), screen.get_width(), screen.get_height(),
                         screen.get_width_mm(), screen.get_height_mm(),
                         monitors,
