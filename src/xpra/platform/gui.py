@@ -48,6 +48,10 @@ def system_bell(*args):
 def get_native_notifier_classes():
     return []
 
+
+def get_antialias_info():
+    return {}
+
 def get_workarea():
     return None
 
@@ -90,6 +94,7 @@ def get_info_base():
             "system_bell"                   : fname(system_bell),
             "native_notifiers"              : fnames(get_native_notifier_classes()),
             "workarea"                      : get_workarea() or "",
+            "antialias"                     : get_antialias_info(),
             "vertical-refresh"              : get_vrefresh(),
             "double_click.time"             : get_double_click_time(),
             "double_click.distance"         : get_double_click_distance(),
@@ -108,7 +113,7 @@ platform_import(globals(), "gui", False,
                 "get_native_tray_classes",
                 "get_native_system_tray_classes",
                 "get_native_notifier_classes",
-                "get_vrefresh", "get_workarea",
+                "get_vrefresh", "get_workarea", "get_antialias_info",
                 "get_double_click_time", "get_double_click_distance",
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",
@@ -120,6 +125,7 @@ def main():
     from xpra.util import nonl
     try:
         platform_init("GUI-Properties")
+        init()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
             from xpra.log import get_all_loggers

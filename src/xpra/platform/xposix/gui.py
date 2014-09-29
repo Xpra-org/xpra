@@ -60,6 +60,11 @@ def _get_X11_root_property(name, req_type):
     return None
 
 
+def get_antialias_info():
+    info = {}
+    return info
+
+
 def get_current_desktop():
     try:
         d = _get_X11_root_property("_NET_CURRENT_DESKTOP", "CARDINAL")

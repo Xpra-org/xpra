@@ -13,6 +13,8 @@ grablog = Logger("win32", "grab")
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct
+import ctypes
+from ctypes import windll, wintypes, byref
 
 
 KNOWN_EVENTS = {}
@@ -33,14 +35,14 @@ except Exception as e:
 def do_init():
     #tell win32 we handle dpi
     try:
-        from ctypes import WINFUNCTYPE, windll
+        from ctypes import WINFUNCTYPE
         from ctypes.wintypes import BOOL
         prototype = WINFUNCTYPE(BOOL)
         SetProcessDPIAware = prototype(("SetProcessDPIAware", windll.user32))
         dpi_set = SetProcessDPIAware()
         log("SetProcessDPIAware()=%s", dpi_set)
     except Exception as e:
-        log.warn("failed to set DPI: %s", e)
+        log("failed to set DPI: %s", e)
 
 
 def get_native_notifier_classes():
@@ -119,8 +121,37 @@ def remove_window_hooks(window):
         log.error("remove_window_hooks(%s)", exc_info=True)
 
 
+def get_antialias_info():
+    info = {}
+    try:
+        SystemParametersInfo = windll.user32.SystemParametersInfoA
+        def add_param(constant, name, convert):
+            i = ctypes.c_uint32()
+            if SystemParametersInfo(constant, 0, byref(i), 0):
+                info[name] = convert(i.value)
+        #SPI_GETFONTSMOOTHING:
+        add_param(0x004A, "enabled", bool)
+        #SPI_GETFONTSMOOTHINGCONTRAST
+        add_param(0x200C, "contrast", int)
+        #SPI_GETFONTSMOOTHINGORIENTATION
+        def orientation(v):
+            #FE_FONTSMOOTHINGORIENTATIONBGR  0x0000
+            #FE_FONTSMOOTHINGORIENTATIONRGB  0x0001
+            #FE_FONTSMOOTHINGORIENTATIONVBGR 0x0002
+            #FE_FONTSMOOTHINGORIENTATIONVRGB 0x0003
+            return {0 : "BGR", 1 : "RGB", 2 : "VBGR", 3 : "VRGB"}.get(v, "unknown")
+        add_param(0x2012, "orientation", orientation)
+        #SPI_GETFONTSMOOTHINGTYPE
+        def smoothing_type(v):
+            #FE_FONTSMOOTHINGCLEARTYPE      0x0002 
+            #FE_FONTSMOOTHINGDOCKING        0x8000 
+            return {0 : "normal",  2: "cleartype"}.get(v & 0x1, "unknown")
+        add_param(0x200A, "type", smoothing_type)
+    except Exception as e:
+        log.warn("failed to query antialias info: %s", e)
+    return info
+
 def get_workarea():
-    from ctypes import windll, wintypes, byref
     SystemParametersInfo = windll.user32.SystemParametersInfoA
     workarea = wintypes.RECT()
     if SystemParametersInfo(win32con.SPI_GETWORKAREA, 0, byref(workarea), 0):
@@ -130,7 +161,7 @@ def get_workarea():
 def _get_device_caps(constant):
     dc = None
     try:
-        import ctypes, win32gui             #@UnresolvedImport
+        import win32gui             #@UnresolvedImport
         gdi32 = ctypes.windll.gdi32
         dc = win32gui.GetDC(None)
         return gdi32.GetDeviceCaps(dc, constant)
