@@ -259,6 +259,8 @@ def get_info():
         i["xsettings.serial"] = serial
         for _,name,value,_ in values:
             i["xsettings.%s" % name] = value
+    i["dpi.xsettings"] = _get_xsettings_dpi()
+    i["dpi.randr"] = _get_randr_dpi()
     return i
 
 
