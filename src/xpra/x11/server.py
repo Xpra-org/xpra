@@ -44,7 +44,7 @@ traylog = Logger("server", "tray")
 settingslog = Logger("x11", "xsettings")
 
 import xpra
-from xpra.util import nonl
+from xpra.util import nonl, typedict
 from xpra.os_util import StringIOClass
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 from xpra.net.compression import Compressed
@@ -792,6 +792,22 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._xsettings_manager = XSettingsManager()
         self._xsettings_manager.set_settings(v)
 
+    def _get_antialias_hintstyle(self):
+        ad = typedict(self.antialias)
+        hintstyle = ad.strget("hintstyle", "hintnone").lower()
+        if hintstyle in ("hintnone", "hintslight", "hintmedium", "hintfull"):
+            #X11 clients can give us what we need directly:
+            return hintstyle
+        #win32 style contrast value:
+        contrast = ad.intget("contrast", -1)
+        if contrast>1600:
+            return "hintfull"
+        elif contrast>1000:
+            return "hintmedium"
+        elif contrast>0:
+            return "hintslight"
+        return "hintnone"
+
     def update_server_settings(self, settings, reset=False):
         if not self.xsettings_enabled:
             settingslog("ignoring xsettings update: %s", settings)
@@ -803,6 +819,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         old_settings = dict(self._settings)
         settingslog("server_settings: old=%s, updating with=%s", nonl(old_settings), nonl(settings))
         settingslog("overrides: dpi=%s, double click time=%s, double click distance=%s", self.dpi, self.double_click_time, self.double_click_distance)
+        settingslog("overrides: antialias=%s", self.antialias)
         self._settings.update(settings)
         root = gtk.gdk.get_default_root_window()
         for k, v in settings.items():
@@ -821,6 +838,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     values[parts[0]] = parts[1]
                 values["Xft.dpi"] = self.dpi
                 values["gnome.Xft/DPI"] = self.dpi*1024
+                if self.antialias:
+                    ad = typedict(self.antialias)
+                    values.update({
+                                   "Xft.antialias"  : ad.intget("enabled", -1),
+                                   "Xft.hinting"    : ad.intget("hinting", -1),
+                                   "Xft.rgba"       : ad.strget("orientation", "none").lower(),
+                                   "Xft.hintstyle"  : self._get_antialias_hintstyle()})
                 settingslog("server_settings: resource-manager values=%s", nonl(values))
                 #convert the dict back into a resource string:
                 value = ''
@@ -833,15 +857,25 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #cook xsettings to add double-click settings:
             #(as those may not be present in xsettings on some platforms.. like win32 and osx)
             if k=="xsettings-blob" and (self.double_click_time>0 or self.double_click_distance!=(-1, -1)):
-                from xpra.x11.xsettings_prop import XSettingsTypeInteger
-                def set_xsettings_int(name, value):
+                from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
+                def set_xsettings_value(name, value_type, value):
                     #remove existing one, if any:
                     serial, values = v
                     new_values = [(_t,_n,_v,_s) for (_t,_n,_v,_s) in values if _n!=name]
-                    new_values.append((XSettingsTypeInteger, name, value, 0))
+                    new_values.append((value_type, name, value, 0))
                     return serial, new_values
+                def set_xsettings_int(name, value):
+                    return set_xsettings_value(name, XSettingsTypeInteger, value)
+                if self.dpi>0:
+                    v = set_xsettings_int("Xft/DPI", self.dpi*1024)
                 if self.double_click_time>0:
                     v = set_xsettings_int("Net/DoubleClickTime", self.double_click_time)
+                if self.antialias:
+                    ad = typedict(self.antialias)
+                    v = set_xsettings_int("Xft/Antialias",  ad.intget("enabled", -1))
+                    v = set_xsettings_int("Xft/Hinting",    ad.intget("hinting", -1))
+                    v = set_xsettings_value("Xft/RGBA",     XSettingsTypeString, ad.strget("orientation", "none").lower())
+                    v = set_xsettings_value("Xft/HintStyle", XSettingsTypeString, self._get_antialias_hintstyle())
                 if self.double_click_distance!=(-1, -1):
                     #some platforms give us a value for each axis,
                     #but X11 only has one, so take the average

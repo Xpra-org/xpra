@@ -72,6 +72,7 @@ class ServerBase(ServerCore):
         self.dpi = 0
         self.xdpi = 0
         self.ydpi = 0
+        self.antialias = {}
         #duplicated from Server Source...
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
@@ -143,6 +144,7 @@ class ServerBase(ServerCore):
         self.dpi = 0
         self.xdpi = 0
         self.ydpi = 0
+        self.antialias = {}
         self.supports_clipboard = opts.clipboard
         self.supports_dbus_proxy = opts.dbus_proxy
         self.send_pings = opts.pings
@@ -538,6 +540,11 @@ class ServerBase(ServerCore):
             return
 
         if not is_request and ui_client:
+            #a bit of explanation:
+            #normally these things are synchronized using xsettings, which we handle already
+            #but non-posix clients have no such thing and we don't won't to expose that as an interface (it's not very nice and very X11 specific)
+            #also, clients may want to override what is in their xsettings..
+            #so if the client specifies what it wants to use, we patch the xsettings with it
             if share_count>0:
                 log.info("sharing with %s other client(s)", share_count)
                 self.dpi = 0
@@ -551,17 +558,16 @@ class ServerBase(ServerCore):
                 self.ydpi = c.intget("dpi.y", 0)
                 self.double_click_time = c.intget("double_click.time", -1)
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
-            log("dpi=%s, dpi.x=%s, dpi.y=%s, double_click_time=%s, double_click_distance=%s", self.dpi, self.xdpi, self.ydpi, self.double_click_time, self.double_click_distance)
+            self.antialias = c.dictget("antialias")
+            log("dpi=%s, dpi.x=%s, dpi.y=%s, double_click_time=%s, double_click_distance=%s, antialias=%s", self.dpi, self.xdpi, self.ydpi, self.double_click_time, self.double_click_distance, self.antialias)
             #if we're not sharing, reset all the settings:
             reset = share_count==0
             #some non-posix clients never send us 'resource-manager' settings
-            #so just use a fake one to ensure the dpi gets applied:
-            if self.dpi>0:
-                self.update_server_settings({'resource-manager' : ""}, reset=reset)
+            #so just use a fake one to ensure the overrides get applied:
+            self.update_server_settings({'resource-manager' : ""}, reset=reset)
             #same for xsettings and double click settings:
-            #fake an empty xsettings update
-            if self.double_click_time>0 or self.double_click_distance!=(-1, -1):
-                self.update_server_settings({"xsettings-blob" : (0, [])}, reset=reset)
+            #fake an empty xsettings update:
+            self.update_server_settings({"xsettings-blob" : (0, [])}, reset=reset)
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.send_aliases = c.dictget("aliases")

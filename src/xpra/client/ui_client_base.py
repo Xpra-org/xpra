@@ -963,8 +963,7 @@ class UIXpraClient(XpraClientBase):
                                  "dpi.x"    : get_xdpi(),
                                  "dpi.y"    : get_ydpi(),
                                  })
-        from xpra.util import updict
-        updict(capabilities, "antialias", get_antialias_info())
+        capabilities["antialias"] = get_antialias_info()
         #generic rgb compression flags:
         for x in compression.ALL_COMPRESSORS:
             capabilities["encoding.rgb_%s" % x] = x in compression.get_enabled_compressors()
@@ -1062,6 +1061,7 @@ class UIXpraClient(XpraClientBase):
                                          receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
                 except Exception:
                     pass
+            from xpra.util import updict
             updict(capabilities, "sound", sound_caps)
             soundlog("sound capabilities: %s", sound_caps)
         except ImportError as e:
