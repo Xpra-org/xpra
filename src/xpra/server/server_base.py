@@ -69,7 +69,9 @@ class ServerBase(ServerCore):
         self.bell = False
         self.cursors = False
         self.default_dpi = 96
-        self.dpi = 96
+        self.dpi = 0
+        self.xdpi = 0
+        self.ydpi = 0
         #duplicated from Server Source...
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
@@ -138,7 +140,9 @@ class ServerBase(ServerCore):
         self.bell = opts.bell
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
-        self.dpi = self.default_dpi
+        self.dpi = 0
+        self.xdpi = 0
+        self.ydpi = 0
         self.supports_clipboard = opts.clipboard
         self.supports_dbus_proxy = opts.dbus_proxy
         self.send_pings = opts.pings
@@ -536,14 +540,18 @@ class ServerBase(ServerCore):
         if not is_request and ui_client:
             if share_count>0:
                 log.info("sharing with %s other client(s)", share_count)
-                self.dpi = self.default_dpi
+                self.dpi = 0
+                self.xdpi = 0
+                self.ydpi = 0
                 self.double_click_time = -1
                 self.double_click_distance = -1, -1
             else:
-                self.dpi = c.intget("dpi", self.default_dpi)
+                self.dpi = c.intget("dpi", 0)
+                self.xdpi = c.intget("dpi.x", 0)
+                self.ydpi = c.intget("dpi.y", 0)
                 self.double_click_time = c.intget("double_click.time", -1)
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
-            log("dpi=%s, double_click_time=%s, double_click_distance=%s", self.dpi, self.double_click_time, self.double_click_distance)
+            log("dpi=%s, dpi.x=%s, dpi.y=%s, double_click_time=%s, double_click_distance=%s", self.dpi, self.xdpi, self.ydpi, self.double_click_time, self.double_click_distance)
             #if we're not sharing, reset all the settings:
             reset = share_count==0
             #some non-posix clients never send us 'resource-manager' settings
@@ -1084,6 +1092,12 @@ class ServerBase(ServerCore):
         log("info-request: sources=%s, wids=%s", sources, wids)
         ei = self.do_get_info(proto, sources, wids)
         info.update(ei)
+        updict(info, "dpi", {
+                             "default"      : self.default_dpi,
+                             "value"        : self.dpi,
+                             "x"            : self.xdpi,
+                             "y"            : self.ydpi
+                             })
         log("get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 

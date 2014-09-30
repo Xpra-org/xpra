@@ -88,21 +88,22 @@ def _get_xsettings_dict():
     return d
 
 
-def get_dpi():
+def _get_xsettings_dpi():
+    from xpra.x11.xsettings_prop import XSettingsTypeInteger
+    d = _get_xsettings_dict()
+    for k,div in {"Xft.dpi"         : 1,
+                  "gnome.Xft/DPI"   : 1024,
+                  #"Gdk/UnscaledDPI" : 1024, ??
+                  }.items():
+        if k in d:
+            value_type, value = d.get(k)
+            if value_type==XSettingsTypeInteger:
+                log.info("get_dpi() found %s=%s", k, value)
+                return max(10, min(1000, value/div))
+    return -1
+
+def _get_randr_dpi():
     try:
-        #first we try xsettings:
-        from xpra.x11.xsettings_prop import XSettingsTypeInteger
-        d = _get_xsettings_dict()
-        for k,div in {"Xft.dpi"         : 1,
-                      "gnome.Xft/DPI"   : 1024,
-                      #"Gdk/UnscaledDPI" : 1024, ??
-                      }.items():
-            if k in d:
-                value_type, value = d.get(k)
-                if value_type==XSettingsTypeInteger:
-                    log.info("get_dpi() found %s=%s", k, value)
-                    return max(10, min(1000, value/div))
-        #try from X11:
         from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
         randr_bindings = RandRBindings()
         wmm, hmm = randr_bindings.get_screen_size_mm()
@@ -110,9 +111,30 @@ def get_dpi():
         dpix = int(w * 25.4 / wmm + 0.5)
         dpiy = int(h * 25.4 / hmm + 0.5)
         log("dpix=%s, dpiy=%s", dpix, dpiy)
-        return (dpix + dpiy)//2
+        return dpix, dpiy
     except Exception as e:
         log.warn("failed to get dpi: %s", e)
+    return -1, -1
+
+def get_xdpi():
+    dpi = _get_xsettings_dpi()
+    if dpi>0:
+        return dpi
+    return _get_randr_dpi()[0]
+
+def get_ydpi():
+    dpi = _get_xsettings_dpi()
+    if dpi>0:
+        return dpi
+    return _get_randr_dpi()[1]
+
+def get_dpi():
+    dpi = _get_xsettings_dpi()
+    if dpi>0:
+        return dpi
+    xdpi, ydpi = _get_randr_dpi()
+    if xdpi>0 and ydpi>0:
+        return (xdpi + ydpi)//2
     return -1
 
 def get_antialias_info():

@@ -30,7 +30,9 @@ from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_application_name
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
-from xpra.platform.gui import ready as gui_ready, get_vrefresh, get_antialias_info, get_double_click_time, get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
+from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_double_click_time,
+                               get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
+                               get_native_tray_menu_helper_classes, get_dpi, get_xdpi, get_ydpi, ClientExtras)
 from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
@@ -79,7 +81,7 @@ class UIXpraClient(XpraClientBase):
         self.session_name = ""
         self.auto_refresh_delay = -1
         self.max_window_size = 0, 0
-        self.dpi = 96
+        self.dpi = 0
 
         #draw thread:
         self._draw_queue = None
@@ -905,7 +907,6 @@ class UIXpraClient(XpraClientBase):
             "wants_events"              : True,
             "randr_notify"              : True,
             "compressible_cursors"      : True,
-            "dpi"                       : self.dpi,
             "clipboard"                 : self.client_supports_clipboard,
             "clipboard.notifications"   : self.client_supports_clipboard,
             "clipboard.selections"      : CLIPBOARDS,
@@ -952,6 +953,16 @@ class UIXpraClient(XpraClientBase):
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
             })
+        if self.dpi>0:
+            #command line (or config file) override supplied:
+            capabilities["dpi"] = self.dpi
+        else:
+            #use platform detection code:
+            capabilities.update({
+                                 "dpi"      : get_dpi(),
+                                 "dpi.x"    : get_xdpi(),
+                                 "dpi.y"    : get_ydpi(),
+                                 })
         from xpra.util import updict
         updict(capabilities, "antialias", get_antialias_info())
         #generic rgb compression flags:

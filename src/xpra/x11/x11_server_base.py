@@ -282,26 +282,34 @@ class X11ServerBase(GTKServerBase):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         if desired_w==root_w and desired_h==root_h and not self.fake_xinerama:
             return    root_w,root_h    #unlikely: perfect match already!
-        #find the "physical" screen dimensions, so we can calculate the required dpi
-        #(and do this before changing the resolution)
-        wmm, hmm = 0, 0
-        client_w, client_h = 0, 0
-        sss = self._server_sources.values()
-        for ss in sss:
-            for s in ss.screen_sizes:
-                if len(s)>=10:
-                    #display_name, width, height, width_mm, height_mm, monitors, work_x, work_y, work_width, work_height
-                    client_w = max(client_w, s[1])
-                    client_h = max(client_h, s[2])
-                    wmm = max(wmm, s[3])
-                    hmm = max(hmm, s[4])
-        xdpi = self.default_dpi or self.dpi or 96
-        ydpi = self.default_dpi or self.dpi or 96
-        if wmm>0 and hmm>0 and client_w>0 and client_h>0:
-            #calculate "real" dpi using integer calculations:
-            xdpi = client_w * 254 / wmm / 10
-            ydpi = client_h * 254 / hmm / 10
-        log("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)", xdpi, ydpi, client_w, wmm, client_h, hmm)
+        #clients may supply "xdpi" and "ydpi" (v0.15 onwards), or just "dpi", or nothing...
+        xdpi = self.xdpi or self.dpi
+        ydpi = self.ydpi or self.dpi
+        log("set_screen_size(%s, %s) xdpi=%s, ydpi=%s", desired_w, desired_h, xdpi, ydpi)
+        if xdpi<=0 or ydpi<=0:
+            #use some sane defaults: either the command line option, or fallback to 96
+            #(96 is better than nothing, because we do want to set the dpi
+            # to avoid Xdummy setting a crazy dpi from the virtual screen dimensions)
+            xdpi = self.default_dpi or 96
+            ydpi = self.default_dpi or 96
+            #find the "physical" screen dimensions, so we can calculate the required dpi
+            #(and do this before changing the resolution)
+            wmm, hmm = 0, 0
+            client_w, client_h = 0, 0
+            sss = self._server_sources.values()
+            for ss in sss:
+                for s in ss.screen_sizes:
+                    if len(s)>=10:
+                        #display_name, width, height, width_mm, height_mm, monitors, work_x, work_y, work_width, work_height
+                        client_w = max(client_w, s[1])
+                        client_h = max(client_h, s[2])
+                        wmm = max(wmm, s[3])
+                        hmm = max(hmm, s[4])
+            if wmm>0 and hmm>0 and client_w>0 and client_h>0:
+                #calculate "real" dpi:
+                xdpi = int(client_w * 25.4 / wmm + 0.5)
+                ydpi = int(client_h * 25.4 / hmm + 0.5)
+                log("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)", xdpi, ydpi, client_w, wmm, client_h, hmm)
         self.set_dpi(xdpi, ydpi)
 
         #try to find the best screen size to resize to:

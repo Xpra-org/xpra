@@ -26,7 +26,7 @@ from xpra.platform.paths import get_default_socket_dir
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.net.protocol import ConnectionClosedException
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
-    make_defaults_struct, parse_bool, print_bool, validate_config, has_sound_support, name_to_field
+    make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
 
 
 SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
@@ -590,7 +590,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Which X11 input method to configure for client applications started with start-child (default: '%default', options: none, keep, xim, IBus, SCIM, uim)")
     group.add_option("--dpi", action="store",
                       dest="dpi", default=defaults.dpi,
-                      help="The 'dots per inch' value that client applications should try to honour. Default: %default.")
+                      help="The 'dots per inch' value that client applications should try to honour, from 10 to 1000 or 0 for automatic setting. Default: %s." % print_number(defaults.dpi))
     default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or '~/.xpra'"
     group.add_option("--socket-dir", action="store",
                       dest="socket_dir", default=defaults.socket_dir,
@@ -715,7 +715,7 @@ def do_parse_cmdline(cmdline, defaults):
         args[1] = address
 
     try:
-        int(options.dpi)
+        options.dpi = int(options.dpi)
     except Exception as e:
         raise InitException("invalid dpi: %s" % e)
     if options.max_size:

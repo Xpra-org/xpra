@@ -121,11 +121,23 @@ def remove_window_hooks(window):
         log.error("remove_window_hooks(%s)", exc_info=True)
 
 
+def get_xdpi():
+    try:
+        return _get_device_caps(win32con.LOGPIXELSX)
+    except Exception as e:
+        log.warn("failed to get xdpi: %s", e)
+    return -1
+
+def get_ydpi():
+    try:
+        return _get_device_caps(win32con.LOGPIXELSY)
+    except Exception as e:
+        log.warn("failed to get ydpi: %s", e)
+    return -1
+
 def get_dpi():
     try:
-        dpiX = _get_device_caps(win32con.LOGPIXELSX)
-        dpiY = _get_device_caps(win32con.LOGPIXELSY)
-        return (dpiX + dpiY)//2
+        return (get_xdpi() + get_ydpi())//2
     except Exception as e:
         log.warn("failed to get dpi: %s", e)
     return -1

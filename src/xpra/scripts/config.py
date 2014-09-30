@@ -367,7 +367,7 @@ def get_defaults():
                     "speed"             : 0,
                     "min-speed"         : 0,
                     "compression_level" : 1,
-                    "dpi"               : 96,
+                    "dpi"               : 0,
                     "max-bandwidth"     : 0.0,
                     "auto-refresh-delay": 0.25,
                     "daemon"            : True,
@@ -468,6 +468,11 @@ def parse_number(numtype, k, v, auto=0):
     except Exception as e:
         warn("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
         return None
+
+def print_number(i, auto_value=0):
+    if i==auto_value:
+        return "auto"
+    return str(i)
 
 def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_validation={}):
     """

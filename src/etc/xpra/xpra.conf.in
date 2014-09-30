@@ -122,8 +122,10 @@ min-speed = 0
 # Idle delay in seconds before doing an automatic lossless refresh:
 auto-refresh-delay = 0.15
 
-# Default DPI:
-dpi = 96
+# Use a fixed DPI:
+#dpi = 96
+#automatic (which is the default):
+#dpi = 0
 
 
 ################################################################################
