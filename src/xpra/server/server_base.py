@@ -1104,6 +1104,7 @@ class ServerBase(ServerCore):
                              "x"            : self.xdpi,
                              "y"            : self.ydpi
                              })
+        updict(info, "antialias", self.antialias)
         log("get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 
