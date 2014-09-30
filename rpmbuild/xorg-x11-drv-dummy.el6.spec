@@ -5,7 +5,7 @@
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
 Version:   0.3.6
-Release:   2.xpra1%{?dist}
+Release:   2.xpra2%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
@@ -50,13 +50,13 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/dummy_drv.so
 
 %changelog
-* Fri Apr 18 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-4
+* Fri Apr 18 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-2.xpra2
 - Add DPI override via root window property
 
-* Wed Apr 16 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-3
+* Wed Apr 16 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-2.xpra1
 - Add "ConstantDPI" support
 
-* Wed Aug 22 2012 airlied@redhat.com - 0.3.6-2
+* Wed Aug 22 2012 Dave Airlie <airlied@redhat.com> - 0.3.6-2
 - rebuild for server ABI requires
 
 * Thu Aug 02 2012 Dave Airlie <airlied@redhat.com> 0.3.6-1
