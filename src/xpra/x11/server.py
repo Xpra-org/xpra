@@ -794,7 +794,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _get_antialias_hintstyle(self):
         ad = typedict(self.antialias)
-        hintstyle = ad.strget("hintstyle", "hintnone").lower()
+        hintstyle = ad.strget("hintstyle", "").lower()
         if hintstyle in ("hintnone", "hintslight", "hintmedium", "hintfull"):
             #X11 clients can give us what we need directly:
             return hintstyle
