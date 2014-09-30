@@ -154,6 +154,14 @@ cdef class RandRBindings(X11CoreBindings):
     def get_screen_count(self):
         return XScreenCount(self.display)
 
+    def get_screen_size_mm(self):
+        sizes = self.get_screen_sizes_mm()
+        tw, th = 0, 0
+        for w,h in sizes:
+            tw += w
+            th += h
+        return tw, th
+
     def get_screen_sizes_mm(self):
         cdef int n = XScreenCount(self.display)
         cdef int i, w, h

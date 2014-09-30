@@ -360,10 +360,7 @@ class X11ServerBase(GTKServerBase):
                     msg += " (best match for %sx%s)" % (desired_w, desired_h)
                 log.info(msg)
             def show_dpi():
-                sizes_mm = RandR.get_screen_sizes_mm()      #ie: [(1280, 1024)]
-                assert len(sizes_mm)>0
-                wmm = sum([x[0] for x in sizes_mm]) / len(sizes_mm)
-                hmm = sum([x[1] for x in sizes_mm]) / len(sizes_mm)
+                wmm, hmm = RandR.get_screen_size_mm()      #ie: (1280, 1024)
                 actual_xdpi = int(root_w * 25.4 / wmm + 0.5)
                 actual_ydpi = int(root_h * 25.4 / hmm + 0.5)
                 if actual_xdpi==xdpi and actual_ydpi==ydpi:

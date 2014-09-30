@@ -130,17 +130,6 @@ def get_dpi():
         log.warn("failed to get dpi: %s", e)
     return -1
 
-def get_icon_size():
-    dpi = get_dpi()
-    if dpi > 144:
-        return 48
-    elif dpi > 120:
-        return 32
-    elif dpi > 96:
-        return 24
-    else:
-        return 16
-
 def get_antialias_info():
     info = {}
     try:

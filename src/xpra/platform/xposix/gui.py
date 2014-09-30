@@ -78,34 +78,72 @@ def _get_xsettings():
         log("_get_xsettings error: %s", e)
     return None
 
+def _get_xsettings_dict():
+    d = {}
+    v = _get_xsettings()
+    if v:
+        _, values = v
+        for setting_type, prop_name, value, _ in values:
+            d[prop_name] = (setting_type, value)
+    return d
+
+
+def get_dpi():
+    try:
+        #first we try xsettings:
+        from xpra.x11.xsettings_prop import XSettingsTypeInteger
+        d = _get_xsettings_dict()
+        for k,div in {"Xft.dpi"         : 1,
+                      "gnome.Xft/DPI"   : 1024,
+                      #"Gdk/UnscaledDPI" : 1024, ??
+                      }.items():
+            if k in d:
+                value_type, value = d.get(k)
+                if value_type==XSettingsTypeInteger:
+                    log.info("get_dpi() found %s=%s", k, value)
+                    return max(10, min(1000, value/div))
+        #try from X11:
+        from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
+        randr_bindings = RandRBindings()
+        wmm, hmm = randr_bindings.get_screen_size_mm()
+        w, h =  randr_bindings.get_screen_size()
+        dpix = int(w * 25.4 / wmm + 0.5)
+        dpiy = int(h * 25.4 / hmm + 0.5)
+        log("dpix=%s, dpiy=%s", dpix, dpiy)
+        return (dpix + dpiy)//2
+    except Exception as e:
+        log.warn("failed to get dpi: %s", e)
+    return -1
 
 def get_antialias_info():
     info = {}
     try:
         from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
-        v = _get_xsettings()
-        if v:
-            _, values = v
-            for setting_type, prop_name, value, _ in values:
-                #-1 means default, so we just don't specify it
-                if setting_type==XSettingsTypeInteger and value>=0:
-                    if prop_name=="Xft/Antialias":
-                        info["enabled"] = bool(value)
-                    elif prop_name=="Xft/Hinting":
-                        info["hinting"] = bool(value)
-                if setting_type==XSettingsTypeString:
-                    if prop_name=="Xft/HintStyle":
-                        info["hintstyle"] = value
-                        #win32 API uses numerical values:
-                        #(this is my best guess at translating the X11 names)
-                        contrast = {"hintnone"      : 0,
-                                    "hintslight"    : 1000,
-                                    "hintmedium"    : 1600,
-                                    "hintfull"      : 2200}.get(value, -1)
-                        if contrast>=0:
-                            info["contrast"] = contrast
-                    elif prop_name=="Xft/RGBA":
-                        info["orientation"] = str(value).upper()
+        d = _get_xsettings_dict()
+        for prop_name, name in {"Xft/Antialias"    : "enabled",
+                                "Xft/Hinting"      : "hinting"}.items():
+            if prop_name in d:
+                value_type, value = d.get(prop_name)
+                if value_type==XSettingsTypeInteger and value>0:
+                    info[name] = bool(value)
+        def get_contrast(value):
+            #win32 API uses numerical values:
+            #(this is my best guess at translating the X11 names)
+            return {"hintnone"      : 0,
+                    "hintslight"    : 1000,
+                    "hintmedium"    : 1600,
+                    "hintfull"      : 2200}.get(value)
+        for prop_name, name, convert in (
+                                         ("Xft/HintStyle",  "hintstyle",    str),
+                                         ("Xft/HintStyle",  "contrast",     get_contrast),
+                                         ("Xft/RGBA",       "orientation",  lambda x : str(x).upper())
+                                         ):
+            if prop_name in d:
+                value_type, value = d.get(prop_name)
+                if value_type==XSettingsTypeString:
+                    cval = convert(value)
+                    if cval is not None:
+                        info[name] = cval
     except Exception as e:
         log.warn("failed to get antialias info from xsettings: %s", e)
     return info
@@ -152,15 +190,14 @@ def get_vrefresh():
 
 
 def _get_xsettings_int(name, default_value):
-    s = _get_xsettings()
-    if not s:
+    d = _get_xsettings_dict()
+    if name not in d:
         return default_value
+    value_type, value = d.get(name)
     from xpra.x11.xsettings_prop import XSettingsTypeInteger
-    _, values = s
-    for setting_type, prop_name, value, _ in values:
-        if setting_type==XSettingsTypeInteger and prop_name==name:
-            return value
-    return default_value
+    if value_type!=XSettingsTypeInteger:
+        return default_value
+    return value
 
 def get_double_click_time():
     return _get_xsettings_int("Net/DoubleClickTime", -1)

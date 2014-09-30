@@ -49,8 +49,19 @@ def get_native_notifier_classes():
     return []
 
 
+def get_dpi():
+    return -1
+
 def get_icon_size():
-    return 24
+    dpi = get_dpi()
+    if dpi > 144:
+        return 48
+    elif dpi > 120:
+        return 32
+    elif dpi > 96:
+        return 24
+    else:
+        return 16
 
 def get_antialias_info():
     return {}
@@ -100,6 +111,7 @@ def get_info_base():
             "vertical-refresh"              : get_vrefresh(),
             "double_click.time"             : get_double_click_time(),
             "double_click.distance"         : get_double_click_distance(),
+            "dpi"                           : get_dpi(),
             "icon_size"                     : get_icon_size(),
             }
     from xpra.util import updict
@@ -120,7 +132,7 @@ platform_import(globals(), "gui", False,
                 "get_native_tray_classes",
                 "get_native_system_tray_classes",
                 "get_native_notifier_classes",
-                "get_vrefresh", "get_workarea", "get_antialias_info", "get_icon_size",
+                "get_vrefresh", "get_workarea", "get_antialias_info", "get_icon_size", "get_dpi",
                 "get_double_click_time", "get_double_click_distance",
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",
