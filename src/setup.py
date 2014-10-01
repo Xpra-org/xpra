@@ -1111,6 +1111,7 @@ if WIN32:
                                 "include_files"     : data_files,
                                 "excludes"          : excludes,
                                 "include_msvcr"     : True,
+                                "bin_excludes"      : ["MSVCR90.DLL"],
                                 "create_shared_zip" : zip_ENABLED,
                                 }
             setup_options["options"] = {"build_exe" : cx_freeze_options}
