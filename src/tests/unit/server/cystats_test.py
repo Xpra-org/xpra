@@ -7,7 +7,11 @@
 import unittest
 import random
 import time
-from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_timesize_weighted_average	#@UnresolvedImport
+
+try:
+	from xpra.server import cystats
+except ImportError:
+	cystats = None
 
 
 class TestCystats(unittest.TestCase):
@@ -23,18 +27,18 @@ class TestCystats(unittest.TestCase):
 			v = random.random()
 			data.append((t, s, v))
 			t += 1
-		a, ra = calculate_timesize_weighted_average(data)
+		a, ra = cystats.calculate_timesize_weighted_average(data)
 		assert 0<a and 0<ra
 		#the calculations use the ratio of the size divided by the elapsed time,
 		#so check that a predictable ratio gives the expected value:
 		for x in (5, 1000):
 			v = [(now, i*x, i) for i in range(1, 1000)]
-			a, ra = calculate_timesize_weighted_average(v)
+			a, ra = cystats.calculate_timesize_weighted_average(v)
 			#but we need to round to an int to compare
 			self.assertEquals(x, int(round(a)))
 			self.assertEquals(x, int(round(ra)))
 		def t(v, ea, era):
-			a, ra = calculate_timesize_weighted_average(v)
+			a, ra = cystats.calculate_timesize_weighted_average(v)
 			self.assertEquals(int(round(a)), ea)
 			self.assertEquals(int(round(ra)), era)
 		#an old record won't make any difference
@@ -57,7 +61,7 @@ class TestCystats(unittest.TestCase):
 		t([(now-100, 1*1000, 1000), (now, 50*1000, 1000)], 50, 50)
 		#if using the same time, then size matters more:
 		v = [(now, 100*1000, 1000), (now, 50*1000, 1000)]
-		a, ra = calculate_timesize_weighted_average(v)
+		a, ra = cystats.calculate_timesize_weighted_average(v)
 		#recent is the same as "normal" average:
 		self.assertEquals(int(round(a)), int(round(ra)))
 		self.assertGreater(a, 75)
@@ -79,7 +83,7 @@ class TestCystats(unittest.TestCase):
 		raw_v = [size/elapsed for _,size,elapsed in v]
 		min_v = min(raw_v)
 		max_v = max(raw_v)
-		a, ra = calculate_timesize_weighted_average(v)
+		a, ra = cystats.calculate_timesize_weighted_average(v)
 		self.assertLess(a, max_v)
 		self.assertLess(ra, max_v)
 		self.assertGreater(a, min_v)
@@ -94,18 +98,19 @@ class TestCystats(unittest.TestCase):
 			v = random.random()
 			data.append((t, v))
 			t += 1
-		a, ra = calculate_time_weighted_average(data)
+		a, ra = cystats.calculate_time_weighted_average(data)
 		assert 0<a<1 and 0<ra<1
 	
 	def test_logp(self):
 		for _ in range(10000):
 			x = random.random()
-			v = logp(x)
+			v = cystats.logp(x)
 			assert v>0 and v<1
 
 
 def main():
-	unittest.main()
+	if cystats:
+		unittest.main()
 
 if __name__ == '__main__':
 	main()

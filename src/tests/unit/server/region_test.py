@@ -7,13 +7,17 @@
 
 import unittest
 
-from xpra.server.region import rectangle
+try:
+    from xpra.server.region import rectangle
+    
+    R1 = rectangle(0, 0, 20, 20)
+    R2 = rectangle(0, 0, 20, 20)
+    R3 = rectangle(0, 0, 40, 40)
+    R4 = rectangle(10, 10, 50, 50)
+    R5 = rectangle(100, 100, 100, 100)
+except:
+    rectangle, R1, R2, R3, R4, R5 = None, None, None, None, None, None
 
-R1 = rectangle(0, 0, 20, 20)
-R2 = rectangle(0, 0, 20, 20)
-R3 = rectangle(0, 0, 40, 40)
-R4 = rectangle(10, 10, 50, 50)
-R5 = rectangle(100, 100, 100, 100)
 
 class TestVersionUtilModule(unittest.TestCase):
 
@@ -98,7 +102,9 @@ class TestVersionUtilModule(unittest.TestCase):
 
 
 def main():
-    unittest.main()
+    #skip test if import failed (ie: not a server build)
+    if rectangle is not None:
+        unittest.main()
 
 if __name__ == '__main__':
     main()

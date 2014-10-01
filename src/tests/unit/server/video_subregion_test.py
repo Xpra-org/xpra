@@ -8,29 +8,32 @@ import time
 import gobject
 gobject.threads_init()
 
-from collections import deque
-from xpra.server.video_subregion import VideoSubregion, MIN_EVENTS
-from xpra.server.video_subregion import sslog as log
-from xpra.server.region import rectangle, merge_all
-
-
 import unittest
+from collections import deque
+try:
+    from xpra.server import video_subregion, region
+except ImportError:
+    video_subregion = None
+    region = None
+
 
 class TestVersionUtilModule(unittest.TestCase):
 
     def test_eq(self):
+        log = video_subregion.sslog
+        
         def refresh_cb(window, regions):
             log("refresh_cb(%s, %s)", window, regions)
-        r = VideoSubregion(gobject.timeout_add, gobject.source_remove, refresh_cb, 150)
+        r = video_subregion.VideoSubregion(gobject.timeout_add, gobject.source_remove, refresh_cb, 150)
 
         ww = 1024
         wh = 768
 
         log("* checking that we need some events")
         last_damage_events = []
-        for x in range(MIN_EVENTS):
+        for x in range(video_subregion.MIN_EVENTS):
             last_damage_events.append((0, 0, 0, 1, 1))
-        r.identify_video_subregion(ww, wh, MIN_EVENTS, last_damage_events)
+        r.identify_video_subregion(ww, wh, video_subregion.MIN_EVENTS, last_damage_events)
         assert r.rectangle is None
 
         vr = (time.time(), 100, 100, 320, 240)
@@ -40,7 +43,7 @@ class TestVersionUtilModule(unittest.TestCase):
             last_damage_events.append(vr)
         r.identify_video_subregion(ww, wh, 50, last_damage_events)
         assert r.rectangle
-        assert r.rectangle==rectangle(*vr[1:])
+        assert r.rectangle==region.rectangle(*vr[1:])
 
         log("* checking that empty damage events does not cause errors")
         r.reset()
@@ -84,7 +87,7 @@ class TestVersionUtilModule(unittest.TestCase):
             last_damage_events.append(v1)
             last_damage_events.append(v2)
         r.identify_video_subregion(ww, wh, 100, last_damage_events)
-        m = merge_all([rectangle(*v1[1:]), rectangle(*v2[1:])])
+        m = region.merge_all([region.rectangle(*v1[1:]), region.rectangle(*v2[1:])])
         assert r.rectangle==m, "expected %s but got %s" % (m, r.rectangle)
 
         log("* but not if they are too far apart")
@@ -100,7 +103,8 @@ class TestVersionUtilModule(unittest.TestCase):
 
 
 def main():
-    unittest.main()
+    if video_subregion and region:
+        unittest.main()
 
 if __name__ == '__main__':
     main()

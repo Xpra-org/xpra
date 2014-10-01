@@ -249,12 +249,13 @@ rm -rf $RPM_BUILD_ROOT
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 
 pushd xpra-%{version}-python2/tests
-%{__python2} unit/run.py
+PYTHONPATH=%{buildroot}%{python2_sitearch}:. %{__python2} unit/run.py
 popd
 
 %if 0%{?with_python3}
+export
 pushd xpra-%{version}-python3/tests
-%{__python3} unit/run.py
+PYTHONPATH=%{buildroot}%{python3_sitearch}:. %{__python3} unit/run.py
 popd
 %endif
 
