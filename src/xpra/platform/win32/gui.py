@@ -35,6 +35,10 @@ except Exception as e:
 def do_init():
     #tell win32 we handle dpi
     try:
+        import os
+        if os.environ.get("XPRA_DPI_AWARE", "1")!="1":
+            log.warn("SetProcessDPIAware not set due to environment override")
+            return
         from ctypes import WINFUNCTYPE
         from ctypes.wintypes import BOOL
         prototype = WINFUNCTYPE(BOOL)
