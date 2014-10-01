@@ -40,7 +40,6 @@
 %define requires_lzo %{nil}
 #do not disable sound support, but do not declare deps for it either
 #(so it can be installed if desired):
-%define no_sound 0
 %define requires_sound %{nil}
 %define py3requires_sound %{nil}
 #don't have python3 by default:
@@ -59,12 +58,6 @@
 %if %(egrep -q 'release 6.0|release 6.1|release 6.2|release 6.3|release 6.4' /etc/redhat-release && echo 1 || echo 0)
 %define requires_opengl %{nil}
 %endif
-%endif
-
-
-%if 0%{?no_sound}
-%define requires_sound %{nil}
-%define py3requires_sound %{nil}
 %endif
 
 
@@ -222,11 +215,6 @@ popd
 #(but I can't get distutils to play nice: I want them built, not installed)
 rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/tests
 rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/tests
-
-%if 0%{?no_sound}
-rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/xpra/sound
-rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/xpra/sound
-%endif
 
 
 %clean
