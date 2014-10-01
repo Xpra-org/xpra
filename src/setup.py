@@ -808,7 +808,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/argb/argb.c",
                    "xpra/server/stats/cymaths.c",
                    "etc/xpra/xpra.conf"]
-    if sys.platform.startswith("win"):
+    if WIN32:
         #on win32, the build creates ".pyd" files, clean those too:
         for x in list(CLEAN_FILES):
             if x.endswith(".c"):
@@ -1690,7 +1690,7 @@ if nvenc_ENABLED:
         nvenc = "nvenc%s" % int(nvenc_ENABLED)
     except:
         nvenc = "nvenc"
-    make_constants("xpra", "codecs", "nvenc", "constants", NV_WINDOWS=int(sys.platform.startswith("win")))
+    make_constants("xpra", "codecs", "nvenc", "constants", NV_WINDOWS=int(WIN32))
     nvenc_pkgconfig = pkgconfig(nvenc, "cuda", ignored_flags=["-l", "-L"])
     #don't link against libnvidia-encode, we load it dynamically:
     libraries = nvenc_pkgconfig.get("libraries", [])
