@@ -21,6 +21,29 @@
              version="1.1.0"/>
   </autotools>
 
+  <autotools id="nxcomp"
+             skip-install="True"
+             autogenargs="" 
+             autogen-template="%(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s &amp;&amp; curl -O -k http://winswitch.org/src/nxcomp.patch &amp;&amp; patch -p1 &lt; nxcomp.patch &amp;&amp; sed -i -e 's+-bundle+-dynamiclib+g' Makefile"
+             makeargs="&amp;&amp; cp libXcomp*.so ${JHBUILD_PREFIX}/lib/ &amp;&amp; echo ' -j 3 because if we don't jhbuild mucks with this'">
+     <branch repo="winswitch.org" module="/src/nxcomp-3.5.0-2.tar.gz"
+             hash="md5:ad8c0f133122c6d07732ca69c8759410"
+             version="3.5.0-2"
+             checkoutdir="nxcomp">
+     <!-- MUST DO THIS AFTER configure patch file="http://winswitch.org/src/nxcomp.patch" strip="1" /-->
+     </branch>
+  </autotools>
+
+  <autotools id="nxproxy"
+             autogenargs=""
+             autogen-template="%(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s &amp;&amp; sed -i -e 's/-lXcomp/-lXcomp -lpng -ljpeg -lz/' Makefile">
+     <branch repo="winswitch.org" module="/src/nxproxy-3.5.0-1.tar.gz"
+             hash="md5:488bb4d9b8e9f82dc272b4e6e9c57d30"
+             version="3.5.0-1"
+             checkoutdir="nxproxy">
+     </branch> 
+  </autotools>
+
   <distutils id="xpra">
      <branch repo="xpra.org"
              module="/src/xpra-0.14.7.tar.xz"
