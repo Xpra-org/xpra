@@ -36,6 +36,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-numpy
 # for PNG and JPEG support:
         ,python-imaging
+# packet encoder:
+		,python-rencode
 #depend on lz4 for those that have it, lzo otherwise:
 #wheezy:	,python-lzo
 #jessie:	,python-lz4
