@@ -95,23 +95,23 @@ def add_window_hooks(window):
     #save original geometry function:
     window.__apply_geometry_hints = window.apply_geometry_hints
     #our function for taking gdk window hints and passing them to the win32 hooks class:
-    def apply_maxsize_hints(window, hints):
+    def apply_maxsize_hints(hints):
         maxw = hints.get("max_width", 0)
         maxh = hints.get("max_height", 0)
-        log("apply_maxsize_hints(%s, %s) found max: %sx%s", window, hints, maxw, maxh)
+        log("apply_maxsize_hints(%s) for window %s, found max: %sx%s", hints, window, maxw, maxh)
         if maxw>0 or maxh>0:
             window.win32hooks.max_size = (maxw or 32000), (maxh or 32000)
         elif window.win32hooks.max_size:
             #was set, clear it
             window.win32hooks.max_size = None
     #our monkey patching method, which calls the function above:
-    def apply_geometry_hints(window, hints):
-        apply_maxsize_hints(window, hints)
+    def apply_geometry_hints(hints):
+        apply_maxsize_hints(hints)
         return window.__apply_geometry_hints(hints)
     window.apply_geometry_hints = apply_geometry_hints
     #apply current geometry hints, if any:
     if window.geometry_hints:
-        apply_maxsize_hints(window, window.geometry_hints)
+        apply_maxsize_hints(window.geometry_hints)
 
 def remove_window_hooks(window):
     try:
