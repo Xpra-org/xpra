@@ -149,6 +149,12 @@ if %errorlevel% NEQ 0 (
 
 
 :MAKEINSTALLER
+
+ECHO ****** Generating HTML Manual Page
+REM "Add mingw to the path unconditionally so we can find groff"
+SET PATH=C:\MinGW\bin;C:\MinGW\msys\1.0\bin;%PATH%
+groff.exe -mandoc -Thtml < man\xpra.1 > dist\manual.html
+
 ECHO ****** Adding TortoisePlink
 REM "These are the versions currently used by TortoisePlink.exe: VC 2012 redist.."
 COPY /B /Y /V "C:\WINDOWS\system32\msvcr110.dll" dist\ > NUL

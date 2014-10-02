@@ -27,6 +27,7 @@ Source: dist\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsub
 [Icons]
 Name: {group}\Xpra; Filename: {app}\Xpra-Launcher.exe; WorkingDir: {app}
 Name: "{group}\Xpra Homepage"; Filename: "{app}\website.url"
+Name: "{group}\Xpra Command Manual"; Filename: "{app}\manual.html"
 
 [Run]
 Filename: {app}\Xpra-Launcher.exe; Description: {cm:LaunchProgram,xpra}; Flags: nowait postinstall skipifsilent

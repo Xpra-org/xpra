@@ -218,6 +218,12 @@ popd
 
 echo
 echo "*******************************************************************************"
+echo "Add the manual in HTML format (since we cannot install the man page properly..)"
+groff -mandoc -Thtml < ../src/man/xpra.1 > ${RSCDIR}/share/manual.html
+groff -mandoc -Thtml < ../src/man/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
+
+echo
+echo "*******************************************************************************"
 echo "Clean unnecessary files"
 pwd
 ls image
