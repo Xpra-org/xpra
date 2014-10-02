@@ -1,0 +1,21 @@
+Source: python-rencode
+Section: python
+Priority: optional
+Maintainer: Antoine Martin <antoine@devloop.org.uk>
+Build-Depends: debhelper (>= 9), python-all-dev
+X-Python-Version: >= 2.7
+Standards-Version: 3.9.5
+Homepage: https://code.google.com/p/rencode/
+Vcs-Browser: http://xpra.org/svn/Xpra/trunk/src/rencode/
+Vcs-Svn: svn://xpra.org/svn/Xpra/trunk/src/rencode/
+
+Package: python-rencode
+Architecture: any
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
+Description: python encoding library similar to bittorrent's bencode
+ .
+ For complex, heterogeneous data structures with many small
+ elements, r-encodings take up significantly less space than b-encodings.
+ This version of rencode is a complete rewrite in Cython to attempt to
+ increase the performance over the pure Python module written
+ by Petru Paler, Connelly Barnes et al.

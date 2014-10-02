@@ -1,0 +1,5 @@
+# uscan(1) configuration file.
+version=3
+
+opts="dversionmangle=s/\+dfsg//" \
+ https://xpra.org/src/rencode-(\d[-\d\.]+)\.tar\.(?:gz|bz2|xz)
