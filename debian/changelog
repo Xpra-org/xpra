@@ -1,6 +1,7 @@
-xpra (0.14.0-1) UNRELEASED; urgency=low
+xpra (0.15.0-1) UNRELEASED; urgency=low
+  * TODO
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 17 Aug 2014 20:45:25 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 02 Oct 2014 16:23:49 +0700
 
 xpra (0.14.0-1) UNRELEASED; urgency=low
   * support for lzo compression
