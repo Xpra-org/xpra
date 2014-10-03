@@ -25,7 +25,7 @@
              skip-install="True"
              autogenargs="" 
              autogen-template="%(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s &amp;&amp; curl -O -k http://winswitch.org/src/nxcomp.patch &amp;&amp; patch -p1 &lt; nxcomp.patch &amp;&amp; sed -i -e 's+-bundle+-dynamiclib+g' Makefile"
-             makeargs="&amp;&amp; cp libXcomp*.so ${JHBUILD_PREFIX}/lib/ &amp;&amp; echo ' -j 3 because if we don't jhbuild mucks with this'">
+             makeargs="&amp;&amp; cp -Rvp libXcomp.so* ${JHBUILD_PREFIX}/lib/ &amp;&amp; echo ' -j 3 because jhbuild mucks with this'">
      <branch repo="winswitch.org" module="/src/nxcomp-3.5.0-2.tar.gz"
              hash="md5:ad8c0f133122c6d07732ca69c8759410"
              version="3.5.0-2"
