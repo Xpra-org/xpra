@@ -222,14 +222,30 @@ class ClientWindowBase(ClientWidgetBase):
         w,h = max_window_size
         if w>0 and h>0 and not self._fullscreen:
             #get the min size, if there is one:
-            minw = hints.get("min_width", 0)
-            minh = hints.get("min_height", 0)
+            minw = max(1, hints.get("min_width", 1))
+            minh = max(1, hints.get("min_height", 1))
             #the actual max size is:
             # * greater than the min-size
             # * the lowest of the max-size set by the application and the one we have
-            #TODO: if there are size increments, honour them
-            hints["max_width"] = max(minw, min(w, hints.get("max_width", 32768)))
-            hints["max_height"] = max(minh, min(h, hints.get("max_height", 32768)))
+            # * ensure we honour the other hints, and round the max-size down if needed:
+            #according to the GTK docs:
+            #allowed window widths are base_width + width_inc * N where N is any integer
+            #allowed window heights are base_height + width_inc * N where N is any integer
+            maxw = hints.get("max_width", 32768)
+            maxh = hints.get("max_height", 32768)
+            maxw = max(minw, min(w, maxw))
+            maxh = max(minh, min(h, maxh))
+            rw = (maxw - hints.get("base_width", 0)) % max(hints.get("width_inc", 1), 1)
+            rh = (maxh - hints.get("base_height", 0)) % max(hints.get("height_inc", 1), 1)
+            maxw -= rw
+            maxh -= rh
+            #if the hints combination is invalid, it's possible that we'll end up
+            #not honouring "base" + "inc", but honouring just "min" instead:
+            maxw = max(minw, maxw)
+            maxh = max(minh, maxh)
+            log("modified hints for max window size %s: %s (rw=%s, rh=%s) -> max=%sx%s", max_window_size, hints, rw, rh, maxw, maxh)
+            hints["max_width"] = maxw
+            hints["max_height"] = maxh
         try:
             log("calling: %s(%s)", self.apply_geometry_hints, hints)
             #save them so the window hooks can use the last value used:
