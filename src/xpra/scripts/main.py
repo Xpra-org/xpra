@@ -879,7 +879,7 @@ def parse_display_name(error_cb, opts, display_name):
             try:
                 desc["port"] = int(port)
             except:
-                error_cb("invalid ssh port specified: %s", port)
+                error_cb("invalid ssh port specified: %s" % port)
             #grr why bother doing it different?
             if is_putty:
                 full_ssh += ["-P", port]
