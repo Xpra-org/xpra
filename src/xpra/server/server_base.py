@@ -962,7 +962,7 @@ class ServerBase(ServerCore):
             def set_scaling_control(ws, wid, window):
                 ws.set_scaling_control(scaling_control)
                 ws.refresh(window)
-            for_all_window_sources(wids, set_scaling)
+            for_all_window_sources(wids, set_scaling_control)
             return 0, "scaling-control set to %s on window %s for %s clients" % (scaling_control, wids, len(sources))
         elif command=="scaling":
             if len(args)==0:
