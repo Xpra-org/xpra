@@ -88,6 +88,8 @@ class Keyboard(KeyboardBase):
             log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases")
             log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred")
             xkbmap_query_struct = parse_xkbmap_query(xkbmap_query)
+        else:
+            xkbmap_query_struct = {}
         return xkbmap_print, xkbmap_query, xkbmap_query_struct
 
     def get_keymap_spec_from_xkb(self):
