@@ -720,7 +720,8 @@ def do_parse_cmdline(cmdline, defaults):
         raise InitException("invalid dpi: %s" % e)
     if options.max_size:
         try:
-            w,h = [int(x.strip()) for x in options.max_size.split("x", 1)]
+            #split on "," or "x":
+            w,h = [int(x.strip()) for x in options.max_size.replace(",", "x").split("x", 1)]
             assert w>=0 and h>0 and w<32768 and h<32768
         except:
             raise InitException("invalid max-size: %s" % options.max_size)
