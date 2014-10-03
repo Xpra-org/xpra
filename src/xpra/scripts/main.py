@@ -614,7 +614,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--mmap-group", action="store_true",
                       dest="mmap_group", default=defaults.mmap_group,
                       help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
-    legacy_bool_parse("enable-ping")
+    replace_option("--enable-pings", "--pings=yes")
     group.add_option("--pings", action="store", metavar="yes|no",
                       dest="pings", default=defaults.pings,
                       help="Send ping packets every second to gather latency statistics. Default: %s." % enabled_str(defaults.pings))
