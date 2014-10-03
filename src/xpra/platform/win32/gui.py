@@ -104,6 +104,11 @@ def add_window_hooks(window):
         elif window.win32hooks.max_size:
             #was set, clear it
             window.win32hooks.max_size = None
+        #remove them so GTK doesn't try to set attributes,
+        #which would remove the maximize button:
+        for x in ("max_width", "max_height"):
+            if x in hints:
+                del hints[x]
     #our monkey patching method, which calls the function above:
     def apply_geometry_hints(hints):
         apply_maxsize_hints(hints)
