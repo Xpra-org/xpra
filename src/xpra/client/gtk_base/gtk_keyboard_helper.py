@@ -63,3 +63,20 @@ class GTKKeyboardHelper(KeyboardHelper):
 
     def get_full_keymap(self):
         return  get_gtk_keymap()
+
+
+def main():
+    #use gtk as display source:
+    from xpra.x11.gtk_x11 import gdk_display_source
+    assert gdk_display_source
+    from xpra.util import nonl
+    from xpra.platform import init as platform_init
+    platform_init("GTK-Keyboard", "GTK Keyboard")
+
+    x = GTKKeyboardHelper(None, True, "")
+    x.query_xkbmap()
+    for k,v in x.get_keymap_properties().items():
+        print("%s=%s" % (k,nonl(v)))
+
+if __name__ == "__main__":
+    main()

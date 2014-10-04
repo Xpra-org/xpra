@@ -9,7 +9,6 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-from xpra.platform.keyboard import Keyboard
 from xpra.util import nonl
 
 
@@ -21,6 +20,7 @@ class KeyboardHelper(object):
         self.locked = False
         self.keyboard_sync = keyboard_sync
         self.key_shortcuts = self.parse_shortcuts(key_shortcuts)
+        from xpra.platform.keyboard import Keyboard
         self.keyboard = Keyboard()
         log("KeyboardHelper.__init__(%s, %s, %s) keyboard=%s", net_send, keyboard_sync, key_shortcuts, self.keyboard)
 
@@ -296,7 +296,7 @@ class KeyboardHelper(object):
 
     def get_keymap_properties(self):
         props = {}
-        for x in ("print", "query", "query_struct", "mod_meanings",
+        for x in ("layout", "variant", "print", "query", "query_struct", "mod_meanings",
                   "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes"):
             p = "xkbmap_%s" % x
             props[p] = getattr(self, p) or ""

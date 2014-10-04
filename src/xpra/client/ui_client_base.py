@@ -850,8 +850,6 @@ class UIXpraClient(XpraClientBase):
         else:
             for k,v in self.get_keymap_properties().items():
                 capabilities[k] = v
-            capabilities["xkbmap_layout"] = self.keyboard_helper.xkbmap_layout or ""
-            capabilities["xkbmap_variant"] = self.keyboard_helper.xkbmap_variant or ""
             #show the user a summary of what we have detected:
             kb_info = {}
             xkbq = capabilities.get("xkbmap_query")

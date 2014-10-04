@@ -233,6 +233,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             #    for i in range(vd.num_extra):
             #        v[vd.extra_names[i][:]] = vd.extra_values[] ???
             XFree(vd.extra_names)
+        log("getXkbProperties()=%s", v)
         return v
 
     cdef _get_minmax_keycodes(self):
