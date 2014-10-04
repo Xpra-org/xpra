@@ -872,19 +872,37 @@ def parse_display_name(error_cb, opts, display_name):
                 desc["username"] = username
                 opts.username = username
                 full_ssh += ["-l", username]
-        upos = host.find(":")
-        if upos>0:
-            port = host[upos+1:]
+        upos = host.rfind(":")
+        ssh_port = ""
+        if host.count(":")>=2:
+            #more than 2 ":", assume this is IPv6:
+            if host.startswith("["):
+                #if we have brackets, we can support: "[HOST]:SSHPORT"
+                epos = host.find("]")
+                if epos<0:
+                    error_cb("invalid host format, expected IPv6 [..]")
+                ssh_port = host[epos+1:]            #ie: ":SSHPORT"
+                if ssh_port.startswith(":"):
+                    ssh_port = ssh_port[1:]         #ie: "SSHPORT"
+                host = host[1:epos]                 #ie: "HOST"
+            else:
+                #otherwise, we have to assume they are all part of IPv6
+                #we could count them at split at 8, but that would be just too fugly
+                pass
+        elif upos>0:
+            #assume HOST:SSHPORT
+            ssh_port = host[upos+1:]
             host = host[:upos]
+        if ssh_port:
             try:
-                desc["port"] = int(port)
+                desc["port"] = int(ssh_port)
             except:
-                error_cb("invalid ssh port specified: %s" % port)
+                error_cb("invalid ssh port specified: %s" % ssh_port)
             #grr why bother doing it different?
             if is_putty:
-                full_ssh += ["-P", port]
+                full_ssh += ["-P", ssh_port]
             else:
-                full_ssh += ["-p", port]
+                full_ssh += ["-p", ssh_port]
 
         full_ssh += ["-T", host]
         desc["host"] = host
