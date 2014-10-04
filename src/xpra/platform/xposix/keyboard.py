@@ -137,8 +137,7 @@ class Keyboard(KeyboardBase):
                 v = v[2]
         if v:
             layouts = v.split(",")
-            if len(layouts)>0:
-                layout = layouts[0]
+            layout = v
         return layout, layouts, "", None
 
 
