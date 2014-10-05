@@ -198,7 +198,7 @@ def parse_xkbmap_query(xkbmap_query):
 def xkbmap_query_tostring(query_dict):
     """ converts an xkb query dict back into a string """
     s = ""
-    for k in ("rules", "model", "layout", "variant"):
+    for k in ("rules", "model", "layout", "variant", "options"):
         if k in query_dict:
             v = query_dict.get(k)
             s += (str(k)+":").ljust(12)+str(v)+"\n"

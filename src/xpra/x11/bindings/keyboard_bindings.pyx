@@ -224,7 +224,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             v["layout"] = s(vd.layout[:])
             XFree(vd.layout)
         if vd.options!=NULL:
-            v["options"] = s(vd.options).split("\0")
+            v["options"] = s(vd.options[:])
             XFree(vd.options)
         #log("vd.num_extra=%s", vd.num_extra)
         if vd.extra_names:
