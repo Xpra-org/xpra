@@ -421,9 +421,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         if name in self._property_handlers:
             self._property_handlers[name](self)
 
-        if name in self._property_handlers:
-            self._property_handlers[name](self)
-
     def do_xpra_configure_event(self, event):
         if self.client_window is None or not self._managed:
             return
