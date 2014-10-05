@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
-
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.keyboard.layouts import parse_xkbmap_query, xkbmap_query_tostring
@@ -114,13 +112,14 @@ class Keyboard(KeyboardBase):
         #FIXME: a bit ugly to call gtk here...
         #but otherwise we have to call XGetWindowProperty and deal with X11 errors..
         xkb_rules_names = ""
-        if "gtk" in sys.modules:
-            import gtk.gdk
-            prop = gtk.gdk.get_default_root_window().property_get("_XKB_RULES_NAMES", "STRING")
-            #ie:('STRING', 8, 'evdev\x00pc104\x00gb,us\x00,\x00\x00')
-            if prop and len(prop)==3:
-                xkb_rules_names = prop[2].split("\0")
-                #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
+        from xpra.platform.xposix.gui import _get_X11_root_property
+        prop = _get_X11_root_property("_XKB_RULES_NAMES", "STRING")
+        log("get_xkb_rules_names_property() _XKB_RULES_NAMES=%s", prop)
+        #ie: 'evdev\x00pc104\x00gb,us\x00,\x00\x00'
+        if prop:
+            xkb_rules_names = prop.split("\0")
+            #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
+        log("get_xkb_rules_names_property()=%s", xkb_rules_names)
         return xkb_rules_names
 
     def get_layout_spec(self):
