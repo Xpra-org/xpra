@@ -34,6 +34,9 @@ class XpraClient(GTKXpraClient):
         capabilities["encoding.supports_delta"] = [x for x in ("rgb24", "rgb32") if x in self.get_core_encodings()]
         return capabilities
 
+    def __repr__(self):
+        return "gtk3.client"
+
     def client_type(self):
         return "Python/Gtk3"
 
