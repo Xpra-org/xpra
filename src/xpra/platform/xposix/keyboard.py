@@ -151,8 +151,12 @@ class Keyboard(KeyboardBase):
 
     def update_modifier_map(self, display, xkbmap_mod_meanings):
         try:
+            dn = "%s %s" % (type(display).__name__, display.get_name())
+        except Exception as e:
+            dn = str(display)
+        try:
             from xpra.x11.gtk_x11.keys import grok_modifier_map
             self.modifier_map = grok_modifier_map(display, xkbmap_mod_meanings)
         except ImportError:
             self.modifier_map = MODIFIER_MAP
-        log("update_modifier_map(%s, %s) modifier_map=%s", display, xkbmap_mod_meanings, self.modifier_map)
+        log("update_modifier_map(%s, %s) modifier_map=%s", dn, xkbmap_mod_meanings, self.modifier_map)
