@@ -97,7 +97,8 @@ class Keyboard(KeyboardBase):
         _query_struct = keyboard_bindings.getXkbProperties()
         _query = xkbmap_query_tostring(_query_struct)
         log("get_keymap_spec_from_xkb() query tostring(%s)=%s", _query_struct, _query)
-        return "", _query, _query_struct
+        xkbmap_print = self.exec_get_keyboard_data(["setxkbmap", "-print"])
+        return xkbmap_print or "", _query, _query_struct
 
     def get_keymap_spec(self):
         v = self.get_keymap_spec_from_xkb()
