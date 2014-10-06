@@ -10,7 +10,7 @@ import re
 from xpra.x11.gtk_x11 import gdk_display_source
 assert gdk_display_source
 
-from xpra.util import std
+from xpra.util import std, nonl
 from xpra.keyboard.layouts import parse_xkbmap_query
 from xpra.gtk_common.error import trap
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -26,9 +26,9 @@ def exec_keymap_command(args, stdin=None):
         from xpra.scripts.exec_util import safe_exec
         returncode, _, _ = safe_exec(args, stdin)
         def logstdin():
-            if not stdin or len(stdin)<32:
-                return  stdin
-            return stdin[:30].replace("\n", "\\n")+".."
+            if not stdin or len(stdin)<500:
+                return  nonl(stdin)
+            return nonl(stdin[:500])+".."
         if returncode==0:
             if not stdin:
                 log("%s", args)
