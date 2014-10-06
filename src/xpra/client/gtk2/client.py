@@ -184,7 +184,7 @@ class XpraClient(GTKXpraClient):
     def process_clipboard_packet(self, packet):
         clipboardlog("process_clipboard_packet(%s) level=%s", packet, gtk.main_level())
         #check for clipboard loops:
-        if gtk.main_level()>=10:
+        if gtk.main_level()>=40:
             clipboardlog.warn("loop nesting too deep: %s", gtk.main_level())
             clipboardlog.warn("you may have a clipboard forwarding loop, disabling the clipboard")
             self.clipboard_enabled = False
