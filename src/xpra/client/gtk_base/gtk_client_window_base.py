@@ -228,6 +228,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         log("%s.property_changed(%s, %s) : %s", self, widget, event, event.atom)
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
             self.do_workspace_changed(event)
+        elif event.atom=="XKLAVIER_STATE":
+            #unused for now, but log it:
+            xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
+            keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
+
 
     def workspace_changed(self):
         #on X11 clients, this fires from the root window property watcher
