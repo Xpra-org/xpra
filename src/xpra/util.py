@@ -424,7 +424,7 @@ def pver(v):
             return ", ".join(v)
     return v
 
-def std(_str, extras="-,./ "):
+def std(_str, extras="-,./: "):
     def f(v):
         return str.isalnum(str(v)) or v in extras
     return "".join(filter(f, _str))
