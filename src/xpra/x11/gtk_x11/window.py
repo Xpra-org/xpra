@@ -83,6 +83,8 @@ USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
 #these properties are not handled, and we don't want to spam the log file
 #whenever an app decides to change them:
 PROPERTIES_IGNORED = ("_NET_WM_OPAQUE_REGION", )
+#make it easier to debug property changes, just add them here:
+PROPERTIES_DEBUG = {}   #ie: {"WM_PROTOCOLS" : ["atom"]}
 
 
 # Todo:
@@ -413,6 +415,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def _handle_property_change(self, name):
         log("Property changed on %#x: %s", self.client_window.xid, name)
+        if name in PROPERTIES_DEBUG:
+            log.info("%s=%s", name, self.prop_get(name, PROPERTIES_DEBUG[name], True, False))
         if name in PROPERTIES_IGNORED:
             return
         self._call_property_handler(name)
