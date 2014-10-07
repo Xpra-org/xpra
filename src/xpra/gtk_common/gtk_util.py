@@ -7,9 +7,6 @@
 import sys
 import os.path
 
-from xpra.platform.gui import init as gui_init
-gui_init()
-
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, import_cairo, import_gobject, is_gtk3
 gtk     = import_gtk()
 gdk     = import_gdk()
