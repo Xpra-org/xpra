@@ -143,6 +143,9 @@ class MutableInteger(object):
 
 class typedict(dict):
 
+    from xpra.log import Logger
+    log = Logger("util")
+
     def capsget(self, key, default=None):
         v = self.get(strtobytes(key), default)
         if sys.version >= '3' and type(v)==bytes:
@@ -165,7 +168,9 @@ class typedict(dict):
         v = self.capsget(k, default_value)
         if v is None:
             return None
-        assert type(v)==dict, "expected a dict value for %s but got %s" % (k, type(v))
+        if type(v)!=dict:
+            typedict.log.warn("expected a dict value for %s but got %s", k, type(v))
+            return default_value
         return v
 
     def intpair(self, k, default_value=None):
@@ -190,7 +195,9 @@ class typedict(dict):
         v = self.capsget(k, default_value)
         if v is None:
             return default_value
-        assert type(v) in (list, tuple), "expected a list or tuple value for %s but got %s" % (k, type(v))
+        if type(v) not in (list, tuple):
+            typedict.log.warn("expected a list or tuple value for %s but got %s", k, type(v))
+            return default_value
         aslist = list(v)
         if item_type:
             for i in range(len(aslist)):
@@ -201,9 +208,13 @@ class typedict(dict):
                 elif type(x)==unicode and item_type==str:
                     x = str(x)
                     aslist[i] = x
-                assert type(x)==item_type, "invalid item type for %s %s: expected %s but got %s" % (type(v), k, item_type, type(x))
+                if type(x)!=item_type:
+                    typedict.log.warn("invalid item type for %s %s: expected %s but got %s", type(v), k, item_type, type(x))
+                    return default_value
         if max_items is not None:
-            assert len(v)<=max_items, "too many items in %s %s: maximum %s allowed, but got %s" % (type(v), k, max_items, len(v))
+            if len(v)>max_items:
+                typedict.log.warn("too many items in %s %s: maximum %s allowed, but got %s", type(v), k, max_items, len(v))
+                return default_value
         return aslist
 
 
