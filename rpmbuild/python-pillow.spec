@@ -27,17 +27,6 @@
 %endif
 
 
-# Refer to the comment for Source0 below on how to obtain the source tarball
-# The saved file has format python-imaging-Pillow-$version-$ahead-g$shortcommit.tar.gz
-%global commit 68c6904c280ad872620cc8d904e6d4e6ecc5b6f9
-%global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global ahead 0
-
-# If ahead is 0, the tarball corresponds to a release version, otherwise to a git snapshot
-%if %{ahead} > 0
-%global snap .git%{shortcommit}
-%endif
-
 Name:           python-pillow
 Version:        2.6.0
 Release:        1%{?snap}%{?dist}
@@ -46,11 +35,7 @@ Summary:        Python image processing library
 # License: see http://www.pythonware.com/products/pil/license.htm
 License:        MIT
 URL:            http://python-imaging.github.com/Pillow/
-
-# Obtain the tarball for a certain commit via:
-#  wget --content-disposition https://github.com/python-imaging/Pillow/tarball/$commit
-Source:        	https://github.com/python-imaging/Pillow/tarball/%{commit}/python-pillow-Pillow-%{version}-%{ahead}-g%{shortcommit}.tar.gz
-
+Source:        	https://pypi.python.org/packages/source/P/Pillow/Pillow-%{version}.tar.gz
 
 BuildRequires:  python2-devel
 BuildRequires:  python-setuptools
@@ -214,7 +199,7 @@ PIL image wrapper for Qt.
 
 
 %prep
-%setup -q -n python-pillow-Pillow-%{shortcommit}
+%setup -q -n Pillow-%{version}
 %if %{with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
