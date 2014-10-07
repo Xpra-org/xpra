@@ -4,9 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.platform.darwin.osx_menu import getOSXMenuHelper
-from xpra.platform.paths import get_icon
-
 from xpra.log import Logger
 log = Logger("osx", "events")
 
@@ -46,10 +43,15 @@ except:
 
 def do_init():
     osxapp = get_OSXApplication()
+    log("do_init() osxapp=%s", osxapp)
+    from xpra.platform.paths import get_icon
     icon = get_icon("xpra.png")
+    log("do_init() icon=%s", icon)
     if icon:
         osxapp.set_dock_icon_pixbuf(icon)
+    from xpra.platform.darwin.osx_menu import getOSXMenuHelper
     mh = getOSXMenuHelper(None)
+    log("do_init() menu helper=%s", mh)
     osxapp.set_dock_menu(mh.build_dock_menu())
     osxapp.set_menu_bar(mh.rebuild())
 
@@ -60,6 +62,7 @@ def do_ready():
 
 
 def get_native_tray_menu_helper_classes():
+    from xpra.platform.darwin.osx_menu import getOSXMenuHelper
     return [getOSXMenuHelper]
 
 def get_native_tray_classes():
