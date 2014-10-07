@@ -194,6 +194,10 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
         #XPRA_SOCKET_DIR is a special case, it is handled below
         if var=="XPRA_SOCKET_DIR":
             continue
+        if var.startswith("BASH_FUNC"):
+            #some versions of bash will apparently generate functions
+            #that cannot be reloaded using this script
+            continue
         # :-separated envvars that people might change while their server is
         # going:
         if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
