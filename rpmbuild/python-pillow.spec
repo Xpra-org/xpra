@@ -39,7 +39,7 @@
 %endif
 
 Name:           python-pillow
-Version:        2.5.3
+Version:        2.6.0
 Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
@@ -333,5 +333,8 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Tue Oct 07 2014 Antoine Martin <antoine@devloop.org.uk - 2.6.0-1
+- new upstream release
+
 * Thu Sep 04 2014 Antoine Martin <antoine@devloop.org.uk - 2.5.3-1
 - Initial packaging for xpra
