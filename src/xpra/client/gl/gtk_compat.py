@@ -51,6 +51,8 @@ if is_gtk3():
             #doing this crashes!
             #GtkGLExt.widget_end_gl(self.widget, False)
             pass
+        def __repr__(self):
+            return "gtk3.GLContextManager(%s)" % self.widget
 
 else:
     import gtk
@@ -90,6 +92,8 @@ else:
         def __exit__(self, exc_type, exc_val, exc_tb):
             gldrawable = gtkgl.widget_get_gl_drawable(self.widget)
             gldrawable.gl_end()
+        def __repr__(self):
+            return "gtk2.GLContextManager(%s)" % self.widget
 
 def GLDrawingArea(glconfig):
     glarea = gtk.DrawingArea()

@@ -631,7 +631,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
-                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width/div_w, height/div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
+                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
 
 
         self.gl_marker("updating planar textures: %sx%s %s" % (width, height, pixel_format))
@@ -644,8 +644,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
             pixel_data = img_data[index]
-            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes", index, divs[index], rowstrides[index], width/div_w, height/div_h, len(pixel_data))
-            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, width/div_w, height/div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
+            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes", index, divs[index], rowstrides[index], width//div_w, height//div_h, len(pixel_data))
+            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, width//div_w, height//div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
 
     def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
         log("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
