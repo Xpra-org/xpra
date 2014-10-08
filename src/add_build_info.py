@@ -30,7 +30,15 @@ def save_properties(props, filename):
     with open(filename, mode='w') as f:
         for name,value in props.items():
             s = str(value).replace("'", "\\'")
-            f.write("%s='%s'\n" % (name, s))
+            f.write(name)
+            f.write("=")
+            quote_it = type(value) not in (bool, tuple, int)
+            if quote_it:
+                f.write("'")                
+            f.write(s)
+            if quote_it:
+                f.write("'")                
+            f.write("\n")
     print("updated %s with:" % filename)
     for k in sorted(props.keys()):
         print("* %s = %s" % (str(k).ljust(20), props[k]))
