@@ -32,6 +32,7 @@
 
 %define libwebp libwebp
 %define libvpx libvpx
+%define run_tests 1
 
 # any centos / rhel supported:
 %if 0%{?el6}%{?el7}
@@ -47,6 +48,8 @@
 %endif
 
 %if 0%{?el6}
+#can't run the tests with python 2.6 which is too old:
+%define run_tests 0
 #distro version is too old replace with our private libraries
 %define libvpx libvpx-xpra
 %define libwebp libwebp-xpra
@@ -248,6 +251,7 @@ rm -rf $RPM_BUILD_ROOT
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 
+%if 0%{?run_tests}
 pushd xpra-%{version}-python2/tests
 PYTHONPATH=%{buildroot}%{python2_sitearch}:. %{__python2} unit/run.py
 popd
@@ -257,6 +261,7 @@ export
 pushd xpra-%{version}-python3/tests
 PYTHONPATH=%{buildroot}%{python3_sitearch}:. %{__python3} unit/run.py
 popd
+%endif
 %endif
 
 
