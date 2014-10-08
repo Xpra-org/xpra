@@ -7,6 +7,8 @@
 import sys
 import os.path
 
+import array
+from xpra.os_util import strtobytes
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, import_cairo, import_gobject, is_gtk3
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -394,8 +396,7 @@ def scaled_image(pixbuf, icon_size=None):
 
 def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
     if is_gtk3():
-        import array
-        data = array.array('B', rgb_data)
+        data = array.array('B', strtobytes(rgb_data))
         return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
                                          True, 8, w, h, rowstride,
                                          None, None)
