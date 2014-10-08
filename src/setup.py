@@ -145,9 +145,9 @@ swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
 nvenc_ENABLED           = False
 if pkg_config_ok("--exists", "nvenc4"):
-    nvenc_ENABLED = "nvenc4"
+    nvenc_ENABLED = 4
 elif pkg_config_ok("--exists", "nvenc3"):
-    nvenc_ENABLED = "nvenc3"
+    nvenc_ENABLED = 3
 #elif os.path.exists("C:\\nvenc_3.0_windows_sdk")
 #...
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
@@ -1685,6 +1685,7 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc", "xpra.codecs.cuda_common")
 if nvenc_ENABLED:
     try:
+        assert nvenc_ENABLED>2
         nvenc = "nvenc%s" % int(nvenc_ENABLED)
     except:
         nvenc = "nvenc"
