@@ -669,7 +669,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             ay = min(th, y)
             for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
                 (div_w, div_h) = divs[index]
-                glMultiTexCoord2i(texture, ax/div_w, ay/div_h)
+                glMultiTexCoord2i(texture, ax//div_w, ay//div_h)
             glVertex2i(int(rx+ax*x_scale), int(ry+ay*y_scale))
         glEnd()
         if self.pixel_format == "GBRP":
