@@ -99,7 +99,7 @@ def check_pyopencl_AMD():
     return True
 
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
-shadow_ENABLED = SHADOW_SUPPORTED
+shadow_ENABLED = SHADOW_SUPPORTED and not PYTHON3       #shadow servers use some GTK2 code..
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3
 client_ENABLED = True
 
@@ -107,7 +107,6 @@ x11_ENABLED = not WIN32 and not OSX
 gtk_x11_ENABLED = not WIN32 and not OSX
 gtk2_ENABLED = client_ENABLED and not PYTHON3
 gtk3_ENABLED = PYTHON3
-qt4_ENABLED = False
 opengl_ENABLED = client_ENABLED
 html5_ENABLED = not WIN32 and not OSX
 
@@ -239,7 +238,7 @@ if "clean" not in sys.argv:
     if gtk_x11_ENABLED and not x11_ENABLED:
         print("Error: you must enable x11 to support gtk_x11!")
         exit(1)
-    if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED and not qt4_ENABLED:
+    if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
         print("Warning: client is enabled but none of the client toolkits are!?")
     if not client_ENABLED and not server_ENABLED:
         print("Error: you must build at least the client or server!")
@@ -1652,7 +1651,6 @@ if client_ENABLED:
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "gi")
-toggle_packages(client_ENABLED and qt4_ENABLED, "xpra.client.qt4", "PyQt4")
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client.gl.gtk2")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
