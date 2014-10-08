@@ -147,7 +147,7 @@ nvenc_ENABLED           = False
 if pkg_config_ok("--exists", "nvenc4"):
     nvenc_ENABLED = "nvenc4"
 elif pkg_config_ok("--exists", "nvenc3"):
-    nvenc_ENABLED = "nvenc4"
+    nvenc_ENABLED = "nvenc3"
 #elif os.path.exists("C:\\nvenc_3.0_windows_sdk")
 #...
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
