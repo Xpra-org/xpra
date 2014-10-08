@@ -278,8 +278,21 @@ fi
 
 
 %changelog
-* Wed Sep 17 2014 Antoine Martin <antoine@devloop.org.uk> 0.15.0-1
-- TODO
+* Wed Oct 08 2014 Antoine Martin <antoine@devloop.org.uk> 0.15.0-1
+- dropped support for Python 2.5 and older, allowing many code cleanups and improvements
+- include manual in html format with MS Windows and OSX builds
+- fixed workarea coordinates detection for MS Windows clients
+- add scaling command line and config file switch for controlling automatic scaling aggressiveness
+- add html command line switch for easily setting up an html5 xpra server
+- add more control over sound command line options, so sound can start disabled and still be turned on manually later
+- add command line option for selecting the sound source (pulseaudio, alsa, etc)
+- better window icon forwarding, especially for non X11 clients
+- optimized OpenGL rendering for X11 clients
+- handle screen update storms better
+- GTK3 port improvements
+- added a few unit tests which are run during packaging
+- more detailed bug report information
+- more minimal MS Windows and OSX builds
 
 * Thu Aug 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.14.0-1
 - support for lzo compression
