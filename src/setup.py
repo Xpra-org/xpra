@@ -174,7 +174,7 @@ SWITCHES = ["enc_x264", "x264_static",
             "bencode", "cython_bencode",
             "clipboard",
             "server", "client", "x11", "gtk_x11",
-            "gtk2", "gtk3", "qt4", "html5",
+            "gtk2", "gtk3", "html5",
             "sound", "opengl",
             "warn", "strict", "shadow", "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests"]
@@ -1645,7 +1645,7 @@ if bundle_tests_ENABLED:
             k = os.sep+k
         add_data_files("tests"+k, v)
 
-#special case for client: cannot use toggle_packages which would include gtk3, qt, etc:
+#special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
     add_modules("xpra.client", "xpra.client.notifications")
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or server_ENABLED, "xpra.gtk_common")
