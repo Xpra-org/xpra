@@ -257,7 +257,6 @@ PYTHONPATH=%{buildroot}%{python2_sitearch}:. %{__python2} unit/run.py
 popd
 
 %if 0%{?with_python3}
-export
 pushd xpra-%{version}-python3/tests
 PYTHONPATH=%{buildroot}%{python3_sitearch}:. %{__python3} unit/run.py
 popd
