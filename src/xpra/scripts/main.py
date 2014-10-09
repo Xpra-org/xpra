@@ -462,6 +462,7 @@ def do_parse_cmdline(cmdline, defaults):
         hidden_options["speaker_codec"] = []
         hidden_options["microphone"] = False
         hidden_options["microphone_codec"] = []
+        hidden_options["sound_source"] = ""
 
     group = optparse.OptionGroup(parser, "Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
