@@ -97,16 +97,21 @@ class DesktopManager(gtk.Widget):
     def configure_window(self, win, x, y, w, h, resize_counter=0):
         log("DesktopManager.configure_window(%s, %s, %s, %s, %s, %s)", win, x, y, w, h, resize_counter)
         model = self._models[win]
+        new_geom = [x, y, w, h]
+        update_geometry = False
+        if model.geom!=new_geom:
+            if resize_counter>0 and resize_counter<model.resize_counter:
+                log("resize ignored: counter %s vs %s", resize_counter, model.resize_counter)
+            else:
+                update_geometry = True
+                model.geom = new_geom
         if not self.visible(win):
             model.shown = True
             win.set_property("iconic", False)
-            win.ownership_election()
-        if resize_counter>0 and resize_counter<model.resize_counter:
-            log("resize ignored: counter %s vs %s", resize_counter, model.resize_counter)
-            return
-        new_geom = [x, y, w, h]
-        if model.geom!=new_geom:
-            model.geom = [x, y, w, h]
+            if win.ownership_election():
+                #window has been configured already
+                update_geometry = False
+        if update_geometry:
             win.maybe_recalculate_geometry_for(self)
 
     def hide_window(self, model):

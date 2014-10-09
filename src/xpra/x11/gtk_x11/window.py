@@ -991,6 +991,7 @@ class WindowModel(BaseWindowModel):
         BaseWindowModel.do_unmanaged(self, wm_exiting)
 
     def ownership_election(self):
+        #returns True if we have updated the geometry
         candidates = self.emit("ownership-election")
         if candidates:
             rating, winner = sorted(candidates)[-1]
@@ -1000,7 +1001,7 @@ class WindowModel(BaseWindowModel):
             winner = None
         old_owner = self.get_property("owner")
         if old_owner is winner:
-            return
+            return False
         if old_owner is not None:
             self.corral_window.hide()
             self.corral_window.reparent(self.parking_window, 0, 0)
@@ -1009,8 +1010,9 @@ class WindowModel(BaseWindowModel):
             winner.take_window(self, self.corral_window)
             self._update_client_geometry()
             self.corral_window.show_unraised()
-            return
+            return True
         trap.swallow_synced(X11Window.sendConfigureNotify, self.client_window.xid)
+        return False
 
     def maybe_recalculate_geometry_for(self, maybe_owner):
         if maybe_owner and self.get_property("owner") is maybe_owner:
