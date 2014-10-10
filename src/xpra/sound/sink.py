@@ -98,6 +98,9 @@ class SoundSink(SoundPipeline):
             self.queue.connect("running", self.queue_running)
             self.queue.connect("pushing", self.queue_pushing)
 
+    def __repr__(self):
+        return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
+
     def queue_pushing(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
         log("sound sink queue pushing: level=%s", ltime)

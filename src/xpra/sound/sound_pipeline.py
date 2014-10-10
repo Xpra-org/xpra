@@ -31,6 +31,7 @@ class SoundPipeline(gobject.GObject):
         self.bus_message_handler_id = None
         self.bitrate = -1
         self.pipeline = None
+        self.pipeline_str = ""
         self.start_time = 0
         self.state = "stopped"
         self.buffer_count = 0
@@ -42,6 +43,7 @@ class SoundPipeline(gobject.GObject):
                 "state"             : self.get_state(),
                 "buffers"           : self.buffer_count,
                 "bytes"             : self.byte_count,
+                "pipeline"          : self.pipeline_str,
                 }
         if self.codec_mode:
             info["codec_mode"] = self.codec_mode
@@ -51,10 +53,10 @@ class SoundPipeline(gobject.GObject):
 
     def setup_pipeline_and_bus(self, elements):
         log("pipeline elements=%s", elements)
-        pipeline_str = " ! ".join([x for x in elements if x is not None])
-        log("pipeline=%s", pipeline_str)
+        self.pipeline_str = " ! ".join([x for x in elements if x is not None])
+        log("pipeline=%s", self.pipeline_str)
         self.start_time = time.time()
-        self.pipeline = gst.parse_launch(pipeline_str)
+        self.pipeline = gst.parse_launch(self.pipeline_str)
         self.bus = self.pipeline.get_bus()
         self.bus_message_handler_id = self.bus.connect("message", self.on_message)
         self.bus.add_signal_watch()

@@ -67,6 +67,9 @@ class SoundSource(SoundPipeline):
             self.sink.connect("new-buffer", self.on_new_buffer)
             self.sink.connect("new-preroll", self.on_new_preroll0)
 
+    def __repr__(self):
+        return "SoundSource('%s' - %s)" % (self.pipeline_str, self.state)
+
     def set_volume(self, volume=1.0):
         if self.sink and self.volume:
             self.volume.set_property("volume", volume)

@@ -1609,7 +1609,7 @@ class UIXpraClient(XpraClientBase):
             return False
 
     def new_sound_buffer(self, sound_source, data, metadata):
-        soundlog("new_sound_buffer(%s, %s, %s) sound source=%s", sound_source, len(data or []), metadata, self.sound_source)
+        soundlog("new_sound_buffer(%s, %s, %s)", sound_source, len(data or []), metadata)
         if self.sound_source:
             self.send("sound-data", self.sound_source.codec, compression.Compressed(self.sound_source.codec, data), metadata)
 

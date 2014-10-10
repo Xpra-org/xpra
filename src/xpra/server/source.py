@@ -721,8 +721,8 @@ class ServerSource(object):
             thread.start_new_thread(stop_sending_sound_thread, ())
 
     def new_sound_buffer(self, sound_source, data, metadata):
-        soundlog("new_sound_buffer(%s, %s, %s) source=%s, suspended=%s, sequence=%s",
-                 sound_source, len(data or []), metadata, self.sound_source, self.suspended, self.sound_source_sequence)
+        soundlog("new_sound_buffer(%s, %s, %s) suspended=%s, sequence=%s",
+                 sound_source, len(data or []), metadata, self.suspended, self.sound_source_sequence)
         if self.sound_source is None:
             return
         if self.sound_source_sequence>0:
