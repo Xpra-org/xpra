@@ -193,6 +193,10 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         self.max_keycode = -1
         self.ensure_XTest_support()
 
+    def __repr__(self):
+        return "X11KeyboardBindings(%s)" % self.display_name
+
+
     def ensure_XTest_support(self):
         cdef int ignored = 0
         XTestQueryExtension(self.display, &ignored, &ignored, &ignored, &ignored)

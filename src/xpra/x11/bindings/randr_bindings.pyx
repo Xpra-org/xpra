@@ -82,6 +82,9 @@ cdef class RandRBindings(X11CoreBindings):
     def __init__(self):
         self._has_randr = self.check_randr()
 
+    def __repr__(self):
+        return "RandRBindings(%s)" % self.display_name
+
     def check_randr(self):
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
         if XRRQueryExtension(self.display, &event_base, &ignored):

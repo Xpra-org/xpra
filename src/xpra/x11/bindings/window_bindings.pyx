@@ -308,6 +308,9 @@ from core_bindings cimport X11CoreBindings
 
 cdef class X11WindowBindings(X11CoreBindings):
 
+    def __repr__(self):
+        return "X11WindowBindings(%s)" % self.display_name
+
     ###################################
     # Extension testing
     ###################################

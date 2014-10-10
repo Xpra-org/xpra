@@ -58,6 +58,9 @@ cdef class X11CoreBindings:
         dn = get_display_name()
         self.display_name = dn
 
+    def __repr__(self):
+        return "X11CoreBindings(%s)" % self.display_name
+
     cdef xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
