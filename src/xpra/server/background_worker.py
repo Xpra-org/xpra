@@ -26,6 +26,9 @@ class Worker_Thread(Thread):
         self.exit = False
         self.setDaemon(True)
 
+    def __repr__(self):
+        return "Worker_Thread(items=%s, exit=%s)" % (self.items.qsize(), self.exit)
+
     def stop(self, force=False):
         if self.exit:
             return
