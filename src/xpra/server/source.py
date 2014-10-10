@@ -723,7 +723,7 @@ class ServerSource(object):
     def new_sound_buffer(self, sound_source, data, metadata):
         soundlog("new_sound_buffer(%s, %s, %s) suspended=%s, sequence=%s",
                  sound_source, len(data or []), metadata, self.suspended, self.sound_source_sequence)
-        if self.sound_source is None:
+        if self.sound_source is None or self.is_closed():
             return
         if self.sound_source_sequence>0:
             metadata["sequence"] = self.sound_source_sequence
@@ -807,6 +807,8 @@ class ServerSource(object):
 
     def sound_data(self, codec, data, metadata, *args):
         soundlog("sound_data(%s, %s, %s, %s) sound sink=%s", codec, len(data or []), metadata, args, self.sound_sink)
+        if self.is_closed():
+            return
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
             log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
             self.sound_sink.cleanup()
