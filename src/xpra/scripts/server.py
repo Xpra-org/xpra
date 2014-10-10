@@ -869,15 +869,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     #the server class will usually override those:
     signal.signal(signal.SIGINT, deadly_signal)
     signal.signal(signal.SIGTERM, deadly_signal)
-    app = None
-    #initialize this early as we may need it for websockify, etc
-    child_reaper = None
-    if os.name=="posix":
-        def reaper_quit():
-            if opts.exit_with_children:
-                log.info("all children have exited and --exit-with-children was specified, exiting")
-                gobject.idle_add(app.reaper_quit)
-        child_reaper = ChildReaper(reaper_quit)
 
     dotxpra = DotXpra(opts.socket_dir)
 
@@ -929,13 +920,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     except Exception as e:
         log.error("cannot start server: failed to setup sockets: %s", e)
         return 1
-
-    if child_reaper:
-        # start websockify?
-        try:
-            start_websockify(child_reaper, opts, bind_tcp)
-        except Exception as e:
-            error_cb("failed to setup websockify html server: %s" % e)
 
     # Do this after writing out the shell script:
     if display_name[0] != 'S':
@@ -1065,7 +1049,17 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         _cleanups.append(kill_xvfb)
 
     if os.name=="posix" and not proxying and not upgrading and not shadowing:
-        assert child_reaper
+        #initialize this early as we may need it for websockify, etc
+        def reaper_quit():
+            if opts.exit_with_children:
+                log.info("all children have exited and --exit-with-children was specified, exiting")
+                gobject.idle_add(app.reaper_quit)
+        child_reaper = ChildReaper(reaper_quit)
+        # start websockify?
+        try:
+            start_websockify(child_reaper, opts, bind_tcp)
+        except Exception as e:
+            error_cb("failed to setup websockify html server: %s" % e)
         if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
             start_pulseaudio(child_reaper, opts.pulseaudio_command)
         if opts.exit_with_children:
