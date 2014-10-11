@@ -1039,7 +1039,7 @@ if WIN32:
             #list of DLLs we want to include, without the "lib" prefix, or the version and extension
             #(ie: "libatk-1.0-0.dll" -> "atk")
             add_DLLs('atk', 'cairo-gobject',
-                     'dbus', 'dbus-glib', 'gdk', 'gdk_pixbuf',
+                     'dbus', 'dbus-glib', 'gdk', 'gdk_pixbuf', 'openraw',
                      'gdkglext', 'gio', 'girepository', 'glib',
                      'gnutls', 'gobject', 'gthread',
                      'gtk', 'gtkglext', 'harfbuzz-gobject',
@@ -1047,11 +1047,12 @@ if WIN32:
                      'p11-kit', 'proxy',
                      'pango', 'pangocairo', 'pangoft2', 'pangowin32',
                      'png16',
-                     #ie: libpyglib-gi-2.0-python33
-                     'pyglib-gi-2.0-python%s%s' % (sys.version_info[0], sys.version_info[1]),
                      'rsvg', 'webp',
                      'winpthread',
                      'zzz')
+            #this one may be missing in pygi-aio 3.14?
+            #ie: libpyglib-gi-2.0-python34
+            # pyglib-gi-2.0-python%s%s' % (sys.version_info[0], sys.version_info[1])
 
             add_dir('etc', ["fonts", "gtk-3.0", "pango", "pkcs11"])     #add "dbus-1"?
             add_dir('lib', ["gdk-pixbuf-2.0", "gio", "gtk-3.0",
