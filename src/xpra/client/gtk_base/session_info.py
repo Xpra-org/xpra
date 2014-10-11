@@ -878,7 +878,7 @@ class SessionInfo(gtk.Window):
                             pass
                 #print("window_encoder_stats=%s" % window_encoder_stats)
                 for wid, props in window_encoder_stats.items():
-                    l = label("%s (%s)" % (wid, props.get("")))
+                    l = label("%s (%s)" % (wid, bytestostr(props.get(""))))
                     l.show()
                     info = ["%s=%s" % (k,v) for k,v in props.items() if k!=""]
                     set_tooltip_text(l, " ".join(info))
