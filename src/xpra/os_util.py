@@ -55,18 +55,18 @@ except:
 
 if sys.version < '3':
     def strtobytes(x):
-        return x
+        return str(x)
     def bytestostr(x):
-        return x
+        return str(x)
 else:
     def strtobytes(x):
         if type(x)==bytes:
             return x
-        return x.encode()
+        return str(x).encode()
     def bytestostr(x):
-        if type(x)==str:
-            return x
-        return x.decode()
+        if type(x)==bytes:
+            return x.decode()
+        return str(x)
 
 
 def memoryview_to_bytes(v):
