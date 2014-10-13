@@ -51,9 +51,6 @@ cdef extern from "stdlib.h":
 CUresult = ctypes.c_int
 CUcontext = ctypes.c_void_p
 
-cdef extern from "NvTypes.h":
-    pass
-
 
 cdef extern from "nvEncodeAPI.h":
     ctypedef int NVENCSTATUS
