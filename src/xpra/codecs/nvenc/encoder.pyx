@@ -1070,11 +1070,15 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID)         : "low-latency",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
+    #only available in SDK4:
+    "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "high-444",
     }
+
 
 #try to map preset names to a "speed" value:
 PRESET_SPEED = {
-    "bd"            : 0,
+    "high-444"      : 0,
+    "bd"            : 10,
     "hq"            : 20,
     "default"       : 40,
     "hp"            : 50,
@@ -1083,7 +1087,8 @@ PRESET_SPEED = {
     "low-latency-hp": 100,
     }
 PRESET_QUALITY = {
-    "bd"            : 100,
+    "high-444"      : 100,
+    "bd"            : 90,
     "hq"            : 80,
     "default"       : 60,
     "hp"            : 50,
