@@ -148,6 +148,7 @@ if pkg_config_ok("--exists", "nvenc4"):
     nvenc_ENABLED = 4
 elif pkg_config_ok("--exists", "nvenc3"):
     nvenc_ENABLED = 3
+cuda_ENABLED = nvenc_ENABLED
 #elif os.path.exists("C:\\nvenc_3.0_windows_sdk")
 #...
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
@@ -164,7 +165,7 @@ tests_ENABLED           = False
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "x264_static",
             "enc_x265", "x265_static",
-            "nvenc",
+            "nvenc", "cuda",
             "dec_avcodec2", "avcodec2_static",
             "csc_swscale", "swscale_static",
             "csc_opencl", "csc_cython",
@@ -1690,8 +1691,13 @@ if nvenc_ENABLED:
         nvenc = "nvenc%s" % int(nvenc_ENABLED)
     except:
         nvenc = "nvenc"
+    try:
+        assert int(cuda_ENABLED[0])>=5
+        cuda = "cuda-%s" % cuda_ENABLED
+    except:
+        cuda = "cuda"
     make_constants("xpra", "codecs", "nvenc", "constants", NV_WINDOWS=int(WIN32))
-    nvenc_pkgconfig = pkgconfig(nvenc, "cuda", ignored_flags=["-l", "-L"])
+    nvenc_pkgconfig = pkgconfig(nvenc, cuda, ignored_flags=["-l", "-L"])
     #don't link against libnvidia-encode, we load it dynamically:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
