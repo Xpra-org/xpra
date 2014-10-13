@@ -2138,6 +2138,7 @@ def init_module():
     log("nvenc.init_module()")
     if NVENCAPI_VERSION<=0x20:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
+    log.info("NVENC API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
     #this should log the kernel module version
     get_nvidia_module_version()
@@ -2199,7 +2200,7 @@ def init_module():
             raise Exception("invalid license %s specified" % (["key", "keys"][len(failed_keys)>1]))
         else:
             raise Exception("you must provide a license key")
-    log.info("NVENC version %s successfully initialized", ".".join([str(x) for x in PRETTY_VERSION]))
+    log.info("NVENC successfully initialized")
 
 def cleanup_module():
     log("nvenc.cleanup_module()")
