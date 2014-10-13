@@ -1036,6 +1036,8 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_H264_PROFILE_STEREO_GUID)            : "stereo",
         guidstr(NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY): "temporal",
         guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)  : "constrained-high",
+        #only available in SDK4:
+        "7ADD423D-D035-4F6F-AEA5-50885658643C"              : "high-444",
         },
     }
     #removed in nvenc v4:
@@ -1071,7 +1073,8 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
     #only available in SDK4:
-    "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "high-444",
+    "D5BFB716-C604-44e7-9BB8-DEA5510FC3AC"                  : "lossless",
+    "149998E7-2364-411d-82EF-179888093409"                  : "lossless-hp",
     }
 
 
