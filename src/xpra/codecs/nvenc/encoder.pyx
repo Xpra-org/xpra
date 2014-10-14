@@ -19,8 +19,8 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device
                 get_CUDA_function, record_device_failure, record_device_success
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nvenc.CUDA_rgb2yuv444p import BGRA2Y_kernel, BGRA2U_kernel, BGRA2V_kernel
-from xpra.codecs.nvenc.CUDA_rgb2nv12 import BGRA2NV12_kernel
+from xpra.codecs.cuda_common.CUDA_rgb2yuv444p import BGRA2Y_kernel, BGRA2U_kernel, BGRA2V_kernel
+from xpra.codecs.cuda_common.CUDA_rgb2nv12 import BGRA2NV12_kernel
 
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
@@ -1072,9 +1072,7 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID)         : "low-latency",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
-    #only available in SDK4:
-    "D5BFB716-C604-44e7-9BB8-DEA5510FC3AC"                  : "lossless",
-    "149998E7-2364-411d-82EF-179888093409"                  : "lossless-hp",
+    "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "streaming",
     }
 
 
@@ -1088,6 +1086,7 @@ PRESET_SPEED = {
     "low-latency-hq": 60,
     "low-latency"   : 80,
     "low-latency-hp": 100,
+    "streaming"     : -1000,    #disabled for now
     }
 PRESET_QUALITY = {
     "high-444"      : 100,
@@ -1098,6 +1097,7 @@ PRESET_QUALITY = {
     "low-latency-hq": 40,
     "low-latency"   : 20,
     "low-latency-hp": 0,
+    "streaming"     : -1000,    #disabled for now
     }
 
 
@@ -1342,8 +1342,9 @@ cdef class Encoder:
         for x in CODEC_PRESETS_GUIDS.values():
             preset_speed = PRESET_SPEED.get(x, 50)
             preset_quality = PRESET_QUALITY.get(x, 50)
-            v = abs(preset_speed-self.speed) + abs(preset_quality-self.quality)
-            options.setdefault(v, []).append(x)
+            if preset_speed>=0 and preset_quality>=0:
+                v = abs(preset_speed-self.speed) + abs(preset_quality-self.quality)
+                options.setdefault(v, []).append(x)
         log("get_preset(%s) speed=%s, quality=%s, options=%s", guidstr(codec), self.speed, self.quality, options)
         for v in sorted(options.keys()):
             for preset in options.get(v):
@@ -1948,6 +1949,7 @@ cdef class Encoder:
         assert presetConfig!=NULL, "failed to allocate memory for preset config"
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
+        presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
         ret = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
         if ret!=0:
             log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(ret, ret))
