@@ -65,8 +65,11 @@ class X11ServerBase(GTKServerBase):
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 
-    def init(self, clobber, opts):
+    def __init__(self, clobber):
         self.clobber = clobber
+        GTKServerBase.__init__(self)
+
+    def init(self, opts):
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
         self.x11_init()

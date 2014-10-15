@@ -990,16 +990,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer()
         app.init(opts)
+        info = "shadow"
     elif proxying:
         from xpra.server.proxy_server import ProxyServer
         app = ProxyServer()
-        try:
-            app.init(opts)
-        except Exception as e:
-            log.error("Error: cannot start the proxy server")
-            log.error(str(e))
-            log.info("")
-            return 1
+        info = "proxy"
     else:
         assert starting or upgrading
         from xpra.x11.gtk_x11 import gdk_display_source
@@ -1028,26 +1023,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         if not X11Window.displayHasXComposite():
             log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
             return 1
-        app = XpraServer()
-        app.init(clobber, opts)
-    log("%s(%s)", app.init_sockets, sockets)
-    app.init_sockets(sockets)
-    log("%s(%s)", app.init_when_ready, _when_ready)
-    app.init_when_ready(_when_ready)
+        app = XpraServer(clobber)
+        info = "xpra"
 
-    #we got this far so the sockets have initialized and
-    #the server should be able to manage the display
-    #from now on, if we exit without upgrading we will also kill the Xvfb
-    def kill_xvfb():
-        # Close our display(s) first, so the server dying won't kill us.
-        log.info("killing xvfb with pid %s" % xvfb_pid)
-        import gtk  #@Reimport
-        for display in gtk.gdk.display_manager_get().list_displays():
-            display.close()
-        os.kill(xvfb_pid, signal.SIGTERM)
-    if xvfb_pid is not None and not opts.use_display and not shadowing:
-        _cleanups.append(kill_xvfb)
-
+    #honour start child, html webserver, and setup child reaper
     if os.name=="posix" and not proxying and not upgrading and not shadowing:
         #initialize this early as we may need it for websockify, etc
         def reaper_quit():
@@ -1069,6 +1048,31 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             assert os.name=="posix", "start-child cannot be used on %s" % os.name
             start_children(child_reaper, opts.start_child, (opts.fake_xinerama and not shadowing))
         app.child_reaper = child_reaper
+
+    try:
+        app.init(opts)
+    except Exception as e:
+        log.error("Error: cannot start the %s server", info)
+        log.error(str(e))
+        log.info("")
+        return 1
+    log("%s(%s)", app.init_sockets, sockets)
+    app.init_sockets(sockets)
+    log("%s(%s)", app.init_when_ready, _when_ready)
+    app.init_when_ready(_when_ready)
+
+    #we got this far so the sockets have initialized and
+    #the server should be able to manage the display
+    #from now on, if we exit without upgrading we will also kill the Xvfb
+    def kill_xvfb():
+        # Close our display(s) first, so the server dying won't kill us.
+        log.info("killing xvfb with pid %s" % xvfb_pid)
+        import gtk  #@Reimport
+        for display in gtk.gdk.display_manager_get().list_displays():
+            display.close()
+        os.kill(xvfb_pid, signal.SIGTERM)
+    if xvfb_pid is not None and not opts.use_display and not shadowing:
+        _cleanups.append(kill_xvfb)
 
     try:
         log("running %s", app.run)

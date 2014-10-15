@@ -176,12 +176,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         "xpra-cursor-event": one_arg_signal,
         }
 
-    def __init__(self):
+    def __init__(self, clobber):
         gobject.GObject.__init__(self)
-        X11ServerBase.__init__(self)
+        X11ServerBase.__init__(self, clobber)
 
-    def init(self, clobber, opts):
-        X11ServerBase.init(self, clobber, opts)
+    def init(self, opts):
+        X11ServerBase.init(self, opts)
         self.xsettings_enabled = opts.xsettings
 
     def x11_init(self):
