@@ -411,7 +411,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--cursors", action="store", metavar="yes|no",
                       dest="cursors", default=defaults.cursors,
                       help="Forward custom application mouse cursors. Default: %s." % enabled_str(defaults.cursors))
-    legacy_bool_parse("cursors")
+    legacy_bool_parse("bell")
     group.add_option("--bell", action="store",
                       dest="bell", default=defaults.bell, metavar="yes|no",
                       help="Forward the system bell. Default: %s." % enabled_str(defaults.bell))
