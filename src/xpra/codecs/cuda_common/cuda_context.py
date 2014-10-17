@@ -57,7 +57,7 @@ def get_device_info(i):
 
 DEVICES = None
 def init_all_devices():
-    global DEVICES
+    global DEVICES, DEVICE_INFO
     if DEVICES is not None:
         return  DEVICES
     log.info("CUDA initialization (this may take a few seconds)")
@@ -144,7 +144,10 @@ def select_device(preferred_device_id=-1, preferred_device_name=CUDA_DEVICE_NAME
                 if compute<min_compute:
                     log("ignoring device %s: compute capability %#x (minimum %#x required)", device_info(device), compute, min_compute)
                 elif device_id==preferred_device_id:
-                    log.info("device matches preferred device id %s: %s", preferred_device_id, device_info(device))
+                    l = log
+                    if len(device_list)>1:
+                        l = log.info
+                    l("device matches preferred device id %s: %s", preferred_device_id, device_info(device))
                     return device_id, device
                 elif preferred_device_name and device_info(device).find(preferred_device_name)>=0:
                     log("device matches preferred device name: %s", preferred_device_name)
