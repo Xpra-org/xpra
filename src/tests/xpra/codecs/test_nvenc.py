@@ -111,7 +111,7 @@ def test_parallel_encode():
     ec = getattr(encoder_module, "Encoder")
     encoding = encoder_module.get_encodings()[0]
     log("")
-    log("test_parallel_encode() will test one %s encoder using %s encoding on each of %s in parallel" % (ec, encoding, cuda_devices))
+    log.info("test_parallel_encode() will test one %s encoder using %s encoding on each of %s in parallel", ec, encoding, cuda_devices)
     w, h = 1920, 1080
     IMAGE_COUNT = 20
     ENCODER_CONTEXTS_PER_DEVICE = 4
@@ -121,9 +121,7 @@ def test_parallel_encode():
     images = []
     for _ in range(IMAGE_COUNT):
         images += gen_src_images(src_format, w, h, 1)
-        sys.stdout.write(".")
-        sys.stdout.flush()
-    log("%s images generated" % IMAGE_COUNT)
+    log("%s images generated", IMAGE_COUNT)
     encoders = []
     for device_id in cuda_devices:
         device_info = get_device_info(device_id)
@@ -131,23 +129,23 @@ def test_parallel_encode():
         for i in range(ENCODER_CONTEXTS_PER_DEVICE):
             e = ec()
             e.init_context(w, h, src_format, dst_formats, encoding, 20, 0, None, options)
-            log("encoder %s for device %s initialized" % (i, device_id))
+            log("encoder %s for device %s initialized", i, device_id)
             info = "%s / encoder %s" % (device_info, i)
             encoders.append((info, e, images))
-    log("%s encoders initialized: %s" % (len(encoders), [e[1] for e in encoders]))
+    log("%s encoders initialized: %s", len(encoders), [e[1] for e in encoders])
     threads = []
     i = 0
     for info, encoder, images in encoders:
-        name = "Card %s : %s" % (i, info)
+        name = "Context %s : %s" % (i, info)
         thread = threading.Thread(target=encoding_thread, name=name, args=(encoder, src_format, w, h, images, name))
         threads.append(thread)
         i += 1
-    log("%s threads created: %s" % (len(threads), threads))
+    log("%s threads created: %s", len(threads), threads)
     log("starting all threads")
     log("")
     for thread in threads:
         thread.start()
-    log("%s threads started - waiting for completion" % len(threads))
+    log("%s threads started - waiting for completion", len(threads))
     for thread in threads:
         thread.join()
     log("all threads ended")
