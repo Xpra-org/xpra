@@ -22,7 +22,6 @@ CODEC_TO_MODULE = {"vpx"        : "vpx",
                    "swscale"    : "csc_swscale",
                    "cython"     : "csc_cython",
                    "opencl"     : "csc_opencl",
-                   "avcodec"    : "dec_avcodec",
                    "avcodec2"   : "dec_avcodec2"}
 
 def has_codec_module(module_name):
