@@ -35,7 +35,15 @@ find_ld_linux() {
 	fi
 }
 
-XORG_BIN=$(which Xorg)
+if [ -x "/usr/libexec/Xorg.bin" ]; then
+	#Fedora 21+ workaround where /usr/bin/Xorg is not suid
+	#because it is a script, which calls /usr/libexec/Xorg.wrap
+	#which is setuid, and which eventually calls this one:
+	XORG_BIN="/usr/libexec/Xorg.bin"
+else
+	XORG_BIN=$(which Xorg)
+fi
+
 if [ ! -x "$XORG_BIN" ]; then
 	echo "failed to locate Xorg binary to run"
 	exit 1
