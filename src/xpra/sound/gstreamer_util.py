@@ -527,8 +527,8 @@ def main():
         print("")
         encs = [x for x in CODEC_ORDER if has_encoder(x)]
         decs = [x for x in CODEC_ORDER if has_decoder(x)]
-        print("encoders supported: %s" % str(encs))
-        print("decoders supported: %s" % str(decs))
+        print("encoders supported: %s" % ", ".join(encs))
+        print("decoders supported: %s" % ", ".join(decs))
     finally:
         clean()
 
