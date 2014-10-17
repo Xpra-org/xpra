@@ -11,7 +11,7 @@ from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_device_info
 
 from xpra.log import Logger
-log = Logger("encoder", "test")
+log = Logger("encoder", "test", "nvenc")
 
 #TEST_DIMENSIONS = ((32, 32), (1920, 1080), (512, 512))
 TEST_DIMENSIONS = ((1920, 1080), (512, 512), (32, 32))
@@ -24,12 +24,11 @@ def set_encoder_module(module):
 
 
 def test_encode_one():
-    log("")
-    log("test_nvenc()")
+    log("test_encode_one()")
     test_encoder(encoder_module)
-    log("")
 
 def test_memleak():
+    log.info("test_memleak()")
     from pycuda import driver
     #use the first device for this test
     start_free_memory = None
@@ -76,6 +75,7 @@ def test_encode_all_GPUs():
     log("")
 
 def test_context_limits():
+    log.info("test_context_limits()")
     #figure out how many contexts we can have on each card:
     cuda_devices = init_all_devices()
     ec = getattr(encoder_module, "Encoder")
@@ -96,7 +96,7 @@ def test_context_limits():
                     try:
                         e.init_context(w, h, src_format, dst_formats, encoding, 20, 0, None, options)
                     except Exception as e:
-                        log.warn("failed to created context %s on %s: %s", i, device_info, e)
+                        log.warn("failed to create context %s on %s: %s", i, device_info, e)
                         break
                 log.info("device %s managed %s contexts at %sx%s", device_info, len(encoders)-1, w, h)
                 for encoder in encoders:

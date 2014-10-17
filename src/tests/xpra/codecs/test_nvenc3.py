@@ -6,12 +6,7 @@
 
 from tests.xpra.codecs import test_nvenc
 
-from xpra.log import Logger
-log = Logger("encoder", "test")
-
-
 def main():
-    log("main()")
     from xpra.codecs.nvenc3 import encoder
     test_nvenc.set_encoder_module(encoder)
     test_nvenc.test_encode_one()

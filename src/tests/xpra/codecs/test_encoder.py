@@ -123,5 +123,5 @@ def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None,
     tpf = int(1000*(end-start)/len(images))
     sized = "%sx%s" % (w, h)
     fsize = tsize/len(images)
-    log.info("%s finished encoding %s frames at %s: %s MPixels/s, %sms/frame, %sKB/frame (%s)", name, len(images), sized.rjust(10), str(perf).rjust(4), str(tpf).rjust(4), str(fsize/1024).rjust(8), encoder.get_info().get("pixel_format"))
+    log.info("%s finished encoding %s frames at %s: %s MPixels/s, %sms/frame, %sKB/frame (%s)", name, str(len(images)).rjust(3), sized.rjust(10), str(perf).rjust(4), str(tpf).rjust(4), str(fsize/1024).rjust(8), encoder.get_info().get("pixel_format"))
     #log.info("info=%s", encoder.get_info())
