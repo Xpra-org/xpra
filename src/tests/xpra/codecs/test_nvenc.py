@@ -113,8 +113,8 @@ def test_parallel_encode():
     log("")
     log.info("test_parallel_encode() will test one %s encoder using %s encoding on each of %s in parallel", ec, encoding, cuda_devices)
     w, h = 1920, 1080
-    IMAGE_COUNT = 20
-    ENCODER_CONTEXTS_PER_DEVICE = 4
+    IMAGE_COUNT = 40
+    ENCODER_CONTEXTS_PER_DEVICE = 10
     src_format = encoder_module.get_input_colorspaces()[0]
     dst_formats = encoder_module.get_output_colorspaces(src_format)
     log("generating %s images..." % IMAGE_COUNT)
@@ -157,4 +157,4 @@ def test_parallel_encode():
 def encoding_thread(encoder, src_format, w, h, images, info):
     #log("encoding_thread(%s, %s, %s, %s, %s, %s)" % (encoder, src_format, w, h, images, info))
     log("%s started" % info)
-    do_test_encoder(encoder, src_format, w, h, images, name=info, log=log, pause=0.25)
+    do_test_encoder(encoder, src_format, w, h, images, name=info, log=log, pause=0.005)
