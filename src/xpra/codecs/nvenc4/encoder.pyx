@@ -928,6 +928,8 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
     #new in SDK4:
     guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)              : "lossless",
+    #this one is also lossless, apparently:
+    "D5BFB716-C604-44E7-9BB8-DEA5510FC3AC"                  : "lossless",
     guidstr(NV_ENC_PRESET_LOSSLESS_HP_GUID)                 : "lossless-hp",
     "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "streaming",
     }
