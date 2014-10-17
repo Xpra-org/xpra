@@ -50,6 +50,11 @@ def get_pycuda_info():
             "driver.driver_version" : driver.get_driver_version()}
 
 
+DEVICE_INFO = {}
+def get_device_info(i):
+    global DEVICE_INFO
+    return DEVICE_INFO.get(i, None)
+
 DEVICES = None
 def init_all_devices():
     global DEVICES
@@ -58,6 +63,7 @@ def init_all_devices():
     log.info("CUDA initialization (this may take a few seconds)")
     driver.init()
     DEVICES = []
+    DEVICE_INFO = {}
     log("CUDA driver version=%s", driver.get_driver_version())
     ngpus = driver.Device.count()
     log.info("CUDA %s / PyCUDA %s, found %s device(s):", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus)
@@ -69,6 +75,7 @@ def init_all_devices():
         try:
             device = driver.Device(i)
             log(" + testing device %s: %s", i, device_info(device))
+            DEVICE_INFO[i] = device_info(device)
             host_mem = device.get_attribute(da.CAN_MAP_HOST_MEMORY)
             if not host_mem:
                 log.warn("skipping device %s (cannot map host memory)", device_info(device))

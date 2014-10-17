@@ -15,12 +15,12 @@ def main():
     from xpra.codecs.nvenc3 import encoder
     test_nvenc.set_encoder_module(encoder)
     test_nvenc.test_encode_one()
-    #test_memleak()
-    #test_dimensions()
+    #test_nvenc.test_memleak()
+    test_nvenc.test_dimensions()
     test_nvenc.test_perf()
-    #test_encode_all_GPUs()
-    #test_context_limits()
-    #test_parallel_encode()
+    #test_nvenc.test_encode_all_GPUs()
+    test_nvenc.test_context_limits()
+    test_nvenc.test_parallel_encode()
 
 
 if __name__ == "__main__":

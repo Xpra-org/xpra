@@ -8,6 +8,7 @@ import sys
 import random
 import threading
 from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test_encoder, test_encoder_dimensions, test_performance
+from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_device_info
 
 from xpra.log import Logger
 log = Logger("encoder", "test")
@@ -76,7 +77,7 @@ def test_encode_all_GPUs():
 
 def test_context_limits():
     #figure out how many contexts we can have on each card:
-    cuda_devices = encoder_module.get_cuda_devices()
+    cuda_devices = init_all_devices()
     ec = getattr(encoder_module, "Encoder")
     MAX_ENCODER_CONTEXTS_PER_DEVICE = 64
     log("")
@@ -84,18 +85,20 @@ def test_context_limits():
         for w,h in TEST_DIMENSIONS:
             log("test_context_limits() %s @ %sx%s" % (encoding, w, h))
             src_format = encoder_module.get_input_colorspaces()[0]
-            for device_id, device_info in cuda_devices.items():
+            dst_formats = encoder_module.get_output_colorspaces(src_format)
+            for device_id in cuda_devices:
+                device_info = get_device_info(device_id)
                 options = {"cuda_device" : device_id}
                 encoders = []
                 for i in range(MAX_ENCODER_CONTEXTS_PER_DEVICE):
                     e = ec()
                     encoders.append(e)
                     try:
-                        e.init_context(w, h, src_format, encoding, 20, 0, options)
+                        e.init_context(w, h, src_format, dst_formats, encoding, 20, 0, None, options)
                     except Exception as e:
-                        log("failed to created context %s on %s: %s" % (i, device_info, e))
+                        log.warn("failed to created context %s on %s: %s", i, device_info, e)
                         break
-                log("device %s managed %s contexts at %sx%s" % (device_info, len(encoders)-1, w, h))
+                log.info("device %s managed %s contexts at %sx%s", device_info, len(encoders)-1, w, h)
                 for encoder in encoders:
                     try:
                         encoder.clean()
@@ -104,7 +107,7 @@ def test_context_limits():
     log("")
 
 def test_parallel_encode():
-    cuda_devices = encoder_module.get_cuda_devices()
+    cuda_devices = init_all_devices()
     ec = getattr(encoder_module, "Encoder")
     encoding = encoder_module.get_encodings()[0]
     log("")
@@ -112,7 +115,8 @@ def test_parallel_encode():
     w, h = 1920, 1080
     IMAGE_COUNT = 20
     ENCODER_CONTEXTS_PER_DEVICE = 4
-    src_format = encoder_module.get_colorspaces()[0]
+    src_format = encoder_module.get_input_colorspaces()[0]
+    dst_formats = encoder_module.get_output_colorspaces(src_format)
     log("generating %s images..." % IMAGE_COUNT)
     images = []
     for _ in range(IMAGE_COUNT):
@@ -121,11 +125,12 @@ def test_parallel_encode():
         sys.stdout.flush()
     log("%s images generated" % IMAGE_COUNT)
     encoders = []
-    for device_id, device_info in cuda_devices.items():
+    for device_id in cuda_devices:
+        device_info = get_device_info(device_id)
         options = {"cuda_device" : device_id}
         for i in range(ENCODER_CONTEXTS_PER_DEVICE):
             e = ec()
-            e.init_context(w, h, src_format, encoding, 20, 0, options)
+            e.init_context(w, h, src_format, dst_formats, encoding, 20, 0, None, options)
             log("encoder %s for device %s initialized" % (i, device_id))
             info = "%s / encoder %s" % (device_info, i)
             encoders.append((info, e, images))
@@ -154,4 +159,4 @@ def test_parallel_encode():
 def encoding_thread(encoder, src_format, w, h, images, info):
     #log("encoding_thread(%s, %s, %s, %s, %s, %s)" % (encoder, src_format, w, h, images, info))
     log("%s started" % info)
-    do_test_encoder(encoder, src_format, w, h, images, name=info, log_data=False, pause=0.25)
+    do_test_encoder(encoder, src_format, w, h, images, name=info, log=log, pause=0.25)
