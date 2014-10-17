@@ -98,6 +98,7 @@ KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "vid
                  "keyboard", "pointer", "focus",
                  "server", "command",
                  "shadow",
+                 "test",
                  "x11", "bindings", "core", "randr", "ximage", "focus", "tray", "xor"]
 
 
