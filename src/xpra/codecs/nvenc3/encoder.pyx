@@ -1047,6 +1047,8 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
     "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "streaming",
+    "D5BFB716-C604-44E7-9BB8-DEA5510FC3AC"                  : "lossless",
+    "149998E7-2364-411d-82EF-179888093409"                  : "lossless-hp",
     }
 
 
