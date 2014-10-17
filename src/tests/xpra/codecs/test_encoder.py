@@ -28,7 +28,7 @@ def test_encoder_dimensions(encoder_module):
 def test_performance(encoder_module, options={}):
     log("")
     log("test_encoder_dimensions()")
-    dims = [(1920, 1080), (1024, 768)]
+    dims = [(1920, 1080), (1280, 720)]
     for speed in (0, 100):
         for quality in (0, 100):
             log.info("testing speed=%s, quality=%s", speed, quality)
@@ -123,5 +123,6 @@ def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None,
     tpf = int(1000*(end-start)/len(images))
     sized = "%sx%s" % (w, h)
     fsize = tsize/len(images)
-    log.info("%s finished encoding %s frames at %s: %s MPixels/s, %sms/frame, %sKB/frame (%s)", name, str(len(images)).rjust(3), sized.rjust(10), str(perf).rjust(4), str(tpf).rjust(4), str(fsize/1024).rjust(8), encoder.get_info().get("pixel_format"))
+    log.info("%s finished encoding %s frames at %s: %s MPixels/s, %sms/frame, %sKB/frame (%s)",
+             name, str(len(images)).rjust(3), sized.rjust(10), str(perf).rjust(4), str(tpf).rjust(4), str(fsize/1024).rjust(8), encoder.get_info().get("pixel_format"))
     #log.info("info=%s", encoder.get_info())
