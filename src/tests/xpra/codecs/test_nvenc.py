@@ -112,7 +112,7 @@ def test_parallel_encode():
     encoding = encoder_module.get_encodings()[0]
     log("")
     log.info("test_parallel_encode() will test one %s encoder using %s encoding on each of %s in parallel", ec, encoding, cuda_devices)
-    w, h = 1920, 1080
+    w, h = 1280, 720
     IMAGE_COUNT = 40
     ENCODER_CONTEXTS_PER_DEVICE = 10
     src_format = encoder_module.get_input_colorspaces()[0]
@@ -128,7 +128,7 @@ def test_parallel_encode():
         options = {"cuda_device" : device_id}
         for i in range(ENCODER_CONTEXTS_PER_DEVICE):
             e = ec()
-            e.init_context(w, h, src_format, dst_formats, encoding, 20, 0, None, options)
+            e.init_context(w, h, src_format, dst_formats, encoding, 0, 100, None, options)
             log("encoder %s for device %s initialized", i, device_id)
             info = "%s / encoder %s" % (device_info, i)
             encoders.append((info, e, images))
