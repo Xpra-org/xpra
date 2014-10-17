@@ -15,14 +15,15 @@ from xpra.codecs.loader import get_codec, get_codec_error, load_codecs
 
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:
-CODEC_TO_MODULE = {"vpx"        : "vpx",
-                   "x264"       : "enc_x264",
-                   "x265"       : "enc_x265",
-                   "nvenc"      : "nvenc",
-                   "swscale"    : "csc_swscale",
-                   "cython"     : "csc_cython",
-                   "opencl"     : "csc_opencl",
-                   "avcodec2"   : "dec_avcodec2"}
+CODEC_TO_MODULE = {"vpx"        : ["vpx"],
+                   "x264"       : ["enc_x264"],
+                   "x265"       : ["enc_x265"],
+                   "nvenc"      : ["nvenc4", "nvenc3"],
+                   "swscale"    : ["csc_swscale"],
+                   "cython"     : ["csc_cython"],
+                   "opencl"     : ["csc_opencl"],
+                   "avcodec"    : ["dec_avcodec"],
+                   "avcodec2"   : ["dec_avcodec2"]}
 
 def has_codec_module(module_name):
     top_module = "xpra.codecs.%s" % module_name
@@ -37,9 +38,11 @@ def has_codec_module(module_name):
 def try_import_modules(codec_names):
     names = []
     for codec_name in codec_names:
-        module_name = CODEC_TO_MODULE[codec_name]
-        if has_codec_module(module_name):
-            names.append(codec_name)
+        module_names = CODEC_TO_MODULE[codec_name]
+        for module_name in module_names:
+            if has_codec_module(module_name):
+                names.append(codec_name)
+                break
     return names
 
 #all the codecs we know about:
@@ -60,10 +63,12 @@ log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 #on top of that, there are compatibility problems with gtk at times: OpenCL AMD and TLS don't mix well
 
 
-def get_encoder_module_name(x):
-        if x.find("enc")>=0:
-            return x            #ie: "nvenc" or "enc_vpx"
-        return "enc_"+x         #ie: "enc_x264"
+def get_encoder_module_names(x):
+    if x=="nvenc":
+        return ["nvenc4", "nvenc3"]
+    elif x.find("enc")>=0:
+        return [x]              #ie: "nvenc" or "enc_vpx"
+    return ["enc_"+x]           #ie: "enc_x264"
 
 def get_decoder_module_name(x):
         return "dec_"+x         #ie: "dec_vpx"
@@ -77,10 +82,12 @@ def get_DEFAULT_VIDEO_ENCODERS():
     """ returns all the video encoders installed """
     encoders = []
     for x in list(ALL_VIDEO_ENCODER_OPTIONS):
-        mod = get_encoder_module_name(x)
-        c = get_codec(mod)
-        if c:
-            encoders.append(x)
+        mods = get_encoder_module_names(x)
+        for mod in mods:
+            c = get_codec(mod)
+            if c:
+                encoders.append(x)
+                break
     return encoders
 
 def get_DEFAULT_CSC_MODULES():
@@ -242,10 +249,16 @@ class VideoHelper(object):
         log("init_video_encoders_options() will try video encoders: %s", self.video_encoders)
         for x in self.video_encoders:
             try:
-                mod = get_encoder_module_name(x)
-                self.init_video_encoder_option(mod)
-            except:
-                log.warn("init_video_encoders_options() cannot add %s encoder", x, exc_info=True)
+                mods = get_encoder_module_names(x)
+                log("init_video_encoders_options() modules for %s: %s", x, mods)
+                for mod in mods:
+                    try:
+                        self.init_video_encoder_option(mod)
+                        break
+                    except:
+                        log.warn("init_video_encoders_options() cannot add %s encoder", mod, exc_info=True)
+            except Exception as e:
+                log.warn("init_video_encoders_options() cannot add %s encoder: %s", x, e)
         log("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)
 
     def init_video_encoder_option(self, encoder_name):
@@ -260,7 +273,7 @@ class VideoHelper(object):
             encoder_module.init_module()
             self._cleanup_modules.append(encoder_module)
         except Exception as e:
-            log("exception in %s module initialization %s: %s", encoder_type, encoder_module.init_module, e, exc_info=True)
+            log("exception in %s module %s initialization %s: %s", encoder_type, encoder_module.__name__, encoder_module.init_module, e, exc_info=True)
             log.warn("Warning: %s video encoder failed: %s", encoder_type, e)
             return
         colorspaces = encoder_module.get_input_colorspaces()

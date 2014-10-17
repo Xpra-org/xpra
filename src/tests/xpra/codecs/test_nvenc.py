@@ -8,13 +8,18 @@ import sys
 import random
 import threading
 from tests.xpra.codecs.test_encoder import test_encoder, gen_src_images, do_test_encoder, test_encoder_dimensions, test_performance
-from xpra.codecs.nvenc import encoder as encoder_module     #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("encoder", "test")
 
 #TEST_DIMENSIONS = ((32, 32), (1920, 1080), (512, 512))
 TEST_DIMENSIONS = ((1920, 1080), (512, 512), (32, 32))
+
+
+encoder_module = None
+def set_encoder_module(module):
+    global encoder_module
+    encoder_module = module
 
 
 def test_encode_one():
@@ -150,17 +155,3 @@ def encoding_thread(encoder, src_format, w, h, images, info):
     #log("encoding_thread(%s, %s, %s, %s, %s, %s)" % (encoder, src_format, w, h, images, info))
     log("%s started" % info)
     do_test_encoder(encoder, src_format, w, h, images, name=info, log_data=False, pause=0.25)
-
-def main():
-    log("main()")
-    test_encode_one()
-    #test_memleak()
-    #test_dimensions()
-    test_perf()
-    #test_encode_all_GPUs()
-    #test_context_limits()
-    #test_parallel_encode()
-
-
-if __name__ == "__main__":
-    main()

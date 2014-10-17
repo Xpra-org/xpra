@@ -21,6 +21,7 @@ from xpra.codecs.codec_constants import video_codec_spec, TransientCodecExceptio
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.cuda_common.CUDA_rgb2yuv444p import BGRA2Y_kernel, BGRA2U_kernel, BGRA2V_kernel
 from xpra.codecs.cuda_common.CUDA_rgb2nv12 import BGRA2NV12_kernel
+from xpra.codecs.nv_util import get_nvidia_module_version
 
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
@@ -32,7 +33,6 @@ from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEYS_STR = [x.strip() for x in os.environ.get("XPRA_NVENC_CLIENT_KEY", "").split(",")]
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
-YUV444P_USER_OVERRIDE = os.environ.get("XPRA_NVENC_YUV444P", "")
 
 #NVENC requires compute capability value 0x30 or above:
 MIN_COMPUTE = 0x30
@@ -41,7 +41,8 @@ if FORCE:
 
 
 cdef extern from "string.h":
-    void* memset (void * ptr, int value, size_t num)
+    void* memset(void * ptr, int value, size_t num)
+    void* memcpy(void * destination, void * source, size_t num)
 
 cdef extern from "stdlib.h":
     void* malloc(size_t __size)
@@ -163,11 +164,6 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_PIC_FLAG_FORCEIDR
         NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
         NV_ENC_PIC_FLAG_EOS
-        NV_ENC_PIC_FLAG_DYN_RES_CHANGE
-        NV_ENC_PIC_FLAG_DYN_BITRATE_CHANGE
-        NV_ENC_PIC_FLAG_USER_FORCE_CONSTQP
-        NV_ENC_PIC_FLAG_DYN_RCMODE_CHANGE
-        NV_ENC_PIC_FLAG_REINIT_ENCODER
 
     ctypedef enum NV_ENC_PIC_STRUCT:
         NV_ENC_PIC_STRUCT_FRAME
@@ -212,18 +208,6 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_LEVEL_H264_42
         NV_ENC_LEVEL_H264_5
         NV_ENC_LEVEL_H264_51
-        NV_ENC_LEVEL_MPEG2_LOW
-        NV_ENC_LEVEL_MPEG2_MAIN
-        NV_ENC_LEVEL_MPEG2_HIGH
-        NV_ENC_LEVEL_MPEG2_HIGH1440
-        NV_ENC_LEVEL_VC1_LOW
-        NV_ENC_LEVEL_VC1_MEDIAN
-        NV_ENC_LEVEL_VC1_HIGH
-        NV_ENC_LEVEL_VC1_0
-        NV_ENC_LEVEL_VC1_1
-        NV_ENC_LEVEL_VC1_2
-        NV_ENC_LEVEL_VC1_3
-        NV_ENC_LEVEL_VC1_4
 
     ctypedef enum NV_ENC_PARAMS_RC_MODE:
         NV_ENC_PARAMS_RC_CONSTQP            #Constant QP mode
@@ -301,7 +285,8 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    subResourceIndex    #[in]: Subresource Index of the DirectX resource to be registered. Should eb set to 0 for other interfaces.
         void*       resourceToRegister  #[in]: Handle to the resource that is being registered.
         NV_ENC_REGISTERED_PTR   registeredResource  #[out]: Registered resource handle. This should be used in future interactions with the Nvidia Video Encoder Interface.
-        uint32_t    reserved1[249]      #[in]: Reserved and must be set to 0.
+        NV_ENC_BUFFER_FORMAT    bufferFormat        #[in]: Buffer format of resource to be registered.
+        uint32_t    reserved1[248]      #[in]: Reserved and must be set to 0.
         void*       reserved2[62]       #[in]: Reserved and must be set to NULL.
 
     ctypedef struct GUID:
@@ -314,28 +299,16 @@ cdef extern from "nvEncodeAPI.h":
 
     #Encode Codec GUIDS supported by the NvEncodeAPI interface.
     GUID NV_ENC_CODEC_H264_GUID
-    #removed in nvenc v4:
-    #GUID NV_ENC_CODEC_MPEG2_GUID
-    #GUID NV_ENC_CODEC_VC1_GUID
-    #GUID NV_ENC_CODEC_JPEG_GUID
-    #GUID NV_ENC_CODEC_VP8_GUID
 
     #Profiles:
     GUID NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID
     GUID NV_ENC_H264_PROFILE_BASELINE_GUID
     GUID NV_ENC_H264_PROFILE_MAIN_GUID
     GUID NV_ENC_H264_PROFILE_HIGH_GUID
+    GUID NV_ENC_H264_PROFILE_HIGH_444_GUID
     GUID NV_ENC_H264_PROFILE_STEREO_GUID
     GUID NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY
     GUID NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID
-    GUID NV_ENC_MPEG2_PROFILE_SIMPLE_GUID
-    GUID NV_ENC_MPEG2_PROFILE_MAIN_GUID
-    GUID NV_ENC_MPEG2_PROFILE_HIGH_GUID
-    GUID NV_ENC_VP8_GUID
-    GUID NV_ENC_VC1_PROFILE_SIMPLE_GUID
-    GUID NV_ENC_VC1_PROFILE_MAIN_GUID
-    GUID NV_ENC_VC1_PROFILE_ADVANCED_GUID
-    GUID NV_ENC_JPEG_PROFILE_BASELINE_GUID
 
     #Presets:
     GUID NV_ENC_PRESET_DEFAULT_GUID
@@ -346,7 +319,9 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID
     GUID NV_ENC_PRESET_LOW_LATENCY_HQ_GUID
     GUID NV_ENC_PRESET_LOW_LATENCY_HP_GUID
-    #NV_ENC_CODEC_MPEG2_GUID, etc..
+    #V4 ONLY PRESETS:
+    GUID NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID
+    GUID NV_ENC_PRESET_LOSSLESS_HP_GUID
 
     ctypedef struct NV_ENC_CAPS_PARAM:
         uint32_t    version
@@ -389,16 +364,6 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    qpInterB
         uint32_t    qpIntra
 
-    ctypedef struct NV_ENC_CONFIG_SVC_TEMPORAL:
-        uint32_t    numTemporalLayers   #[in]: Max temporal layers. Valid value range is [1,::NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS]
-        uint32_t    basePriorityID      #[in]: Priority id of the base layer. Default is 0. Priority Id is increased by 1 for each consecutive temporal layers.
-        uint32_t    reserved1[254]      #[in]: Reserved and should be set to 0
-        void*       reserved2[64]       #[in]: Reserved and should be set to NULL
-
-    ctypedef struct NV_ENC_CONFIG_MVC:
-        uint32_t    reserved1[256]      #[in]: Reserved and should be set to 0
-        void*       reserved2[64]       #[in]: Reserved and should be set to NULL
-
     ctypedef struct NV_ENC_CONFIG_H264_VUI_PARAMETERS:
         uint32_t    overscanInfoPresentFlag         #[in]: if set to 1 , it specifies that the overscanInfo is present
         uint32_t    overscanInfo                    #[in]: Specifies the overscan info(as defined in Annex E of the ITU-T Specification).
@@ -414,12 +379,6 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    chromaSampleLocationBot         #[in]: Specifies the chroma sample location for bottom field(as defined in Annex E of the ITU-T Specification)
         uint32_t    bitstreamRestrictionFlag        #[in]: if set to 1, it speficies the bitstream restriction parameters are present in the bitstream.
         uint32_t    reserved[15]
-
-    ctypedef union NV_ENC_CONFIG_H264_EXT:
-        NV_ENC_CONFIG_SVC_TEMPORAL  svcTemporalConfig   #[in]: SVC encode config
-        NV_ENC_CONFIG_MVC           mvcConfig           #[in]: MVC encode config
-        uint32_t                    reserved1[254]      #[in]: Reserved and should be set to 0
-        void*                       reserved2[64]       #[in]: Reserved and should be set to NULL
 
     ctypedef struct NV_ENC_CONFIG_H264:
         uint32_t    enableTemporalSVC   #[in]: Set to 1 to enable SVC temporal
@@ -437,8 +396,10 @@ cdef extern from "nvEncodeAPI.h":
                                                 #Check support for constrained encoding using ::NV_ENC_CAPS_SUPPORT_CONSTRAINED_ENCODING caps.
         uint32_t    repeatSPSPPS        #[in]: Set to 1 to enable writing of Sequence and Picture parameter for every IDR frame
         uint32_t    enableVFR           #[in]: Set to 1 to enable variable frame rate.
-        uint32_t    enableLTR           #[in]: Set to 1 to enable LTR support and auto-mark the first
-        uint32_t    reservedBitFields   #[in]: Reserved bitfields and must be set to 0
+        uint32_t    enableLTR           #[in]: Currently this feature is not available and must be set to 0. Set to 1 to enable LTR support and auto-mark the first
+        uint32_t    qpPrimeYZeroTransformBypassFlag #[in]  To enable lossless encode set this to 1, set QP to 0 and RC_mode to NV_ENC_PARAMS_RC_CONSTQP and profile to HIGH_444_PREDICTIVE_PROFILE
+                                                    #Check support for lossless encoding using ::NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE caps.
+        uint32_t    reservedBitFields[16]       #[in]: Reserved bitfields and must be set to 0
         uint32_t    level               #[in]: Specifies the encoding level. Client is recommended to set this to NV_ENC_LEVEL_AUTOSELECT in order to enable the NvEncodeAPI interface to select the correct level.
         uint32_t    idrPeriod           #[in]: Specifies the IDR interval. If not set, this is made equal to gopLength in NV_ENC_CONFIG.Low latency application client can set IDR interval to NVENC_INFINITE_GOPLENGTH so that IDR frames are not inserted automatically.
         uint32_t    separateColourPlaneFlag     #[in]: Set to 1 to enable 4:4:4 separate colour planes
@@ -451,11 +412,9 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_H264_BDIRECT_MODE bdirectMode    #[in]: Specifies the BDirect mode. Check support for BDirect mode using ::NV_ENC_CAPS_SUPPORT_BDIRECT_MODE caps.
         NV_ENC_H264_ENTROPY_CODING_MODE entropyCodingMode   #[in]: Specifies the entropy coding mode. Check support for CABAC mode using ::NV_ENC_CAPS_SUPPORT_CABAC caps.
         NV_ENC_STEREO_PACKING_MODE stereoMode   #[in]: Specifies the stereo frame packing mode which is to be signalled in frame packing arrangement SEI
-        NV_ENC_CONFIG_H264_EXT h264Extension    #[in]: Specifies the H264 extension config
-        uint32_t    intraRefreshPeriod  #[in]: Specifies the interval between successive intra refresh if enableIntrarefresh is set and one time intraRefresh configuration is desired.
-                                        #When this is specified only first IDR will be encoded and no more key frames will be encoded. Client should set PIC_TYPE = NV_ENC_PIC_TYPE_INTRA_REFRESH
-                                        #for first picture of every intra refresh period.
-        uint32_t    intraRefreshCnt     #[in]: Specifies the number of frames over which intra refresh will happen
+        uint32_t    intraRefreshPeriod  #[in]: Specifies the interval between successive intra refresh if enableIntrarefresh is set. Requires enableIntraRefresh to be set.
+                                        #Will be disabled if NV_ENC_CONFIG::gopLength is not set to NVENC_INFINITE_GOPLENGTH.
+        uint32_t    intraRefreshCnt     #[in]: Specifies the length of intra refresh in number of frames for periodic intra refresh. This value should be smaller than intraRefreshPeriod
         uint32_t    maxNumRefFrames     #[in]: Specifies the DPB size used for encoding. Setting it to 0 will let driver use the default dpb size.
                                         #The low latency application which wants to invalidate reference frame as an error resilience tool
                                         #is recommended to use a large DPB size so that the encoder can keep old reference frames which can be used if recent
@@ -472,45 +431,13 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CONFIG_H264_VUI_PARAMETERS h264VUIParameters   #[in]: Specifies the H264 video usability info pamameters
         uint32_t    ltrNumFrames        #[in]: Specifies the number of LTR frames used. Additionally, encoder will mark the first numLTRFrames base layer reference frames within each IDR interval as LTR
         uint32_t    ltrTrustMode        #[in]: Specifies the LTR operating mode. Set to 0 to disallow encoding using LTR frames until later specified. Set to 1 to allow encoding using LTR frames unless later invalidated.
-        uint32_t    reserved1[272]      #[in]: Reserved and must be set to 0
-        void        *reserved2[64]      #[in]: Reserved and must be set to NULL
-
-    ctypedef struct NV_ENC_CONFIG_MPEG2:
-        uint32_t    profile             #[in]: Specifies the encoding profile
-        uint32_t    level               #[in]: Specifies the encoding level
-        uint32_t    alternateScanValue  #[in]: Specifies the AlternateScan value
-        uint32_t    quantScaleType      #[in]: Specifies the QuantScale value
-        uint32_t    intraDCPrecision    #[in]: Specifies the intra DC precision
-        uint32_t    frameDCT            #[in]: Specifies the frame Discrete Cosine Transform
-        uint32_t    reserved[250]       #[in]: Reserved and must be set to 0
-        void        *reserved2[64]      #[in]: Reserved and must be set to NULL
-
-    ctypedef struct NV_ENC_CONFIG_JPEG:
-        uint32_t    reserved[256]       #[in]: Reserved and must be set to 0
-        void        *reserved2[64]      #[in]: Reserved and must be set to NULL
-
-    ctypedef struct NV_ENC_CONFIG_VC1:
-        uint32_t    level               #[in]: Specifies the encoding level
-        uint32_t    disableOverlapSmooth#[in]: Set this to 1 for disabling overlap smoothing
-        uint32_t    disableFastUVMC     #[in]: Set this to 1 for disabling fastUVMC mode
-        uint32_t    disableInloopFilter #[in]: Set this to 1 for disabling in-loop filtering
-        uint32_t    disable4MV          #[in]: Set this to 1 for disabling 4MV mode
-        uint32_t    reservedBitFields   #[in]: Reserved bitfields and must be set to 0
-        uint32_t    numSlices           #[in]: Specifies number of slices to encode. This field is applicable only for Advanced Profile.
-                                        #If set to 0, NvEncodeAPI interface will choose optimal number of slices. Currently we support only a maximum of three slices
-        uint32_t    reserved[253]       #[in]: Reserved and must be set to 0
-        void        *reserved2[64]      #[in]: Reserved and must be set to NULL
-
-    ctypedef struct NV_ENC_CONFIG_VP8:
-        uint32_t    reserved[256]       #[in]: Reserved and must be set to 0
+        uint32_t    chromaFormatIDC     #[in]: Specifies the chroma format. Should be set to 1 for yuv420 input, 3 for yuv444 input.
+                                        #Check support for YUV444 encoding using ::NV_ENC_CAPS_SUPPORT_YUV444_ENCODE caps.
+        uint32_t    reserved1[271]      #[in]: Reserved and must be set to 0
         void        *reserved2[64]      #[in]: Reserved and must be set to NULL
 
     ctypedef struct NV_ENC_CODEC_CONFIG:
         NV_ENC_CONFIG_H264  h264Config  #[in]: Specifies the H.264-specific encoder configuration
-        NV_ENC_CONFIG_VC1   vc1Config   #[in]: Specifies the VC1-specific encoder configuration. Currently unsupported and must not to be used.
-        NV_ENC_CONFIG_JPEG  jpegConfig  #[in]: Specifies the JPEG-specific encoder configuration. Currently unsupported and must not to be used.
-        NV_ENC_CONFIG_MPEG2 mpeg2Config #[in]: Specifies the MPEG2-specific encoder configuration. Currently unsupported and must not to be used.
-        NV_ENC_CONFIG_VP8   vp8Config   #[in]: Specifies the VP8-specific encoder configuration. Currently unsupported and must not to be used.
         uint32_t            reserved[256]       #[in]: Reserved and must be set to 0
 
     ctypedef struct NV_ENC_RC_PARAMS:
@@ -524,7 +451,9 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    enableMinQP         #[in]: Set this to 1 if minimum QP used for rate control.
         uint32_t    enableMaxQP         #[in]: Set this to 1 if maximum QP used for rate control.
         uint32_t    enableInitialRCQP   #[in]: Set this to 1 if user suppplied initial QP is used for rate control.
-        uint32_t    reservedBitFields   #[in]: Reserved bitfields and must be set to 0
+        uint32_t    enableAQ            #[in]: Set this to 1 to enable adaptive quantization.
+        uint32_t    enableExtQPDeltaMap #[in]: Set this to 1 to enable additional QP modifier for each MB supplied by client though signed byte array pointed to by NV_ENC_PIC_PARAMS::qpDeltaMap
+        uint32_t    reservedBitFields[27] #[in]: Reserved bitfields and must be set to 0
         NV_ENC_QP   minQP               #[in]: Specifies the minimum QP used for rate control. Client must set NV_ENC_CONFIG::enableMinQP to 1.
         NV_ENC_QP   maxQP               #[in]: Specifies the maximum QP used for rate control. Client must set NV_ENC_CONFIG::enableMaxQP to 1.
         NV_ENC_QP   initialRCQP         #[in]: Specifies the initial QP used for rate control. Client must set NV_ENC_CONFIG::enableInitialRCQP to 1.
@@ -600,26 +529,6 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved1[255]      #[in]: Reserved and must be set to 0
         void*       reserved2[64]       #[in]: Reserved and must be set to NULL
 
-    ctypedef struct NV_ENC_PIC_PARAMS_MVC:
-        uint32_t    viewID              #[in]: Specifies the view ID associated with the current input view.
-        uint32_t    temporalID          #[in]: Specifies the temporal ID associated with the current input view.
-        uint32_t    priorityID          #[in]: Specifies the priority ID associated with the current input view. Reserved and ignored by the NvEncodeAPI interface.
-        uint32_t    reserved1[253]      #[in]: Reserved and must be set to 0.
-        void        *reserved2[64]      #[in]: Reserved and must be set to NULL.
-
-    ctypedef struct NV_ENC_PIC_PARAMS_SVC:
-        uint32_t    priorityID          #[in]: Specifies the priority id associated with the current input.
-        uint32_t    temporalID          #[in]: Specifies the temporal id associated with the current input.
-        uint32_t    dependencyID        #[in]: Specifies the dependency id  associated with the current input.
-        uint32_t    qualityID           #[in]: Specifies the quality id associated with the current input.
-        uint32_t    reserved1[252]      #[in]: Reserved and must be set to 0.
-        void        *reserved2[64]      #[in]: Reserved and must be set to NULL.
-
-    ctypedef struct NV_ENC_PIC_PARAMS_H264_EXT:
-        NV_ENC_PIC_PARAMS_MVC mvcPicParams   #[in]: Specifies the MVC picture parameters.
-        NV_ENC_PIC_PARAMS_SVC svcPicParams   #[in]: Specifies the SVC picture parameters.
-        uint32_t    reserved1[256]      #[in]: Reserved and must be set to 0.
-
     ctypedef struct NV_ENC_H264_SEI_PAYLOAD:
         uint32_t    payloadSize         #[in] SEI payload size in bytes. SEI payload must be byte aligned, as described in Annex D
         uint32_t    payloadType         #[in] SEI payload types and syntax can be found in Annex D of the H.264 Specification.
@@ -628,7 +537,6 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef struct NV_ENC_PIC_PARAMS_H264:
         uint32_t    displayPOCSyntax    #[in]: Specifies the display POC syntax This is required to be set if client is handling the picture type decision.
         uint32_t    reserved3           #[in]: Reserved and must be set to 0
-        NV_ENC_PIC_PARAMS_H264_EXT h264ExtPicParams     #[in]: Specifies the H264 extension config parameters using this config.
         uint32_t    refPicFlag          #[in]: Set to 1 for a reference picture. This is ignored if NV_ENC_INITIALIZE_PARAMS::enablePTD is set to 1.
         uint32_t    colourPlaneId       #[in]: Specifies the colour plane ID associated with the current input.
         uint32_t    forceIntraRefreshWithFrameCnt   #[in]: Forces an intra refresh with duration equal to intraRefreshFrameCnt.
@@ -663,35 +571,8 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved[243]       #[in]: Reserved and must be set to 0.
         void*       reserved2[62]       #[in]: Reserved and must be set to NULL.
 
-    ctypedef struct NV_ENC_PIC_PARAMS_MPEG:
-        uint32_t    displayPOC          #[in]: Specifies the input display POC for current picture.
-        uint32_t    reserved[255]       #[in]: Reserved and must be set to 0.
-        void*       reserved2[64]       #[in]: Reserved and must be set to NULL.
-
-    ctypedef struct NV_ENC_PIC_PARAMS_VC1:
-        uint32_t    gopUserDataSize     #[in]: Specifies the size of the private data to be inserted in GOP header.
-        uint8_t*    gopUserData         #[in]: Specifies the private data to be inserted in GOP header. It is the client's responsibility to allocate and manage the struct memory.
-        uint8_t*    picUserData         #[in]: Specifies the private data to be inserted in picture header. It is the client's responsibility to allocate and manage the struct memory.
-        uint32_t    picUserDataSize     #[in]: Specifies the size of the private data to be inserted in picture header.
-        uint32_t    reserved[252]       #[in]: Reserved and must be set to 0.
-        void*       reserved2[64]       #[in]: Reserved and must be set to NULL.
-
-    ctypedef struct NV_ENC_PIC_PARAMS_VP8:
-        uint32_t    reserved[256]       #[in]: Reserved and must be set to 0
-        void*       reserved2[64]       #[in]: Reserved and must be set to NULL
-
-    ctypedef struct NV_ENC_PIC_PARAMS_JPEG:
-        uint32_t    exifBlobSize        #[in]: Specifies the size of the EXIF data blob to be added
-        uint8_t*    exifBlob            #[in]: Specifies the EXIF data blob to be added. It is the client's responsibility to allocate and manage the struct memory.
-        uint32_t    reserved[255]       #[in]: Reserved and must be set to 0
-        void*       reserved2[63]       #[in]: Reserved and must be set to NULL
-
     ctypedef union NV_ENC_CODEC_PIC_PARAMS:
         NV_ENC_PIC_PARAMS_H264 h264PicParams    #[in]: H264 encode picture params.
-        NV_ENC_PIC_PARAMS_MPEG mpegPicParams    #[in]: MPEG2 encode picture params. Currently unsupported and must not to be used.
-        NV_ENC_PIC_PARAMS_VC1  vc1PicParams     #[in]: VC1 encode picture params. Currently unsupported and must not to be used.
-        NV_ENC_PIC_PARAMS_JPEG jpegPicParams    #[in]: JPEG encode picture params. Currently unsupported and must not to be used.
-        NV_ENC_PIC_PARAMS_VP8  vp8PicParams     #[in]: VP8 encode picture params. Currently unsupported and must not to be used.
         uint32_t               reserved[256]    #[in]: Reserved and must be set to 0.
 
     ctypedef struct NVENC_EXTERNAL_ME_HINT:
@@ -868,43 +749,42 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfuly mapped.",
       }
 
-CODEC_PROFILES = {
-                  #NV_ENC_H264_PROFILE_BASELINE_GUID
-                  "baseline"    : 66,
-                  #NV_ENC_H264_PROFILE_MAIN_GUID
-                  "main"        : 77,
-                  #NV_ENC_H264_PROFILE_HIGH_GUID
-                  "high"        : 100,
-                  #NV_ENC_H264_PROFILE_STEREO_GUID
-                  "stereo"      : 128,
-                  }
+CAPS_NAMES = {
+        NV_ENC_CAPS_NUM_MAX_BFRAMES             : "NUM_MAX_BFRAMES",
+        NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES : "SUPPORTED_RATECONTROL_MODES",
+        NV_ENC_CAPS_SUPPORT_FIELD_ENCODING      : "SUPPORT_FIELD_ENCODING",
+        NV_ENC_CAPS_SUPPORT_MONOCHROME          : "SUPPORT_MONOCHROME",
+        NV_ENC_CAPS_SUPPORT_FMO                 : "SUPPORT_FMO",
+        NV_ENC_CAPS_SUPPORT_QPELMV              : "SUPPORT_QPELMV",
+        NV_ENC_CAPS_SUPPORT_BDIRECT_MODE        : "SUPPORT_BDIRECT_MODE",
+        NV_ENC_CAPS_SUPPORT_CABAC               : "SUPPORT_CABAC",
+        NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM  : "SUPPORT_ADAPTIVE_TRANSFORM",
+        NV_ENC_CAPS_SUPPORT_STEREO_MVC          : "SUPPORT_STEREO_MVC",
+        NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS     : "NUM_MAX_TEMPORAL_LAYERS",
+        NV_ENC_CAPS_SUPPORT_HIERARCHICAL_PFRAMES: "SUPPORT_HIERARCHICAL_PFRAMES",
+        NV_ENC_CAPS_SUPPORT_HIERARCHICAL_BFRAMES: "SUPPORT_HIERARCHICAL_BFRAMES",
+        NV_ENC_CAPS_LEVEL_MAX                   : "LEVEL_MAX",
+        NV_ENC_CAPS_LEVEL_MIN                   : "LEVEL_MIN",
+        NV_ENC_CAPS_SEPARATE_COLOUR_PLANE       : "SEPARATE_COLOUR_PLANE",
+        NV_ENC_CAPS_WIDTH_MAX                   : "WIDTH_MAX",
+        NV_ENC_CAPS_HEIGHT_MAX                  : "HEIGHT_MAX",
+        NV_ENC_CAPS_SUPPORT_TEMPORAL_SVC        : "SUPPORT_TEMPORAL_SVC",
+        NV_ENC_CAPS_SUPPORT_DYN_RES_CHANGE      : "SUPPORT_DYN_RES_CHANGE",
+        NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE  : "SUPPORT_DYN_BITRATE_CHANGE",
+        NV_ENC_CAPS_SUPPORT_DYN_FORCE_CONSTQP   : "SUPPORT_DYN_FORCE_CONSTQP",
+        NV_ENC_CAPS_SUPPORT_DYN_RCMODE_CHANGE   : "SUPPORT_DYN_RCMODE_CHANGE",
+        NV_ENC_CAPS_SUPPORT_SUBFRAME_READBACK   : "SUPPORT_SUBFRAME_READBACK",
+        NV_ENC_CAPS_SUPPORT_CONSTRAINED_ENCODING: "SUPPORT_CONSTRAINED_ENCODING",
+        NV_ENC_CAPS_SUPPORT_INTRA_REFRESH       : "SUPPORT_INTRA_REFRESH",
+        NV_ENC_CAPS_SUPPORT_CUSTOM_VBV_BUF_SIZE : "SUPPORT_CUSTOM_VBV_BUF_SIZE",
+        NV_ENC_CAPS_SUPPORT_DYNAMIC_SLICE_MODE  : "SUPPORT_DYNAMIC_SLICE_MODE",
+        NV_ENC_CAPS_SUPPORT_REF_PIC_INVALIDATION: "SUPPORT_REF_PIC_INVALIDATION",
+        NV_ENC_CAPS_PREPROC_SUPPORT             : "PREPROC_SUPPORT",
+        NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT        : "ASYNC_ENCODE_SUPPORT",
+        NV_ENC_CAPS_MB_NUM_MAX                  : "MB_NUM_MAX",
+        NV_ENC_CAPS_EXPOSED_COUNT               : "EXPOSED_COUNT",
+        }
 
-def identify_nvidia_module_version():
-    from xpra.os_util import load_binary_file
-    v = load_binary_file("/proc/driver/nvidia/version")
-    if not v:
-        log.warn("nvidia kernel module not installed?")
-        return []
-    KSTR = "Kernel Module"
-    p = v.find(KSTR)
-    if not p:
-        log.warn("unknown nvidia kernel module version")
-        return []
-    v = v[p+len(KSTR):].strip().split(" ")[0]
-    try:
-        numver = [int(x) for x in v.split(".")]
-        log.info("nvenc: found nvidia kernel module version %s", v)
-        return numver
-    except Exception as e:
-        log.warn("failed to parse nvidia kernel module version '%s': %s", v, e)
-    return []
-
-nvidia_module_version = None
-def get_nvidia_module_version(probe=True):
-    global nvidia_module_version
-    if nvidia_module_version is None and probe:
-        nvidia_module_version = identify_nvidia_module_version()
-    return nvidia_module_version
 
 NvEncodeAPICreateInstance = None
 cuCtxGetCurrent = None
@@ -1019,13 +899,6 @@ if CLIENT_KEYS_STR:
 CODEC_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID)     : "H264",
     }
-    #removed in nvenc v4:
-    #CODEC_GUIDS.update({
-    #    guidstr(NV_ENC_CODEC_MPEG2_GUID)    : "MPEG2",
-    #    guidstr(NV_ENC_CODEC_VC1_GUID)      : "VC1",
-    #    guidstr(NV_ENC_CODEC_JPEG_GUID)     : "JPEG",
-    #    guidstr(NV_ENC_CODEC_VP8_GUID)      : "VP8",
-    #})
 
 CODEC_PROFILES_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID) : {
@@ -1036,33 +909,14 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_H264_PROFILE_STEREO_GUID)            : "stereo",
         guidstr(NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY): "temporal",
         guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)  : "constrained-high",
-        #only available in SDK4:
-        "7ADD423D-D035-4F6F-AEA5-50885658643C"              : "high-444",
+        #new in SDK v4:
+        guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)          : "high-444",
         },
     }
-    #removed in nvenc v4:
-    #CODEC_PROFILES_GUIDS.update({
-    #guidstr(NV_ENC_CODEC_MPEG2_GUID) : {
-    #    guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
-    #    guidstr(NV_ENC_MPEG2_PROFILE_SIMPLE_GUID)           : "simple",
-    #    guidstr(NV_ENC_MPEG2_PROFILE_MAIN_GUID)             : "main",
-    #    guidstr(NV_ENC_MPEG2_PROFILE_HIGH_GUID)             : "high",
-    #    },
-    #guidstr(NV_ENC_CODEC_VC1_GUID) : {
-    #    guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
-    #    guidstr(NV_ENC_VC1_PROFILE_SIMPLE_GUID)             : "simple",
-    #    guidstr(NV_ENC_VC1_PROFILE_MAIN_GUID)               : "main",
-    #    guidstr(NV_ENC_VC1_PROFILE_ADVANCED_GUID)           : "advanced",
-    #    },
-    #guidstr(NV_ENC_CODEC_JPEG_GUID) : {
-    #    guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
-    #    guidstr(NV_ENC_JPEG_PROFILE_BASELINE_GUID)          : "baseline"
-    #    },
-    #guidstr(NV_ENC_CODEC_VP8_GUID) : {
-    #    guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
-    #    },
-    #})
 
+#this one is not defined anywhere but in the OBS source
+#(I think they have access to information we do not have):
+#GUID NV_ENC_PRESET_STREAMING = c_parseguid("7ADD423D-D035-4F6F-AEA5-50885658643C")
 
 CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_DEFAULT_GUID)                     : "default",
@@ -1072,6 +926,9 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID)         : "low-latency",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
+    #new in SDK4:
+    guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)              : "lossless",
+    guidstr(NV_ENC_PRESET_LOSSLESS_HP_GUID)                 : "lossless-hp",
     "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "streaming",
     }
 
@@ -1125,27 +982,7 @@ def is_YUV444P_ENABLED():
     if YUV444P_ENABLED is None:
         #check version:
         version = get_nvidia_module_version(True)
-        if not version:
-            msg = "unknown version, disabling YUV444 support"
-            YUV444P_ENABLED = False
-        elif version<[337, 0] and (version[0]!=331 or version[1]<79) and (version[0]!=334 or version[1]<21):
-            msg = "supported version, enabling YUV444 support"
-            YUV444P_ENABLED = True
-        else:
-            msg = "unsupported driver version %i.%i, disabling YUV444 support" % (version[0], version[1])
-            YUV444P_ENABLED = False
-        #env override and logging:
-        if YUV444P_USER_OVERRIDE=="0" and YUV444P_ENABLED:
-            msg = "YUV444 disabled using environment override"
-            YUV444P_ENABLED = False
-        elif YUV444P_USER_OVERRIDE=="1" and not YUV444P_ENABLED:
-            msg = "YUV444 enabled using environment override"
-            YUV444P_ENABLED = True
-        #log the result:
-        if not YUV444P_ENABLED:
-            log.warn(msg)
-        else:
-            log(msg)
+        YUV444P_ENABLED = False     #must be checked against the card!?
     return YUV444P_ENABLED
 
 def get_COLORSPACES():
@@ -1210,10 +1047,11 @@ def get_spec(encoding, colorspace):
 #(in a python2.4 compatible way... convoluted)
 def phex(v):
     return hex(v).lstrip("0x")
-PRETTY_VERSION = [int(x, 16) for x in phex(NVENCAPI_VERSION)]
+MODULE_VERSION = 0
+PRETTY_VERSION = [int(x, 16) for x in phex(NVENCAPI_VERSION)]+[MODULE_VERSION]
 
 def get_version():
-    return NVENCAPI_VERSION
+    return ".".join((str(x) for x in PRETTY_VERSION))
 
 def get_type():
     return "nvenc"
@@ -1289,6 +1127,7 @@ cdef class Encoder:
     cdef object cuda_device_info
     cdef object cuda_device
     cdef object cuda_context
+    cdef void *cuda_context_ptr
     cdef object kernels
     cdef object kernel_names
     cdef object max_block_sizes
@@ -1297,7 +1136,7 @@ cdef class Encoder:
     cdef long free_memory
     cdef long total_memory
     #NVENC:
-    cdef NV_ENCODE_API_FUNCTION_LIST functionList               #@DuplicatedSignature
+    cdef NV_ENCODE_API_FUNCTION_LIST *functionList               #@DuplicatedSignature
     cdef void *context
     cdef NV_ENC_REGISTERED_PTR inputHandle
     cdef object inputBuffer
@@ -1393,6 +1232,11 @@ cdef class Encoder:
         self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
         try:
             self.init_cuda()
+
+            #the example code accesses the cuda context after a context.pop()
+            #(which is weird)
+            self.init_nvenc()
+
             record_device_success(self.cuda_device_id)
         except Exception as e:
             log("init_cuda failed", exc_info=True)
@@ -1405,6 +1249,7 @@ cdef class Encoder:
     cdef init_cuda(self):
         cdef int plane_size_div
         cdef int max_input_stride
+        cdef int result
 
         assert self.cuda_device_id>=0 and self.cuda_device, "no NVENC device found!"
         global context_counter, last_context_failure
@@ -1471,7 +1316,12 @@ cdef class Encoder:
             self.max_threads_per_block = min([kernel.get_attribute(driver.function_attribute.MAX_THREADS_PER_BLOCK) for kernel in self.kernels])
             log("max_threads_per_block=%s", self.max_threads_per_block)
 
-            self.init_nvenc()
+            #get the CUDA context (C pointer):
+            #a bit of magic to pass a cython pointer to ctypes:
+            context_pointer = <unsigned long> (&self.cuda_context_ptr)
+            result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
+            assert result==0, "failed to get current cuda context"
+            log("cuCtxGetCurrent() cuda context pointer=%#x", <unsigned long> self.cuda_context_ptr)
         finally:
             self.cuda_context.pop()
 
@@ -1479,12 +1329,19 @@ cdef class Encoder:
         cdef GUID codec
         cdef GUID preset
         cdef GUID profile
-        cdef NV_ENC_INITIALIZE_PARAMS params
+        cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
+        cdef NV_ENC_CONFIG *config = NULL
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
         cdef NV_ENC_REGISTER_RESOURCE registerResource
         cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
+        cdef NV_ENC_CONFIG_H264 *h264Config
         cdef long resource
+        cdef Py_ssize_t size
+        cdef unsigned char* cptr
+
+        self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> malloc(sizeof(NV_ENCODE_API_FUNCTION_LIST))
+        memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
 
         self.open_encode_session()
         codec = self.get_codec()
@@ -1494,16 +1351,21 @@ cdef class Encoder:
         input_formats = self.query_input_formats(codec)
         assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
         try:
+            #TODO: undo malloc and use local var
+            params = <NV_ENC_INITIALIZE_PARAMS*> malloc(sizeof(NV_ENC_INITIALIZE_PARAMS))
+            assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
+            config = <NV_ENC_CONFIG*> malloc(sizeof(NV_ENC_CONFIG))
+
             presetConfig = self.get_preset_config(self.preset_name, codec, preset)
             assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
+            assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
 
             #PROFILE
             profiles = self.query_profiles(NV_ENC_CODEC_H264_GUID)
             #self.gopLength = presetConfig.presetCfg.gopLength
 
-            memset(&params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))
             params.version = NV_ENC_INITIALIZE_PARAMS_VER
-            params.encodeGUID = codec    #ie: NV_ENC_CODEC_H264_GUID
+            params.encodeGUID = codec
             params.presetGUID = preset
             params.encodeWidth = self.encoder_width
             params.encodeHeight = self.encoder_height
@@ -1511,16 +1373,13 @@ cdef class Encoder:
             params.darHeight = self.encoder_height
             params.enableEncodeAsync = 0            #not supported on Linux
             params.enablePTD = 0                    #not supported in sync mode!?
+            params.frameRateNum = 1
+            params.frameRateDen = 30
+            params.encodeConfig = config
+            log("nvEncInitializeEncoder using encode=%s, preset=%s", guidstr(codec), guidstr(preset))
 
-            presetConfig.presetCfg.gopLength = NVENC_INFINITE_GOPLENGTH
-            presetConfig.presetCfg.frameIntervalP = 1
-            presetConfig.presetCfg.encodeCodecConfig.h264Config.enableVFR = 1
-            presetConfig.presetCfg.encodeCodecConfig.h264Config.idrPeriod = NVENC_INFINITE_GOPLENGTH
-            if self.pixel_format=="YUV444P":
-                presetConfig.presetCfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1
-            params.encodeConfig = &presetConfig.presetCfg
-
-            raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, &params), "initializing encoder")
+            log("nvEncInitializeEncoder(%#x)", <unsigned long> params)
+            raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, params), "initializing encoder")
             log("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
             #register CUDA input buffer:
@@ -1532,6 +1391,7 @@ cdef class Encoder:
             registerResource.width = self.encoder_width
             registerResource.height = self.encoder_height
             registerResource.pitch = self.outputPitch
+            log("nvEncRegisterResource(%#x)", <unsigned long> &registerResource)
             raiseNVENC(self.functionList.nvEncRegisterResource(self.context, &registerResource), "registering CUDA input buffer")
             self.inputHandle = registerResource.registeredResource
             log("input handle for CUDA buffer: %#x", <unsigned long> self.inputHandle)
@@ -1545,12 +1405,17 @@ cdef class Encoder:
                 createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
             ELSE:
                 createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED
+            log("nvEncCreateBitstreamBuffer(%#x)", <unsigned long> &createBitstreamBufferParams)
             raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
             log("output bitstream buffer=%#x", <unsigned long> self.bitstreamBuffer)
         finally:
             if presetConfig!=NULL:
                 free(presetConfig)
+            if config!=NULL:
+                free(config)
+            if params!=NULL:
+                free(params)
 
     def get_info(self):                     #@DuplicatedSignature
         cdef double pps
@@ -1672,31 +1537,35 @@ cdef class Encoder:
         if self.context!=NULL and self.frames>0:
             self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
-            log("clean() unregistering CUDA output buffer input handle %#x", <unsigned long> self.inputHandle)
+            log("cuda_clean() unregistering CUDA output buffer input handle %#x", <unsigned long> self.inputHandle)
+            log("nvEncUnregisterResource(%#x)", <unsigned long> self.inputHandle)
             raiseNVENC(self.functionList.nvEncUnregisterResource(self.context, self.inputHandle), "unregistering CUDA input buffer")
             self.inputHandle = NULL
         if self.inputBuffer is not None:
-            log("clean() freeing CUDA host buffer %s", self.inputBuffer)
+            log("cuda_clean() freeing CUDA host buffer %s", self.inputBuffer)
             self.inputBuffer = None
         if self.cudaInputBuffer is not None:
-            log("clean() freeing CUDA input buffer %#x", int(self.cudaInputBuffer))
+            log("cuda_clean() freeing CUDA input buffer %#x", int(self.cudaInputBuffer))
             self.cudaInputBuffer.free()
             self.cudaInputBuffer = None
         if self.cudaOutputBuffer is not None:
-            log("clean() freeing CUDA output buffer %#x", int(self.cudaOutputBuffer))
+            log("cuda_clean() freeing CUDA output buffer %#x", int(self.cudaOutputBuffer))
             self.cudaOutputBuffer.free()
             self.cudaOutputBuffer = None
         if self.context!=NULL:
             if self.bitstreamBuffer!=NULL:
-                log("clean() destroying output bitstream buffer %#x", <unsigned long> self.bitstreamBuffer)
+                log("cuda_clean() destroying output bitstream buffer %#x", <unsigned long> self.bitstreamBuffer)
+                log("nvEncDestroyBitstreamBuffer(%#x)", <unsigned long> self.bitstreamBuffer)
                 raiseNVENC(self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer), "destroying output buffer")
                 self.bitstreamBuffer = NULL
-            log("clean() destroying encoder %#x", <unsigned long> self.context)
+            log("cuda_clean() destroying encoder %#x", <unsigned long> self.context)
+            log("nvEncDestroyEncoder(%#x)", <unsigned long> self.context)
             raiseNVENC(self.functionList.nvEncDestroyEncoder(self.context), "destroying context")
             self.context = NULL
             global context_counter
             context_counter.decrease()
-            log("clean() (still %s contexts in use)", context_counter)
+            log("cuda_clean() (still %s contexts in use)", context_counter)
+        self.cuda_context_ptr = <void *> 0
 
     def get_width(self):
         return self.width
@@ -1743,6 +1612,7 @@ cdef class Encoder:
         memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
         picParams.version = NV_ENC_PIC_PARAMS_VER
         picParams.encodePicFlags = NV_ENC_PIC_FLAG_EOS
+        log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
         raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "flushing encoder buffer")
 
     def compress_image(self, image, options={}, retry=0):
@@ -1860,6 +1730,7 @@ cdef class Encoder:
             memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
             mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
             mapInputResource.registeredResource  = self.inputHandle
+            log("nvEncMapInputResource(%#x)", <unsigned long> &mapInputResource)
             raiseNVENC(self.functionList.nvEncMapInputResource(self.context, &mapInputResource), "mapping input resource")
             log("compress_image(..) device buffer mapped to %#x", <unsigned long> mapInputResource.mappedResource)
 
@@ -1893,6 +1764,7 @@ cdef class Encoder:
                 picParams.rcParams.averageBitRate = self.target_bitrate
                 picParams.rcParams.maxBitRate = self.max_bitrate
 
+                log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
                 raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
                 encode_end = time.time()
                 log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
@@ -1902,6 +1774,7 @@ cdef class Encoder:
                 lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
                 lockOutputBuffer.doNotWait = 0
                 lockOutputBuffer.outputBitstream = self.bitstreamBuffer
+                log("nvEncLockBitstream(%#x)", <unsigned long> &lockOutputBuffer)
                 raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer), "locking output buffer")
                 log("compress_image(..) output buffer locked, bitstreamBufferPtr=%#x", <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
 
@@ -1911,7 +1784,9 @@ cdef class Encoder:
                 self.bytes_out += size
                 data.append((<char *> lockOutputBuffer.bitstreamBufferPtr)[:size])
             finally:
+                log("nvEncUnlockBitstream(%#x)", <unsigned long> self.bitstreamBuffer)
                 raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer), "unlocking output buffer")
+                log("nvEncUnmapInputResource(%#x)", <unsigned long> self.bitstreamBuffer)
                 raiseNVENC(self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource), "unmapping input resource")
 
         download_end = time.time()
@@ -1950,6 +1825,7 @@ cdef class Encoder:
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
+        log("nvEncGetEncodePresetConfig(%s, %s, %#x)", guidstr(encode_GUID), guidstr(preset_GUID), <unsigned long> presetConfig)
         ret = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
         if ret!=0:
             log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(ret, ret))
@@ -1965,12 +1841,14 @@ cdef class Encoder:
         cdef NV_ENC_CONFIG encConfig
 
         presets = {}
+        log("nvEncGetEncodePresetCount(%s, %#x)", guidstr(encode_GUID), <unsigned long> &presetCount)
         raiseNVENC(self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
         log("%s presets:", presetCount)
         assert presetCount<2**8
         preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
         assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
         try:
+            log("nvEncGetEncodePresetGUIDs(%s, %#x)", guidstr(encode_GUID), <unsigned long> &presetCount)
             raiseNVENC(self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount), "getting encode presets")
             assert presetsRetCount==presetCount
             unknowns = []
@@ -2004,6 +1882,7 @@ cdef class Encoder:
         cdef GUID profile_GUID
 
         profiles = {}
+        log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", guidstr(encode_GUID), <unsigned long> &profileCount)
         raiseNVENC(self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount), "getting profile count")
         log("%s profiles:", profileCount)
         assert profileCount<2**8
@@ -2011,6 +1890,7 @@ cdef class Encoder:
         assert profile_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
         PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
         try:
+            log("nvEncGetEncodeProfileGUIDs(%s, %#x, %#x)", guidstr(encode_GUID), <unsigned long> profile_GUIDs, <unsigned long> &profileCount)
             raiseNVENC(self.functionList.nvEncGetEncodeProfileGUIDs(self.context, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount), "getting encode profiles")
             #(void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
             assert profilesRetCount==profileCount
@@ -2030,12 +1910,14 @@ cdef class Encoder:
         cdef NV_ENC_BUFFER_FORMAT inputFmt
 
         input_formats = {}
+        log("nvEncGetInputFormatCount(%s, %#x)", guidstr(encode_GUID), <unsigned long> &inputFmtCount)
         raiseNVENC(self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount), "getting input format count")
         log("%s input format types:", inputFmtCount)
         assert inputFmtCount>0 and inputFmtCount<2**8
         inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
         assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
         try:
+            log("nvEncGetInputFormats(%s, %#x, %i, %#x)", guidstr(encode_GUID), <unsigned long> inputFmts, inputFmtCount, <unsigned long> &inputFmtsRetCount)
             raiseNVENC(self.functionList.nvEncGetInputFormats(self.context, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount), "getting input formats")
             assert inputFmtsRetCount==inputFmtCount
             for x in range(inputFmtCount):
@@ -2050,14 +1932,16 @@ cdef class Encoder:
             free(inputFmts)
         return input_formats
 
-    cdef int query_encoder_caps(self, GUID encodeGUID, NV_ENC_CAPS caps_type):
+    cdef int query_encoder_caps(self, GUID encode_GUID, NV_ENC_CAPS caps_type):
         cdef int val
         cdef NV_ENC_CAPS_PARAM encCaps
         memset(&encCaps, 0, sizeof(NV_ENC_CAPS_PARAM))
         encCaps.version = NV_ENC_CAPS_PARAM_VER
         encCaps.capsToQuery = caps_type
 
-        raiseNVENC(self.functionList.nvEncGetEncodeCaps(self.context, encodeGUID, &encCaps, &val), "getting encode caps")
+        log("nvEncGetEncodeCaps(%s, %#x, %#x)", guidstr(encode_GUID), <unsigned long> &encCaps, <unsigned long> &val)
+        raiseNVENC(self.functionList.nvEncGetEncodeCaps(self.context, encode_GUID, &encCaps, &val), "getting encode caps")
+        log("query_encoder_caps(%s, %s) %s=%s", guidstr(encode_GUID), caps_type, CAPS_NAMES.get(caps_type, caps_type), val)
         return val
 
     cdef query_codecs(self, full_query=False):
@@ -2066,6 +1950,7 @@ cdef class Encoder:
         cdef GUID* encode_GUIDs
         cdef GUID encode_GUID
 
+        log("nvEncGetEncodeGUIDCount(%#x)", <unsigned long> &GUIDCount)
         raiseNVENC(self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount), "getting encoder count")
         log("found %s encode GUIDs", GUIDCount)
         assert GUIDCount<2**8
@@ -2073,6 +1958,7 @@ cdef class Encoder:
         assert encode_GUIDs!=NULL, "could not allocate memory for %s encode GUIDs!" % (GUIDCount)
         codecs = {}
         try:
+            log("nvEncGetEncodeGUIDs(%#x, %i, %#x)", <unsigned long> encode_GUIDs, GUIDCount, <unsigned long> &GUIDRetCount)
             raiseNVENC(self.functionList.nvEncGetEncodeGUIDs(self.context, encode_GUIDs, GUIDCount, &GUIDRetCount), "getting list of encode GUIDs")
             assert GUIDRetCount==GUIDCount, "expected %s items but got %s" % (GUIDCount, GUIDRetCount)
             for x in range(GUIDRetCount):
@@ -2106,32 +1992,35 @@ cdef class Encoder:
 
     cdef open_encode_session(self):
         global context_counter, last_context_failure
+        cdef int ret            #@DuplicatedSignature
+        cdef int t
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
+        #params = <NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS*> malloc(sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
         log("open_encode_session() cuda_context=%s", self.cuda_context)
+        log("open_encode_session() cuda_context_ptr=%#x", <unsigned long> self.cuda_context_ptr)
 
         #get NVENC function pointers:
-        memset(&self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
+        memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
         self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
-        raiseNVENC(NvEncodeAPICreateInstance(<unsigned long> &self.functionList), "getting API function list")
+        log("NvEncodeAPICreateInstance(%#x)", <unsigned long> self.functionList)
+        raiseNVENC(NvEncodeAPICreateInstance(<unsigned long> self.functionList), "getting API function list")
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
-
-        #get the CUDA context (C pointer):
-        cdef void *cuda_context
-        cdef int result
-        #a bit of magic to pass a cython pointer to ctypes:
-        context_pointer = <unsigned long> (&cuda_context)
-        result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
-        assert result==0, "failed to get current cuda context"
 
         #NVENC init:
         memset(&params, 0, sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
         params.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
         params.deviceType = NV_ENC_DEVICE_TYPE_CUDA
-        params.device = <void*> cuda_context
+        params.device = self.cuda_context_ptr
         params.clientKeyPtr = &CLIENT_KEY_GUID
         params.apiVersion = NVENCAPI_VERSION
+        cstr = <unsigned char*> &params
+        #fixstr = binascii.unhexlify("1006014001000000c003470100000000c08d8896d07f00004000000000")
+        #for i in range(len(fixstr)):
+        #    cstr[i] = ord(fixstr[i])
+        pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
+        log("NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS (%s bytes): %s", sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS),
+            binascii.hexlify(pstr))
         log("calling nvEncOpenEncodeSessionEx @ %#x", <unsigned long> self.functionList.nvEncOpenEncodeSessionEx)
-        cdef int ret            #@DuplicatedSignature
         ret = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if ret==NV_ENC_ERR_UNSUPPORTED_DEVICE:
             last_context_failure = time.time()
@@ -2146,9 +2035,10 @@ cdef class Encoder:
 def init_module():
     global CLIENT_KEY_GUID
     log("nvenc.init_module()")
-    if NVENCAPI_VERSION<=0x20:
+    #TODO: this should be a build time check:
+    if NVENCAPI_VERSION<0x40:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
-    log.info("NVENC API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
+    log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
     #this should log the kernel module version
     get_nvidia_module_version()
@@ -2182,6 +2072,7 @@ def init_module():
                         log("the license key '%s' is valid", client_key)
                         valid_keys.append(client_key)
                 except NVENCException as e:
+                    log("encoder %s failed: %s", test_encoder, e)
                     #special handling for license key issues:
                     if e.code==NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY:
                         if client_key:
@@ -2193,7 +2084,14 @@ def init_module():
                         #we can bail out already:
                         raise Exception("version mismatch, you need a newer/older codec build or newer/older drivers")
                     else:
-                        raise e
+                        #it seems that newer version will fail with
+                        #seemingly random errors when we supply the wrong key
+                        log.warn("error during NVENC v4 encoder test: %s", e)
+                        if client_key:
+                            log(" license key '%s' may not be valid (skipped)", client_key)
+                            failed_keys.append(client_key)
+                        else:
+                            log(" a license key may be required")
             finally:
                 test_encoder.clean()
     if success:
@@ -2210,7 +2108,7 @@ def init_module():
             raise Exception("invalid license %s specified" % (["key", "keys"][len(failed_keys)>1]))
         else:
             raise Exception("you must provide a license key")
-    log.info("NVENC successfully initialized")
+    log.info("NVENC v4 successfully initialized")
 
 def cleanup_module():
     log("nvenc.cleanup_module()")

@@ -14,7 +14,7 @@ if sys.version > '3':
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc", "opencl"]
+NOWARN = ["nvenc3", "nvenc4", "opencl"]
 
 codec_errors = {}
 codecs = {}
@@ -105,8 +105,10 @@ def load_codecs():
     codec_import_check("enc_x265", "x265 encoder", "xpra.codecs.enc_x265", "xpra.codecs.enc_x265.encoder", "Encoder")
     add_codec_version("x265", "xpra.codecs.enc_x265.encoder")
 
-    codec_import_check("nvenc", "nvenc encoder", "xpra.codecs.nvenc", "xpra.codecs.nvenc.encoder", "Encoder")
-    add_codec_version("nvenc", "xpra.codecs.nvenc.encoder")
+    codec_import_check("nvenc4", "nvenc encoder", "xpra.codecs.nvenc4", "xpra.codecs.nvenc4.encoder", "Encoder")
+    add_codec_version("nvenc4", "xpra.codecs.nvenc4.encoder")
+    codec_import_check("nvenc3", "nvenc encoder", "xpra.codecs.nvenc3", "xpra.codecs.nvenc3.encoder", "Encoder")
+    add_codec_version("nvenc3", "xpra.codecs.nvenc3.encoder")
 
     codec_import_check("csc_swscale", "swscale colorspace conversion", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
     add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter")
@@ -159,7 +161,7 @@ NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx"}
 ALL_OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8", "rgb24" : "rgb"}
 ALL_NEW_ENCODING_NAMES_TO_OLD = {"h264" : "x264", "vp8" : "vpx", "rgb" : "rgb24"}
 
-ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc", \
+ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc3", "nvenc4", \
             "csc_swscale", "csc_cython", "csc_opencl", \
             "dec_avcodec2", \
             "enc_webp", \

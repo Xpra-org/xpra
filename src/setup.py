@@ -143,12 +143,9 @@ avcodec2_static_ENABLED = False
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
-nvenc_ENABLED           = False
-if pkg_config_ok("--exists", "nvenc4"):
-    nvenc_ENABLED = 4
-elif pkg_config_ok("--exists", "nvenc3"):
-    nvenc_ENABLED = 3
-cuda_ENABLED = nvenc_ENABLED
+nvenc3_ENABLED          = pkg_config_ok("--exists", "nvenc3")
+nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
+cuda_ENABLED            = nvenc3_ENABLED or nvenc4_ENABLED
 #elif os.path.exists("C:\\nvenc_3.0_windows_sdk")
 #...
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
@@ -165,7 +162,7 @@ tests_ENABLED           = False
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "x264_static",
             "enc_x265", "x265_static",
-            "nvenc", "cuda",
+            "nvenc3", "nvenc4", "cuda",
             "dec_avcodec2", "avcodec2_static",
             "csc_swscale", "swscale_static",
             "csc_opencl", "csc_cython",
@@ -794,8 +791,10 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
-                   "xpra/codecs/nvenc/encoder.c",
-                   "xpra/codecs/nvenc/constants.pxi",
+                   "xpra/codecs/nvenc3/encoder.c",
+                   "xpra/codecs/nvenc3/constants.pxi",
+                   "xpra/codecs/nvenc4/encoder.c",
+                   "xpra/codecs/nvenc4/constants.pxi",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
                    "xpra/codecs/webp/encode.c",
@@ -1316,7 +1315,7 @@ if WIN32:
             add_keywords([webp_bin_dir], [webp_include_dir],
                          [webp_lib_dir],
                          webp_lib_names, nocmt=True)
-        elif "nvenc3" in pkgs_options[0]:
+        elif ("nvenc3" in pkgs_options[0]) or ("nvenc4" in pkgs_options[0]):
             add_keywords([nvenc_bin_dir, cuda_bin_dir], [nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir],
                          [cuda_lib_dir],
                          nvenc_lib_names)
@@ -1684,26 +1683,25 @@ if server_ENABLED:
 toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
-toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc", "xpra.codecs.cuda_common")
-if nvenc_ENABLED:
+toggle_packages(nvenc3_ENABLED, "xpra.codecs.nvenc3", "xpra.codecs.cuda_common")
+toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4", "xpra.codecs.cuda_common")
+for nvenc_version, _nvenc_version_enabled in {3 : nvenc3_ENABLED, 4 : nvenc4_ENABLED}.items():
+    if not _nvenc_version_enabled:
+        continue
+    nvencmodule = "nvenc%s" % nvenc_version
     try:
-        assert nvenc_ENABLED>2
-        nvenc = "nvenc%s" % int(nvenc_ENABLED)
-    except:
-        nvenc = "nvenc"
-    try:
-        assert int(cuda_ENABLED[0])>=5
+        assert int(cuda_ENABLED.split(".")[0])>1
         cuda = "cuda-%s" % cuda_ENABLED
     except:
         cuda = "cuda"
-    make_constants("xpra", "codecs", "nvenc", "constants", NV_WINDOWS=int(WIN32))
-    nvenc_pkgconfig = pkgconfig(nvenc, cuda, ignored_flags=["-l", "-L"])
+    make_constants("xpra", "codecs", nvencmodule, "constants", NV_WINDOWS=int(WIN32))
+    nvenc_pkgconfig = pkgconfig(nvencmodule, cuda, ignored_flags=["-l", "-L"])
     #don't link against libnvidia-encode, we load it dynamically:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
         libraries.remove("nvidia-encode")
-    cython_add(Extension("xpra.codecs.nvenc.encoder",
-                         ["xpra/codecs/nvenc/encoder.pyx", buffers_c],
+    cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
+                         ["xpra/codecs/%s/encoder.pyx" % nvencmodule, buffers_c],
                          **nvenc_pkgconfig))
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
