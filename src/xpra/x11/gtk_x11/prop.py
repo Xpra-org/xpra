@@ -141,7 +141,7 @@ class WMSizeHints(object):
              "max_aspect_ratio"  : self.max_aspect_ratio,
              "win_gravity"       : self.win_gravity,
              "set_initial_position"  : self.set_initial_position}
-        return "WMSizeHints(%s)" % dict([(k,v) for k,v in d.items() if v is not None])
+        return "WMSizeHints(%s)" % dict([(k,v) for k,v in d.items() if v not in (False, None)])
 
 
 class WMHints(object):
