@@ -502,6 +502,8 @@ class WindowSource(object):
         if self.webp_leaks and "webp" in common_encodings:
             common_encodings.remove("webp")
         self.common_encodings = [x for x in PREFERED_ENCODING_ORDER if x in common_encodings]
+        if not self.common_encodings:
+            raise Exception("no common encodings found (server: %s vs client: %s)" % (", ".join(self._encoders.keys()), ", ".join(self.core_encodings)))
         #ensure the encoding chosen is supported by this source:
         if encoding in self.common_encodings:
             self.encoding = encoding
