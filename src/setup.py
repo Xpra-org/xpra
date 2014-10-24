@@ -795,6 +795,11 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/nvenc3/constants.pxi",
                    "xpra/codecs/nvenc4/encoder.c",
                    "xpra/codecs/nvenc4/constants.pxi",
+                   "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
+                   "xpra/codecs/cuda_common/BGRA_to_U.fatbin",
+                   "xpra/codecs/cuda_common/BGRA_to_V.fatbin",
+                   "xpra/codecs/cuda_common/BGRA_to_Y.fatbin",
+                   "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
                    "xpra/codecs/webp/encode.c",
@@ -1686,24 +1691,48 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 toggle_packages(nvenc3_ENABLED, "xpra.codecs.nvenc3")
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
 toggle_packages(nvenc3_ENABLED or nvenc4_ENABLED, "xpra.codecs.cuda_common")
-for nvenc_version, _nvenc_version_enabled in {3 : nvenc3_ENABLED, 4 : nvenc4_ENABLED}.items():
-    if not _nvenc_version_enabled:
-        continue
-    nvencmodule = "nvenc%s" % nvenc_version
-    try:
-        assert int(cuda_ENABLED.split(".")[0])>1
-        cuda = "cuda-%s" % cuda_ENABLED
-    except:
-        cuda = "cuda"
-    make_constants("xpra", "codecs", nvencmodule, "constants", NV_WINDOWS=int(WIN32))
-    nvenc_pkgconfig = pkgconfig(nvencmodule, cuda, ignored_flags=["-l", "-L"])
-    #don't link against libnvidia-encode, we load it dynamically:
-    libraries = nvenc_pkgconfig.get("libraries", [])
-    if "nvidia-encode" in libraries:
-        libraries.remove("nvidia-encode")
-    cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
-                         ["xpra/codecs/%s/encoder.pyx" % nvencmodule, buffers_c],
-                         **nvenc_pkgconfig))
+if nvenc3_ENABLED or nvenc4_ENABLED:
+    #first compile the cuda kernels
+    #(using the same cuda SDK for both nvenc modules for now..)
+    #TODO:
+    # * compile directly to output directory instead of using data files?
+    # * detect which arches we want to build for? (does it really matter much?)
+    kernels = ("BGRA_to_NV12", "BGRA_to_U", "BGRA_to_V", "BGRA_to_Y", "BGRA_to_YUV444")
+    for kernel in kernels:
+        cmd = ["/opt/cuda/bin/nvcc",
+               '-fatbin',
+               #"-cubin",
+               #"-arch=compute_30", "-code=compute_30,sm_30,sm_35",
+               #"-gencode=arch=compute_50,code=sm_50",
+               #"-gencode=arch=compute_52,code=sm_52",
+               #"-gencode=arch=compute_52,code=compute_52",
+               "-c", "xpra/codecs/cuda_common/%s.cu" % kernel,
+               "-o", "xpra/codecs/cuda_common/%s.fatbin" % kernel]
+        for arch, code in ((30, 30), (35, 35), (50, 50)):
+            cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
+        print("CUDA compiling %s" % kernel)
+        c, stdout, stderr = get_status_output(cmd)
+        assert c==0, "failed to compile cuda kernel %s using '%s'" % (kernel, " ".join(["'%s'" % x for x in cmd]))
+    add_data_files("share/xpra/cuda",
+                   ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
+    for nvenc_version, _nvenc_version_enabled in {3 : nvenc3_ENABLED, 4 : nvenc4_ENABLED}.items():
+        if not _nvenc_version_enabled:
+            continue
+        nvencmodule = "nvenc%s" % nvenc_version
+        try:
+            assert int(cuda_ENABLED.split(".")[0])>1
+            cuda = "cuda-%s" % cuda_ENABLED
+        except:
+            cuda = "cuda"
+        make_constants("xpra", "codecs", nvencmodule, "constants", NV_WINDOWS=int(WIN32))
+        nvenc_pkgconfig = pkgconfig(nvencmodule, cuda, ignored_flags=["-l", "-L"])
+        #don't link against libnvidia-encode, we load it dynamically:
+        libraries = nvenc_pkgconfig.get("libraries", [])
+        if "nvidia-encode" in libraries:
+            libraries.remove("nvidia-encode")
+        cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
+                             ["xpra/codecs/%s/encoder.pyx" % nvencmodule, buffers_c],
+                             **nvenc_pkgconfig))
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:

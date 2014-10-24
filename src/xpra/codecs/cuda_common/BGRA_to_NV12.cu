@@ -1,13 +1,13 @@
-# This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
-# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
-# later version. See the file COPYING for details.
+/*
+ * This file is part of Xpra.
+ * Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+ * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+ * later version. See the file COPYING for details.
+ */
 
-
-BGRA2NV12_kernel = """
 #include <stdint.h>
 
-__global__ void BGRA2NV12(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
+__global__ void BGRA_to_NV12(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
                           uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
                           int w, int h)
 {
@@ -73,4 +73,3 @@ __global__ void BGRA2NV12(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
         dstImage[di + 1]  = __float2int_rn(v / 4.0);
     }
 }
-"""

@@ -168,65 +168,28 @@ def select_device(preferred_device_id=-1, preferred_device_name=CUDA_DEVICE_NAME
     return -1, None
 
 
-#cache pre-compiled kernel cubins per device:
-KERNEL_cubins = {}
-def get_CUDA_function(device_id, function_name, kernel_source):
+#cache kernel fatbin files:
+KERNELS = {}
+def get_CUDA_function(device_id, function_name):
     """
         Returns the compiled kernel for the given device
         and kernel key.
-        Kernels may be pre-compiled with compile_all.
     """
-    global KERNEL_cubins
-    cubin = KERNEL_cubins.get((device_id, function_name))
-    if cubin is None:
-        start = time.time()
-        log("compiling for device %s: %s=%s", device_id, function_name, kernel_source)
-        cubin = compile(kernel_source)
-        KERNEL_cubins[(device_id, function_name)] = cubin
-        end = time.time()
-        log("compilation of %s took %.1fms", function_name, 1000.0*(end-start))
+    global KERNELS
+    data = KERNEL_cubins.get(function_name)
+    if data is None:
+        from xpra.platform.paths import default_get_app_dir
+        from xpra.os_util import load_binary_file
+        cubin_file = os.path.join(default_get_app_dir(), "cuda", "%s.fatbin" % function_name)
+        data = load_binary_file(cubin_file)
+        KERNELS[function_name] = data
     #now load from cubin:
     start = time.time()
-    mod = driver.module_from_buffer(cubin)
+    mod = driver.module_from_buffer(data)
     CUDA_function = mod.get_function(function_name)
     end = time.time()
     log("loading function %s from pre-compiled cubin took %.1fms", function_name, 1000.0*(end-start))
     return CUDA_function
-
-
-def recompile_all(function_name, kernel_src, device_ids=None):
-    global KERNEL_cubins
-    KERNEL_cubins = {}
-    tools.clear_context_caches()
-    compile_all(function_name, kernel_src, device_ids)
-
-def compile_all(function_name, kernel_src, device_ids=None):
-    """
-        Pre-compiles kernel source on the given devices,
-        so we can then call get_CUDA_function quickly
-        to get the function to call.
-    """
-    global KERNEL_cubins
-    if device_ids is None:
-        device_ids = init_all_devices()
-    cf = driver.ctx_flags
-    for device_id in device_ids:
-        device = None
-        context = None
-        try:
-            device = driver.Device(device_id)
-            context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
-            cubin = KERNEL_cubins.get((device_id, function_name))
-            if cubin is None:
-                start = time.time()
-                log("compiling for device %s: %s=%s", device_id, function_name, kernel_src)
-                cubin = compile(kernel_src)
-                end = time.time()
-                log("compilation of %s took %.1fms", function_name, 1000.0*(end-start))
-                KERNEL_cubins[(device_id, function_name)] = cubin
-        finally:
-            if context:
-                context.pop()
 
 
 def main():

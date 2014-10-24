@@ -19,8 +19,6 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device
                 get_CUDA_function, record_device_failure, record_device_success
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.cuda_common.CUDA_rgb2yuv444p import BGRA2Y_kernel, BGRA2U_kernel, BGRA2V_kernel
-from xpra.codecs.cuda_common.CUDA_rgb2nv12 import BGRA2NV12_kernel
 from xpra.codecs.nv_util import get_nvidia_module_version
 
 from xpra.log import Logger
@@ -1227,22 +1225,21 @@ cdef raiseNVENC(NVENCSTATUS ret, msg):
     if ret!=0:
         raise NVENCException(ret, msg)
 
-cpdef get_CUDA_CSC_function(int device_id, function_name, kernel_source):
-    return function_name, get_CUDA_function(device_id, function_name, kernel_source)
+cpdef get_CUDA_CSC_function(int device_id, function_name):
+    return function_name, get_CUDA_function(device_id, function_name)
 
 
 cpdef get_BGRA2Y(int device_id):
-    return get_CUDA_CSC_function(device_id, "BGRA2Y", BGRA2Y_kernel)
+    return get_CUDA_CSC_function(device_id, "BGRA_to_Y")
 
 cpdef get_BGRA2U(int device_id):
-    return get_CUDA_CSC_function(device_id, "BGRA2U", BGRA2U_kernel)
+    return get_CUDA_CSC_function(device_id, "BGRA_to_U")
 
 cpdef get_BGRA2V(int device_id):
-    return get_CUDA_CSC_function(device_id, "BGRA2V", BGRA2V_kernel)
-
+    return get_CUDA_CSC_function(device_id, "BGRA_to_V")
 
 cpdef get_BGRA2NV12(int device_id):
-    return get_CUDA_CSC_function(device_id, "BGRA2NV12", BGRA2NV12_kernel)
+    return get_CUDA_CSC_function(device_id, "BGRA_to_NV12")
 
 
 cdef class Encoder:
