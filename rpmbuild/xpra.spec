@@ -14,7 +14,13 @@
 %endif
 
 #the only build option we specify:
+%if 0%{?fedora}
+#Fedora needs the wrapper, before 21 because Xorg is suid,
+#21 onwards use a non-suid script which eventually calls the suid binary anyway..
+%define dummy --with-Xdummy --with-Xdummy_wrapper
+%else
 %define dummy --with-Xdummy
+%endif
 
 #some of these dependencies may get turned off (empty) on some platforms:
 %define requires_websockify , python-websockify
@@ -119,6 +125,7 @@ Requires(postun): desktop-file-utils
 
 %if %{with_python3}
 BuildRequires: python3-devel
+BuildRequires: python3-Cython
 BuildRequires: gtk3-devel
 #BuildRequires: pygobject3-devel
 BuildRequires: gobject-introspection-devel
