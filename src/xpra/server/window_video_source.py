@@ -284,6 +284,9 @@ class WindowVideoSource(WindowSource):
             q = 100
             return self.get_best_nonvideo_encoding(pixel_count, ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
 
+        if len(self.non_video_encodings)==0:
+            return current_encoding
+
         #if speed is high, assume we have bandwidth to spare
         if pixel_count<=self._rgb_auto_threshold:
             return lossless("low pixel count")
