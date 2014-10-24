@@ -210,6 +210,10 @@ cdef extern from "X11/Xlib.h":
         int x, y, width, height, border_width
         Window above
         Bool override_redirect
+    ctypedef struct XCreateWindowEvent:
+        Window window
+        int width
+        int height
     # The only way we can learn about override redirects is through MapNotify,
     # which means we need to be able to get MapNotify for windows we have
     # never seen before, which means we can't rely on GDK:
@@ -246,6 +250,7 @@ cdef extern from "X11/Xlib.h":
         XFocusChangeEvent xfocus
         XClientMessageEvent xclient
         XMapEvent xmap
+        XCreateWindowEvent xcreatewindow
         XUnmapEvent xunmap
         XReparentEvent xreparent
         XDestroyWindowEvent xdestroywindow
@@ -697,6 +702,7 @@ cdef init_x11_events():
         FocusIn             : ("xpra-focus-in-event", None),
         FocusOut            : ("xpra-focus-out-event", None),
         ClientMessage       : ("xpra-client-message-event", None),
+        CreateNotify        : ("xpra-create-event", None),
         MapNotify           : ("xpra-map-event", "xpra-child-map-event"),
         UnmapNotify         : ("xpra-unmap-event", "xpra-child-unmap-event"),
         DestroyNotify       : ("xpra-destroy-event", None),
@@ -984,6 +990,10 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                         # architectures where Python's int is 64-bits.
                         pieces.append(int(e.xclient.data.l[i]) & 0xffffffff)
                     pyev.data = tuple(pieces)
+                elif e.type == CreateNotify:
+                    pyev.window = _gw(d, e.xcreatewindow.window)
+                    pyev.width = e.xcreatewindow.width
+                    pyev.height = e.xcreatewindow.height
                 elif e.type == MapNotify:
                     pyev.window = _gw(d, e.xmap.window)
                     pyev.override_redirect = e.xmap.override_redirect
