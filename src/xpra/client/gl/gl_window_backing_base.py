@@ -201,7 +201,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 log.warn("display %s does not support compositing, transparency disabled", display.get_name())
                 self._alpha_enabled = False
             elif rgba:
-                log("%s.__init__() using rgba colormap %s", rgba)
+                log("%s.__init__() using rgba colormap %s", self, rgba)
                 self._backing.set_colormap(rgba)
             else:
                 log.warn("failed to enable transparency on screen %s", screen)
