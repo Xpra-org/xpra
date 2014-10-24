@@ -131,16 +131,17 @@ class WMSizeHints(object):
         return d
 
     def __str__(self):
-        return "WMSizeHints(%s)" % {"max_size"  : self.max_size,
-                                    "min_size"  : self.min_size,
-                                    "base_size" : self.base_size,
-                                    "resize_inc": self.resize_inc,
-                                    "min_aspect": self.min_aspect,
-                                    "max_aspect": self.max_aspect,
-                                    "min_aspect_ratio"  : self.min_aspect_ratio,
-                                    "max_aspect_ratio"  : self.max_aspect_ratio,
-                                    "win_gravity"       : self.win_gravity,
-                                    "set_initial_position"  : self.set_initial_position}
+        d = {"max_size"  : self.max_size,
+             "min_size"  : self.min_size,
+             "base_size" : self.base_size,
+             "resize_inc": self.resize_inc,
+             "min_aspect": self.min_aspect,
+             "max_aspect": self.max_aspect,
+             "min_aspect_ratio"  : self.min_aspect_ratio,
+             "max_aspect_ratio"  : self.max_aspect_ratio,
+             "win_gravity"       : self.win_gravity,
+             "set_initial_position"  : self.set_initial_position}
+        return "WMSizeHints(%s)" % dict([(k,v) for k,v in d.items() if v is not None])
 
 
 class WMHints(object):
