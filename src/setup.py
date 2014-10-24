@@ -491,17 +491,20 @@ def make_constants_pxi(constants_path, pxi_path, **kwargs):
                 out.write('DEF %s = %s\n' % (k, v))
 
 
+def should_rebuild(src_file, bin_file):
+    if not os.path.exists(bin_file):
+        return "no file"
+    elif os.path.getctime(bin_file)<os.path.getctime(src_file):
+        return "binary file out of date"
+    elif os.path.getctime(bin_file)<os.path.getctime(__file__):
+        return "newer build file"
+    return None
+
 def make_constants(*paths, **kwargs):
     base = os.path.join(os.getcwd(), *paths)
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
-    reason = None
-    if not os.path.exists(pxi_file):
-        reason = "no pxi file"
-    elif os.path.getctime(pxi_file)<os.path.getctime(constants_file):
-        reason = "pxi file out of date"
-    elif os.path.getctime(pxi_file)<os.path.getctime(__file__):
-        reason = "newer build file"
+    reason = should_rebuild(constants_file, pxi_file)
     if reason:
         if verbose_ENABLED:
             print("(re)generating %s (%s):" % (pxi_file, reason))
@@ -1699,6 +1702,11 @@ if nvenc3_ENABLED or nvenc4_ENABLED:
     # * detect which arches we want to build for? (does it really matter much?)
     kernels = ("BGRA_to_NV12", "BGRA_to_U", "BGRA_to_V", "BGRA_to_Y", "BGRA_to_YUV444")
     for kernel in kernels:
+        cuda_src = "xpra/codecs/cuda_common/%s.cu" % kernel
+        cuda_bin = "xpra/codecs/cuda_common/%s.fatbin" % kernel
+        reason = should_rebuild(cuda_src, cuda_bin)
+        if not reason:
+            continue
         cmd = ["/opt/cuda/bin/nvcc",
                '-fatbin',
                #"-cubin",
@@ -1706,11 +1714,11 @@ if nvenc3_ENABLED or nvenc4_ENABLED:
                #"-gencode=arch=compute_50,code=sm_50",
                #"-gencode=arch=compute_52,code=sm_52",
                #"-gencode=arch=compute_52,code=compute_52",
-               "-c", "xpra/codecs/cuda_common/%s.cu" % kernel,
-               "-o", "xpra/codecs/cuda_common/%s.fatbin" % kernel]
+               "-c", cuda_src,
+               "-o", cuda_bin]
         for arch, code in ((30, 30), (35, 35), (50, 50)):
             cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
-        print("CUDA compiling %s" % kernel)
+        print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
         c, stdout, stderr = get_status_output(cmd)
         assert c==0, "failed to compile cuda kernel %s using '%s'" % (kernel, " ".join(["'%s'" % x for x in cmd]))
     add_data_files("share/xpra/cuda",
