@@ -21,7 +21,6 @@ cursorlog = Logger("cursor")
 
 from xpra.server import ClientException
 from xpra.server.source_stats import GlobalPerformanceStatistics
-from xpra.server.window_source import WindowSource, HAS_ALPHA
 from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
@@ -506,7 +505,6 @@ class ServerSource(object):
         self.system_tray = c.boolget("system_tray")
         self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.control_commands = c.strlistget("control_commands")
-        self.supports_transparency = HAS_ALPHA and c.boolget("encoding.transparency")
         self.vrefresh = c.intget("vrefresh", -1)
         self.double_click_time = c.intget("double_click.time")
         self.double_click_distance = c.intpair("double_click.distance")
@@ -1494,15 +1492,7 @@ class ServerSource(object):
         ws = self.window_sources.get(wid)
         if ws is None:
             batch_config = self.make_batch_config(wid, window)
-            wclass = WindowSource
-            #don't use video for system trays
-            #or for transparent windows (if the client supports transparency) since video doesn't do alpha (yet?)
-            if not window.is_tray() and (not window.has_alpha() or not self.supports_transparency):
-                wts = get_generic_window_type(window, strip_net=True)
-                if set(("NORMAL", "DIALOG", "DESKTOP")).intersection(wts):
-                    wclass = WindowVideoSource
-
-            ws = wclass(self.idle_add, self.timeout_add, self.source_remove,
+            ws = WindowVideoSource(self.idle_add, self.timeout_add, self.source_remove,
                               self.queue_size, self.queue_damage, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
