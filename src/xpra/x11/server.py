@@ -13,6 +13,7 @@
 
 import gtk.gdk
 import gobject
+import time
 
 from xpra.util import AdHocStruct
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -212,6 +213,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         settingslog("default_xsettings=%s", self.default_xsettings)
         self._settings = {}
         self._xsettings_manager = None
+
+        #for handling resize synchronization between client and server (this is not xsync!):
+        self.last_client_configure_event = 0
+        self.snc_timer = 0
 
         #cursor:
         self.default_cursor_data = None
@@ -418,9 +423,32 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #unchanged
             return
         geom[:4] = [x, y, nw, nh]
+        lcce = self.last_client_configure_event
+        if self.snc_timer>0:
+            gobject.source_remove(self.snc_timer)
+        #TODO: find a better way to choose the timer delay:
+        #for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
+        #(lcce should always be in the past, so min(..) should be redundant here)
+        delay = max(100, min(250, 250 + 1000 * (lcce-time.time())))
+        self.snc_timer = gobject.timeout_add(int(delay), self.size_notify_clients, window, lcce)
+
+    def size_notify_clients(self, window, lcce):
+        log("size_notify_clients(%s, %s) last_client_configure_event=%s", window, lcce, self.last_client_configure_event)
+        self.snc_timer = 0
+        wid = self._window_to_id.get(window)
+        if lcce!=self.last_client_configure_event or not wid:
+            #we have received a new client resize since,
+            #or the window is simply gone
+            return
+        geom = self._desktop_manager.window_geometry(window)
+        x, y, nw, nh = geom[:4]
         resize_counter = self._desktop_manager.get_resize_counter(window, 1)
         for ss in self._server_sources.values():
             ss.move_resize_window(self._window_to_id[window], window, x, y, nw, nh, resize_counter)
+            #refresh to ensure the client gets the new window contents:
+            #TODO: to save bandwidth, we should compare the dimensions and skip the refresh
+            #if the window is smaller than before, or at least only send the new edges rather than the whole window
+            ss.damage(wid, window, 0, 0, nw, nh, {})
 
     def _add_new_or_window(self, raw_window):
         xid = raw_window.xid
@@ -668,6 +696,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._tray.move_resize(window, x, y, w, h)
         else:
             assert not window.is_OR()
+            self.last_client_configure_event = time.time()
             owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
             windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
             self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)
