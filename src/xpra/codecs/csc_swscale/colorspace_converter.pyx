@@ -445,6 +445,7 @@ cdef class ColorspaceConverter:
             for i in range(3):
                 output_image[1+i] = output_image[i] + self.out_size[i]
             result = sws_scale(self.context, input_image, input_stride, 0, self.src_height, output_image, self.out_stride)
+        assert result!=0, "sws_scale failed!"
         assert result==self.dst_height, "invalid output height: %s, expected %s" % (result, self.dst_height)
         #now parse the output:
         csci = CSCImage()           #keep a reference to memory for cleanup
