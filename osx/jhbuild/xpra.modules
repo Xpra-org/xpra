@@ -166,9 +166,9 @@
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
-    <branch module="/releases/webp/libwebp-0.4.1.tar.gz"
-			version="0.4.1"
-                        hash="md5:42bc79613ec5ee5b0e68ba97839c981e"
+    <branch module="/releases/webp/libwebp-0.4.2.tar.gz"
+			version="0.4.2"
+                        hash="md5:404f45a7d695217db2bb49e1e22ad49f"
             repo="downloads.webmproject.org"/>
   </autotools>
 
