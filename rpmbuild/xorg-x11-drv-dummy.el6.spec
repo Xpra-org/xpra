@@ -5,14 +5,15 @@
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
 Version:   0.3.6
-Release:   2.xpra2%{?dist}
+Release:   15.xpra1%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Source0:   ftp://ftp.x.org/pub/individual/driver/%{tarball}-%{version}.tar.bz2
-Patch0:    0002-Constant-DPI.patch
+Patch0:    0001-Remove-mibstore.h.patch
+Patch1:    0002-Constant-DPI.patch
 
 ExcludeArch: s390 s390x
 
@@ -28,6 +29,7 @@ X.Org X11 dummy video driver.
 %prep
 %setup -q -n %{tarball}-%{version}
 %patch0 -p1
+%patch1 -p1
 
 %build
 %configure --disable-static
@@ -50,6 +52,9 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Sat Oct 25 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-15.xpra1
+- version bump to ensure our patched version does not get "upgraded"
+
 * Fri Apr 18 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-2.xpra2
 - Add DPI override via root window property
 
