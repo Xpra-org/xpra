@@ -1156,7 +1156,7 @@ def get_runtime_factor():
     cc = context_counter.get()
     #try to avoid using too many contexts
     #(usually, we can have up to 32 contexts per card)
-    low_limit = 24
+    low_limit = 16
     f = max(0, 1.0 - (max(0, cc-low_limit)/max(1, max_contexts-low_limit)))
     #if we have had errors recently, lower our chances further:
     failure_elapsed = time.time()-last_context_failure
