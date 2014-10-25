@@ -11,8 +11,6 @@ Patch1:         %{name}-noexecstack.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  ncurses-devel
-BuildRequires:  gtk+-devel
-# pkg-config should be pulled in by gtk+-devel but is not in EL-5
 BuildRequires:  pkgconfig
 %ifarch %{ix86}
 BuildRequires:  nasm
@@ -39,14 +37,6 @@ Requires:       %{name}-libs = %{version}-%{release}
 %description    devel
 This package development files for %{name}.
 
-%package        mp3x
-Summary:        MP3 frame analyzer
-Group:          Applications/Multimedia
-Requires:       %{name} = %{version}-%{release}
-
-%description    mp3x
-This package contains the mp3x frame analyzer.
-
 
 %prep
 %setup -q
@@ -64,7 +54,6 @@ export CFLAGS="$RPM_OPT_FLAGS -ffast-math"
 %ifarch %{ix86}
   --enable-nasm \
 %endif
-  --enable-mp3x \
   --enable-mp3rtp
 
 make %{?_smp_mflags}
@@ -110,10 +99,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libmp3lame.so
 %{_includedir}/lame/
 %{_includedir}/lame.h
-
-%files mp3x
-%defattr (-,root,root,-)
-%{_bindir}/mp3x
 
 %changelog
 * Fri Oct 17 2014 Antoine Martin <antoine@devloop.org.uk> 3.99.5-3

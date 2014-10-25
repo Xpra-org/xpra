@@ -6,7 +6,8 @@
 
 Summary: GStreamer streaming media framework "ugly" plug-ins
 Name: gstreamer-plugins-ugly
-Version: 0.10.19
+#0.10.19 is available but does not build on CentOS 6
+Version: 0.10.18
 Release: 4%{?dist}
 License: LGPL
 Group: Applications/Multimedia
@@ -23,7 +24,6 @@ BuildRequires: gcc-c++
 BuildRequires: gettext-devel
 BuildRequires: lame-devel >= 3.89
 BuildRequires: libmad-devel >= 0.15.0
-BuildRequires: x264-devel
 BuildRequires: liboil-devel
 
 Provides: gstreamer-mad = %{version}-%{release}
