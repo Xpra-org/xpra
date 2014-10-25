@@ -4,10 +4,14 @@
 # later version. See the file COPYING for details.
 
 
+import os
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
 
+
 def identify_nvidia_module_version():
+    if os.name!="posix":
+        return None
     from xpra.os_util import load_binary_file
     v = load_binary_file("/proc/driver/nvidia/version")
     if not v:

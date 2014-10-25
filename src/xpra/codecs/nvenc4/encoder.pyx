@@ -1062,6 +1062,9 @@ def get_info():
     v = get_nvidia_module_version(False)
     if v:
         info["kernel_module_version"] = v
+    if sys.platform.startswith("linux"):
+        from xpra.scripts.config import python_platform
+        info["kernel_version"] = python_platform.uname()[2]
     return v
 
 
