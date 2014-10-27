@@ -82,12 +82,20 @@ def get_thread_info(proto=None):
         log.error("error getting system info", exc_info=True)
     #extract frame info:
     try:
+        def nn(x):
+            if x is None:
+                return ""
+            return x
         import traceback
         frames = sys._current_frames()
         for i,frame_pair in enumerate(frames.items()):
             stack = traceback.extract_stack(frame_pair[1])
             info["frame[%s].thread" % i] = thread_ident.get(frame_pair[0], "unknown")
-            info["frame[%s].stack" % i] = stack
+            #sanitize stack to prevent None values (which cause encoding errors with the bencoder)
+            sanestack = []
+            for e in stack:
+                sanestack.append(tuple([nn(x) for x in e]))
+            info["frame[%s].stack" % i] = sanestack
     except Exception as e:
         log.error("failed to get frame info: %s", e)
     return info
