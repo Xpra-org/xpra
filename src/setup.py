@@ -158,6 +158,7 @@ debug_ENABLED           = False
 verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
 tests_ENABLED           = False
+rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "x264_static",
@@ -174,6 +175,7 @@ SWITCHES = ["enc_x264", "x264_static",
             "server", "client", "x11", "gtk_x11",
             "gtk2", "gtk3", "html5",
             "sound", "opengl",
+            "rebuild",
             "warn", "strict", "shadow", "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests"]
 if WIN32:
@@ -494,10 +496,11 @@ def make_constants_pxi(constants_path, pxi_path, **kwargs):
 def should_rebuild(src_file, bin_file):
     if not os.path.exists(bin_file):
         return "no file"
-    elif os.path.getctime(bin_file)<os.path.getctime(src_file):
-        return "binary file out of date"
-    elif os.path.getctime(bin_file)<os.path.getctime(__file__):
-        return "newer build file"
+    elif rebuild_ENABLED:
+        if os.path.getctime(bin_file)<os.path.getctime(src_file):
+            return "binary file out of date"
+        elif os.path.getctime(bin_file)<os.path.getctime(__file__):
+            return "newer build file"
     return None
 
 def make_constants(*paths, **kwargs):
