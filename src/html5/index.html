@@ -22,6 +22,9 @@
 			    margin: 0;
 			    overflow: hidden;
 			}
+			div#connect_form {
+				display: none;
+			}
 			div#disconnect_form {
 				display: none;
 			}
@@ -109,17 +112,6 @@
 		<script type="text/javascript" src="include/jqueryui.min.js"></script>
 
 		<script>
-			/* 
-			 * We need to either load protocol.js (non-worker method) or if the browser is WebKit based
-			 * load protocol_host.js which is the WebWorker implementation
-			 */
-			if(window.webkitConvertPointFromNodeToPage) {
-				debug("webkit based browser, using web workers");
-				jQuery.getScript('include/protocol_host.js');
-			} else {
-				debug("not using web worker implementation");
-				jQuery.getScript('include/protocol.js');
-			}
 
 			var protocol;
 			var status = "ready";
@@ -726,28 +718,46 @@
 				"use strict";
 				show("start()");
 
-				//hook document and window events:
-				document.onkeydown = onkeydown;
-				document.onkeyup = onkeyup;
-				document.onkeypress = onkeypress;
-				protocol = new Protocol();
-				protocol.set_packet_handler("open", process_open);
-				protocol.set_packet_handler("close", process_close);
-				protocol.set_packet_handler("error", process_error);
-				var uri = "ws://";
-				if (params["ssl"]=="true")
-					uri = "wss://";
-				uri += params["host"];
-				uri += ":"+params["port"];
-				try {
-					status = "connecting";
-					show("opening connection to "+uri);
-					set_ui_message("connecting to "+uri);
-					protocol.open(uri);
+				/* 
+				 * We need to either load protocol.js (non-worker method) or if the browser is WebKit based
+				 * load protocol_host.js which is the WebWorker implementation
+				 */
+				if(window.webkitConvertPointFromNodeToPage) {
+					debug("webkit based browser, using web workers");
+					var protoscript = 'include/protocol_host.js';
+				} else {
+					debug("not using web worker implementation");
+					var protoscript = 'include/protocol.js';
 				}
-				catch (e) {
-					set_ui_message("error connecting to "+uri+": "+e, "red");
-				}
+
+				jQuery.getScript(protoscript)
+					.done(function() {
+						//hook document and window events:
+						document.onkeydown = onkeydown;
+						document.onkeyup = onkeyup;
+						document.onkeypress = onkeypress;
+						protocol = new Protocol();
+						protocol.set_packet_handler("open", process_open);
+						protocol.set_packet_handler("close", process_close);
+						protocol.set_packet_handler("error", process_error);
+						var uri = "ws://";
+						if (params["ssl"]=="true")
+							uri = "wss://";
+						uri += params["host"];
+						uri += ":"+params["port"];
+						try {
+							status = "connecting";
+							show("opening connection to "+uri);
+							set_ui_message("connecting to "+uri);
+							protocol.open(uri);
+						}
+						catch (e) {
+							set_ui_message("error connecting to "+uri+": "+e, "red");
+						}
+					})
+					.fail(function() {
+						// handle the error gracefully
+					});
 			}
 
 			function stop() {
@@ -866,13 +876,13 @@
 			function get_params_from_request() {
 				"use strict";
 				var params = {};
-				params['host'] = parse_host(window.location.getParameter("host"));
-				params['port'] = parse_port(window.location.getParameter("port") || "80");
+				params['host'] = parse_host(window.location.getParameter("host") || window.location.hostname);
+				params['port'] = parse_port(window.location.getParameter("port") || window.location.port);
 				params['ssl'] = get_bool(window.location.getParameter("ssl"), false);
 				params['popup'] = get_bool(window.location.getParameter("popup"), false);
-				params['connect'] = get_bool(window.location.getParameter("connect"), false);
+				params['connect'] = get_bool(window.location.getParameter("connect"), true);
 				params['options'] = get_bool(window.location.getParameter("options"), true);
-				//show("get_params_from_request()="+params.toSource());
+				console.log(params);
 				return params;
 			}
 
@@ -919,12 +929,13 @@
 			}
 
 
-			function init() {
+			$(document).ready(function() {
 				"use strict";
 
 				set_ui_message("ready", "green");
 				show("init()");
-				//populate form:
+
+				//populate params:
 				var params = get_params_from_request();
 				populate_form(params);
 
@@ -934,12 +945,15 @@
 						do_popup(params)
 					else
 						do_start(params);
+				} else {
+					// make sure form is hidden unless we didn't autostart
+					document.getElementById('connect_form').style.display = "block";
 				}
-			}
+			});
 		</script>
 	</head>
 
-	<body onload="init()">
+	<body>
 		<div class="form" id="connect_form">
 			<form onsubmit="return false;">
 				<fieldset>
