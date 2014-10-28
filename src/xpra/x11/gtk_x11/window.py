@@ -1259,21 +1259,25 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("requested-position", (geometry[0], geometry[1]))
         self._internal_set_property("requested-size", (geometry[2], geometry[3]))
 
-        def set_class_instance(s):
-            try:
-                parts = class_instance.split("\0")
-                if len(parts)!=3:
-                    return  False
-                (c, i, _) = parts
-                self._internal_set_property("class-instance", (c, i))
-                return  True
-            except ValueError:
-                log.warn("Malformed WM_CLASS: %s, ignoring", class_instance)
-                return  False
-        class_instance = pget("WM_CLASS", "latin1")
-        if class_instance:
-            if not set_class_instance(class_instance):
-                set_class_instance(pget("WM_CLASS", "utf8"))
+        #try using XGetClassHint:
+        class_instance = X11Window.getClassHint(self.client_window.xid)
+        if class_instance is None:
+            #fallback to reading WM_CLASS:
+            def get_wm_class_prop(ptype):
+                class_instance = pget("WM_CLASS", ptype)
+                if not class_instance:
+                    return None
+                try:
+                    parts = class_instance.split("\0")
+                    if len(parts)!=3:
+                        return None
+                    (c, i, _) = parts
+                    return  (c, i)
+                except ValueError:
+                    log.warn("Malformed WM_CLASS: %s, ignoring", class_instance)
+                    return None
+            class_instance = get_wm_class_prop("latin1") or get_wm_class_prop("utf8")
+        self._internal_set_property("class-instance", class_instance)
 
         protocols = pget("WM_PROTOCOLS", ["atom"])
         if protocols is None:
