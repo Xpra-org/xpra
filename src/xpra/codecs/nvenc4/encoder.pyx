@@ -2017,12 +2017,7 @@ cdef class Encoder:
         params.clientKeyPtr = &CLIENT_KEY_GUID
         params.apiVersion = NVENCAPI_VERSION
         cstr = <unsigned char*> &params
-        #fixstr = binascii.unhexlify("1006014001000000c003470100000000c08d8896d07f00004000000000")
-        #for i in range(len(fixstr)):
-        #    cstr[i] = ord(fixstr[i])
         pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
-        log("NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS (%s bytes): %s", sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS),
-            binascii.hexlify(pstr))
         log("calling nvEncOpenEncodeSessionEx @ %#x", <unsigned long> self.functionList.nvEncOpenEncodeSessionEx)
         ret = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if ret==NV_ENC_ERR_UNSUPPORTED_DEVICE:
