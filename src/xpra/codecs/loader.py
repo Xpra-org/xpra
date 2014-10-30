@@ -69,7 +69,7 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
             #optional info:
             if hasattr(module, "get_info"):
                 info = getattr(module, "get_info")
-                log(" %s info(%s)=%s", name, top_module, info())
+                log(" %s %s.%s=%s", name, top_module, info, info())
             return v
         if name in codecs:
             log.warn(" cannot find %s in %s", " or ".join(fieldnames), module)

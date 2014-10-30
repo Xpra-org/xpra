@@ -1066,7 +1066,7 @@ def get_info():
     if sys.platform.startswith("linux"):
         from xpra.scripts.config import python_platform
         info["kernel_version"] = python_platform.uname()[2]
-    return v
+    return info
 
 
 def get_encodings():

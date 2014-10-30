@@ -1199,7 +1199,7 @@ def get_info():
     v = get_nvidia_module_version(False)
     if v:
         info["kernel_module_version"] = v
-    return v
+    return info
 
 
 def get_encodings():
