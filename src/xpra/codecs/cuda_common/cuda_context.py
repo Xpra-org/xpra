@@ -176,17 +176,23 @@ def get_CUDA_function(device_id, function_name):
         and kernel key.
     """
     global KERNELS
-    data = KERNEL_cubins.get(function_name)
+    data = KERNELS.get(function_name)
     if data is None:
         from xpra.platform.paths import default_get_app_dir
         from xpra.os_util import load_binary_file
         cubin_file = os.path.join(default_get_app_dir(), "cuda", "%s.fatbin" % function_name)
+        log("get_CUDA_function(%s, %s) cubin file=%s", device_id, function_name, cubin_file)
         data = load_binary_file(cubin_file)
+        log(" loaded %s bytes", len(data))
         KERNELS[function_name] = data
     #now load from cubin:
     start = time.time()
     mod = driver.module_from_buffer(data)
-    CUDA_function = mod.get_function(function_name)
+    log("get_CUDA_function(%s, %s) module=%s", device_id, function_name, mod)
+    try:
+        CUDA_function = mod.get_function(function_name)
+    except driver.LogicError as e:
+        raise Exception("failed to load '%s' from %s: %s" % (function_name, mod, e))
     end = time.time()
     log("loading function %s from pre-compiled cubin took %.1fms", function_name, 1000.0*(end-start))
     return CUDA_function
