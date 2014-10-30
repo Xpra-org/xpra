@@ -35,7 +35,7 @@ from xpra.x11.gtk_x11.send_wm import (
 from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
                            one_arg_signal,
                            non_none_list_accumulator)
-from xpra.gtk_common.error import trap, XError
+from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.composite import CompositeHelper
 
@@ -338,7 +338,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def call_setup(self):
         try:
-            self._geometry = trap.call_synced(X11Window.geometry_with_border, self.client_window.xid)
+            with xsync:
+                self._geometry = X11Window.geometry_with_border(self.client_window.xid)
         except XError as e:
             raise Unmanageable(e)
         add_event_receiver(self.client_window, self)
@@ -346,20 +347,24 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         # reparent, so I'm not sure doing this here in the superclass,
         # before we reparent, actually works... let's wait and see.
         try:
-            trap.call_synced(self._composite.setup)
+            with xsync:
+                self._composite.setup()
         except XError as e:
             remove_event_receiver(self.client_window, self)
             log("window %#x does not support compositing: %s", self.client_window.xid, e)
-            trap.swallow_synced(self._composite.destroy)
+            with xswallow:
+                self._composite.destroy()
             self._composite = None
             raise Unmanageable(e)
         #compositing is now enabled, from now on we need to call setup_failed to clean things up
         self._managed = True
         try:
-            trap.call_synced(self.setup)
+            with xsync:
+                self.setup()
         except XError as e:
             try:
-                trap.call_synced(self.setup_failed, e)
+                with xsync:
+                    self.setup_failed(e)
             except Exception as ex:
                 log.error("error in cleanup handler: %s", ex)
             raise Unmanageable(e)
@@ -437,14 +442,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def do_get_property_geometry(self, pspec):
         if self._geometry is None:
-            def synced_update():
+            with xsync:
                 xwin = self.client_window.xid
                 self._geometry = X11Window.geometry_with_border(xwin)
-                log("BaseWindowModel.synced_update() geometry(%#x)=%s", xwin, self._geometry)
-            try:
-                trap.call_unsynced(synced_update)
-            except XError:
-                log.error("failed to retrieve updated window geometry - maybe it's gone?", exc_info=True)
+                log("BaseWindowModel.do_get_property_geometry() synced update: geometry(%#x)=%s", xwin, self._geometry)
         x, y, w, h, b = self._geometry
         return (x, y, w + 2*b, h + 2*b)
 
@@ -557,7 +558,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             shm = self._composite.get_property("shm-handle")
             #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
             if shm is not None:
-                shm_image = trap.call_synced(shm.get_image, handle.get_pixmap(), x, y, width, height)
+                with xsync:
+                    shm_image = shm.get_image(handle.get_pixmap(), x, y, width, height)
                 #logger("get_image(..) XShm image: %s", shm_image)
                 if shm_image:
                     return shm_image
@@ -572,7 +574,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             h = min(handle.get_height(), height)
             if w!=width or h!=height:
                 logger("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
-            return trap.call_synced(handle.get_image, x, y, w, h)
+            with xsync:
+                return handle.get_image(x, y, w, h)
         except Exception as e:
             if type(e)==XError and e.msg=="BadMatch":
                 logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
@@ -967,8 +970,9 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("owner", None)
         if self.corral_window:
             remove_event_receiver(self.corral_window, self)
-            for prop in WindowModel.SCRUB_PROPERTIES:
-                trap.swallow_synced(X11Window.XDeleteProperty, self.client_window.xid, prop)
+            with xswallow:
+                for prop in WindowModel.SCRUB_PROPERTIES:
+                    X11Window.XDeleteProperty(self.client_window.xid, prop)
             if self.client_reparented:
                 self.client_window.reparent(gtk.gdk.get_default_root_window(), 0, 0)
                 self.client_reparented = False
@@ -983,9 +987,11 @@ class WindowModel(BaseWindowModel):
             # section 10. Connection Close).  This causes "ghost windows", see
             # bug #27:
             if self.in_save_set:
-                trap.swallow_synced(X11Window.XRemoveFromSaveSet, self.client_window.xid)
+                with xswallow:
+                    X11Window.XRemoveFromSaveSet(self.client_window.xid)
                 self.in_save_set = False
-            trap.swallow_synced(X11Window.sendConfigureNotify, self.client_window.xid)
+            with xswallow:
+                X11Window.sendConfigureNotify(self.client_window.xid)
             if wm_exiting:
                 self.client_window.show_unraised()
         BaseWindowModel.do_unmanaged(self, wm_exiting)
@@ -1011,7 +1017,8 @@ class WindowModel(BaseWindowModel):
             self._update_client_geometry()
             self.corral_window.show_unraised()
             return True
-        trap.swallow_synced(X11Window.sendConfigureNotify, self.client_window.xid)
+        with xswallow:
+            X11Window.sendConfigureNotify(self.client_window.xid)
         return False
 
     def maybe_recalculate_geometry_for(self, maybe_owner):
@@ -1093,7 +1100,8 @@ class WindowModel(BaseWindowModel):
         self.corral_window.move_resize(x, y, w, h)
         self._internal_set_property("actual-size", (w, h))
         self._internal_set_property("user-friendly-size", (wvis, hvis))
-        trap.swallow_synced(X11Window.configureAndNotify, self.client_window.xid, 0, 0, w, h)
+        with xswallow:
+            X11Window.configureAndNotify(self.client_window.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):
         log("WindowModel.do_xpra_configure_event(%s)", event)
@@ -1108,8 +1116,9 @@ class WindowModel(BaseWindowModel):
             return
         try:
             #workaround applications whose windows disappear from underneath us:
-            if trap.call_synced(self.resize_corral_window, event.x, event.y, event.width, event.height, event.border_width):
-                self.notify("geometry")
+            with xsync:
+                if self.resize_corral_window(event.x, event.y, event.width, event.height, event.border_width):
+                    self.notify("geometry")
         except XError as e:
             log.warn("failed to resize corral window: %s", e)
 
@@ -1399,7 +1408,8 @@ class WindowModel(BaseWindowModel):
 
     def _handle_state_changed(self, *args):
         # Sync changes to "state" property out to X property.
-        trap.swallow_synced(prop_set, self.client_window, "_NET_WM_STATE",
+        with xswallow:
+            prop_set(self.client_window, "_NET_WM_STATE",
                  ["atom"], self.get_property("state"))
 
     def do_set_property(self, pspec, value):
@@ -1425,8 +1435,8 @@ class WindowModel(BaseWindowModel):
 
     def _handle_iconic_update(self, *args):
         def set_state(state):
-            trap.swallow_synced(prop_set, self.client_window, "WM_STATE",
-                             ["u32"],
+            with xswallow:
+                prop_set(self.client_window, "WM_STATE", ["u32"],
                              [state, XNone])
 
         if self.get_property("iconic"):
@@ -1456,7 +1466,8 @@ class WindowModel(BaseWindowModel):
         """The focus manager has decided that our client should recieve X
         focus.  See world_window.py for details."""
         if self.corral_window:
-            trap.swallow_synced(self.do_give_client_focus)
+            with xswallow:
+                self.do_give_client_focus()
 
     def do_give_client_focus(self):
         focuslog("Giving focus to %#x", self.client_window.xid)
@@ -1493,7 +1504,8 @@ class WindowModel(BaseWindowModel):
 
     def request_close(self):
         if "WM_DELETE_WINDOW" in self.get_property("protocols"):
-            trap.swallow_synced(send_wm_delete_window, self.client_window)
+            with xswallow:
+                send_wm_delete_window(self.client_window)
         else:
             title = self.get_property("title")
             xid = self.get_property("xid")
@@ -1513,7 +1525,8 @@ class WindowModel(BaseWindowModel):
                     os.kill(pid, 9)
                 except OSError:
                     log.warn("failed to kill() client with pid %s", pid)
-        trap.swallow_synced(X11Window.XKillClient, self.client_window.xid)
+        with xswallow:
+            X11Window.XKillClient(self.client_window.xid)
 
     def __repr__(self):
         xid = 0

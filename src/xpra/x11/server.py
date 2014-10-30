@@ -33,7 +33,7 @@ X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
 from xpra.x11.gtk_x11.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
-from xpra.gtk_common.error import trap
+from xpra.gtk_common.error import trap, xsync
 
 from xpra.log import Logger
 log = Logger("server")
@@ -758,7 +758,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             w, h = window.get_dimensions()
             log("screenshot: size(%s)=%sx%s", window, w, h)
             try:
-                img = trap.call_synced(window.get_image, 0, 0, w, h)
+                with xsync:
+                    img = window.get_image(0, 0, w, h)
             except:
                 log.warn("screenshot: window %s could not be captured", wid)
                 continue

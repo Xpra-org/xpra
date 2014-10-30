@@ -13,7 +13,7 @@ import gtk
 from struct import pack, unpack, calcsize
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.gtk_common.error import trap, XError
+from xpra.gtk_common.error import xsync, XError
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
@@ -114,12 +114,10 @@ class ManagerSelection(gobject.GObject):
         if old_owner != XNone and when is self.FORCE:
             # Block in a recursive mainloop until the previous owner has
             # cleared out.
-            def getwin():
-                window = get_pywindow(self.clipboard, old_owner)
-                window.set_events(window.get_events() | gtk.gdk.STRUCTURE_MASK)
-                return window
             try:
-                window = trap.call_synced(getwin)
+                with xsync:
+                    window = get_pywindow(self.clipboard, old_owner)
+                    window.set_events(window.get_events() | gtk.gdk.STRUCTURE_MASK)
                 log("got window")
             except XError:
                 log("Previous owner is already gone, not blocking")

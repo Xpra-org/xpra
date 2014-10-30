@@ -8,7 +8,7 @@ import gobject
 
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.gtk_common.error import trap
+from xpra.gtk_common.error import xswallow, xsync
 
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
@@ -110,7 +110,8 @@ class SystemTray(gobject.GObject):
             X11Window.Unmap(window.xid)
             X11Window.Reparent(window.xid, root.xid, 0, 0)
         for window, tray_window in self.tray_windows.items():
-            trap.swallow_synced(undock, window)
+            with xswallow:
+                undock(window)
             tray_window.destroy()
         self.tray_window.destroy()
         self.tray_window = None
@@ -164,7 +165,8 @@ class SystemTray(gobject.GObject):
             if opcode==SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
                 log("tray docking request from %#x", xid)
-                trap.call_synced(self.dock_tray, xid)
+                with xsync:
+                    self.dock_tray(xid)
             elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]
                 mlen = event.data[3]

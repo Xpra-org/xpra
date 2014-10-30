@@ -12,7 +12,7 @@ assert gdk_display_source
 
 from xpra.util import std, nonl
 from xpra.keyboard.layouts import parse_xkbmap_query
-from xpra.gtk_common.error import trap
+from xpra.gtk_common.error import xsync
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
 
@@ -136,7 +136,8 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
 
 def apply_xmodmap(instructions):
     try:
-        unset = trap.call_synced(X11Keyboard.set_xmodmap, instructions)
+        with xsync:
+            unset = X11Keyboard.set_xmodmap(instructions)
     except:
         log.error("apply_xmodmap", exc_info=True)
         unset = instructions

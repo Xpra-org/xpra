@@ -20,7 +20,7 @@ from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@Unresolved
 X11Keyboard = X11KeyboardBindings()
 from xpra.x11.bindings.core_bindings import X11CoreBindings #@UnresolvedImport
 X11Core = X11CoreBindings()
-from xpra.gtk_common.error import XError, trap
+from xpra.gtk_common.error import XError, xswallow, xsync
 from xpra.server.server_uuid import save_uuid, get_uuid
 
 from xpra.log import Logger
@@ -231,7 +231,8 @@ class X11ServerBase(GTKServerBase):
 
     def get_cursor_data(self):
         #must be called from the UI thread!
-        cursor_data = trap.call(X11Keyboard.get_cursor_image)
+        with xsync:
+            cursor_data = X11Keyboard.get_cursor_image()
         if cursor_data is None:
             cursorlog("get_cursor_data() failed to get cursor image")
             return None, []
@@ -357,7 +358,8 @@ class X11ServerBase(GTKServerBase):
                     log.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
                     RandR.set_screen_size(tw, th)
             log("calling RandR.set_screen_size(%s, %s)", w, h)
-            trap.call_synced(RandR.set_screen_size, w, h)
+            with xsync:
+                RandR.set_screen_size(w, h)
             log("calling RandR.get_screen_size()")
             root_w, root_h = RandR.get_screen_size()
             log("RandR.get_screen_size()=%s,%s", root_w, root_h)
@@ -470,15 +472,15 @@ class X11ServerBase(GTKServerBase):
 
     def X11_ungrab(self):
         grablog("X11_ungrab")
-        def do_X11_ungrab():
+        with xsync:
             X11Core.UngrabKeyboard()
             X11Core.UngrabPointer()
-        trap.call_synced(do_X11_ungrab)
 
 
     def fake_key(self, keycode, press):
         keylog("fake_key(%s, %s)", keycode, press)
-        trap.call_synced(X11Keyboard.xtest_fake_key, keycode, press)
+        with xsync:
+            X11Keyboard.xtest_fake_key(keycode, press)
 
 
     def _move_pointer(self, wid, pos):
@@ -494,7 +496,8 @@ class X11ServerBase(GTKServerBase):
         pos = gtk.gdk.get_default_root_window().get_pointer()[:2]
         if pos==pointer:
             return
-        trap.swallow_synced(self._move_pointer, wid, pointer)
+        with xswallow:
+            self._move_pointer(wid, pointer)
         ss.make_keymask_match(modifiers)
 
     def _process_button_action(self, proto, packet):
@@ -505,7 +508,8 @@ class X11ServerBase(GTKServerBase):
         self._process_mouse_common(proto, wid, pointer, modifiers)
         ss.user_event()
         try:
-            trap.call_synced(X11Keyboard.xtest_fake_button, button, pressed)
+            with xsync:
+                X11Keyboard.xtest_fake_button(button, pressed)
         except XError:
             err = "Failed to pass on (un)press of mouse button %s" % button
             if button>=4:

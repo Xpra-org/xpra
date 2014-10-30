@@ -7,7 +7,7 @@
 import gtk
 import gobject
 
-from xpra.gtk_common.error import trap
+from xpra.gtk_common.error import xsync, xswallow
 import xpra.x11.gtk_x11.selection
 from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
@@ -298,7 +298,8 @@ class Wm(gobject.GObject):
     def _manage_client(self, gdkwindow):
         try:
             if gdkwindow not in self._windows:
-                trap.call_synced(self.do_manage_client, gdkwindow)
+                with xsync:
+                    self.do_manage_client(gdkwindow)
         except Exception as e:
             log("failed to manage client %s: %s", gdkwindow, e)
 
@@ -332,11 +333,10 @@ class Wm(gobject.GObject):
         # in a moment we'll get a signal telling us about the window that
         # doesn't exist anymore, will remove it from the list, and then call
         # _update_window_list again.
-        trap.swallow_synced(self.root_set, "_NET_CLIENT_LIST",
-                     ["window"], self._windows_in_order)
-        # This is a lie, but we don't maintain a stacking order, so...
-        trap.swallow_synced(self.root_set, "_NET_CLIENT_LIST_STACKING",
-                     ["window"], self._windows_in_order)
+        with xswallow:
+            self.root_set("_NET_CLIENT_LIST", ["window"], self._windows_in_order)
+            # This is a lie, but we don't maintain a stacking order, so...
+            self.root_set("_NET_CLIENT_LIST_STACKING", ["window"], self._windows_in_order)
 
     def do_xpra_client_message_event(self, event):
         # FIXME
@@ -379,10 +379,9 @@ class Wm(gobject.GObject):
         if event.window in self._windows:
             return
         log("Reconfigure on withdrawn window")
-        trap.swallow_synced(X11Window.configureAndNotify,
-                     event.window.xid, event.x, event.y,
-                     event.width, event.height,
-                     event.value_mask)
+        with xswallow:
+            X11Window.configureAndNotify(event.window.xid, event.x, event.y,
+                     event.width, event.height, event.value_mask)
 
     def do_xpra_focus_in_event(self, event):
         # The purpose of this function is to detect when the focus mode has

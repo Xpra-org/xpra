@@ -10,7 +10,7 @@ log = Logger("posix")
 eventlog = Logger("events", "posix")
 
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
-from xpra.gtk_common.error import trap, XError
+from xpra.gtk_common.error import xsync, XError
 
 device_bell = None
 
@@ -50,7 +50,8 @@ def _get_X11_root_property(name, req_type):
         window_bindings = X11WindowBindings()
         root = window_bindings.getDefaultRootWindow()
         try:
-            prop = trap.call_synced(window_bindings.XGetWindowProperty, root, name, req_type)
+            with xsync:
+                prop = window_bindings.XGetWindowProperty(root, name, req_type)
             log("_get_X11_root_property(%s, %s)=%s, len=%s", name, req_type, type(prop), len(prop))
             return prop
         except PropertyError as e:
@@ -242,7 +243,8 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
             device_bell = X11KeyboardBindings().device_bell
         device_bell(get_xid(window), device, bell_class, bell_id, percent, bell_name)
     try:
-        trap.call_synced(x11_bell)
+        with xsync:
+            x11_bell()
         return  True
     except XError as e:
         log.error("error using device_bell: %s, switching native X11 bell support off", e)

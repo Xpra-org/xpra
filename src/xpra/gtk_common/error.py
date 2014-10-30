@@ -155,3 +155,39 @@ class _ErrorManager(object):
         assert self.depth == 0
 
 trap = _ErrorManager()
+
+
+class XSyncContext(object):
+
+    def __enter__(self):
+        trap._enter()
+
+    def __exit__(self, e_typ, e_val, trcbak):
+        #log("xsync.exit%s", (e_typ, e_val, trcbak))
+        try:
+            trap._exit(True)
+        except XError as ee:
+            if e_typ is None:
+                #we are not handling an exception yet, so raise this one:
+                raise ee
+            log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
+        return True
+
+xsync = XSyncContext()
+
+
+class XSwallowContext(object):
+
+    def __enter__(self):
+        trap._enter()
+
+    def __exit__(self, e_typ, e_val, trcbak):
+        #log("xswallow.exit%s", (e_typ, e_val, trcbak))
+        try:
+            trap._exit(True)
+        except XError as ee:
+            log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
+        #don't raise exceptions:
+        return True
+
+xswallow = XSwallowContext()

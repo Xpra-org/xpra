@@ -33,7 +33,7 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
     try:
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
-        from xpra.gtk_common.error import trap
+        from xpra.gtk_common.error import xsync
         X11Window = X11WindowBindings()
         HAS_X11_BINDINGS = True
 
@@ -288,13 +288,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         workspace = max(0, min(ndesktops-1, self._window_workspace))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
 
-        def send():
+        with xsync:
             from xpra.gtk_common.gobject_compat import get_xid
             root_xid = get_xid(root)
             xwin = get_xid(self.get_window())
             X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_DESKTOP",
                   workspace, CurrentTime, 0, 0, 0)
-        trap.call_synced(send)
         return workspace
 
     def get_desktop_workspace(self):

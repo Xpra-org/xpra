@@ -26,7 +26,7 @@ X11Window = X11WindowBindings()
 
 from xpra.os_util import StringIOClass
 from xpra.x11.xsettings_prop import set_settings, get_settings
-from xpra.gtk_common.error import trap, XError
+from xpra.gtk_common.error import xsync, XError
 from xpra.codecs.argb.argb import premultiply_argb_in_place #@UnresolvedImport
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -351,7 +351,8 @@ def _prop_encode_list(disp, etype, value):
 
 
 def prop_set(target, key, etype, value):
-    trap.call_synced(X11Window.XChangeProperty, get_xwindow(target), key,
+    with xsync:
+        X11Window.XChangeProperty(get_xwindow(target), key,
                        _prop_encode(target, etype, value))
 
 def _prop_decode(disp, etype, data):
@@ -388,7 +389,8 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
         scalar_type = etype
     (_, atom, _, _, _, _) = _prop_types[scalar_type]
     try:
-        data = trap.call_synced(X11Window.XGetWindowProperty, get_xwindow(target), key, atom, etype)
+        with xsync:
+            data = X11Window.XGetWindowProperty(get_xwindow(target), key, atom, etype)
         if data is None:
             if not ignore_errors:
                 log("Missing property %s (%s)", key, etype)
