@@ -989,7 +989,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     if shadowing:
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer()
-        app.init(opts)
         info = "shadow"
     elif proxying:
         from xpra.server.proxy_server import ProxyServer
