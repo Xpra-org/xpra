@@ -956,7 +956,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                         pyev.above = _gw(d, e.xconfigurerequest.above)
                     except XError:
                         pyev.above = None
-                    pyev.override_redirect = e.xconfigurerequest.override_redirect
+                    pyev.above = e.xconfigurerequest.above
                     pyev.detail = e.xconfigurerequest.detail
                     pyev.value_mask = e.xconfigurerequest.value_mask
                 elif e.type in (FocusIn, FocusOut):
