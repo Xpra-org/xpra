@@ -22,6 +22,7 @@ cursorlog = Logger("cursor")
 from xpra.server import ClientException
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_video_source import WindowVideoSource
+from xpra.server.window_source import WindowSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.codecs.loader import OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
@@ -176,6 +177,8 @@ class ServerSource(object):
         self.idle_add = idle_add
         self.timeout_add = timeout_add
         self.source_remove = source_remove
+        #pass it to window source:
+        WindowSource.staticinit(idle_add, timeout_add, source_remove)
         self.get_transient_for = get_transient_for
         self.get_focus = get_focus
         self.get_cursor_data_cb = get_cursor_data_cb
@@ -1492,8 +1495,7 @@ class ServerSource(object):
         ws = self.window_sources.get(wid)
         if ws is None:
             batch_config = self.make_batch_config(wid, window)
-            ws = WindowVideoSource(self.idle_add, self.timeout_add, self.source_remove,
-                              self.queue_size, self.queue_damage, self.queue_packet, self.compressed_wrapper,
+            ws = WindowVideoSource(self.queue_size, self.queue_damage, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               self.video_helper,

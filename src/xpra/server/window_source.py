@@ -55,10 +55,15 @@ class WindowSource(object):
 
     """
 
-    _encoding_warnings = set()
+    @staticmethod
+    def staticinit(idle_add, timeout_add, source_remove):
+        WindowSource._encoding_warnings = set()
+        #scheduling stuff (gobject wrapped):
+        WindowSource.idle_add = idle_add
+        WindowSource.timeout_add = timeout_add
+        WindowSource.source_remove = source_remove
 
-    def __init__(self, idle_add, timeout_add, source_remove,
-                    queue_size, queue_damage, queue_packet, compressed_wrapper,
+    def __init__(self, queue_size, queue_damage, queue_packet, compressed_wrapper,
                     statistics,
                     wid, window, batch_config, auto_refresh_delay,
                     video_helper,
@@ -66,11 +71,6 @@ class WindowSource(object):
                     encoding, encodings, core_encodings, encoding_options, rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size):
-        #scheduling stuff (gobject wrapped):
-        self.idle_add = idle_add
-        self.timeout_add = timeout_add
-        self.source_remove = source_remove
-
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
