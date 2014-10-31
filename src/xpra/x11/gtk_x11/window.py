@@ -45,6 +45,9 @@ focuslog = Logger("x11", "window", "focus")
 grablog = Logger("x11", "window", "grab")
 
 
+_NET_WM_STATE_REMOVE = 0
+_NET_WM_STATE_ADD = 1
+
 XNone = constants["XNone"]
 CWX = constants["CWX"]
 CWY = constants["CWY"]
@@ -597,8 +600,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         if event.message_type=="_NET_WM_STATE" and event.data and len(event.data)==5:
             atom1 = get_pyatom(event.window, event.data[1])
             atom2 = get_pyatom(event.window, event.data[2])
-            _NET_WM_STATE_REMOVE = 0
-            _NET_WM_STATE_ADD = 1
             if atom1=="_NET_WM_STATE_FULLSCREEN":
                 fullscreen = event.data[0]==_NET_WM_STATE_ADD
                 log("do_xpra_client_message_event(..) setting fullscreen=%s", fullscreen)
