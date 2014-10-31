@@ -171,7 +171,8 @@ class XSyncContext(object):
                 #we are not handling an exception yet, so raise this one:
                 raise ee
             log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
-        return True
+        #raise the original exception:
+        return False
 
 xsync = XSyncContext()
 
