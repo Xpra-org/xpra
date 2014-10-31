@@ -46,6 +46,8 @@ cdef extern from "X11/Xlib.h":
     int XUngrabKeyboard(Display * display, Time t)
     int XUngrabPointer(Display * display, Time t)
 
+    int *XSynchronize(Display *display, Bool onoff)
+
 
 from display_source cimport get_display
 from display_source import get_display_name
@@ -57,6 +59,8 @@ cdef class X11CoreBindings:
         assert self.display!=NULL, "display is not set!"
         dn = get_display_name()
         self.display_name = dn
+        if os.environ.get("XPRA_X_SYNC", "0")=="1":
+            XSynchronize(self.display, True)
 
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
