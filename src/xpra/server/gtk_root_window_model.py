@@ -16,6 +16,9 @@ from xpra.server.shadow_server_base import RootWindowModel
 
 class GTKRootWindowModel(RootWindowModel):
 
+    def __repr__(self):
+        return "GTKRootWindowModel(%s)" % self.window
+
     def get_image(self, x, y, width, height, logger=None):
         v = get_rgb_rawdata(self.window, x, y, width, height, logger=logger)
         if v is None:

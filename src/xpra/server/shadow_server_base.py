@@ -218,7 +218,7 @@ class ShadowServerBase(object):
         log("send_windows_and_cursors(%s, %s) will send: %s", ss, sharing, self._id_to_window)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
-            assert window == self.root_window_model
+            assert window == self.root_window_model, "expected window to be %s, but got %s" % (self.root_window_model, window)
             w, h = self.root.get_size()
             ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(ss.uuid))
 

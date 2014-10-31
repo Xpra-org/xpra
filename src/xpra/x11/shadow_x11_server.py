@@ -11,6 +11,12 @@ from xpra.server.shadow_server_base import ShadowServerBase
 from xpra.server.gtk_root_window_model import GTKRootWindowModel
 
 
+class GTKX11RootWindowModel(GTKRootWindowModel):
+
+    def __repr__(self):
+        return "GTKX11RootWindowModel(%#x)" % self.window.xid
+
+
 class ShadowX11Server(ShadowServerBase, X11ServerBase):
 
     def __init__(self):
@@ -21,7 +27,7 @@ class ShadowX11Server(ShadowServerBase, X11ServerBase):
         X11ServerBase.init(self, opts)
 
     def makeRootWindowModel(self):
-        return GTKRootWindowModel(self.root)
+        return GTKX11RootWindowModel(self.root)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         #adjust pointer position for offset in client:
