@@ -176,15 +176,17 @@ def fixup_video_all_or_none(options):
 
 def fixup_encodings(options):
     from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW, PREFERED_ENCODING_ORDER
+    RENAME = {"jpg" : "jpeg"}
     if options.encoding:
         #fix old encoding names if needed:
         options.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(options.encoding, options.encoding)
+        options.encoding = RENAME.get(options.encoding, options.encoding)
     estr = _csvstr(options.encodings)
     if estr=="all":
         #replace with an actual list
         options.encodings = PREFERED_ENCODING_ORDER
         return
-    encodings = _nodupes(estr)
+    encodings = [RENAME.get(x, x) for x in _nodupes(estr)]
     if "rgb" in encodings:
         if "rgb24" not in encodings:
             encodings.append("rgb24")
