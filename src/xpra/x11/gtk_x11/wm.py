@@ -56,7 +56,11 @@ def wm_check(display, upgrading=False):
             #errors here generally indicate that the window is gone
             #which is fine: it means the previous window manager is no longer active
             continue
-        log("_NET_SUPPORTING_WM_CHECK for screen %s: %#x", i, ewmh_wm.xid)
+        def xid(w):
+            if w:
+                return "%#x" % w.xid
+            return None
+        log("_NET_SUPPORTING_WM_CHECK for screen %s: %#x (root=%#x)", i, xid(ewmh_wm), xid(root))
         if ewmh_wm:
             try:
                 name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
