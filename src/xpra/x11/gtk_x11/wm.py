@@ -203,7 +203,6 @@ class Wm(gobject.GObject):
         if display is None:
             display = gtk.gdk.display_manager_get().get_default_display()
         self._display = display
-        self._alt_display = gtk.gdk.Display(self._display.get_name())
         self._root = self._display.get_default_screen().get_root_window()
         self._ewmh_window = None
 
@@ -238,8 +237,7 @@ class Wm(gobject.GObject):
         self.root_set("_NET_DESKTOP_VIEWPORT", ["u32"], [0, 0])
 
         # Load up our full-screen widget
-        self._world_window = WorldWindow()
-        self._world_window.set_screen(self._display.get_default_screen())
+        self._world_window = WorldWindow(self._display.get_default_screen())
         self.notify("toplevel")
         self._world_window.show_all()
 

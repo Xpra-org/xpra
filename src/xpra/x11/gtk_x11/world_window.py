@@ -89,11 +89,12 @@ def get_world_window():
     return world_window
 
 class WorldWindow(gtk.Window):
-    def __init__(self):
+    def __init__(self, screen=gtk.gdk.screen_get_default()):
         global world_window
-        assert world_window is None
+        assert world_window is None, "a world window already exists! (%s)" % world_window
         world_window = self
         super(WorldWindow, self).__init__()
+        self.set_screen(screen)
         self.set_title("Xpra-WorldWindow")
 
         # FIXME: This would better be a default handler, but there is a bug in
@@ -106,7 +107,7 @@ class WorldWindow(gtk.Window):
 
         # Make sure that we are always the same size as the screen
         self.set_resizable(False)
-        gtk.gdk.screen_get_default().connect("size-changed", self._resize)
+        screen.connect("size-changed", self._resize)
         self.move(0, 0)
         self._resize()
 
