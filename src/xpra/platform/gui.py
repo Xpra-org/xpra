@@ -132,7 +132,7 @@ def get_info_base():
             }
     from xpra.util import updict
     updict(info, "antialias", get_antialias_info())
-    updict(info, "window_frame_sizes", get_window_frame_sizes())
+    updict(info, "window_frame", get_window_frame_sizes())
     return info
 
 get_info = get_info_base
