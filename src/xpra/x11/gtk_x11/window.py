@@ -46,7 +46,8 @@ grablog = Logger("x11", "window", "grab")
 
 
 _NET_WM_STATE_REMOVE = 0
-_NET_WM_STATE_ADD = 1
+_NET_WM_STATE_ADD    = 1
+_NET_WM_STATE_TOGGLE = 2
 
 XNone = constants["XNone"]
 
@@ -619,22 +620,30 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         #   _NET_WM_STATE (more fully)
         if event.message_type=="_NET_WM_STATE" and event.data and len(event.data)==5:
             atom1 = get_pyatom(event.window, event.data[1])
-            atom2 = get_pyatom(event.window, event.data[2])
+            log("_NET_WM_STATE: %s", atom1)
             if atom1=="_NET_WM_STATE_FULLSCREEN":
-                fullscreen = event.data[0]==_NET_WM_STATE_ADD
+                if event.data[0]==_NET_WM_STATE_TOGGLE:
+                    fullscreen = not self.get_property("fullscreen")
+                else:
+                    fullscreen = event.data[0]==_NET_WM_STATE_ADD
                 log("do_xpra_client_message_event(..) setting fullscreen=%s", fullscreen)
                 self.set_property("fullscreen", fullscreen)
-            elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ") and \
-                 atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
-                if self._last_wm_state_serial == event.serial:
-                    #already seen!
-                    return
-                maximized = event.data[0]==_NET_WM_STATE_ADD
-                log("do_xpra_client_message_event(%s) window maximized=%s", event, maximized)
-                self.set_property("maximized", maximized)
+            elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
+                atom2 = get_pyatom(event.window, event.data[2])
+                log("%s: atom2=%s", atom1, atom2)
+                if atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
+                    if self._last_wm_state_serial == event.serial:
+                        #already seen!
+                        return
+                    maximized = event.data[0]==_NET_WM_STATE_ADD
+                    log("do_xpra_client_message_event(%s) window maximized=%s", event, maximized)
+                    self.set_property("maximized", maximized)
+            elif atom1 in ("_NET_WM_STATE_ABOVE", "_NET_WM_STATE_BELOW"):
+                #TODO: keep track of this preference and pass it to the client
+                pass
             else:
-                log("do_xpra_client_message_event(%s) atom=%s", event, atom1)
-        if event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0] in (0, 1):
+                log("do_xpra_client_message_event(%s) atom1=%s", event, atom1)
+        elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0] in (0, 1):
             self.set_active()
             self.emit("raised", event)
         else:
