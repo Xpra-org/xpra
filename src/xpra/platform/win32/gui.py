@@ -151,6 +151,28 @@ def get_dpi():
         log.warn("failed to get dpi: %s", e)
     return -1
 
+#those constants aren't found in win32con:
+SPI_GETFONTSMOOTHING            = 0x004A
+SPI_GETFONTSMOOTHINGCONTRAST    = 0x200C
+SPI_GETFONTSMOOTHINGORIENTATION = 0x2012
+FE_FONTSMOOTHINGORIENTATIONBGR  = 0x0000
+FE_FONTSMOOTHINGORIENTATIONRGB  = 0x0001
+FE_FONTSMOOTHINGORIENTATIONVBGR = 0x0002
+FE_FONTSMOOTHINGORIENTATIONVRGB = 0x0003
+SPI_GETFONTSMOOTHINGTYPE        = 0x200A
+FE_FONTSMOOTHINGCLEARTYPE       = 0x0002
+FE_FONTSMOOTHINGDOCKING         = 0x8000
+FE_ORIENTATION_STR = {
+                      FE_FONTSMOOTHINGORIENTATIONBGR    : "BGR",
+                      FE_FONTSMOOTHINGORIENTATIONRGB    : "RGB",
+                      FE_FONTSMOOTHINGORIENTATIONVBGR   : "VBGR",
+                      FE_FONTSMOOTHINGORIENTATIONVRGB   : "VRGB",
+                      }
+FE_FONTSMOOTHING_STR = {
+    0                           : "Normal",
+    FE_FONTSMOOTHINGCLEARTYPE   : "ClearType",
+    }
+
 def get_antialias_info():
     info = {}
     try:
@@ -159,26 +181,16 @@ def get_antialias_info():
             i = ctypes.c_uint32()
             if SystemParametersInfo(constant, 0, byref(i), 0):
                 info[name] = convert(i.value)
-        #SPI_GETFONTSMOOTHING:
-        add_param(0x004A, "enabled", bool)
-        #SPI_GETFONTSMOOTHINGCONTRAST
+        add_param(SPI_GETFONTSMOOTHING, "enabled", bool)
         #"Valid contrast values are from 1000 to 2200. The default value is 1400."
-        add_param(0x200C, "contrast", int)
-        #SPI_GETFONTSMOOTHINGORIENTATION
+        add_param(SPI_GETFONTSMOOTHINGCONTRAST, "contrast", int)
         def orientation(v):
-            #FE_FONTSMOOTHINGORIENTATIONBGR  0x0000
-            #FE_FONTSMOOTHINGORIENTATIONRGB  0x0001
-            #FE_FONTSMOOTHINGORIENTATIONVBGR 0x0002
-            #FE_FONTSMOOTHINGORIENTATIONVRGB 0x0003
-            return {0 : "BGR", 1 : "RGB", 2 : "VBGR", 3 : "VRGB"}.get(v, "unknown")
-        add_param(0x2012, "orientation", orientation)
-        #SPI_GETFONTSMOOTHINGTYPE
+            return FE_ORIENTATION_STR.get(v, "unknown")
+        add_param(SPI_GETFONTSMOOTHINGORIENTATION, "orientation", orientation)
         def smoothing_type(v):
-            #FE_FONTSMOOTHINGCLEARTYPE      0x0002 
-            #FE_FONTSMOOTHINGDOCKING        0x8000 
-            return {0 : "Normal",  2: "ClearType"}.get(v & 0x2, "unknown")
-        add_param(0x200A, "type", smoothing_type)
-        add_param(0x200A, "hinting", lambda v : bool(v & 0x2))
+            return FE_FONTSMOOTHING_STR.get(v & FE_FONTSMOOTHINGCLEARTYPE, "unknown")
+        add_param(SPI_GETFONTSMOOTHINGTYPE, "type", smoothing_type)
+        add_param(SPI_GETFONTSMOOTHINGTYPE, "hinting", lambda v : bool(v & 0x2))
     except Exception as e:
         log.warn("failed to query antialias info: %s", e)
     return info
