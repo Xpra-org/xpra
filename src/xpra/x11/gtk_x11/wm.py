@@ -6,6 +6,7 @@
 
 import gtk
 import gobject
+import os
 
 from xpra.gtk_common.error import xsync, xswallow
 import xpra.x11.gtk_x11.selection
@@ -32,6 +33,8 @@ WM_WINDOW_NAME = "Xpra-EWMH"
 
 NotifyPointerRoot   = constants["NotifyPointerRoot"]
 NotifyDetailNone    = constants["NotifyDetailNone"]
+
+XPRA_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
 
 def wm_check(display, upgrading=False):
@@ -426,11 +429,7 @@ class Wm(gobject.GObject):
                  "window", self._ewmh_window)
         self.root_set("_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
-
-    # Other global actions:
-
-    def _make_window_pseudoclient(self, win):
-        "Used by PseudoclientWindow, only."
-        win.set_screen(self._alt_display.get_default_screen())
+        self.root_set("_NET_WM_NAME",
+                 "utf8", unicode(XPRA_NET_WM_NAME))
 
 gobject.type_register(Wm)
