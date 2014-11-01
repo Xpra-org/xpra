@@ -229,6 +229,15 @@ def get_double_click_distance():
     v = _get_xsettings_int("Net/DoubleClickDistance", -1)
     return v, v
 
+def get_window_frame_sizes():
+    #FIXME: we should create a window
+    #and then check the _NET_FRAME_EXTENTS value after sending a _NET_REQUEST_FRAME_EXTENTS message,
+    #but because X11 and the window manager are asynchronous,
+    #this is not as easy as it should be
+    #also, in theory, the sizes can vary depending on what the window manager chooses to do
+    #at that point in time, which may vary depending on which screen or monitor we are on, etc
+    return {}
+
 
 def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
     global device_bell

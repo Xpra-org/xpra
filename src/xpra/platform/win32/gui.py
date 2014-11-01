@@ -28,8 +28,10 @@ try:
         if x.startswith("PBT_"):
             v = getattr(win32con, x)
             POWER_EVENTS[v] = x
+    import win32api             #@UnresolvedImport
+    import win32gui             #@UnresolvedImport
 except Exception as e:
-    log.warn("error loading win32con: %s", e)
+    log.warn("error loading pywin32: %s", e)
 
 
 def do_init():
@@ -205,7 +207,6 @@ def get_workarea():
 def _get_device_caps(constant):
     dc = None
     try:
-        import win32gui             #@UnresolvedImport
         gdi32 = ctypes.windll.gdi32
         dc = win32gui.GetDC(None)
         return gdi32.GetDeviceCaps(dc, constant)
@@ -222,7 +223,6 @@ def get_vrefresh():
 
 def get_double_click_time():
     try:
-        import win32gui                     #@UnresolvedImport
         return win32gui.GetDoubleClickTime()
     except Exception as e:
         log.warn("failed to get double click time: %s", e)
@@ -230,11 +230,48 @@ def get_double_click_time():
 
 def get_double_click_distance():
     try:
-        import win32api                     #@UnresolvedImport
         return win32api.GetSystemMetrics(win32con.SM_CXDOUBLECLK), win32api.GetSystemMetrics(win32con.SM_CYDOUBLECLK)
     except Exception as e:
         log.warn("failed to get double click distance: %s", e)
         return -1, -1
+
+def get_fixed_cursor_size():
+    try:
+        x = win32api.GetSystemMetrics(win32con.SM_CXCURSOR)
+        y = win32api.GetSystemMetrics(win32con.SM_CYCURSOR)
+        return x, y
+    except Exception as e:
+        log.warn("failed to get window frame size information: %s", e)
+        return None
+
+def get_window_frame_sizes():
+    try:
+        #normal resizable windows:
+        rx = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
+        ry = win32api.GetSystemMetrics(win32con.SM_CYSIZEFRAME)
+        #non-resizable windows:
+        fx = win32api.GetSystemMetrics(win32con.SM_CXFIXEDFRAME)
+        fy = win32api.GetSystemMetrics(win32con.SM_CYFIXEDFRAME)
+        #min size:
+        mx = win32api.GetSystemMetrics(win32con.SM_CXMIN)
+        my = win32api.GetSystemMetrics(win32con.SM_CYMIN)
+        #size of menu bar:
+        m = win32api.GetSystemMetrics(win32con.SM_CYMENU)
+        #border:
+        b = win32api.GetSystemMetrics(win32con.SM_CYBORDER)
+        #caption:
+        c = win32api.GetSystemMetrics(win32con.SM_CYCAPTION)
+        return {
+                "normal"    : (rx, ry),
+                "fixed"     : (fx, fy),
+                "minimum"   : (mx, my),
+                "menu-bar"  : m,
+                "border"    : b,
+                "caption"   : c,
+                }
+    except Exception as e:
+        log.warn("failed to get window frame size information: %s", e)
+        return None
 
 
 class ClientExtras(object):
@@ -277,7 +314,6 @@ class ClientExtras(object):
 
     def setup_console_event_listener(self, enable=1):
         try:
-            import win32api     #@UnresolvedImport
             result = win32api.SetConsoleCtrlHandler(self.handle_console_event, enable)
             if result == 0:
                 log.error("could not SetConsoleCtrlHandler (error %r)", win32api.GetLastError())

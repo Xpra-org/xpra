@@ -85,6 +85,12 @@ def get_double_click_time():
 def get_double_click_distance():
     return -1, -1
 
+def get_fixed_cursor_size():
+    return -1, -1
+
+def get_window_frame_sizes():
+    return {}
+
 
 def add_window_hooks(window):
     pass
@@ -118,6 +124,7 @@ def get_info_base():
             "vertical-refresh"              : get_vrefresh(),
             "double_click.time"             : get_double_click_time(),
             "double_click.distance"         : get_double_click_distance(),
+            "fixed_cursor_size"             : get_fixed_cursor_size(),
             "dpi"                           : get_dpi(),
             "dpi.x"                         : get_xdpi(),
             "dpi.y"                         : get_ydpi(),
@@ -125,8 +132,9 @@ def get_info_base():
             }
     from xpra.util import updict
     updict(info, "antialias", get_antialias_info())
+    updict(info, "window_frame_sizes", get_window_frame_sizes())
     return info
-    
+
 get_info = get_info_base
 
 
@@ -143,6 +151,7 @@ platform_import(globals(), "gui", False,
                 "get_native_notifier_classes",
                 "get_vrefresh", "get_workarea", "get_antialias_info", "get_icon_size", "get_dpi", "get_xdpi", "get_ydpi",
                 "get_double_click_time", "get_double_click_distance",
+                "get_fixed_cursor_size", "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",
                 "get_info")
