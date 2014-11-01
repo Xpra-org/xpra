@@ -50,6 +50,8 @@ cdef extern from "X11/Xlib.h":
     ctypedef XID Drawable
     ctypedef XID Window
     ctypedef CARD32 Time
+    ctypedef CARD32 VisualID
+    ctypedef CARD32 Colormap
 
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
     char *XGetAtomName(Display *display, Atom atom)
@@ -129,9 +131,20 @@ cdef extern from "X11/Xlib.h":
 
     ctypedef struct XWindowAttributes:
         int x, y, width, height, border_width
-        Bool override_redirect
+        int depth
+        Visual *visual
+        #int class
+        int bit_gravity, win_gravity, backing_store
+        unsigned long backing_planes, backing_pixel
+        Bool save_under
+        Colormap colormap
+        Bool map_installed
         int map_state
-        unsigned long your_event_mask
+        long all_event_masks
+        long your_event_mask
+        long do_not_propagate_mask
+        Bool override_redirect
+        #Screen *screen
     Status XGetWindowAttributes(Display * display, Window w,
                                 XWindowAttributes * attributes)
 
@@ -141,6 +154,9 @@ cdef extern from "X11/Xlib.h":
         int stack_mode
     int XConfigureWindow(Display * display, Window w,
          unsigned int value_mask, XWindowChanges * changes)
+    Status XReconfigureWMWindow(Display * display, Window w, int screen_number,
+                                unsigned int value_mask, XWindowChanges *values)
+    int XMoveResizeWindow(Display * display, Window w, int x, int y, int width, int height)
 
     Bool XTranslateCoordinates(Display * display,
                                Window src_w, Window dest_w,
@@ -172,8 +188,6 @@ cdef extern from "X11/Xlib.h":
     int XMapRaised(Display *, Window)
     Status XWithdrawWindow(Display *, Window, int screen_number)
     void XReparentWindow(Display *, Window w, Window parent, int x, int y)
-
-    ctypedef CARD32 VisualID
 
     ctypedef struct Visual:
         void    *ext_data       #XExtData *ext_data;     /* hook for extension to hang data */
@@ -318,6 +332,7 @@ class PropertyOverflow(PropertyError):
 
 from core_bindings cimport X11CoreBindings
 
+cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 
 cdef class X11WindowBindings(X11CoreBindings):
 
@@ -636,6 +651,20 @@ cdef class X11WindowBindings(X11CoreBindings):
         if s == 0:
             raise ValueError("failed to serialize ConfigureNotify")
 
+    def ConfigureWindow(self, Window xwindow,
+                        int x, int y, int width, int height, int border=0,
+                        int sibling=0, int stack_mode=0,
+                        int value_mask=CONFIGURE_GEOMETRY_MASK):
+        cdef XWindowChanges changes
+        changes.x = x
+        changes.y = y
+        changes.width = width
+        changes.height = height
+        changes.border_width = border
+        changes.sibling = sibling
+        changes.stack_mode = stack_mode
+        XConfigureWindow(self.display, xwindow, value_mask, &changes)
+
     def configureAndNotify(self, Window xwindow, x, y, width, height, fields=None):
         # Reconfigure the window.  We have to use XConfigureWindow directly
         # instead of GdkWindow.resize, because GDK does not give us any way to
@@ -646,23 +675,19 @@ cdef class X11WindowBindings(X11CoreBindings):
         # of a ConfigureRequest (along with the other arguments they are passing
         # to us).  This also means we need to be careful to zero out any bits
         # besides these, because they could be set to anything.
-        cdef int all_optional_fields_we_know = CWX | CWY | CWWidth | CWHeight
+        cdef int geom_flags = CWX | CWY | CWWidth | CWHeight
         if fields is None:
-            fields = all_optional_fields_we_know
+            fields = geom_flags
         else:
-            fields = fields & all_optional_fields_we_know
+            fields = fields & geom_flags
         # But we always unconditionally squash the border to zero.
         fields = fields | CWBorderWidth
-
-        cdef XWindowChanges changes
-        changes.x = x
-        changes.y = y
-        changes.width = width
-        changes.height = height
-        changes.border_width = 0
-        XConfigureWindow(self.display, xwindow, fields, &changes)
+        self.ConfigureWindow(xwindow, x, y, width, height, value_mask=fields)
         # Tell the client.
         self.sendConfigureNotify(xwindow)
+
+    def MoveResizeWindow(self, Window xwindow, int x, int y, int width, int height):
+        return bool(XMoveResizeWindow(self.display, xwindow, x, y, width, height))
 
 
     cpdef addXSelectInput(self, Window xwindow, add_mask):
@@ -793,3 +818,12 @@ cdef class X11WindowBindings(X11CoreBindings):
         XFree(classhints)
         log("XGetClassHint(%#x) classhints: %s, %s", xwindow, _name, _class)
         return (_name, _class)
+
+    def getGeometry(self, Drawable d):
+        cdef Window root_return
+        cdef int x, y                                           #@pydev dupe
+        cdef unsigned int width, height, border_width, depth    #@pydev dupe
+        if not XGetGeometry(self.display, d, &root_return,
+                        &x, &y, &width, &height, &border_width, &depth):
+            return None
+        return x, y, width, height, border_width, depth
