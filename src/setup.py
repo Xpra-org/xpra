@@ -23,7 +23,7 @@ import shutil
 if sys.version<'2.6':
     raise Exception("xpra no longer supports Python versions older than 2.6")
 
-from hashlib import md5         #@UnusedImport
+from hashlib import md5
 
 print(" ".join(sys.argv))
 
@@ -123,11 +123,7 @@ enc_proxy_ENABLED       = True
 enc_x264_ENABLED        = True          #too important to detect
 enc_x265_ENABLED        = pkg_config_ok("--exists", "x265")
 webp_ENABLED            = pkg_config_ok("--atleast-version=0.3", "libwebp", fallback=WIN32)
-x264_static_ENABLED     = False
-x265_static_ENABLED     = False
-webp_static_ENABLED     = False
 vpx_ENABLED             = pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32)
-vpx_static_ENABLED      = False
 #ffmpeg 2 onwards:
 dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fallback=WIN32)
 # some version strings I found:
@@ -139,9 +135,7 @@ dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fa
 # * jessie and sid: (last updated 2014-05-26): 55.34.1
 #   (moved to ffmpeg2 style buffer API sometime in early 2014)
 # * wheezy: 53.35
-avcodec2_static_ENABLED = False
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
-swscale_static_ENABLED  = False
 csc_cython_ENABLED      = True
 nvenc3_ENABLED          = pkg_config_ok("--exists", "nvenc3")
 nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
@@ -161,14 +155,11 @@ tests_ENABLED           = False
 rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
-SWITCHES = ["enc_x264", "x264_static",
-            "enc_x265", "x265_static",
+SWITCHES = ["enc_x264", "enc_x265",
             "nvenc3", "nvenc4", "cuda",
-            "dec_avcodec2", "avcodec2_static",
-            "csc_swscale", "swscale_static",
+            "vpx", "webp",
+            "dec_avcodec2", "csc_swscale",
             "csc_opencl", "csc_cython",
-            "vpx", "vpx_static",
-            "webp", "webp_static",
             "memoryview",
             "bencode", "cython_bencode",
             "clipboard",
@@ -514,21 +505,6 @@ def make_constants(*paths, **kwargs):
         make_constants_pxi(constants_file, pxi_file, **kwargs)
 
 
-def static_link_args(*libnames):
-    return ["-Wl,-Bstatic"] + ["-l%s" % x for x in libnames] + ["-Wl,-Bsymbolic", "-Wl,-Bdynamic"]
-
-def get_static_pkgconfig(*libnames):
-    defs = pkgconfig()
-    remove_from_keywords(defs, 'extra_compile_args', '-fsanitize=address')
-    if os.name=="posix":
-        if debug_ENABLED:
-            add_to_keywords(defs, 'extra_link_args', "-Wl,--verbose")
-        defs.update({'include_dirs': ["/usr/include/xpra", "/usr/local/include"],
-                     'library_dirs': ["/usr/lib64/xpra", "/usr/lib/xpra", "/usr/local/lib", "/usr/local/lib64"]})
-    if len(libnames)>0:
-        add_to_keywords(defs,  'extra_link_args', *static_link_args(*libnames))
-    return defs
-
 def is_msvc():
     #ugly: assume we want to use visual studio if we find the env var:
     return os.environ.get("VCINSTALLDIR") is not None
@@ -536,11 +512,6 @@ def is_msvc():
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
-    static = kw.get("static", None)
-    if static is not None:
-        del kw["static"]
-        if static:
-            return get_static_pkgconfig(*pkgs_options)
     if kw.get("optimize"):
         optimize = kw["optimize"]
         del kw["optimize"]
@@ -1268,10 +1239,7 @@ if WIN32:
     #(normally used with python2 / py2exe builds)
     def VC_pkgconfig(*pkgs_options, **ekw):
         kw = dict(ekw)
-        #remove static flag on win32..
-        for flag in ("static", "ignored_flags"):
-            if kw.get(flag) is not None:
-                del kw[flag]
+        #remove optimize flag on win32..
         if kw.get("optimize"):
             add_to_keywords(kw, 'extra_compile_args', "/Ox")
             del kw["optimize"]
@@ -1747,21 +1715,21 @@ if nvenc3_ENABLED or nvenc4_ENABLED:
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
-    x264_pkgconfig = pkgconfig("x264", static=x264_static_ENABLED)
+    x264_pkgconfig = pkgconfig("x264")
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx", buffers_c],
                 **x264_pkgconfig))
 
 toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
 if enc_x265_ENABLED:
-    x265_pkgconfig = pkgconfig("x265", static=x265_static_ENABLED)
+    x265_pkgconfig = pkgconfig("x265")
     cython_add(Extension("xpra.codecs.enc_x265.encoder",
                 ["xpra/codecs/enc_x265/encoder.pyx", buffers_c],
                 **x265_pkgconfig))
 
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:
-    webp_pkgconfig = pkgconfig("webp", static=webp_static_ENABLED)
+    webp_pkgconfig = pkgconfig("webp")
     cython_add(Extension("xpra.codecs.webp.encode",
                 ["xpra/codecs/webp/encode.pyx", buffers_c],
                 **webp_pkgconfig))
@@ -1771,7 +1739,7 @@ if webp_ENABLED:
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
-    avcodec2_pkgconfig = pkgconfig("avcodec", "avutil", static=avcodec2_static_ENABLED)
+    avcodec2_pkgconfig = pkgconfig("avcodec", "avutil")
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx"]+membuffers_c,
                 **avcodec2_pkgconfig))
@@ -1780,7 +1748,7 @@ if dec_avcodec2_ENABLED:
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     make_constants("xpra", "codecs", "csc_swscale", "constants")
-    swscale_pkgconfig = pkgconfig("swscale", "avutil", static=swscale_static_ENABLED)
+    swscale_pkgconfig = pkgconfig("swscale", "avutil")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"]+membuffers_c,
                 **swscale_pkgconfig))
@@ -1794,7 +1762,7 @@ if csc_cython_ENABLED:
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
-    vpx_pkgconfig = pkgconfig("vpx", static=vpx_static_ENABLED)
+    vpx_pkgconfig = pkgconfig("vpx")
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx"]+membuffers_c,
                 **vpx_pkgconfig))
