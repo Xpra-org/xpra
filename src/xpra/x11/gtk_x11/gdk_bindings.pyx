@@ -263,10 +263,6 @@ cdef extern from "X11/Xlib.h":
                       Window * root, Window * parent,
                       Window ** children, unsigned int * nchildren)
 
-    Status XGetGeometry(Display *display, Drawable d, Window *root_return,
-                        int *x_return, int *y_return, unsigned int  *width_return, unsigned int *height_return,
-                        unsigned int *border_width_return, unsigned int *depth_return)
-
 
 cdef extern from "X11/extensions/xfixeswire.h":
     unsigned int XFixesCursorNotify

@@ -196,6 +196,10 @@ cdef extern from "X11/Xlib.h":
     XClassHint *XAllocClassHint()
     Status XGetClassHint(Display *display, Window w, XClassHint *class_hints_return)
 
+    Status XGetGeometry(Display *display, Drawable d, Window *root_return,
+                        int *x_return, int *y_return, unsigned int  *width_return, unsigned int *height_return,
+                        unsigned int *border_width_return, unsigned int *depth_return)
+
 
 ###################################
 # Composite
@@ -406,6 +410,15 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef XWindowAttributes geom_attrs
         XGetWindowAttributes(self.display, xwindow, &geom_attrs)
         return (geom_attrs.x, geom_attrs.y, geom_attrs.width, geom_attrs.height, geom_attrs.border_width)
+
+    def get_depth(self, Drawable d):
+        cdef Window root
+        cdef int x, y
+        cdef unsigned int width, height, border_width, depth
+        if not XGetGeometry(self.display, d, &root,
+                        &x, &y, &width, &height, &border_width, &depth):
+            return 0
+        return depth
 
     # Focus management
     def XSetInputFocus(self, Window xwindow, object time=None):

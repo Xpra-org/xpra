@@ -485,7 +485,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             window_type = self._guess_window_type(transient_for)
             window_types = [gtk.gdk.atom_intern(window_type)]
         self._internal_set_property("window-type", window_types)
-        self._internal_set_property("has-alpha", self.client_window.get_depth() in (0, 32))
+        self._internal_set_property("has-alpha", X11Window.get_depth(self.client_window.xid)==32)
         self._internal_set_property("xid", self.client_window.xid)
         self._internal_set_property("pid", pget("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", pget("WM_WINDOW_ROLE", "latin1"))
