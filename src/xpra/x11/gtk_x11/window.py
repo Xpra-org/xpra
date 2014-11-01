@@ -49,10 +49,16 @@ _NET_WM_STATE_REMOVE = 0
 _NET_WM_STATE_ADD = 1
 
 XNone = constants["XNone"]
-CWX = constants["CWX"]
-CWY = constants["CWY"]
-CWWidth = constants["CWWidth"]
-CWHeight = constants["CWHeight"]
+
+CWX             = constants["CWX"]
+CWY             = constants["CWY"]
+CWWidth         = constants["CWWidth"]
+CWHeight        = constants["CWHeight"]
+CWBorderWidth   = constants["CWBorderWidth"]
+CWSibling       = constants["CWSibling"]
+CWStackMode     = constants["CWStackMode"]
+CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
+
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
 
@@ -434,14 +440,28 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._property_handlers[name](self)
 
     def do_xpra_configure_event(self, event):
+        log("BaseWindowModel.do_xpra_configure_event(%s) client_window=%s, managed=%s", event, self.client_window, self._managed)
         if self.client_window is None or not self._managed:
             return
-        oldgeom = self._geometry
-        self._geometry = (event.x, event.y, event.width, event.height,
-                          event.border_width)
-        log("BaseWindowModel.do_xpra_configure_event(%s) old geometry=%s, new geometry=%s", event, oldgeom, self._geometry)
-        if oldgeom!=self._geometry:
-            self.notify("geometry")
+        if event.value_mask & CONFIGURE_GEOMETRY_MASK:
+            oldgeom = self._geometry
+            geom = list(self._geometry)
+            if event.value_mask & CWX:
+                geom[0] = event.x
+            if event.value_mask & CWY:
+                geom[1] = event.y
+            if event.value_mask & CWWidth:
+                geom[2] = event.width
+            if event.value_mask & CWHeight:
+                geom[3] = event.height
+            if event.value_mask & CWBorderWidth:
+                #always force border to 0
+                geom[4] = 0
+            self._geometry = tuple(geom)
+            log("BaseWindowModel.do_xpra_configure_event(%s) old geometry=%s, new geometry=%s", event, oldgeom, self._geometry)
+            if oldgeom!=self._geometry:
+                #X11Window.MoveResizeWindow(self.client_window.xid, )
+                self.notify("geometry")
 
     def do_get_property_geometry(self, pspec):
         if self._geometry is None:
@@ -874,11 +894,11 @@ class WindowModel(BaseWindowModel):
         self.in_save_set = True
 
         log("setup() reparenting")
-        self.client_window.reparent(self.corral_window, 0, 0)
+        X11Window.Reparent(self.client_window.xid, self.corral_window.xid, 0, 0)
         self.client_reparented = True
 
         log("setup() geometry")
-        w,h = self.client_window.get_geometry()[2:4]
+        w,h = X11Window.getGeometry(self.client_window.xid)[2:4]
         hints = self.get_property("size-hints")
         self._sanitize_size_hints(hints)
         nw, nh = calc_constrained_size(w, h, hints)[:2]
@@ -886,9 +906,11 @@ class WindowModel(BaseWindowModel):
             #we can't handle windows that big!
             raise Unmanageable("window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)" % (nw, nh, w, h, hints))
         log("setup() resizing windows to %sx%s", nw, nh)
-        self.client_window.resize(nw, nh)
         self.corral_window.resize(nw, nh)
+        self.client_window.resize(nw, nh)
         self.client_window.show_unraised()
+        #this is here to trigger X11 errors if any are pending
+        #or if the window is deleted already:
         self.client_window.get_geometry()
         self._internal_set_property("actual-size", (nw, nh))
 

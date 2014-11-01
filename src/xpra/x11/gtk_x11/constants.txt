@@ -50,6 +50,15 @@ MappingNotify
 #GenericEvent (not available on all platforms)
 LASTEvent
 
+# Configure event mask:
+CWX
+CWY
+CWWidth
+CWHeight
+CWBorderWidth
+CWSibling
+CWStackMode
+
 # Protocol error codes
 Success
 BadRequest
