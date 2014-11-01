@@ -35,6 +35,7 @@ NotifyPointerRoot   = constants["NotifyPointerRoot"]
 NotifyDetailNone    = constants["NotifyDetailNone"]
 
 XPRA_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
+XPRA_FORCE_REPLACE_WM = os.environ.get("XPRA_FORCE_REPLACE_WM", "0")=="1"
 
 
 def wm_check(display, upgrading=False):
@@ -55,7 +56,7 @@ def wm_check(display, upgrading=False):
             #errors here generally indicate that the window is gone
             #which is fine: it means the previous window manager is no longer active
             continue
-        log("_NET_SUPPORTING_WM_CHECK for screen %s: %s", i, ewmh_wm)
+        log("_NET_SUPPORTING_WM_CHECK for screen %s: %#x (root=%#x)", i, ewmh_wm.xid, root.xid)
         if ewmh_wm:
             try:
                 name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
@@ -66,9 +67,14 @@ def wm_check(display, upgrading=False):
             else:
                 log.warn("Warning: found an existing window manager on screen %s using window %#x: %s", i, ewmh_wm.xid, name or "unknown")
             if (wm_so is None or wm_so==0) and (cwm_so is None or cwm_so==0):
-                log.error("it does not own the selection '%s' or '%s' so we cannot take over and make it exit", wm_prop, cwm_prop)
-                log.error("please stop %s so you can run xpra on this display", name or "the existing window manager")
-                return False
+                if XPRA_FORCE_REPLACE_WM:
+                    log.warn("XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")
+                else:
+                    log.error("it does not own the selection '%s' or '%s' so we cannot take over and make it exit", wm_prop, cwm_prop)
+                    log.error("please stop %s so you can run xpra on this display", name or "the existing window manager")
+                    log.warn("if you are certain that the window manager is already gone,")
+                    log.warn(" you may set XPRA_FORCE_REPLACE_WM=1 to force xpra to continue, at your own risk")
+                    return False
     return True
 
 
