@@ -562,6 +562,9 @@ class WindowSource(object):
                 return self.encoding_is_rgb24
             elif "rgb32" in self.common_encodings:
                 return self.encoding_is_rgb32
+        return self.get_best_encoding_impl_default()
+
+    def get_best_encoding_impl_default(self):
         #stick to what is specified or use rgb for small regions:
         return self.get_current_or_rgb
 

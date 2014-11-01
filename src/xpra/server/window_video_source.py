@@ -260,11 +260,7 @@ class WindowVideoSource(WindowSource):
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
         log("do_set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s, scaling_control=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings, self.scaling_control)
 
-    def get_best_encoding_impl(self):
-        #if we're here, the window does not have any alpha (or the client does not support it)
-        #and it is a normal window (not a POPUP or other)
-        if self.strict or self.encoding not in self.video_encodings:
-            return WindowSource.get_best_encoding_impl(self)
+    def get_best_encoding_impl_default(self):
         return self.get_best_encoding_video
 
 
