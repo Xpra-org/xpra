@@ -426,10 +426,10 @@ def start_websockify(child_reaper, opts, tcp_sockets):
     from xpra.log import Logger
     log = Logger("server")
     websockify_command = ["websockify", "--web", www_dir, "%s:%s" % (html_host, html_port), "127.0.0.1:%s" % xpra_tcp_port]
-    log.info("websockify_command: %s", websockify_command)
+    log("websockify_command: %s", websockify_command)
     websockify_proc = subprocess.Popen(websockify_command, close_fds=True)
     child_reaper.add_process(websockify_proc, "websockify", ignore=True)
-    log.info("websockify started on %s:%s", html_host, html_port)
+    log.info("websockify started, serving %s on %s:%s", www_dir, html_host, html_port)
     def check_websockify_start():
         if websockify_proc.poll() is not None or websockify_proc.pid in child_reaper._dead_pids:
             log.warn("Warning: websockify has terminated, the html web server will not be available.")
