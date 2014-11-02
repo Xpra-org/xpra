@@ -1700,7 +1700,7 @@ if nvenc3_ENABLED or nvenc4_ENABLED:
         reason = should_rebuild(cuda_src, cuda_bin)
         if not reason:
             continue
-        cmd = ["/opt/cuda/bin/nvcc",
+        cmd = [nvcc,
                '-fatbin',
                #"-cubin",
                #"-arch=compute_30", "-code=compute_30,sm_30,sm_35",
@@ -1713,7 +1713,9 @@ if nvenc3_ENABLED or nvenc4_ENABLED:
             cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
         print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
         c, stdout, stderr = get_status_output(cmd)
-        assert c==0, "failed to compile cuda kernel %s using '%s'" % (kernel, " ".join(["'%s'" % x for x in cmd]))
+        if c!=0:
+            print("Error: failed to compile CUDA kernel %s" % kernel)
+            sys.exit(1)
     add_data_files("share/xpra/cuda",
                    ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
     for nvenc_version, _nvenc_version_enabled in {3 : nvenc3_ENABLED, 4 : nvenc4_ENABLED}.items():
