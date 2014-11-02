@@ -1666,6 +1666,28 @@ toggle_packages(nvenc3_ENABLED, "xpra.codecs.nvenc3")
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
 toggle_packages(nvenc3_ENABLED or nvenc4_ENABLED, "xpra.codecs.cuda_common")
 if nvenc3_ENABLED or nvenc4_ENABLED:
+    #find nvcc:
+    nvcc = None
+    options = ["/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc"]
+    try:
+        code, out, err = get_status_output(["which", "nvcc"])
+        if code==0:
+            options.insert(0, out)
+    except:
+        pass
+    for filename in options:
+        if not os.path.exists(filename):
+            continue
+        code, out, err = get_status_output([filename, "--version"])
+        if code==0:
+            nvcc = filename
+            version = ""
+            vpos = out.rfind(", V")
+            if vpos>0:
+                version = "  version %s" % out[vpos+3:].strip("\n")            
+            print("found CUDA compiler: %s%s" % (nvcc, version))
+            break
+    assert nvcc is not None, "cannot find nvcc compiler!"
     #first compile the cuda kernels
     #(using the same cuda SDK for both nvenc modules for now..)
     #TODO:
