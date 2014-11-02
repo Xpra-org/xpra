@@ -1061,7 +1061,7 @@ class WindowModel(BaseWindowModel):
         if size_hints is None:
             return
         for attr in ["min_aspect", "max_aspect"]:
-            v = getattr(size_hints, attr)
+            v = size_hints.get(attr)
             if v is not None:
                 try:
                     f = float(v)
@@ -1069,10 +1069,10 @@ class WindowModel(BaseWindowModel):
                     f = None
                 if f is None or f>=MAX_ASPECT:
                     log.warn("clearing invalid aspect hint value for %s: %s", attr, v)
-                    setattr(size_hints, attr, -1.0)
+                    size_hints[attr] = -1.0
         for attr in ["max_size", "min_size", "base_size", "resize_inc",
                      "min_aspect_ratio", "max_aspect_ratio"]:
-            v = getattr(size_hints, attr)
+            v = size_hints.get(attr)
             if v is not None:
                 try:
                     w,h = v
@@ -1080,24 +1080,24 @@ class WindowModel(BaseWindowModel):
                     w,h = None,None
                 if (w is None or h is None) or w>=MAX_WINDOW_SIZE or h>=MAX_WINDOW_SIZE:
                     log("clearing invalid size hint value for %s: %s", attr, v)
-                    setattr(size_hints, attr, None)
+                    del size_hints[attr]
         #if max-size is smaller than min-size (bogus), clamp it..
-        mins = size_hints.min_size
-        maxs = size_hints.max_size
+        mins = size_hints.get("min_size")
+        maxs = size_hints.get("max_size")
         if mins is not None and maxs is not None:
             minw,minh = mins
             maxw,maxh = maxs
             if minw<=0 and minh<=0:
                 #doesn't do anything
-                size_hints.min_size = None
+                size_hints["min_size"] = None
             if maxw<=0 or maxh<=0:
                 #doesn't mak sense!
-                size_hints.max_size = None
+                size_hints["max_size"] = None
             if maxw<minw or maxh<minh:
-                size_hints.min_size = max(minw, maxw), max(minh, maxh)
-                size_hints.max_size = size_hints.min_size
+                size_hints["min_size"] = max(minw, maxw), max(minh, maxh)
+                size_hints["max_size"] = size_hints.min_size
                 log.warn("invalid min_size=%s / max_size=%s changed to: %s / %s",
-                         mins, maxs, size_hints.min_size, size_hints.max_size)
+                         mins, maxs, size_hints["min_size"], size_hints["max_size"])
 
     def _update_client_geometry(self):
         owner = self.get_property("owner")
@@ -1122,8 +1122,6 @@ class WindowModel(BaseWindowModel):
         log("_do_update_client_geometry: %sx%s", allocated_w, allocated_h)
         hints = self.get_property("size-hints")
         log("_do_update_client_geometry: hints=%s", hints)
-        self._sanitize_size_hints(hints)
-        log("_do_update_client_geometry: sanitized hints=%s", hints)
         size = calc_constrained_size(allocated_w, allocated_h, hints)
         log("_do_update_client_geometry: size=%s", size)
         w, h, wvis, hvis = size
@@ -1163,7 +1161,6 @@ class WindowModel(BaseWindowModel):
             modded = True
         #size changes (and position if any):
         hints = self.get_property("size-hints")
-        self._sanitize_size_hints(hints)
         size = calc_constrained_size(w, h, hints)
         log("resize_corral_window() new constrained size=%s", size)
         w, h, wvis, hvis = size
@@ -1227,14 +1224,14 @@ class WindowModel(BaseWindowModel):
     _property_handlers = BaseWindowModel._property_handlers.copy()
 
     def _handle_wm_normal_hints(self):
-        size_hints = self.prop_get("WM_NORMAL_HINTS", "wm-size-hints")
+        size_hints = X11Window.getSizeHints(self.client_window.xid)
         self._sanitize_size_hints(size_hints)
         # Don't send out notify and ConfigureNotify events when this property
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
         # their properties every time they see a ConfigureNotify, and this
         # reduces the chance for us to get caught in loops:
         old_hints = self.get_property("size-hints")
-        if size_hints and (old_hints is None or size_hints.__dict__ != old_hints.__dict__):
+        if size_hints and size_hints!=old_hints:
             self._internal_set_property("size-hints", size_hints)
             self._update_client_geometry()
 

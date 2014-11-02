@@ -80,7 +80,9 @@ class RootWindowModel(object):
             return None
         elif prop=="size-hints":
             size = self.window.get_size()
-            return RootSizeHints(size)
+            return {"max_size"  : size,
+                    "min_size"  : size,
+                    "base_size" : size}
         elif prop=="class-instance":
             osn = self.get_generic_os_name()
             return ("xpra-%s" % osn, "Xpra-%s" % osn.upper())
@@ -118,18 +120,6 @@ class RootWindowModel(object):
 
     def get_position(self):
         return 0, 0
-
-class RootSizeHints(AdHocStruct):
-
-    def __init__(self, size):
-        self.max_size = size
-        self.min_size = size
-        self.base_size = size
-        for x in ("resize_inc", "min_aspect", "max_aspect", "min_aspect_ratio", "max_aspect_ratio"):
-            setattr(self, x, None)
-
-    def to_dict(self):
-        return self.__dict__
 
 
 class ShadowServerBase(object):

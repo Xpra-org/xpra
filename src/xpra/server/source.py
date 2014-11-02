@@ -73,11 +73,10 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     elif propname == "pid":
         return {"pid" : window.get_property("pid") or -1}
     elif propname == "size-hints":
-        hints_metadata = {}
         hints = window.get_property("size-hints")
-        if hints is not None:
-            hints_metadata = hints.to_dict()
-        return {"size-constraints": hints_metadata}
+        if not hints:
+            return {}
+        return {"size-constraints": hints}
     elif propname == "class-instance":
         c_i = window.get_property("class-instance")
         if c_i is None:

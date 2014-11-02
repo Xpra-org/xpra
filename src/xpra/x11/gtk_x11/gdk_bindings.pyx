@@ -506,33 +506,32 @@ def calc_constrained_size(int width, int height, object hints):
     cdef int new_width = 0, new_height = 0
     cdef int flags = 0
 
-    if hints.max_size is not None:
+    if "max_size" in hints:
         flags = flags | gtk.gdk.HINT_MAX_SIZE
-        geom.max_width, geom.max_height = hints.max_size
-    if hints.min_size is not None:
+        geom.max_width, geom.max_height = hints["max_size"]
+    if "min_size" in hints:
         flags = flags | gtk.gdk.HINT_MIN_SIZE
-        geom.min_width, geom.min_height = hints.min_size
-    if hints.base_size is not None:
+        geom.min_width, geom.min_height = hints["min_size"]
+    if "base_size" in hints:
         flags = flags | gtk.gdk.HINT_BASE_SIZE
-        geom.base_width, geom.base_height = hints.base_size
-    if hints.resize_inc is not None:
+        geom.base_width, geom.base_height = hints["base_size"]
+    if "resize_inc" in hints:
         flags = flags | gtk.gdk.HINT_RESIZE_INC
-        geom.width_inc, geom.height_inc = hints.resize_inc
-    if hints.min_aspect is not None:
-        assert hints.max_aspect is not None
+        geom.width_inc, geom.height_inc = hints["resize_inc"]
+    if "min_aspect" in hints:
+        assert "max_aspect" in hints
         flags = flags | gtk.gdk.HINT_ASPECT
-        geom.min_aspect = hints.min_aspect
-        geom.max_aspect = hints.max_aspect
-    gdk_window_constrain_size(&geom, flags, width, height,
-                              &new_width, &new_height)
+        geom.min_aspect = hints["min_aspect"]
+        geom.max_aspect = hints["max_aspect"]
+    gdk_window_constrain_size(&geom, flags, width, height, &new_width, &new_height)
 
     vis_width, vis_height = (new_width, new_height)
-    if hints.resize_inc is not None:
-        if hints.base_size is not None:
-            vis_width = vis_width - hints.base_size[0]
-            vis_height = vis_height - hints.base_size[1]
-        vis_width = vis_width / hints.resize_inc[0]
-        vis_height = vis_height / hints.resize_inc[1]
+    if "resize_inc" in hints:
+        if "base_size" in hints:
+            vis_width = vis_width - hints["base_size"][0]
+            vis_height = vis_height - hints["base_size"][1]
+        vis_width = vis_width / hints["resize_inc"][0]
+        vis_height = vis_height / hints["resize_inc"][1]
 
     return (new_width, new_height, vis_width, vis_height)
 

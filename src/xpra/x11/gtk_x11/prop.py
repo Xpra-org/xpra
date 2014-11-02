@@ -66,83 +66,6 @@ def _force_length(name, data, length, noerror_length=None):
     data += "\0" * length
     return data[:length]
 
-class WMSizeHints(object):
-    def __init__(self, disp, data):
-        # pre-ICCCM size is 15
-        data = _force_length("WM_SIZE_HINTS", data, 18*4, noerror_length=15*4)
-        def normint(v):
-            if v==(2**32-1):
-                return -1
-            return v
-        (flags,
-         pad1, pad2, pad3, pad4,            #@UnusedVariable
-         min_width, min_height,
-         max_width, max_height,
-         width_inc, height_inc,
-         min_aspect_num, min_aspect_denom,
-         max_aspect_num, max_aspect_denom,
-         base_width, base_height,
-         win_gravity) = [normint(x) for x in struct.unpack("=" + "I" * 18, data)] #@UnusedVariable
-        # We only extract the pieces we care about:
-        if flags & PMaxSize:
-            self.max_size = (max_width, max_height)
-        else:
-            self.max_size = None
-        if flags & PMinSize:
-            self.min_size = (min_width, min_height)
-        else:
-            self.min_size = None
-        if flags & PBaseSize:
-            self.base_size = (base_width, base_height)
-        else:
-            self.base_size = None
-        if flags & PResizeInc:
-            self.resize_inc = (width_inc, height_inc)
-        else:
-            self.resize_inc = None
-        if flags & PAspect:
-            self.min_aspect = min_aspect_num * 1.0 / min_aspect_denom
-            self.min_aspect_ratio = (min_aspect_num, min_aspect_denom)
-            self.max_aspect = max_aspect_num * 1.0 / max_aspect_denom
-            self.max_aspect_ratio = (max_aspect_num,  max_aspect_denom)
-        else:
-            self.min_aspect, self.max_aspect = (None, None)
-            self.min_aspect_ratio, self.max_aspect_ratio = (None, None)
-        if flags & PWinGravity:
-            self.win_gravity = win_gravity
-        else:
-            self.win_gravity = -1
-        self.set_initial_position = bool((flags & USPosition) or (flags & PPosition))
-
-    def to_dict(self, include_none=False):
-        d = {}
-        for attr, metakey in [
-            ("max_size", "maximum-size"),
-            ("min_size", "minimum-size"),
-            ("base_size", "base-size"),
-            ("resize_inc", "increment"),
-            ("min_aspect_ratio", "minimum-aspect-ratio"),
-            ("max_aspect_ratio", "maximum-aspect-ratio"),
-            ("set_initial_position", "set-initial-position")
-            ]:
-            v = getattr(self, attr)
-            if v is not None or include_none:
-                d[metakey] = v
-        return d
-
-    def __str__(self):
-        d = {"max_size"  : self.max_size,
-             "min_size"  : self.min_size,
-             "base_size" : self.base_size,
-             "resize_inc": self.resize_inc,
-             "min_aspect": self.min_aspect,
-             "max_aspect": self.max_aspect,
-             "min_aspect_ratio"  : self.min_aspect_ratio,
-             "max_aspect_ratio"  : self.max_aspect_ratio,
-             "win_gravity"       : self.win_gravity,
-             "set_initial_position"  : self.set_initial_position}
-        return "WMSizeHints(%s)" % dict([(k,v) for k,v in d.items() if v not in (False, None, (0,0))])
-
 
 class WMHints(object):
     def __init__(self, disp, data):
@@ -297,10 +220,6 @@ _prop_types = {
                lambda disp, c: struct.pack("=I", get_xwindow(c)),
                lambda disp, d: get_pywindow(disp, struct.unpack("=I", d)[0]),
                ""),
-    "wm-size-hints": (WMSizeHints, "WM_SIZE_HINTS", 32,
-                      unsupported,
-                      WMSizeHints,
-                      None),
     "wm-hints": (WMHints, "WM_HINTS", 32,
                  unsupported,
                  WMHints,

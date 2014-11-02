@@ -22,7 +22,19 @@ cdef extern from "stdlib.h":
     void free(void* mem)
 
 cdef extern from "X11/Xutil.h":
-    pass
+    ctypedef struct aspect:
+        int x,y
+    ctypedef struct XSizeHints:
+        long flags                  #marks which fields in this structure are defined
+        int x, y                    #Obsolete
+        int width, height           #Obsolete
+        int min_width, min_height
+        int max_width, max_height
+        int width_inc, height_inc
+        aspect min_aspect, max_aspect
+        int base_width, base_height
+        int win_gravity
+        #this structure may be extended in the future
 
 
 ######
@@ -213,6 +225,10 @@ cdef extern from "X11/Xlib.h":
     Status XGetGeometry(Display *display, Drawable d, Window *root_return,
                         int *x_return, int *y_return, unsigned int  *width_return, unsigned int *height_return,
                         unsigned int *border_width_return, unsigned int *depth_return)
+
+    XSizeHints *XAllocSizeHints()
+    #Status XGetWMSizeHints(Display *display, Window w, XSizeHints *hints_return, long *supplied_return, Atom property)
+    Status XGetWMNormalHints(Display *display, Window w, XSizeHints *hints_return, long *supplied_return)
 
 
 ###################################
@@ -827,3 +843,33 @@ cdef class X11WindowBindings(X11CoreBindings):
                         &x, &y, &width, &height, &border_width, &depth):
             return None
         return x, y, width, height, border_width, depth
+
+    def getSizeHints(self, Window xwindow):
+        cdef XSizeHints *size_hints = XAllocSizeHints()
+        cdef long supplied_return   #ignored!
+        if not XGetWMNormalHints(self.display, xwindow, size_hints, &supplied_return):
+            return None
+        hints = {}
+        if (size_hints.flags & USPosition) or (size_hints.flags & PPosition):
+            hints["position"] = size_hints.x, size_hints.y
+        if (size_hints.flags & USSize) or (size_hints.flags & PSize):
+            hints["size"] = size_hints.width, size_hints.height
+        if size_hints.flags & PMinSize:
+            hints["min_size"] = size_hints.min_width, size_hints.min_height
+        if size_hints.flags & PMaxSize:
+            hints["max_size"] = size_hints.max_width, size_hints.max_height
+        if size_hints.flags & PMaxSize:
+            hints["max_size"] = size_hints.max_width, size_hints.max_height
+        if size_hints.flags & PResizeInc:
+            hints["resize_inc"] = size_hints.width_inc, size_hints.height_inc
+        if size_hints.flags & PAspect:
+            try:
+                hints["min_aspect"] = size_hints.min_aspect.x * 1.0 / size_hints.min_aspect.y
+                hints["max_aspect"] = size_hints.max_aspect.x * 1.0 / size_hints.max_aspect.y
+                hints["min_aspect_ratio"] = size_hints.min_aspect.x, size_hints.min_aspect.y
+                hints["max_aspect_ratio"] = size_hints.max_aspect.x, size_hints.max_aspect.y
+            except ZeroDivisionError:
+                pass
+        if size_hints.flags & PWinGravity:
+            hints["win_gravity"] = size_hints.win_gravity
+        return hints
