@@ -67,38 +67,6 @@ def _force_length(name, data, length, noerror_length=None):
     return data[:length]
 
 
-class WMHints(object):
-    def __init__(self, disp, data):
-        data = _force_length("WM_HINTS", data, 9 * 4)
-        (flags, _input, initial_state,  #@UnusedVariable
-         icon_pixmap, icon_window,      #@UnusedVariable
-         icon_x, icon_y, icon_mask,     #@UnusedVariable
-         window_group) = struct.unpack("=" + "i" * 9, data)
-        # NB the last field is missing from at least some ICCCM 2.0's (typo).
-        # FIXME: extract icon stuff too
-        self.urgency = bool(flags & XUrgencyHint)
-        if flags & WindowGroupHint:
-            try:
-                pywin = get_pywindow(disp, window_group)
-            except:
-                pywin = None
-            self.group_leader = (window_group, pywin)
-        else:
-            self.group_leader = None
-        if flags & StateHint:
-            self.start_iconic = (initial_state == IconicState)
-        else:
-            self.start_iconic = None
-        if flags & InputHint:
-            self.input = _input
-        else:
-            self.input = None
-
-    def __str__(self):
-        return "WMHints(%s)" % {"group_leader"  : self.group_leader,
-                                "start_iconic"  : self.start_iconic,
-                                "input"         : self.input}
-
 class NetWMStrut(object):
     def __init__(self, disp, data):
         # This eats both _NET_WM_STRUT and _NET_WM_STRUT_PARTIAL.  If we are
@@ -220,10 +188,6 @@ _prop_types = {
                lambda disp, c: struct.pack("=I", get_xwindow(c)),
                lambda disp, d: get_pywindow(disp, struct.unpack("=I", d)[0]),
                ""),
-    "wm-hints": (WMHints, "WM_HINTS", 32,
-                 unsupported,
-                 WMHints,
-                 None),
     "strut": (NetWMStrut, "CARDINAL", 32,
               unsupported, NetWMStrut, None),
     "strut-partial": (NetWMStrut, "CARDINAL", 32,

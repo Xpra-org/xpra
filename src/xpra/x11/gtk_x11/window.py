@@ -24,6 +24,7 @@ X11Window = X11WindowBindings()
 
 from xpra.x11.gtk_x11.gdk_bindings import (
                 get_pyatom,                                 #@UnresolvedImport
+                get_pywindow,                               #@UnresolvedImport
                 add_event_receiver,                         #@UnresolvedImport
                 remove_event_receiver,                      #@UnresolvedImport
                 get_display_for,                            #@UnresolvedImport
@@ -532,23 +533,31 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     _property_handlers["_NET_WM_NAME"] = _handle_title_change
 
     def _handle_wm_hints(self):
-        wm_hints = self.prop_get("WM_HINTS", "wm-hints", True)
-        if wm_hints is not None:
-            # GdkWindow or None
-            self._internal_set_property("group-leader", wm_hints.group_leader)
-            # FIXME: extract state and input hint
+        wm_hints = X11Window.getWMHints(self.client_window.xid)
+        if wm_hints is None:
+            return
+        # GdkWindow or None
+        group_leader = None
+        if "window_group" in wm_hints:
+            xid = wm_hints.get("window_group")
+            try:
+                group_leader = xid, get_pywindow(xid)
+            except:
+                group_leader = xid, None
+        self._internal_set_property("group-leader", group_leader)
 
-            if wm_hints.urgency:
-                self.set_property("attention-requested", True)
+        if "urgency" in wm_hints:
+            self.set_property("attention-requested", True)
 
-            log("wm_hints.input = %s", wm_hints.input)
-            #we only set this value once:
-            #(input_field always starts as True, and we then set it to an int)
-            if self._input_field is True and wm_hints.input is not None:
-                #keep the value as an int to differentiate from the start value:
-                self._input_field = int(wm_hints.input)
-                if bool(self._input_field):
-                    self.notify("can-focus")
+        _input = wm_hints.get("input")
+        log("wm_hints.input = %s", _input)
+        #we only set this value once:
+        #(input_field always starts as True, and we then set it to an int)
+        if self._input_field is True and _input is not None:
+            #keep the value as an int to differentiate from the start value:
+            self._input_field = int(_input)
+            if bool(self._input_field):
+                self.notify("can-focus")
 
     _property_handlers["WM_HINTS"] = _handle_wm_hints
 

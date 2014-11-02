@@ -21,6 +21,34 @@ cdef extern from "stdlib.h":
     void* malloc(size_t __size)
     void free(void* mem)
 
+
+######
+# Xlib primitives and constants
+######
+
+include "constants.pxi"
+# To make it easier to translate stuff in the X header files into
+# appropriate pyrex declarations, without having to untangle the typedefs
+# over and over again, here are some convenience typedefs.  (Yes, CARD32
+# really is 64 bits on 64-bit systems.
+# Why? Because it was defined as a C "unsigned long" a long long time ago,
+# when all longs were 32 bits - and it was just badly named..
+ctypedef unsigned long CARD32
+
+ctypedef int Bool
+ctypedef int Status
+ctypedef CARD32 XID
+ctypedef CARD32 Atom
+ctypedef XID Drawable
+ctypedef XID Window
+ctypedef XID Pixmap
+ctypedef CARD32 Time
+ctypedef CARD32 VisualID
+ctypedef CARD32 Colormap
+
+cdef extern from "X11/X.h":
+    unsigned long NoSymbol
+
 cdef extern from "X11/Xutil.h":
     ctypedef struct aspect:
         int x,y
@@ -36,34 +64,20 @@ cdef extern from "X11/Xutil.h":
         int win_gravity
         #this structure may be extended in the future
 
+    ctypedef struct XWMHints:
+        long flags                  #marks which fields in this structure are defined
+        Bool input                  #does this application rely on the window manager to get keyboard input?
+        int initial_state
+        Pixmap icon_pixmap          #pixmap to be used as icon
+        Window icon_window          #window to be used as icon
+        int icon_x, icon_y          #initial position of icon
+        Pixmap icon_mask            #pixmap to be used as mask for icon_pixmap
+        XID window_group            #id of related window group
 
-######
-# Xlib primitives and constants
-######
-
-include "constants.pxi"
-ctypedef unsigned long CARD32
-
-cdef extern from "X11/X.h":
-    unsigned long NoSymbol
 
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
         pass
-    # To make it easier to translate stuff in the X header files into
-    # appropriate pyrex declarations, without having to untangle the typedefs
-    # over and over again, here are some convenience typedefs.  (Yes, CARD32
-    # really is 64 bits on 64-bit systems.  Why?  I have no idea.)
-    ctypedef CARD32 XID
-
-    ctypedef int Bool
-    ctypedef int Status
-    ctypedef CARD32 Atom
-    ctypedef XID Drawable
-    ctypedef XID Window
-    ctypedef CARD32 Time
-    ctypedef CARD32 VisualID
-    ctypedef CARD32 Colormap
 
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
     char *XGetAtomName(Display *display, Atom atom)
@@ -229,6 +243,7 @@ cdef extern from "X11/Xlib.h":
     XSizeHints *XAllocSizeHints()
     #Status XGetWMSizeHints(Display *display, Window w, XSizeHints *hints_return, long *supplied_return, Atom property)
     Status XGetWMNormalHints(Display *display, Window w, XSizeHints *hints_return, long *supplied_return)
+    XWMHints *XGetWMHints(Display *display, Window w)
 
 
 ###################################
@@ -848,6 +863,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef XSizeHints *size_hints = XAllocSizeHints()
         cdef long supplied_return   #ignored!
         if not XGetWMNormalHints(self.display, xwindow, size_hints, &supplied_return):
+            XFree(size_hints)
             return None
         hints = {}
         if (size_hints.flags & USPosition) or (size_hints.flags & PPosition):
@@ -872,4 +888,29 @@ cdef class X11WindowBindings(X11CoreBindings):
                 pass
         if size_hints.flags & PWinGravity:
             hints["win_gravity"] = size_hints.win_gravity
+        XFree(size_hints)
+        return hints
+
+    def getWMHints(self, Window xwindow):
+        cdef XWMHints *wm_hints = XGetWMHints(self.display, xwindow)
+        if wm_hints==NULL:
+            return None
+        hints = {}
+        if wm_hints.flags & InputHint:
+            hints["input"] = wm_hints.input
+        if wm_hints.flags & StateHint:
+            hints["initial_state"] = wm_hints.initial_state
+        if wm_hints.flags & IconPixmapHint:
+            hints["icon_pixmap"] = wm_hints.icon_pixmap
+        if wm_hints.flags & IconWindowHint:
+            hints["icon_window"] = wm_hints.icon_window
+        if wm_hints.flags & IconPositionHint:
+            hints["icon_position"] = wm_hints.icon_x, wm_hints.icon_y
+        if wm_hints.flags & IconMaskHint:
+            hints["icon_mask"] = wm_hints.icon_mask
+        if wm_hints.flags & WindowGroupHint:
+            hints["window_group"] = wm_hints.window_group
+        if wm_hints.flags & XUrgencyHint:
+            hints["urgency"] = True
+        XFree(wm_hints)
         return hints
