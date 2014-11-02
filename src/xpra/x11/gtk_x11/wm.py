@@ -58,7 +58,7 @@ def wm_check(display, upgrading=False):
             if w:
                 return "%#x" % w.xid
             return None
-        log("_NET_SUPPORTING_WM_CHECK for screen %s: %#x (root=%#x)", i, xid(ewmh_wm), xid(root))
+        log("_NET_SUPPORTING_WM_CHECK for screen %s: %s (root=%s)", i, xid(ewmh_wm), xid(root))
         if ewmh_wm:
             try:
                 name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
