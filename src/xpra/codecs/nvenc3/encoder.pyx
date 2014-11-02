@@ -19,7 +19,7 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device
                 get_CUDA_function, record_device_failure, record_device_success
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version
+from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys
 
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
@@ -29,7 +29,7 @@ from ctypes import cdll as loader, POINTER
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
-CLIENT_KEYS_STR = [x.strip() for x in os.environ.get("XPRA_NVENC_CLIENT_KEY", "").split(",")]
+CLIENT_KEYS_STR = get_nvenc_license_keys(3)
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 YUV444P_USER_OVERRIDE = os.environ.get("XPRA_NVENC_YUV444P", "")
 
