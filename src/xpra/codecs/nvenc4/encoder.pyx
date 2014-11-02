@@ -1334,14 +1334,14 @@ cdef class Encoder:
         cdef GUID profile
         cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
         cdef NV_ENC_CONFIG *config = NULL
-        cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
+        cdef NV_ENC_PRESET_CONFIG *presetConfig = NULL  #@DuplicatedSignature
         cdef NV_ENC_REGISTER_RESOURCE registerResource
         cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
-        cdef NV_ENC_CONFIG_H264 *h264Config
+        cdef NV_ENC_CONFIG_H264 *h264Config = NULL
         cdef long resource
         cdef Py_ssize_t size
-        cdef unsigned char* cptr
+        cdef unsigned char* cptr = NULL
 
         self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> malloc(sizeof(NV_ENCODE_API_FUNCTION_LIST))
         memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
