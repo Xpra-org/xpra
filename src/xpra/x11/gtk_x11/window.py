@@ -69,6 +69,7 @@ NotifyNormal        = constants["NotifyNormal"]
 NotifyGrab          = constants["NotifyGrab"]
 NotifyUngrab        = constants["NotifyUngrab"]
 NotifyWhileGrabbed  = constants["NotifyWhileGrabbed"]
+NotifyNonlinearVirtual = constants["NotifyNonlinearVirtual"]
 GRAB_CONSTANTS = {
                   NotifyNormal          : "NotifyNormal",
                   NotifyGrab            : "NotifyGrab",
@@ -442,28 +443,15 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._property_handlers[name](self)
 
     def do_xpra_configure_event(self, event):
-        log("BaseWindowModel.do_xpra_configure_event(%s) client_window=%s, managed=%s", event, self.client_window, self._managed)
         if self.client_window is None or not self._managed:
             return
-        if event.value_mask & CONFIGURE_GEOMETRY_MASK:
-            oldgeom = self._geometry
-            geom = list(self._geometry)
-            if event.value_mask & CWX:
-                geom[0] = event.x
-            if event.value_mask & CWY:
-                geom[1] = event.y
-            if event.value_mask & CWWidth:
-                geom[2] = event.width
-            if event.value_mask & CWHeight:
-                geom[3] = event.height
-            if event.value_mask & CWBorderWidth:
-                #always force border to 0
-                geom[4] = 0
-            self._geometry = tuple(geom)
-            log("BaseWindowModel.do_xpra_configure_event(%s) old geometry=%s, new geometry=%s", event, oldgeom, self._geometry)
-            if oldgeom!=self._geometry:
-                #X11Window.MoveResizeWindow(self.client_window.xid, )
-                self.notify("geometry")
+        #shouldn't the border width always be 0?
+        geom = (event.x, event.y, event.width, event.height, event.border_width)
+        log("BaseWindowModel.do_xpra_configure_event(%s) client_window=%#x, old geometry=%s, new geometry=%s", event, self.client_window.xid, self._geometry, geom)
+        if geom!=self._geometry:
+            self._geometry = geom
+            #X11Window.MoveResizeWindow(self.client_window.xid, )
+            self.notify("geometry")
 
     def do_get_property_geometry(self, pspec):
         if self._geometry is None:
@@ -1143,11 +1131,11 @@ class WindowModel(BaseWindowModel):
             X11Window.configureAndNotify(self.client_window.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):
-        log("WindowModel.do_xpra_configure_event(%s)", event)
+        log("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x", event, self.corral_window.xid, self.client_window.xid)
+        if not self._managed:
+            return
         if event.window!=self.client_window:
             #we only care about events on the client window
-            return
-        if not self._managed:
             return
         if self.corral_window is None or not self.corral_window.is_visible():
             return
@@ -1207,7 +1195,9 @@ class WindowModel(BaseWindowModel):
         return modded
 
     def do_child_configure_request_event(self, event):
-        log("do_child_configure_request_event(%s)", event)
+        log("do_child_configure_request_event(%s) client=%#x, corral=%#x", event, self.client_window.xid, self.corral_window.xid)
+        if event.value_mask & CWStackMode:
+            log(" restack above=%s, detail=%s", event.above, event.detail)
         # Also potentially update our record of what the app has requested:
         (x, y) = self.get_property("requested-position")
         if event.value_mask & CWX:
