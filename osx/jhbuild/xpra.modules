@@ -263,6 +263,14 @@
     </after>
   </autotools>
 
+  <autotools id="gtk-mac-bundler" autogenargs="" skip-autogen="True">
+    <branch module="/pub/gnome/sources/gtk-mac-bundler/0.7/gtk-mac-bundler-0.7.3.tar.xz"
+            version="0.7.3"
+            repo="ftp.gnome.org">
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-mac-bundler-pathfix.patch" strip="2"/>
+    </branch>
+  </autotools>
+
   <distutils id="setuptools">
      <branch repo="pypi.python.org"
 	     module="/packages/source/s/setuptools/setuptools-5.4.1.tar.gz"
