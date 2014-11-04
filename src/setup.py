@@ -555,8 +555,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         r, out, err = get_status_output(cmd)
         if r!=0:
             sys.exit("ERROR: call to pkg-config ('%s') failed (err=%s)" % (" ".join(cmd), err))
-        if sys.version>='3':
-            out = out.decode('utf-8')
+        out = out.decode('utf-8')
         for token in out.split():
             if token[:2] in ignored_flags:
                 pass
