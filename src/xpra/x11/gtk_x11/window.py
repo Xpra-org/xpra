@@ -876,6 +876,7 @@ class WindowModel(BaseWindowModel):
                                             event_mask=gtk.gdk.PROPERTY_CHANGE_MASK,
                                             title = "CorralWindow-%#x" % self.client_window.xid)
         log("setup() corral_window=%#x", self.corral_window.xid)
+        prop_set(self.corral_window, "_NET_WM_NAME", "utf8", u"Xpra-CorralWindow-%#x" % self.client_window.xid)
         X11Window.substructureRedirect(self.corral_window.xid)
         add_event_receiver(self.corral_window, self)
 
