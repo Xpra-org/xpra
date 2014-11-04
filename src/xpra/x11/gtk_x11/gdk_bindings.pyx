@@ -205,6 +205,16 @@ cdef extern from "X11/Xlib.h":
         int detail              #NotifyAncestor, NotifyVirtual, NotifyInferior,
                                 #NotifyNonlinear,NotifyNonlinearVirtual, NotifyPointer,
                                 #NotifyPointerRoot, NotifyDetailNone
+    ctypedef struct XMotionEvent:
+        Window window           #event window reported relative to
+        Window root             #root window that the event occurred on
+        Window subwindow        #child window
+        Time time               #milliseconds
+        int x, y                #pointer x, y coordinates in event window
+        int x_root, y_root      #coordinates relative to root
+        unsigned int state      #key or button mask
+        char is_hint            #detail
+        Bool same_screen        #same screen
     # We have to generate synthetic ConfigureNotify's:
     ctypedef struct XConfigureEvent:
         Window event    # Same as xany.window, confusingly.
@@ -252,6 +262,7 @@ cdef extern from "X11/Xlib.h":
         XConfigureEvent xconfigure
         XCrossingEvent xcrossing
         XFocusChangeEvent xfocus
+        XMotionEvent xmotion
         XClientMessageEvent xclient
         XMapEvent xmap
         XCreateWindowEvent xcreatewindow
@@ -718,6 +729,7 @@ cdef init_x11_events():
         DamageNotify        : ("xpra-damage-event", None),
         EnterNotify         : ("xpra-enter-event", None),
         LeaveNotify         : ("xpra-leave-event", None),
+        MotionNotify        : ("xpra-motion-event", None)       #currently unused, just defined for debugging purposes
         }
     event_type_names = {
         KeyPress            : "KeyPress",
@@ -786,9 +798,10 @@ cdef init_x11_events():
         #add to correct set:
         for e in events:
             event_set.add(e)
-    debug_route_events = debug_set.difference(ignore_set)
-    if len(debug_route_events)>0:
-        log.warn("debugging of X11 events enabled for: %s", ", ".join([event_type_names.get(x, x) for x in debug_route_events]))
+    events = debug_set.difference(ignore_set)
+    if len(events)>0:
+        log.warn("debugging of X11 events enabled for: %s", ", ".join(events))
+    debug_route_events = [names_to_event_type.get(x) for x in events]
 
 #and change this debugging on the fly, programmatically:
 def add_debug_route_event(event_type):
@@ -827,7 +840,7 @@ cdef _route_event(event, signal, parent_signal):
     global debug_route_events
     DEBUG = event.type in debug_route_events
     if DEBUG:
-        log.info("%s event %#x", event_type_names.get(event.type, event.type), event.serial)
+        log.info("%s event %#x : %s", event_type_names.get(event.type, event.type), event.serial, event)
     if event.window is None:
         if DEBUG:
             log.info("  event.window is None, ignoring")
@@ -1034,6 +1047,18 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     cursor_e = <XFixesCursorNotifyEvent*>e
                     pyev.cursor_serial = cursor_e.cursor_serial
                     pyev.cursor_name = trap.call_synced(get_pyatom, d, cursor_e.cursor_name)
+                elif e.type == MotionNotify:
+                    pyev.window = _gw(d, e.xmotion.window)
+                    pyev.root = _gw(d, e.xmotion.root)
+                    pyev.subwindow = _gw(d, e.xmotion.subwindow)
+                    pyev.time = e.xmotion.time
+                    pyev.x = e.xmotion.x
+                    pyev.y = e.xmotion.y
+                    pyev.x_root = e.xmotion.x_root
+                    pyev.y_root = e.xmotion.y_root
+                    pyev.state = e.xmotion.state
+                    pyev.is_hint = e.xmotion.is_hint
+                    pyev.same_screen = e.xmotion.same_screen
                 elif e.type == XKBNotify:
                     # note we could just cast directly to XkbBellNotifyEvent
                     # but this would be dirty, and we may want to catch
