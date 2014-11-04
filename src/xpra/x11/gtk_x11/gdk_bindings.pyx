@@ -176,6 +176,9 @@ cdef extern from "X11/Xlib.h":
         Window above
         int detail
         unsigned long value_mask
+    ctypedef struct XResizeRequestEvent:
+        Window window
+        int width, height
     ctypedef struct XReparentEvent:
         Window window
         Window parent
@@ -244,6 +247,7 @@ cdef extern from "X11/Xlib.h":
         XButtonEvent xbutton
         XMapRequestEvent xmaprequest
         XConfigureRequestEvent xconfigurerequest
+        XResizeRequestEvent xresizerequest
         XCirculateRequestEvent xcirculaterequest
         XConfigureEvent xconfigure
         XCrossingEvent xcrossing
@@ -625,6 +629,10 @@ def remove_event_receiver(window, receiver):
     if not receivers:
         window.set_data(_ev_receiver_key, None)
 
+#only used for debugging:
+def get_event_receivers(window):
+    return window.get_data(_ev_receiver_key)
+
 def cleanup_all_event_receivers():
     root = gtk.gdk.get_default_root_window()
     root.set_data(_ev_receiver_key, None)
@@ -794,22 +802,25 @@ def remove_debug_route_event(event_type):
     global debug_route_events
     debug_route_events.remove(event_type)
 
-cdef void _maybe_send_event(l, window, signal, event):
+cdef void _maybe_send_event(DEBUG, window, signal, event):
     handlers = window.get_data(_ev_receiver_key)
-    if handlers is not None:
-        # Copy the 'handlers' list, because signal handlers might cause items
-        # to be added or removed from it while we are iterating:
-        for handler in list(handlers):
-            signals = gobject.signal_list_names(handler)
-            if signal in signals:
-                l("  forwarding event to a %s handler's %s signal", type(handler).__name__, signal)
-                handler.emit(signal, event)
-                l("  forwarded")
-            else:
-                l("  not forwarding to %s handler, it has no %s signal (it has: %s)",
-                    type(handler).__name__, signal, signals)
-    else:
-        l("  no handler registered for this window, ignoring event")
+    if not handlers:
+        if DEBUG:
+            log.info("  no handler registered for window %#x (%s), ignoring event", window.xid, handlers)
+        return
+    # Copy the 'handlers' list, because signal handlers might cause items
+    # to be added or removed from it while we are iterating:
+    for handler in list(handlers):
+        signals = gobject.signal_list_names(handler)
+        if signal in signals:
+            if DEBUG:
+                log.info("  forwarding event to a %s handler's %s signal", type(handler).__name__, signal)
+            handler.emit(signal, event)
+            if DEBUG:
+                log.info("  forwarded")
+        elif DEBUG:
+            log.info("  not forwarding to %s handler, it has no %s signal (it has: %s)",
+                type(handler).__name__, signal, signals)
 
 def noop(*args):
     pass
@@ -821,27 +832,29 @@ cdef _route_event(event, signal, parent_signal):
     # matters for override redirect windows when they disappear, and we don't
     # care about those anyway.
     global debug_route_events
-    l = noop
-    if event.type in debug_route_events:
-        l = log.info
-    l("%s event %s", event_type_names.get(event.type, event.type), event.serial)
+    DEBUG = event.type in debug_route_events
+    if DEBUG:
+        log.info("%s event %#x", event_type_names.get(event.type, event.type), event.serial)
     if event.window is None:
-        l("  event.window is None, ignoring")
+        if DEBUG:
+            log.info("  event.window is None, ignoring")
         assert event.type in (UnmapNotify, DestroyNotify), \
                 "event window is None for event type %s!" % (event_type_names.get(event.type, event.type))
         return
     if event.window is event.delivered_to:
         if signal is not None:
-            l("  delivering event to window itself: %s  (signal=%s)", event.window, signal)
-            _maybe_send_event(l, event.window, signal, event)
-        else:
-            l("  received event on window itself but have no signal for that")
+            if DEBUG:
+                log.info("  delivering event to window itself: %#x  (signal=%s)", event.window.xid, signal)
+            _maybe_send_event(DEBUG, event.window, signal, event)
+        elif DEBUG:
+            log.info("  received event on window itself but have no signal for that")
     else:
         if parent_signal is not None:
-            l("  delivering event to parent window: %s (signal=%s)", event.delivered_to, parent_signal)
-            _maybe_send_event(l, event.delivered_to, parent_signal, event)
+            if DEBUG:
+                log.info("  delivering event to parent window: %#x (signal=%s)", event.delivered_to.xid, parent_signal)
+            _maybe_send_event(DEBUG, event.delivered_to, parent_signal, event)
         else:
-            l("  received event on a parent window but have no parent signal")
+            log.info("  received event on a parent window but have no parent signal")
 
 
 cdef object _gw(display, Window xwin):
@@ -880,7 +893,9 @@ class X11Event(object):
         for k,v in self.__dict__.items():
             if k=="name":
                 continue
-            if v and type(v)==gtk.gdk.Window:
+            elif k=="serial":
+                d[k] = "%#x" % v
+            elif v and type(v)==gtk.gdk.Window:
                 d[k] = "%#x" % v.xid
             elif v and type(v)==gtk.gdk.Display:
                 d[k] = "%s" % v.get_name()
@@ -954,6 +969,10 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.above = e.xconfigurerequest.above
                     pyev.detail = e.xconfigurerequest.detail
                     pyev.value_mask = e.xconfigurerequest.value_mask
+                elif e.type == ResizeRequest:
+                    pyev.window = _gw(d, e.xresizerequest.window)
+                    pyev.width = e.xresizerequest.width
+                    pyev.height = e.xresizerequest.height
                 elif e.type in (FocusIn, FocusOut):
                     pyev.window = _gw(d, e.xfocus.window)
                     pyev.mode = e.xfocus.mode
@@ -978,7 +997,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     # I am lazy.  Add this later if needed for some reason.
                     if pyev.format != 32:
                         #things like _KDE_SPLASH_PROGRESS and _NET_STARTUP_INFO will come through here
-                        log("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)" % (pyev.message_type, pyev.format))
+                        log("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)", pyev.message_type, pyev.format)
                         return GDK_FILTER_CONTINUE
                     pieces = []
                     for i in range(5):
@@ -1007,6 +1026,10 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.width = e.xconfigure.width
                     pyev.height = e.xconfigure.height
                     pyev.border_width = e.xconfigure.border_width
+                    pyev.above = e.xconfigure.above
+                elif e.type == CirculateNotify:
+                    pyev.window = _gw(d, e.xcirculaterequest.window)
+                    pyev.place = e.xcirculaterequest.place
                 elif e.type == ReparentNotify:
                     pyev.window = _gw(d, e.xreparent.window)
                 elif e.type == KeyPress:
@@ -1048,6 +1071,8 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.delivered_to = pyev.window
                     pyev.window_model = None
                     pyev.bell_name = get_pyatom(d, bell_e.name)
+                else:
+                    log.info("not handled: %s", event_type_names.get(e.type, e.type))
             except XError as ex:
                 if ex.msg==BadWindow:
                     if e.type == DestroyNotify:
