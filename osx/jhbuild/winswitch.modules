@@ -46,16 +46,31 @@
 
   <distutils id="xpra">
      <branch repo="xpra.org"
-             module="/src/xpra-0.14.7.tar.xz"
-             version="0.14.7"/>
+             module="/src/xpra-0.14.10.tar.xz"
+             version="0.14.10"/>
   </distutils>
+
+  <!-- FIXME: This works for now but fails when it does make. I haven't found any way to skip make or install this using the disutils module -->
+  <autotools id="winswitch"
+             skip-install="True"
+             autogenargs=""
+             autogen-template="curl -O -k http://winswitch.org/src/winswitch-osx-0.12.20.src.tar.bz2 &amp;&amp; tar -jxf winswitch-osx-0.12.20.src.tar.bz2 &amp;&amp; ln -sf winswitch-osx-0.12.20 osx &amp;&amp; PYTHONPATH=.:$PYTHONPATH ./setup.py install &amp;&amp; ./setup.py py2app &amp;&amp; cd osx/bundle &amp;&amp; ./make-app.sh">
+     <branch repo="winswitch.org" module="/src/winswitch-0.12.20.src.tar.bz2"
+             hash="md5:79dd00cf44ebd047f49602e147308310"
+             version="0.12.20">
+     </branch> 
+  </autotools>
 
   <metamodule id="osx-winswitch-deps">
     <dependencies>
       <dep package="rdesktop"/>
-      <dep package="tigervnc"/>      
+      <dep package="tigervnc"/>
+      <dep package="nxcomp"/>
+      <dep package="nxproxy"/>
+      <dep package="xpra"/>
     </dependencies>
   </metamodule>
+
 
 </moduleset>
 
