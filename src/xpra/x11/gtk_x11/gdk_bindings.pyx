@@ -778,21 +778,17 @@ cdef init_x11_events():
             event_set = debug_set
         if name=="*":
             events = names_to_event_type.keys()
-        else:
+        elif name in names_to_event_type:
             events = [name]
+        else:
+            log.warn("unknown X11 debug event type: %s", name)
+            continue
         #add to correct set:
         for e in events:
             event_set.add(e)
-    #
-    events = debug_set.difference(ignore_set)
-    for name in events:
-        event_type = names_to_event_type.get(name)
-        if event_type is None:
-            log.warn("could not find event type '%s' in %s", name, ", ".join(names_to_event_type.keys()))
-            continue
-        debug_route_events.append(event_type)
+    debug_route_events = debug_set.difference(ignore_set)
     if len(debug_route_events)>0:
-        log.warn("debugging of X11 events enabled for: %s", [event_type_names.get(x, x) for x in debug_route_events])
+        log.warn("debugging of X11 events enabled for: %s", ", ".join([event_type_names.get(x, x) for x in debug_route_events]))
 
 #and change this debugging on the fly, programmatically:
 def add_debug_route_event(event_type):
@@ -821,9 +817,6 @@ cdef void _maybe_send_event(DEBUG, window, signal, event):
         elif DEBUG:
             log.info("  not forwarding to %s handler, it has no %s signal (it has: %s)",
                 type(handler).__name__, signal, signals)
-
-def noop(*args):
-    pass
 
 cdef _route_event(event, signal, parent_signal):
     # Sometimes we get GDK events with event.window == None, because they are
