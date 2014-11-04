@@ -263,11 +263,14 @@
     </after>
   </autotools>
 
-  <autotools id="gtk-mac-bundler" autogenargs="" skip-autogen="True">
+  <!--HACK: skip-install but do make install during autogen phase instead this allows us to bypass the error with DESTDIR since it doesn't actually install anywhere -->
+  <autotools id="gtk-mac-bundler"
+   skip-install="True"
+   autogen-template="make install">
     <branch module="/pub/gnome/sources/gtk-mac-bundler/0.7/gtk-mac-bundler-0.7.3.tar.xz"
             version="0.7.3"
             repo="ftp.gnome.org">
-    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-mac-bundler-pathfix.patch" strip="2"/>
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-mac-bundler-pathfix.patch" strip="1"/>
     </branch>
   </autotools>
 
