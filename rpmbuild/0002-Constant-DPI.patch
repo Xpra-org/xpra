@@ -93,7 +93,7 @@ index 6062c39..c994d79 100644
 +        //25.4 mm per inch: (254/10)
 +        pScrn->pScreen->mmWidth = mode->HDisplay * 254 / xDpi / 10;
 +        pScrn->pScreen->mmHeight = mode->VDisplay * 254 / yDpi / 10;
-+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "mm(dpi %ix%i)=%ix%i\n", xDpi, yDpi, pScrn->pScreen->mmWidth, pScrn->pScreen->mmHeight);
++        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "mm(dpi %ix%i)=%ix%i\n", xDpi, yDpi, pScrn->pScreen->mmWidth, pScrn->pScreen->mmHeight);
 +        RRScreenSizeNotify(pScrn->pScreen);
 +        RRTellChanged(pScrn->pScreen);
 +    }
