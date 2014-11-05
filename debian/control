@@ -91,9 +91,14 @@ Recommends:
 Suggests: openssh-server
 # optional - only really useful with GPU opencl implementations:
         ,python-pyopencl
+# for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils
+# for notifications forwarding:
         ,python-dbus
+# for publishing servers via mdns:
+		,python-avahi
+		,python-netifaces
 # only useful when connecting using a JSON / YAML only client:
 		,python-yaml
 Description: tool to detach/reattach running X programs
