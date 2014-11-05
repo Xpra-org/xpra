@@ -5,7 +5,7 @@
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
 Version:   0.3.6
-Release:   15.xpra3%{?dist}
+Release:   15.xpra4%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
@@ -14,6 +14,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Source0:   ftp://ftp.x.org/pub/individual/driver/%{tarball}-%{version}.tar.bz2
 Patch0:    0001-Remove-mibstore.h.patch
 Patch1:    0002-Constant-DPI.patch
+Patch2:    0003-fix-pointer-limits.patch
 
 ExcludeArch: s390 s390x
 
@@ -30,6 +31,7 @@ X.Org X11 dummy video driver.
 %setup -q -n %{tarball}-%{version}
 %patch0 -p1
 %patch1 -p1
+%patch2 -p1
 
 %build
 %configure --disable-static
@@ -52,7 +54,10 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/dummy_drv.so
 
 %changelog
-* Thu Oct 30 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-16.xpra2
+* Wed Nov 05 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-15.xpra4
+- add cursor limit fix
+
+* Thu Oct 30 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-15.xpra3
 - force rebuild for CentOS 6.6
 
 * Sat Oct 25 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-15.xpra2
