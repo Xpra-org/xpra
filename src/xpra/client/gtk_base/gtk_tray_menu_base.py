@@ -11,7 +11,7 @@ gtk = import_gtk()
 gobject = import_gobject()
 
 from xpra.util import CLIENT_EXIT
-from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, menuitem
+from xpra.gtk_common.gtk_util import set_tooltip_text, ensure_item_selected, menuitem
 from xpra.client.client_base import EXIT_OK
 from xpra.client.gtk_base.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
@@ -50,6 +50,26 @@ SPEED_OPTIONS[1]    = "Lowest Bandwidth"
 SPEED_OPTIONS[100]  = "Lowest Latency"
 
 
+class TrayCheckMenuItem(gtk.CheckMenuItem):
+    """ We add a button handler to catch clicks that somehow do not
+        trigger the "toggled" signal on some platforms (win32?) when we
+        show the tray menu with a right click and click on the item with the left click.
+        (or the other way around?)
+    """
+    def __init__(self, label, tooltip=None):
+        gtk.CheckMenuItem.__init__(self, label)
+        self.label = label
+        if tooltip:
+            self.set_tooltip_text(tooltip)
+        self.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.connect("button-release-event", self.on_button_release_event)
+
+    def on_button_release_event(self, *args):
+        log("TrayCheckMenuItem.on_button_release_event(%s) label=%s", args, self.label)
+        self.set_active(True)
+        self.toggled()
+
+
 def make_min_auto_menu(title, min_options, options, get_current_min_value, get_current_value, set_min_value_cb, set_value_cb):
     #note: we must keep references to the parameters on the submenu
     #(closures and gtk callbacks don't mix so well!)
@@ -70,7 +90,7 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
             options[value] = "%s%%" % value
         for s in sorted(options.keys()):
             t = options.get(s)
-            qi = CheckMenuItem(t)
+            qi = TrayCheckMenuItem(t)
             qi.set_draw_as_radio(True)
             candidate_match = s>=max(0, value)
             qi.set_active(not found_match and candidate_match)
@@ -153,16 +173,15 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
         name = ENCODINGS_TO_NAME.get(encoding, encoding)
         descr = ENCODINGS_HELP.get(encoding)
         NAME_TO_ENCODING[name] = encoding
-        encoding_item = CheckMenuItem(name)
+        encoding_item = TrayCheckMenuItem(name)
         if descr:
             if encoding not in server_encodings:
                 descr += "\n(not available on this server)"
             set_tooltip_text(encoding_item, descr)
-        def encoding_changed(oitem):
-            log("encoding_changed(%s)", oitem)
-            item = ensure_item_selected(encodings_submenu, oitem)
+        def encoding_changed(item):
+            ensure_item_selected(encodings_submenu, item)
             enc = NAME_TO_ENCODING.get(item.get_label())
-            log("encoding_changed(%s) item=%s, enc=%s, current=%s", oitem, item, enc, encodings_submenu.get_current_encoding())
+            log("encoding_changed(%s) enc=%s, current=%s", item, enc, encodings_submenu.get_current_encoding())
             if enc is not None and encodings_submenu.get_current_encoding()!=enc:
                 encodings_submenu.set_encoding(enc)
         log("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
@@ -292,8 +311,8 @@ class GTKTrayMenuBase(object):
         return menuitem(title, image, tooltip, cb)
 
     def checkitem(self, title, cb=None, active=False):
-        """ Utility method for easily creating a CheckMenuItem """
-        check_item = CheckMenuItem(title)
+        """ Utility method for easily creating a TrayCheckMenuItem """
+        check_item = TrayCheckMenuItem(title)
         check_item.set_active(active)
         if cb:
             check_item.connect("toggled", cb)
@@ -436,10 +455,10 @@ class GTKTrayMenuBase(object):
                             "Secondary" : "SECONDARY"}
             from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
             for label, remote_clipboard in LABEL_TO_NAME.items():
-                clipboard_item = CheckMenuItem(label)
+                clipboard_item = TrayCheckMenuItem(label)
                 def remote_clipboard_changed(item):
                     assert can_clipboard
-                    item = ensure_item_selected(clipboard_submenu, item)
+                    ensure_item_selected(clipboard_submenu, item)
                     label = item.get_label()
                     remote_clipboard = LABEL_TO_NAME.get(label)
                     old_state = self.client.clipboard_enabled
@@ -715,7 +734,7 @@ class GTKTrayMenuBase(object):
         menu = gtk.Menu()
         menu.ignore_events = False
         def onoffitem(label, active, cb):
-            c = CheckMenuItem(label)
+            c = TrayCheckMenuItem(label)
             c.set_draw_as_radio(True)
             c.set_active(active)
             def submenu_uncheck(item, menu):
@@ -761,7 +780,7 @@ class GTKTrayMenuBase(object):
         def kbitem(title, layout, variant, active=False):
             def set_layout(item):
                 """ this callback updates the client (and server) if needed """
-                item = ensure_item_selected(self.layout_submenu, item)
+                ensure_item_selected(self.layout_submenu, item)
                 layout = item.keyboard_layout
                 variant = item.keyboard_variant
                 kh = self.client.keyboard_helper
@@ -849,13 +868,13 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(self.compression_submenu)
         compression_options = {0 : "None"}
         def set_compression(item):
-            item = ensure_item_selected(self.compression_submenu, item)
+            ensure_item_selected(self.compression_submenu, item)
             c = int(item.get_label().replace("None", "0"))
             if c!=self.client.compression_level:
                 log("setting compression level to %s", c)
                 self.client.set_deflate_level(c)
         for i in range(0, 10):
-            c = CheckMenuItem(str(compression_options.get(i, i)))
+            c = TrayCheckMenuItem(str(compression_options.get(i, i)))
             c.set_draw_as_radio(True)
             c.set_active(i==self.client.compression_level)
             c.connect('activate', set_compression)
