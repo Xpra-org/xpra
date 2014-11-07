@@ -5,7 +5,7 @@
 
 Name:           python-pycuda
 Version:        2014.1
-Release:        1
+Release:        2
 Url:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
@@ -41,6 +41,7 @@ PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir}
+	--no-cuda-enable-curand
 #	--boost-python-libname=boost_python-mt \
 #	--boost-thread-libname=boost_thread
 python setup.py build
@@ -58,6 +59,9 @@ rm -rf %{buildroot}
 %{python2_sitearch}/pycuda*
 
 %changelog
+
+* Fri Nov 07 2014 Antoine Martin <antoine@devloop.org.uk - 2014.1-2
+- remove curand bindings which require libcurand found in full CUDA SDK
 
 * Wed Sep 03 2014 Antoine Martin <antoine@devloop.org.uk - 2014.1-1
 - initial packaging
