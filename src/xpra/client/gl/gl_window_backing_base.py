@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import os
 
 from xpra.log import Logger
@@ -22,7 +21,6 @@ from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.gl.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GLContextManager, GLDrawingArea
 from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
-from OpenGL import version as OpenGL_version
 from OpenGL.GL import \
     GL_PROJECTION, GL_MODELVIEW, \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
@@ -103,10 +101,6 @@ if OPENGL_DEBUG:
 from ctypes import c_char_p
 
 
-#support for memory views requires Python 2.7 and PyOpenGL 3.1
-memoryview_type = None
-if sys.version_info[:2]>=(2,7) and OpenGL_version.__version__.split('.')[:2]>=['3','1']:
-    memoryview_type = memoryview
 try:
     buffer_type = buffer
 except:
@@ -479,13 +473,6 @@ class GLWindowBackingBase(GTKWindowBacking):
 
     def _do_paint_rgb(self, bpp, img_data, x, y, width, height, rowstride, options):
         log("%s._do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)", self, bpp, len(img_data), x, y, width, height, rowstride, options)
-        #deal with buffers uploads by wrapping them if we can, or copy to a string:
-        if type(img_data)==buffer_type:
-            if memoryview_type is not None:
-                img_data = memoryview_type(img_data)
-            else:
-                img_data = str(img_data)
-
         context = self.gl_context()
         if not context:
             log("%s._do_paint_rgb(..) no context!", self)
@@ -554,28 +541,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         return True
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
-        clone = True
-        #we can only use zero copy upload if the image is "thread_safe"
-        #(dec_avcodec2 is not safe...)
-        #and if the data is a memoryview (or if we can wrap it in one)
-        if memoryview_type is not None and img.is_thread_safe():
-            pixels = img.get_pixels()
-            assert len(pixels)==3, "invalid number of planes: %s" % len(pixels)
-            plane_types = list(set([type(plane) for plane in img.get_pixels()]))
-            if len(plane_types)==1:
-                plane_type = plane_types[0]
-                if plane_type==memoryview_type:
-                    clone = False
-                elif plane_type in (str, buffer_type):
-                    #wrap with a memoryview that pyopengl can use:
-                    views = []
-                    for i in range(3):
-                        views.append(memoryview_type(pixels[i]))
-                    img.set_pixels(views)
-                    clone = False
-        if clone:
-            #copy so the data will be usable (usually a str)
-            img.clone_pixel_data()
+        #copy so the data will be usable (usually a str)
+        img.clone_pixel_data()
         idle_add(self.gl_paint_planar, img, x, y, enc_width, enc_height, width, height, callbacks)
 
     def gl_paint_planar(self, img, x, y, enc_width, enc_height, width, height, callbacks):
