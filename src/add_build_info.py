@@ -14,6 +14,9 @@ import os.path
 import re
 import sys
 
+if sys.version > '3':
+    unicode = str           #@ReservedAssignment
+
 
 def update_properties(props, filename):
     eprops = get_properties(filename)
@@ -27,28 +30,34 @@ def save_properties(props, filename):
             os.unlink(filename)
         except:
             print("WARNING: failed to delete %s" % filename)
-    with open(filename, mode='w') as f:
+    def u(v):
+        if type(v) not in (str, unicode):
+            return str(v)
+        return v.encode("utf-8")
+    with open(filename, mode='wb') as f:
+        def w(v):
+            f.write(u(v))
         for name,value in props.items():
             s = str(value).replace("'", "\\'")
-            f.write(name)
-            f.write("=")
+            w(name)
+            w("=")
             quote_it = type(value) not in (bool, tuple, int)
             if quote_it:
-                f.write("'")                
-            f.write(s)
+                w("'")
+            w(s)
             if quote_it:
-                f.write("'")                
-            f.write("\n")
+                w("'")
+            w("\n")
     print("updated %s with:" % filename)
     for k in sorted(props.keys()):
-        print("* %s = %s" % (str(k).ljust(20), props[k]))
+        print("* %s = %s" % (str(k).ljust(20), u(props[k])))
 
 def get_properties(filename):
     props = dict()
     if os.path.exists(filename):
         with open(filename, "rU") as f:
             for line in f:
-                s = line.strip()
+                s = line.decode("utf-8").strip()
                 if len(s)==0:
                     continue
                 if s[0] in ('!', '#'):
