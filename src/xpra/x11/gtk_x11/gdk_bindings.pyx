@@ -860,7 +860,8 @@ cdef _route_event(event, signal, parent_signal):
                 log.info("  delivering event to parent window: %#x (signal=%s)", event.delivered_to.xid, parent_signal)
             _maybe_send_event(DEBUG, event.delivered_to, parent_signal, event)
         else:
-            log.info("  received event on a parent window but have no parent signal")
+            if DEBUG:
+                log.info("  received event on a parent window but have no parent signal")
 
 
 cdef object _gw(display, Window xwin):
