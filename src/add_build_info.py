@@ -32,8 +32,11 @@ def save_properties(props, filename):
             print("WARNING: failed to delete %s" % filename)
     def u(v):
         if type(v) not in (str, unicode):
-            return str(v)
-        return v.encode("utf-8")
+            v = str(v)
+        try:
+            return v.encode("utf-8")
+        except:
+            return v
     with open(filename, mode='wb') as f:
         def w(v):
             f.write(u(v))
@@ -55,9 +58,14 @@ def save_properties(props, filename):
 def get_properties(filename):
     props = dict()
     if os.path.exists(filename):
-        with open(filename, "rU") as f:
+        with open(filename, "rb") as f:
             for line in f:
-                s = line.decode("utf-8").strip()
+                try:
+                    s = line.decode("utf-8")
+                except:
+                    #str cannot be decoded!
+                    s = str(line)
+                s = s.strip()
                 if len(s)==0:
                     continue
                 if s[0] in ('!', '#'):
