@@ -11,7 +11,7 @@ gtk = import_gtk()
 gobject = import_gobject()
 
 from xpra.util import CLIENT_EXIT
-from xpra.gtk_common.gtk_util import set_tooltip_text, ensure_item_selected, menuitem
+from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem
 from xpra.client.client_base import EXIT_OK
 from xpra.client.gtk_base.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
@@ -97,7 +97,7 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
             found_match |= candidate_match
             qi.connect('activate', set_fn, submenu)
             if s>0:
-                set_tooltip_text(qi, "%s%%" % s)
+                qi.set_tooltip_text("%s%%" % s)
             submenu.append(qi)
             items[s] = qi
         return items
@@ -177,7 +177,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
         if descr:
             if encoding not in server_encodings:
                 descr += "\n(not available on this server)"
-            set_tooltip_text(encoding_item, descr)
+            encoding_item.set_tooltip_text(descr)
         def encoding_changed(item):
             ensure_item_selected(encodings_submenu, item)
             enc = NAME_TO_ENCODING.get(item.get_label())
@@ -357,9 +357,9 @@ class GTKTrayMenuBase(object):
             can_toggle_bell = c.toggle_cursors_bell_notify and c.server_supports_bell and c.client_supports_bell
             self.bell_menuitem.set_sensitive(can_toggle_bell)
             if can_toggle_bell:
-                set_tooltip_text(self.bell_menuitem, "Forward system bell")
+                self.bell_menuitem.set_tooltip_text("Forward system bell")
             else:
-                set_tooltip_text(self.bell_menuitem, "Cannot forward the system bell: the feature has been disabled")
+                self.bell_menuitem.set_tooltip_text("Cannot forward the system bell: the feature has been disabled")
         self.client.connect("handshake-complete", set_bell_menuitem)
         return  self.bell_menuitem
 
@@ -382,9 +382,9 @@ class GTKTrayMenuBase(object):
             can_toggle_cursors = c.toggle_cursors_bell_notify and c.server_supports_cursors and c.client_supports_cursors
             self.cursors_menuitem.set_sensitive(can_toggle_cursors)
             if can_toggle_cursors:
-                set_tooltip_text(self.cursors_menuitem, "Forward custom mouse cursors")
+                self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
             else:
-                set_tooltip_text(self.cursors_menuitem, "Cannot forward mouse cursors: the feature has been disabled")
+                self.cursors_menuitem.set_tooltip_text("Cannot forward mouse cursors: the feature has been disabled")
         self.client.connect("handshake-complete", set_cursors_menuitem)
         return  self.cursors_menuitem
 
@@ -405,9 +405,9 @@ class GTKTrayMenuBase(object):
             can_notify = c.toggle_cursors_bell_notify and c.server_supports_notifications and c.client_supports_notifications
             self.notifications_menuitem.set_sensitive(can_notify)
             if can_notify:
-                set_tooltip_text(self.notifications_menuitem, "Forward system notifications")
+                self.notifications_menuitem.set_tooltip_text("Forward system notifications")
             else:
-                set_tooltip_text(self.notifications_menuitem, "Cannot forward system notifications: the feature has been disabled")
+                self.notifications_menuitem.set_tooltip_text("Cannot forward system notifications: the feature has been disabled")
         self.client.connect("handshake-complete", set_notifications_menuitem)
         return self.notifications_menuitem
 
@@ -427,9 +427,9 @@ class GTKTrayMenuBase(object):
             can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard
             self.clipboard_menuitem.set_sensitive(can_clipboard)
             if can_clipboard:
-                set_tooltip_text(self.clipboard_menuitem, "Enable clipboard synchronization")
+                self.clipboard_menuitem.set_tooltip_text("Enable clipboard synchronization")
             else:
-                set_tooltip_text(self.clipboard_menuitem, "Clipboard synchronization cannot be enabled: disabled by server")
+                self.clipboard_menuitem.set_tooltip_text("Clipboard synchronization cannot be enabled: disabled by server")
         self.client.connect("handshake-complete", set_clipboard_menuitem)
         def clipboard_toggled(*args):
             #keep menu in sync with actual "clipboard_enabled" flag:
@@ -508,13 +508,13 @@ class GTKTrayMenuBase(object):
     def make_keyboardsyncmenuitem(self):
         def set_keyboard_sync_tooltip():
             if not self.client.keyboard_helper:
-                set_tooltip_text(self.keyboard_sync_menuitem, "Keyboard support is not loaded")
+                self.keyboard_sync_menuitem.set_tooltip_text("Keyboard support is not loaded")
             elif not self.client.toggle_keyboard_sync:
-                set_tooltip_text(self.keyboard_sync_menuitem, "This server does not support changes to keyboard synchronization")
+                self.keyboard_sync_menuitem.set_tooltip_text("This server does not support changes to keyboard synchronization")
             elif self.client.keyboard_helper.keyboard_sync:
-                set_tooltip_text(self.keyboard_sync_menuitem, "Disable keyboard synchronization (prevents spurious key repeats on high latency connections)")
+                self.keyboard_sync_menuitem.set_tooltip_text("Disable keyboard synchronization (prevents spurious key repeats on high latency connections)")
             else:
-                set_tooltip_text(self.keyboard_sync_menuitem, "Enable keyboard state synchronization")
+                self.keyboard_sync_menuitem.set_tooltip_text("Enable keyboard state synchronization")
         def keyboard_sync_toggled(*args):
             self.client.keyboard_sync = self.keyboard_sync_menuitem.get_active()
             log("keyboard_sync_toggled(%s) keyboard_sync=%s", args, self.client.keyboard_sync)
@@ -537,7 +537,7 @@ class GTKTrayMenuBase(object):
             gl.set_active(self.client.opengl_enabled)
             gl.set_sensitive(self.client.window_unmap)
             if not self.client.window_unmap:
-                set_tooltip_text(gl, "no server support for runtime switching")
+                gl.set_tooltip_text("no server support for runtime switching")
                 return
             def opengl_toggled(*args):
                 log("opengl_toggled%s", args)
@@ -555,7 +555,7 @@ class GTKTrayMenuBase(object):
             if self.client.mmap_enabled:
                 #mmap disables encoding and uses raw rgb24
                 encodings.set_label("Encoding")
-                set_tooltip_text(encodings, "memory mapped transfers are in use so picture encoding is disabled")
+                encodings.set_tooltip_text("memory mapped transfers are in use so picture encoding is disabled")
             else:
                 encodings.set_submenu(self.make_encodingssubmenu())
         self.client.connect("handshake-complete", set_encodingsmenuitem)
@@ -625,9 +625,9 @@ class GTKTrayMenuBase(object):
             can_use = not self.client.mmap_enabled and self.client.encoding in self.client.server_encodings_with_quality
             self.quality.set_sensitive(can_use)
             if not can_use:
-                set_tooltip_text(self.quality, "Not supported with %s encoding" % self.client.encoding)
+                self.quality.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
                 return
-            set_tooltip_text(self.quality, "Minimum picture quality")
+            self.quality.set_tooltip_text("Minimum picture quality")
             #now check if lossless is supported:
             if self.quality.get_submenu():
                 can_lossless = self.client.encoding in self.client.server_encodings_with_lossless_mode
@@ -671,13 +671,13 @@ class GTKTrayMenuBase(object):
             can_use = not self.client.mmap_enabled and self.client.encoding in self.client.server_encodings_with_speed and self.client.change_speed
             self.speed.set_sensitive(can_use)
             if self.client.mmap_enabled:
-                set_tooltip_text(self.speed, "Quality is always 100% with mmap")
+                self.speed.set_tooltip_text("Quality is always 100% with mmap")
             elif not self.client.change_speed:
-                set_tooltip_text(self.speed, "Server does not support changing speed")
+                self.speed.set_tooltip_text("Server does not support changing speed")
             elif self.client.encoding!="h264":
-                set_tooltip_text(self.speed, "Not supported with %s encoding" % self.client.encoding)
+                self.speed.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
             else:
-                set_tooltip_text(self.speed, "Encoding latency vs size")
+                self.speed.set_tooltip_text("Encoding latency vs size")
 
 
     def spk_on(self, *args):
@@ -694,11 +694,11 @@ class GTKTrayMenuBase(object):
         def speaker_state(*args):
             if not self.client.speaker_allowed:
                 speaker.set_sensitive(False)
-                set_tooltip_text(speaker, "Speaker forwarding has been disabled")
+                speaker.set_tooltip_text("Speaker forwarding has been disabled")
                 return
             if not self.client.server_sound_send:
                 speaker.set_sensitive(False)
-                set_tooltip_text(speaker, "Server does not support speaker forwarding")
+                speaker.set_tooltip_text("Server does not support speaker forwarding")
                 return
             speaker.set_sensitive(True)
             speaker.set_submenu(self.make_soundsubmenu(is_speaker_on, self.spk_on, self.spk_off, "speaker-changed"))
@@ -719,11 +719,11 @@ class GTKTrayMenuBase(object):
         def microphone_state(*args):
             if not self.client.microphone_allowed:
                 microphone.set_sensitive(False)
-                set_tooltip_text(microphone, "Microphone forwarding has been disabled")
+                microphone.set_tooltip_text("Microphone forwarding has been disabled")
                 return
             if not self.client.server_sound_receive:
                 microphone.set_sensitive(False)
-                set_tooltip_text(microphone, "Server does not support microphone forwarding")
+                microphone.set_tooltip_text("Server does not support microphone forwarding")
                 return
             microphone.set_sensitive(True)
             microphone.set_submenu(self.make_soundsubmenu(is_microphone_on, self.mic_on, self.mic_off, "microphone-changed"))

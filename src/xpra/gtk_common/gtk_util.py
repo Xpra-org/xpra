@@ -428,7 +428,7 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, 
     if icon:
         button.set_image(scaled_image(icon, icon_size))
     if tooltip:
-        set_tooltip_text(button, tooltip)
+        button.set_tooltip_text(tooltip)
     if min_size:
         button.set_size_request(min_size, min_size)
     if clicked_callback:
@@ -456,17 +456,11 @@ def menuitem(title, image=None, tooltip=None, cb=None):
         if hasattr(menu_item, "set_always_show_image"):
             menu_item.set_always_show_image(True)
     if tooltip:
-        set_tooltip_text(menu_item, tooltip)
+        menu_item.set_tooltip_text(tooltip)
     if cb:
         menu_item.connect('activate', cb)
     menu_item.show()
     return menu_item
-
-def set_tooltip_text(widget, text):
-    if hasattr(widget, "set_tooltip_text"):
-        widget.set_tooltip_text(text)
-        return True
-    return False
 
 
 def add_close_accel(window, callback):
@@ -494,7 +488,7 @@ def label(text="", tooltip=None, font=None):
         fontdesc = pango.FontDescription(font)
         l.modify_font(fontdesc)
     if tooltip:
-        set_tooltip_text(l, tooltip)
+        l.set_tooltip_text(tooltip)
     return l
 
 
@@ -562,7 +556,7 @@ def CheckMenuItem(label, tooltip=None):
             return  label
         cmi.get_label = get_label
     if tooltip:
-        set_tooltip_text(cmi, tooltip)
+        cmi.set_tooltip_text(tooltip)
     return cmi
 
 

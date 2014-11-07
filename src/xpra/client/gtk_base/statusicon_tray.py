@@ -12,7 +12,7 @@ gtk = import_gtk()
 gdk = import_gdk()
 
 from xpra.client.tray_base import TrayBase, log
-from xpra.gtk_common.gtk_util import set_tooltip_text, get_icon_from_file, get_pixbuf_from_data, INTERP_HYPER
+from xpra.gtk_common.gtk_util import get_icon_from_file, get_pixbuf_from_data, INTERP_HYPER
 
 ORIENTATION = {}
 if not is_gtk3():
@@ -28,7 +28,7 @@ class GTKStatusIconTray(TrayBase):
     def __init__(self, *args):
         TrayBase.__init__(self, *args)
         self.tray_widget = gtk.StatusIcon()
-        set_tooltip_text(self.tray_widget, self.tooltip or "Xpra")
+        self.tray_widget.set_tooltip_text(self.tooltip or "Xpra")
         self.tray_widget.connect('activate', self.activate_menu)
         self.tray_widget.connect('popup-menu', self.popup_menu)
         if self.size_changed_cb:
@@ -108,7 +108,7 @@ class GTKStatusIconTray(TrayBase):
 
 
     def set_tooltip(self, text=None):
-        set_tooltip_text(self.tray_widget, text or "Xpra")
+        self.tray_widget.set_tooltip_text(text or "Xpra")
 
     def set_blinking(self, on):
         if hasattr(self.tray_widget, "set_blinking"):

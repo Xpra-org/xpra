@@ -20,7 +20,7 @@ from collections import deque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from xpra.scripts.config import python_platform
 from xpra.log import Logger
-from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, \
+from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, \
                         TableBuilder, imagebutton, scaled_image, get_preferred_size, get_gtk_version_info, \
                         RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER
 from xpra.net.protocol import get_network_caps
@@ -478,7 +478,7 @@ class SessionInfo(gtk.Window):
         button.connect("button_press_event", click_cb)
         button.add(graph)
         if tooltip:
-            set_tooltip_text(graph, tooltip)
+            graph.set_tooltip_text(tooltip)
         self.graph_box.add(button)
         return graph
 
@@ -881,7 +881,7 @@ class SessionInfo(gtk.Window):
                     l = label("%s (%s)" % (wid, bytestostr(props.get(""))))
                     l.show()
                     info = ["%s=%s" % (k,v) for k,v in props.items() if k!=""]
-                    set_tooltip_text(l, " ".join(info))
+                    l.set_tooltip_text(" ".join(info))
                     self.encoder_info_box.add(l)
         return True
 

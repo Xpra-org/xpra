@@ -29,7 +29,7 @@ pango = import_pango()
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, ENCRYPTION_CIPHERS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
-from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, \
+from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, \
                                     OptionMenu, choose_file, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
@@ -141,7 +141,7 @@ class ApplicationWindow:
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)
             logo_button.connect("clicked", about)
-            set_tooltip_text(logo_button, "About")
+            logo_button.set_tooltip_text("About")
             image = gtk.Image()
             image.set_from_pixbuf(icon_pixbuf)
             logo_button.set_image(image)
@@ -232,23 +232,23 @@ class ApplicationWindow:
         self.username_entry.set_max_length(128)
         self.username_entry.set_width_chars(16)
         self.username_entry.connect("changed", self.validate)
-        set_tooltip_text(self.username_entry, "SSH username")
+        self.username_entry.set_tooltip_text("SSH username")
         self.username_label = gtk.Label("@")
         self.host_entry = gtk.Entry()
         self.host_entry.set_max_length(128)
         self.host_entry.set_width_chars(24)
         self.host_entry.connect("changed", self.validate)
-        set_tooltip_text(self.host_entry, "hostname")
+        self.host_entry.set_tooltip_text("hostname")
         self.ssh_port_entry = gtk.Entry()
         self.ssh_port_entry.set_max_length(5)
         self.ssh_port_entry.set_width_chars(5)
         self.ssh_port_entry.connect("changed", self.validate)
-        set_tooltip_text(self.ssh_port_entry, "SSH port")
+        self.ssh_port_entry.set_tooltip_text("SSH port")
         self.port_entry = gtk.Entry()
         self.port_entry.set_max_length(5)
         self.port_entry.set_width_chars(5)
         self.port_entry.connect("changed", self.validate)
-        set_tooltip_text(self.port_entry, "port/display")
+        self.port_entry.set_tooltip_text("port/display")
 
         hbox.pack_start(self.username_entry)
         hbox.pack_start(self.username_label)
@@ -285,12 +285,12 @@ class ApplicationWindow:
         vbox.pack_start(hbox)
         #Save:
         self.save_btn = gtk.Button("Save")
-        set_tooltip_text(self.save_btn, "Save settings to a session file")
+        self.save_btn.set_tooltip_text("Save settings to a session file")
         self.save_btn.connect("clicked", self.save_clicked)
         hbox.pack_start(self.save_btn)
         #Load:
         self.load_btn = gtk.Button("Load")
-        set_tooltip_text(self.load_btn, "Load settings from a session file")
+        self.load_btn.set_tooltip_text("Load settings from a session file")
         self.load_btn.connect("clicked", self.load_clicked)
         hbox.pack_start(self.load_btn)
         # Connect button:
@@ -359,14 +359,14 @@ class ApplicationWindow:
         self.port_entry.set_text("")
         if ssh:
             self.ssh_port_entry.show()
-            set_tooltip_text(self.port_entry, "Display number (optional)")
-            set_tooltip_text(self.password_entry, "SSH Password")
+            self.port_entry.set_tooltip_text("Display number (optional)")
+            self.password_entry.set_tooltip_text("SSH Password")
             self.username_entry.show()
             self.username_label.show()
         else:
             self.ssh_port_entry.hide()
-            set_tooltip_text(self.port_entry, "port number")
-            set_tooltip_text(self.password_entry, "Session Password")
+            self.port_entry.set_tooltip_text("port number")
+            self.password_entry.set_tooltip_text("Session Password")
             self.username_entry.hide()
             self.username_label.hide()
             if self.config.port>0:

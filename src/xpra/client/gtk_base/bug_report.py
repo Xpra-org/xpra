@@ -21,7 +21,7 @@ gobject.threads_init()
 pango = import_pango()
 
 
-from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, \
+from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, \
                                     JUSTIFY_LEFT, WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
 from xpra.scripts.config import read_xpra_defaults
 from xpra.client.gtk_base.about import about
@@ -60,7 +60,7 @@ class BugReport(object):
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)
             logo_button.connect("clicked", about)
-            set_tooltip_text(logo_button, "About")
+            logo_button.set_tooltip_text("About")
             image = gtk.Image()
             image.set_from_pixbuf(icon_pixbuf)
             logo_button.set_image(image)
@@ -170,7 +170,7 @@ class BugReport(object):
             cb = gtk.CheckButton(title+[" (not available)", ""][bool(value_cb)])
             cb.set_active(self.includes.get(name, True))
             cb.set_sensitive(bool(value_cb))
-            set_tooltip_text(cb, tooltip)
+            cb.set_tooltip_text(tooltip)
             ibox.pack_start(cb)
             setattr(self, name, cb)
 
@@ -179,7 +179,7 @@ class BugReport(object):
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
             btn = gtk.Button(label)
-            set_tooltip_text(btn, tooltip)
+            btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
             if icon_name:
                 icon = self.get_icon(icon_name)
