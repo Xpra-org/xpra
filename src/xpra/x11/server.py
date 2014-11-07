@@ -257,6 +257,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def get_ui_info(self, proto, wids, *args):
         info = X11ServerBase.get_ui_info(self, proto, wids, *args)
+        #_NET_WM_NAME:
+        info["window-manager-name"] = self._wm.get_net_wm_name()
         #now cursor size info:
         display = gtk.gdk.display_get_default()
         for prop, size in {"default" : display.get_default_cursor_size(),

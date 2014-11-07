@@ -438,4 +438,10 @@ class Wm(gobject.GObject):
         self.root_set("_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
 
+    def get_net_wm_name(self):
+        try:
+            return prop_get(self._ewmh_window, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
+        except Exception as e:
+            log.error("error querying _NET_WM_NAME: %s", e)
+
 gobject.type_register(Wm)
