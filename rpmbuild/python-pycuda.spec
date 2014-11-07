@@ -40,7 +40,7 @@ PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 	--cudadrv-lib-dir=/usr/local/lib64 \
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
-	--boost-lib-dir=%{_libdir}
+	--boost-lib-dir=%{_libdir} \
 	--no-cuda-enable-curand
 #	--boost-python-libname=boost_python-mt \
 #	--boost-thread-libname=boost_thread
