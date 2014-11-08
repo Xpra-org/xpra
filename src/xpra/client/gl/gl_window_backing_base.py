@@ -477,6 +477,9 @@ class GLWindowBackingBase(GTKWindowBacking):
         if not context:
             log("%s._do_paint_rgb(..) no context!", self)
             return False
+        #have to convert buffer to string because we can't handle buffer upload..
+        if type(img_data)==buffer_type:
+            img_data = str(img_data)
         with context:
             self.gl_init()
             self.set_rgb_paint_state()
