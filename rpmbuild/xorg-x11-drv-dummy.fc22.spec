@@ -54,7 +54,7 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/dummy_drv.so
 
 %changelog
-* Wed Nov 05 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-20.xpra1
+* Wed Nov 05 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-20.xpra3
 - add cursor limit fix, bump release number
 
 * Tue Sep 30 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-19.xpra2
