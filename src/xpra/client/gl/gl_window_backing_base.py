@@ -14,6 +14,7 @@ OPENGL_PAINT_BOX = os.environ.get("XPRA_OPENGL_PAINT_BOX", "0")=="1"
 from xpra.gtk_common.gtk_util import import_gobject
 idle_add = import_gobject().idle_add
 
+from xpra.os_util import memoryview_to_bytes
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
@@ -480,6 +481,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         #have to convert buffer to string because we can't handle buffer upload..
         if type(img_data)==buffer_type:
             img_data = str(img_data)
+        else:
+            img_data = memoryview_to_bytes(img_data)
         with context:
             self.gl_init()
             self.set_rgb_paint_state()
