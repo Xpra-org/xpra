@@ -1225,14 +1225,27 @@ class WindowModel(BaseWindowModel):
 
     def _handle_wm_normal_hints(self):
         size_hints = X11Window.getSizeHints(self.client_window.xid)
-        self._sanitize_size_hints(size_hints)
+        #getSizeHints exports fields using their X11 names as defined in the "XSizeHints" structure,
+        #but we use a different naming (for historical reason and backwards compatibility)
+        #so rename the fields:
+        hints = {}
+        for k,v in size_hints.items():
+            hints[{"min_size"       : "minimum-size",
+                   "max_size"       : "maximum-size",
+                   "base_size"      : "base-size",
+                   "resize_inc"     : "increment",
+                   "min_aspect"     : "minimum-aspect-ratio",
+                   "max_aspect"     : "maximum-aspect-ratio",
+                   "win_gravity"    : "gravity",
+                   }.get(k, k)] = v
+        self._sanitize_size_hints(hints)
         # Don't send out notify and ConfigureNotify events when this property
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
         # their properties every time they see a ConfigureNotify, and this
         # reduces the chance for us to get caught in loops:
         old_hints = self.get_property("size-hints")
-        if size_hints and size_hints!=old_hints:
-            self._internal_set_property("size-hints", size_hints)
+        if hints and hints!=old_hints:
+            self._internal_set_property("size-hints", hints)
             self._update_client_geometry()
 
     _property_handlers["WM_NORMAL_HINTS"] = _handle_wm_normal_hints
