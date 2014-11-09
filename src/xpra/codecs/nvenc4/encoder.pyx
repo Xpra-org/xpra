@@ -1011,6 +1011,7 @@ HEIGHT_MASK = 0xFFFE
 #when we call get_runtime_factor(), we don't know which device is going to get used!
 #since we have load balancing, using an overall factor isn't too bad
 context_counter = AtomicInteger()
+context_gen_counter = AtomicInteger()
 last_context_failure = 0
 
 def get_runtime_factor():
@@ -1066,6 +1067,12 @@ def get_info():
     if sys.platform.startswith("linux"):
         from xpra.scripts.config import python_platform
         info["kernel_version"] = python_platform.uname()[2]
+    global last_context_failure, context_counter, context_gen_counter
+    info["device_count"] = len(init_all_devices())
+    info["context_count"] = context_counter.get()
+    info["generation"] = context_gen_counter.get()
+    if last_context_failure>0:
+        info["last_failure"] = int(time.time()-last_context_failure)
     return info
 
 
@@ -1255,7 +1262,7 @@ cdef class Encoder:
         cdef int result
 
         assert self.cuda_device_id>=0 and self.cuda_device, "no NVENC device found!"
-        global context_counter, last_context_failure
+        global last_context_failure
         d = self.cuda_device
         cf = driver.ctx_flags
         log("init_cuda() pixel format=%s, device_id=%s", self.pixel_format, self.cuda_device_id)
@@ -1422,15 +1429,15 @@ cdef class Encoder:
 
     def get_info(self):                     #@DuplicatedSignature
         cdef double pps
-        info = {"width"     : self.width,
+        info = get_info()
+        info.update({
+                "width"     : self.width,
                 "height"    : self.height,
                 "frames"    : self.frames,
                 "codec"     : self.codec_name,
                 "encoder_width"     : self.encoder_width,
                 "encoder_height"    : self.encoder_height,
-                "bitrate"   : self.target_bitrate,
-                "version"   : get_version(),
-                "kernel_module_version"    : get_nvidia_module_version()}
+                "bitrate"   : self.target_bitrate})
         if self.scaling!=(1,1):
             info.update({
                 "input_width"       : self.input_width,
@@ -1994,7 +2001,7 @@ cdef class Encoder:
 
 
     cdef open_encode_session(self):
-        global context_counter, last_context_failure
+        global context_counter, context_gen_counter, last_context_failure
         cdef int ret            #@DuplicatedSignature
         cdef int t
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
@@ -2027,6 +2034,7 @@ cdef class Encoder:
             raise TransientCodecException(msg)
         raiseNVENC(ret, "opening session")
         context_counter.increase()
+        context_gen_counter.increase()
         log("success, encoder context=%#x (%s contexts in use)", <unsigned long> self.context, context_counter)
 
 
