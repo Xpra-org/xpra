@@ -541,6 +541,7 @@ cdef class Decoder:
                     if av_frame.format==-1:
                         log.error("avcodec error decoding %i bytes of data with options=%s (step %i of %i)", buf_len, options, (step+1), steps)
                         log.error(" decoder state: %s", self.get_info())
+                        raise Exception("avcodec decoding failed to decode %i bytes of %s data (frame %i, step %i of %i)" % (buf_len, self.encoding, self.frames, (step+1), steps))
                     self.actual_pix_fmt = av_frame.format
                     if self.actual_pix_fmt not in ENUM_TO_FORMAT:
                         av_frame_unref(av_frame)
