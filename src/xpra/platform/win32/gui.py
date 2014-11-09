@@ -237,12 +237,13 @@ def get_double_click_distance():
 
 def get_fixed_cursor_size():
     try:
-        x = win32api.GetSystemMetrics(win32con.SM_CXCURSOR)
-        y = win32api.GetSystemMetrics(win32con.SM_CYCURSOR)
-        return x, y
+        w = win32api.GetSystemMetrics(win32con.SM_CXCURSOR)
+        h = win32api.GetSystemMetrics(win32con.SM_CYCURSOR)
+        return w, h
     except Exception as e:
         log.warn("failed to get window frame size information: %s", e)
-        return None
+        #best to try to use a limit anyway:
+        return 32, 32
 
 def get_window_frame_sizes():
     try:
