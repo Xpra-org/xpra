@@ -417,6 +417,8 @@ def repr_ellipsized(obj, limit=100):
 #used for merging dicts with a prefix and suffix
 #non-None values get added to <todict> with a prefix and optional suffix
 def updict(todict, prefix, d, suffix=""):
+    if not d:
+        return
     for k,v in d.items():
         if v is not None:
             if k:
