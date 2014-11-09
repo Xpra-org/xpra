@@ -497,11 +497,11 @@ cdef class Decoder:
         plane_sizes = options.get("plane_sizes")
         if plane_sizes is not None:
             #this is the separate colour plane format
-            #each loop will only collect one plane:
+            #each loop iteration will decode one plane (Y, U then V):
             steps = 3
             nplanes = 1
             #the actual format is fixed:
-            assert options.get("csc")=="YUV444P"
+            assert options.get("csc")=="YUV444P", "separate plane sizes is only supported for YUV444P mode, got %s instead" % options.get("csc")
             self.actual_pix_fmt = FORMAT_TO_ENUM["YUV444P"]
             plane_offsets = [0, plane_sizes[0], plane_sizes[0]+plane_sizes[1]]
         else:
@@ -538,6 +538,9 @@ cdef class Decoder:
 
             if steps==1:
                 if self.actual_pix_fmt!=av_frame.format:
+                    if av_frame.format==-1:
+                        log.error("avcodec error decoding %i bytes of data with options=%s (step %i of %i)", buf_len, options, (step+1), steps)
+                        log.error(" decoder state: %s", self.get_info())
                     self.actual_pix_fmt = av_frame.format
                     if self.actual_pix_fmt not in ENUM_TO_FORMAT:
                         av_frame_unref(av_frame)
