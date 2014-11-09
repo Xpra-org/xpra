@@ -155,6 +155,7 @@ def select_device(preferred_device_id=-1, preferred_device_name=CUDA_DEVICE_NAME
                 elif tpct>free_pct:
                     selected_device = device
                     selected_device_id = device_id
+                    free_pct = tpct
             finally:
                 if context:
                     context.pop()
