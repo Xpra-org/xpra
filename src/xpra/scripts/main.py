@@ -1306,12 +1306,13 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             display_name = args[0]
         else:
             assert mode=="_shadow_start"
+            assert len(args) in (0, 1), "_shadow_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
             cmd.append("shadow")
-            if len(args)==1:
+            display_name = None
+            if len(args)==1 and args[0]!=":":
                 #display_name was provided:
                 display_name = args[0]
             else:
-                assert len(args)==0, "_shadow_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
                 display_name = guess_X11_display(opts.socket_dir)
                 #we now know the display name, so add it:
                 args = [display_name]
