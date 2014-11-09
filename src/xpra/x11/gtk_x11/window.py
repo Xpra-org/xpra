@@ -1229,15 +1229,16 @@ class WindowModel(BaseWindowModel):
         #but we use a different naming (for historical reason and backwards compatibility)
         #so rename the fields:
         hints = {}
-        for k,v in size_hints.items():
-            hints[{"min_size"       : "minimum-size",
-                   "max_size"       : "maximum-size",
-                   "base_size"      : "base-size",
-                   "resize_inc"     : "increment",
-                   "min_aspect"     : "minimum-aspect-ratio",
-                   "max_aspect"     : "maximum-aspect-ratio",
-                   "win_gravity"    : "gravity",
-                   }.get(k, k)] = v
+        if size_hints:
+            for k,v in size_hints.items():
+                hints[{"min_size"       : "minimum-size",
+                       "max_size"       : "maximum-size",
+                       "base_size"      : "base-size",
+                       "resize_inc"     : "increment",
+                       "min_aspect"     : "minimum-aspect-ratio",
+                       "max_aspect"     : "maximum-aspect-ratio",
+                       "win_gravity"    : "gravity",
+                       }.get(k, k)] = v
         self._sanitize_size_hints(hints)
         # Don't send out notify and ConfigureNotify events when this property
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
