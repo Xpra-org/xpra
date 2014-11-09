@@ -555,10 +555,14 @@ class XpraClientBase(object):
         if show_as_text:
             #looks like the first packet back is just text, print it:
             data = bytestostr(data)
-            log.info("Failed to connect, received: %s", repr_ellipsized(data.strip("\n").strip("\r")))
+            if data.find("Traceback "):
+                for x in data.split("\n"):
+                    log.warn(x.strip("\r"))
+            else:
+                log.warn("Failed to connect, received: %s", repr_ellipsized(data.strip("\n").strip("\r")))
         else:
-            log.info("Received uninterpretable nonsense: %s", message)
-            log.info(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
+            log.warn("Received uninterpretable nonsense: %s", message)
+            log.warn(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
         if str(data).find("assword")>0:
             self.warn_and_quit(EXIT_SSH_FAILURE,
                               "Your ssh program appears to be asking for a password."
