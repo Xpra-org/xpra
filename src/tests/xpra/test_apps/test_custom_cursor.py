@@ -2,12 +2,17 @@
 
 import gtk
 
-width = 400
-height = 200
-def main():
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	window.set_size_request(width, height)
-	window.connect("delete_event", gtk.mainquit)
+class CursorWindow(gtk.Window):
+
+	def __init__(self, width=200, height=100, title="", cursor=None):
+		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+		self.connect("delete_event", gtk.mainquit)
+		self.set_title(title)
+		self.set_size_request(width, height)
+		self.show()
+		self.get_window().set_cursor(cursor)
+
+def colored_cursor():		
 	#create a custom cursor:
 	#first get a colormap and then allocate the colors
 	#black and white for drawing on the bitmaps:
@@ -29,10 +34,19 @@ def main():
 	# Then create and set the cursor using unallocated colors:
 	green = gtk.gdk.color_parse('green')
 	red = gtk.gdk.color_parse('red')
-	cur=gtk.gdk.Cursor(pm,mask,green,red,5,5)
+	return gtk.gdk.Cursor(pm,mask,green,red,5,5)
 
-	window.show_all()
-	window.get_window().set_cursor(cur)
+def small_empty_cursor():
+	#same as xterm when pressing a modifier key
+	w, h = 6, 13
+	pixbuf = gtk.gdk.pixbuf_new_from_data("\0"*w*h*4, gtk.gdk.COLORSPACE_RGB, True, 8, w, h, w*4)
+	return gtk.gdk.Cursor(gtk.gdk.display_get_default(), pixbuf, 0, 11)
+
+
+def main():
+	CursorWindow(title="colored cursor", cursor=colored_cursor()).show_all()
+	CursorWindow(title="X cursor", cursor=gtk.gdk.Cursor(gtk.gdk.X_CURSOR)).show_all()
+	CursorWindow(title="small empty cursor", cursor=small_empty_cursor()).show_all()
 	gtk.main()
 	return 0
 
