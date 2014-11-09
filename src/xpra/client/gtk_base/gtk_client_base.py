@@ -28,7 +28,7 @@ from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import system_bell, get_workarea
+from xpra.platform.gui import system_bell, get_workarea, get_fixed_cursor_size
 
 missing_cursor_names = set()
 
@@ -312,7 +312,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             smax = cursor_data[10]
             cursorlog("server cursor sizes: default=%s, max=%s", ssize, smax)
         cursorlog("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", xhot,yhot, serial, w,h, len(pixels), csize, (cmaxw, cmaxh))
-        if w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
+        fw, fh = get_fixed_cursor_size()
+        if fw>0 and fh>0 and (w!=fw or h!=fh):
+            #OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
+            cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
+            pixbuf = pixbuf.scale_simple(fw, fh, INTERP_BILINEAR)
+            xratio, yratio = float(w)/fw, float(h)/fh
+            x, y = int(x/xratio), int(y/yratio)
+        elif w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
             ratio = max(float(w)/cmaxw, float(h)/cmaxh, float(max(w,h))/csize)
             x, y, w, h = int(x/ratio), int(y/ratio), int(w/ratio), int(h/ratio)
             cursorlog("downscaling cursor %s by %.2f: %sx%s", pixbuf, ratio, w, h)
