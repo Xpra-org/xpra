@@ -28,6 +28,23 @@ def test_encode_one():
     log("test_encode_one()")
     test_encoder(encoder_module)
 
+def test_context_leak():
+    def do_test_context_leak():
+        N = 50
+        info = threading.current_thread()
+        for i in range(N):
+            log.info("%s of %s (%s)", i, N, info)
+            test_encoder(encoder_module)
+    #not threaded:
+    do_test_context_leak("main thread")
+    #threads:
+    thread1 = threading.Thread(target=do_test_context_leak)
+    thread2 = threading.Thread(target=do_test_context_leak)
+    thread1.start()
+    thread2.start()
+    thread1.join()
+    thread2.join()
+
 def test_memleak():
     log.info("test_memleak()")
     from pycuda import driver
