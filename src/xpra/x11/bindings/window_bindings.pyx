@@ -874,8 +874,8 @@ cdef class X11WindowBindings(X11CoreBindings):
             hints["min_size"] = size_hints.min_width, size_hints.min_height
         if size_hints.flags & PMaxSize:
             hints["max_size"] = size_hints.max_width, size_hints.max_height
-        if size_hints.flags & PMaxSize:
-            hints["max_size"] = size_hints.max_width, size_hints.max_height
+        if size_hints.flags & PBaseSize:
+            hints["base_size"] = size_hints.base_width, size_hints.base_height
         if size_hints.flags & PResizeInc:
             hints["resize_inc"] = size_hints.width_inc, size_hints.height_inc
         if size_hints.flags & PAspect:
