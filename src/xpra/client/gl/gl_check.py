@@ -183,7 +183,7 @@ def do_check_GL_support(min_texture_size, force_enable):
             log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
 
         from OpenGL import version as OpenGL_version
-        props["memoryview"] = is_pyopengl_memoryview_safe(OpenGL_version.__version__)
+        props["zerocopy"] = is_pyopengl_memoryview_safe(OpenGL_version.__version__)
 
         try:
             extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
