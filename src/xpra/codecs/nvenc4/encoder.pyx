@@ -621,39 +621,39 @@ cdef extern from "nvEncodeAPI.h":
 
     #NVENCSTATUS NvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList)
 
-    ctypedef NVENCSTATUS (*PNVENCOPENENCODESESSION)         (void* device, uint32_t deviceType, void** encoder)
-    ctypedef NVENCSTATUS (*PNVENCGETENCODEGUIDCOUNT)        (void* encoder, uint32_t* encodeGUIDCount)
-    ctypedef NVENCSTATUS (*PNVENCGETENCODEGUIDS)            (void* encoder, GUID* GUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
-    ctypedef NVENCSTATUS (*PNVENCGETENCODEPROFILEGUIDCOUNT) (void* encoder, GUID encodeGUID, uint32_t* encodeProfileGUIDCount)
-    ctypedef NVENCSTATUS (*PNVENCGETENCODEPROFILEGUIDS)     (void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
-    ctypedef NVENCSTATUS (*PNVENCGETINPUTFORMATCOUNT)       (void* encoder, GUID encodeGUID, uint32_t* inputFmtCount)
-    ctypedef NVENCSTATUS (*PNVENCGETINPUTFORMATS)           (void* encoder, GUID encodeGUID, NV_ENC_BUFFER_FORMAT* inputFmts, uint32_t inputFmtArraySize, uint32_t* inputFmtCount)
-    ctypedef NVENCSTATUS (*PNVENCGETENCODECAPS)             (void* encoder, GUID encodeGUID, NV_ENC_CAPS_PARAM* capsParam, int* capsVal)
-    ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCOUNT)      (void* encoder, GUID encodeGUID, uint32_t* encodePresetGUIDCount)
-    ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETGUIDS)      (void* encoder, GUID encodeGUID, GUID* presetGUIDs, uint32_t guidArraySize, uint32_t* encodePresetGUIDCount)
-    ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCONFIG)     (void* encoder, GUID encodeGUID, GUID  presetGUID, NV_ENC_PRESET_CONFIG* presetConfig)
-    ctypedef NVENCSTATUS (*PNVENCINITIALIZEENCODER)         (void* encoder, NV_ENC_INITIALIZE_PARAMS* createEncodeParams)
-    ctypedef NVENCSTATUS (*PNVENCCREATEINPUTBUFFER)         (void* encoder, NV_ENC_CREATE_INPUT_BUFFER* createInputBufferParams)
-    ctypedef NVENCSTATUS (*PNVENCDESTROYINPUTBUFFER)        (void* encoder, NV_ENC_INPUT_PTR inputBuffer)
-    ctypedef NVENCSTATUS (*PNVENCCREATEBITSTREAMBUFFER)     (void* encoder, NV_ENC_CREATE_BITSTREAM_BUFFER* createBitstreamBufferParams)
-    ctypedef NVENCSTATUS (*PNVENCDESTROYBITSTREAMBUFFER)    (void* encoder, NV_ENC_OUTPUT_PTR bitstreamBuffer)
-    ctypedef NVENCSTATUS (*PNVENCENCODEPICTURE)             (void* encoder, NV_ENC_PIC_PARAMS* encodePicParams)
-    ctypedef NVENCSTATUS (*PNVENCLOCKBITSTREAM)             (void* encoder, NV_ENC_LOCK_BITSTREAM* lockBitstreamBufferParams)
-    ctypedef NVENCSTATUS (*PNVENCUNLOCKBITSTREAM)           (void* encoder, NV_ENC_OUTPUT_PTR bitstreamBuffer)
-    ctypedef NVENCSTATUS (*PNVENCLOCKINPUTBUFFER)           (void* encoder, NV_ENC_LOCK_INPUT_BUFFER* lockInputBufferParams)
-    ctypedef NVENCSTATUS (*PNVENCUNLOCKINPUTBUFFER)         (void* encoder, NV_ENC_INPUT_PTR inputBuffer)
-    ctypedef NVENCSTATUS (*PNVENCGETENCODESTATS)            (void* encoder, NV_ENC_STAT* encodeStats)
-    ctypedef NVENCSTATUS (*PNVENCGETSEQUENCEPARAMS)         (void* encoder, NV_ENC_SEQUENCE_PARAM_PAYLOAD* sequenceParamPayload)
-    ctypedef NVENCSTATUS (*PNVENCREGISTERASYNCEVENT)        (void* encoder, NV_ENC_EVENT_PARAMS* eventParams)
-    ctypedef NVENCSTATUS (*PNVENCUNREGISTERASYNCEVENT)      (void* encoder, NV_ENC_EVENT_PARAMS* eventParams)
-    ctypedef NVENCSTATUS (*PNVENCMAPINPUTRESOURCE)          (void* encoder, NV_ENC_MAP_INPUT_RESOURCE* mapInputResParams)
-    ctypedef NVENCSTATUS (*PNVENCUNMAPINPUTRESOURCE)        (void* encoder, NV_ENC_INPUT_PTR mappedInputBuffer)
-    ctypedef NVENCSTATUS (*PNVENCDESTROYENCODER)            (void* encoder)
-    ctypedef NVENCSTATUS (*PNVENCINVALIDATEREFFRAMES)       (void* encoder, uint64_t invalidRefFrameTimeStamp)
-    ctypedef NVENCSTATUS (*PNVENCOPENENCODESESSIONEX)       (NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS *openSessionExParams, void** encoder)
-    ctypedef NVENCSTATUS (*PNVENCREGISTERRESOURCE)          (void* encoder, NV_ENC_REGISTER_RESOURCE* registerResParams)
-    ctypedef NVENCSTATUS (*PNVENCUNREGISTERRESOURCE)        (void* encoder, NV_ENC_REGISTERED_PTR registeredRes)
-    ctypedef NVENCSTATUS (*PNVENCRECONFIGUREENCODER)        (void* encoder, NV_ENC_RECONFIGURE_PARAMS* reInitEncodeParams)
+    ctypedef NVENCSTATUS (*PNVENCOPENENCODESESSION)         (void* device, uint32_t deviceType, void** encoder) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODEGUIDCOUNT)        (void* encoder, uint32_t* encodeGUIDCount) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODEGUIDS)            (void* encoder, GUID* GUIDs, uint32_t guidArraySize, uint32_t* GUIDCount) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODEPROFILEGUIDCOUNT) (void* encoder, GUID encodeGUID, uint32_t* encodeProfileGUIDCount) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODEPROFILEGUIDS)     (void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETINPUTFORMATCOUNT)       (void* encoder, GUID encodeGUID, uint32_t* inputFmtCount) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETINPUTFORMATS)           (void* encoder, GUID encodeGUID, NV_ENC_BUFFER_FORMAT* inputFmts, uint32_t inputFmtArraySize, uint32_t* inputFmtCount) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODECAPS)             (void* encoder, GUID encodeGUID, NV_ENC_CAPS_PARAM* capsParam, int* capsVal) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCOUNT)      (void* encoder, GUID encodeGUID, uint32_t* encodePresetGUIDCount) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETGUIDS)      (void* encoder, GUID encodeGUID, GUID* presetGUIDs, uint32_t guidArraySize, uint32_t* encodePresetGUIDCount) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCONFIG)     (void* encoder, GUID encodeGUID, GUID  presetGUID, NV_ENC_PRESET_CONFIG* presetConfig) nogil
+    ctypedef NVENCSTATUS (*PNVENCINITIALIZEENCODER)         (void* encoder, NV_ENC_INITIALIZE_PARAMS* createEncodeParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCCREATEINPUTBUFFER)         (void* encoder, NV_ENC_CREATE_INPUT_BUFFER* createInputBufferParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCDESTROYINPUTBUFFER)        (void* encoder, NV_ENC_INPUT_PTR inputBuffer) nogil
+    ctypedef NVENCSTATUS (*PNVENCCREATEBITSTREAMBUFFER)     (void* encoder, NV_ENC_CREATE_BITSTREAM_BUFFER* createBitstreamBufferParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCDESTROYBITSTREAMBUFFER)    (void* encoder, NV_ENC_OUTPUT_PTR bitstreamBuffer) nogil
+    ctypedef NVENCSTATUS (*PNVENCENCODEPICTURE)             (void* encoder, NV_ENC_PIC_PARAMS* encodePicParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCLOCKBITSTREAM)             (void* encoder, NV_ENC_LOCK_BITSTREAM* lockBitstreamBufferParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCUNLOCKBITSTREAM)           (void* encoder, NV_ENC_OUTPUT_PTR bitstreamBuffer) nogil
+    ctypedef NVENCSTATUS (*PNVENCLOCKINPUTBUFFER)           (void* encoder, NV_ENC_LOCK_INPUT_BUFFER* lockInputBufferParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCUNLOCKINPUTBUFFER)         (void* encoder, NV_ENC_INPUT_PTR inputBuffer) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODESTATS)            (void* encoder, NV_ENC_STAT* encodeStats) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETSEQUENCEPARAMS)         (void* encoder, NV_ENC_SEQUENCE_PARAM_PAYLOAD* sequenceParamPayload) nogil
+    ctypedef NVENCSTATUS (*PNVENCREGISTERASYNCEVENT)        (void* encoder, NV_ENC_EVENT_PARAMS* eventParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCUNREGISTERASYNCEVENT)      (void* encoder, NV_ENC_EVENT_PARAMS* eventParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCMAPINPUTRESOURCE)          (void* encoder, NV_ENC_MAP_INPUT_RESOURCE* mapInputResParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCUNMAPINPUTRESOURCE)        (void* encoder, NV_ENC_INPUT_PTR mappedInputBuffer) nogil
+    ctypedef NVENCSTATUS (*PNVENCDESTROYENCODER)            (void* encoder) nogil
+    ctypedef NVENCSTATUS (*PNVENCINVALIDATEREFFRAMES)       (void* encoder, uint64_t invalidRefFrameTimeStamp) nogil
+    ctypedef NVENCSTATUS (*PNVENCOPENENCODESESSIONEX)       (NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS *openSessionExParams, void** encoder) nogil
+    ctypedef NVENCSTATUS (*PNVENCREGISTERRESOURCE)          (void* encoder, NV_ENC_REGISTER_RESOURCE* registerResParams) nogil
+    ctypedef NVENCSTATUS (*PNVENCUNREGISTERRESOURCE)        (void* encoder, NV_ENC_REGISTERED_PTR registeredRes) nogil
+    ctypedef NVENCSTATUS (*PNVENCRECONFIGUREENCODER)        (void* encoder, NV_ENC_RECONFIGURE_PARAMS* reInitEncodeParams) nogil
 
     ctypedef struct NV_ENCODE_API_FUNCTION_LIST:
         uint32_t    version         #[in]: Client should pass NV_ENCODE_API_FUNCTION_LIST_VER.
@@ -1349,6 +1349,7 @@ cdef class Encoder:
         cdef long resource
         cdef Py_ssize_t size
         cdef unsigned char* cptr = NULL
+        cdef NVENCSTATUS r
 
         self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> malloc(sizeof(NV_ENCODE_API_FUNCTION_LIST))
         memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
@@ -1389,7 +1390,9 @@ cdef class Encoder:
             log("nvEncInitializeEncoder using encode=%s, preset=%s", guidstr(codec), guidstr(preset))
 
             log("nvEncInitializeEncoder(%#x)", <unsigned long> params)
-            raiseNVENC(self.functionList.nvEncInitializeEncoder(self.context, params), "initializing encoder")
+            with nogil:
+                r = self.functionList.nvEncInitializeEncoder(self.context, params)
+            raiseNVENC(r, "initializing encoder")
             log("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
             #register CUDA input buffer:
@@ -1402,7 +1405,9 @@ cdef class Encoder:
             registerResource.height = self.encoder_height
             registerResource.pitch = self.outputPitch
             log("nvEncRegisterResource(%#x)", <unsigned long> &registerResource)
-            raiseNVENC(self.functionList.nvEncRegisterResource(self.context, &registerResource), "registering CUDA input buffer")
+            with nogil:
+                r = self.functionList.nvEncRegisterResource(self.context, &registerResource)
+            raiseNVENC(r, "registering CUDA input buffer")
             self.inputHandle = registerResource.registeredResource
             log("input handle for CUDA buffer: %#x", <unsigned long> self.inputHandle)
 
@@ -1416,7 +1421,9 @@ cdef class Encoder:
             ELSE:
                 createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED
             log("nvEncCreateBitstreamBuffer(%#x)", <unsigned long> &createBitstreamBufferParams)
-            raiseNVENC(self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams), "creating output buffer")
+            with nogil:
+                r = self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams)
+            raiseNVENC(r, "creating output buffer")
             self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
             log("output bitstream buffer=%#x", <unsigned long> self.bitstreamBuffer)
         finally:
@@ -1544,12 +1551,15 @@ cdef class Encoder:
 
 
     cdef cuda_clean(self):
+        cdef NVENCSTATUS r                  #@DuplicatedSignature
         if self.context!=NULL and self.frames>0:
             self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
             log("cuda_clean() unregistering CUDA output buffer input handle %#x", <unsigned long> self.inputHandle)
             log("nvEncUnregisterResource(%#x)", <unsigned long> self.inputHandle)
-            raiseNVENC(self.functionList.nvEncUnregisterResource(self.context, self.inputHandle), "unregistering CUDA input buffer")
+            with nogil:
+                r = self.functionList.nvEncUnregisterResource(self.context, self.inputHandle)
+            raiseNVENC(r, "unregistering CUDA input buffer")
             self.inputHandle = NULL
         if self.inputBuffer is not None:
             log("cuda_clean() freeing CUDA host buffer %s", self.inputBuffer)
@@ -1566,11 +1576,15 @@ cdef class Encoder:
             if self.bitstreamBuffer!=NULL:
                 log("cuda_clean() destroying output bitstream buffer %#x", <unsigned long> self.bitstreamBuffer)
                 log("nvEncDestroyBitstreamBuffer(%#x)", <unsigned long> self.bitstreamBuffer)
-                raiseNVENC(self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer), "destroying output buffer")
+                with nogil:
+                    r = self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer)
+                raiseNVENC(r, "destroying output buffer")
                 self.bitstreamBuffer = NULL
             log("cuda_clean() destroying encoder %#x", <unsigned long> self.context)
             log("nvEncDestroyEncoder(%#x)", <unsigned long> self.context)
-            raiseNVENC(self.functionList.nvEncDestroyEncoder(self.context), "destroying context")
+            with nogil:
+                r = self.functionList.nvEncDestroyEncoder(self.context)
+            raiseNVENC(r, "destroying context")
             self.context = NULL
             global context_counter
             context_counter.decrease()
@@ -1619,11 +1633,14 @@ cdef class Encoder:
 
     cdef flushEncoder(self):
         cdef NV_ENC_PIC_PARAMS picParams
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
         memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
         picParams.version = NV_ENC_PIC_PARAMS_VER
         picParams.encodePicFlags = NV_ENC_PIC_FLAG_EOS
         log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
-        raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "flushing encoder buffer")
+        with nogil:
+            r = self.functionList.nvEncEncodePicture(self.context, &picParams)
+        raiseNVENC(r, "flushing encoder buffer")
 
     def compress_image(self, image, options={}, retry=0):
         self.cuda_context.push()
@@ -1653,6 +1670,7 @@ cdef class Encoder:
         cdef int x, y, image_stride, stride
         cdef int w, h
         cdef int i
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         start = time.time()
         log("compress_image(%s, %s)", image, options)
@@ -1741,7 +1759,9 @@ cdef class Encoder:
             mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
             mapInputResource.registeredResource  = self.inputHandle
             log("nvEncMapInputResource(%#x)", <unsigned long> &mapInputResource)
-            raiseNVENC(self.functionList.nvEncMapInputResource(self.context, &mapInputResource), "mapping input resource")
+            with nogil:
+                r = self.functionList.nvEncMapInputResource(self.context, &mapInputResource)
+            raiseNVENC(r, "mapping input resource")
             log("compress_image(..) device buffer mapped to %#x", <unsigned long> mapInputResource.mappedResource)
 
             size = 0
@@ -1775,7 +1795,9 @@ cdef class Encoder:
                 picParams.rcParams.maxBitRate = self.max_bitrate
 
                 log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
-                raiseNVENC(self.functionList.nvEncEncodePicture(self.context, &picParams), "error during picture encoding")
+                with nogil:
+                    r = self.functionList.nvEncEncodePicture(self.context, &picParams)
+                raiseNVENC(r, "error during picture encoding")
                 encode_end = time.time()
                 log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
 
@@ -1785,7 +1807,9 @@ cdef class Encoder:
                 lockOutputBuffer.doNotWait = 0
                 lockOutputBuffer.outputBitstream = self.bitstreamBuffer
                 log("nvEncLockBitstream(%#x)", <unsigned long> &lockOutputBuffer)
-                raiseNVENC(self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer), "locking output buffer")
+                with nogil:
+                    r = self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer)
+                raiseNVENC(r, "locking output buffer")
                 log("compress_image(..) output buffer locked, bitstreamBufferPtr=%#x", <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
 
                 #copy to python buffer:
@@ -1795,9 +1819,13 @@ cdef class Encoder:
                 data.append((<char *> lockOutputBuffer.bitstreamBufferPtr)[:size])
             finally:
                 log("nvEncUnlockBitstream(%#x)", <unsigned long> self.bitstreamBuffer)
-                raiseNVENC(self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer), "unlocking output buffer")
+                with nogil:
+                    r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
+                raiseNVENC(r, "unlocking output buffer")
                 log("nvEncUnmapInputResource(%#x)", <unsigned long> self.bitstreamBuffer)
-                raiseNVENC(self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource), "unmapping input resource")
+                with nogil:
+                    r = self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource)
+                raiseNVENC(r, "unmapping input resource")
 
         download_end = time.time()
         log("compress_image(..) download took %.1f ms", (download_end-encode_end)*1000.0)
@@ -1829,16 +1857,16 @@ cdef class Encoder:
     cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID):
         """ you must free it after use! """
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
-        cdef int ret
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
         presetConfig = <NV_ENC_PRESET_CONFIG*> malloc(sizeof(NV_ENC_PRESET_CONFIG))
         assert presetConfig!=NULL, "failed to allocate memory for preset config"
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
         log("nvEncGetEncodePresetConfig(%s, %s, %#x)", guidstr(encode_GUID), guidstr(preset_GUID), <unsigned long> presetConfig)
-        ret = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
-        if ret!=0:
-            log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(ret, ret))
+        r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
+        if r!=0:
+            log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(r, r))
             return NULL
         return presetConfig
 
@@ -1849,17 +1877,22 @@ cdef class Encoder:
         cdef GUID preset_GUID
         cdef NV_ENC_PRESET_CONFIG *presetConfig
         cdef NV_ENC_CONFIG encConfig
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         presets = {}
         log("nvEncGetEncodePresetCount(%s, %#x)", guidstr(encode_GUID), <unsigned long> &presetCount)
-        raiseNVENC(self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount), "getting preset count for %s" % guidstr(encode_GUID))
+        with nogil:
+            r = self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount)
+        raiseNVENC(r, "getting preset count for %s" % guidstr(encode_GUID))
         log("%s presets:", presetCount)
         assert presetCount<2**8
         preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
         assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
         try:
             log("nvEncGetEncodePresetGUIDs(%s, %#x)", guidstr(encode_GUID), <unsigned long> &presetCount)
-            raiseNVENC(self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount), "getting encode presets")
+            with nogil:
+                r = self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount)
+            raiseNVENC(r, "getting encode presets")
             assert presetsRetCount==presetCount
             unknowns = []
             for x in range(presetCount):
@@ -1890,10 +1923,13 @@ cdef class Encoder:
         cdef uint32_t profilesRetCount
         cdef GUID* profile_GUIDs
         cdef GUID profile_GUID
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         profiles = {}
         log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", guidstr(encode_GUID), <unsigned long> &profileCount)
-        raiseNVENC(self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount), "getting profile count")
+        with nogil:
+            r = self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount)
+        raiseNVENC(r, "getting profile count")
         log("%s profiles:", profileCount)
         assert profileCount<2**8
         profile_GUIDs = <GUID*> malloc(sizeof(GUID) * profileCount)
@@ -1901,7 +1937,9 @@ cdef class Encoder:
         PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
         try:
             log("nvEncGetEncodeProfileGUIDs(%s, %#x, %#x)", guidstr(encode_GUID), <unsigned long> profile_GUIDs, <unsigned long> &profileCount)
-            raiseNVENC(self.functionList.nvEncGetEncodeProfileGUIDs(self.context, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount), "getting encode profiles")
+            with nogil:
+                r = self.functionList.nvEncGetEncodeProfileGUIDs(self.context, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount)
+            raiseNVENC(r, "getting encode profiles")
             #(void* encoder, GUID encodeGUID, GUID* profileGUIDs, uint32_t guidArraySize, uint32_t* GUIDCount)
             assert profilesRetCount==profileCount
             for x in range(profileCount):
@@ -1918,17 +1956,22 @@ cdef class Encoder:
         cdef NV_ENC_BUFFER_FORMAT* inputFmts
         cdef uint32_t inputFmtsRetCount
         cdef NV_ENC_BUFFER_FORMAT inputFmt
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         input_formats = {}
         log("nvEncGetInputFormatCount(%s, %#x)", guidstr(encode_GUID), <unsigned long> &inputFmtCount)
-        raiseNVENC(self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount), "getting input format count")
+        with nogil:
+            r = self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount)
+        raiseNVENC(r, "getting input format count")
         log("%s input format types:", inputFmtCount)
         assert inputFmtCount>0 and inputFmtCount<2**8
         inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
         assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
         try:
             log("nvEncGetInputFormats(%s, %#x, %i, %#x)", guidstr(encode_GUID), <unsigned long> inputFmts, inputFmtCount, <unsigned long> &inputFmtsRetCount)
-            raiseNVENC(self.functionList.nvEncGetInputFormats(self.context, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount), "getting input formats")
+            with nogil:
+                r = self.functionList.nvEncGetInputFormats(self.context, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount)
+            raiseNVENC(r, "getting input formats")
             assert inputFmtsRetCount==inputFmtCount
             for x in range(inputFmtCount):
                 inputFmt = inputFmts[x]
@@ -1945,12 +1988,15 @@ cdef class Encoder:
     cdef int query_encoder_caps(self, GUID encode_GUID, NV_ENC_CAPS caps_type):
         cdef int val
         cdef NV_ENC_CAPS_PARAM encCaps
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
         memset(&encCaps, 0, sizeof(NV_ENC_CAPS_PARAM))
         encCaps.version = NV_ENC_CAPS_PARAM_VER
         encCaps.capsToQuery = caps_type
 
         log("nvEncGetEncodeCaps(%s, %#x, %#x)", guidstr(encode_GUID), <unsigned long> &encCaps, <unsigned long> &val)
-        raiseNVENC(self.functionList.nvEncGetEncodeCaps(self.context, encode_GUID, &encCaps, &val), "getting encode caps")
+        with nogil:
+            r = self.functionList.nvEncGetEncodeCaps(self.context, encode_GUID, &encCaps, &val)
+        raiseNVENC(r, "getting encode caps")
         log("query_encoder_caps(%s, %s) %s=%s", guidstr(encode_GUID), caps_type, CAPS_NAMES.get(caps_type, caps_type), val)
         return val
 
@@ -1959,9 +2005,12 @@ cdef class Encoder:
         cdef uint32_t GUIDRetCount
         cdef GUID* encode_GUIDs
         cdef GUID encode_GUID
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         log("nvEncGetEncodeGUIDCount(%#x)", <unsigned long> &GUIDCount)
-        raiseNVENC(self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount), "getting encoder count")
+        with nogil:
+            r = self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount)
+        raiseNVENC(r, "getting encoder count")
         log("found %s encode GUIDs", GUIDCount)
         assert GUIDCount<2**8
         encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
@@ -1969,7 +2018,9 @@ cdef class Encoder:
         codecs = {}
         try:
             log("nvEncGetEncodeGUIDs(%#x, %i, %#x)", <unsigned long> encode_GUIDs, GUIDCount, <unsigned long> &GUIDRetCount)
-            raiseNVENC(self.functionList.nvEncGetEncodeGUIDs(self.context, encode_GUIDs, GUIDCount, &GUIDRetCount), "getting list of encode GUIDs")
+            with nogil:
+                r = self.functionList.nvEncGetEncodeGUIDs(self.context, encode_GUIDs, GUIDCount, &GUIDRetCount)
+            raiseNVENC(r, "getting list of encode GUIDs")
             assert GUIDRetCount==GUIDCount, "expected %s items but got %s" % (GUIDCount, GUIDRetCount)
             for x in range(GUIDRetCount):
                 encode_GUID = encode_GUIDs[x]
@@ -2002,18 +2053,18 @@ cdef class Encoder:
 
     cdef open_encode_session(self):
         global context_counter, context_gen_counter, last_context_failure
-        cdef int ret            #@DuplicatedSignature
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
         cdef int t
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
         #params = <NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS*> malloc(sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
-        log("open_encode_session() cuda_context=%s", self.cuda_context)
-        log("open_encode_session() cuda_context_ptr=%#x", <unsigned long> self.cuda_context_ptr)
+        log("open_encode_session() cuda_context=%s, cuda_context_ptr=%#x", self.cuda_context, <unsigned long> self.cuda_context_ptr)
 
         #get NVENC function pointers:
         memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
         self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
         log("NvEncodeAPICreateInstance(%#x)", <unsigned long> self.functionList)
-        raiseNVENC(NvEncodeAPICreateInstance(<unsigned long> self.functionList), "getting API function list")
+        r = NvEncodeAPICreateInstance(<unsigned long> self.functionList)
+        raiseNVENC(r, "getting API function list")
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
         #NVENC init:
@@ -2026,13 +2077,14 @@ cdef class Encoder:
         cstr = <unsigned char*> &params
         pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
         log("calling nvEncOpenEncodeSessionEx @ %#x", <unsigned long> self.functionList.nvEncOpenEncodeSessionEx)
-        ret = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
-        if ret==NV_ENC_ERR_UNSUPPORTED_DEVICE:
+        with nogil:
+            r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
+        if r==NV_ENC_ERR_UNSUPPORTED_DEVICE:
             last_context_failure = time.time()
             msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
             log(msg)
             raise TransientCodecException(msg)
-        raiseNVENC(ret, "opening session")
+        raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
         log("success, encoder context=%#x (%s contexts in use)", <unsigned long> self.context, context_counter)
