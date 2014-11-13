@@ -16,7 +16,7 @@ from pycuda import driver
 from pycuda.compiler import compile
 
 from xpra.util import AtomicInteger, updict
-from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, get_pycuda_info, device_info, reset_state, \
+from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, get_pycuda_info, device_info, reset_state, \
                 get_CUDA_function, record_device_failure, record_device_success
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -1068,7 +1068,7 @@ def get_info():
         from xpra.scripts.config import python_platform
         info["kernel_version"] = python_platform.uname()[2]
     global last_context_failure, context_counter, context_gen_counter
-    info["device_count"] = len(init_all_devices())
+    info["device_count"] = len(get_devices())
     info["context_count"] = context_counter.get()
     info["generation"] = context_gen_counter.get()
     if last_context_failure>0:

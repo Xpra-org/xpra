@@ -104,6 +104,10 @@ def init_all_devices():
             log.error("error on device %s: %s", (device or i), e)
     return DEVICES
 
+def get_devices():
+    global DEVICES
+    return DEVICES
+
 def check_devices():
     devices = init_all_devices()
     assert len(devices)>0, "no valid CUDA devices found!"
