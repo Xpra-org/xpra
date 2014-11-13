@@ -97,6 +97,31 @@ def raise_error(msg):
 gl_check_error = raise_error
 
 
+#support for memory views requires Python 2.7 and PyOpenGL 3.1
+def is_pyopengl_memoryview_safe(pyopengl_version):
+    if sys.version_info[:2]<(2,7):
+        #memoryview type requires python 2.7
+        return False
+    vsplit = pyopengl_version.split('.')
+    if vsplit[:2]<['3','1']:
+        #requires PyOpenGL >= 3.1, earlier versions will not work
+        return False
+    if vsplit[:2]>=['3','2']:
+        #assume that newer versions are OK too
+        return True
+    #at this point, we know we have a 3.1.x version, but which one?
+    if len(vsplit)<3:
+        #not enough parts to know for sure, assume it's not supported
+        return False
+    micro = vsplit[2]
+    #ie: '0', '1' or '0b2'
+    if micro=='0':
+        return True     #3.1.0 is OK
+    if micro>='1':
+        return True     #3.1.1 onwards should be too
+    return False        #probably something like '0b2' which is broken
+    
+    
 def check_functions(*functions):
     missing = []
     available = []
@@ -156,6 +181,10 @@ def do_check_GL_support(min_texture_size, force_enable):
                               (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
         else:
             log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
+
+        from OpenGL import version as OpenGL_version
+        props["memoryview"] = is_pyopengl_memoryview_safe(OpenGL_version.__version__)
+
         try:
             extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
         except:

@@ -20,8 +20,9 @@ from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.gl.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GLContextManager, GLDrawingArea
-from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER
+from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, is_pyopengl_memoryview_safe
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
+from OpenGL import version as OpenGL_version
 from OpenGL.GL import \
     GL_PROJECTION, GL_MODELVIEW, \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
@@ -102,6 +103,11 @@ if OPENGL_DEBUG:
 from ctypes import c_char_p
 
 
+zerocopy_upload = is_pyopengl_memoryview_safe(OpenGL_version.__version__)
+try:
+    memoryview_type = memoryview
+except:
+    memoryview_type = None
 try:
     buffer_type = buffer
 except:
@@ -478,11 +484,20 @@ class GLWindowBackingBase(GTKWindowBacking):
         if not context:
             log("%s._do_paint_rgb(..) no context!", self)
             return False
-        #have to convert buffer to string because we can't handle buffer upload..
-        if type(img_data)==buffer_type:
+
+        #TODO: move this code up to the decode thread section
+        #prepare the pixel buffer for upload:
+        if type(img_data)==memoryview_type:
+            if not zerocopy_upload:
+                #not safe, make a copy :(
+                img_data = memoryview_to_bytes(img_data)
+        elif type(img_data) in (str, buffer_type) and zerocopy_upload:
+            #we can zerocopy if we wrap it:
+            img_data = memoryview_type(img_data)
+        elif type(img_data)!=str:
+            #everything else.. copy to bytes (aka str):
             img_data = str(img_data)
-        else:
-            img_data = memoryview_to_bytes(img_data)
+
         with context:
             self.gl_init()
             self.set_rgb_paint_state()
