@@ -487,16 +487,24 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         #TODO: move this code up to the decode thread section
         #prepare the pixel buffer for upload:
-        if type(img_data)==memoryview_type:
+        t = type(img_data)
+        if t==memoryview_type:
             if not zerocopy_upload:
                 #not safe, make a copy :(
                 img_data = memoryview_to_bytes(img_data)
-        elif type(img_data) in (str, buffer_type) and zerocopy_upload:
+                upload = "copy:memoryview_to_bytes"
+            else:
+                upload = "zerocopy:memoryview"
+        elif t in (str, buffer_type) and zerocopy_upload:
             #we can zerocopy if we wrap it:
             img_data = memoryview_type(img_data)
-        elif type(img_data)!=str:
+            upload = "zerocopy:memoryview", t
+        elif t!=str:
             #everything else.. copy to bytes (aka str):
             img_data = str(img_data)
+            upload = "copy:str", t
+        else:
+            upload = "copy:str"
 
         with context:
             self.gl_init()
@@ -514,7 +522,6 @@ class GLWindowBackingBase(GTKWindowBacking):
                 rgb_format = rgb_format.decode()
             #convert it to a GL constant:
             pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)
-            log("pixel format(%s)=%s", rgb_format, pformat)
             assert pformat is not None, "could not find pixel format for %s (bpp=%s)" % (rgb_format, bpp)
 
             bytes_per_pixel = len(rgb_format)       #ie: BGRX -> 4
@@ -531,7 +538,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             if (rowstride - width * bytes_per_pixel) >= alignment:
                 row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
 
-            self.gl_marker("%s %sbpp update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL upload format=%s" % (rgb_format, bpp, x, y, width, height, len(img_data), rowstride, row_length, alignment, CONSTANT_TO_PIXEL_FORMAT.get(pformat)))
+            self.gl_marker("%s %sbpp update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL %s format=%s" %
+                           (rgb_format, bpp, x, y, width, height, len(img_data), rowstride, row_length, alignment, upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat)))
 
             # Upload data as temporary RGB texture
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
