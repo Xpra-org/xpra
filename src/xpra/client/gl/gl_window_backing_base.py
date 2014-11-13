@@ -220,11 +220,15 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.gl_setup = False
             self.size = w, h
 
-    def gl_marker(self, msg):
-        log("%s.gl_marker(%s)", self, msg)
+    def gl_marker(self, *msg):
+        log(*msg)
         if not bool(glStringMarkerGREMEDY):
             return
-        c_string = c_char_p(msg)
+        try:
+            s = "%s" % msg
+        except:
+            s = str(msg)
+        c_string = c_char_p(s)
         glStringMarkerGREMEDY(0, c_string)
 
     def gl_frame_terminator(self):
@@ -303,7 +307,7 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         if not self.gl_setup:
             w, h = self.size
-            self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))
+            self.gl_marker("Initializing GL context for window size %d x %d", w, h)
             # Initialize viewport and matrices for 2D rendering
             glViewport(0, 0, w, h)
             glMatrixMode(GL_PROJECTION)
@@ -538,8 +542,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             if (rowstride - width * bytes_per_pixel) >= alignment:
                 row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
 
-            self.gl_marker("%s %sbpp update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL %s format=%s" %
-                           (rgb_format, bpp, x, y, width, height, len(img_data), rowstride, row_length, alignment, upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat)))
+            self.gl_marker("%s %sbpp update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL %s format=%s",
+                           rgb_format, bpp, x, y, width, height, len(img_data), rowstride, row_length, alignment, upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat))
 
             # Upload data as temporary RGB texture
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
@@ -612,7 +616,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
             self.pixel_format = pixel_format
             self.texture_size = (width, height)
-            self.gl_marker("Creating new planar textures, pixel format %s" % pixel_format)
+            self.gl_marker("Creating new planar textures, pixel format %s", pixel_format)
             # Create textures of the same size as the window's
             glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
@@ -630,7 +634,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
 
 
-        self.gl_marker("updating planar textures: %sx%s %s" % (width, height, pixel_format))
+        self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
         assert len(rowstrides)==3 and len(img_data)==3
@@ -650,7 +654,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             return
         if self.pixel_format == "GBRP":
             self.set_rgbP_paint_state()
-        self.gl_marker("painting planar update, format %s" % self.pixel_format)
+        self.gl_marker("painting planar update, format %s", self.pixel_format)
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
