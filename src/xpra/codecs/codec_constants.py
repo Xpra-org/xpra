@@ -56,23 +56,6 @@ def get_subsampling_divs(pixel_format):
     return PIXEL_SUBSAMPLING.get(pixel_format)
 
 
-AVUTIL_ENUM_TO_COLORSPACE =  {
-            0   : "YUV420P",
-            2   : "RGB",
-            3   : "BGR",
-            4   : "YUV422P",
-            5   : "YUV444P"}
-COLORSPACE_TO_AVUTIL_ENUM = {}
-for e, s in AVUTIL_ENUM_TO_COLORSPACE.items():
-    COLORSPACE_TO_AVUTIL_ENUM[s] = e
-
-def get_colorspace_from_avutil_enum(pixfmt):
-    return AVUTIL_ENUM_TO_COLORSPACE.get(pixfmt)
-
-def get_avutil_enum_from_colorspace(pixfmt):
-    return COLORSPACE_TO_AVUTIL_ENUM.get(pixfmt)
-
-
 RGB_FORMATS = ("XRGB",
                "BGRX",
                "ARGB",

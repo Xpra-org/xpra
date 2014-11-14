@@ -11,7 +11,7 @@ from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
 from xpra.util import typedict
-from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum, get_PIL_decodings
+from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr
@@ -339,15 +339,9 @@ class WindowBackingBase(object):
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             input_colorspace = options.strget("csc")
             if not input_colorspace:
-                # Backwards compatibility with pre 0.10.x clients
-                # We used to specify the colorspace as an avutil PixelFormat constant
-                old_csc_fmt = options.intget("csc_pixel_format")
-                input_colorspace = get_colorspace_from_avutil_enum(old_csc_fmt)
-                if input_colorspace is None:
-                    #completely broken and out of date servers (ie: v0.3.x):
-                    log("csc was not specified and we cannot find a colorspace from csc_pixel_format=%s, assuming it is an old server and using YUV420P", old_csc_fmt)
-                    input_colorspace = "YUV420P"
-
+                log.error("csc mode is missing from the video options!")
+                fire_paint_callbacks(callbacks, False)
+                return  False
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
             assert input_colorspace in decoder_colorspaces, "decoder does not support %s for %s" % (input_colorspace, coding)
