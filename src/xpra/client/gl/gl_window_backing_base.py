@@ -102,8 +102,11 @@ if OPENGL_DEBUG:
             glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY)
 from ctypes import c_char_p
 
-
-zerocopy_upload = is_pyopengl_memoryview_safe(OpenGL_version.__version__)
+try:
+    import OpenGL_accelerate
+except:
+    OpenGL_accelerate = None
+zerocopy_upload = is_pyopengl_memoryview_safe(OpenGL_version.__version__) and OpenGL_accelerate
 try:
     memoryview_type = memoryview
 except:
