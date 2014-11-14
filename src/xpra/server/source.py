@@ -144,7 +144,7 @@ class ServerSource(object):
     See 'next_packet'.
 
     The UI thread calls damage(), which goes into WindowSource and eventually (batching may be involved)
-    adds the damage pixels ready for processing to the compression_work_queue,
+    adds the damage pixels ready for processing to the encode_work_queue,
     items are picked off by the separate 'encode' thread (see 'encode_loop')
     and added to the damage_packet_queue.
     """
@@ -213,7 +213,7 @@ class ServerSource(object):
         self.connection_time = time.time()
 
         # the queues of damage requests we work through:
-        self.compression_work_queue = Queue()       #holds functions to call to compress data (pixels, clipboard)
+        self.encode_work_queue = Queue()            #holds functions to call to compress data (pixels, clipboard)
                                                     #items placed in this queue are picked off by the "encode" thread,
                                                     #the functions should add the packets they generate to the 'packet_queue'
         self.packet_queue = deque()                 #holds actual packets ready for sending (already encoded)
@@ -325,7 +325,7 @@ class ServerSource(object):
         #it is now safe to add the end of queue marker:
         #(all window sources will have stopped queuing data,
         # they queue data using the UI thread, so we use it too)
-        self.idle_add(self.compression_work_queue.put, None)
+        self.idle_add(self.encode_work_queue.put, None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
         if self.mmap:
@@ -1107,7 +1107,7 @@ class ServerSource(object):
             Adds encoding and window specific information
         """
         info = {
-            "damage.compression_queue.size.current" : self.compression_work_queue.qsize(),
+            "damage.compression_queue.size.current" : self.encode_work_queue.qsize(),
             "damage.packet_queue.size.current"      : len(self.packet_queue),
             }
         qpixels = [x[2] for x in list(self.packet_queue)]
@@ -1201,7 +1201,7 @@ class ServerSource(object):
                 self.send_clipboard_enabled(msg)
                 return
         #call compress_clibboard via the work queue:
-        self.compression_work_queue.put((self.compress_clipboard, packet))
+        self.encode_work_queue.put((self.compress_clipboard, packet))
 
     def compress_clipboard(self, packet):
         #Note: this runs in the 'encode' thread!
@@ -1494,7 +1494,7 @@ class ServerSource(object):
         ws = self.window_sources.get(wid)
         if ws is None:
             batch_config = self.make_batch_config(wid, window)
-            ws = WindowVideoSource(self.queue_size, self.queue_damage, self.queue_packet, self.compressed_wrapper,
+            ws = WindowVideoSource(self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               self.video_helper,
@@ -1544,15 +1544,15 @@ class ServerSource(object):
 # Methods used by WindowSource:
 #
     def queue_size(self):
-        return self.compression_work_queue.qsize()
+        return self.encode_work_queue.qsize()
 
-    def queue_damage(self, *fn_and_args):
+    def call_in_encode_thread(self, *fn_and_args):
         """
             This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
             The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
         """
-        self.statistics.compression_work_qsizes.append((time.time(), self.compression_work_queue.qsize()))
-        self.compression_work_queue.put(fn_and_args)
+        self.statistics.compression_work_qsizes.append((time.time(), self.encode_work_queue.qsize()))
+        self.encode_work_queue.put(fn_and_args)
 
     def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None):
         """
@@ -1574,12 +1574,12 @@ class ServerSource(object):
     def encode_loop(self):
         """
             This runs in a separate thread and calls all the function callbacks
-            which are added to the 'compression_work_queue'.
+            which are added to the 'encode_work_queue'.
             Must run until we hit the end of queue marker,
             to ensure all the queued items get called.
         """
         while True:
-            fn_and_args = self.compression_work_queue.get(True)
+            fn_and_args = self.encode_work_queue.get(True)
             if fn_and_args is None:
                 return              #empty marker
             try:

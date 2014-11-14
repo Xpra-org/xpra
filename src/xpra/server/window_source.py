@@ -50,9 +50,11 @@ class WindowSource(object):
     """
     We create a Window Source for each window we send pixels for.
 
-    The UI thread calls 'damage' and we eventually
-    call ServerSource.queue_damage to queue the damage compression,
-
+    The UI thread calls 'damage' for screen updates,  
+    we eventually call 'ServerSource.call_in_encode_thread' to queue the damage compression,
+    the function can then submit the packet using the 'queue_damage_packet' callback.
+    
+    (also by 'send_window_icon' and clibpoard packets)
     """
 
     @staticmethod
@@ -63,7 +65,7 @@ class WindowSource(object):
         WindowSource.timeout_add = timeout_add
         WindowSource.source_remove = source_remove
 
-    def __init__(self, queue_size, queue_damage, queue_packet, compressed_wrapper,
+    def __init__(self, queue_size, call_in_encode_thread, queue_packet, compressed_wrapper,
                     statistics,
                     wid, window, batch_config, auto_refresh_delay,
                     video_helper,
@@ -78,7 +80,7 @@ class WindowSource(object):
         self.init_vars()
 
         self.queue_size   = queue_size                  #callback to get the size of the damage queue
-        self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
+        self.call_in_encode_thread = call_in_encode_thread  #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
         self.compressed_wrapper = compressed_wrapper    #callback utility for making compressed wrappers
         self.wid = wid
@@ -395,7 +397,7 @@ class WindowSource(object):
                 #and delay sending it by a bit to allow basic icon batching:
                 delay = max(50, int(self.batch_config.delay))
                 iconlog("send_window_icon(%s) wid=%s, icon=%s, compression scheduled in %sms", window, self.wid, surf, delay)
-                self.timeout_add(delay, self.queue_damage, self.compress_and_send_window_icon)
+                self.timeout_add(delay, self.call_in_encode_thread, self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self):
         #this runs in the work queue
@@ -1111,7 +1113,7 @@ class WindowSource(object):
         log("process_damage_regions: wid=%s, adding %s pixel data to queue, elapsed time: %.1f ms, request time: %.1f ms",
                 self.wid, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
-        self.queue_damage(self.make_data_packet_cb, window, damage_time, now, self.wid, image, coding, sequence, options)
+        self.call_in_encode_thread(self.make_data_packet_cb, window, damage_time, now, self.wid, image, coding, sequence, options)
 
     def make_data_packet_cb(self, window, damage_time, process_damage_time, wid, image, coding, sequence, options):
         """ This function is called from the damage data thread!

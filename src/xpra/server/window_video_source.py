@@ -222,7 +222,7 @@ class WindowVideoSource(WindowSource):
         """ Calls self._csc_encoder.clean() from the encode thread """
         if self._csc_encoder:
             #call in encode thread:
-            self.queue_damage(self.do_csc_encoder_clean)
+            self.call_in_encode_thread(self.do_csc_encoder_clean)
 
     def do_csc_encoder_clean(self):
         csc_encoder = self._csc_encoder
@@ -234,7 +234,7 @@ class WindowVideoSource(WindowSource):
         """ Calls self._video_encoder.clean() from the encode thread """
         if self._video_encoder:
             #call in encode thread:
-            self.queue_damage(self.do_video_encoder_clean)
+            self.call_in_encode_thread(self.do_video_encoder_clean)
 
     def do_video_encoder_clean(self):
         video_encoder = self._video_encoder
