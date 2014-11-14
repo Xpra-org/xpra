@@ -315,16 +315,23 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         fw, fh = get_fixed_cursor_size()
         if fw>0 and fh>0 and (w!=fw or h!=fh):
             #OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
-            cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
-            pixbuf = pixbuf.scale_simple(fw, fh, INTERP_BILINEAR)
-            xratio, yratio = float(w)/fw, float(h)/fh
-            x, y = int(x/xratio), int(y/yratio)
+            if w<=fw and h<=fh:
+                cursorlog("pasting cursor of size %ix%i onto clear pixbuf of size %ix%i", w, h, fw, fh)
+                cursor_pixbuf = get_pixbuf_from_data("\0"*fw*fh*4, True, fw, fh, fw*4)
+                pixbuf.copy_area(0, 0, w, h, cursor_pixbuf, 0, 0)
+            else:
+                cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
+                cursor_pixbuf = pixbuf.scale_simple(fw, fh, INTERP_BILINEAR)
+                xratio, yratio = float(w)/fw, float(h)/fh
+                x, y = int(x/xratio), int(y/yratio)
         elif w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
             ratio = max(float(w)/cmaxw, float(h)/cmaxh, float(max(w,h))/csize)
             x, y, w, h = int(x/ratio), int(y/ratio), int(w/ratio), int(h/ratio)
             cursorlog("downscaling cursor %s by %.2f: %sx%s", pixbuf, ratio, w, h)
-            pixbuf = pixbuf.scale_simple(w, h, INTERP_BILINEAR)
-        return new_Cursor_from_pixbuf(display, pixbuf, x, y)
+            cursor_pixbuf = pixbuf.scale_simple(w, h, INTERP_BILINEAR)
+        else:
+            cursor_pixbuf = pixbuf
+        return new_Cursor_from_pixbuf(display, cursor_pixbuf, x, y)
 
 
     def process_ui_capabilities(self):
