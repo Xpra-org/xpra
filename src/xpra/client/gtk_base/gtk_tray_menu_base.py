@@ -11,7 +11,7 @@ gtk = import_gtk()
 gobject = import_gobject()
 
 from xpra.util import CLIENT_EXIT
-from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem
+from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, BUTTON_PRESS_MASK
 from xpra.client.client_base import EXIT_OK
 from xpra.client.gtk_base.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
@@ -61,7 +61,7 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
         self.label = label
         if tooltip:
             self.set_tooltip_text(tooltip)
-        self.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.add_events(BUTTON_PRESS_MASK)
         self.connect("button-release-event", self.on_button_release_event)
 
     def on_button_release_event(self, *args):
