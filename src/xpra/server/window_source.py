@@ -979,6 +979,8 @@ class WindowSource(object):
         """
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
+        if not window.is_managed():
+            return
         window.acknowledge_changes()
         if not self.is_cancelled():
             self.do_send_delayed_regions(damage_time, window, regions, coding, options)
