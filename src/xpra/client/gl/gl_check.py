@@ -120,8 +120,8 @@ def is_pyopengl_memoryview_safe(pyopengl_version):
     if micro>='1':
         return True     #3.1.1 onwards should be too
     return False        #probably something like '0b2' which is broken
-    
-    
+
+
 def check_functions(*functions):
     missing = []
     available = []

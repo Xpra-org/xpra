@@ -47,7 +47,7 @@ def bool_or(v, other_value, true_str, false_str, other_str):
 
 def sound_option(v):
     #ensures we return only: "on", "off" or "disabled" given any value
-    return bool_or(v, "disabled", "on", "off", "disabled")    
+    return bool_or(v, "disabled", "on", "off", "disabled")
 
 def warn(msg):
     #use this function to print warnings
@@ -551,9 +551,9 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="window_layout", default=defaults.window_layout,
                       help="The type of window layout to use, each client toolkit may provide different layouts."
                         "use the value 'help' to get a list of possible layouts. Default: %default.")
-    group.add_option("--max-size", action="store", 
-                      dest="max_size", default=defaults.max_size, 
-                      metavar="MAX_SIZE", 
+    group.add_option("--max-size", action="store",
+                      dest="max_size", default=defaults.max_size,
+                      metavar="MAX_SIZE",
                       help="The maximum size for all windows, ie: 800x600. Default: '%default'.")
     group.add_option("--border", action="store",
                       dest="border", default=defaults.border,

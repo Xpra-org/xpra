@@ -50,10 +50,10 @@ class WindowSource(object):
     """
     We create a Window Source for each window we send pixels for.
 
-    The UI thread calls 'damage' for screen updates,  
+    The UI thread calls 'damage' for screen updates,
     we eventually call 'ServerSource.call_in_encode_thread' to queue the damage compression,
     the function can then submit the packet using the 'queue_damage_packet' callback.
-    
+
     (also by 'send_window_icon' and clibpoard packets)
     """
 

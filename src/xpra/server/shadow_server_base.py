@@ -90,7 +90,6 @@ class RootWindowModel(object):
             #convert it to a cairo surface..
             #because that's what the property is expected to be
             try:
-                
                 import gtk.gdk
                 from xpra.platform.paths import get_icon
                 icon_name = self.get_generic_os_name()+".png"

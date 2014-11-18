@@ -22,7 +22,7 @@ log = Logger("paint", "cairo")
 FORMATS = {-1   : "INVALID"}
 for x in (f for f in dir(cairo) if f.startswith("FORMAT_")):
     FORMATS[getattr(cairo, x)] = x.replace("FORMAT_", "")
-        
+
 
 """
 Superclass for gtk2 and gtk3 cairo implementations.

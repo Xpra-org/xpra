@@ -88,7 +88,7 @@ def get_double_click_time():
         #They must have considered gigaparsecs divided by teapot too, which is just as useful.
         #(but still call it "Time" you see)
         MS_PER_TICK = 1000/60
-        return int(Carbon_ctypes.GetDblTime() * MS_PER_TICK)   
+        return int(Carbon_ctypes.GetDblTime() * MS_PER_TICK)
     except:
         return -1
 

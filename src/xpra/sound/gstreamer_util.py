@@ -423,7 +423,7 @@ def get_sound_source_options(plugin, options_str, remote):
             #means failure
             return None
     else:
-        options = {} 
+        options = {}
     #parse the options string and add the pairs:
     for s in options_str.split(","):
         if not s:
@@ -443,7 +443,7 @@ def parse_sound_source(sound_source_plugin, remote):
     options_str = (sound_source_plugin+":").split(":",1)[1]
     simple_str = (plugin).lower().strip()
     if not simple_str:
-        #choose the first one from 
+        #choose the first one from
         options = get_available_source_plugins()
         if not options:
             log.error("no source plugins available")

@@ -1684,7 +1684,7 @@ if nvenc3_ENABLED or nvenc4_ENABLED:
             out = out.decode('utf-8')
             vpos = out.rfind(", V")
             if vpos>0:
-                version = "  version %s" % out[vpos+3:].strip("\n")            
+                version = "  version %s" % out[vpos+3:].strip("\n")
             print("found CUDA compiler: %s%s" % (nvcc, version))
             break
     assert nvcc is not None, "cannot find nvcc compiler!"

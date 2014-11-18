@@ -133,11 +133,11 @@ class ServerSource(object):
     """
     A ServerSource represents a client connection.
     It mediates between the server class (which only knows about actual window objects and display server events)
-    and the client specific WindowSource instances (which only know about window ids 
+    and the client specific WindowSource instances (which only know about window ids
     and manage window pixel compression).
     It sends messages to the client via its 'protocol' instance (the network connection),
     directly for a number of cases (cursor, sound, notifications, etc)
-    or on behalf of the window sources for pixel data. 
+    or on behalf of the window sources for pixel data.
 
     Strategy: if we have 'ordinary_packets' to send, send those.
     When we don't, then send packets from the 'packet_queue'. (compressed pixels or clipboard data)
