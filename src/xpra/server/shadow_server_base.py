@@ -12,7 +12,7 @@ log = Logger("shadow")
 
 from xpra.net.compression import Compressed
 from xpra.server.batch_config import DamageBatchConfig
-from xpra.util import AdHocStruct, prettify_plug_name, DONE
+from xpra.util import prettify_plug_name, DONE
 
 DEFAULT_DELAY = 50              #50ms refresh
 
