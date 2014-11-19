@@ -405,6 +405,10 @@ cdef class ColorspaceConverter:
             self.out_size[i] = 0
         self.buffer_size = 0
 
+    def is_closed(self):
+        return self.context!=NULL
+
+
     def convert_image(self, image):
         cdef Py_ssize_t pic_buf_len = 0
         assert self.context!=NULL
