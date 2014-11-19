@@ -1715,6 +1715,8 @@ if nvenc3_ENABLED or nvenc4_ENABLED:
         c, stdout, stderr = get_status_output(cmd)
         if c!=0:
             print("Error: failed to compile CUDA kernel %s" % kernel)
+            print(stdout or "")
+            print(stderr or "")
             sys.exit(1)
     add_data_files("share/xpra/cuda",
                    ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
