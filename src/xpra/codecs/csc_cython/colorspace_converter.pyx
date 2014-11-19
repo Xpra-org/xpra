@@ -279,6 +279,8 @@ cdef class ColorspaceConverter:
         self.convert_image_function = None
         self.buffer_size = 0
 
+    def is_closed(self):
+        return bool(self.convert_image_function)
 
     def get_info(self):      #@DuplicatedSignature
         info = {
