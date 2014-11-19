@@ -1068,7 +1068,7 @@ def get_info():
         from xpra.scripts.config import python_platform
         info["kernel_version"] = python_platform.uname()[2]
     global last_context_failure, context_counter, context_gen_counter
-    info["device_count"] = len(get_devices())
+    info["device_count"] = len(get_devices() or [])
     info["context_count"] = context_counter.get()
     info["generation"] = context_gen_counter.get()
     if last_context_failure>0:
