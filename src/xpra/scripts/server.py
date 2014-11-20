@@ -858,9 +858,14 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         else:
             if not opts.displayfd:
                 error_cb("displayfd support is not enabled on this system, you must specify the display to use")
-            # We will try to find one automaticaly
-            # Use the temporary magic value 'S' as marker:
-            display_name = 'S' + str(os.getpid())
+            if opts.use_display:
+                #only use automatic guess for xpra displays and not X11 displays:
+                from xpra.scripts.main import guess_xpra_display     #@Reimport
+                display_name = guess_xpra_display(opts.socket_dir)
+            else:
+                # We will try to find one automaticaly
+                # Use the temporary magic value 'S' as marker:
+                display_name = 'S' + str(os.getpid())
 
     if not shadowing and not proxying and not upgrading and opts.exit_with_children and not opts.start_child:
         error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
