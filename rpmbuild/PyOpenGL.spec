@@ -10,16 +10,17 @@
 %endif
 
 %global VERSION 3.1.0
+%global RPMVERSION %{VERSION}final
 
 Name:           PyOpenGL
-Version:        %{VERSION}final
-Release:        2%{?dist}
+Version:        %{RPMVERSION}
+Release:        3%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 Group:          System Environment/Libraries
 URL:            http://pyopengl.sourceforge.net/
 Source0:        http://downloads.sourceforge.net/pyopengl/%{name}-%{VERSION}.tar.gz
-BuildRoot:      %{_tmppath}/%{name}-%{VERSION}-%{release}-root-%(%{__id_u} -n)
+BuildRoot:      %{_tmppath}/%{name}-%{RPMVERSION}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python-devel
 #see: http://fedoraproject.org/wiki/Changes/Remove_Python-setuptools-devel
 %if 0%{?fedora}
@@ -46,7 +47,7 @@ for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
 %package Tk
 Summary:        %{name} OpenGL Tk widget
 Group:          System Environment/Libraries
-Requires:       %{name} = %{VERSION}-%{release}, tkinter
+Requires:       %{name} = %{RPMVERSION}-%{release}, tkinter
 
 %description Tk
 %{name} Togl (Tk OpenGL widget) 1.6 support.
@@ -65,7 +66,7 @@ implementation).
 %package -n python3-PyOpenGL-Tk
 Summary:        %{name} OpenGL Tk widget
 Group:          System Environment/Libraries
-Requires:       %{name} = %{VERSION}-%{release}, tkinter
+Requires:       %{name} = %{RPMVERSION}-%{release}, tkinter
 
 %description -n python3-PyOpenGL-Tk
 %{name} Togl (Tk OpenGL widget) 1.6 support.
@@ -120,6 +121,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> - 3.1.0final-3
+- fixed Tk package dependencies
+
 * Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> - 3.1.0final-2
 - Add Python3 package
 
