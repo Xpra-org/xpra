@@ -507,9 +507,13 @@ class GLWindowBackingBase(GTKWindowBacking):
             img_data = memoryview_type(img_data)
             upload = "zerocopy:memoryview", t
         elif t!=str:
-            #everything else.. copy to bytes (aka str):
-            img_data = str(img_data)
-            upload = "copy:str", t
+            if hasattr(img_data, "raw"):
+                img_data = img_data.raw
+                upload = "zerocopy:mmap"
+            else:
+                #everything else.. copy to bytes (aka str):
+                img_data = str(img_data)
+                upload = "copy:str", t
         else:
             upload = "copy:str"
 
