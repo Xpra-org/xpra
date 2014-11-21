@@ -1981,8 +1981,10 @@ class UIXpraClient(XpraClientBase):
             pass
         assert maxw>0 and maxh>0 and maxw<32768 and maxh<32768, "problems calculating maximum desktop size: %sx%s" % (maxw, maxh)
         #full screen at 32bits times 4 for safety
-        self._protocol.max_packet_size = maxw*maxh*4*4
-        log("set maximum packet size to %s", self._protocol.max_packet_size)
+        p = self._protocol
+        if p:
+            p.max_packet_size = maxw*maxh*4*4
+            log("set maximum packet size to %s", p.max_packet_size)
 
 
     def init_authenticated_packet_handlers(self):
