@@ -528,6 +528,7 @@ class ApplicationWindow:
 
     def do_start_XpraClient(self, conn):
         log("start_XpraClient() client=%s", self.client)
+        self.client.encoding = self.config.encoding
         self.client.setup_connection(conn)
         self.client.init_ui(self.config)
         log("start_XpraClient() client initialized")
@@ -627,6 +628,7 @@ class ApplicationWindow:
         else:
             self.config.mode = "ssh"
         self.config.password = self.password_entry.get_text()
+        log("update_options_from_gui() %s", (self.config.username, self.config.password, self.config.mode, self.config.encryption, self.config.host, self.config.port, self.config.ssh_port, self.config.encoding))
 
     def update_gui_from_config(self):
         #mode:
@@ -638,7 +640,8 @@ class ApplicationWindow:
             self.mode_combo.set_active(2)
         if self.config.encoding:
             index = self.encoding_combo.get_menu().encoding_to_index.get(self.config.encoding, -1)
-            if index>0:
+            log("setting encoding combo to %s / %s", self.config.encoding, index)
+            if index>=0:
                 self.encoding_combo.set_history(index)
         self.username_entry.set_text(self.config.username)
         self.password_entry.set_text(self.config.password)
