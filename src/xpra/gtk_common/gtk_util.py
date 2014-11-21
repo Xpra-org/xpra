@@ -415,8 +415,7 @@ def get_icon_from_file(filename):
         loader = PixbufLoader()
         loader.write(data)
         loader.close()
-    except:
-        e = sys.exc_info()[1]
+    except Exception as e:
         log.error("get_icon_from_file(%s) %s", filename, e)
         return    None
     pixbuf = loader.get_pixbuf()

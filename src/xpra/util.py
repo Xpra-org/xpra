@@ -224,10 +224,10 @@ class typedict(dict):
 def log_screen_sizes(root_w, root_h, sizes):
     try:
         do_log_screen_sizes(root_w, root_h, sizes)
-    except Exception:
+    except Exception as e:
         from xpra.log import Logger
         log = Logger("util")
-        log.warn("failed to parse screen size information: %s", sys.exc_info()[1])
+        log.warn("failed to parse screen size information: %s", e)
 
 def prettify_plug_name(s, default=""):
     if not s:

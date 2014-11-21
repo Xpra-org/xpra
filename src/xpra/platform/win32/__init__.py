@@ -183,8 +183,7 @@ def fix_unicode_out():
                                 if not remaining:
                                     break
                                 text = text[n.value:]
-                    except:
-                        e = sys.exc_info()[1]
+                    except Exception as e:
                         _complain("%s.write: %r" % (self.name, e))
                         raise
 
@@ -192,8 +191,7 @@ def fix_unicode_out():
                     try:
                         for line in lines:
                             self.write(line)
-                    except:
-                        e = sys.exc_info()[1]
+                    except Exception as e:
                         _complain("%s.writelines: %r" % (self.name, e))
                         raise
 

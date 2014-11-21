@@ -240,8 +240,7 @@ def get_sound_codecs(is_speaker, is_server):
             return can_encode()
         else:
             return can_decode()
-    except:
-        e = sys.exc_info()[1]
+    except Exception as e:
         log.warn("failed to get list of codecs: %s" % e)
         return []
 
@@ -495,8 +494,7 @@ def start_sending_sound(sound_source_plugin, codec, volume, remote_decoders, loc
         from xpra.sound.src import SoundSource
         log.info("starting sound stream capture using %s source", PLUGIN_TO_DESCRIPTION.get(plugin, plugin))
         return SoundSource(plugin, options, codec, volume, {})
-    except:
-        e = sys.exc_info()[1]
+    except Exception as e:
         log.error("error setting up sound: %s", e, exc_info=True)
         return    None
 

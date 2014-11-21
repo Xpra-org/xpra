@@ -264,8 +264,7 @@ def main():
                         print("                         %s" % i)
                     except:
                         pass
-                except:
-                    e = sys.exc_info()[1]
+                except Exception as e:
                     print("error getting extra information on %s: %s" % (name, e))
         print("")
         print("codecs versions:")
