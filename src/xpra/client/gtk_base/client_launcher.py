@@ -544,6 +544,7 @@ class ApplicationWindow:
         def do_quit(*args):
             self.client.warn_and_quit = warn_and_quit_save
             self.client.quit = quit_save
+            self.client.cleanup()
             self.destroy()
             gtk.main_quit()
         def warn_and_quit_override(exit_code, warning):
