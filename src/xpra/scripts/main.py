@@ -112,16 +112,14 @@ def main(script_file, cmdline):
             return run_mode(script_file, err, options, args, mode, defaults)
         except SystemExit:
             raise
-        except InitExit:
-            e = sys.exc_info()[1]
+        except InitExit as e:
             if str(e) and e.args and (e.args[0] or len(e.args)>1):
                 command_info("%s" % e)
             return e.status
-        except InitInfo:
-            command_info("%s" % sys.exc_info()[1])
+        except InitInfo as e:
+            command_info("%s" % e)
             return 0
-        except InitException:
-            e = sys.exc_info()[1]
+        except (InitException, AssertionError) as e:
             command_error("xpra initialization error: %s" % e)
             return 1
         except Exception:
