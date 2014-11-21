@@ -1083,6 +1083,9 @@ class UIXpraClient(XpraClientBase):
         return self._server_ok
 
     def check_server_echo(self, ping_sent_time):
+        if self._protocol is None:
+            #no longer connected!
+            return False
         last = self._server_ok
         self._server_ok = not FAKE_BROKEN_CONNECTION and self.last_ping_echoed_time>=ping_sent_time
         if last!=self._server_ok and not self._server_ok:
