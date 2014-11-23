@@ -34,6 +34,9 @@ class UI_thread_watcher(object):
         self.timeout_add = timeout_add
         self.polling_timeout = polling_timeout
         self.max_delta = polling_timeout * 2
+        self.init_vars()
+
+    def init_vars(self):
         self.alive_callbacks = []
         self.fail_callbacks = []
         self.resume_callbacks = []
@@ -104,6 +107,7 @@ class UI_thread_watcher(object):
                 self.run_callbacks(self.alive_callbacks)
             self.timeout_add(0, self.UI_thread_wakeup)
             self.exit.wait(self.polling_timeout/1000.0)
+        self.init_vars()
 
 
 UI_watcher = None
