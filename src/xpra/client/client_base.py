@@ -38,6 +38,7 @@ EXIT_MMAP_TOKEN_FAILURE = 10
 EXIT_NO_AUTHENTICATION = 11
 EXIT_UNSUPPORTED = 12
 EXIT_REMOTE_ERROR = 13
+EXIT_INTERNAL_ERROR = 14
 
 
 EXTRA_TIMEOUT = 10
@@ -209,13 +210,18 @@ class XpraClientBase(object):
             i += 1
 
     def send_hello(self, challenge_response=None, client_salt=None):
-        hello = self.make_hello_base()
-        if self.password_file and not challenge_response:
-            #avoid sending the full hello: tell the server we want
-            #a packet challenge first
-            hello["challenge"] = True
-        else:
-            hello.update(self.make_hello())
+        try:
+            hello = self.make_hello_base()
+            if self.password_file and not challenge_response:
+                #avoid sending the full hello: tell the server we want
+                #a packet challenge first
+                hello["challenge"] = True
+            else:
+                hello.update(self.make_hello())
+        except Exception as e:
+            log.error("error preparing connection: %s", e)
+            self.quit(EXIT_INTERNAL_ERROR)
+            return
         if challenge_response:
             assert self.password_file
             hello["challenge_response"] = challenge_response
