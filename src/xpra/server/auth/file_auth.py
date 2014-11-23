@@ -47,25 +47,29 @@ auth_data = None
 auth_data_time = None
 def load_auth_file():
     global auth_data, auth_data_time, password_file, socket_dir
-    if not os.path.exists(password_file):
-        log.error("password file is missing: %s", password_file)
-        auth_data = None
-        return auth_data
     ptime = 0
-    try:
-        ptime = os.stat(password_file).st_mtime
-    except Exception as e:
-        log.error("error accessing password file time: %s", e)
+    if password_file:
+        if not os.path.exists(password_file):
+            log.error("password file is missing: %s", password_file)
+            auth_data = None
+            return auth_data
+        try:
+            ptime = os.stat(password_file).st_mtime
+        except Exception as e:
+            log.error("error accessing password file time: %s", e)
     if auth_data is None or ptime!=auth_data_time:
         auth_data = {}
         auth_data_time = ptime
-        f = None
-        try:
-            with open(password_file, mode='rb') as f:
-                data = f.read()
-        except Exception as e:
-            log.error("error loading %s: %s", password_file, e)
-            data = ""
+        if password_file:
+            f = None
+            try:
+                with open(password_file, mode='rb') as f:
+                    data = f.read()
+            except Exception as e:
+                log.error("error loading %s: %s", password_file, e)
+                data = ""
+        else:
+            data = os.environ.get('XPRA_PASSWORD')
         i = 0
         for line in data.splitlines():
             i += 1

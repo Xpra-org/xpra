@@ -172,6 +172,9 @@ class ServerCore(object):
         if not auth and opts.password_file:
             log.warn("no authentication module specified with 'password_file', using 'file' based authentication")
             auth = "file"
+        if not auth and os.environ.get('XPRA_PASSWORD'):
+            log.warn("no authentication module specified with 'XPRA_PASSWORD', using 'file' based authentication")
+            auth = "file"
         if auth=="":
             return
         elif auth=="sys":
@@ -582,6 +585,9 @@ class ServerCore(object):
         if self.encryption_keyfile:
             log("trying to load encryption key from keyfile: %s", self.encryption_keyfile)
             return self.filedata_nocrlf(self.encryption_keyfile)
+        env_key = os.environ.get('XPRA_ENCRYPTION_KEY')
+        if env_key:
+            return env_key
         v = None
         if authenticator:
             log("trying to get encryption key from: %s", authenticator)
@@ -589,6 +595,8 @@ class ServerCore(object):
         if v is None and self.password_file:
             log("trying to load encryption key from password file: %s", self.password_file)
             v = self.filedata_nocrlf(self.password_file)
+        if v is None and os.environ.get('XPRA_PASSWORD'):
+            v = os.environ.get('XPRA_PASSWORD')
         return v
 
     def hello_oked(self, proto, packet, c, auth_caps):
@@ -688,11 +696,16 @@ class ServerCore(object):
         info = {}
         def up(prefix, d):
             updict(info, prefix, d)
+        filtered_env = os.environ.copy()
+        if filtered_env.get('XPRA_PASSWORD'):
+            filtered_env['XPRA_PASSWORD'] = "*****"
+        if filtered_env.get('XPRA_ENCRYPTION_KEY'):
+            filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
 
         up("network",   get_network_caps())
         up("server",    get_server_info())
         up("threads",   get_thread_info(proto))
-        up("env",       os.environ)
+        up("env",       filtered_env)
         up("server", {
                 "mode"              : self.get_server_mode(),
                 "type"              : "Python",

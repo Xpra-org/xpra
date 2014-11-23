@@ -212,7 +212,7 @@ class XpraClientBase(object):
     def send_hello(self, challenge_response=None, client_salt=None):
         try:
             hello = self.make_hello_base()
-            if self.password_file and not challenge_response:
+            if (self.password_file or os.environ.get('XPRA_PASSWORD')) and not challenge_response:
                 #avoid sending the full hello: tell the server we want
                 #a packet challenge first
                 hello["challenge"] = True
@@ -223,7 +223,7 @@ class XpraClientBase(object):
             self.quit(EXIT_INTERNAL_ERROR)
             return
         if challenge_response:
-            assert self.password_file
+            assert self.password_file or os.environ.get('XPRA_PASSWORD')
             hello["challenge_response"] = challenge_response
             if client_salt:
                 hello["challenge_client_salt"] = client_salt
@@ -387,7 +387,7 @@ class XpraClientBase(object):
 
     def _process_challenge(self, packet):
         log("processing challenge: %s", packet[1:])
-        if not self.password_file:
+        if not self.password_file and not os.environ.get('XPRA_PASSWORD'):
             self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requires authentication, please provide a password")
             return
         password = self.load_password()
@@ -449,15 +449,23 @@ class XpraClientBase(object):
 
     def get_encryption_key(self):
         key = load_binary_file(self.encryption_keyfile)
-        if key is None and self.password_file:
+        if not key:
+            key = os.environ.get('XPRA_ENCRYPTION_KEY')
+        if not key and self.password_file:
             key = load_binary_file(self.password_file)
             if key:
                 log("used password file as encryption key")
+        if not key:
+            key = os.environ.get('XPRA_PASSWORD')
+            if key:
+                log("used XPRA_PASSWORD as encryption key")
         if key is None:
-            raise Exception("failed to load encryption keyfile %s" % self.encryption_keyfile)
+            raise Exception("no encryption key")
         return key.strip("\n\r")
 
     def load_password(self):
+        if not self.password_file:
+            return os.environ.get('XPRA_PASSWORD')
         filename = os.path.expanduser(self.password_file)
         password = load_binary_file(filename)
         if password is None:
@@ -467,7 +475,7 @@ class XpraClientBase(object):
         return password
 
     def _process_hello(self, packet):
-        if not self.password_sent and self.password_file:
+        if not self.password_sent and (self.password_file or os.environ.get('XPRA_PASSWORD')):
             self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
             return
         try:

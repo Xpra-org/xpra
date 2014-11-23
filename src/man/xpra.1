@@ -500,7 +500,8 @@ and should only be used for testing
 always fails authentication, useful for testing
 .IP \fBfile\fP
 checks the password against the file specified using
-\fBpassword\-file\fP switch.  The file can either contain
+\fBpassword\-file\fP switch or data provided via the
+\fBXPRA_PASSWORD\fP environment variable.  They can either contain
 a single password, in which case it will be used for all
 usernames, or a list of user credentials of the form (one
 per line):
@@ -610,11 +611,14 @@ This allows sessions to be secured with a password stored in a text
 file.  You should use this if you use the \fB\-\-bind\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
+Instead of using this option, password itself can be provided
+via the \fBXPRA_PASSWORD\fP environment variable.
 .TP
 \fB\-\-encryption\fP=\fICIPHER\fP
 Specifies the cipher to use for securing the connection from
 prying eyes.  This is only really useful with the \fB\-\-bind\-tcp\fP option.
-This option requires the use of the \fB\-\-encryption\-keyfile\fP option.
+This option requires the use of the \fB\-\-encryption\-keyfile\fP option
+or the \fBXPRA_ENCRYPTION_KEY\fP environment variable.
 The only cipher supported at present is \fIAES\fP, if the client
 requests encryption it will be used by both the client and server
 for all communication after the initial password verification,
@@ -626,6 +630,8 @@ it should not be considered safe from determined attackers.
 Specifies the key to use with the encryption cipher specified
 with \fB\-\-encryption\fP.  The client and server must use the
 same keyfile contents.
+Instead of using this option, the key can be provided
+via the \fBXPRA_ENCRYPTION_KEY\fP environment variable.
 .TP
 \fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP
 Name of a file containing regular expressions, any clipboard data
@@ -948,6 +954,19 @@ environment of the child to point to the xpra display.
 
 \fBxpra attach\fP, on the other hand, uses this variable to determine
 which display the remote applications should be shown on.
+
+\fBXPRA_PASSWORD\fP
+Can be used to specify the password (or user and password list) as
+an alternative to a password file.
+If \fB\-\-password\-file\fP is also specified, this environment variable
+is ignored.
+
+\fBXPRA_ENCRYPTION_KEY\fP
+Can be used to specify the encryption key to use if encryption is enabled.
+Specifying the key on its own does not enable encryption.
+If \fB\-\-encryption\-keyfile\fP is also specified, this environment
+variable is ignored.
+
 .\" --------------------------------------------------------------------
 .SH FILES
 \fIxpra.conf\fP stores default values for most options.

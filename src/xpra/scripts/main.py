@@ -731,7 +731,7 @@ def do_parse_cmdline(cmdline, defaults):
         assert len(ENCRYPTION_CIPHERS)>0, "cannot use encryption: no ciphers available"
         if options.encryption not in ENCRYPTION_CIPHERS:
             raise InitException("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
-        if not options.password_file and not options.encryption_keyfile:
+        if not options.password_file and not os.environ.get('XPRA_PASSWORD') and not options.encryption_keyfile and not os.environ.get('XPRA_ENCRYPTION_KEY'):
             raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
     #ensure opengl is either True, False or None
     options.opengl = parse_bool("opengl", options.opengl)
