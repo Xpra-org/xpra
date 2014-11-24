@@ -429,11 +429,16 @@ class ApplicationWindow:
 
 
     def handle_exception(self, e):
+        t = str(e)
+        if self.config.debug:
+            #in debug mode, include the full stacktrace:
+            import traceback
+            t = traceback.format_exc()
         def ui_handle_exception():
             self.reset_client()
             self.set_sensitive(True)
             self.set_info_color(True)
-            self.set_info_text(str(e))
+            self.set_info_text(t)
             self.window.show()
         gobject.idle_add(ui_handle_exception)
 
