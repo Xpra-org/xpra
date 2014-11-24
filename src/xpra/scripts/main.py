@@ -1030,6 +1030,11 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             if debug_cb:
                 debug_cb("starting %s tunnel" % str(cmd[0]))
                 #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
+            #non-string arguments can make Popen choke,
+            #instead of lazily converting everything to a string, we validate the command:
+            for x in cmd:
+                if type(x)!=str:
+                    raise Exception("argument is not a string: %s (%s), found in command: %s" % (x, type(x), cmd))
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError as e:
             raise Exception("Error running ssh program '%s': %s" % (cmd, e))
