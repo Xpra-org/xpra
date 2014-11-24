@@ -124,8 +124,12 @@ class SoundSource(SoundPipeline):
         #            "duration"  : buf.duration,
         #            "offset"    : buf.offset,
         #            "offset_end": buf.offset_end}
-        self.do_emit_buffer(buf.data, {"timestamp" : buf.timestamp,
-                                       "duration"  : buf.duration})
+        def normv(v):
+            if v==2**64-1:
+                return -1
+            return v
+        self.do_emit_buffer(buf.data, {"timestamp" : normv(buf.timestamp),
+                                       "duration"  : normv(buf.duration)})
 
 
     def do_emit_buffer(self, data, metadata={}):
