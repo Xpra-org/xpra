@@ -486,11 +486,11 @@ class ApplicationWindow:
                 #putty needs those:
                 full_ssh.append("-ssh")
                 full_ssh.append("-agent")
-            if self.config.ssh_port!="22":
+            if str(self.config.ssh_port)!="22":
                 if sys.platform.startswith("win"):
-                    full_ssh += ["-P", self.config.ssh_port]
+                    full_ssh += ["-P", str(self.config.ssh_port)]
                 else:
-                    full_ssh += ["-p", self.config.ssh_port]
+                    full_ssh += ["-p", str(self.config.ssh_port)]
             params["full_ssh"] = full_ssh
             params["password"] = password
             params["display_name"] = "ssh:%s:%s" % (self.config.host, self.config.port)
