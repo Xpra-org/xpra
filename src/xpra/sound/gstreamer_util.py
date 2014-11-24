@@ -198,6 +198,12 @@ except:
     log("failed to import GStreamer", exc_info=True)
 
 
+def normv(v):
+    if v==2**64-1:
+        return -1
+    return v
+
+
 def get_all_plugin_names():
     global all_plugin_names, has_gst
     if len(all_plugin_names)==0 and has_gst:

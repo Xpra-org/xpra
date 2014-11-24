@@ -8,7 +8,7 @@ import sys
 
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, get_queue_time, MP3, CODECS, QUEUE_LEAK
+from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, get_queue_time, normv, MP3, CODECS, QUEUE_LEAK
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -16,12 +16,6 @@ log = Logger("sound")
 AUDIOCONVERT = True
 AUDIORESAMPLE = False
 QUEUE_TIME = get_queue_time(0)
-
-
-def normv(v):
-    if v==2**64-1:
-        return -1
-    return v
 
 
 class SoundSource(SoundPipeline):

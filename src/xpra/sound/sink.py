@@ -8,7 +8,7 @@ import sys, os, time
 
 from xpra.sound.sound_pipeline import SoundPipeline, gobject, one_arg_signal
 from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, MP3, CODECS, gst, QUEUE_LEAK, MS_TO_NS
+from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, MP3, CODECS, gst, QUEUE_LEAK, MS_TO_NS
 
 from xpra.os_util import thread
 from xpra.log import Logger
@@ -157,10 +157,10 @@ class SoundSink(SoundPipeline):
         if metadata:
             ts = metadata.get("timestamp")
             if ts is not None:
-                buf.timestamp = ts
+                buf.timestamp = normv(ts)
             d = metadata.get("duration")
             if d is not None:
-                buf.duration = d
+                buf.duration = normv(d)
         log("add_data(..) queue_state=%s", self.queue_state)
         if self.push_buffer(buf):
             self.buffer_count += 1
