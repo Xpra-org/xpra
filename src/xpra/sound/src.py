@@ -17,6 +17,13 @@ AUDIOCONVERT = True
 AUDIORESAMPLE = False
 QUEUE_TIME = get_queue_time(0)
 
+
+def normv(v):
+    if v==2**64-1:
+        return -1
+    return v
+
+
 class SoundSource(SoundPipeline):
 
     __gsignals__ = SoundPipeline.__generic_signals__.copy()
@@ -100,8 +107,8 @@ class SoundSource(SoundPipeline):
         #info = sample.get_info()
         size = buf.get_size()
         data = buf.extract_dup(0, size)
-        self.do_emit_buffer(data, {"timestamp"  : buf.pts,
-                                   "duration"   : buf.duration})
+        self.do_emit_buffer(data, {"timestamp"  : normv(buf.pts),
+                                   "duration"   : normv(buf.duration)})
 
 
     def on_new_preroll0(self, appsink):
@@ -124,10 +131,6 @@ class SoundSource(SoundPipeline):
         #            "duration"  : buf.duration,
         #            "offset"    : buf.offset,
         #            "offset_end": buf.offset_end}
-        def normv(v):
-            if v==2**64-1:
-                return -1
-            return v
         self.do_emit_buffer(buf.data, {"timestamp" : normv(buf.timestamp),
                                        "duration"  : normv(buf.duration)})
 
