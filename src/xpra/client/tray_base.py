@@ -90,7 +90,7 @@ class TrayBase(object):
             with_ext = "%s.%s" % (basefilename, self.default_icon_extension)
             icon_dir = get_icon_dir()
             filename = os.path.join(icon_dir, with_ext)
-        if not os.path.exists(filename):
+        if not filename or not os.path.exists(filename):
             log.error("could not find icon '%s' for name '%s'", filename, basefilename)
             return
         abspath = os.path.abspath(filename)
