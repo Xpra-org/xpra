@@ -716,7 +716,7 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
     if XPRA_VERSION_NO<[0, 3]:
         return  {}
     info_cmd = XPRA_INFO_COMMAND[:]
-    if XPRA_USE_PASSWORD and password_filename:
+    if XPRA_USE_PASSWORD:
         info_cmd.append("--password-file=%s" % password_filename)
     out = getoutput(info_cmd)
     if not out:
@@ -868,13 +868,13 @@ def test_xpra():
                             for speed in speed_options:
                                 for speaker in XPRA_SPEAKER_OPTIONS:
                                     for mic in XPRA_MICROPHONE_OPTIONS:
-                                        comp_options = []
-                                        if XPRA_VERSION_NO>=[0, 14]:
+                                        comp_options = [None]
+                                        if XPRA_VERSION_NO>=[0, 13]:
                                             comp_options = XPRA_COMPRESSORS_OPTIONS
                                         for comp in comp_options:
                                             comp_level_options = XPRA_COMPRESSION_LEVEL_OPTIONS
                                             for compression in comp_level_options:
-                                                packet_encoders_options = []
+                                                packet_encoders_options = [None]
                                                 if XPRA_VERSION_NO>=[0, 14]:
                                                     packet_encoders_options = XPRA_PACKET_ENCODERS_OPTIONS
                                                 for packet_encoders in packet_encoders_options:
