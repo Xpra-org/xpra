@@ -106,7 +106,7 @@ try:
     import OpenGL_accelerate
 except:
     OpenGL_accelerate = None
-zerocopy_upload = is_pyopengl_memoryview_safe(OpenGL_version.__version__) and OpenGL_accelerate
+zerocopy_upload = os.environ.get("XPRA_ZEROCOPY_OPENGL_UPLOAD", "1")=="1" and is_pyopengl_memoryview_safe(OpenGL_version.__version__) and OpenGL_accelerate
 try:
     memoryview_type = memoryview
 except:
