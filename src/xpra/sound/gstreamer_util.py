@@ -187,12 +187,15 @@ def import_gst0_10():
         unredirect_stderr(oldfd)
         sys.argv = saved_args
 
+_gst_major_version = None
 try:
     from xpra.gtk_common.gobject_compat import is_gtk3
     if is_gtk3():
         gst = import_gst1()
+        _gst_major_version = 1
     else:
         gst = import_gst0_10()
+        _gst_major_version = 0
     has_gst = True
 except:
     log("failed to import GStreamer", exc_info=True)
@@ -228,12 +231,18 @@ if has_gst:
         if encoding in CODECS:
             #we already have one for this encoding
             continue
+        elif sys.platform.startswith("win") and _gst_major_version==0 and encoding==FLAC:
+            #the gstreamer 0.10 builds on win32 use the outdated oss build,
+            #which includes outdated flac libraries with known CVEs,
+            #so avoid using those:
+            log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
+            continue
         #verify we have all the elements needed:
         if has_plugins(*elements[1:]):
             #ie: FLAC, "flacenc", "oggmux", "flacdec", "oggdemux" = elements
             encoding, encoder, muxer, decoder, demuxer = elements
             CODECS[encoding] = (encoder, muxer, decoder, demuxer)
-    log("initalized CODECS:")
+    log("initialized CODECS:")
     for k in [x for x in CODEC_ORDER if x in CODECS]:
         log("* %s : %s", k, CODECS[k])
 
