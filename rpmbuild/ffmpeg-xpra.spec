@@ -1,6 +1,6 @@
 %global   real_name ffmpeg
-Name:	     ffmpeg-xpra	
-Version:     2.4.3
+Name:	     ffmpeg-xpra
+Version:     2.4.4
 Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra	
 
@@ -126,6 +126,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Dec 01 2014 Antoine Martin <antoine@devloop.org.uk> 2.4.4-1
+- new upstream release
+
 * Mon Nov 03 2014 Antoine Martin <antoine@devloop.org.uk> 2.4.3-1
 - new upstream release
 
