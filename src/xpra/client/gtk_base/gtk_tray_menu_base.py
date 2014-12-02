@@ -235,6 +235,10 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_bellmenuitem())
         if self.client.windows_enabled:
             menu.append(self.make_cursorsmenuitem())
+        if not self.client.readonly and self.client.keyboard_helper:
+            menu.append(self.make_layoutsmenuitem())
+        if self.client.windows_enabled and not self.client.readonly:
+            menu.append(self.make_keyboardsyncmenuitem())
         menu.append(self.make_notificationsmenuitem())
         if not self.client.readonly:
             menu.append(self.make_clipboardmenuitem())
@@ -250,10 +254,6 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_microphonemenuitem())
         if SHOW_COMPRESSION_MENU:
             menu.append(self.make_compressionmenu())
-        if not self.client.readonly and self.client.keyboard_helper:
-            menu.append(self.make_layoutsmenuitem())
-        if self.client.windows_enabled and not self.client.readonly:
-            menu.append(self.make_keyboardsyncmenuitem())
         if self.client.windows_enabled:
             menu.append(self.make_refreshmenuitem())
             menu.append(self.make_raisewindowsmenuitem())
