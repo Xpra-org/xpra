@@ -950,7 +950,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         if log_filename0 != log_filename1:
             # we now have the correct log filename, so use it:
             os.rename(log_filename0, log_filename1)
-            stderr.write("Actual log file name is now: %s" % log_filename1)
+            stderr.write("Actual log file name is now: %s\n" % log_filename1)
         stdout.close()
         stderr.close()
 
