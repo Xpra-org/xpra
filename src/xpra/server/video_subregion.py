@@ -46,6 +46,11 @@ class VideoSubregion(object):
     def cleanup(self):
         self.reset()
 
+
+    def __repr__(self):
+        return "VideoSubregion(%s)" % self.get_info()
+
+
     def cancel_refresh_timer(self):
         refreshlog("cancel_refresh_timer() timer=%s", self.refresh_timer)
         if self.refresh_timer:
@@ -127,6 +132,8 @@ class VideoSubregion(object):
         self.counter = 0
 
     def identify_video_subregion(self, ww, wh, damage_events_count, last_damage_events):
+        sslog("%s.identify_video_subregion(..)", self)
+        sslog("identify_video_subregion(%s, %s, %s, %s)", ww, wh, damage_events_count, last_damage_events)
 
         def setnewregion(rect, msg="", *args):
             if rect.x<=0 and rect.y<=0 and rect.width>=ww and rect.height>=wh:
@@ -223,7 +230,8 @@ class VideoSubregion(object):
             # we would otherwise end up excluding the ones on the edge
             # if they ever happen to have a slightly lower hit count)
             score = inpct * ww*wh*2 / (ww*wh + insize)
-            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, score=%2i", info, region, inpct, outpct, score)
+            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, score=%2i",
+                  info, region, inpct, outpct, 100*region.width*region.height/ww/wh, score)
             return score
 
         update_markers()
@@ -235,6 +243,8 @@ class VideoSubregion(object):
             if cur_score>=125:
                 sslog("keeping existing video region %s with score %s", rect, cur_score)
                 return
+
+        scores = {None : 0}
 
         #split the regions we really care about (enough pixels, big enough):
         damage_count = {}
@@ -261,10 +271,11 @@ class VideoSubregion(object):
                         return self.novideoregion("most damaged region is (almost?) the whole window: %s", r)
                     setnewregion(r, "%s%% of large damage requests, score=%s", most_pct, score)
                     return
+                elif score>=100:
+                    scores[r] = score
 
         #try harder: try combining regions with the same width or height:
         #(some video players update the video region in bands)
-        scores = {None : 0}
         for w, d in wc.items():
             for x,regions in d.items():
                 if len(regions)>=2:
@@ -298,7 +309,7 @@ class VideoSubregion(object):
             sslog("keeping existing video region %s with score %s", rect, cur_score)
             return
 
-        if highscore>=105:
+        if highscore>=100:
             region = [r for r,s in scores.items() if s==highscore][0]
             return setnewregion(region, "high score: %s", highscore)
 
