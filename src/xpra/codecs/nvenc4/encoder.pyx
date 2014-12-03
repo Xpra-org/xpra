@@ -1690,7 +1690,7 @@ cdef class Encoder:
 
         #FIXME: we should copy from pixels directly..
         #copy to input buffer:
-        if image_stride<self.inputPitch:
+        if image_stride<=self.inputPitch:
             stride = image_stride
             assert len(pixels)<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, len(pixels), w, h, stride, self.inputPitch, self.input_height)
             self.inputBuffer.data[:len(pixels)] = pixels
@@ -1699,7 +1699,9 @@ cdef class Encoder:
             #before uploading to the device... this is probably costly!
             stride = self.inputPitch
             for i in range(h):
-                self.inputBuffer.data[i*stride:(i+1)*stride] = pixels[i*image_stride:(i+1)*image_stride+stride]
+                x = i*stride
+                y = i*image_stride
+                self.inputBuffer.data[x:x+stride] = pixels[y:y+stride]
         log("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), input_size)
 
         #copy input buffer to CUDA buffer:
