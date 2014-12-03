@@ -317,6 +317,7 @@ OPTION_TYPES = {
                     "compressors"       : list,
                     "packet-encoders"   : list,
                     "key-shortcut"      : list,
+                    "start"             : list,
                     "start-child"       : list,
                     "bind-tcp"          : list,
                }
@@ -409,6 +410,7 @@ def get_defaults():
                     "packet-encoders"   : ["all"],
                     "key-shortcut"      : ["Meta+Shift+F4:quit", "Meta+Shift+F8:magic_key", "Meta+Shift+F11:show_session_info"],
                     "bind-tcp"          : None,
+                    "start"             : None,
                     "start-child"       : None,
                     }
     return GLOBAL_DEFAULTS

@@ -300,9 +300,12 @@ def do_parse_cmdline(cmdline, defaults):
                 " or ".join(["'%s'" % x for x in server_modes]))
     parser.add_option_group(group)
     #we support remote start, so we need those even if we don't have server support:
+    group.add_option("--start", action="append",
+                      dest="start", metavar="CMD", default=list(defaults.start or []),
+                      help="program to spawn in new server (may be repeated). Default: %default.")
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
-                      help="program to spawn in new server (may be repeated). Default: %default.")
+                      help="program to spawn in new server, taken into account by the exit-with-children option (may be repeated). Default: %default.")
     group.add_option("--exit-with-children", action="store_true",
                       dest="exit_with_children", default=defaults.exit_with_children,
                       help="Terminate the server when the last --start-child command(s) exit")
@@ -588,7 +591,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="The file containing the password required to connect (useful to secure TCP mode). Default: '%default'.")
     group.add_option("--input-method", action="store",
                       dest="input_method", default=defaults.input_method,
-                      help="Which X11 input method to configure for client applications started with start-child (default: '%default', options: none, keep, xim, IBus, SCIM, uim)")
+                      help="Which X11 input method to configure for client applications started with start or start-child (default: '%default', options: none, keep, xim, IBus, SCIM, uim)")
     group.add_option("--dpi", action="store",
                       dest="dpi", default=defaults.dpi,
                       help="The 'dots per inch' value that client applications should try to honour, from 10 to 1000 or 0 for automatic setting. Default: %s." % print_number(defaults.dpi))
@@ -1204,7 +1207,7 @@ def shellquote(s):
 
 def strip_defaults_start_child(start_child, defaults_start_child):
     if start_child and defaults_start_child:
-        #ensure we don't pass start-child commands
+        #ensure we don't pass start / start-child commands
         #which came from defaults (the configuration files)
         #only the ones specified on the command line:
         #(and only remove them once so the command line can re-add the same ones!)
@@ -1224,6 +1227,10 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         start_child = strip_defaults_start_child(opts.start_child, defaults.start_child)
         for c in start_child:
             proxy_args.append(shellquote("--start-child=%s" % c))
+    if opts.start:
+        start = strip_defaults_start_child(opts.start, defaults.start)
+        for c in start:
+            proxy_args.append(shellquote("--start=%s" % c))
     #key=value options we forward:
     for x in ("session-name", "encoding", "socket-dir", "dpi"):
         v = getattr(opts, x.replace("-", "_"))

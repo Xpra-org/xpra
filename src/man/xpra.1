@@ -96,6 +96,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
 .HP
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
+[\fB\-\-start\fP=\fICMD\fP]\fB .\|.\|.\fP
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
@@ -196,7 +197,7 @@ The password is only actually used on Microsoft Windows.
 \fBxpra start\fP \fI:7\fP
 Start an xpra server using display number \fI:7\fP.
 .TP
-\fBxpra start\fP \fIssh:bigbox:7 \-\-start\-child=xterm\fP
+\fBxpra start\fP \fIssh:bigbox:7 \-\-start=xterm\fP
 Start an xpra server on \fIbigbox\fP with an xterm in it,
 and connect to it.
 .TP
@@ -519,11 +520,14 @@ automatically (either \fBpam\fP or \fBwin32\fP)
 
 .SS Options for start, upgrade
 .TP
-\fB\-\-start\-child\fP=\fICMD\fP
+\fB\-\-start\fP=\fICMD\fP
 After starting the server, runs the command \fICMD\fP using the
 default shell.  The command is run with its \fB$DISPLAY\fP set to point to
 the newly-started server.  This option may be given multiple times to
 start multiple children.
+\fB\-\-start\-child\fP=\fICMD\fP
+Identical to \fB\-\-start\fP, except the commands are taken into
+account by \fB\-\-exit\-with\-children\fP.
 .TP
 \fB\-\-exit\-with\-children\fP
 This option may only be used if \fB\-\-start\-child\fP is also

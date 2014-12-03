@@ -781,7 +781,7 @@ def find_fakeXinerama():
     return find_lib("libfakeXinerama.so.1")
 
 
-def start_children(child_reaper, commands, fake_xinerama):
+def start_children(child_reaper, commands, fake_xinerama, ignore=False):
     assert os.name=="posix"
     from xpra.log import Logger
     log = Logger("server")
@@ -800,7 +800,7 @@ def start_children(child_reaper, commands, fake_xinerama):
             continue
         try:
             proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
-            child_reaper.add_process(proc, child_cmd)
+            child_reaper.add_process(proc, child_cmd, ignore)
             log.info("started child '%s' with pid %s", child_cmd, proc.pid)
         except OSError as e:
             sys.stderr.write("Error spawning child '%s': %s\n" % (child_cmd, e))
@@ -1048,6 +1048,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         if opts.exit_with_children:
             assert opts.start_child, "exit-with-children was specified but start-child is missing!"
 
+        if opts.start:
+            assert os.name=="posix", "start cannot be used on %s" % os.name
+            start_children(child_reaper, opts.start, (opts.fake_xinerama and not shadowing), True)
         if opts.start_child:
             assert os.name=="posix", "start-child cannot be used on %s" % os.name
             start_children(child_reaper, opts.start_child, (opts.fake_xinerama and not shadowing))

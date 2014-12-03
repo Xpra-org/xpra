@@ -220,7 +220,11 @@ key-shortcut = Meta+Shift+F11:show_session_info
 #start-child = /usr/bin/xeyes
 # Xsession can take care of initializing dbus, keyring-daemon,
 # gpg-agent or whatever else might be usually started together with X
-#start-child = /etc/X11/Xsession true
+#start = /etc/X11/Xsession true
+# The difference between start and start-child is only relevant
+# when using exit-with-children.
+# This causes the server to terminate when the last child has exited:
+exit-with-children = no
 
 # Video encoders loaded by the server
 # (all of them unless specified)
