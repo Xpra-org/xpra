@@ -130,7 +130,6 @@ class ShadowServerBase(object):
         self.sharing = False
         DamageBatchConfig.ALWAYS = True             #always batch
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
-        DamageBatchConfig.RECALCULATE_DELAY = 0.1   #re-compute delay 10 times per second at most
 
     def get_server_mode(self):
         return "shadow"

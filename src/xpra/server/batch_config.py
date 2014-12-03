@@ -14,21 +14,37 @@ NRECS = 100
 from collections import deque
 from xpra.simple_stats import add_list_stats
 
+import os
+
+
+def ival(key, default, minv=0, maxv=None):
+    try:
+        v = os.environ.get("XPRA_BATCH_%s" % key)
+        iv = int(v)
+        if v is None:
+            return default
+        assert minv is None or minv<=iv, "value for %s is too small: %s (minimum is %s)" % (key, iv, minv)
+        assert maxv is None or maxv>=iv, "value for %s is too high: %s (maximum is %s)" % (key, iv, maxv)
+        return iv
+    except Exception as e:
+        from xpra.log import Logger
+        log = Logger("util")
+        log.warn("failed to parse value '%s' for %s: %s", v, key, e)
+        return default
+
 
 class DamageBatchConfig(object):
     """
     Encapsulate all the damage batching configuration into one object.
     """
     ALWAYS = False
-    MAX_EVENTS = min(50, NRECS)         #maximum number of damage events
-    MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
-    TIME_UNIT = 1                       #per second
-    MIN_DELAY = 5                       #lower than 5 milliseconds does not make sense, just don't batch
-    START_DELAY = 50
-    MAX_DELAY = 500
-    TIMEOUT_DELAY = 15000
-    RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
-                                        #(this theoretical limit is never achieved since calculations take time + scheduling also does)
+    MAX_EVENTS = ival("MAX_EVENTS", min(50, NRECS), 10)         #maximum number of damage events
+    MAX_PIXELS = ival("MAX_PIXELS", 1024*1024*MAX_EVENTS)       #small screen at MAX_EVENTS frames
+    TIME_UNIT = ival("TIME_UNIT", 1, 1, 1000)                   #per second
+    MIN_DELAY = ival("MIN_DELAY", 5, 0, 1000)                   #lower than 5 milliseconds does not make sense, just don't batch
+    START_DELAY = ival("START_DELAY", 50, 1, 1000)
+    MAX_DELAY = ival("MAX_DELAY", 500, 1, 15000)
+    TIMEOUT_DELAY = ival("TIMEOUT_DELAY", 15000, 100, 100000)
 
     def __init__(self):
         self.always = self.ALWAYS
