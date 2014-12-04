@@ -887,7 +887,8 @@ def test_xpra():
                                                     else:
                                                         cmd.append(":%s" % (DISPLAY_NO))
                                                     cmd.append("--readonly")
-                                                    cmd.append("--password-file=%s" % password_filename)
+                                                    if XPRA_USE_PASSWORD:
+                                                        cmd.append("--password-file=%s" % password_filename)
                                                     if packet_encoders:
                                                         cmd += ["--packet-encoders=%s" % packet_encoders]
                                                     if comp:
