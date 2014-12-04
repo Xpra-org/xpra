@@ -23,6 +23,11 @@ from xpra.scripts.main import TCP_NODELAY, warn
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
 
+# use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
+# or when the user requests it with the env var:
+USE_PROCESS_POLLING = os.environ.get("XPRA_USE_PROCESS_POLLING")=="1" or sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
+
+
 _cleanups = []
 def run_cleanups():
     global _cleanups
@@ -67,21 +72,12 @@ class ChildReaper(object):
         self._ignored_pids = set()
         from xpra.log import Logger
         self._logger = Logger("server", "util")
-        old_python = sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0)
-        if old_python:
+        self._logger.enable_debug()
+        if USE_PROCESS_POLLING:
             POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
             self._logger.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
             self._logger.warn("switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
-            #keep track of process objects:
-            self.processes = []
-            def check_procs():
-                for proc in self.processes:
-                    if proc.poll() is not None:
-                        self.add_dead_pid(proc.pid)
-                        self.check()
-                self.processes = [proc for proc in self.processes if proc.poll() is None]
-                return True
-            gobject.timeout_add(POLL_DELAY*1000, check_procs)
+            gobject.timeout_add(POLL_DELAY*1000, self.check)
         else:
             #with a less buggy python, we can just check the list of pids
             #whenever we get a SIGCHLD
@@ -118,6 +114,8 @@ class ChildReaper(object):
             self._logger("check() pids=%s, dead_pids=%s", pids, self._dead_pids)
             if pids.issubset(self._dead_pids):
                 self._quit()
+                return False
+        return True
 
     def sigchld(self, signum, frame):
         self._logger("sigchld(%s, %s)", signum, frame)
