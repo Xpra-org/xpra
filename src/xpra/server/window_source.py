@@ -892,12 +892,6 @@ class WindowSource(object):
 
     def delayed_region_soft_timeout(self):
         self.soft_timer = None
-        if self._damage_delayed is None:
-            return
-        damage_time = self._damage_delayed[0]
-        now = time.time()
-        actual_delay = int(1000.0*(now-damage_time))
-        self.batch_config.last_actual_delays.append((now, actual_delay))
         self.do_send_delayed()
         return False
 
@@ -920,7 +914,7 @@ class WindowSource(object):
         return False
 
     def may_send_delayed(self):
-        """ send the delayed region for processing if there is no client backlog """
+        """ send the delayed region for processing if the time is right """
         if not self._damage_delayed:
             log("window %s delayed region already sent", self.wid)
             return False
@@ -929,40 +923,41 @@ class WindowSource(object):
         now = time.time()
         actual_delay = int(1000.0 * (now-damage_time))
         if packets_backlog>0:
-            if actual_delay<self.batch_config.max_delay:
-                log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
-                        self.wid, packets_backlog, self.batch_config.delay, actual_delay)
-                #this method will get fired again damage_packet_acked
-                return False
-            else:
+            if actual_delay>self.batch_config.max_delay:
                 log.warn("send_delayed for wid %s, elapsed time %.1f is above limit of %.1f - sending now", self.wid, actual_delay, self.batch_config.max_delay)
-        else:
-            #if we're here, there is no packet backlog, and therefore
-            #may_send_delayed() may not be called again by an ACK packet,
-            #so we must either process the region now or set a timer to
-            #check again later:
-            def check_again(delay=actual_delay/10.0):
-                delay = int(min(self.batch_config.max_delay, max(10, delay)))
-                self.timeout_add(delay, self.may_send_delayed)
-                return False
-            if self.batch_config.locked and self.batch_config.delay>actual_delay:
-                #ensure we honour the fixed delay
-                #(as we may get called from a damage ack before we expire)
-                return check_again(self.batch_config.delay-actual_delay)
-            pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
-            ww, wh = self.window_dimensions
-            if pixels_encoding_backlog>=(ww*wh):
-                log("send_delayed for wid %s, delaying again because too many pixels are waiting to be encoded: %s", self.wid, ww*wh)
-                return check_again()
-            elif enc_backlog_count>10:
-                log("send_delayed for wid %s, delaying again because too many damage regions are waiting to be encoded: %s", self.wid, enc_backlog_count)
-                return check_again()
-            #no backlog, so ok to send, clear soft-expired counter:
-            self.soft_expired = 0
-            log("send_delayed for wid %s, batch delay is %.1f, elapsed time is %.1f ms", self.wid, self.batch_config.delay, actual_delay)
-        self.batch_config.last_actual_delays.append((now, actual_delay))
+                return self.do_send_delayed()
+            log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
+                    self.wid, packets_backlog, self.batch_config.delay, actual_delay)
+            #this method will get fired again damage_packet_acked
+            return
+        #if we're here, there is no packet backlog, and therefore
+        #may_send_delayed() may not be called again by an ACK packet,
+        #so we must either process the region now or set a timer to
+        #check again later:
+        def check_again(delay=actual_delay/10.0):
+            #schedules a call to check again:
+            delay = int(min(self.batch_config.max_delay, max(10, delay)))
+            self.timeout_add(delay, self.may_send_delayed)
+            return
+        if self.batch_config.locked and self.batch_config.delay>actual_delay:
+            #ensure we honour the fixed delay
+            #(as we may get called from a damage ack before we expire)
+            check_again(self.batch_config.delay-actual_delay)
+            return
+        pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
+        ww, wh = self.window_dimensions
+        if pixels_encoding_backlog>=(ww*wh):
+            log("send_delayed for wid %s, delaying again because too many pixels are waiting to be encoded: %s", self.wid, ww*wh)
+            check_again()
+            return
+        elif enc_backlog_count>10:
+            log("send_delayed for wid %s, delaying again because too many damage regions are waiting to be encoded: %s", self.wid, enc_backlog_count)
+            check_again()
+            return
+        #no backlog, so ok to send, clear soft-expired counter:
+        self.soft_expired = 0
+        log("send_delayed for wid %s, batch delay is %.1f, elapsed time is %.1f ms", self.wid, self.batch_config.delay, actual_delay)
         self.do_send_delayed()
-        return False
 
     def do_send_delayed(self):
         self.cancel_timeout_timer()
@@ -970,6 +965,10 @@ class WindowSource(object):
         delayed = self._damage_delayed
         if delayed:
             self._damage_delayed = None
+            damage_time = delayed[0]
+            now = time.time()
+            actual_delay = int(1000.0 * (now-damage_time))
+            self.batch_config.last_actual_delays.append((now, actual_delay))
             self.send_delayed_regions(*delayed)
         return False
 
