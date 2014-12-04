@@ -442,8 +442,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         #show region being painted:
         if OPENGL_PAINT_BOX:
             glLineWidth(1)
-            glColor4f(0.8, 0.4, 0.4, 0.3)   #red-ish
             glBegin(GL_LINE_LOOP)
+            glColor4f(0.8, 0.4, 0.4, 0.3)   #red-ish
             for x,y in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
                 glVertex2i(x, y)
             glEnd()
@@ -452,9 +452,9 @@ class GLWindowBackingBase(GTKWindowBacking):
         if self.border and self.border.shown:
             #double size since half the line will be off-screen
             glLineWidth(self.border.size*2)
-            glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)
             glBegin(GL_LINE_LOOP)
-            for x,y in ((0, 0), (w, 0), (w, h), (0, h)):
+            glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)
+            for x,y in ((0, 0), (ww, 0), (ww, wh), (0, wh)):
                 glVertex2i(x, y)
             glEnd()
 
