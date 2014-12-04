@@ -855,10 +855,6 @@ def parse_display_name(error_cb, opts, display_name):
         #sys.platform.startswith("win")
         ssh_cmd = ssh[0].lower()
         is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
-        if is_putty:
-            #putty needs those:
-            full_ssh.append("-ssh")
-            full_ssh.append("-agent")
 
         upos = host.find("@")
         if upos>=0:

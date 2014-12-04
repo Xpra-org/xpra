@@ -203,6 +203,9 @@ keyboard-sync = yes
 
 # Client ssh command:
 #ssh = /usr/bin/ssh
+#ssh = ssh -o ControlMaster=no -o ConnectTimeout=20
+#ssh = ssh -x
+ssh = %(ssh_command)s
 
 # Key Shortcuts:
 key-shortcut = Meta+Shift+F4:quit

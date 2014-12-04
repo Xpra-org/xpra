@@ -734,8 +734,13 @@ def build_xpra_conf(build_base):
         template  = f_in.read()
     if not os.path.exists(build_base):
         os.makedirs(build_base)
+    if WIN32:
+        ssh_command = "plink -ssh -agent"
+    else:
+        ssh_command = "ssh -x"
     with open(build_base + "/xpra.conf", "w") as f_out:
         f_out.write(template % {'xvfb_command'  : xvfb_command,
+                                'ssh_command'   : ssh_command,
                                 'has_displayfd' : ["no", "yes"][int(has_displayfd)]})
 
 
