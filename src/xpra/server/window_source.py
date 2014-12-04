@@ -896,19 +896,25 @@ class WindowSource(object):
         return False
 
     def delayed_region_timeout(self, delayed_region_time):
-        if self._damage_delayed is None:
+        self.timeout_timer = None
+        delayed = self._damage_delayed
+        if delayed is None:
             #delayed region got sent
             return False
-        region_time = self._damage_delayed[0]
+        region_time = delayed[0]
         if region_time!=delayed_region_time:
             #this is a different region
             return False
         #ouch: same region!
-        window      = self._damage_delayed[1]
-        options     = self._damage_delayed[4]
+        window      = delayed[1]
+        options     = delayed[4]
         elapsed = int(1000.0 * (time.time() - region_time))
         log.warn("delayed_region_timeout: region is %ims old, bad connection?", elapsed)
-        #re-try:
+        #re-try: cancel anything pending and do a full quality refresh
+        self.cancel_damage()
+        self.cancel_expire_timer()
+        self.cancel_refresh_timer()
+        self.cancel_soft_timer()
         self._damage_delayed = None
         self.full_quality_refresh(window, options)
         return False
@@ -917,15 +923,15 @@ class WindowSource(object):
         """ send the delayed region for processing if the time is right """
         if not self._damage_delayed:
             log("window %s delayed region already sent", self.wid)
-            return False
+            return
         damage_time = self._damage_delayed[0]
         packets_backlog = self.statistics.get_packets_backlog()
         now = time.time()
         actual_delay = int(1000.0 * (now-damage_time))
         if packets_backlog>0:
-            if actual_delay>self.batch_config.max_delay:
-                log.warn("send_delayed for wid %s, elapsed time %.1f is above limit of %.1f - sending now", self.wid, actual_delay, self.batch_config.max_delay)
-                return self.do_send_delayed()
+            if actual_delay>self.batch_config.timeout_delay:
+                log.warn("send_delayed for wid %s, elapsed time %.1f is above limit of %.1f", self.wid, actual_delay, self.batch_config.max_delay)
+                return
             log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
                     self.wid, packets_backlog, self.batch_config.delay, actual_delay)
             #this method will get fired again damage_packet_acked
