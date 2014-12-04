@@ -20,9 +20,9 @@ import os
 def ival(key, default, minv=0, maxv=None):
     try:
         v = os.environ.get("XPRA_BATCH_%s" % key)
-        iv = int(v)
         if v is None:
             return default
+        iv = int(v)
         assert minv is None or minv<=iv, "value for %s is too small: %s (minimum is %s)" % (key, iv, minv)
         assert maxv is None or maxv>=iv, "value for %s is too high: %s (maximum is %s)" % (key, iv, maxv)
         return iv
