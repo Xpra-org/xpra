@@ -72,7 +72,6 @@ class ChildReaper(object):
         self._ignored_pids = set()
         from xpra.log import Logger
         self._logger = Logger("server", "util")
-        self._logger.enable_debug()
         if USE_PROCESS_POLLING:
             POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
             self._logger.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
