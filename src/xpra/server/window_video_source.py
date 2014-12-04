@@ -54,6 +54,8 @@ def parse_scaling_value(v):
     return ret
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 
+VIDEO_SUBREGION = os.environ.get("XPRA_VIDEO_SUBREGION", "1")=="1"
+
 
 class WindowVideoSource(WindowSource):
     """
@@ -67,7 +69,7 @@ class WindowVideoSource(WindowSource):
         self.uses_swscale = self.encoding_options.boolget("uses_swscale", True)
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_reinit = self.encoding_options.boolget("video_reinit", False)
-        self.supports_video_subregion = self.encoding_options.boolget("video_subregion", False)
+        self.supports_video_subregion = VIDEO_SUBREGION and self.encoding_options.boolget("video_subregion", False)
 
     def init_encoders(self):
         WindowSource.init_encoders(self)
