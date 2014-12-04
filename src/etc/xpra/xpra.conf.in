@@ -209,6 +209,10 @@ key-shortcut = Meta+Shift+F4:quit
 key-shortcut = Meta+Shift+F8:magic_key
 key-shortcut = Meta+Shift+F11:show_session_info
 
+# Border:
+#border=5,auto
+#border=1,red
+#border=no
 
 ########################################################################
 # Server Options:
