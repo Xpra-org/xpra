@@ -80,7 +80,7 @@ class XpraClient(GTKXpraClient):
             log.info("  eg: ,5")
             log.info("  eg: auto,5")
             log.info("  eg: blue")
-        if color_str.lower()=="none":
+        if color_str.lower() in ("none", "no", "off", "0"):
             return
         if color_str.lower()=="help":
             border_help()
@@ -118,7 +118,7 @@ class XpraClient(GTKXpraClient):
                 log("border size is %s, disabling it", size)
                 return
         self.border = WindowBorder(True, color.red_float, color.green_float, color.blue_float, alpha, size)
-        log("parse_border(%s)=%s", border_str, self.border)
+        log.info("parse_border(%s)=%s", border_str, self.border)
 
 
     def gtk_main(self):
