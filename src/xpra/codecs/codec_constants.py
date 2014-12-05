@@ -144,9 +144,6 @@ class codec_spec(object):
             return max(0, 1.0 - (1.0*ic/mi)**2)
         return 1.0
 
-    def __str__(self):
-        return "codec_spec(%s)" % self.__dict__
-
     def __repr__(self):
         return "codec_spec(%s)" % self.info()
 
