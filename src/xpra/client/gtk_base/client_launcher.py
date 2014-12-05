@@ -482,10 +482,6 @@ class ApplicationWindow:
                 params["username"] = username
                 full_ssh += ["-l", username]
             full_ssh += ["-T", host]
-            if sys.platform.startswith("win"):
-                #putty needs those:
-                full_ssh.append("-ssh")
-                full_ssh.append("-agent")
             if str(self.config.ssh_port)!="22":
                 if sys.platform.startswith("win"):
                     full_ssh += ["-P", str(self.config.ssh_port)]
@@ -676,6 +672,7 @@ class ApplicationWindow:
             fn = k.replace("-", "_")
             setattr(self.config, fn, v)
         self.config_keys = self.config_keys.union(set(props.keys()))
+        log("update_options_from_file(%s) populated config with keys '%s', ssh=%s", filename, options.keys(), self.config.ssh)
 
     def choose_session_file(self, title, action, action_button, callback):
         file_filter = gtk.FileFilter()
