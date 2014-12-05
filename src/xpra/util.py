@@ -271,7 +271,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             if len(m)<7:
                 log.info("    %s", m)
                 continue
-            plug_name, plug_x, plug_y, plug_width, plug_height, plug_width_mm, plug_height_mm = m[:8]
+            plug_name, plug_x, plug_y, plug_width, plug_height, plug_width_mm, plug_height_mm = m[:7]
             info = ['%s' % prettify_plug_name(plug_name, "monitor %s" % i)]
             if plug_width!=width or plug_height!=height or plug_x!=0 or plug_y!=0:
                 info.append("%sx%s" % (plug_width, plug_height))
