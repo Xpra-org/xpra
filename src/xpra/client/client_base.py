@@ -219,7 +219,7 @@ class XpraClientBase(object):
             else:
                 hello.update(self.make_hello())
         except Exception as e:
-            log.error("error preparing connection: %s", e)
+            log.error("error preparing connection: %s", e, exc_info=True)
             self.quit(EXIT_INTERNAL_ERROR)
             return
         if challenge_response:
