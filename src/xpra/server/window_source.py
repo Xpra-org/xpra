@@ -934,31 +934,37 @@ class WindowSource(object):
                 return
             log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
                     self.wid, packets_backlog, self.batch_config.delay, actual_delay)
-            #this method will get fired again damage_packet_acked
+            #this method will fire again from damage_packet_acked
             return
-        #if we're here, there is no packet backlog, and therefore
-        #may_send_delayed() may not be called again by an ACK packet,
-        #so we must either process the region now or set a timer to
-        #check again later:
+        #if we're here, there is no packet backlog, but there may be damage acks pending.
+        #if there are acks pending, may_send_delayed() should be called again from damage_packet_acked,
+        #if not, we must either process the region now or set a timer to check again later
         def check_again(delay=actual_delay/10.0):
             #schedules a call to check again:
             delay = int(min(self.batch_config.max_delay, max(10, delay)))
             self.timeout_add(delay, self.may_send_delayed)
             return
-        if self.batch_config.locked and self.batch_config.delay>actual_delay:
-            #ensure we honour the fixed delay
-            #(as we may get called from a damage ack before we expire)
-            check_again(self.batch_config.delay-actual_delay)
+        #locked means a fixed delay we try to honour,
+        #this code ensures that we don't fire too early if called from damage_packet_acked
+        if self.batch_config.locked:
+            if self.batch_config.delay>actual_delay:
+                #ensure we honour the fixed delay
+                #(as we may get called from a damage ack before we expire)
+                check_again(self.batch_config.delay-actual_delay)
+            else:
+                self.do_send_delayed()
             return
         pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
         ww, wh = self.window_dimensions
         if pixels_encoding_backlog>=(ww*wh):
             log("send_delayed for wid %s, delaying again because too many pixels are waiting to be encoded: %s", self.wid, ww*wh)
-            check_again()
+            if self.statistics.get_acks_pending()==0:
+                check_again()
             return
         elif enc_backlog_count>10:
             log("send_delayed for wid %s, delaying again because too many damage regions are waiting to be encoded: %s", self.wid, enc_backlog_count)
-            check_again()
+            if self.statistics.get_acks_pending()==0:
+                check_again()
             return
         #no backlog, so ok to send, clear soft-expired counter:
         self.soft_expired = 0
