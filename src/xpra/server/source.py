@@ -704,7 +704,7 @@ class ServerSource(object):
                 self.sound_source.connect("new-buffer", self.new_sound_buffer)
                 self.sound_source.start()
         except Exception as e:
-            log.error("error setting up sound: %s", e)
+            log.error("error setting up sound: %s", e, exc_info=True)
 
     def stop_sending_sound(self):
         ss = self.sound_source
