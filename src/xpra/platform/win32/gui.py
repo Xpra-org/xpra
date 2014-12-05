@@ -198,10 +198,11 @@ def get_antialias_info():
     return info
 
 def get_workarea():
-    SystemParametersInfo = windll.user32.SystemParametersInfoA
-    workarea = wintypes.RECT()
-    if SystemParametersInfo(win32con.SPI_GETWORKAREA, 0, byref(workarea), 0):
-        return workarea.left, workarea.top, workarea.right, workarea.bottom
+    #we need to use GetMonitorInfo
+    #SystemParametersInfo = windll.user32.SystemParametersInfoA
+    #workarea = wintypes.RECT()
+    #if SystemParametersInfo(win32con.SPI_GETWORKAREA, 0, byref(workarea), 0):
+    #    return workarea.left, workarea.top, workarea.right, workarea.bottom
     return None
 
 def _get_device_caps(constant):
