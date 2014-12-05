@@ -202,6 +202,7 @@ title = @title@ on @client-machine@
 keyboard-sync = yes
 
 # Client ssh command:
+#ssh = "C:\Program Files\Plink.exe" -ssh -noagent
 #ssh = /usr/bin/ssh
 #ssh = ssh -o ControlMaster=no -o ConnectTimeout=20
 #ssh = ssh -x
