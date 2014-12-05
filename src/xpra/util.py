@@ -227,7 +227,7 @@ def log_screen_sizes(root_w, root_h, sizes):
     except Exception as e:
         from xpra.log import Logger
         log = Logger("util")
-        log.warn("failed to parse screen size information: %s", e)
+        log.warn("failed to parse screen size information: %s", e, exc_info=True)
 
 def prettify_plug_name(s, default=""):
     if not s:
@@ -260,12 +260,14 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             #log plug dimensions if not the same as display (root):
             info.append("%sx%s" % (width, height))
         info.append("(%sx%s mm - DPI: %sx%s)" % (width_mm, height_mm, dpi(width, width_mm), dpi(height, height_mm)))
-        if work_width!=width or work_height!=height or work_x!=0 or work_y!=0:
-            #log workarea if not the same as plug size:
-            info.append("workarea: %sx%s" % (work_width, work_height))
-            if work_x!=0 or work_y!=0:
+        def add_workarea(wx, wy, ww, wh):
+            info.append("workarea: %sx%s" % (ww, wh))
+            if wx!=0 or wy!=0:
                 #log position if not (0, 0)
-                info.append("at %sx%s" % (work_x, work_y))
+                info.append("at %sx%s" % (wx, wy))
+
+        if work_width!=width or work_height!=height or work_x!=0 or work_y!=0:
+            add_workarea(work_x, work_y, work_width, work_height)
         log.info("  "+" ".join(info))
         for i, m in enumerate(monitors, start=1):
             if len(m)<7:
@@ -279,6 +281,9 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                     info.append("at %sx%s" % (plug_x, plug_y))
             if (plug_width_mm!=width_mm or plug_height_mm!=height_mm) and (plug_width_mm>0 or plug_height_mm>0):
                 info.append("(%sx%s mm - DPI: %sx%s)" % (plug_width_mm, plug_height_mm, dpi(plug_width, plug_width_mm), dpi(plug_height, plug_height_mm)))
+            if len(m)>=11:
+                work_x, work_y, work_width, work_height = m[7:11]
+                add_workarea(work_x, work_y, work_width, work_height)
             log.info("    "+" ".join(info))
 
 def get_screen_info(screen_sizes):

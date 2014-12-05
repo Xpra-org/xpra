@@ -14,7 +14,7 @@ from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct
 import ctypes
-from ctypes import windll, wintypes, byref
+from ctypes import windll, byref
 
 
 KNOWN_EVENTS = {}
@@ -198,12 +198,50 @@ def get_antialias_info():
     return info
 
 def get_workarea():
-    #we need to use GetMonitorInfo
-    #SystemParametersInfo = windll.user32.SystemParametersInfoA
-    #workarea = wintypes.RECT()
-    #if SystemParametersInfo(win32con.SPI_GETWORKAREA, 0, byref(workarea), 0):
-    #    return workarea.left, workarea.top, workarea.right, workarea.bottom
-    return None
+    #this is for x11 servers which can only use a single workarea,
+    #calculate the total area:
+    try:
+        workareas = []
+        for m in win32api.EnumDisplayMonitors(None, None):
+            mi = win32api.GetMonitorInfo(m[0])
+            #absolute workarea / monitor coordinates:
+            #(all relative to 0,0 being top left)
+            wx1, wy1, wx2, wy2 = mi['Work']
+            workareas.append((wx1, wy1, wx2, wy2))
+        assert len(workareas)>0
+        minx = min(w[0] for w in workareas)
+        miny = min(w[1] for w in workareas)
+        maxx = max(w[2] for w in workareas)
+        maxy = max(w[3] for w in workareas)
+        return minx, miny, maxx, maxy
+    except Exception as e:
+        log.warn("failed to query workareas: %s", e)
+        return []
+
+#ie: for a 60 pixel bottom bar on the second monitor at 1280x800:
+# [(0,0,1920,1080), (0,0,1280,740)]
+def get_workareas():
+    try:
+        workareas = []
+        for m in win32api.EnumDisplayMonitors(None, None):
+            mi = win32api.GetMonitorInfo(m[0])
+            #absolute workarea / monitor coordinates:
+            #(all relative to 0,0 being top left)
+            wx1, wy1, wx2, wy2 = mi['Work']
+            mx1, my1, mx2, my2 = mi['Monitor']
+            assert mx1<mx2 and my1<my2, "invalid monitor coordinates"
+            #clamp to monitor, and make it all relative to monitor:
+            rx1 = max(0, min(mx2-mx1, wx1-mx1))
+            ry1 = max(0, min(my2-my1, wy1-my1))
+            rx2 = max(0, min(mx2-mx1, wx2-mx1))
+            ry2 = max(0, min(my2-my1, wy2-my1))
+            assert rx1<rx2 and ry1<ry2, "invalid relative workarea coordinates"
+            workareas.append((rx1, ry1, rx2-rx1, ry2-ry1))
+        assert len(workareas)>0
+        return workareas
+    except Exception as e:
+        log.warn("failed to query workareas: %s", e)
+        return []
 
 def _get_device_caps(constant):
     dc = None

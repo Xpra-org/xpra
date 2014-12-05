@@ -73,8 +73,13 @@ def get_icon_size():
 def get_antialias_info():
     return {}
 
+#global workarea for all screens
 def get_workarea():
     return None
+
+#per monitor workareas (assuming a single screen)
+def get_workareas():
+    return []
 
 def get_vrefresh():
     return -1
@@ -121,6 +126,7 @@ def get_info_base():
             "system_bell"                   : fname(system_bell),
             "native_notifiers"              : fnames(get_native_notifier_classes()),
             "workarea"                      : get_workarea() or "",
+            "workareas"                     : get_workareas(),
             "vertical-refresh"              : get_vrefresh(),
             "double_click.time"             : get_double_click_time(),
             "double_click.distance"         : get_double_click_distance(),
@@ -149,7 +155,8 @@ platform_import(globals(), "gui", False,
                 "get_native_tray_classes",
                 "get_native_system_tray_classes",
                 "get_native_notifier_classes",
-                "get_vrefresh", "get_workarea", "get_antialias_info", "get_icon_size", "get_dpi", "get_xdpi", "get_ydpi",
+                "get_vrefresh", "get_workarea", "get_workareas",
+                "get_antialias_info", "get_icon_size", "get_dpi", "get_xdpi", "get_ydpi",
                 "get_double_click_time", "get_double_click_distance",
                 "get_fixed_cursor_size", "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
