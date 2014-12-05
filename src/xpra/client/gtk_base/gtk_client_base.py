@@ -28,7 +28,7 @@ from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import system_bell, get_workarea, get_fixed_cursor_size
+from xpra.platform.gui import system_bell, get_workarea, get_workareas, get_fixed_cursor_size
 
 missing_cursor_names = set()
 
@@ -236,6 +236,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             screen = display.get_screen(i)
             j = 0
             monitors = []
+            workareas = []
+            #native "get_workareas()" is only valid for a single screen (but describes all the monitors)
+            #and it is only implemented on win32 right now
+            #other platforms only implement "get_workarea()" instead, which is reported against the screen
+            if display.get_n_screens()==1:
+                workareas = get_workareas()
+                if len(workareas)!=screen.get_n_monitors():
+                    workareas = []
             while j<screen.get_n_monitors():
                 geom = screen.get_monitor_geometry(j)
                 plug_name = ""
@@ -247,8 +255,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 hmm = -1
                 if hasattr(screen, "get_monitor_height_mm"):
                     hmm = screen.get_monitor_height_mm(j)
-                monitor = plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm
-                monitors.append(monitor)
+                monitor = [plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm]
+                if workareas:
+                    w = workareas[j]
+                    monitor += list(w)
+                monitors.append(tuple(monitor))
                 j += 1
             work_x, work_y = 0, 0
             work_width, work_height = screen.get_width(), screen.get_height()
