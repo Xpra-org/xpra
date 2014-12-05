@@ -398,7 +398,7 @@ def get_defaults():
                     "exit-with-client"  : False,
                     "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
-                    "mdns"              : os.name=="posix" and not sys.platform.startswith("darwin"),
+                    "mdns"              : False,
                     "swap-keys"         : sys.platform.startswith("darwin"),    #only used on osx
                     "encodings"         : ["all"],
                     "video-encoders"    : ["all"],
