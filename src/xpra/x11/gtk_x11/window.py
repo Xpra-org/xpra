@@ -521,7 +521,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     _property_handlers["_NET_WM_NAME"] = _handle_title_change
 
     def _handle_wm_hints(self):
-        wm_hints = X11Window.getWMHints(self.client_window.xid)
+        with xswallow:
+            wm_hints = X11Window.getWMHints(self.client_window.xid)
         if wm_hints is None:
             return
         # GdkWindow or None
@@ -1224,7 +1225,8 @@ class WindowModel(BaseWindowModel):
     _property_handlers = BaseWindowModel._property_handlers.copy()
 
     def _handle_wm_normal_hints(self):
-        size_hints = X11Window.getSizeHints(self.client_window.xid)
+        with xswallow:
+            size_hints = X11Window.getSizeHints(self.client_window.xid)
         #getSizeHints exports fields using their X11 names as defined in the "XSizeHints" structure,
         #but we use a different naming (for historical reason and backwards compatibility)
         #so rename the fields:
@@ -1278,7 +1280,7 @@ class WindowModel(BaseWindowModel):
 
     def _handle_net_wm_icon(self):
         log("_NET_WM_ICON changed on %#x, re-reading", self.client_window.xid)
-        surf = self.prop_get("_NET_WM_ICON", "icon")
+        surf = self.prop_get("_NET_WM_ICON", "icon", not self._managed)
         if surf is not None:
             # FIXME: There is no Pixmap.new_for_display(), so this isn't
             # actually display-clean.  Oh well.
@@ -1535,7 +1537,8 @@ class WindowModel(BaseWindowModel):
         # the WM's XSetInputFocus.
         if bool(self._input_field):
             focuslog("... using XSetInputFocus")
-            X11Window.XSetInputFocus(self.client_window.xid, now)
+            with xsync:
+                X11Window.XSetInputFocus(self.client_window.xid, now)
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             focuslog("... using WM_TAKE_FOCUS")
             send_wm_take_focus(self.client_window, now)
