@@ -1,5 +1,5 @@
 Name:	     x264-xpra	
-Version:     20141006
+Version:     20141208
 Release:     1%{?dist}
 Summary:     x264 library for xpra	
 
@@ -71,6 +71,9 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
+* Mon Dec 09 2014 Antoine Martin <antoine@devloop.org.uk> 20141208
+- new upstream release
+
 * Tue Oct 07 2014 Antoine Martin <antoine@devloop.org.uk> 20141006
 - new upstream release
 
