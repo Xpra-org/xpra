@@ -58,7 +58,7 @@ POPUP_TYPE_HINTS = set((
                     "MENU",
                     #"TOOLBAR",
                     "SPLASHSCREEN",
-                    #"UTILITY",
+                    "UTILITY",
                     "DOCK",
                     #"DESKTOP",
                     "DROPDOWN_MENU",
