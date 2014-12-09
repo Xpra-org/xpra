@@ -260,8 +260,8 @@ exit-with-children = no
 log-file = $DISPLAY.log
 
 # Publish sessions:
-#mdns = yes
-mdns = no
+#mdns = no
+mdns = yes
 
 # Input methods
 # To disable input method completely:
