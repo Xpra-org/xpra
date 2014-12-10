@@ -14,7 +14,8 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 
 WHITELIST = {}
-BLACKLIST = {"vendor" : ["nouveau", "Humper", "VMware, Inc."]}
+BLACKLIST = {"vendor" : ["nouveau", "Humper", "VMware, Inc."],
+             "renderer" : ["Software Rasterizer"]}
 if False:
     #for testing:
     BLACKLIST["vendor"].append("NVIDIA Corporation")
