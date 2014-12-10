@@ -353,7 +353,7 @@ class WindowVideoSource(WindowSource):
         #(high speed favours switching to lossy sooner)
         #take into account how many pixels need to be encoder:
         #more pixels means we switch to lossless more easily
-        lossless_q = self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh)
+        lossless_q = min(100, self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh))
         if quality<lossless_q:
             #lossy options:
             if "jpeg" in options:

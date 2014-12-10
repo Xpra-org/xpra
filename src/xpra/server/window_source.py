@@ -101,7 +101,7 @@ class WindowSource(object):
         self.generic_encodings = encoding_options.boolget("generic")
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = encoding_options.boolget("full_frames_only")
-        ropts = set(("png", "webp", "rgb", "jpeg"))     #default encodings for auto-refresh
+        ropts = set(("png", "webp", "rgb24", "rgb32", "jpeg"))     #default encodings for auto-refresh
         if self.webp_leaks:
             ropts.remove("webp")                        #don't use webp if the client is going to leak with it!
         ropts = ropts.intersection(set(self.server_core_encodings)) #ensure the server has support for it
@@ -1160,7 +1160,8 @@ class WindowSource(object):
         actual_quality = client_options.get("quality", 0)
         if encoding.startswith("png") or encoding.startswith("rgb"):
             actual_quality = 100
-        lossy_csc = client_options.get("csc") in LOSSY_PIXEL_FORMATS
+        #jpeg uses colour subsampling by default, otherwise check the csc format value:
+        lossy_csc = encoding=="jpeg" or client_options.get("csc") in LOSSY_PIXEL_FORMATS
         scaled = client_options.get("scaled_size") is not None
         region = rectangle(x, y, w, h)
         if actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
@@ -1275,11 +1276,13 @@ class WindowSource(object):
             #choose an encoding:
             ww, wh = window.get_dimensions()
             encoding = self.auto_refresh_encodings[0]
-            encodings = self.get_best_encoding(ww*wh, ww, wh, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
-            refresh_encodings = [x for x in self.auto_refresh_encodings if x in encodings]
-            if refresh_encodings:
-                encoding = refresh_encodings[0]
+            best_encoding = self.get_best_encoding(ww*wh, ww, wh, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
+            refresh_encodings = self.auto_refresh_encodings
+            if best_encoding in refresh_encodings:
+                encoding = best_encoding
             options = self.get_refresh_options()
+            refreshlog.info("timer_full_refresh() size=%s, encoding=%s, best=%s, auto_refresh_encodings=%s, refresh_encodings=%s, options=%s",
+                            (ww, wh), encoding, best_encoding, self.auto_refresh_encodings, refresh_encodings, options)
             WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options, exclude_region=self.get_refresh_exclude())
         return False
 
