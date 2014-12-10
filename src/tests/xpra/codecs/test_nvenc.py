@@ -36,7 +36,7 @@ def test_context_leak():
             log.info("%s of %s (%s)", i, N, info)
             test_encoder(encoder_module)
     #not threaded:
-    do_test_context_leak("main thread")
+    do_test_context_leak()
     #threads:
     thread1 = threading.Thread(target=do_test_context_leak)
     thread2 = threading.Thread(target=do_test_context_leak)
