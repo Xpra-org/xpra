@@ -495,7 +495,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             window_type = self._guess_window_type(transient_for)
             window_types = [gtk.gdk.atom_intern(window_type)]
         #normalize them (hide _NET_WM_WINDOW_TYPE prefix):
-        window_types = [wt.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for wt in window_types]
+        window_types = [str(wt).replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for wt in window_types]
         self._internal_set_property("window-type", window_types)
         self._internal_set_property("has-alpha", X11Window.get_depth(self.client_window.xid)==32)
         self._internal_set_property("xid", self.client_window.xid)
