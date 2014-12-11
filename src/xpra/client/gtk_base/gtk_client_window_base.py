@@ -85,10 +85,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
 
     def _is_popup(self, metadata):
-        #decide if the window type is POPUP or NORMAL:
+        #decide if the window type is POPUP or NORMAL
+        #(show window decorations or not)
         if self._override_redirect:
             return True
         window_types = metadata.get("window-type", [])
+        #skip decorations for any non-normal window that is transient for another window:
+        if "NORMAL" not in window_types and metadata.intget("transient-for", -1)>0:
+            return True
         popup_types = list(POPUP_TYPE_HINTS.intersection(window_types))
         log("popup_types(%s)=%s", window_types, popup_types)
         if popup_types:
