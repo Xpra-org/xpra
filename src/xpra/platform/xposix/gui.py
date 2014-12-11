@@ -10,7 +10,6 @@ log = Logger("posix")
 eventlog = Logger("events", "posix")
 
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
-from xpra.gtk_common.error import xsync, XError
 
 device_bell = None
 
@@ -46,6 +45,7 @@ def get_native_system_tray_classes():
 #which is still better than having dependencies on that GTK2 code
 def _get_X11_root_property(name, req_type):
     try:
+        from xpra.gtk_common.error import xsync
         from xpra.x11.bindings.window_bindings import X11WindowBindings, PropertyError #@UnresolvedImport
         window_bindings = X11WindowBindings()
         root = window_bindings.getDefaultRootWindow()
@@ -240,6 +240,7 @@ def get_window_frame_sizes():
 
 
 def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+    from xpra.gtk_common.error import XError
     global device_bell
     if device_bell is False:
         #failed already
@@ -252,6 +253,7 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
             device_bell = X11KeyboardBindings().device_bell
         device_bell(get_xid(window), device, bell_class, bell_id, percent, bell_name)
     try:
+        from xpra.gtk_common.error import xsync
         with xsync:
             x11_bell()
         return  True
