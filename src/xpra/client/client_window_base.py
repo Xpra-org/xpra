@@ -340,11 +340,17 @@ class ClientWindowBase(ClientWidgetBase):
         #see UIXpraClient.dbus_call
         return self._client.dbus_call(self._id, *args, **kwargs)
 
+
+    def get_mouse_event_wid(self):
+        #on OSX, the mouse events are reported against the wrong window by GTK,
+        #so we have to use the currently focused window
+        return self._client._focused or self._id
+
     def do_motion_notify_event(self, event):
         if self._client.readonly:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
-        wid = self._client._focused or self._id
+        wid = self.get_mouse_event_wid()
         mouselog("do_motion_notify_event(%s) wid=%s / focus=%s, pointer=%s, modifiers=%s, buttons=%s", event, self._id, self._client._focused, pointer, modifiers, buttons)
         self._client.send_mouse_position(["pointer-position", wid,
                                           pointer, modifiers, buttons])
@@ -353,14 +359,15 @@ class ClientWindowBase(ClientWidgetBase):
         if self._client.readonly:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
-        mouselog("_button_action(%s, %s, %s) wid=%s, pointer=%s, modifiers=%s, buttons=%s", button, event, depressed, self._id, pointer, modifiers, buttons)
+        wid = self.get_mouse_event_wid()
+        mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s, pointer=%s, modifiers=%s, buttons=%s", button, event, depressed, self._id, self._client._focused, pointer, modifiers, buttons)
         def send_button(pressed):
-            self._client.send_positional(["button-action", self._id,
+            self._client.send_positional(["button-action", wid,
                                           button, pressed,
                                           pointer, modifiers, buttons])
         pressed_state = self.button_state.get(button, False)
         if pressed_state is False and depressed is False:
-            mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", self._id)
+            mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", wid)
             #(needed for some dialogs on win32):
             send_button(True)
         self.button_state[button] = depressed
