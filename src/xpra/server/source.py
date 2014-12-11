@@ -42,28 +42,6 @@ debug = log.debug
 MAX_CLIPBOARD_PER_SECOND = int(os.environ.get("XPRA_CLIPBOARD_LIMIT", "10"))
 
 
-def get_generic_window_type(window, strip_net=True):
-    window_types = window.get_property("window-type")
-    assert window_types is not None, "window-type is not defined for %s" % window
-    log("window_types=%s", window_types)
-    wts = []
-    for window_type in window_types:
-        s = str(window_type)
-        if strip_net:
-            s = s.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "")
-        else:
-            #for older clients: ensure values do have the prefix.
-            #(shadow servers expose their root window as "NORMAL",
-            #we handle all the legitimate values here for correctness):
-            if s in ("NORMAL", "DIALOG", "MENU", "TOOLBAR", "SPLASH",
-                     "UTILITY", "DOCK", "DESKTOP", "DROPDOWN_MENU",
-                     "POPUP_MENU", "TOOLTIP", "NOTIFICATION", "COMBO", "DND"):
-                s = "_NET_WM_WINDOW_TYPE_"+s
-        wts.append(s)
-    log("window_types=%s", wts)
-    return wts
-
-
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
     if propname in ("title", "icon-title"):
         v = window.get_property(propname)
@@ -98,8 +76,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
             return {"transient-for" : wid}
         return {}
     elif propname == "window-type":
-        wts = get_generic_window_type(window)
-        return {"window-type" : wts}
+        return {"window-type" : window.get_property("window-type")}
     elif propname in ("has-alpha", "override-redirect", "tray", "modal", "fullscreen", "maximized"):
         v = window.get_property(propname)
         if v is False:

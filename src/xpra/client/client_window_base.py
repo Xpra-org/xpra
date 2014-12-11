@@ -103,13 +103,6 @@ class ClientWindowBase(ClientWidgetBase):
 
     def update_metadata(self, metadata):
         log("update_metadata(%s)", metadata)
-        #normalize window-type:
-        window_type = metadata.strlistget("window-type")
-        if window_type is not None:
-            #normalize the window type for servers that don't do "generic_window_types"
-            window_type = [x.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for x in window_type]
-            metadata["window-type"] = window_type
-
         self._metadata.update(metadata)
         if not self.is_realized():
             #Warning: window managers may ignore the icons we try to set
