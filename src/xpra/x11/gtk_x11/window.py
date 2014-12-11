@@ -691,11 +691,8 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         super(OverrideRedirectWindowModel, self).__init__(client_window)
         self.property_names.append("override-redirect")
 
-    def call_setup(self):
-        self._read_initial_properties()
-        BaseWindowModel.call_setup(self)
-
     def setup(self):
+        self._read_initial_properties()
         BaseWindowModel.setup(self)
         # So now if the window becomes unmapped in the future then we will
         # notice... but it might be unmapped already, and any event
