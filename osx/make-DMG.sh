@@ -14,7 +14,7 @@ VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__v
 REVISION=`svnversion -n .. | awk -F: '{print $2}'`
 if [ -z "${REVISION}" ]; then
 	#fallback to using revision recorded in build info
-	REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(src_info.REVISION)"`
+	REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
 fi
 DMG_NAME="Xpra-$VERSION-r$REVISION.dmg"
 echo "Creating $DMG_NAME"
