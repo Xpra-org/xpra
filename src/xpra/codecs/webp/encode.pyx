@@ -300,12 +300,13 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
 
     assert object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)==0
     log("webp.compress(%s bytes, %s, %s, %s, %s, %s, %s) buf=%#x", len(pixels), width, height, stride, quality, speed, has_alpha, <unsigned long> pic_buf)
+    c = (stride or (width*4)) * height
+    assert pic_buf_len>=c, "pixel buffer is too small: expected at least %s bytes but got %s" % (c, pic_buf_len)
 
     if not has_alpha:
         #ensure webp will not decide to encode the alpha channel
         #(this is stupid: we should be able to pass a flag instead)
         i = 3
-        c = (stride or width) * height * 4
         while i<c:
             pic_buf[i] = 0xff
             i += 4
@@ -358,4 +359,16 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     cdata = memory_writer.mem[:memory_writer.size]
     free(memory_writer.mem)
     WebPPictureFree(&pic)
+    log("webp.compress ratio=%i%%", 100*memory_writer.size/c)
     return cdata
+
+
+def selftest():
+    #fake empty buffer:
+    w, h = 24, 16
+    pixels = "\0" * w*h*4
+    for has_alpha in (True, False):
+        r = compress(pixels, w, h, w, quality=50, speed=50, has_alpha=has_alpha)
+        assert len(r)>0
+        #import binascii
+        #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

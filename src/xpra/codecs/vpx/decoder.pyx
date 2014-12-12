@@ -289,12 +289,12 @@ cdef class Decoder:
         with nogil:
             ret = vpx_codec_decode(self.context, buf, buf_len, NULL, 0)
         if ret!=VPX_CODEC_OK:
-            log.warn("error during vpx_codec_decode: %s" % vpx_codec_error(self.context))
+            log.warn("error during vpx_codec_decode: %s", vpx_codec_error(self.context))
             return None
         with nogil:
             img = vpx_codec_get_frame(self.context, &iter)
         if img==NULL:
-            log.warn("error during vpx_codec_get_frame: %s" % vpx_codec_error(self.context))
+            log.warn("error during vpx_codec_get_frame: %s", vpx_codec_error(self.context))
             return None
         strides = []
         pixels = []
