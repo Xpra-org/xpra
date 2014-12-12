@@ -5,7 +5,7 @@
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
 Version:   0.3.6
-Release:   15.xpra4%{?dist}
+Release:   15.xpra5%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
@@ -54,6 +54,9 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Thu Dec 11 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-15.xpra5
+- force rebuild with fixed CentOS environment (unwanted upgrades)
+
 * Wed Nov 05 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-15.xpra4
 - add cursor limit fix
 
