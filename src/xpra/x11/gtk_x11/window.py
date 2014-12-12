@@ -17,6 +17,7 @@ from socket import gethostname
 import gobject
 import gtk.gdk
 import cairo
+import signal
 
 from xpra.util import nonl
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -857,6 +858,7 @@ class WindowModel(BaseWindowModel):
         self.in_save_set = False
         self.client_reparented = False
         self.startup_unmap_serial = None
+        self.kill_count = 0
 
         self.connect("notify::iconic", self._handle_iconic_update)
 
@@ -1561,16 +1563,31 @@ class WindowModel(BaseWindowModel):
         pid = self.get_property("pid")
         machine = self.get_property("client-machine")
         localhost = gethostname()
+        log("force_quit() pid=%s, machine=%s, localhost=%s", pid, machine, localhost)
+        xid = self.client_window.xid
+        def XKill():
+            with xswallow:
+                X11Window.XKillClient(xid)
         if pid > 0 and machine is not None and machine == localhost:
             if pid==os.getpid():
                 log.warn("force_quit() refusing to kill ourselves!")
-            else:
+                return
+            if self.kill_count==0:
+                #first time around: just send a SIGINT and hope for the best
                 try:
-                    os.kill(pid, 9)
+                    os.kill(pid, signal.SIGINT)
                 except OSError:
-                    log.warn("failed to kill() client with pid %s", pid)
-        with xswallow:
-            X11Window.XKillClient(self.client_window.xid)
+                    log.warn("failed to kill(SIGINT) client with pid %s", pid)
+            else:
+                #the more brutal way: SIGKILL + XKill
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    log.warn("failed to kill(SIGKILL) client with pid %s", pid)
+                XKill()
+            self.kill_count += 1
+            return
+        XKill()
 
     def __repr__(self):
         xid = 0
