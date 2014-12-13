@@ -65,6 +65,7 @@ def deadly_signal(signum, frame):
 # child to exit and us to receive the SIGCHLD before our fork() returns (and
 # thus before we even know the pid of the child).  So be careful:
 class ChildReaper(object):
+    #note: the quit callback will fire only once!
     def __init__(self, quit_cb):
         self._quit = quit_cb
         self._children_pids = {}
@@ -112,7 +113,10 @@ class ChildReaper(object):
                     self.add_dead_pid(pid)
             self._logger("check() pids=%s, dead_pids=%s", pids, self._dead_pids)
             if pids.issubset(self._dead_pids):
-                self._quit()
+                cb = self._quit
+                if cb:
+                    self._quit = None
+                    cb()
                 return False
         return True
 
