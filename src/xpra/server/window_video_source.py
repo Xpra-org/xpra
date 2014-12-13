@@ -425,6 +425,12 @@ class WindowVideoSource(WindowSource):
         return q
 
 
+    def client_decode_error(self, error):
+        WindowSource.client_decode_error(self, error)
+        #maybe the stream is now corrupted..
+        self.cleanup_codecs()
+
+
     def get_refresh_exclude(self):
         #exclude video region (if any) from lossless refresh:
         return self.video_subregion.rectangle

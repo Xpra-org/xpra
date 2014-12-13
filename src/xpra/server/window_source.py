@@ -1360,6 +1360,8 @@ class WindowSource(object):
         log("packet decoding sequence %s for window %s %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
             self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
+        elif decode_time<0:
+            self.client_decode_error(decode_time)
         pending = self.statistics.damage_ack_pending.get(damage_packet_sequence)
         if pending is None:
             log("cannot find sent time for sequence %s", damage_packet_sequence)
@@ -1373,13 +1375,15 @@ class WindowSource(object):
             #damage_packet_sent, so we must validate the data:
             if bytecount>0 and end_send_at>0:
                 self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
-        else:
-            #something failed client-side, so we can't rely on the delta being available
-            self.last_pixmap_data = None
         if self._damage_delayed is not None and self._damage_delayed_expired:
             self.idle_add(self.may_send_delayed)
         if not self._damage_delayed:
             self.soft_expired = 0
+
+    def client_decode_error(self, error):
+        #something failed client-side, so we can't rely on the delta being available
+        self.last_pixmap_data = None
+
 
     def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options):
         """
