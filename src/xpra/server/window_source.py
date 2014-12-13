@@ -1381,6 +1381,7 @@ class WindowSource(object):
             self.soft_expired = 0
 
     def client_decode_error(self, error):
+        self.global_statistics.decode_errors += 1
         #something failed client-side, so we can't rely on the delta being available
         self.last_pixmap_data = None
 

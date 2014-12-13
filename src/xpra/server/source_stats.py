@@ -55,6 +55,7 @@ class GlobalPerformanceStatistics(object):
         self.client_load = None
         self.damage_events_count = 0
         self.packet_count = 0
+        self.decode_errors = 0
         #these values are calculated from the values above (see update_averages)
         self.min_client_latency = self.DEFAULT_LATENCY
         self.avg_client_latency = self.DEFAULT_LATENCY
@@ -145,7 +146,8 @@ class GlobalPerformanceStatistics(object):
     def get_info(self):
         info = {
             "damage.events"                     : self.damage_events_count,
-            "damage.packets_sent"               : self.packet_count
+            "damage.packets_sent"               : self.packet_count,
+            "encoding.decode_errors"            : self.decode_errors,
             }
         qsizes = [x for _,x in list(self.compression_work_qsizes)]
         add_list_stats(info, "damage.data_queue.size",  qsizes)
