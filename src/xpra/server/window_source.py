@@ -1365,7 +1365,7 @@ class WindowSource(object):
             log("cannot find sent time for sequence %s", damage_packet_sequence)
             return
         del self.statistics.damage_ack_pending[damage_packet_sequence]
-        if decode_time:
+        if decode_time>0:
             start_send_at, start_bytes, end_send_at, end_bytes, pixels = pending
             bytecount = end_bytes-start_bytes
             #it is possible, though very unlikely,
