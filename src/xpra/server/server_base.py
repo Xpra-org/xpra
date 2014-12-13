@@ -1680,16 +1680,21 @@ class ServerBase(ServerCore):
             ss = self._server_sources.get(proto)
             if ss:
                 ss.client_ack_damage(packet_sequence, wid, width, height, decode_time)
+            if decode_time<0:
+                #an error occurred, try to refresh:
+                ss.cancel_damage(wid)
+                def refresh():
+                    win = self._id_to_window.get(wid)
+                    ss = self._server_sources.get(proto)
+                    if ss and win:
+                        ss.refresh(wid, win, {})
+                self.idle_add(refresh)
 
 
     def _damage(self, window, x, y, width, height, options=None):
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
             ss.damage(wid, window, x, y, width, height, options)
-
-    def _cancel_damage(self, wid, window):
-        for ss in self._server_sources.values():
-            ss.cancel_damage(wid, window)
 
 
     def _process_buffer_refresh(self, proto, packet):

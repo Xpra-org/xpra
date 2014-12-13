@@ -1383,13 +1383,11 @@ class ServerSource(object):
             return
         self.send("window-move-resize", wid, x, y, ww, wh, resize_counter)
 
-    def cancel_damage(self, wid, window):
+    def cancel_damage(self, wid):
         """
         Use this method to cancel all currently pending and ongoing
         damage requests for a window.
         """
-        if not self.can_send_window(window):
-            return
         ws = self.window_sources.get(wid)
         if ws:
             ws.cancel_damage()
@@ -1432,7 +1430,7 @@ class ServerSource(object):
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):
             return
-        self.cancel_damage(wid, window)
+        self.cancel_damage(wid)
         w, h = window.get_dimensions()
         self.damage(wid, window, 0, 0, w, h, opts)
 
