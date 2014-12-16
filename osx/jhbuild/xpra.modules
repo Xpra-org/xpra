@@ -159,9 +159,9 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-pic --enable-shared --enable-static --host=i386-apple-darwin"
              autogen-sh="configure">
-    <branch module="/pub/x264/snapshots/x264-snapshot-20140805-2245-stable.tar.bz2"
-			version="20140805-2245-stable"
-                        hash="md5:e7f549e131660b025977e87f80daa106"
+    <branch module="/pub/x264/snapshots/x264-snapshot-20141215-2245-stable.tar.bz2"
+			version="20141215-2245-stable"
+                        hash="md5:63055571f311ffba0b5a7b567b0e77d1"
             repo="download.videolan.org"/>
   </autotools>
 
@@ -185,9 +185,9 @@
 --disable-filter=atrim --disable-filter=null
 --disable-programs --disable-avfilter"
              autogen-sh="configure">
-    <branch module="/releases/ffmpeg-2.4.2.tar.bz2"
-            version="2.4.2"
-                        hash="md5:9e6163b09b7b9331b834d80874c2c0ff"
+    <branch module="/releases/ffmpeg-2.5.1.tar.bz2"
+            version="2.5.1"
+            hash="md5:ad3b4c189e9a7d43ae54c52d409a43ef"
             repo="ffmpeg.org"/>
   </autotools>
 
@@ -414,13 +414,19 @@
   </autotools>
 
   <autotools id="apr-util" autogenargs="--with-berkeley-db --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config" autogen-sh="configure">
-    <branch module="/dist/apr/apr-util-1.5.3.tar.bz2"
-                        hash="md5:6f3417691c7a27090f36e7cf4d94b36e"
-			version="1.5.3"
+    <branch module="/dist/apr/apr-util-1.5.4.tar.bz2"
+                        hash="md5:2202b18f269ad606d70e1864857ed93c"
+			version="1.5.4"
             repo="www.eu.apache.org"/>
   </autotools>
 
-  <autotools id="serf" autogenargs="" autogen-sh="configure">
+  <distutils id="scons">
+     <branch repo="sourceforge.net" module="/project/scons/scons/2.3.4/scons-2.3.4.tar.gz"
+             hash="md5:91fbbb67c2c65b03c746601baac4a6a5"
+             version="2.3.4"/>
+  </distutils>
+
+  <autotools id="serf" autogenargs="" autogen-sh="scons">
     <branch module="/files/serf-1.2.1.tar.bz2"
                         hash="md5:4f8e76c9c6567aee1d66aba49f76a58b"
 			version="1.2.1"
