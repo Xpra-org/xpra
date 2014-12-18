@@ -1281,7 +1281,7 @@ class WindowSource(object):
             if best_encoding in refresh_encodings:
                 encoding = best_encoding
             options = self.get_refresh_options()
-            refreshlog.info("timer_full_refresh() size=%s, encoding=%s, best=%s, auto_refresh_encodings=%s, refresh_encodings=%s, options=%s",
+            refreshlog("timer_full_refresh() size=%s, encoding=%s, best=%s, auto_refresh_encodings=%s, refresh_encodings=%s, options=%s",
                             (ww, wh), encoding, best_encoding, self.auto_refresh_encodings, refresh_encodings, options)
             WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options, exclude_region=self.get_refresh_exclude())
         return False
