@@ -557,7 +557,7 @@ def selftest():
     for encoding in get_encodings():
         e = Encoder()
         try:
-            e.init_context(w, h, "YUV420P", ["YUV420P"], encoding, 24, 16, (1,1), {})
+            e.init_context(w, h, "YUV420P", ["YUV420P"], encoding, w, h, (1,1), {})
             from xpra.codecs.image_wrapper import ImageWrapper
             image = ImageWrapper(0, 0, w, h, [y, u ,v], "YUV420P", 32, [w, w/2, w/2], planes=ImageWrapper.PACKED, thread_safe=True)
             c = e.compress_image(image, {})
