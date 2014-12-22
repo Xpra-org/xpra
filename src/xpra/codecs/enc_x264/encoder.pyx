@@ -546,3 +546,22 @@ cdef class Encoder:
         if x264_encoder_reconfig(self.context, &param)!=0:
             raise Exception("x264_encoder_reconfig failed for quality=%s" % pct)
         self.quality = pct
+
+
+def selftest():
+    #fake empty buffer:
+    w, h = 24, 16
+    y = "\0" * (w*h)
+    u = "\0" * (w*h/4)
+    v = "\0" * (w*h/4)
+    for encoding in get_encodings():
+        e = Encoder()
+        try:
+            e.init_context(w, h, "YUV420P", ["YUV420P"], encoding, 24, 16, (1,1), {})
+            from xpra.codecs.image_wrapper import ImageWrapper
+            image = ImageWrapper(0, 0, w, h, [y, u ,v], "YUV420P", 32, [w, w/2, w/2], planes=ImageWrapper.PACKED, thread_safe=True)
+            c = e.compress_image(image, {})
+            #import binascii
+            #print("compressed data(%s)=%s" % (encoding, binascii.hexlify(str(c))))
+        finally:
+            e.clean()
