@@ -49,6 +49,9 @@ cdef extern from "libavcodec/version.h":
     int LIBAVCODEC_VERSION_MINOR
     int LIBAVCODEC_VERSION_MICRO
 
+#why can't we define this inside the avcodec.h section? (beats me)
+ctypedef unsigned int AVCodecID
+
 cdef extern from "libavcodec/avcodec.h":
 
     int AV_PIX_FMT_YUV420P
@@ -63,15 +66,12 @@ cdef extern from "libavcodec/avcodec.h":
 
     int CODEC_FLAG2_FAST
 
-
     ctypedef struct AVFrame:
         uint8_t **data
         int *linesize
         int format
         void *opaque
     ctypedef struct AVCodec:
-        pass
-    ctypedef struct AVCodecID:
         pass
     ctypedef struct AVDictionary:
         pass
@@ -310,28 +310,21 @@ cdef class Decoder:
 
         avcodec_register_all()
 
+        cdef AVCodecID CodecID
         if self.encoding=="h264":
-            self.codec = avcodec_find_decoder(AV_CODEC_ID_H264)
-            if self.codec==NULL:
-                log.error("codec H264 not found!")
-                return  False
+            CodecID = AV_CODEC_ID_H264
         elif self.encoding=="h265":
-            self.codec = avcodec_find_decoder(AV_CODEC_ID_H265)
-            if self.codec==NULL:
-                log.error("codec H265 (HEVC) not found!")
-                return  False
+            CodecID = AV_CODEC_ID_H265
         elif self.encoding=="vp8":
-            self.codec = avcodec_find_decoder(AV_CODEC_ID_VP8)
-            if self.codec==NULL:
-                log.error("codec VP8 not found!")
-                return  False
+            CodecID = AV_CODEC_ID_VP8
         elif self.encoding=="vp9":
-            self.codec = avcodec_find_decoder(AV_CODEC_ID_VP8)
-            if self.codec==NULL:
-                log.error("codec VP8 not found!")
-                return  False
+            CodecID = AV_CODEC_ID_VP9
         else:
             raise Exception("invalid codec; %s" % self.encoding)
+        self.codec = avcodec_find_decoder(CodecID)
+        if self.codec==NULL:
+            log.error("codec %s not found!" % self.encoding)
+            return  False
 
         #from here on, we have to call clean_decoder():
         self.codec_ctx = avcodec_alloc_context3(self.codec)
