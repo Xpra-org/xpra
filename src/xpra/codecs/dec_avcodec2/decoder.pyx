@@ -320,12 +320,18 @@ cdef class Decoder:
             if self.codec==NULL:
                 log.error("codec H265 (HEVC) not found!")
                 return  False
-        else:
-            assert self.encoding=="vp8"
+        elif self.encoding=="vp8":
             self.codec = avcodec_find_decoder(AV_CODEC_ID_VP8)
             if self.codec==NULL:
                 log.error("codec VP8 not found!")
                 return  False
+        elif self.encoding=="vp9":
+            self.codec = avcodec_find_decoder(AV_CODEC_ID_VP8)
+            if self.codec==NULL:
+                log.error("codec VP8 not found!")
+                return  False
+        else:
+            raise Exception("invalid codec; %s" % self.encoding)
 
         #from here on, we have to call clean_decoder():
         self.codec_ctx = avcodec_alloc_context3(self.codec)
@@ -483,7 +489,7 @@ cdef class Decoder:
         cdef AVFrame *av_frame
         cdef object img
         cdef object plane_offsets, plane_sizes
-        assert self.codec_ctx!=NULL
+        assert self.codec_ctx!=NULL, "no codec context! (not initialized or already closed)"
         assert self.codec!=NULL
 
         #copy the whole input buffer into a padded C buffer:
@@ -525,7 +531,7 @@ cdef class Decoder:
             #ensure we can detect if the frame buffer got allocated:
             clear_frame(av_frame)
             #now safe to run without gil:
-            log("decompress_image() step %s/%s using offset=%s and size=%s", step, steps, offset, size)
+            log("decompress_image() step %s/%s using offset=%s and size=%s", step+1, steps, offset, size)
             with nogil:
                 av_init_packet(&avpkt)
                 avpkt.data = <uint8_t *> (padded_buf+offset)
