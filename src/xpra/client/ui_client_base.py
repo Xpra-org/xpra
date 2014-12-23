@@ -939,6 +939,7 @@ class UIXpraClient(XpraClientBase):
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             "windows"                   : self.windows_enabled,
             "window.raise"              : True,
+            "window.initiate-moveresize": os.name=="posix",     #only implemented on posix (not sure it can be implemented anywhere else..)
             "raw_window_icons"          : True,
             "system_tray"               : self.client_supports_system_tray,
             "xsettings-tuple"           : True,
@@ -1928,6 +1929,12 @@ class UIXpraClient(XpraClientBase):
         #only implemented in gtk2 for now
         pass
 
+    def _process_initiate_moveresize(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        if window:
+            window.initiate_moveresize(*packet[2:7])
+
     def _process_window_metadata(self, packet):
         wid, metadata = packet[1:3]
         window = self._id_to_window.get(wid)
@@ -2005,6 +2012,7 @@ class UIXpraClient(XpraClientBase):
             "new-override-redirect":self._process_new_override_redirect,
             "new-tray":             self._process_new_tray,
             "raise-window":         self._process_raise_window,
+            "initiate-moveresize":  self._process_initiate_moveresize,
             "window-move-resize":   self._process_window_move_resize,
             "window-resized":       self._process_window_resized,
             "cursor":               self._process_cursor,

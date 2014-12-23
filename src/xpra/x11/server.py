@@ -403,6 +403,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
         window.managed_connect("raised", self._raised_window)
+        window.managed_connect("initiate-moveresize", self._initiate_moveresize)
         window.managed_connect("grab", self._window_grab)
         window.managed_connect("ungrab", self._window_ungrab)
         return wid
@@ -651,6 +652,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._has_grab = 0
         for ss in self._server_sources.values():
             ss.pointer_ungrab(grab_id)
+
+
+    def _initiate_moveresize(self, window, event):
+        log("initiate_moveresize(%s, %s)", window, event)
+        assert len(event.data)==5
+        #x_root, y_root, direction, button, source_indication = event.data
+        wid = self._window_to_id[window]
+        for ss in self._server_sources.values():
+            ss.initiate_moveresize(wid, window, *event.data)
 
 
     def _raised_window(self, window, event):

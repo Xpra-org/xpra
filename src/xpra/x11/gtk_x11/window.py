@@ -305,6 +305,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "client-contents-changed": one_arg_signal,
         "raised"                : one_arg_signal,
         "unmanaged"             : one_arg_signal,
+        "initiate-moveresize"   : one_arg_signal,
 
         "grab"                  : one_arg_signal,
         "ungrab"                : one_arg_signal,
@@ -648,6 +649,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             log("WM_CHANGE_STATE: %s", event.data[0])
             if event.data[0]==IconicState:
                 self._internal_set_property("iconic", True)
+        elif event.message_type=="_NET_WM_MOVERESIZE" and event.data and len(event.data)==5:
+            self.emit("initiate-moveresize", event)
         elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0] in (0, 1):
             self.set_active()
             self.emit("raised", event)
