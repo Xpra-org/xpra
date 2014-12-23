@@ -1286,8 +1286,7 @@ class WindowModel(BaseWindowModel):
     def _handle_motif_wm_hints(self):
         #motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints")
         motif_hints = prop_get(self.client_window, "_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
-        if motif_hints is not None:
-            self._internal_set_property("decorations", bool(motif_hints.decorations))
+        self._internal_set_property("decorations", (motif_hints is None) or bool(motif_hints.decorations))
     _property_handlers["_MOTIF_WM_HINTS"] = _handle_motif_wm_hints
 
     def _handle_net_wm_icon(self):

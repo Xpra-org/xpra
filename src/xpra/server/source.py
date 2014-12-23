@@ -83,6 +83,12 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
             #save space: all these properties are assumed false if unspecified
             return {}
         return {propname : v}
+    elif propname in ("decorations", ):
+        v = window.get_property(propname)
+        if v is True:
+            #save space: all these properties are assumed true if unspecified
+            return {}
+        return {propname : v}
     elif propname in ("role", "opacity"):
         v = window.get_property(propname)
         if v is None or v=="":
