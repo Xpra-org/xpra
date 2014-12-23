@@ -189,6 +189,12 @@ class ClientWindowBase(ClientWidgetBase):
             fullscreen = metadata.boolget("fullscreen")
             self.set_fullscreen(fullscreen)
 
+        if b"iconic" in metadata:
+            if metadata.boolget("iconic"):
+                self.iconify()
+            else:
+                self.deiconify()
+
 
     def set_size_constraints(self, size_constraints, max_window_size):
         self._set_initial_position = size_constraints.get("set-initial-position")

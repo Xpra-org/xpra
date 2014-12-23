@@ -416,7 +416,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
         windowlog("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
         self._desktop_manager.add_window(window, x, y, w, h)
         window.connect("notify::geometry", self._window_resized_signaled)
+        window.connect("notify::iconic", self._iconic_changed)
         self._send_new_window_packet(window)
+
+    def _iconic_changed(self, window, pspec):
+        #only defined for debugging purposes
+        log("_iconic_changed(%s, %s) iconic=%s, shown=%s", window, pspec, window.get_property("iconic"), self._desktop_manager.is_shown(window))
+
 
     def _window_resized_signaled(self, window, *args):
         nw, nh = window.get_property("actual-size")

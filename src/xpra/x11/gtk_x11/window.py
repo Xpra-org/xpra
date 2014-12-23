@@ -644,6 +644,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 pass
             else:
                 log("do_xpra_client_message_event(%s) atom1=%s", event, atom1)
+        elif event.message_type=="WM_CHANGE_STATE" and event.data and len(event.data)==5:
+            log("WM_CHANGE_STATE: %s", event.data[0])
+            if event.data[0]==IconicState:
+                self._internal_set_property("iconic", True)
         elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0] in (0, 1):
             self.set_active()
             self.emit("raised", event)
@@ -928,7 +932,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("actual-size", (nw, nh))
 
     def get_dynamic_property_names(self):
-        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints"]
+        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic"]
 
 
     def is_OR(self):
@@ -1494,6 +1498,7 @@ class WindowModel(BaseWindowModel):
 
     def _handle_iconic_update(self, *args):
         def set_state(state):
+            log("_handle_iconic_update: set_state(%s)", state)
             with xswallow:
                 prop_set(self.client_window, "WM_STATE", ["u32"],
                              [state, XNone])

@@ -422,7 +422,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def do_configure_event(self, event):
         log("%s.do_configure_event(%s)", self, event)
         gtk.Window.do_configure_event(self, event)
-        if not self._override_redirect:
+        if not self._override_redirect and not self._iconified:
             self.process_configure_event()
 
     def process_configure_event(self):
