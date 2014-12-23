@@ -1442,29 +1442,41 @@ class WindowModel(BaseWindowModel):
     #      accesses the "state" set directly.  This is done by overriding
     #      do_set_property and do_get_property.
     _state_properties = {
-        "attention-requested": "_NET_WM_STATE_DEMANDS_ATTENTION",
-        "fullscreen": "_NET_WM_STATE_FULLSCREEN",
+        "attention-requested"   : ("_NET_WM_STATE_DEMANDS_ATTENTION", ),
+        "fullscreen"            : ("_NET_WM_STATE_FULLSCREEN", ),
+        "maximized"             : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
         }
 
     _state_properties_reversed = {}
-    for k, v in _state_properties.iteritems():
-        _state_properties_reversed[v] = k
+    for k, states in _state_properties.iteritems():
+        for x in states:
+            _state_properties_reversed[x] = k
 
-    def _state_add(self, state_name):
+    def _state_add(self, *state_names):
         curr = set(self.get_property("state"))
-        if state_name not in curr:
-            curr.add(state_name)
+        add = [s for s in state_names if s not in curr]
+        if add:
+            for x in add:
+                curr.add(x)
             self._internal_set_property("state", frozenset(curr))
-            if state_name in self._state_properties_reversed:
-                self.notify(self._state_properties_reversed[state_name])
+            self._state_notify(add)
 
-    def _state_remove(self, state_name):
+    def _state_remove(self, *state_names):
         curr = set(self.get_property("state"))
-        if state_name in curr:
-            curr.discard(state_name)
+        discard = [s for s in state_names if s in curr]
+        if discard:
+            for x in discard:
+                curr.discard(x)
             self._internal_set_property("state", frozenset(curr))
-            if state_name in self._state_properties_reversed:
-                self.notify(self._state_properties_reversed[state_name])
+            self._state_notify(discard)
+
+    def _state_notify(self, state_names):
+        notify_props = set()
+        for x in state_names:
+            if x in self._state_properties_reversed:
+                notify_props.add(self._state_properties_reversed[x])
+        for x in list(notify_props):
+            self.notify(x)
 
     def _state_isset(self, state_name):
         return state_name in self.get_property("state")
@@ -1477,11 +1489,11 @@ class WindowModel(BaseWindowModel):
 
     def do_set_property(self, pspec, value):
         if pspec.name in self._state_properties:
-            state = self._state_properties[pspec.name]
+            state_names = self._state_properties[pspec.name]
             if value:
-                self._state_add(state)
+                self._state_add(*state_names)
             else:
-                self._state_remove(state)
+                self._state_remove(*state_names)
         else:
             AutoPropGObjectMixin.do_set_property(self, pspec, value)
 
@@ -1491,7 +1503,12 @@ class WindowModel(BaseWindowModel):
 
     def do_get_property(self, pspec):
         if pspec.name in self._state_properties:
-            return self._state_isset(self._state_properties[pspec.name])
+            #return True if any is set (only relevant for maximized)
+            state_names = self._state_properties[pspec.name]
+            for x in state_names:
+                if self._state_isset(x):
+                    return True
+            return False
         else:
             return AutoPropGObjectMixin.do_get_property(self, pspec)
 
