@@ -55,6 +55,22 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
 #window types we map to POPUP rather than TOPLEVEL
 POPUP_TYPE_HINTS = set((
                     #"DIALOG",
+                    #"MENU",
+                    #"TOOLBAR",
+                    #"SPLASHSCREEN",
+                    #"UTILITY",
+                    #"DOCK",
+                    #"DESKTOP",
+                    "DROPDOWN_MENU",
+                    "POPUP_MENU",
+                    #"TOOLTIP",
+                    #"NOTIFICATION",
+                    #"COMBO",
+                    #"DND"
+                    ))
+#window types for which we skip window decorations (title bar)
+UNDECORATED_TYPE_HINTS = set((
+                    #"DIALOG",
                     "MENU",
                     #"TOOLBAR",
                     "SPLASHSCREEN",
@@ -86,19 +102,32 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def _is_popup(self, metadata):
         #decide if the window type is POPUP or NORMAL
-        #(show window decorations or not)
         if self._override_redirect:
             return True
         window_types = metadata.get("window-type", [])
-        #skip decorations for any non-normal non-dialog window that is transient for another window:
-        if ("NORMAL" not in window_types) and ("DIALOG" not in window_types) and metadata.intget("transient-for", -1)>0:
-            return True
         popup_types = list(POPUP_TYPE_HINTS.intersection(window_types))
         log("popup_types(%s)=%s", window_types, popup_types)
         if popup_types:
             log("forcing POPUP window type for %s", popup_types)
             return True
         return False
+
+    def _is_decorated(self, metadata):
+        #decide if the window type is POPUP or NORMAL
+        #(show window decorations or not)
+        if self._override_redirect:
+            return False
+        window_types = metadata.get("window-type", [])
+        #skip decorations for any non-normal non-dialog window that is transient for another window:
+        if ("NORMAL" not in window_types) and ("DIALOG" not in window_types) and metadata.intget("transient-for", -1)>0:
+            return False
+        undecorated_types = list(UNDECORATED_TYPE_HINTS.intersection(window_types))
+        log("undecorated_types(%s)=%s", window_types, undecorated_types)
+        if undecorated_types:
+            log("not decorating window type %s", undecorated_types)
+            return False
+        return True
+
 
     def setup_window(self):
         self.set_app_paintable(True)

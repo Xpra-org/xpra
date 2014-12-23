@@ -84,6 +84,7 @@ class GTK2WindowBase(GTKClientWindowBase):
             gtk.Window.__init__(self, gtk.WINDOW_POPUP)
         else:
             gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        self.set_decorated(self._is_decorated(metadata))
         GTKClientWindowBase.init_window(self, metadata)
         # tell KDE/oxygen not to intercept clicks
         # see: https://bugs.kde.org/show_bug.cgi?id=274485

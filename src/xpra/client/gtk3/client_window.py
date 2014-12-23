@@ -95,7 +95,7 @@ class ClientWindow(GTKClientWindowBase):
             window_type = Gtk.WindowType.TOPLEVEL
         Gtk.Window.__init__(self,
                             type = window_type,
-                            decorated = not self._override_redirect,
+                            decorated = self._is_decorated(metadata),
                             app_paintable = True)
         GTKClientWindowBase.init_window(self, metadata)
         # tell KDE/oxygen not to intercept clicks
