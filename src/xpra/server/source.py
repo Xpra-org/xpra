@@ -77,10 +77,10 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
         return {}
     elif propname == "window-type":
         return {"window-type" : window.get_property("window-type")}
-    elif propname in ("iconic", ):
-        #always send this one when requested
+    elif propname in ("iconic", "fullscreen", "maximized"):
+        #always send these when requested
         return {propname : bool(window.get_property(propname))}
-    elif propname in ("has-alpha", "override-redirect", "tray", "modal", "fullscreen", "maximized"):
+    elif propname in ("has-alpha", "override-redirect", "tray", "modal"):
         v = window.get_property(propname)
         if v is False:
             #save space: all these properties are assumed false if unspecified
