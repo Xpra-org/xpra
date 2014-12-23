@@ -115,7 +115,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def _is_decorated(self, metadata):
         #decide if the window type is POPUP or NORMAL
         #(show window decorations or not)
-        if self._override_redirect:
+        if self._override_redirect or not metadata.get("decorations", True):
             return False
         window_types = metadata.get("window-type", [])
         #skip decorations for any non-normal non-dialog window that is transient for another window:

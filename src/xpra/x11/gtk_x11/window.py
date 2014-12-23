@@ -824,6 +824,10 @@ class WindowModel(BaseWindowModel):
         "owner": (gobject.TYPE_PYOBJECT,
                   "Owner", "",
                   gobject.PARAM_READABLE),
+        "decorations": (gobject.TYPE_BOOLEAN,
+                       "Should the window decorations be shown", "",
+                       True,
+                       gobject.PARAM_READABLE),
         }
     __gsignals__ = {
         # X11 bell event:
@@ -862,7 +866,7 @@ class WindowModel(BaseWindowModel):
 
         self.connect("notify::iconic", self._handle_iconic_update)
 
-        self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "modal"]
+        self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "modal", "decorations"]
         self.call_setup()
 
     def setup(self):
@@ -1279,6 +1283,13 @@ class WindowModel(BaseWindowModel):
     _property_handlers["_NET_WM_STRUT"] = _handle_wm_strut
     _property_handlers["_NET_WM_STRUT_PARTIAL"] = _handle_wm_strut
 
+    def _handle_motif_wm_hints(self):
+        #motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints")
+        motif_hints = prop_get(self.client_window, "_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
+        if motif_hints is not None:
+            self._internal_set_property("decorations", bool(motif_hints.decorations))
+    _property_handlers["_MOTIF_WM_HINTS"] = _handle_motif_wm_hints
+
     def _handle_net_wm_icon(self):
         log("_NET_WM_ICON changed on %#x, re-reading", self.client_window.xid)
         surf = self.prop_get("_NET_WM_ICON", "icon", not self._managed)
@@ -1367,9 +1378,12 @@ class WindowModel(BaseWindowModel):
         modal = (net_wm_state is not None) and ("_NET_WM_STATE_MODAL" in net_wm_state)
         self._internal_set_property("modal", modal)
 
+        #the default value is True, but is not being honoured! (so we force it here)
+        self._internal_set_property("decorations", True)
+
         for mutable in ["WM_HINTS", "WM_NORMAL_HINTS",
                         "WM_ICON_NAME", "_NET_WM_ICON_NAME",
-                        "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]:
+                        "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL", "_MOTIF_WM_HINTS"]:
             self._call_property_handler(mutable)
         for mutable in ["_NET_WM_ICON"]:
             try:

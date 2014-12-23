@@ -89,6 +89,18 @@ class NetWMStrut(object):
                                      self.top_start_x, self.top_end_x,
                                      self.bottom_start_x, self.bottom_stop_x)
 
+class MotifWMHints(object):
+    def __init__(self, disp, data):
+        self.flags, self.functions, self.decorations, self.input_mode, self.status = \
+            struct.unpack("=IIIiI", data)
+
+    def __str__(self):
+        return "MotifWMHints(%s)" % {"flags"        : self.flags,
+                                     "functions"    : self.functions,
+                                     "decorations"  : self.decorations,
+                                     "input_mode"   : self.input_mode,
+                                     "status"       : self.status}
+
 
 def _read_image(disp, stream):
     try:
@@ -192,6 +204,8 @@ _prop_types = {
               unsupported, NetWMStrut, None),
     "strut-partial": (NetWMStrut, "CARDINAL", 32,
                       unsupported, NetWMStrut, None),
+    "motif-hints": (MotifWMHints, "_MOTIF_WM_HINTS", 32,
+              unsupported, MotifWMHints, None),
     "icon": (cairo.ImageSurface, "CARDINAL", 32,
              unsupported, NetWMIcons, None),
     "xsettings-settings": (tuple, "_XSETTINGS_SETTINGS", 8,
