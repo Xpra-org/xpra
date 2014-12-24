@@ -651,6 +651,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 self._internal_set_property("iconic", True)
         elif event.message_type=="_NET_WM_MOVERESIZE" and event.data and len(event.data)==5:
             self.emit("initiate-moveresize", event)
+        elif event.message_type=="_NET_MOVERESIZE_WINDOW" and event.data and len(event.data)==5:
+            log("ignoring _NET_MOVERESIZE_WINDOW on %s (data=%s)", self, event.data)
         elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0] in (0, 1):
             self.set_active()
             self.emit("raised", event)
@@ -946,6 +948,29 @@ class WindowModel(BaseWindowModel):
 
     def get_dimensions(self):
         return  self.get_property("actual-size")
+
+
+    def do_xpra_client_message_event(self, event):
+        if event.message_type=="_NET_MOVERESIZE_WINDOW" and event.data and len(event.data)==5:
+            #TODO: honour gravity, show source indication
+            geom = self.corral_window.get_geometry()
+            x, y, w, h, _ = geom
+            if event.data[0] & 0x100:
+                x = event.data[1]
+            if event.data[0] & 0x200:
+                y = event.data[2]
+            if event.data[0] & 0x400:
+                w = event.data[3]
+            if event.data[0] & 0x800:
+                h = event.data[4]
+            #honour hints:
+            hints = self.get_property("size-hints")
+            w, h, _, _ = calc_constrained_size(w, h, hints)
+            log("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)", self, event.data, geom, (x,y,w,h))
+            with xswallow:
+                X11Window.configureAndNotify(self.client_window.xid, x, y, w, h)
+            return
+        BaseWindowModel.do_xpra_client_message_event(self, event)
 
     def do_xpra_xkb_event(self, event):
         log("WindowModel.do_xpra_xkb_event(%r)" % event)

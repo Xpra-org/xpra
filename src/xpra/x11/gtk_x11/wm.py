@@ -159,6 +159,7 @@ class Wm(gobject.GObject):
         # _NET_WM_STATE_BELOW,
 
         "_NET_WM_MOVERESIZE",
+        "_NET_MOVERESIZE_WINDOW",
 
         # Not at all yet:
         #"_NET_REQUEST_FRAME_EXTENTS",
