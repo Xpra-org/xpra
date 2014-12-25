@@ -1,11 +1,13 @@
+#!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
-from xpra.scripts.config import python_platform
+from xpra.scripts.config import python_platform as pp
 import sys
+import os
 from xpra import __version__ as local_version
 from xpra.log import Logger
 log = Logger("util")
@@ -38,7 +40,6 @@ def version_compat_check(remote_version):
 def get_host_info():
     #this function is for non UI thread info
     info = {}
-    import os
     try:
         import socket
         info.update({
@@ -91,16 +92,37 @@ def get_version_info():
 
 def do_get_platform_info():
     from xpra.os_util import platform_name
+    def get_processor_name():
+        if pp.system() == "Windows":
+            return pp.processor()
+        elif pp.system() == "Darwin":
+            os.environ['PATH'] = os.environ['PATH'] + os.pathsep + '/usr/sbin'
+            command ="sysctl -n machdep.cpu.brand_string"
+            import subprocess
+            return subprocess.check_output(command).strip()
+        elif pp.system() == "Linux":
+            with open("/proc/cpuinfo") as f:
+                data = f.read()
+            import re
+            for line in data.split("\n"):
+                if "model name" in line:
+                    return re.sub(".*model name.*:", "", line,1).strip()
+        assert False
     info = {
             ""          : sys.platform,
-            "name"      : platform_name(sys.platform, python_platform.release()),
-            "release"   : python_platform.release(),
-            "platform"  : python_platform.platform(),
-            "machine"   : python_platform.machine(),
-            "processor" : python_platform.processor(),
+            "name"      : platform_name(sys.platform, pp.release()),
+            "release"   : pp.release(),
+            "platform"  : pp.platform(),
+            "machine"   : pp.machine(),
+            "processor" : pp.processor(),
+            "architecture" : pp.architecture(),
             }
-    if sys.platform.startswith("linux") and hasattr(python_platform, "linux_distribution"):
-        info["linux_distribution"] = python_platform.linux_distribution()
+    try:
+        info["processor"] = get_processor_name()
+    except:
+        info["processor"] = pp.processor()
+    if sys.platform.startswith("linux") and hasattr(pp, "linux_distribution"):
+        info["linux_distribution"] = pp.linux_distribution()
     return info
 #cache the output:
 platform_info_cache = None
