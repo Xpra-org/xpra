@@ -221,6 +221,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #window icon bits
         capabilities["encoding.icons.size"] = 64, 64            #size we want
         capabilities["encoding.icons.max_size"] = 128, 128      #limit
+        from xpra.client.window_backing_base import DELTA_BUCKETS
+        capabilities["encoding.delta_buckets"] = DELTA_BUCKETS
         return capabilities
 
 

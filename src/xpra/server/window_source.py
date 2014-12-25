@@ -26,7 +26,7 @@ AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 50))
 MAX_PIXELS_PREFER_RGB = 4096
 
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
-MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
+MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "32768"))
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
 FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
 STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
@@ -110,6 +110,9 @@ class WindowSource(object):
         self.supports_delta = []
         if not window.is_tray():
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
+            if self.supports_delta:
+                self.delta_buckets = encoding_options.intget("delta_buckets", 1)
+                self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         self.batch_config = batch_config
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
@@ -205,7 +208,8 @@ class WindowSource(object):
         self.supports_transparency = False
         self.full_frames_only = False
         self.supports_delta = []
-        self.last_pixmap_data = None
+        self.delta_buckets = 0
+        self.delta_pixel_data = []
         self.suspended = False
         self.strict = STRICT_MODE
         #
@@ -220,7 +224,7 @@ class WindowSource(object):
         self.soft_timer = None
         self.soft_expired = 0
         self.max_soft_expired = 5
-        self.min_delta_size = 512
+        self.min_delta_size = 1024
         self.max_delta_size = MAX_DELTA_SIZE
         self.is_OR = False
         self.is_tray = False
@@ -287,7 +291,14 @@ class WindowSource(object):
                 "last_used"             : self.encoding_last_used or "",
                 "full-frames-only"      : self.full_frames_only,
                 "supports-transparency" : self.supports_transparency,
+                "delta"                 : self.supports_delta,
+                "delta.buckets"         : self.delta_buckets,
                 })
+        now = time.time()
+        for i,x in enumerate(self.delta_pixel_data):
+            if x:
+                w, h, coding, store, dpixels, last_used = x
+                info["encoding.delta.bucket[%s]" % i] = w, h, coding, store, len(dpixels), int((now-last_used)*1000)
         up("encoding",  self.get_quality_speed_info())
         try:
             #ie: get_strict_encoding -> "strict_encoding"
@@ -490,7 +501,7 @@ class WindowSource(object):
         if self.encoding==encoding:
             return
         self.statistics.reset()
-        self.last_pixmap_data = None
+        self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         self.update_encoding_selection(encoding)
 
 
@@ -623,7 +634,7 @@ class WindowSource(object):
         self.refresh_regions = []
         self._damage_delayed = None
         self._damage_delayed_expired = False
-        self.last_pixmap_data = None
+        self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         #make sure we don't account for those as they will get dropped
         #(generally before encoding - only one may still get encoded):
         for sequence in self.statistics.encoding_pending.keys():
@@ -1383,7 +1394,7 @@ class WindowSource(object):
     def client_decode_error(self, error):
         self.global_statistics.decode_errors += 1
         #something failed client-side, so we can't rely on the delta being available
-        self.last_pixmap_data = None
+        self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
 
 
     def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options):
@@ -1422,22 +1433,25 @@ class WindowSource(object):
                 options["mmap_data"] = data
 
         #if client supports delta pre-compression for this encoding, use it if we can:
-        delta = -1
-        store = -1
-        isize = image.get_width() * image.get_height()
-        if DELTA and w>2 and h>2 and not (self._mmap and self._mmap_size>0) and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size:
-            #we need to copy the pixels because some delta encodings
-            #will modify the pixel array in-place!
+        delta, store, bucket = -1, -1, -1
+        isize = image.get_width()*image.get_height()
+        if DELTA and not (self._mmap and self._mmap_size>0) and self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size:
+            #we need to copy the pixels because some encodings
+            #may modify the pixel array in-place!
             dpixels = image.get_pixels()[:]
             store = sequence
-            lpd = self.last_pixmap_data
-            if lpd is not None:
-                lw, lh, lcoding, lsequence, ldata = lpd
+            for i, dr in enumerate(list(self.delta_pixel_data)):
+                if dr is None:
+                    continue
+                lw, lh, lcoding, lsequence, ldata, _ = dr
                 if lw==w and lh==h and lcoding==coding and len(ldata)==len(dpixels):
-                    #xor with the last frame:
+                    #xor with this matching delta bucket:
                     delta = lsequence
+                    bucket = i
                     data = xor_str(dpixels, ldata)
                     image.set_pixels(data)
+                    dr[-1] = time.time()            #update last used time
+                    break
 
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
@@ -1460,17 +1474,33 @@ class WindowSource(object):
         #tell client about delta/store for this pixmap:
         if delta>=0:
             client_options["delta"] = delta
+            client_options["bucket"] = bucket
         csize = len(data)
         if store>0:
             if delta>0 and csize>=psize/3:
                 #compressed size is more than 33% of the original
                 #maybe delta is not helping us, so clear it:
-                self.last_pixmap_data = None
+                self.delta_pixel_data[bucket] = None
                 #TODO: could tell the clients they can clear it too
                 #(add a new client capability and send it a zero store value)
             else:
-                self.last_pixmap_data = w, h, coding, store, dpixels
+                #find the bucket to use:
+                if bucket<0:
+                    lpd = self.delta_pixel_data
+                    try:
+                        bucket = lpd.index(None)
+                    except:
+                        #find a bucket which has not been used recently
+                        t = 0
+                        bucket = 0
+                        for i,dr in enumerate(lpd):
+                            if dr and (t==0 or dr[-1]<t):
+                                t = dr[-1]
+                                bucket = i
+                self.delta_pixel_data[bucket] = [w, h, coding, store, dpixels, time.time()]
                 client_options["store"] = store
+                client_options["bucket"] = bucket
+                log("delta client options: %s (for region %s)", client_options, (x, y, w, h))
         encoding = coding
         if not self.generic_encodings:
             #old clients use non-generic encoding names:

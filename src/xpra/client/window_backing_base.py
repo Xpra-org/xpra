@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.log import Logger
 log = Logger("paint")
 
@@ -17,6 +18,8 @@ from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr
 from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place   #@UnresolvedImport
+
+DELTA_BUCKETS = int(os.environ.get("XPRA_DELTA_BUCKETS", "5"))
 
 PIL = get_codec("PIL")
 
@@ -73,7 +76,7 @@ class WindowBackingBase(object):
         self.idle_add = idle_add
         self._alpha_enabled = window_alpha
         self._backing = None
-        self._last_pixmap_data = None
+        self._delta_pixel_data = [None for _ in xrange(DELTA_BUCKETS)]
         self._video_decoder = None
         self._csc_decoder = None
         self._decoder_lock = Lock()
@@ -170,17 +173,19 @@ class WindowBackingBase(object):
             raise Exception("expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" %
                                 (rowstride * height, width, height, rowstride, len(img_data), len(raw_data)))
         delta = options.intget("delta", -1)
+        bucket = options.intget("bucket", 0)
         rgb_data = img_data
         if delta>=0:
-            if not self._last_pixmap_data:
-                raise Exception("delta region references pixmap data we do not have!")
-            lwidth, lheight, store, ldata = self._last_pixmap_data
-            assert width==lwidth and height==lheight and delta==store
+            assert bucket>=0 and bucket<DELTA_BUCKETS, "invalid delta bucket number: %s" % bucket
+            if self._delta_pixel_data[bucket] is None:
+                raise Exception("delta region bucket %s references pixmap data we do not have!" % bucket)
+            lwidth, lheight, store, ldata = self._delta_pixel_data[bucket]
+            assert width==lwidth and height==lheight and delta==store, "delta bucket %s data does not match: expected %s but got %s" % (bucket, (width, height, delta), (lwidth, lheight, store))
             rgb_data = xor_str(img_data, ldata)
         #store new pixels for next delta:
         store = options.intget("store", -1)
         if store>=0:
-            self._last_pixmap_data =  width, height, store, rgb_data
+            self._delta_pixel_data[bucket] =  width, height, store, rgb_data
         return rgb_data
 
 
