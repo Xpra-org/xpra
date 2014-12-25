@@ -1424,7 +1424,8 @@ class WindowSource(object):
         #if client supports delta pre-compression for this encoding, use it if we can:
         delta = -1
         store = -1
-        if DELTA and not (self._mmap and self._mmap_size>0) and (coding in self.supports_delta) and self.min_delta_size<image.get_size()<self.max_delta_size:
+        isize = image.get_width() * image.get_height()
+        if DELTA and w>2 and h>2 and not (self._mmap and self._mmap_size>0) and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size:
             #we need to copy the pixels because some delta encodings
             #will modify the pixel array in-place!
             dpixels = image.get_pixels()[:]
