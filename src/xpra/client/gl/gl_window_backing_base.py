@@ -24,7 +24,7 @@ _DEFAULT_BOX_COLORS = {
               "webp"    : "pink",
               "jpeg"    : "purple",
               "png/P"   : "indigo",
-              "png/L"   : "pink",
+              "png/L"   : "teal",
               "h265"    : "khaki",
               "vp9"     : "lavender",
               "expose"  : "violet",
