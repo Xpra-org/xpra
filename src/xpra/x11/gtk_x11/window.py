@@ -326,7 +326,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._input_field = True            # The WM_HINTS input field
         self._geometry = None
         self._damage_forward_handle = None
-        self._last_wm_state_serial = 0
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
@@ -635,12 +634,18 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 atom2 = get_pyatom(event.window, event.data[2])
                 log("%s: atom2=%s", atom1, atom2)
                 if atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
-                    if self._last_wm_state_serial == event.serial:
-                        #already seen!
+                    if event.data[0]==_NET_WM_STATE_ADD:
+                        maximized = True
+                    elif event.data[0]==_NET_WM_STATE_REMOVE:
+                        maximized = False
+                    elif event.data[0]==_NET_WM_STATE_TOGGLE:
+                        maximized = not self.get_property("maximized")
+                    else:
+                        log.warn("invalid mode for _NET_WM_STATE: %s", event.data[0])
                         return
-                    maximized = event.data[0]==_NET_WM_STATE_ADD
-                    log("do_xpra_client_message_event(%s) window maximized=%s", event, maximized)
-                    self.set_property("maximized", maximized)
+                    log("do_xpra_client_message_event(%s) window maximized=%s (current state=%s)", event, maximized, self.get_property("maximized"))
+                    if maximized!=self.get_property("maximized"):
+                        self.set_property("maximized", maximized)
             elif atom1 in ("_NET_WM_STATE_ABOVE", "_NET_WM_STATE_BELOW"):
                 #TODO: keep track of this preference and pass it to the client
                 pass
@@ -661,7 +666,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self.emit("raised", event)
         else:
             log("do_xpra_client_message_event(%s)", event)
-        self._last_wm_state_serial = event.serial
 
     def set_active(self):
         prop_set(self.client_window.get_screen().get_root_window(), "_NET_ACTIVE_WINDOW", "u32", self.client_window.xid)
