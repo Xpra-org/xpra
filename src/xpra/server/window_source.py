@@ -1500,6 +1500,10 @@ class WindowSource(object):
                 self.delta_pixel_data[bucket] = [w, h, coding, store, dpixels, time.time()]
                 client_options["store"] = store
                 client_options["bucket"] = bucket
+                #record number of frames and pixels:
+                totals = self.statistics.encoding_totals.setdefault("delta", [0, 0])
+                totals[0] = totals[0] + 1
+                totals[1] = totals[1] + w*h
                 log("delta client options: %s (for region %s)", client_options, (x, y, w, h))
         encoding = coding
         if not self.generic_encodings:
