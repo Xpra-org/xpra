@@ -195,6 +195,9 @@ class ClientWindowBase(ClientWidgetBase):
             else:
                 self.deiconify()
 
+        if b"decorations" in metadata:
+            self.set_decorated(metadata.boolget("decorations"))
+
 
     def set_size_constraints(self, size_constraints, max_window_size):
         self._set_initial_position = size_constraints.get("set-initial-position")

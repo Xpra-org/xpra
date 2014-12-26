@@ -937,7 +937,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("actual-size", (nw, nh))
 
     def get_dynamic_property_names(self):
-        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic"]
+        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic", "decorations"]
 
 
     def is_OR(self):
@@ -1318,6 +1318,7 @@ class WindowModel(BaseWindowModel):
     def _handle_motif_wm_hints(self):
         #motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints")
         motif_hints = prop_get(self.client_window, "_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
+        log("_handle_motif_wm_hints() motif_hints=%s", motif_hints)
         self._internal_set_property("decorations", (motif_hints is None) or bool(motif_hints.decorations))
     _property_handlers["_MOTIF_WM_HINTS"] = _handle_motif_wm_hints
 
