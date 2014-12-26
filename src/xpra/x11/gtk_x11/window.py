@@ -610,6 +610,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             return None
 
     def do_xpra_client_message_event(self, event):
+        log("do_xpra_client_message_event(%s)", event)
         # FIXME
         # Need to listen for:
         #   _NET_CLOSE_WINDOW
@@ -650,10 +651,12 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             if event.data[0]==IconicState:
                 self._internal_set_property("iconic", True)
         elif event.message_type=="_NET_WM_MOVERESIZE" and event.data and len(event.data)==5:
+            log("_NET_WM_MOVERESIZE: %s", event)
             self.emit("initiate-moveresize", event)
         elif event.message_type=="_NET_MOVERESIZE_WINDOW" and event.data and len(event.data)==5:
             log("ignoring _NET_MOVERESIZE_WINDOW on %s (data=%s)", self, event.data)
         elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0] in (0, 1):
+            log("_NET_ACTIVE_WINDOW: %s", event)
             self.set_active()
             self.emit("raised", event)
         else:
