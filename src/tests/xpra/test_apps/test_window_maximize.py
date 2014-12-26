@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import gtk
+import gtk.gdk
 
 def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -33,6 +33,20 @@ def main():
 		window.unfullscreen()
 	unfullscreen_btn.connect('clicked', unfullscreen)
 	hbox.pack_start(unfullscreen_btn, expand=False, fill=False, padding=10)
+
+	def window_state(widget, event):
+		STATES = {
+				gtk.gdk.WINDOW_STATE_WITHDRAWN	: "withdrawn",
+				gtk.gdk.WINDOW_STATE_ICONIFIED	: "iconified",
+				gtk.gdk.WINDOW_STATE_MAXIMIZED	: "maximized",
+				gtk.gdk.WINDOW_STATE_STICKY		: "sticky",
+				gtk.gdk.WINDOW_STATE_FULLSCREEN	: "fullscreen",
+				gtk.gdk.WINDOW_STATE_ABOVE		: "above",
+				gtk.gdk.WINDOW_STATE_BELOW		: "below",
+				}
+		print("window_state(%s, %s)" % (widget, event))
+		print("flags: %s" % [STATES[x] for x in STATES.keys() if x & event.new_window_state])
+	window.connect("window-state-event", window_state)
 
 	window.add(vbox)
 	window.show_all()
