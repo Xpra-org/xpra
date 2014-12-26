@@ -21,7 +21,7 @@ gdk.threads_init()
 from xpra.platform.ui_thread_watcher import get_UI_watcher
 UI_watcher = get_UI_watcher(gobject.timeout_add)
 
-from xpra.gtk_common.gtk_util import gtk_main
+from xpra.gtk_common.gtk_util import gtk_main, color_parse
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.client.window_border import WindowBorder
@@ -101,11 +101,11 @@ class XpraClient(GTKXpraClient):
                 #fail: default to red
                 color_str = "red"
         try:
-            color = gtk.gdk.color_parse(color_str)
+            color = color_parse(color_str)
         except Exception as e:
             log.warn("invalid border color specified: '%s' (%s)", color_str, e)
             border_help()
-            color = gtk.gdk.Color("red")
+            color = color_parse("red")
         alpha = 0.6
         size = 4
         if len(parts)==2:

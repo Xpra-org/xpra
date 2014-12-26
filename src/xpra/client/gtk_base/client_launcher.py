@@ -29,7 +29,7 @@ pango = import_pango()
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, ENCRYPTION_CIPHERS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, \
+from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
                                     OptionMenu, choose_file, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
@@ -79,9 +79,9 @@ LAUNCHER_VALIDATION = {
                       }
 
 
-black   = gdk.color_parse("black")
-red     = gdk.color_parse("red")
-white   = gdk.color_parse("white")
+black   = color_parse("black")
+red     = color_parse("red")
+white   = color_parse("white")
 
 
 def get_active_item_index(optionmenu):

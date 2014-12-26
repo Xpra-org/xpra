@@ -64,6 +64,7 @@ def get_gtk_version_info():
 
 
 if is_gtk3():
+    color_parse             = gdk.Color.parse
     default_Cursor          = gdk.Cursor.new(gdk.CursorType.X_CURSOR)
     new_Cursor_for_display  = gdk.Cursor.new_for_display
     new_Cursor_from_pixbuf  = gdk.Cursor.new_from_pixbuf
@@ -170,6 +171,7 @@ else:
     if gtk.gtk_version<(2,18):
         raise Exception("your version of PyGTK is too old: %s" % str(gtk.pygtk_version))
 
+    color_parse             = gdk.color_parse
     default_Cursor          = gdk.Cursor(gdk.X_CURSOR)
     new_Cursor_for_display  = gdk.Cursor
     new_Cursor_from_pixbuf  = gdk.Cursor

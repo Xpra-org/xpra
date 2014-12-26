@@ -11,8 +11,37 @@ log = Logger("opengl", "paint")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 OPENGL_PAINT_BOX = os.environ.get("XPRA_OPENGL_PAINT_BOX", "0")=="1"
 
-from xpra.gtk_common.gtk_util import import_gobject
+from xpra.gtk_common.gtk_util import import_gobject, color_parse
 idle_add = import_gobject().idle_add
+
+
+_DEFAULT_BOX_COLORS = {
+              "png"     : "yellow",
+              "h264"    : "blue",
+              "vp8"     : "green",
+              "rgb24"   : "orange",
+              "rgb32"   : "red",
+              "webp"    : "pink",
+              "jpeg"    : "purple",
+              "png/P"   : "indigo",
+              "png/L"   : "pink",
+              "h265"    : "khaki",
+              "vp9"     : "lavender",
+              "expose"  : "violet",
+              }
+
+def get_fcolor(encoding):
+    color_name = os.environ.get("XPRA_BOX_COLOR_%s" % encoding.upper(), _DEFAULT_BOX_COLORS.get(encoding))
+    try:
+        c = color_parse(color_name)
+    except:
+        c = color_parse("black")
+    return c.red_float, c.green_float, c.blue_float, 0.3
+_DEFAULT_BOX_COLOR = get_fcolor("black")
+BOX_COLORS = {}
+for x in _DEFAULT_BOX_COLORS.keys():
+    BOX_COLORS[x] = get_fcolor(x)
+
 
 from xpra.os_util import memoryview_to_bytes
 from xpra.codecs.codec_constants import get_subsampling_divs
@@ -400,7 +429,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         #   change fragment program
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
-    def present_fbo(self, x, y, w, h):
+    def present_fbo(self, encoding, x, y, w, h):
         if not self.paint_screen:
             return
         self.gl_marker("Presenting FBO on screen")
@@ -445,7 +474,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         if OPENGL_PAINT_BOX:
             glLineWidth(1)
             glBegin(GL_LINE_LOOP)
-            glColor4f(0.8, 0.4, 0.4, 0.3)   #red-ish
+            color = BOX_COLORS.get(encoding, _DEFAULT_BOX_COLOR)
+            glColor4f(*color)
             for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
                 glVertex2i(px, py)
             glEnd()
@@ -578,16 +608,16 @@ class GLWindowBackingBase(GTKWindowBacking):
             glEnd()
 
             # Present update to screen
-            self.present_fbo(x, y, width, height)
+            self.present_fbo(options.get("encoding"), x, y, width, height)
             # present_fbo has reset state already
         return True
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #copy so the data will be usable (usually a str)
         img.clone_pixel_data()
-        idle_add(self.gl_paint_planar, img, x, y, enc_width, enc_height, width, height, callbacks)
+        idle_add(self.gl_paint_planar, options.get("encoding"), img, x, y, enc_width, enc_height, width, height, callbacks)
 
-    def gl_paint_planar(self, img, x, y, enc_width, enc_height, width, height, callbacks):
+    def gl_paint_planar(self, encoding, img, x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
         log("gl_paint_planar%s", (img, x, y, enc_width, enc_height, width, height, callbacks))
         try:
@@ -611,7 +641,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                     y_scale = float(height)/enc_height
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
                 # Present it on screen
-                self.present_fbo(x, y, width, height)
+                self.present_fbo(encoding, x, y, width, height)
             fire_paint_callbacks(callbacks, True)
         except Exception as e:
             log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)

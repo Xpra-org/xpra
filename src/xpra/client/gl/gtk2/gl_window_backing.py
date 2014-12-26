@@ -38,4 +38,4 @@ class GLPixmapBacking(GLWindowBackingBase):
         with context:
             self.gl_init()
             w, h = self.size
-            self.present_fbo(0, 0, w, h)
+            self.present_fbo("expose", 0, 0, w, h)

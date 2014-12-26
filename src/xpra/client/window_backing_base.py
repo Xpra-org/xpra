@@ -454,6 +454,7 @@ class WindowBackingBase(object):
         """ dispatches the paint to one of the paint_XXXX methods """
         log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
         coding = bytestostr(coding)
+        options["encoding"] = coding            #used for choosing the color of the paint box
         if coding == "mmap":
             self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "rgb24":
