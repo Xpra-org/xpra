@@ -669,6 +669,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for ss in self._server_sources.values():
             ss.raise_window(wid, window)
 
+
+    def _set_window_state(self, proto, wid, window, new_window_state):
+        #only used for setting maximized state:
+        if "maximized" in new_window_state:
+            window.set_property("maximized", bool(new_window_state.get("maximized", False)))
+
     def _process_map_window(self, proto, packet):
         wid, x, y, width, height = packet[1:6]
         window = self._id_to_window.get(wid)
@@ -677,6 +683,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         assert not window.is_OR()
         windowlog("client mapped window %s - %s, at: %s", wid, window, (x, y, width, height))
+        if len(packet)>=8:
+            self._set_window_state(proto, wid, window, packet[7])
         self._desktop_manager.configure_window(window, x, y, width, height)
         self._desktop_manager.show_window(window)
         if len(packet)>=7:
@@ -698,10 +706,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
-        if len(packet)>=7:
-            client_properties = packet[6]
-        else:
-            client_properties = {}
         resize_counter = 0
         if len(packet)>=8:
             resize_counter = packet[7]
@@ -717,11 +721,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
         else:
             assert not window.is_OR()
             self.last_client_configure_event = time.time()
+            if len(packet)>=8:
+                self._set_window_state(proto, wid, window, packet[7])
             owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
             windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
             self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)
-        if client_properties:
-            self._set_client_properties(proto, wid, window, client_properties)
+        if len(packet)>=7:
+            self._set_client_properties(proto, wid, window, packet[6])
         if window.is_tray() or (self._desktop_manager.visible(window) and (oww!=w or owh!=h)):
             self._damage(window, 0, 0, w, h)
 

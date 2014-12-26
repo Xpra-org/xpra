@@ -94,6 +94,7 @@ class GTKKeyEvent(AdHocStruct):
 class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def init_window(self, metadata):
+        self._window_state = {}
         self._iconified = False
         self._resize_counter = 0
         self._window_workspace = self._client_properties.get("workspace", -1)
@@ -195,8 +196,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
         maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
         iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
-        self._client_properties["maximized"] = maximized
-        log("%s.window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s, maximized=%s, iconified=%s", self, widget, repr(event), event.new_window_state, self._fullscreen, maximized, iconified)
+        if event.changed_mask & self.WINDOW_STATE_MAXIMIZED:
+            #this may get sent now as part of map_event code below (and it is irrelevant for the unmap case),
+            #or when we get the configure event - which should come straight after
+            #if we're changing the maximized state
+            self._window_state["maximized"] = maximized
+        log("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s, fullscreen=%s, maximized=%s, iconified=%s", self, widget, repr(event), event.changed_mask, event.new_window_state, self._fullscreen, maximized, iconified)
         if iconified!=self._iconified:
             #handle iconification as map events:
             assert not self._override_redirect
@@ -412,8 +417,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def process_map_event(self):
         x, y, w, h = self.get_window_geometry()
+        state = self._window_state
         props = self._client_properties
         self._client_properties = {}
+        self._window_state = {}
         if not self._been_mapped:
             #this is the first time around, so set the workspace:
             workspace = self.set_workspace()
@@ -427,8 +434,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, self._window_workspace, workspace)
             self._window_workspace = workspace
             props["workspace"] = workspace
-        log("map-window for wid=%s with client props=%s", self._id, props)
-        self.send("map-window", self._id, x, y, w, h, props)
+        log("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
+        self.send("map-window", self._id, x, y, w, h, props, state)
         self._pos = (x, y)
         self._size = (w, h)
         self.idle_add(self._focus_change, "initial")
@@ -447,8 +454,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ox, oy = self._pos
         dx, dy = x-ox, y-oy
         self._pos = (x, y)
+        state = self._window_state
         props = self._client_properties
         self._client_properties = {}
+        self._window_state = {}
         if self._been_mapped:
             #if the window has been mapped already, the workspace should be set:
             props["screen"] = self.get_screen().get_number()
@@ -457,7 +466,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 workspacelog("configure event: changed workspace from %s to %s", self._window_workspace, workspace)
                 self._window_workspace = workspace
                 props["workspace"] = workspace
-        packet = ["configure-window", self._id, x, y, w, h, props]
+        packet = ["configure-window", self._id, x, y, w, h, props, state]
         if self._resize_counter>0:
             packet.append(self._resize_counter)
         self.send(*packet)
