@@ -35,6 +35,7 @@ from OpenGL.GL import \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_2D, \
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
+    glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE, \
     glHint, \
     glBlendFunc, \
     glActiveTexture, glTexSubImage2D, \
@@ -426,6 +427,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             # support alpha channel if present:
             glEnablei(GL_BLEND, self.textures[TEX_FBO])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
         glBegin(GL_QUADS)
         #note how we invert coordinates..
         glTexCoord2i(x, wh-y)
@@ -444,8 +446,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             glLineWidth(1)
             glBegin(GL_LINE_LOOP)
             glColor4f(0.8, 0.4, 0.4, 0.3)   #red-ish
-            for x,y in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
-                glVertex2i(x, y)
+            for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
+                glVertex2i(px, py)
             glEnd()
 
         #if desired, paint window border
@@ -454,8 +456,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             glLineWidth(self.border.size*2)
             glBegin(GL_LINE_LOOP)
             glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)
-            for x,y in ((0, 0), (ww, 0), (ww, wh), (0, wh)):
-                glVertex2i(x, y)
+            for px,py in ((0, 0), (ww, 0), (ww, wh), (0, wh)):
+                glVertex2i(px, py)
             glEnd()
 
         # Show the backbuffer on screen
