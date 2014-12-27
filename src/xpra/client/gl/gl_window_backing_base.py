@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import time, math
 
 from xpra.log import Logger
 log = Logger("opengl", "paint")
@@ -47,6 +48,7 @@ from xpra.os_util import memoryview_to_bytes
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
+from xpra.gtk_common.gtk_spinner import cv
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.gl.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GLContextManager, GLDrawingArea
 from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, is_pyopengl_memoryview_safe
@@ -57,7 +59,7 @@ from OpenGL.GL import \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
-    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINE_LOOP, GL_COLOR_BUFFER_BIT, \
+    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_COLOR_BUFFER_BIT, \
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
@@ -196,6 +198,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.debug_setup = False
         self.border = None
         self.paint_screen = False
+        self.paint_spinner = False
         self.draw_needs_refresh = False
         self.offscreen_fbo = None
 
@@ -479,6 +482,25 @@ class GLWindowBackingBase(GTKWindowBacking):
             for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
                 glVertex2i(px, py)
             glEnd()
+
+        if self.paint_spinner:
+            #add spinner:
+            dim = min(ww/3.0, wh/3.0, 100.0)
+            t = time.time()
+            count = int(t*4.0)
+            bx = ww//2
+            by = wh//2
+            for i in range(8):      #8 lines
+                glBegin(GL_POLYGON)
+                c = cv.trs[count%8][i]
+                glColor4f(c, c, c, 1)
+                mi1 = math.pi*i/4-math.pi/16
+                mi2 = math.pi*i/4+math.pi/16
+                glVertex2i(int(bx+math.sin(mi1)*10), int(by+math.cos(mi1)*10))
+                glVertex2i(int(bx+math.sin(mi1)*dim), int(by+math.cos(mi1)*dim))
+                glVertex2i(int(bx+math.sin(mi2)*dim), int(by+math.cos(mi2)*dim))
+                glVertex2i(int(bx+math.sin(mi2)*10), int(by+math.cos(mi2)*10))
+                glEnd()
 
         #if desired, paint window border
         if self.border and self.border.shown:

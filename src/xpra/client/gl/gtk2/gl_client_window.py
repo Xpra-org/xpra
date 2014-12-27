@@ -7,7 +7,6 @@
 from xpra.log import Logger
 log = Logger("opengl", "window")
 
-from gtk import gdk
 import gobject
 
 from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase
@@ -47,17 +46,13 @@ class GLClientWindow(GTK2WindowBase):
             #rgb_formats.append("BGRX")
 
     def spinner(self, ok):
-        if not self._backing.paint_screen or not self._backing._backing or not self.can_have_spinner():
+        b = self._backing
+        if not b or not b.paint_screen or not b._backing or not self.can_have_spinner():
             return
         w, h = self.get_size()
-        if ok:
-            self._backing.gl_expose_event(self._backing._backing, "spinner: fake event")
-            self.queue_draw(0, 0, w, h)
-        else:
-            self._backing.gl_expose_event(self._backing._backing, "spinner: fake event")
-            window = self._backing._backing.get_window()
-            context = window.cairo_create()
-            self.paint_spinner(context, gdk.Rectangle(0, 0, w, h))
+        b.paint_spinner = not ok
+        b.gl_expose_event(self._backing._backing, "spinner: fake event")
+        self.queue_draw(0, 0, w, h)
 
     def do_expose_event(self, event):
         log("GL do_expose_event(%s)", event)

@@ -312,6 +312,7 @@ class ClientWindowBase(ClientWidgetBase):
     def spinner(self, ok):
         if not self.can_have_spinner():
             return
+        log("spinner(%s) queueing redraw")
         #with normal windows, we just queue a draw request
         #and let the expose event paint the spinner
         w, h = self.get_size()

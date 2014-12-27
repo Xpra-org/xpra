@@ -1089,6 +1089,7 @@ class UIXpraClient(XpraClientBase):
             return False
         last = self._server_ok
         self._server_ok = not FAKE_BROKEN_CONNECTION and self.last_ping_echoed_time>=ping_sent_time
+        log("check_server_echo(%s) last=%s, server_ok=%s", ping_sent_time, last, self._server_ok)
         if last!=self._server_ok and not self._server_ok:
             log.info("server is not responding, drawing spinners over the windows")
             def timer_redraw():
