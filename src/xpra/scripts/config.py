@@ -281,6 +281,7 @@ OPTION_TYPES = {
                     "auto-refresh-delay": float,
                     #boolean options:
                     "daemon"            : bool,
+                    "dbus-proxy"        : bool,
                     "use-display"       : bool,
                     "displayfd"         : bool,
                     "fake-xinerama"     : bool,
@@ -372,6 +373,7 @@ def get_defaults():
                     "max-bandwidth"     : 0.0,
                     "auto-refresh-delay": 0.25,
                     "daemon"            : True,
+                    "dbus-proxy"        : True,
                     "use-display"       : False,
                     "displayfd"         : False,
                     "fake-xinerama"     : True,

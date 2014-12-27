@@ -265,8 +265,8 @@ mdns = yes
 
 # Forward client dbus rpc requests:
 # (requires client configuration)
-#dbus_proxy = no
-dbus_proxy = yes
+#dbus-proxy = no
+dbus-proxy = yes
 
 # Input methods
 # To disable input method completely:
