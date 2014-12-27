@@ -109,7 +109,7 @@ class ServerBase(ServerCore):
                     "scaling", "scaling-control",
                     "suspend", "resume", "name", "ungrab",
                     "key", "focus",
-                    "client"]
+                    "client", "start", "start-child"]
 
         self.init_encodings()
         self.init_packet_handlers()
@@ -1131,6 +1131,15 @@ class ServerBase(ServerCore):
                 else:
                     commandlog.warn("client %s does not support client command %s", source, client_command[0])
             return 0, "client control command '%s' forwarded to %s clients" % (client_command[0], count)
+        elif command in ("start", "start-child"):
+            if len(args)==0:
+                return argn_err("at least 1")
+            ignore = command=="start"
+            cmd = args
+            proc = self.start_child(" ".join(cmd), cmd, ignore)
+            if not proc:
+                return 1, "failed to start new child command %s" % str(cmd)
+            return 0, "new child started"
         else:
             return ServerCore.do_handle_command_request(self, command, args)
 
