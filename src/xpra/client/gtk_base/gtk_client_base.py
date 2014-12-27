@@ -44,6 +44,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         UIXpraClient.__init__(self)
         self.session_info = None
         self.bug_report = None
+        self.start_new_command = None
         #opengl bits:
         self.client_supports_opengl = False
         self.opengl_enabled = False
@@ -93,7 +94,21 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if self.bug_report:
             self.bug_report.destroy()
             self.bug_report = None
+        if self.start_new_command:
+            self.start_new_command.destroy()
+            self.start_new_command = None
         UIXpraClient.cleanup(self)
+
+
+    def show_start_new_command(self, *args):
+        if self.start_new_command is None:
+            from xpra.client.gtk_base.start_new_command import getStartNewCommand
+            def run_command_cb(command):
+                self.send_start_command(command, command, False)
+            self.start_new_command = getStartNewCommand(run_command_cb)
+        self.start_new_command.show()
+        return self.start_new_command
+            
 
     def show_session_info(self, *args):
         if self.session_info and not self.session_info.is_closed:

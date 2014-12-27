@@ -259,6 +259,7 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_raisewindowsmenuitem())
         #menu.append(item("Options", "configure", None, self.options))
         menu.append(gtk.SeparatorMenuItem())
+        menu.append(self.make_startnewcommandmenuitem())
         menu.append(self.make_disconnectmenuitem())
         if show_close:
             menu.append(self.make_closemenuitem())
@@ -898,6 +899,17 @@ class GTKTrayMenuBase(object):
                 if not win.is_OR():
                     win.present()
         return self.handshake_menuitem("Raise Windows", "raise.png", None, raise_windows)
+
+    def make_startnewcommandmenuitem(self):
+        self.startnewcommand = self.menuitem("Run Command", "forward.png", "Run a new command on the server", self.client.show_start_new_command)
+        self.startnewcommand.set_sensitive(False)
+        def enable_start_new_command(*args):
+            log("enable_start_new_command%s start_new_command=%s", args, self.client.start_new_commands)
+            self.startnewcommand.set_sensitive(self.client.start_new_commands)
+            if not self.client.start_new_commands:
+                self.startnewcommand.set_tooltip_text("Not supported by the server")
+        self.client.connect("handshake-complete", enable_start_new_command)
+        return self.startnewcommand
 
     def make_disconnectmenuitem(self):
         def menu_quit(*args):

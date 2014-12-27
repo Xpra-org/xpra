@@ -308,6 +308,7 @@ OPTION_TYPES = {
                     "opengl"            : bool,
                     "mdns"              : bool,
                     "swap-keys"         : bool,
+                    "start-new-commands": bool,
                     #arrays of strings:
                     "encodings"         : list,
                     "video-encoders"    : list,
@@ -398,6 +399,7 @@ def get_defaults():
                     "windows"           : True,
                     "exit-with-children": False,
                     "exit-with-client"  : False,
+                    "start-new-commands": False,
                     "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : False,
@@ -410,7 +412,12 @@ def get_defaults():
                     "microphone-codec"  : [],
                     "compressors"       : ["all"],
                     "packet-encoders"   : ["all"],
-                    "key-shortcut"      : ["Meta+Shift+F4:quit", "Meta+Shift+F8:magic_key", "Meta+Shift+F11:show_session_info"],
+                    "key-shortcut"      : [
+                                           "Meta+Shift+F2:show_start_new_command",
+                                           "Meta+Shift+F4:quit",
+                                           "Meta+Shift+F8:magic_key",
+                                           "Meta+Shift+F11:show_session_info"
+                                           ],
                     "bind-tcp"          : None,
                     "start"             : None,
                     "start-child"       : None,

@@ -309,6 +309,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--exit-with-children", action="store_true",
                       dest="exit_with_children", default=defaults.exit_with_children,
                       help="Terminate the server when the last --start-child command(s) exit")
+    group.add_option("--start-new-commands", action="store", metavar="yes|no",
+                      dest="start_new_commands", default=defaults.start_new_commands,
+                      help="Allows clients to execute new commands on the server. Default: %s." % enabled_str(defaults.start_new_commands))
+
     if supports_server:
         group.add_option("--tcp-proxy", action="store",
                           dest="tcp_proxy", default=defaults.tcp_proxy,

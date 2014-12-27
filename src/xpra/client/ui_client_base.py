@@ -184,6 +184,7 @@ class UIXpraClient(XpraClientBase):
         self.pings = False
         self.xsettings_enabled = False
         self.server_dbus_proxy = False
+        self.start_new_commands = False
 
         self.client_supports_opengl = False
         self.client_supports_notifications = False
@@ -743,6 +744,11 @@ class UIXpraClient(XpraClientBase):
         return self.keyboard_helper.mask_to_names(mask)
 
 
+    def send_start_command(self, name, command, ignore):
+        log("send_start_command(%s, %s, %s)", name, command, ignore)
+        self.send("start-command", name, command, ignore)
+
+
     def send_focus(self, wid):
         focuslog("send_focus(%s)", wid)
         self.send("focus", wid, self.get_current_modifiers())
@@ -1227,6 +1233,7 @@ class UIXpraClient(XpraClientBase):
         self.server_compressors = c.strlistget("compressors", ["zlib"])
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.server_dbus_proxy = c.boolget("dbus_proxy")
+        self.start_new_commands = c.boolget("start-new-commands")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
             mmap_token = c.intget("mmap_token")

@@ -209,6 +209,7 @@ keyboard-sync = yes
 ssh = %(ssh_command)s
 
 # Key Shortcuts:
+key-shortcut = Meta+Shift+F2:show_start_new_command
 key-shortcut = Meta+Shift+F4:quit
 key-shortcut = Meta+Shift+F8:magic_key
 key-shortcut = Meta+Shift+F11:show_session_info
@@ -233,6 +234,10 @@ key-shortcut = Meta+Shift+F11:show_session_info
 # when using exit-with-children.
 # This causes the server to terminate when the last child has exited:
 exit-with-children = no
+
+# Allows clients to start new commands in the server context:
+#start-new-commands = yes
+start-new-commands = no
 
 # Video encoders loaded by the server
 # (all of them unless specified)

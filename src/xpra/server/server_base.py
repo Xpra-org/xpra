@@ -82,6 +82,7 @@ class ServerBase(ServerCore):
         self.supports_dbus_proxy = False
         self.dbus_helper = None
         self.exit_with_children = False
+        self.start_new_commands = False
         self.child_reaper = ChildReaper(self.reaper_exit)
         self.send_pings = False
         self.scaling_control = False
@@ -109,7 +110,9 @@ class ServerBase(ServerCore):
                     "scaling", "scaling-control",
                     "suspend", "resume", "name", "ungrab",
                     "key", "focus",
-                    "client", "start", "start-child"]
+                    "client"]
+        if self.start_new_commands:
+            self.control_commands += ["start", "start-child"]
 
         self.init_encodings()
         self.init_packet_handlers()
@@ -160,7 +163,8 @@ class ServerBase(ServerCore):
         self.supports_clipboard = opts.clipboard
         self.clipboard_filter_file = opts.clipboard_filter_file
         self.supports_dbus_proxy = opts.dbus_proxy
-        self.exit_with_children = False
+        self.exit_with_children = opts.exit_with_children
+        self.start_new_commands = opts.start_new_commands
         self.send_pings = opts.pings
         self.notifications_forwarder = None
         self.notifications = opts.notifications
@@ -440,6 +444,7 @@ class ServerBase(ServerCore):
             "screenshot":                           self._process_screenshot,
             "disconnect":                           self._process_disconnect,
             "info-request":                         self._process_info_request,
+            "start-command":                        self._process_start_command,
             # Note: "clipboard-*" packets are handled via a special case..
             })
 
@@ -827,6 +832,8 @@ class ServerBase(ServerCore):
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
+                 "start-new-commands"           : self.start_new_commands,
+                 "exit-with-children"           : self.exit_with_children,
                  })
             for x in self.get_server_features():
                 capabilities[x] = True
@@ -1132,6 +1139,7 @@ class ServerBase(ServerCore):
                     commandlog.warn("client %s does not support client command %s", source, client_command[0])
             return 0, "client control command '%s' forwarded to %s clients" % (client_command[0], count)
         elif command in ("start", "start-child"):
+            assert self.start_new_commands
             if len(args)==0:
                 return argn_err("at least 1")
             ignore = command=="start"
@@ -1157,6 +1165,12 @@ class ServerBase(ServerCore):
             log.error("failed to capture screenshot", exc_info=True)
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
+
+    def _process_start_command(self, proto, packet):
+        assert self.start_new_commands
+        name, command, ignore = packet[1:4]
+        proc = self.start_child(name, command, ignore)
+        log("process_start_command: proc=%s", proc)
 
     def _process_info_request(self, proto, packet):
         ss = self._server_sources.get(proto)
