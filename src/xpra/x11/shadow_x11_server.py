@@ -23,8 +23,6 @@ class ShadowX11Server(ShadowServerBase, X11ServerBase):
         ShadowServerBase.__init__(self, gtk.gdk.get_default_root_window())
         X11ServerBase.__init__(self, False)
 
-    def init(self, opts):
-        X11ServerBase.init(self, opts)
 
     def makeRootWindowModel(self):
         return GTKX11RootWindowModel(self.root)
