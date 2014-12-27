@@ -173,6 +173,23 @@ def force_quit(status=1):
     os._exit(status)
 
 
+def find_lib(libname):
+    #it would be better to rely on dlopen to find the paths
+    #but I cannot find a way of getting ctypes to tell us the path
+    #it found the library in
+    assert os.name=="posix"
+    libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
+    libpaths.append("/usr/lib64")
+    libpaths.append("/usr/lib")
+    for libpath in libpaths:
+        if not libpath or not os.path.exists(libpath):
+            continue
+        libname_so = os.path.join(libpath, libname)
+        if os.path.exists(libname_so):
+            return libname_so
+    return None
+
+
 def main():
     from xpra.log import Logger
     log = Logger("util")

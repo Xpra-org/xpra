@@ -31,6 +31,7 @@ grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
 
 from xpra.util import prettify_plug_name
+from xpra.os_util import find_lib
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.server_keyboard_config import KeyboardConfig
@@ -74,7 +75,6 @@ class X11ServerBase(GTKServerBase):
         self.current_xinerama_config = None
         self.x11_init()
         GTKServerBase.init(self, opts)
-
 
     def x11_init(self):
         self.init_x11_atoms()
@@ -127,6 +127,19 @@ class X11ServerBase(GTKServerBase):
         self._authenticated_ui_packet_handlers["force-ungrab"] = self._process_force_ungrab
 
 
+    def get_child_env(self):
+        #adds fakexinerama:
+        env = GTKServerBase.get_child_env(self)
+        if self.fake_xinerama:
+            libfakeXinerama_so = self.find_fakeXinerama()
+            if libfakeXinerama_so:
+                env["LD_PRELOAD"] = libfakeXinerama_so
+        return env
+
+    def find_fakeXinerama(self):
+        return find_lib("libfakeXinerama.so.1")
+
+
     def get_uuid(self):
         return get_uuid()
 
@@ -171,8 +184,7 @@ class X11ServerBase(GTKServerBase):
         except:
             pass
         try:
-            from xpra.scripts.server import find_fakeXinerama
-            fx = find_fakeXinerama()
+            fx = self.find_fakeXinerama()
         except:
             fx = None
         info["server.fakeXinerama"] = self.fake_xinerama and bool(fx)

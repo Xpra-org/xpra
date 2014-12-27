@@ -15,9 +15,11 @@ log = Logger("server")
 keylog = Logger("keyboard")
 focuslog = Logger("focus")
 commandlog = Logger("command")
+soundlog = Logger("sound")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
+from xpra.server.child_reaper import ChildReaper
 from xpra.os_util import thread, get_hex_uuid
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE
 from xpra.scripts.config import python_platform, parse_bool_or_int
@@ -79,6 +81,15 @@ class ServerBase(ServerCore):
         self.supports_clipboard = False
         self.supports_dbus_proxy = False
         self.dbus_helper = None
+        self.exit_with_children = False
+        self.child_reaper = ChildReaper(self.reaper_exit)
+        self.send_pings = False
+        self.scaling_control = False
+
+        #sound:
+        self.pulseaudio = False
+        self.pulseaudio_command = None
+        self.pulseaudio_proc = None
 
         #encodings:
         self.allowed_encodings = None
@@ -125,6 +136,7 @@ class ServerBase(ServerCore):
     def source_remove(self, timer):
         raise NotImplementedError()
 
+
     def init(self, opts):
         ServerCore.init(self, opts)
         log("ServerBase.init(%s)", opts)
@@ -146,15 +158,24 @@ class ServerBase(ServerCore):
         self.ydpi = 0
         self.antialias = {}
         self.supports_clipboard = opts.clipboard
+        self.clipboard_filter_file = opts.clipboard_filter_file
         self.supports_dbus_proxy = opts.dbus_proxy
+        self.exit_with_children = False
         self.send_pings = opts.pings
+        self.notifications_forwarder = None
+        self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("scaling", opts.scaling)
 
+        #sound:
+        self.pulseaudio = opts.pulseaudio
+        self.pulseaudio_command = opts.pulseaudio_command
+        self.init_sound_options(opts.sound_source, opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
+
         log("starting component init")
-        self.init_clipboard(self.supports_clipboard, opts.clipboard_filter_file)
+        self.init_clipboard()
         self.init_keyboard()
-        self.init_sound(opts.sound_source, opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
-        self.init_notification_forwarder(opts.notifications)
+        self.init_pulseaudio()
+        self.init_notification_forwarder()
         self.init_dbus_helper()
 
         #video init: default to ALL if not specified
@@ -221,6 +242,7 @@ class ServerBase(ServerCore):
         else:
             self.default_encoding = cmdline_encoding
 
+
     def init_uuid(self):
         # Define a server UUID if needed:
         self.uuid = self.get_uuid()
@@ -235,10 +257,9 @@ class ServerBase(ServerCore):
     def save_uuid(self):
         pass
 
-    def init_notification_forwarder(self, notifications):
-        log("init_notification_forwarder(%s)", notifications)
-        self.notifications_forwarder = None
-        if notifications and os.name=="posix" and not sys.platform.startswith("darwin"):
+    def init_notification_forwarder(self):
+        log("init_notification_forwarder() enabled=%s", self.notifications)
+        if self.notifications and os.name=="posix" and not sys.platform.startswith("darwin"):
             try:
                 from xpra.x11.dbus_notifications_forwarder import register
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
@@ -251,13 +272,38 @@ class ServerBase(ServerCore):
                 log.info("  you should use the '--no-notifications' flag")
                 log.info("")
 
-    def init_sound(self, sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
+    def init_pulseaudio(self):
+        soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
+        if not self.pulseaudio:
+            return
+        self.pulseaudio_proc = self.start_child("pulseaudio", self.pulseaudio_command, True)
+        if self.pulseaudio_proc:
+            log.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
+        def check_pa_start():
+            if not self.is_child_alive(self.pulseaudio_proc):
+                log.warn("Warning: pulseaudio has terminated. Either fix the pulseaudio command line or use the 'pulseaudio=no' option to avoid this warning.")
+                log.warn(" usually, only a single pulseaudio instance can be running for each user account, and one may be running already")
+            return False
+        self.timeout_add(1000*2, check_pa_start)
+
+    def cleanup_pulseaudio(self):
+        if not self.pulseaudio_proc:
+            return
+        log("cleanup_pa() process.poll()=%s, pid=%s", self.pulseaudio_proc.poll(), self.pulseaudio_proc.pid)
+        if self.is_child_alive(self.pulseaudio_proc):
+            log.info("stopping pulseaudio with pid %s", self.pulseaudio_proc.pid)
+            try:
+                self.pulseaudio_proc.terminate()
+            except:
+                log.warn("error trying to stop pulseaudio", exc_info=True)
+
+    def init_sound_options(self, sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
         try:
             from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
         except Exception as e:
             log("cannot load gstreamer: %s", e)
             has_gst = False
-        log("init_sound%s has_gst=%s", (sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec), has_gst)
+        log("init_sound_options%s has_gst=%s", (sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec), has_gst)
         self.sound_source_plugin = sound_source_plugin
         self.supports_speaker = sound_option(speaker) in ("on", "off") and has_gst
         self.supports_microphone = sound_option(microphone) in ("on", "off") and has_gst
@@ -275,27 +321,27 @@ class ServerBase(ServerCore):
         except Exception as e:
             log("failed to set pulseaudio audio tagging: %s", e)
 
-    def init_clipboard(self, clipboard_enabled, clipboard_filter_file):
-        log("init_clipboard(%s, %s)", clipboard_enabled, clipboard_filter_file)
+    def init_clipboard(self):
+        log("init_clipboard() enabled=%s, filter file=%s", self.supports_clipboard, self.clipboard_filter_file)
         ### Clipboard handling:
         self._clipboard_helper = None
         self._clipboard_client = None
         self._clipboards = []
-        if not clipboard_enabled:
+        if not self.supports_clipboard:
             return
         from xpra.platform.features import CLIPBOARDS
         clipboard_filter_res = []
-        if clipboard_filter_file:
-            if not os.path.exists(clipboard_filter_file):
-                log.error("invalid clipboard filter file: '%s' does not exist - clipboard disabled!", clipboard_filter_file)
+        if self.clipboard_filter_file:
+            if not os.path.exists(self.clipboard_filter_file):
+                log.error("invalid clipboard filter file: '%s' does not exist - clipboard disabled!", self.clipboard_filter_file)
                 return
             try:
-                with open(clipboard_filter_file, "r" ) as f:
+                with open(self.clipboard_filter_file, "r" ) as f:
                     for line in f:
                         clipboard_filter_res.append(line.strip())
-                    log("loaded %s regular expressions from clipboard filter file %s", len(clipboard_filter_res), clipboard_filter_file)
+                    log("loaded %s regular expressions from clipboard filter file %s", len(clipboard_filter_res), self.clipboard_filter_file)
             except:
-                log.error("error reading clipboard filter file %s - clipboard disabled!", clipboard_filter_file, exc_info=True)
+                log.error("error reading clipboard filter file %s - clipboard disabled!", self.clipboard_filter_file, exc_info=True)
                 return
         try:
             from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
@@ -412,12 +458,51 @@ class ServerBase(ServerCore):
         return ServerCore.run(self)
 
 
+    def get_child_env(self):
+        #subclasses may add more items (ie: fakexinerama)
+        env = os.environ.copy()
+        #disable ubuntu's global menu using env vars:
+        if os.name=="posix":
+            env.update({
+                "UBUNTU_MENUPROXY"          : "",
+                "QT_X11_NO_NATIVE_MENUBAR"  : "1"})
+        return env
+
+    def start_child(self, name, child_cmd, ignore=False):
+        log("start_child(%s, %s, %s)", name, child_cmd, ignore)
+        import subprocess
+        env = self.get_child_env()
+        try:
+            proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
+            self.add_process(proc, name, child_cmd, ignore)
+            if ignore:
+                log("started child '%s' with pid %s (ignored)", child_cmd, proc.pid)
+            else:
+                log.info("started child '%s' with pid %s", child_cmd, proc.pid)
+            return proc
+        except OSError as e:
+            sys.stderr.write("Error spawning child '%s': %s\n" % (child_cmd, e))
+            return None
+
+    def add_process(self, process, name, command, ignore=False):
+        self.child_reaper.add_process(process, name, command, ignore)
+
+    def is_child_alive(self, proc):
+        return proc is not None and proc.poll() is None and proc.pid not in self.child_reaper._dead_pids
+
+    def reaper_exit(self):
+        if self.exit_with_children:
+            log.info("all children have exited and --exit-with-children was specified, exiting")
+            self.idle_add(self.clean_quit, False)
+
+
     def cleanup(self, *args):
         if self.notifications_forwarder:
             thread.start_new_thread(self.notifications_forwarder.release, ())
             self.notifications_forwarder = None
         ServerCore.cleanup(self)
         getVideoHelper().cleanup()
+        self.cleanup_pulseaudio()
 
     def add_listen_socket(self, socktype, socket):
         raise NotImplementedError()
@@ -1117,6 +1202,7 @@ class ServerBase(ServerCore):
              "bell"             : self.bell,
              "notifications"    : self.notifications_forwarder is not None,
              "pulseaudio"       : self.pulseaudio,
+             "pulseaudio.command" : self.pulseaudio_command,
              "dbus_proxy"       : self.supports_dbus_proxy,
              "clipboard"        : self.supports_clipboard}
         for x in self.get_server_features():

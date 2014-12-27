@@ -61,102 +61,6 @@ def deadly_signal(signum, frame):
     #kill(os.getpid(), signum)
     os._exit(128 + signum)
 
-# Note that this class has async subtleties -- e.g., it is possible for a
-# child to exit and us to receive the SIGCHLD before our fork() returns (and
-# thus before we even know the pid of the child).  So be careful:
-class ChildReaper(object):
-    #note: the quit callback will fire only once!
-    def __init__(self, quit_cb):
-        self._quit = quit_cb
-        self._children_pids = {}
-        self._dead_pids = set()
-        self._ignored_pids = set()
-        from xpra.log import Logger
-        self._logger = Logger("server", "util")
-        if USE_PROCESS_POLLING:
-            POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
-            self._logger.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
-            self._logger.warn("switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
-            gobject.timeout_add(POLL_DELAY*1000, self.check)
-        else:
-            #with a less buggy python, we can just check the list of pids
-            #whenever we get a SIGCHLD
-            #however.. subprocess.Popen will no longer work as expected
-            #see: http://bugs.python.org/issue9127
-            #so we must ensure certain things that exec happen first:
-            from xpra.version_util import get_platform_info
-            get_platform_info()
-
-            signal.signal(signal.SIGCHLD, self.sigchld)
-            # Check once after the mainloop is running, just in case the exit
-            # conditions are satisfied before we even enter the main loop.
-            # (Programming with unix the signal API sure is annoying.)
-            def check_once():
-                self.check()
-                return False # Only call once
-            gobject.timeout_add(0, check_once)
-
-    def add_process(self, process, command, ignore=False):
-        process.command = command
-        assert process.pid>0
-        self._children_pids[process.pid] = process
-        if ignore:
-            self._ignored_pids.add(process.pid)
-        self._logger("add_process(%s, %s, %s) pid=%s", process, command, ignore, process.pid)
-
-    def check(self):
-        pids = set(self._children_pids.keys()) - self._ignored_pids
-        self._logger("check() pids=%s", pids)
-        if pids:
-            for pid, proc in self._children_pids.items():
-                if proc.poll() is not None:
-                    self.add_dead_pid(pid)
-            self._logger("check() pids=%s, dead_pids=%s", pids, self._dead_pids)
-            if pids.issubset(self._dead_pids):
-                cb = self._quit
-                if cb:
-                    self._quit = None
-                    cb()
-                return False
-        return True
-
-    def sigchld(self, signum, frame):
-        self._logger("sigchld(%s, %s)", signum, frame)
-        self.reap()
-
-    def add_dead_pid(self, pid):
-        self._logger("add_dead_pid(%s)", pid)
-        if pid not in self._dead_pids:
-            proc = self._children_pids.get(pid)
-            if proc:
-                self._logger.info("child '%s' with pid %s has terminated", proc.command, pid)
-            self._dead_pids.add(pid)
-            self.check()
-
-    def reap(self):
-        while True:
-            try:
-                pid, _ = os.waitpid(-1, os.WNOHANG)
-            except OSError:
-                break
-            self._logger("reap() waitpid=%s", pid)
-            if pid == 0:
-                break
-            self.add_dead_pid(pid)
-
-    def get_info(self):
-        d = dict(self._children_pids)
-        info = {"children"          : len(d),
-                "children.dead"     : len(self._dead_pids),
-                "children.ignored"  : len(self._ignored_pids)}
-        for i, pid in enumerate(sorted(d.keys())):
-            proc = d[pid]
-            info["child[%i].live" % i]  = pid not in self._dead_pids
-            info["child[%i].pid" % i]   = pid
-            info["child[%i].command" % i]   = proc.command
-            info["child[%i].ignored" % i] = pid in self._ignored_pids
-        return info
-
 
 def save_xvfb_pid(pid):
     import gtk
@@ -429,7 +333,7 @@ def start_websockify(child_reaper, opts, tcp_sockets):
     websockify_command = ["websockify", "--web", www_dir, "%s:%s" % (html_host, html_port), "127.0.0.1:%s" % xpra_tcp_port]
     log("websockify_command: %s", websockify_command)
     websockify_proc = subprocess.Popen(websockify_command, close_fds=True)
-    child_reaper.add_process(websockify_proc, "websockify", ignore=True)
+    child_reaper.add_process(websockify_proc, "websockify", websockify_command, ignore=True)
     log.info("websockify started, serving %s on %s:%s", www_dir, html_host, html_port)
     def check_websockify_start():
         if websockify_proc.poll() is not None or websockify_proc.pid in child_reaper._dead_pids:
@@ -581,29 +485,6 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
         }
     os.environ.update(v)
     return v
-
-def start_pulseaudio(child_reaper, pulseaudio_command):
-    from xpra.log import Logger
-    log = Logger("sound")
-    log("pulseaudio_command=%s", pulseaudio_command)
-    pa_proc = subprocess.Popen(pulseaudio_command, stdin=subprocess.PIPE, shell=True, close_fds=True)
-    child_reaper.add_process(pa_proc, "pulseaudio", ignore=True)
-    log.info("pulseaudio server started with pid %s", pa_proc.pid)
-    def check_pa_start():
-        if pa_proc.poll() is not None or pa_proc.pid in child_reaper._dead_pids:
-            log.warn("Warning: pulseaudio has terminated. Either fix the pulseaudio command line or use --no-pulseaudio to avoid this warning.")
-            log.warn(" usually, only a single pulseaudio instance can be running for each user account, and one may be running already")
-        return False
-    gobject.timeout_add(1000*2, check_pa_start)
-    def cleanup_pa():
-        log("cleanup_pa() process.poll()=%s, pid=%s, dead_pids=%s", pa_proc.poll(), pa_proc.pid, child_reaper._dead_pids)
-        if pa_proc.poll() is None and pa_proc.pid not in child_reaper._dead_pids:
-            log.info("stopping pulseaudio with pid %s", pa_proc.pid)
-            try:
-                pa_proc.terminate()
-            except:
-                log.warn("error trying to stop pulseaudio", exc_info=True)
-    _cleanups.append(cleanup_pa)
 
 def start_Xvfb(xvfb_str, display_name):
     # We need to set up a new server environment
@@ -763,49 +644,6 @@ def verify_display_ready(xvfb, display_name, shadowing):
         return  None
     return display
 
-def find_lib(libname):
-    #it would be better to rely on dlopen to find the paths
-    #but I cannot find a way of getting ctypes to tell us the path
-    #it found the library in
-    libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
-    libpaths.append("/usr/lib64")
-    libpaths.append("/usr/lib")
-    for libpath in libpaths:
-        if not libpath or not os.path.exists(libpath):
-            continue
-        libname_so = os.path.join(libpath, libname)
-        if os.path.exists(libname_so):
-            return libname_so
-    return None
-
-def find_fakeXinerama():
-    return find_lib("libfakeXinerama.so.1")
-
-
-def start_children(child_reaper, commands, fake_xinerama, ignore=False):
-    assert os.name=="posix"
-    from xpra.log import Logger
-    log = Logger("server")
-    env = os.environ.copy()
-    #add fake xinerama:
-    if fake_xinerama:
-        libfakeXinerama_so = find_fakeXinerama()
-        if libfakeXinerama_so:
-            env["LD_PRELOAD"] = libfakeXinerama_so
-    #disable ubuntu's global menu using env vars:
-    env.update({
-        "UBUNTU_MENUPROXY"          : "",
-        "QT_X11_NO_NATIVE_MENUBAR"  : "1"})
-    for child_cmd in commands:
-        if not child_cmd:
-            continue
-        try:
-            proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
-            child_reaper.add_process(proc, child_cmd, ignore)
-            log.info("started child '%s' with pid %s", child_cmd, proc.pid)
-        except OSError as e:
-            sys.stderr.write("Error spawning child '%s': %s\n" % (child_cmd, e))
-
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args):
     if opts.encoding and opts.encoding=="help":
@@ -841,6 +679,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
     clobber   = upgrading or opts.use_display
+
+    if upgrading or shadowing:
+        #there should already be one running
+        opts.pulseaudio = False
 
     #get the display name:
     if shadowing and len(extra_args)==0:
@@ -1031,39 +873,32 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         app = XpraServer(clobber)
         info = "xpra"
 
-    #honour start child, html webserver, and setup child reaper
-    if os.name=="posix" and not proxying and not upgrading and not shadowing:
-        #initialize this early as we may need it for websockify, etc
-        def reaper_quit():
-            if opts.exit_with_children:
-                log.info("all children have exited and --exit-with-children was specified, exiting")
-                gobject.idle_add(app.reaper_quit)
-        child_reaper = ChildReaper(reaper_quit)
-        # start websockify?
-        try:
-            start_websockify(child_reaper, opts, bind_tcp)
-        except Exception as e:
-            error_cb("failed to setup websockify html server: %s" % e)
-        if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
-            start_pulseaudio(child_reaper, opts.pulseaudio_command)
-        if opts.exit_with_children:
-            assert opts.start_child, "exit-with-children was specified but start-child is missing!"
-
-        if opts.start:
-            assert os.name=="posix", "start cannot be used on %s" % os.name
-            start_children(child_reaper, opts.start, (opts.fake_xinerama and not shadowing), True)
-        if opts.start_child:
-            assert os.name=="posix", "start-child cannot be used on %s" % os.name
-            start_children(child_reaper, opts.start_child, (opts.fake_xinerama and not shadowing))
-        app.child_reaper = child_reaper
-
     try:
         app.init(opts)
     except Exception as e:
-        log.error("Error: cannot start the %s server", info)
+        log.error("Error: cannot start the %s server", info, exc_info=True)
         log.error(str(e))
         log.info("")
         return 1
+
+    #honour start child, html webserver, and setup child reaper
+    if os.name=="posix" and not proxying and not upgrading and not shadowing:
+        # start websockify?
+        try:
+            start_websockify(app, opts, bind_tcp)
+        except Exception as e:
+            error_cb("failed to setup websockify html server: %s" % e)
+        if opts.exit_with_children:
+            assert opts.start_child, "exit-with-children was specified but start-child is missing!"
+        if opts.start:
+            for x in opts.start:
+                if x:
+                    app.start_child(x, x, True)
+        if opts.start_child:
+            for x in opts.start_child:
+                if x:
+                    app.start_child(x, x, False)
+
     log("%s(%s)", app.init_sockets, sockets)
     app.init_sockets(sockets)
     log("%s(%s)", app.init_when_ready, _when_ready)
