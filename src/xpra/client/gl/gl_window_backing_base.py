@@ -66,6 +66,7 @@ from OpenGL.GL import \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_2D, \
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
+    glLineStipple, GL_LINE_STIPPLE, \
     glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE, \
     glHint, \
     glBlendFunc, \
@@ -432,7 +433,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         #   change fragment program
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
-    def present_fbo(self, encoding, x, y, w, h):
+    def present_fbo(self, encoding, is_delta, x, y, w, h):
         if not self.paint_screen:
             return
         self.gl_marker("Presenting FBO on screen")
@@ -476,12 +477,17 @@ class GLWindowBackingBase(GTKWindowBacking):
         #show region being painted:
         if OPENGL_PAINT_BOX:
             glLineWidth(1)
+            if is_delta:
+                glLineStipple(1, 0xf0f0)
+                glEnable(GL_LINE_STIPPLE)
             glBegin(GL_LINE_LOOP)
             color = BOX_COLORS.get(encoding, _DEFAULT_BOX_COLOR)
             glColor4f(*color)
             for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
                 glVertex2i(px, py)
             glEnd()
+            if is_delta:
+                glDisable(GL_LINE_STIPPLE)
 
         if self.paint_spinner:
             #add spinner:
@@ -630,7 +636,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glEnd()
 
             # Present update to screen
-            self.present_fbo(options.get("encoding"), x, y, width, height)
+            self.present_fbo(options.get("encoding"), options.get("delta", 0), x, y, width, height)
             # present_fbo has reset state already
         return True
 
@@ -663,7 +669,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                     y_scale = float(height)/enc_height
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
                 # Present it on screen
-                self.present_fbo(encoding, x, y, width, height)
+                self.present_fbo(encoding, False, x, y, width, height)
             fire_paint_callbacks(callbacks, True)
         except Exception as e:
             log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
