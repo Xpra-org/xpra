@@ -1553,8 +1553,7 @@ class WindowModel(BaseWindowModel):
         def set_state(state):
             log("_handle_iconic_update: set_state(%s)", state)
             with xswallow:
-                prop_set(self.client_window, "WM_STATE", ["u32"],
-                             [state, XNone])
+                prop_set(self.client_window, "WM_STATE", "state", state)
 
         if self.get_property("iconic"):
             set_state(IconicState)
