@@ -653,7 +653,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 log("do_xpra_client_message_event(%s) atom1=%s", event, atom1)
         elif event.message_type=="WM_CHANGE_STATE" and event.data and len(event.data)==5:
             log("WM_CHANGE_STATE: %s", event.data[0])
-            if event.data[0]==IconicState:
+            if event.data[0]==IconicState and event.serial>self.last_unmap_serial:
                 self._internal_set_property("iconic", True)
         elif event.message_type=="_NET_WM_MOVERESIZE" and event.data and len(event.data)==5:
             log("_NET_WM_MOVERESIZE: %s", event)
@@ -877,7 +877,7 @@ class WindowModel(BaseWindowModel):
         self.corral_window = None
         self.in_save_set = False
         self.client_reparented = False
-        self.startup_unmap_serial = None
+        self.last_unmap_serial = 0
         self.kill_count = 0
 
         self.connect("notify::iconic", self._handle_iconic_update)
@@ -909,7 +909,7 @@ class WindowModel(BaseWindowModel):
         # the window, not from the client withdrawing the window.
         if X11Window.is_mapped(self.client_window.xid):
             log("hiding inherited window")
-            self.startup_unmap_serial = X11Window.Unmap(self.client_window.xid)
+            self.last_unmap_serial = X11Window.Unmap(self.client_window.xid)
 
         # Process properties
         self._read_initial_properties()
@@ -1019,7 +1019,7 @@ class WindowModel(BaseWindowModel):
         # means that the client has withdrawn the window (even if it was not
         # mapped in the first place) -- ICCCM section 4.1.4.
         log("do_xpra_unmap_event(%s) client window unmapped", event)
-        if event.send_event or event.serial != self.startup_unmap_serial:
+        if event.send_event or event.serial>self.last_unmap_serial:
             self.unmanage()
 
     def do_xpra_destroy_event(self, event):
@@ -1547,6 +1547,19 @@ class WindowModel(BaseWindowModel):
             return False
         else:
             return AutoPropGObjectMixin.do_get_property(self, pspec)
+
+
+    def unmap(self):
+        with xsync:
+            if X11Window.is_mapped(self.client_window.xid):
+                self.last_unmap_serial = X11Window.Unmap(self.client_window.xid)
+                log("client window %#x unmapped, serial=%s", self.client_window.xid, self.last_unmap_serial)
+
+    def map(self):
+        with xsync:
+            if not X11Window.is_mapped(self.client_window.xid):
+                X11Window.MapWindow(self.client_window.xid)
+                log("client window %#x mapped", self.client_window.xid)
 
 
     def _handle_iconic_update(self, *args):

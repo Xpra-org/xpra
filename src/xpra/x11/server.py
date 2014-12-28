@@ -108,6 +108,7 @@ class DesktopManager(gtk.Widget):
                 model.geom = new_geom
         if not self.visible(win):
             model.shown = True
+            win.map()
             #Note: this will fire a metadata change event, which will fire a message to the client(s),
             #which is wasteful when we only have one client and it is the one that configured the window,
             #but when we have multiple clients, this keeps things in sync
@@ -120,6 +121,7 @@ class DesktopManager(gtk.Widget):
 
     def hide_window(self, model):
         if not model.get_property("iconic"):
+            model.unmap()
             model.set_property("iconic", True)
         self._models[model].shown = False
         model.ownership_election()

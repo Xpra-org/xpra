@@ -420,6 +420,9 @@ cdef class X11WindowBindings(X11CoreBindings):
         v = XGetAtomName(self.display, atom)
         return v[:]
 
+    def MapWindow(self, Window xwindow):
+        XMapWindow(self.display, xwindow)
+
     def MapRaised(self, Window xwindow):
         XMapRaised(self.display, xwindow)
 
@@ -429,7 +432,7 @@ cdef class X11WindowBindings(X11CoreBindings):
     def Reparent(self, Window xwindow, Window xparent, int x, int y):
         XReparentWindow(self.display, xwindow, xparent, x, y)
 
-    def Iconify(self, Window xwindow, int screen_number):
+    def Iconify(self, Window xwindow, int screen_number=0):
         return XIconifyWindow(self.display, xwindow, screen_number)
 
     ###################################
