@@ -13,6 +13,8 @@ cdef extern from "../buffers/buffers.h":
 
 
 import struct
+from xpra.log import Logger
+log = Logger("encoding")
 
 
 def argb_to_rgba(buf):
@@ -222,3 +224,35 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
         argb_out[i*4+R] = r
         argb_out[i*4+A] = a
     return argb_out
+
+
+cdef roundup(int n, int m):
+    return (n + m - 1) & ~(m - 1)
+
+def restride_image(image):
+    #NOTE: this must be called from the UI thread!
+    cdef int stride = image.get_rowstride()
+    cdef int width = image.get_width()
+    pixel_format = image.get_pixel_format()
+    cdef int rstride = roundup(width*len(pixel_format), 4)   #a reasonable stride: rounded up to 4
+    cdef int height = image.get_height()
+    if stride<8 or rstride>stride or height<=2:
+        return False                    #not worth it
+    pixels = image.get_pixels()
+    al = len(pixels)                    #current buffer size
+    el = rstride*height                 #desirable size we could have
+    if al-el<1024 or el*110/100>al:     #is it worth re-striding to save space?
+        return False
+    #we'll save at least 1KB and 10%, do it
+    #Note: we could also change the pixel format whilst we're at it
+    # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
+    rows = []
+    for ry in range(height):
+        rows.append(pixels[stride*(ry):stride*(ry)+rstride])
+    pixels = "".join(rows)
+    log("restride_image: %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)" % (pixel_format, 100-100*el/al, stride, al, rstride, el))
+    #if we were running in the UI thread, we could do this then:
+    #image.free_buffers()
+    image.set_pixels(pixels)
+    image.set_rowstride(rstride)
+    return True

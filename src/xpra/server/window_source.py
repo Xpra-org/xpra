@@ -39,6 +39,7 @@ from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
 from xpra.server.region import rectangle, add_rectangle, remove_rectangle
+from xpra.codecs.argb.argb import restride_image
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
 from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
@@ -297,8 +298,8 @@ class WindowSource(object):
         now = time.time()
         for i,x in enumerate(self.delta_pixel_data):
             if x:
-                w, h, coding, store, dpixels, last_used = x
-                info["encoding.delta.bucket[%s]" % i] = w, h, coding, store, len(dpixels), int((now-last_used)*1000)
+                w, h, coding, store, buflen, _, last_used = x
+                info["encoding.delta.bucket[%s]" % i] = w, h, coding, store, buflen, int((now-last_used)*1000)
         up("encoding",  self.get_quality_speed_info())
         try:
             #ie: get_strict_encoding -> "strict_encoding"
@@ -1436,15 +1437,18 @@ class WindowSource(object):
         delta, store, bucket = -1, -1, -1
         isize = image.get_width()*image.get_height()
         if DELTA and not (self._mmap and self._mmap_size>0) and self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size:
+            #this may save space (and lower the cost of xoring):
+            restride_image(image)
             #we need to copy the pixels because some encodings
             #may modify the pixel array in-place!
             dpixels = image.get_pixels()[:]
+            dlen = len(dpixels)
             store = sequence
             for i, dr in enumerate(list(self.delta_pixel_data)):
                 if dr is None:
                     continue
-                lw, lh, lcoding, lsequence, ldata, _ = dr
-                if lw==w and lh==h and lcoding==coding and len(ldata)==len(dpixels):
+                lw, lh, lcoding, lsequence, buflen, ldata, _ = dr
+                if lw==w and lh==h and lcoding==coding and buflen==dlen:
                     #xor with this matching delta bucket:
                     delta = lsequence
                     bucket = i
@@ -1497,7 +1501,7 @@ class WindowSource(object):
                             if dr and (t==0 or dr[-1]<t):
                                 t = dr[-1]
                                 bucket = i
-                self.delta_pixel_data[bucket] = [w, h, coding, store, dpixels, time.time()]
+                self.delta_pixel_data[bucket] = [w, h, coding, store, len(dpixels), dpixels, time.time()]
                 client_options["store"] = store
                 client_options["bucket"] = bucket
                 #record number of frames and pixels:

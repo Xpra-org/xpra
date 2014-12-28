@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("window", "encoding")
 
 from xpra.net import compression
-from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba   #@UnresolvedImport
+from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, restride_image   #@UnresolvedImport
 from xpra.os_util import StringIOClass
 from xpra.codecs.loader import get_codec, get_codec_version
 from xpra.codecs.codec_constants import get_PIL_encodings
@@ -94,29 +94,15 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             coding = "rgb24"
     #always tell client which pixel format we are sending:
     options = {"rgb_format" : pixel_format}
+
+    #we may want to re-stride:
+    restride_image(image)
+
     #compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()
-
-    #special case for when rowstride is so much bigger than the width
-    #that we would end up sending large chunks of padding with each row of pixels
-    #this happens with XShm pixel data (the default)
-    stride = image.get_rowstride()
     width = image.get_width()
-    rstride = roundup(width*len(pixel_format), 4)   #a reasonable stride: rounded up to 4
     height = image.get_height()
-    if stride>8 and rstride<stride:
-        al = len(pixels)                    #current buffer size
-        el = rstride*height                 #desirable size we could have
-        if al-el>1024 and el*110/100<al:    #is it worth re-striding to save space?
-            #we'll save at least 1KB and 10%, do it
-            #Note: we could also change the pixel format whilst we're at it
-            # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
-            rows = []
-            for y in range(height):
-                rows.append(pixels[stride*y:stride*y+rstride])
-            pixels = "".join(rows)
-            log("rgb_encode: %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)", pixel_format, 100-100*el/al, stride, al, rstride, el)
-            stride = rstride
+    stride = image.get_rowstride()
 
     #compression
     #by default, wire=raw:
