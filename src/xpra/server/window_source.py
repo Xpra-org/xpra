@@ -30,6 +30,7 @@ MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "32768"))
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
 FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
 STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
+MERGE_REGIONS = os.environ.get("XPRA_MERGE_REGIONS", "1")=="1"
 
 
 from xpra.util import updict
@@ -1035,46 +1036,47 @@ class WindowSource(object):
                 return
 
         regions = list(set(regions))
-        bytes_threshold = ww*wh*self.max_bytes_percent/100
-        pixel_count = sum(rect.width*rect.height for rect in regions)
-        bytes_cost = pixel_count+self.small_packet_cost*len(regions)
-        log("send_delayed_regions: bytes_cost=%s, bytes_threshold=%s, pixel_count=%s", bytes_cost, bytes_threshold, pixel_count)
-        if bytes_cost>=bytes_threshold:
-            #too many bytes to send lots of small regions..
-            if exclude_region is None:
-                send_full_window_update()
-                return
-            #make regions out of the rest of the window area:
-            non_exclude = rectangle(0, 0, ww, wh).substract_rect(exclude_region)
-            #and keep those that have damage areas in them:
-            regions = [x for x in non_exclude if len([y for y in regions if x.intersects_rect(y)])>0]
-            #TODO: should verify that is still better than what we had before..
-
-        elif len(regions)>1:
-            #try to merge all the regions to see if we save anything:
-            merged = regions[0].clone()
-            for r in regions[1:]:
-                merged.merge_rect(r)
-            #remove the exclude region if needed:
-            if exclude_region:
-                merged_rects = merged.substract_rect(exclude_region)
-            else:
-                merged_rects = [merged]
-            merged_pixel_count = sum([r.width*r.height for r in merged_rects])
-            merged_bytes_cost = pixel_count+self.small_packet_cost*len(merged_rects)
-            if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
-                #better, so replace with merged regions:
-                regions = merged_rects
-
-        #check to see if the total amount of pixels makes us use a fullscreen update instead:
-        if len(regions)>1:
+        if MERGE_REGIONS:
+            bytes_threshold = ww*wh*self.max_bytes_percent/100
             pixel_count = sum(rect.width*rect.height for rect in regions)
-            log("send_delayed_regions: %s regions with %s pixels (coding=%s)", len(regions), pixel_count, coding)
-            actual_encoding = get_encoding(pixel_count)
-            if pixel_count>=ww*wh or self.must_encode_full_frame(window, actual_encoding):
-                #use full screen dimensions:
-                self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
-                return
+            bytes_cost = pixel_count+self.small_packet_cost*len(regions)
+            log("send_delayed_regions: bytes_cost=%s, bytes_threshold=%s, pixel_count=%s", bytes_cost, bytes_threshold, pixel_count)
+            if bytes_cost>=bytes_threshold:
+                #too many bytes to send lots of small regions..
+                if exclude_region is None:
+                    send_full_window_update()
+                    return
+                #make regions out of the rest of the window area:
+                non_exclude = rectangle(0, 0, ww, wh).substract_rect(exclude_region)
+                #and keep those that have damage areas in them:
+                regions = [x for x in non_exclude if len([y for y in regions if x.intersects_rect(y)])>0]
+                #TODO: should verify that is still better than what we had before..
+    
+            elif len(regions)>1:
+                #try to merge all the regions to see if we save anything:
+                merged = regions[0].clone()
+                for r in regions[1:]:
+                    merged.merge_rect(r)
+                #remove the exclude region if needed:
+                if exclude_region:
+                    merged_rects = merged.substract_rect(exclude_region)
+                else:
+                    merged_rects = [merged]
+                merged_pixel_count = sum([r.width*r.height for r in merged_rects])
+                merged_bytes_cost = pixel_count+self.small_packet_cost*len(merged_rects)
+                if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
+                    #better, so replace with merged regions:
+                    regions = merged_rects
+    
+            #check to see if the total amount of pixels makes us use a fullscreen update instead:
+            if len(regions)>1:
+                pixel_count = sum(rect.width*rect.height for rect in regions)
+                log("send_delayed_regions: %s regions with %s pixels (coding=%s)", len(regions), pixel_count, coding)
+                actual_encoding = get_encoding(pixel_count)
+                if pixel_count>=ww*wh or self.must_encode_full_frame(window, actual_encoding):
+                    #use full screen dimensions:
+                    self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
+                    return
 
         #we're processing a number of regions separately:
         for region in regions:
