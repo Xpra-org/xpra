@@ -1071,7 +1071,7 @@ class WindowSource(object):
             pixel_count = sum(rect.width*rect.height for rect in regions)
             log("send_delayed_regions: %s regions with %s pixels (coding=%s)", len(regions), pixel_count, coding)
             actual_encoding = get_encoding(pixel_count)
-            if self.must_encode_full_frame(window, actual_encoding):
+            if pixel_count>=ww*wh or self.must_encode_full_frame(window, actual_encoding):
                 #use full screen dimensions:
                 self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
                 return
