@@ -94,6 +94,10 @@ class ImageWrapper(object):
     def set_pixels(self, pixels):
         self.pixels = pixels
 
+    def allocate_buffer(self, buf_len):
+        #only defined for XImage wrappers:
+        raise NotImplementedError()
+
     def clone_pixel_data(self):
         assert not self.freed, "image has already been freed!"
         if self.planes == 0:

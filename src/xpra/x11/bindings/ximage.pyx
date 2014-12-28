@@ -26,6 +26,11 @@ cdef extern from "../../codecs/buffers/buffers.h":
 cdef extern from "string.h":
     void * memcpy( void * destination, void * source, size_t num )
 
+cdef extern from "stdlib.h":
+    int posix_memalign(void **memptr, size_t alignment, size_t size)
+    void* malloc(size_t __size)
+    void free(void* mem)
+
 cdef extern from "sys/ipc.h":
     ctypedef struct key_t:
         pass
@@ -43,10 +48,6 @@ cdef extern from "sys/shm.h":
 
 cdef extern from "errno.h" nogil:
     int errno
-
-cdef extern from "stdlib.h":
-    void* malloc(size_t __size)
-    void free(void* mem)
 
 cdef extern from "X11/Xutil.h":
     pass
@@ -326,21 +327,25 @@ cdef class XImageWrapper:
         """ overrides the context of the image with the given pixels buffer """
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
+        assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
+        self.allocate_buffer(buf_len)
+        memcpy(self.pixels, buf, buf_len)
+
+    def allocate_buffer(self, buf_len):
         if self.pixels!=NULL:
             free(self.pixels)
             self.pixels = NULL
         #Note: we can't free the XImage, because it may
         #still be used somewhere else (see XShmWrapper)
-        assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
-        self.pixels = <char *> malloc(buf_len)
+        if posix_memalign(<void **> &self.pixels, 64, buf_len):
+            raise Exception("posix_memalign failed!")
         assert self.pixels!=NULL
-        memcpy(self.pixels, buf, buf_len)
         if self.image==NULL:
             self.thread_safe = 1
             #we can only mark this object as thread safe
             #if we have already freed the XImage
             #(since it needs to be freed from the UI thread)
-
+        return int(<unsigned long> self.pixels)
 
     def free(self):                                     #@DuplicatedSignature
         ximagedebug("%s.free()", self)

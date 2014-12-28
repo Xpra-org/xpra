@@ -11,6 +11,9 @@ cdef extern from "../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
     int    object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
+cdef extern from "string.h":
+    void * memcpy(void * destination, void * source, size_t num)
+
 
 import struct
 from xpra.log import Logger
@@ -239,20 +242,28 @@ def restride_image(image):
     if stride<8 or rstride>stride or height<=2:
         return False                    #not worth it
     pixels = image.get_pixels()
-    al = len(pixels)                    #current buffer size
-    el = rstride*height                 #desirable size we could have
-    if al-el<1024 or el*110/100>al:     #is it worth re-striding to save space?
+    cdef unsigned char *img_buf
+    cdef Py_ssize_t img_buf_len
+    assert object_as_buffer(pixels, <const void**> &img_buf, &img_buf_len)==0, "cannot convert %s to a readable buffer" % type(pixels)
+    if img_buf_len<=0:
+        return False
+    cdef int out_size = rstride*height                 #desirable size we could have
+    #is it worth re-striding to save space:
+    if img_buf_len-out_size<1024 or out_size*110/100>img_buf_len:
         return False
     #we'll save at least 1KB and 10%, do it
     #Note: we could also change the pixel format whilst we're at it
     # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
-    rows = []
-    for ry in range(height):
-        rows.append(pixels[stride*(ry):stride*(ry)+rstride])
-    pixels = "".join(rows)
-    log("restride_image: %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)" % (pixel_format, 100-100*el/al, stride, al, rstride, el))
-    #if we were running in the UI thread, we could do this then:
-    #image.free_buffers()
-    image.set_pixels(pixels)
+    #this buffer is allocated by the imagewrapper, so it will be freed after use for us:
+    cdef unsigned long ptr = int(image.allocate_buffer(out_size))
+    assert ptr>0
+    cdef unsigned char *out = <unsigned char*> ptr
+    cdef int ry = height
+    while ry>0:
+        memcpy(out, img_buf, rstride)
+        out += rstride
+        img_buf += stride
+        ry -= 1
+    log("restride_image: %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)" % (pixel_format, 100-100*out_size/img_buf_len, stride, img_buf_len, rstride, out_size))
     image.set_rowstride(rstride)
     return True
