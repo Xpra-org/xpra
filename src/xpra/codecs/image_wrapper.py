@@ -95,16 +95,16 @@ class ImageWrapper(object):
         self.pixels = pixels
 
     def clone_pixel_data(self):
-        if not self.freed:
-            if self.planes == 0:
-                #no planes, simple buffer:
-                assert self.pixels, "no pixels!"
-                self.pixels = self.pixels[:]
-            else:
-                assert self.planes>0
-                for i in range(self.planes):
-                    self.pixels[i] = self.pixels[i][:]
-            self.thread_safe = True
+        assert not self.freed, "image has already been freed!"
+        if self.planes == 0:
+            #no planes, simple buffer:
+            assert self.pixels, "no pixels!"
+            self.pixels = self.pixels[:]
+        else:
+            assert self.planes>0
+            for i in range(self.planes):
+                self.pixels[i] = self.pixels[i][:]
+        self.thread_safe = True
 
     def __del__(self):
         #print("ImageWrapper.__del__() calling %s" % self.free)
