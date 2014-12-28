@@ -112,7 +112,7 @@ class WindowSource(object):
         if not window.is_tray():
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
             if self.supports_delta:
-                self.delta_buckets = encoding_options.intget("delta_buckets", 1)
+                self.delta_buckets = min(25, encoding_options.intget("delta_buckets", 1))
                 self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         self.batch_config = batch_config
         #auto-refresh:
