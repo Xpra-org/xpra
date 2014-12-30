@@ -118,19 +118,22 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def _is_decorated(self, metadata):
         #decide if the window type is POPUP or NORMAL
         #(show window decorations or not)
-        if self._override_redirect or not metadata.get("decorations", True):
+        if self._override_redirect:
             return False
+        decorations = metadata.get("decorations")
+        if decorations is not None:
+            #honour the flag given by the server:
+            return bool(decorations)
+        #older servers don't tell us if we need decorations, so take a guess:
+        #skip decorations for any non-normal non-dialog window that is transient for another window:
         window_types = metadata.get("window-type", [])
-        if metadata.get("decorations") is None:
-            #older servers don't tell us if we need decorations, so take a guess:
-            #skip decorations for any non-normal non-dialog window that is transient for another window:
-            if ("NORMAL" not in window_types) and ("DIALOG" not in window_types) and metadata.intget("transient-for", -1)>0:
-                return False
-            undecorated_types = list(UNDECORATED_TYPE_HINTS.intersection(window_types))
-            log("undecorated_types(%s)=%s", window_types, undecorated_types)
-            if undecorated_types:
-                log("not decorating window type %s", undecorated_types)
-                return False
+        if ("NORMAL" not in window_types) and ("DIALOG" not in window_types) and metadata.intget("transient-for", -1)>0:
+            return False
+        undecorated_types = list(UNDECORATED_TYPE_HINTS.intersection(window_types))
+        log("undecorated_types(%s)=%s", window_types, undecorated_types)
+        if undecorated_types:
+            log("not decorating window type %s", undecorated_types)
+            return False
         return True
 
 
