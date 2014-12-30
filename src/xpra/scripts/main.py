@@ -290,7 +290,8 @@ def do_parse_cmdline(cmdline, defaults):
     parser = ModifiedOptionParser(version="xpra v%s" % XPRA_VERSION,
                           usage="\n" + "".join(command_options))
     hidden_options = {"display" : defaults.display,
-                      "displayfd" : defaults.displayfd}
+                      "displayfd" : defaults.displayfd,
+                      "wm_name" : defaults.wm_name}
     def replace_option(oldoption, newoption):
         do_replace_option(cmdline, oldoption, newoption)
     def legacy_bool_parse(optionname, newoptionname=None):
