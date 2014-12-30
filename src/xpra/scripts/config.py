@@ -21,6 +21,7 @@ def debug(*args):
     pass
 
 DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
+DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
 
 ENCRYPTION_CIPHERS = []
@@ -244,6 +245,7 @@ OPTION_TYPES = {
                     "title"             : str,
                     "username"          : str,
                     "auth"              : str,
+                    "wm-name"           : str,
                     "remote-xpra"       : str,
                     "session-name"      : str,
                     "dock-icon"         : str,
@@ -341,6 +343,7 @@ def get_defaults():
                     "title"             : "@title@ on @client-machine@",
                     "username"          : username,
                     "auth"              : "",
+                    "wm-name"           : DEFAULT_NET_WM_NAME,
                     "remote-xpra"       : "~/.xpra/run-xpra",
                     "session-name"      : "",
                     "dock-icon"         : "",

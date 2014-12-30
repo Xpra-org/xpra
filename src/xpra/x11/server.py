@@ -187,8 +187,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         X11ServerBase.__init__(self, clobber)
 
     def init(self, opts):
-        X11ServerBase.init(self, opts)
         self.xsettings_enabled = opts.xsettings
+        self.wm_name = opts.wm_name
+        X11ServerBase.init(self, opts)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
@@ -208,7 +209,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         add_event_receiver(root, self)
 
         ### Create the WM object
-        self._wm = Wm(self.clobber)
+        self._wm = Wm(self.clobber, self.wm_name)
         self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))

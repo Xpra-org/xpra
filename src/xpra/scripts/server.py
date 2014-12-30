@@ -857,7 +857,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
 
         #check for an existing window manager:
         from xpra.x11.gtk_x11.wm import wm_check
-        if not wm_check(display, upgrading):
+        if not wm_check(display, opts.wm_name, upgrading):
             return 1
         try:
             # This import is delayed because the module depends on gtk:

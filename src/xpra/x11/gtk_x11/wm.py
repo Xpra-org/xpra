@@ -32,11 +32,10 @@ focuslog = Logger("x11", "window", "focus")
 NotifyPointerRoot   = constants["NotifyPointerRoot"]
 NotifyDetailNone    = constants["NotifyDetailNone"]
 
-XPRA_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 XPRA_FORCE_REPLACE_WM = os.environ.get("XPRA_FORCE_REPLACE_WM", "0")=="1"
 
 
-def wm_check(display, upgrading=False):
+def wm_check(display, wm_name, upgrading=False):
     #there should only be one screen... but let's check all of them
     for i in range(display.get_n_screens()):
         screen = display.get_screen(i)
@@ -64,7 +63,7 @@ def wm_check(display, upgrading=False):
                 name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
             except:
                 name = None
-            if upgrading and name and name==XPRA_NET_WM_NAME:
+            if upgrading and name and name==wm_name:
                 log.info("found previous Xpra instance")
             else:
                 log.warn("Warning: found an existing window manager on screen %s using window %#x: %s", i, ewmh_wm.xid, name or "unknown")
@@ -200,13 +199,14 @@ class Wm(gobject.GObject):
         "xpra-xkb-event": one_arg_signal,
         }
 
-    def __init__(self, replace_other_wm, display=None):
+    def __init__(self, replace_other_wm, wm_name, display=None):
         gobject.GObject.__init__(self)
 
         if display is None:
             display = gtk.gdk.display_manager_get().get_default_display()
         self._display = display
         self._root = self._display.get_default_screen().get_root_window()
+        self._wm_name = wm_name
         self._ewmh_window = None
 
         self._windows = {}
@@ -437,11 +437,11 @@ class Wm(gobject.GObject):
                                            window_type=gtk.gdk.WINDOW_TOPLEVEL,
                                            event_mask=0, # event mask
                                            wclass=gtk.gdk.INPUT_ONLY,
-                                           title=XPRA_NET_WM_NAME)
+                                           title=self._wm_name)
         prop_set(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
-        self.root_set("_NET_SUPPORTING_WM_CHECK",
-                 "window", self._ewmh_window)
+        self.root_set("_NET_SUPPORTING_WM_CHECK", "window", self._ewmh_window)
+        self.root_set("_NET_WM_NAME", "utf8", self._wm_name.decode("utf8"))
 
     def get_net_wm_name(self):
         try:
