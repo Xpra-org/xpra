@@ -225,7 +225,7 @@ def gen_yuv_to_rgb():
 
     if selected_platform and selected_platform.name and selected_platform.name.find("CUDA")>=0 and not NVIDIA_YUV2RGB:
         log.warn("CUDA device detected, YUV to RGB disabled")
-        return
+        return {}
 
     #for YUV to RGB support we need to be able to handle the channel_order in WRITE_ONLY mode
     #so we can download the result of the CSC:
