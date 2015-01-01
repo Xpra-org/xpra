@@ -15,10 +15,6 @@
 
 #the only build option we specify:
 %if 0%{?fedora}
-#Fedora needs the wrapper, before 21 because Xorg is suid,
-#21 onwards use a non-suid script which eventually calls the suid binary anyway..
-%define dummy --with-Xdummy --with-Xdummy_wrapper
-%else
 %define dummy --with-Xdummy
 %endif
 

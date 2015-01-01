@@ -675,19 +675,24 @@ def detect_xorg_setup():
             #honour what was specified:
             use_wrapper = Xdummy_wrapper_ENABLED
         elif not xorg_bin:
-            print("Xorg binary not found, assuming the wrapper is needed!")
+            print("Warning: Xorg binary not found, assuming the wrapper is needed!")
             use_wrapper = True
         else:
-            #auto-detect
-            xorg_stat = os.stat(xorg_bin)
-            if (xorg_stat.st_mode & stat.S_ISUID)!=0:
-                if (xorg_stat.st_mode & stat.S_IROTH)==0:
-                    print("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
-                    return Xvfb()
-                print("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
+            #Fedora 21+ workaround:
+            if os.path.exists("/usr/libexec/Xorg.wrap"):
+                #we need our own wrapper to bypass all the scripts and wrappers Fedora uses
                 use_wrapper = True
             else:
-                use_wrapper = False
+                #auto-detect
+                xorg_stat = os.stat(xorg_bin)
+                if (xorg_stat.st_mode & stat.S_ISUID)!=0:
+                    if (xorg_stat.st_mode & stat.S_IROTH)==0:
+                        print("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
+                        return Xvfb()
+                    print("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
+                    use_wrapper = True
+                else:
+                    use_wrapper = False
         if use_wrapper:
             return ("xpra_Xdummy "+Xorg_args, has_displayfd, True)
         else:
