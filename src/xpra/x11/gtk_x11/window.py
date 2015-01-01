@@ -45,6 +45,7 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
 grablog = Logger("x11", "window", "grab")
+iconlog = Logger("x11", "window", "icon")
 
 
 _NET_WM_STATE_REMOVE = 0
@@ -396,12 +397,12 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         h = self._composite.connect("contents-changed", self._forward_contents_changed)
         self._damage_forward_handle = h
 
-    def prop_get(self, key, ptype, ignore_errors=False, raise_xerrors=False):
+    def prop_get(self, key, ptype, ignore_errors=None, raise_xerrors=False):
         # Utility wrapper for prop_get on the client_window
         # also allows us to ignore property errors during setup_client
-        if not self._setup_done:
+        if ignore_errors is None and (not self._setup_done or not self._managed):
             ignore_errors = True
-        return prop_get(self.client_window, key, ptype, ignore_errors=ignore_errors, raise_xerrors=raise_xerrors)
+        return prop_get(self.client_window, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
 
     def is_managed(self):
         return self._managed
@@ -485,13 +486,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._composite = None
 
     def _read_initial_properties(self):
-        def pget(key, ptype, raise_xerrors=True):
-            return self.prop_get(key, ptype, raise_xerrors=raise_xerrors)
-        transient_for = pget("WM_TRANSIENT_FOR", "window")
+        transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
         # May be None
         self._internal_set_property("transient-for", transient_for)
 
-        window_types = pget("_NET_WM_WINDOW_TYPE", ["atom"])
+        window_types = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
         if not window_types:
             window_type = self._guess_window_type(transient_for)
             window_types = [gtk.gdk.atom_intern(window_type)]
@@ -500,8 +499,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("window-type", window_types)
         self._internal_set_property("has-alpha", X11Window.get_depth(self.client_window.xid)==32)
         self._internal_set_property("xid", self.client_window.xid)
-        self._internal_set_property("pid", pget("_NET_WM_PID", "u32") or -1)
-        self._internal_set_property("role", pget("WM_WINDOW_ROLE", "latin1"))
+        self._internal_set_property("pid", self.prop_get("_NET_WM_PID", "u32") or -1)
+        self._internal_set_property("role", self.prop_get("WM_WINDOW_ROLE", "latin1"))
         for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY"]:
             self._call_property_handler(mutable)
 
@@ -1299,6 +1298,7 @@ class WindowModel(BaseWindowModel):
 
     def _handle_icon_title_change(self):
         net_wm_icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
+        iconlog("_NET_WM_ICON_NAME=%s", net_wm_icon_name)
         if net_wm_icon_name is not None:
             self._internal_set_property("icon-title", net_wm_icon_name)
         else:
@@ -1330,8 +1330,8 @@ class WindowModel(BaseWindowModel):
     _property_handlers["_MOTIF_WM_HINTS"] = _handle_motif_wm_hints
 
     def _handle_net_wm_icon(self):
-        log("_NET_WM_ICON changed on %#x, re-reading", self.client_window.xid)
-        surf = self.prop_get("_NET_WM_ICON", "icon", not self._managed)
+        iconlog("_NET_WM_ICON changed on %#x, re-reading", self.client_window.xid)
+        surf = self.prop_get("_NET_WM_ICON", "icon")
         if surf is not None:
             # FIXME: There is no Pixmap.new_for_display(), so this isn't
             # actually display-clean.  Oh well.
@@ -1351,7 +1351,7 @@ class WindowModel(BaseWindowModel):
         #then get the icon pixels on demand and cache them..
         self._internal_set_property("icon", surf)
         self._internal_set_property("icon-pixmap", pixmap)
-        log("icon is now %r", surf)
+        iconlog("icon is now %r", surf)
     _property_handlers["_NET_WM_ICON"] = _handle_net_wm_icon
 
     def _read_initial_properties(self):
