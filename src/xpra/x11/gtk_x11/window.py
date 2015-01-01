@@ -1436,16 +1436,16 @@ class WindowModel(BaseWindowModel):
         if not c_i or len(c_i)!=2:
             return None
         wmclass_name, wmclass_class = [x.encode("utf-8") for x in c_i]
-        log("get_default_window_icon() using %s", (wmclass_name, wmclass_class))
+        iconlog("get_default_window_icon() using %s", (wmclass_name, wmclass_class))
         if not wmclass_name:
             return None
         it = gtk.icon_theme_get_default()
         i = it.lookup_icon(wmclass_name, 48, 0)
-        log("%s.lookup_icon(%s)=%s", it, wmclass_name, i)
+        iconlog("%s.lookup_icon(%s)=%s", it, wmclass_name, i)
         if not i:
             return None
         p = i.load_icon()
-        log("%s.load_icon()=%s", i, p)
+        iconlog("%s.load_icon()=%s", i, p)
         if not p:
             return None
         #to make it consistent with the "icon" property,
@@ -1454,7 +1454,7 @@ class WindowModel(BaseWindowModel):
         gc = gtk.gdk.CairoContext(cairo.Context(surf))
         gc.set_source_pixbuf(p, 0, 0)
         gc.paint()
-        log("get_default_window_icon()=%s", surf)
+        iconlog("get_default_window_icon()=%s", surf)
         return surf
 
     ################################
