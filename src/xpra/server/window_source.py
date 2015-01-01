@@ -148,6 +148,7 @@ class WindowSource(object):
         self.window_icon_data = None
         self.send_window_icon_due = False
         self.theme_default_icons = encoding_options.strlistget("theme.default.icons", [])
+        self.window_icon_greedy = encoding_options.boolget("icons.greedy", False)
         self.window_icon_size = encoding_options.intpair("icons.size", (64, 64))
         self.window_icon_max_size = encoding_options.intpair("icons.max_size", self.window_icon_size)
         self.window_icon_max_size = max(self.window_icon_max_size[0], 16), max(self.window_icon_max_size[1], 16)
@@ -378,13 +379,30 @@ class WindowSource(object):
         self.damage(window, 0, 0, w, h, options)
 
 
+    fallback_window_icon_surface = False
+    @staticmethod
+    def get_fallback_window_icon_surface():
+        if WindowSource.fallback_window_icon_surface is False:
+            try:
+                import cairo
+                from xpra.platform.paths import get_icon_filename
+                fn = get_icon_filename("xpra.png")
+                iconlog("get_fallback_window_icon_surface() icon filename=%s", fn)
+                if os.path.exists(fn):
+                    s = cairo.ImageSurface.create_from_png(fn)
+            except Exception as e:
+                iconlog.warn("failed to get fallback icon: %s", e)
+                s = None
+            WindowSource.fallback_window_icon_surface = s
+        return WindowSource.fallback_window_icon_surface
+
     def send_window_icon(self, window):
         if self.suspended:
             return
         #this runs in the UI thread
         surf = window.get_property("icon")
         iconlog("send_window_icon(%s) icon=%s", window, surf)
-        if surf is None:
+        if not surf:
             #FIXME: this is a bit dirty,
             #we figure out if the client is likely to have an icon for this wmclass already,
             #(assuming the window even has a 'class-instance'), and if not we send the default
@@ -397,9 +415,15 @@ class WindowSource(object):
                 if wm_class in self.theme_default_icons:
                     iconlog("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
                     return
+                #try to load the icon for this class-instance from the theme:
                 surf = window.get_default_window_icon()
                 iconlog("send_window_icon(%s) using default window icon=%s", window, surf)
-        if surf is not None:
+        if not surf and self.window_icon_greedy:
+            #client does not set a default icon, so we must provide one every time
+            #to make sure that the window icon does get set to something
+            #(our icon is at least better than the window manager's default)
+            surf = WindowSource.get_fallback_window_icon_surface()
+        if surf:
             #extract the data from the cairo surface for processing in the work queue:
             import cairo
             assert surf.get_format() == cairo.FORMAT_ARGB32

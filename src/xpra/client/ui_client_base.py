@@ -22,6 +22,7 @@ keylog = Logger("client", "keyboard")
 workspacelog = Logger("client", "workspace")
 dbuslog = Logger("client", "dbus")
 grablog = Logger("client", "grab")
+iconlog = Logger("client", "icon")
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -1951,9 +1952,9 @@ class UIXpraClient(XpraClientBase):
             window.update_metadata(metadata)
 
     def _process_window_icon(self, packet):
-        windowlog("_process_window_icon(%s,%s bytes)", packet[1:5], len(packet[5]))
         wid, w, h, pixel_format, data = packet[1:6]
         window = self._id_to_window.get(wid)
+        iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) window=%s", wid, w, h, pixel_format, len(data), window)
         if window:
             window.update_icon(w, h, pixel_format, data)
 
