@@ -673,7 +673,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def do_xpra_focus_in_event(self, event):
         grablog("focus_in_event(%s) mode=%s, detail=%s",
             event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
-        self.may_emit_grab(event)
+        if event.mode==NotifyNormal and event.detail==NotifyNonlinearVirtual:
+            self.emit("raised", event)
+        else:
+            self.may_emit_grab(event)
 
     def do_xpra_focus_out_event(self, event):
         grablog("focus_out_event(%s) mode=%s, detail=%s",
