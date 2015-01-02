@@ -30,6 +30,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.size_constraints = typedict()
         self.geometry_hints = None
         self._fullscreen = None
+        self._iconified = False
         self.border = border
         self.max_window_size = max_window_size
         self.button_state = {}
@@ -191,8 +192,10 @@ class ClientWindowBase(ClientWidgetBase):
 
         if b"iconic" in metadata:
             if metadata.boolget("iconic"):
+                self._iconified = True
                 self.iconify()
             else:
+                self._iconified = False
                 self.deiconify()
 
         if b"decorations" in metadata:
