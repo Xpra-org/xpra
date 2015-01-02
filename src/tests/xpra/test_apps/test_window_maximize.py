@@ -32,6 +32,19 @@ def main():
 	unfullscreen_btn.connect('clicked', unfullscreen)
 	vbox.pack_start(unfullscreen_btn, expand=False, fill=False, padding=10)
 
+	decorate_btn = gtk.Button("decorate me")
+	def decorate(*args):
+		window.set_decorated(True)
+	decorate_btn.connect('clicked', decorate)
+	vbox.pack_start(decorate_btn, expand=False, fill=False, padding=10)
+
+	undecorate_btn = gtk.Button("undecorate me")
+	def undecorate(*args):
+		window.set_decorated(False)
+	undecorate_btn.connect('clicked', undecorate)
+	vbox.pack_start(undecorate_btn, expand=False, fill=False, padding=10)
+
+
 	def window_state(widget, event):
 		STATES = {
 				gtk.gdk.WINDOW_STATE_WITHDRAWN	: "withdrawn",
