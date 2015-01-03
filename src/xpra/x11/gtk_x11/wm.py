@@ -123,6 +123,8 @@ class Wm(gobject.GObject):
         "_NET_WM_STRUT_PARTIAL"
         "_NET_WM_ICON",
 
+        "_NET_CLOSE_WINDOW",
+
         # These aren't supported in any particularly meaningful way, but hey.
         "_NET_FRAME_EXTENTS",
 
@@ -164,7 +166,6 @@ class Wm(gobject.GObject):
         "_MOTIF_WM_INFO",
         # Not at all yet:
         #"_NET_REQUEST_FRAME_EXTENTS",
-        #"_NET_CLOSE_WINDOW",
         #"_NET_RESTACK_WINDOW",
         #"_NET_WM_DESKTOP",
         ]
@@ -355,7 +356,6 @@ class Wm(gobject.GObject):
     def do_xpra_client_message_event(self, event):
         # FIXME
         # Need to listen for:
-        #   _NET_CLOSE_WINDOW
         #   _NET_ACTIVE_WINDOW
         #   _NET_CURRENT_DESKTOP
         #   _NET_REQUEST_FRAME_EXTENTS

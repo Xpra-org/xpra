@@ -631,7 +631,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         log("do_xpra_client_message_event(%s)", event)
         # FIXME
         # Need to listen for:
-        #   _NET_CLOSE_WINDOW
         #   _NET_CURRENT_DESKTOP
         #   _NET_REQUEST_FRAME_EXTENTS
         #   _NET_WM_PING responses
@@ -654,7 +653,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             if v!=current:
                 self.set_property(prop, v)
 
-        if event.message_type=="_NET_WM_STATE" and event.data and len(event.data)==5:
+        if not event.data or len(event.data)!=5:
+            log.warn("invalid event data: %s", event.data)
+            return
+
+        if event.message_type=="_NET_WM_STATE":
             atoms = get_pyatom(event.window, event.data[1]), get_pyatom(event.window, event.data[2]) 
             log("_NET_WM_STATE: %s", atoms)
             if "_NET_WM_STATE_FULLSCREEN" in atoms:
@@ -674,19 +677,22 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 update_wm_state("maximized")
             else:
                 log.info("do_xpra_client_message_event(%s) unhandled atoms=%s", event, atoms)
-        elif event.message_type=="WM_CHANGE_STATE" and event.data and len(event.data)==5:
+        elif event.message_type=="WM_CHANGE_STATE":
             log("WM_CHANGE_STATE: %s", event.data[0])
             if event.data[0]==IconicState and event.serial>self.last_unmap_serial:
                 self._internal_set_property("iconic", True)
-        elif event.message_type=="_NET_WM_MOVERESIZE" and event.data and len(event.data)==5:
+        elif event.message_type=="_NET_WM_MOVERESIZE":
             log("_NET_WM_MOVERESIZE: %s", event)
             self.emit("initiate-moveresize", event)
-        elif event.message_type=="_NET_MOVERESIZE_WINDOW" and event.data and len(event.data)==5:
+        elif event.message_type=="_NET_MOVERESIZE_WINDOW":
             log("ignoring _NET_MOVERESIZE_WINDOW on %s (data=%s)", self, event.data)
-        elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data and len(event.data)==5 and event.data[0] in (0, 1):
+        elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data[0] in (0, 1):
             log("_NET_ACTIVE_WINDOW: %s", event)
             self.set_active()
             self.emit("raised", event)
+        elif event.message_type=="_NET_CLOSE_WINDOW":
+            log.info("_NET_CLOSE_WINDOW received by %s", self)
+            self.request_close()
         else:
             log("do_xpra_client_message_event(%s)", event)
 
