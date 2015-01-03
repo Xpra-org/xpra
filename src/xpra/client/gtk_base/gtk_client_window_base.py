@@ -197,16 +197,23 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def window_state_updated(self, widget, event):
-        self._fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
-        maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
-        iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
+        log("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s", self, widget, repr(event), event.changed_mask, event.new_window_state)
+        if event.changed_mask & self.WINDOW_STATE_FULLSCREEN:
+            self._fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
+            log("fullscreen=%s", self._fullscreen)
         if event.changed_mask & self.WINDOW_STATE_MAXIMIZED:
             #this may get sent now as part of map_event code below (and it is irrelevant for the unmap case),
             #or when we get the configure event - which should come straight after
             #if we're changing the maximized state
+            maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
             self._window_state["maximized"] = maximized
-        log("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s, fullscreen=%s, maximized=%s, iconified=%s", self, widget, repr(event), event.changed_mask, event.new_window_state, self._fullscreen, maximized, iconified)
-        if iconified!=self._iconified:
+            log("maximized=%s", maximized)
+        if event.changed_mask & self.WINDOW_STATE_ICONIFIED:
+            iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
+            log("iconified=%s (was %s)", iconified, self._iconified)
+            if iconified==self._iconified:
+                #unchanged!
+                return
             #handle iconification as map events:
             assert not self._override_redirect
             if iconified:
