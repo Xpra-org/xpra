@@ -574,7 +574,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         return XSetSelectionOwner(self.display, self.get_xatom(atom), xwindow, time)
 
     def sendClientMessage(self, Window xtarget, Window xwindow, propagate, event_mask,
-                          message_type, data0, data1, data2, data3, data4):
+                          message_type, data0=0, data1=0, data2=0, data3=0, data4=0):
         # data0 etc. are passed through get_xatom, so they can be integers, which
         # are passed through directly, or else they can be strings, which are
         # converted appropriately.

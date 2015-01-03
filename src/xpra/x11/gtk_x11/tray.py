@@ -148,8 +148,7 @@ class SystemTray(gobject.GObject):
         event_mask = StructureNotifyMask
         log("setup tray: sending client message")
         X11Window.sendClientMessage(root.xid, root.xid, False, event_mask, "MANAGER",
-                          CurrentTime, SELECTION,
-                          xtray, 0, 0)
+                          CurrentTime, SELECTION, xtray)
         owner = X11Window.XGetSelectionOwner(SELECTION)
         #FIXME: cleanup if we fail!
         assert owner==xtray, "we failed to get ownership of the tray selection"

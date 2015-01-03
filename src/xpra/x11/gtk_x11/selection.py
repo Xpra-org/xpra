@@ -109,7 +109,7 @@ class ManagerSelection(gobject.GObject):
         root = self.clipboard.get_display().get_default_screen().get_root_window()
         X11Window.sendClientMessage(root.xid, root.xid, False, StructureNotifyMask,
                           "MANAGER",
-                          ts_num, selection_xatom, self._xwindow, 0, 0)
+                          ts_num, selection_xatom, self._xwindow)
 
         if old_owner != XNone and when is self.FORCE:
             # Block in a recursive mainloop until the previous owner has

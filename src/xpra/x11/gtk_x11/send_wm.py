@@ -21,11 +21,11 @@ def send_wm_take_focus(target, timestamp):
         raise OverflowError("invalid time: %#x" % timestamp)
     X11Window.sendClientMessage(target.xid, target.xid, False, 0,
                       "WM_PROTOCOLS",
-                      "WM_TAKE_FOCUS", timestamp, 0, 0, 0)
+                      "WM_TAKE_FOCUS", timestamp)
 
 def send_wm_delete_window(target):
     log("sending WM_DELETE_WINDOW to %#x", target.xid)
     X11Window.sendClientMessage(target.xid, target.xid, False, 0,
                       "WM_PROTOCOLS",
                       "WM_DELETE_WINDOW",
-                      CurrentTime, 0, 0, 0)
+                      CurrentTime)
