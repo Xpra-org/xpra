@@ -428,5 +428,7 @@ class ClientExtras(object):
             self.client.screen_size_changed("from %s event" % self._root_props_watcher)
         elif prop=="_NET_CURRENT_DESKTOP":
             self.client.workspace_changed("from %s event" % self._root_props_watcher)
+        elif prop in ("_NET_DESKTOP_NAMES", "_NET_NUMBER_OF_DESKTOPS"):
+            self.client.desktops_changed("from %s event" % self._root_props_watcher)
         else:
             log.error("unknown property %s", prop)

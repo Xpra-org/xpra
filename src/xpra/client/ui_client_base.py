@@ -639,6 +639,11 @@ class UIXpraClient(XpraClientBase):
         tray_widget.show()
         return ClientTray(client, wid, w, h, tray_widget, self.mmap_enabled, self.mmap)
 
+
+    def desktops_changed(self, *args):
+        workspacelog("desktops_changed%s", args)
+        self.screen_size_changed(*args)
+
     def workspace_changed(self, *args):
         workspacelog("workspace_changed%s", args)
         for win in self._id_to_window.values():
