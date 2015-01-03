@@ -655,30 +655,25 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 self.set_property(prop, v)
 
         if event.message_type=="_NET_WM_STATE" and event.data and len(event.data)==5:
-            atom1 = get_pyatom(event.window, event.data[1])
-            log("_NET_WM_STATE: %s", atom1)
-            if atom1=="_NET_WM_STATE_FULLSCREEN":
+            atoms = get_pyatom(event.window, event.data[1]), get_pyatom(event.window, event.data[2]) 
+            log("_NET_WM_STATE: %s", atoms)
+            if "_NET_WM_STATE_FULLSCREEN" in atoms:
                 update_wm_state("fullscreen")
-            elif atom1=="_NET_WM_STATE_ABOVE":
+            elif "_NET_WM_STATE_ABOVE" in atoms:
                 update_wm_state("above")
-            elif atom1=="_NET_WM_STATE_BELOW":
+            elif "_NET_WM_STATE_BELOW" in atoms:
                 update_wm_state("below")
-            elif atom1=="_NET_WM_STATE_STICKY":
+            elif "_NET_WM_STATE_STICKY" in atoms:
                 update_wm_state("sticky")
-            elif atom1=="_NET_WM_STATE_SKIP_TASKBAR":
+            elif "_NET_WM_STATE_SKIP_TASKBAR" in atoms:
                 update_wm_state("skip-taskbar")
-            elif atom1=="_NET_WM_STATE_SKIP_PAGER":
+            elif "_NET_WM_STATE_SKIP_PAGER" in atoms:
                 update_wm_state("skip-pager")
-            elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
+            elif "_NET_WM_STATE_MAXIMIZED_VERT" in atoms and "_NET_WM_STATE_MAXIMIZED_HORZ" in atoms:
                 #we only have one state for both, so we require both to be set:
-                atom2 = get_pyatom(event.window, event.data[2])
-                log("%s: atom2=%s", atom1, atom2)
-                if atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ") and atom1!=atom2:
-                    update_wm_state("maximized")
-                else:
-                    log.warn("unexpected maximized atom combination: %s - %s", atom1, atom2)
+                update_wm_state("maximized")
             else:
-                log("do_xpra_client_message_event(%s) atom1=%s", event, atom1)
+                log.info("do_xpra_client_message_event(%s) unhandled atoms=%s", event, atoms)
         elif event.message_type=="WM_CHANGE_STATE" and event.data and len(event.data)==5:
             log("WM_CHANGE_STATE: %s", event.data[0])
             if event.data[0]==IconicState and event.serial>self.last_unmap_serial:
