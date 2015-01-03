@@ -500,7 +500,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_configure_event(self, event):
-        log.info("%s.do_configure_event(%s)", self, event)
+        log("%s.do_configure_event(%s)", self, event)
         gtk.Window.do_configure_event(self, event)
         if not self._override_redirect and not self._iconified:
             self.process_configure_event()
@@ -527,7 +527,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         packet = ["configure-window", self._id, x, y, w, h, props, state]
         if self._resize_counter>0:
             packet.append(self._resize_counter)
-        log.info("%s", packet)
+        log("%s", packet)
         self.send(*packet)
         if dx!=0 or dy!=0:
             #window has moved, also move any child OR window:
