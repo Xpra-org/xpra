@@ -848,6 +848,9 @@ class WindowModel(BaseWindowModel):
         "client-machine": (gobject.TYPE_PYOBJECT,
                            "Host where client process is running", "",
                            gobject.PARAM_READABLE),
+        "command": (gobject.TYPE_PYOBJECT,
+                           "Command used to start or restart the client", "",
+                           gobject.PARAM_READABLE),
         # Toggling this property does not actually make the window iconified,
         # i.e. make it appear or disappear from the screen -- it merely
         # updates the various window manager properties that inform the world
@@ -914,7 +917,8 @@ class WindowModel(BaseWindowModel):
 
         self.connect("notify::iconic", self._handle_iconic_update)
 
-        self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "modal", "decorations",
+        self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "command",
+                                "modal", "decorations",
                                 "above", "below", "sticky", "skip-taskbar", "skip-pager"]
         self.call_setup()
 
@@ -1428,6 +1432,9 @@ class WindowModel(BaseWindowModel):
         client_machine = pget("WM_CLIENT_MACHINE", "latin1")
         # May be None
         self._internal_set_property("client-machine", client_machine)
+
+        command = pget("WM_COMMAND", "latin1")
+        self._internal_set_property("command", command)
 
         # WARNING: have to handle _NET_WM_STATE before we look at WM_HINTS;
         # WM_HINTS assumes that our "state" property is already set.  This is

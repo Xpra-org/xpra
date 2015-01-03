@@ -213,6 +213,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self.realize()
             self.window.set_group(self.group_leader)
         gtk.Window.show(self)
+        #now it is realized, we can set WM_COMMAND (for X11 clients only)
+        command = self._metadata.strget("command")
+        if command and HAS_X11_BINDINGS:
+            prop_set(self.get_window(), "WM_COMMAND", "latin1", command.decode("latin1"))
 
 
     def window_state_updated(self, widget, event):

@@ -43,7 +43,7 @@ MAX_CLIPBOARD_PER_SECOND = int(os.environ.get("XPRA_CLIPBOARD_LIMIT", "10"))
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
-    if propname in ("title", "icon-title"):
+    if propname in ("title", "icon-title", "command"):
         v = window.get_property(propname)
         if v is None:
             return {propname: ""}
