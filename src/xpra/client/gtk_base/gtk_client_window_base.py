@@ -21,6 +21,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo,
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
+from xpra.platform.gui import get_window_frame_sizes
 from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba    #@UnresolvedImport
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -134,6 +135,24 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             log("not decorating window type %s", undecorated_types)
             return False
         return True
+
+    def set_decorated(self, decorated):
+        was_decorated = self.get_decorated()
+        gtk.Window.set_decorated(self, decorated)
+        #win32 workaround for new window offsets:
+        #keep the window contents where they were and adjust the frame
+        #this generates a configure event which ensures the server has the correct window position
+        #if we end up implementing "get_window_frame_sizes" on other platforms,
+        #we may end up calling this code unnecessarily - meh
+        wfs = get_window_frame_sizes()
+        if wfs and decorated and not was_decorated:
+            normal = wfs.get("normal")
+            fixed = wfs.get("fixed")
+            if normal and fixed:
+                nx, ny = normal
+                fx, fy = fixed
+                x, y = self.get_position()
+                gtk.Window.move(self, max(0, x-nx+fx), max(0, y-ny+fy))
 
 
     def setup_window(self):
