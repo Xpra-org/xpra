@@ -146,7 +146,7 @@ class Wm(gobject.GObject):
         "_NET_WM_STATE_DEMANDS_ATTENTION",
         "_NET_WM_STATE_MODAL",
         # More states to support:
-        # _NET_WM_STATE_STICKY,
+        "_NET_WM_STATE_STICKY",
         "_NET_WM_STATE_MAXIMIZED_VERT",
         " _NET_WM_STATE_MAXIMIZED_HORZ",
         # _NET_WM_STATE_SHADED,
@@ -154,8 +154,8 @@ class Wm(gobject.GObject):
         "_NET_WM_STATE_SKIP_PAGER",
         "_NET_WM_STATE_HIDDEN",
         "_NET_WM_STATE_FULLSCREEN",
-        # _NET_WM_STATE_ABOVE,
-        # _NET_WM_STATE_BELOW,
+        "_NET_WM_STATE_ABOVE",
+        "_NET_WM_STATE_BELOW",
 
         "_NET_WM_MOVERESIZE",
         "_NET_MOVERESIZE_WINDOW",

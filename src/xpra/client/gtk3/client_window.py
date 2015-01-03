@@ -84,6 +84,9 @@ class ClientWindow(GTKClientWindowBase):
     WINDOW_STATE_FULLSCREEN = Gdk.WindowState.FULLSCREEN
     WINDOW_STATE_MAXIMIZED  = Gdk.WindowState.MAXIMIZED
     WINDOW_STATE_ICONIFIED  = Gdk.WindowState.ICONIFIED
+    WINDOW_STATE_ABOVE      = Gdk.WindowState.ABOVE
+    WINDOW_STATE_BELOW      = Gdk.WindowState.BELOW
+    WINDOW_STATE_STICKY     = Gdk.WindowState.STICKY
 
 
     def init_window(self, metadata):

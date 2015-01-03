@@ -283,6 +283,18 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Is the window maximized", "",
                        False,
                        gobject.PARAM_READWRITE),
+        "above": (gobject.TYPE_BOOLEAN,
+                       "Is the window on top of most windows", "",
+                       False,
+                       gobject.PARAM_READWRITE),
+        "below": (gobject.TYPE_BOOLEAN,
+                       "Is the window below most windows", "",
+                       False,
+                       gobject.PARAM_READWRITE),
+        "sticky": (gobject.TYPE_BOOLEAN,
+                       "Is the window's position fixed on the screen", "",
+                       False,
+                       gobject.PARAM_READWRITE),
         "override-redirect": (gobject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        False,
@@ -608,7 +620,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             return None
 
     def do_xpra_client_message_event(self, event):
-        log("do_xpra_client_message_event(%s)", event)
+        log.info("do_xpra_client_message_event(%s)", event)
         # FIXME
         # Need to listen for:
         #   _NET_CLOSE_WINDOW
@@ -619,35 +631,40 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         #   _NET_RESTACK_WINDOW
         #   _NET_WM_DESKTOP
         #   _NET_WM_STATE (more fully)
+        def update_wm_state(prop):
+            current = self.get_property(prop)
+            if event.data[0]==_NET_WM_STATE_ADD:
+                v = True
+            elif event.data[0]==_NET_WM_STATE_REMOVE:
+                v = False
+            elif event.data[0]==_NET_WM_STATE_TOGGLE:
+                v = not bool(current)
+            else:
+                log.warn("invalid mode for _NET_WM_STATE: %s", event.data[0])
+                return
+            log("do_xpra_client_message_event(%s) window %s=%s (current state=%s)", event, prop, v, current)
+            if v!=current:
+                self.set_property(prop, v)
+
         if event.message_type=="_NET_WM_STATE" and event.data and len(event.data)==5:
             atom1 = get_pyatom(event.window, event.data[1])
             log("_NET_WM_STATE: %s", atom1)
             if atom1=="_NET_WM_STATE_FULLSCREEN":
-                if event.data[0]==_NET_WM_STATE_TOGGLE:
-                    fullscreen = not self.get_property("fullscreen")
-                else:
-                    fullscreen = event.data[0]==_NET_WM_STATE_ADD
-                log("do_xpra_client_message_event(..) setting fullscreen=%s", fullscreen)
-                self.set_property("fullscreen", fullscreen)
+                update_wm_state("fullscreen")
+            elif atom1=="_NET_WM_STATE_ABOVE":
+                update_wm_state("above")
+            elif atom1=="_NET_WM_STATE_BELOW":
+                update_wm_state("below")
+            elif atom1=="_NET_WM_STATE_STICKY":
+                update_wm_state("sticky")
             elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
+                #we only have one state for both, so we require both to be set:
                 atom2 = get_pyatom(event.window, event.data[2])
                 log("%s: atom2=%s", atom1, atom2)
-                if atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
-                    if event.data[0]==_NET_WM_STATE_ADD:
-                        maximized = True
-                    elif event.data[0]==_NET_WM_STATE_REMOVE:
-                        maximized = False
-                    elif event.data[0]==_NET_WM_STATE_TOGGLE:
-                        maximized = not self.get_property("maximized")
-                    else:
-                        log.warn("invalid mode for _NET_WM_STATE: %s", event.data[0])
-                        return
-                    log("do_xpra_client_message_event(%s) window maximized=%s (current state=%s)", event, maximized, self.get_property("maximized"))
-                    if maximized!=self.get_property("maximized"):
-                        self.set_property("maximized", maximized)
-            elif atom1 in ("_NET_WM_STATE_ABOVE", "_NET_WM_STATE_BELOW"):
-                #TODO: keep track of this preference and pass it to the client
-                pass
+                if atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ") and atom1!=atom2:
+                    update_wm_state("maximized")
+                else:
+                    log.warn("unexpected maximized atom combination: %s - %s", atom1, atom2)
             else:
                 log("do_xpra_client_message_event(%s) atom1=%s", event, atom1)
         elif event.message_type=="WM_CHANGE_STATE" and event.data and len(event.data)==5:
@@ -884,7 +901,8 @@ class WindowModel(BaseWindowModel):
 
         self.connect("notify::iconic", self._handle_iconic_update)
 
-        self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "modal", "decorations"]
+        self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "modal", "decorations",
+                                "above", "below", "sticky"]
         self.call_setup()
 
     def setup(self):
@@ -946,7 +964,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("actual-size", (nw, nh))
 
     def get_dynamic_property_names(self):
-        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic", "decorations"]
+        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic", "decorations", "above", "below", "sticky"]
 
 
     def is_OR(self):
@@ -1484,6 +1502,9 @@ class WindowModel(BaseWindowModel):
         "attention-requested"   : ("_NET_WM_STATE_DEMANDS_ATTENTION", ),
         "fullscreen"            : ("_NET_WM_STATE_FULLSCREEN", ),
         "maximized"             : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
+        "above"                 : ("_NET_WM_STATE_ABOVE", ),
+        "below"                 : ("_NET_WM_STATE_BELOW", ),
+        "sticky"                : ("_NET_WM_STATE_STICKY", ),
         }
 
     _state_properties_reversed = {}

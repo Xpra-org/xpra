@@ -201,6 +201,27 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if event.changed_mask & self.WINDOW_STATE_FULLSCREEN:
             self._fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
             log("fullscreen=%s", self._fullscreen)
+        if event.changed_mask & self.WINDOW_STATE_ABOVE:
+            above = bool(event.new_window_state & self.WINDOW_STATE_ABOVE)
+            log("above=%s (was %s)", above, self._above)
+            if above==self._above:
+                return      #unchanged!
+            self._window_state["above"] = above
+            self._above = above
+        if event.changed_mask & self.WINDOW_STATE_BELOW:
+            below = bool(event.new_window_state & self.WINDOW_STATE_BELOW)
+            log("below=%s (was %s)", below, self._below)
+            if below==self._below:
+                return      #unchanged!
+            self._window_state["below"] = below
+            self._below = below
+        if event.changed_mask & self.WINDOW_STATE_STICKY:
+            sticky = bool(event.new_window_state & self.WINDOW_STATE_STICKY)
+            log("sticky=%s (was %s)", sticky, self._sticky)
+            if sticky==self._sticky:
+                return      #unchanged!
+            self._window_state["sticky"] = sticky
+            self._sticky = sticky
         if event.changed_mask & self.WINDOW_STATE_MAXIMIZED:
             #this may get sent now as part of map_event code below (and it is irrelevant for the unmap case),
             #or when we get the configure event - which should come straight after
@@ -212,8 +233,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
             log("iconified=%s (was %s)", iconified, self._iconified)
             if iconified==self._iconified:
-                #unchanged!
-                return
+                return      #unchanged!
             #handle iconification as map events:
             assert not self._override_redirect
             if iconified:
@@ -457,7 +477,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_configure_event(self, event):
-        log("%s.do_configure_event(%s)", self, event)
+        log.info("%s.do_configure_event(%s)", self, event)
         gtk.Window.do_configure_event(self, event)
         if not self._override_redirect and not self._iconified:
             self.process_configure_event()
@@ -484,7 +504,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         packet = ["configure-window", self._id, x, y, w, h, props, state]
         if self._resize_counter>0:
             packet.append(self._resize_counter)
-        log("%s", packet)
+        log.info("%s", packet)
         self.send(*packet)
         if dx!=0 or dy!=0:
             #window has moved, also move any child OR window:

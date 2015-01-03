@@ -30,6 +30,9 @@ class ClientWindowBase(ClientWidgetBase):
         self.size_constraints = typedict()
         self.geometry_hints = None
         self._fullscreen = None
+        self._above = False
+        self._below = False
+        self._sticky = False
         self._iconified = False
         self.border = border
         self.max_window_size = max_window_size
@@ -200,6 +203,21 @@ class ClientWindowBase(ClientWidgetBase):
 
         if b"decorations" in metadata:
             self.set_decorated(metadata.boolget("decorations"))
+
+        if b"above" in metadata:
+            self._above = metadata.boolget("above")
+            self.set_keep_above(self._above)
+
+        if b"below" in metadata:
+            self._below = metadata.boolget("below")
+            self.set_keep_below(self._below)
+
+        if b"sticky" in metadata:
+            self._sticky = metadata.boolget("sticky")
+            if self._sticky:
+                self.stick()
+            else:
+                self.unstick()
 
 
     def set_size_constraints(self, size_constraints, max_window_size):
