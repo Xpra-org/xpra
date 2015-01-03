@@ -227,6 +227,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             icons += it.list_icons(context)
         log("icons: %s", icons)
         capabilities["theme.default.icons"] = list(set(icons))
+        capabilities["window.states"] = ["fullscreen", "maximized", "sticky", "above", "below", "iconified"]
         #window icon bits
         capabilities["encoding.icons.greedy"] = True            #we don't set a default window icon any more
         capabilities["encoding.icons.size"] = 64, 64            #size we want
