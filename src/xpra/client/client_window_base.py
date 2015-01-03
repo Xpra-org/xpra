@@ -219,6 +219,12 @@ class ClientWindowBase(ClientWidgetBase):
             else:
                 self.unstick()
 
+        if b"skip-taskbar" in metadata:
+            self.set_skip_taskbar_hint(metadata.boolget("skip-taskbar"))
+
+        if b"skip-pager" in metadata:
+            self.set_skip_pager_hint(metadata.boolget("skip-pager"))
+
 
     def set_size_constraints(self, size_constraints, max_window_size):
         self._set_initial_position = size_constraints.get("set-initial-position")

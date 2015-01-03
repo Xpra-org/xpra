@@ -4,46 +4,52 @@ import gtk.gdk
 
 def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	window.set_size_request(200, 300)
+	window.set_size_request(200, 600)
 	window.connect("delete_event", gtk.mainquit)
 	vbox = gtk.VBox(False, 0)
 
-	maximize_btn = gtk.Button("maximize me")
-	def maximize(*args):
-		window.maximize()
-	maximize_btn.connect('clicked', maximize)
-	vbox.pack_start(maximize_btn, expand=False, fill=False, padding=10)
+	def add_buttons(t1, cb1, t2, cb2):
+		hbox = gtk.HBox(True, 10)
+		b1 = gtk.Button(t1)
+		def vcb1(*args):
+			cb1()
+		b1.connect('clicked', vcb1)
+		hbox.pack_start(b1, expand=True, fill=False, padding=5)
+		b2 = gtk.Button(t2)
+		def vcb2(*args):
+			cb2()
+		b2.connect('clicked', vcb2)
+		hbox.pack_start(b2, expand=True, fill=False, padding=5)
+		vbox.pack_start(hbox, expand=False, fill=False, padding=2)
 
-	unmaximize_btn = gtk.Button("unmaximize me")
-	def unmaximize(*args):
-		window.unmaximize()
-	unmaximize_btn.connect('clicked', unmaximize)
-	vbox.pack_start(unmaximize_btn, expand=False, fill=False, padding=10)
-
-	fullscreen_btn = gtk.Button("fullscreen me")
-	def fullscreen(*args):
-		window.fullscreen()
-	fullscreen_btn.connect('clicked', fullscreen)
-	vbox.pack_start(fullscreen_btn, expand=False, fill=False, padding=10)
-
-	unfullscreen_btn = gtk.Button("unfullscreen me")
-	def unfullscreen(*args):
-		window.unfullscreen()
-	unfullscreen_btn.connect('clicked', unfullscreen)
-	vbox.pack_start(unfullscreen_btn, expand=False, fill=False, padding=10)
-
-	decorate_btn = gtk.Button("decorate me")
-	def decorate(*args):
+	add_buttons("maximize", window.maximize, "unmaximize", window.unmaximize)
+	add_buttons("fullscreen", window.fullscreen, "unfullscreen", window.unfullscreen)
+	def decorate():
 		window.set_decorated(True)
-	decorate_btn.connect('clicked', decorate)
-	vbox.pack_start(decorate_btn, expand=False, fill=False, padding=10)
-
-	undecorate_btn = gtk.Button("undecorate me")
-	def undecorate(*args):
+	def undecorate():
 		window.set_decorated(False)
-	undecorate_btn.connect('clicked', undecorate)
-	vbox.pack_start(undecorate_btn, expand=False, fill=False, padding=10)
-
+	add_buttons("decorate", decorate, "undecorate", undecorate)
+	def above():
+		window.set_keep_above(True)
+	def notabove():
+		window.set_keep_above(False)
+	add_buttons("keep above", above, "not above", notabove)
+	def below():
+		window.set_keep_below(True)
+	def notbelow():
+		window.set_keep_below(False)
+	add_buttons("keep below", below, "not below", notbelow)
+	add_buttons("stick", window.stick, "unstick", window.unstick)
+	def skip_pager():
+		window.set_skip_pager_hint(True)
+	def notskip_pager():
+		window.set_skip_pager_hint(False)
+	add_buttons("skip pager", skip_pager, "not skip pager", notskip_pager)
+	def skip_taskbar():
+		window.set_skip_taskbar_hint(True)
+	def notskip_taskbar():
+		window.set_skip_taskbar_hint(False)
+	add_buttons("skip taskbar", skip_taskbar, "not skip taskbar", notskip_taskbar)
 
 	def window_state(widget, event):
 		STATES = {

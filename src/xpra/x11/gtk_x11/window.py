@@ -291,6 +291,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Is the window below most windows", "",
                        False,
                        gobject.PARAM_READWRITE),
+        "skip-taskbar": (gobject.TYPE_BOOLEAN,
+                       "Should the window be included on a taskbar", "",
+                       False,
+                       gobject.PARAM_READWRITE),
+        "skip-pager": (gobject.TYPE_BOOLEAN,
+                       "Should the window be included on a pager", "",
+                       False,
+                       gobject.PARAM_READWRITE),
         "sticky": (gobject.TYPE_BOOLEAN,
                        "Is the window's position fixed on the screen", "",
                        False,
@@ -620,7 +628,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             return None
 
     def do_xpra_client_message_event(self, event):
-        log.info("do_xpra_client_message_event(%s)", event)
+        log("do_xpra_client_message_event(%s)", event)
         # FIXME
         # Need to listen for:
         #   _NET_CLOSE_WINDOW
@@ -657,6 +665,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 update_wm_state("below")
             elif atom1=="_NET_WM_STATE_STICKY":
                 update_wm_state("sticky")
+            elif atom1=="_NET_WM_STATE_SKIP_TASKBAR":
+                update_wm_state("skip-taskbar")
+            elif atom1=="_NET_WM_STATE_SKIP_PAGER":
+                update_wm_state("skip-pager")
             elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
                 #we only have one state for both, so we require both to be set:
                 atom2 = get_pyatom(event.window, event.data[2])
@@ -902,7 +914,7 @@ class WindowModel(BaseWindowModel):
         self.connect("notify::iconic", self._handle_iconic_update)
 
         self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "modal", "decorations",
-                                "above", "below", "sticky"]
+                                "above", "below", "sticky", "skip-taskbar", "skip-pager"]
         self.call_setup()
 
     def setup(self):
@@ -964,7 +976,8 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("actual-size", (nw, nh))
 
     def get_dynamic_property_names(self):
-        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic", "decorations", "above", "below", "sticky"]
+        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic", "decorations",
+                                                                       "above", "below", "sticky", "skip-taskbar", "skip-pager"]
 
 
     def is_OR(self):
@@ -1505,6 +1518,8 @@ class WindowModel(BaseWindowModel):
         "above"                 : ("_NET_WM_STATE_ABOVE", ),
         "below"                 : ("_NET_WM_STATE_BELOW", ),
         "sticky"                : ("_NET_WM_STATE_STICKY", ),
+        "skip-taskbar"          : ("_NET_WM_STATE_SKIP_TASKBAR", ),
+        "skip-pager"            : ("_NET_WM_STATE_SKIP_PAGER", ),
         }
 
     _state_properties_reversed = {}
