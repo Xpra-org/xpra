@@ -33,7 +33,7 @@ from xpra.platform import set_application_name
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_double_click_time,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
-                               get_native_tray_menu_helper_classes, get_dpi, get_xdpi, get_ydpi, ClientExtras)
+                               get_native_tray_menu_helper_classes, get_dpi, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, ClientExtras)
 from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
@@ -652,8 +652,10 @@ class UIXpraClient(XpraClientBase):
             self.screen_size_change_pending = False
             root_w, root_h = self.get_root_size()
             ss = self.get_screen_sizes()
-            log("update_screen_size() sizes=%s", ss)
-            screen_settings = (root_w, root_h, ss)
+            ndesktops = get_number_of_desktops()
+            desktop_names = get_desktop_names()
+            log("update_screen_size() sizes=%s, %s desktops: %s", ss, ndesktops, desktop_names)
+            screen_settings = (root_w, root_h, ss, ndesktops, desktop_names)
             if self._last_screen_settings==screen_settings:
                 log("screen size unchanged")
                 return
@@ -880,11 +882,16 @@ class UIXpraClient(XpraClientBase):
         capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = self.get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
+        ndesktops = get_number_of_desktops()
+        capabilities["desktops"] = ndesktops 
+        desktop_names = get_desktop_names()
+        capabilities["desktop.names"] = desktop_names
+        capabilities["desktop_size"] = [root_w, root_h]
         ss = self.get_screen_sizes()
         log.info("desktop size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
         log_screen_sizes(root_w, root_h, ss)
         capabilities["screen_sizes"] = ss
-        self._last_screen_settings = (root_w, root_h, ss)
+        self._last_screen_settings = (root_w, root_h, ss, ndesktops, desktop_names)
         if self.keyboard_helper:
             key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()
             if key_repeat:

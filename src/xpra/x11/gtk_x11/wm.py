@@ -187,8 +187,6 @@ class Wm(gobject.GObject):
         # spontaneously raise it if another WM takes over the display.  By
         # default, unmanages all windows:
         "quit": no_arg_signal,
-        # Emit this when the list of desktop names has changed:
-        "desktop-list-changed": one_arg_signal,
 
         # Mostly intended for internal use:
         "child-map-request-event": one_arg_signal,
@@ -230,7 +228,7 @@ class Wm(gobject.GObject):
         # Set up the necessary EWMH properties on the root window.
         self._setup_ewmh_window()
         # Start with just one desktop:
-        self.do_desktop_list_changed([u"Main"])
+        self.set_desktop_list([u"Main"])
         self.set_current_desktop(0)
         # Start with the full display as workarea:
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
@@ -411,9 +409,10 @@ class Wm(gobject.GObject):
     def do_xpra_focus_out_event(self, event):
         focuslog("wm.do_xpra_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
 
-    def do_desktop_list_changed(self, desktops):
+    def set_desktop_list(self, desktops):
+        log("set_desktop_list(%s)", desktops)
         self.root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
-        self.root_set("_NET_DESKTOP_NAMES", ["utf8"], desktops)
+        self.root_set("_NET_DESKTOP_NAMES", ["utf8"], [d.decode("utf8") for d in desktops])
 
     def set_current_desktop(self, index):
         self.root_set("_NET_CURRENT_DESKTOP", "u32", index)

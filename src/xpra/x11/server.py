@@ -281,6 +281,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         return info
 
 
+    def set_desktops(self, names):
+        self._wm.set_desktop_list(names)
+
     def set_workarea(self, workarea):
         self._wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
 

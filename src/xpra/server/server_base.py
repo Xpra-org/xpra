@@ -717,6 +717,7 @@ class ServerBase(ServerCore):
             except:
                 dw, dh = None, None
         root_w, root_h = self.set_best_screen_size()
+        self.calculate_desktops()
         self.calculate_workarea()
         self.set_desktop_geometry(dw or root_w, dh or root_h)
         return root_w, root_h
@@ -1431,6 +1432,10 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
+        if len(packet)>=6:
+            desktops, desktop_names = packet[4:6]
+            ss.set_desktops(desktops, desktop_names)
+            self.calculate_desktops()
         if len(packet)>=4:
             ss.set_screen_sizes(packet[3])
         log("client requesting new size: %sx%s", width, height)
@@ -1440,6 +1445,26 @@ class ServerBase(ServerCore):
             log.info("client root window size is %sx%s with %s displays:", width, height, len(ss.screen_sizes))
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea()
+
+    def calculate_desktops(self):
+        count = 1
+        for ss in self._server_sources.values():
+            if ss.desktops:
+                count = max(count, ss.desktops)
+        count = max(1, min(20, count))
+        names = []
+        for i in range(count):
+            if i==0:
+                name = "Main"
+            else:
+                name = "Desktop %s" % (i+1)
+            if i<len(ss.desktop_names) and ss.desktop_names[i]:
+                name = ss.desktop_names[i]
+            names.append(name)
+        self.set_desktops(names)
+
+    def set_desktops(self, names):
+        pass
 
     def calculate_workarea(self):
         raise NotImplementedError()

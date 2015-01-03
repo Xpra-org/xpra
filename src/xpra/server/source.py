@@ -266,6 +266,8 @@ class ServerSource(object):
         self.share = False
         self.desktop_size = None
         self.screen_sizes = []
+        self.desktops = 1
+        self.desktop_names = []
         self.system_tray = False
         self.notify_startup_complete = False
         self.control_commands = []
@@ -500,6 +502,7 @@ class ServerSource(object):
                 log.warn("ignoring invalid desktop dimensions: %sx%s", w, h)
                 self.desktop_size = None
         self.set_screen_sizes(c.listget("screen_sizes"))
+        self.set_desktops(c.intget("desktops", 1), c.strlistget("desktop.names"))
 
         #sound stuff:
         self.pulseaudio_id = c.strget("sound.pulseaudio.id")
@@ -825,6 +828,10 @@ class ServerSource(object):
         self.screen_sizes = screen_sizes or []
         log("client screen sizes: %s", screen_sizes)
 
+    def set_desktops(self, desktops, desktop_names):
+        self.desktops = desktops or 1
+        self.desktop_names = desktop_names or []
+
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property
     def _make_metadata(self, wid, window, propname):
@@ -1016,6 +1023,8 @@ class ServerSource(object):
                 "hostname"          : self.hostname,
                 "auto_refresh"      : self.auto_refresh_delay,
                 "desktop_size"      : self.desktop_size or "",
+                "desktops"          : self.desktops,
+                "desktop_names"     : self.desktop_names,
                 "connection_time"   : int(self.connection_time),
                 "elapsed_time"      : int(time.time()-self.connection_time),
                 "suspended"         : self.suspended,

@@ -202,6 +202,29 @@ def get_workarea():
     return None
 
 
+def get_number_of_desktops():
+    try:
+        d = _get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
+        v = struct.unpack("=I", d)[0]
+        log("get_number_of_desktops()=%s", v)
+        return v
+    except Exception as e:
+        log.warn("failed to get number of desktop: %s", e)
+    return 
+
+def get_desktop_names():
+    try:
+        d = _get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
+        v = d.split("\0")
+        if len(v)>1 and v[-1]=="":
+            v = v[:-1]
+        log("get_desktop_names()=%s", v)
+        return v
+    except Exception as e:
+        log.warn("failed to get current desktop: %s", e)
+    return ["Main"]
+
+
 def get_vrefresh():
     try:
         from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
