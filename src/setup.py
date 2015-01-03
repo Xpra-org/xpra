@@ -232,8 +232,7 @@ if "clean" not in sys.argv:
     if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
         print("Warning: client is enabled but none of the client toolkits are!?")
     if not client_ENABLED and not server_ENABLED:
-        print("Error: you must build at least the client or server!")
-        exit(1)
+        print("Warning: you probably want to build at least the client or server!")
     if memoryview_ENABLED and sys.version<"2.7":
         print("Error: memoryview support requires Python version 2.7 or greater")
         exit(1)

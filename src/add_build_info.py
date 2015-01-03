@@ -7,7 +7,6 @@
 
 import datetime
 import subprocess
-import getpass
 import socket
 import platform
 import os.path
@@ -168,7 +167,11 @@ def record_build_info(is_build=True):
     global BUILD_INFO_FILE
     props = get_properties(BUILD_INFO_FILE)
     if is_build:
-        set_prop(props, "BUILT_BY", getpass.getuser())
+        try:
+            import getpass
+            set_prop(props, "BUILT_BY", getpass.getuser())
+        except:
+            set_prop(props, "BUILT_BY", os.environ.get("USER"))
         set_prop(props, "BUILT_ON", socket.gethostname())
         set_prop(props, "BUILD_DATE", datetime.date.today().isoformat())
         set_prop(props, "BUILD_TIME", datetime.datetime.now().strftime("%H:%M"))
