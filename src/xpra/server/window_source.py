@@ -1086,8 +1086,8 @@ class WindowSource(object):
                     merged_rects = merged.substract_rect(exclude_region)
                 else:
                     merged_rects = [merged]
-                merged_pixel_count = sum([r.width*r.height for r in merged_rects])
-                merged_bytes_cost = pixel_count+self.small_packet_cost*len(merged_rects)
+                merged_pixel_count = sum(r.width*r.height for r in merged_rects)
+                merged_bytes_cost = merged_pixel_count+self.small_packet_cost*len(merged_rects)
                 if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
                     #better, so replace with merged regions:
                     regions = merged_rects
