@@ -21,14 +21,15 @@ def add_logger(categories, logger):
     global all_loggers
     categories = list(categories)
     categories.append("all")
+    l = weakref.ref(logger)
     for cat in categories:
-        all_loggers.setdefault(cat, []).append(weakref.ref(logger))
+        all_loggers.setdefault(cat, set()).add(l)
 
 def get_all_loggers():
     global all_loggers
     a = set()
     for loggers in all_loggers.values():
-        for l in loggers:
+        for l in list(loggers):
             #weakref:
             v = l()
             if v:
@@ -37,40 +38,44 @@ def get_all_loggers():
 
 debug_enabled_categories = set()
 debug_disabled_categories = set()
-def add_debug_category(cat):
-    remove_disabled_category(cat)
-    debug_enabled_categories.add(cat)
+def add_debug_category(*cat):
+    remove_disabled_category(*cat)
+    for c in cat:
+        debug_enabled_categories.add(c)
 
-def remove_debug_category(cat):
-    if cat in debug_enabled_categories:
-        debug_enabled_categories.remove(cat)
+def remove_debug_category(*cat):
+    for c in cat:
+        if c in debug_enabled_categories:
+            debug_enabled_categories.remove(c)
 
-def add_disabled_category(cat):
-    remove_debug_category(cat)
-    debug_disabled_categories.add(cat)
+def add_disabled_category(*cat):
+    remove_debug_category(*cat)
+    for c in cat:
+        debug_disabled_categories.add(c)
 
-def remove_disabled_category(cat):
-    if cat in debug_disabled_categories:
-        debug_disabled_categories.remove(cat)
+def remove_disabled_category(*cat):
+    for c in cat:
+        if c in debug_disabled_categories:
+            debug_disabled_categories.remove(c)
 
 
-def enable_debug_for(cat):
-    loggers = all_loggers.get(cat)
-    if loggers:
-        for l in loggers:
-            #weakref:
-            v = l()
-            if v:
-                v.enable_debug()
+def get_loggers_for_categories(*cat):
+    if not cat:
+        return  []
+    cset = set(cat)
+    matches = set()
+    for l in get_all_loggers():
+        if set(l.categories).issuperset(cset):
+            matches.add(l)
+    return list(matches or [])
 
-def disable_debug_for(cat):
-    loggers = all_loggers.get(cat)
-    if loggers:
-        for l in loggers:
-            #weakref:
-            v = l()
-            if v:
-                v.disable_debug()
+def enable_debug_for(*cat):
+    for l in get_loggers_for_categories(*cat):
+        l.enable_debug()
+
+def disable_debug_for(*cat):
+    for l in get_loggers_for_categories(*cat):
+        l.disable_debug()
 
 
 default_level = logging.DEBUG
