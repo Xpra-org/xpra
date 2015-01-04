@@ -11,6 +11,8 @@ from xpra.log import Logger
 log = Logger("x11", "focus")
 
 CurrentTime = constants["CurrentTime"]
+SubstructureNotifyMask = constants["SubstructureNotifyMask"]
+SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
 
 def send_wm_take_focus(target, timestamp):
@@ -29,3 +31,9 @@ def send_wm_delete_window(target):
                       "WM_PROTOCOLS",
                       "WM_DELETE_WINDOW",
                       CurrentTime)
+
+def send_wm_workspace(root, win, workspace=0):
+    event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+    X11Window.sendClientMessage(root.xid, win.xid, False, event_mask,
+                      "_NET_WM_DESKTOP",
+                      workspace, CurrentTime)

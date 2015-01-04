@@ -14,6 +14,9 @@ log = Logger("window")
 plog = Logger("paint")
 focuslog = Logger("focus")
 mouselog = Logger("mouse")
+workspacelog = Logger("workspace")
+
+WORKSPACE_UNSET = 65535
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -50,7 +53,24 @@ class ClientWindowBase(ClientWidgetBase):
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
         self._override_redirect_windows = []
+        if "workspace" in self._client_properties:
+            workspace = self._client_properties.get("workspace")
+            if workspace is not None:
+                workspacelog("workspace from client properties: %s", workspace)
+                #client properties override application specified workspace value on init only:
+                metadata["workspace"] = int(workspace)
+        self._window_workspace = WORKSPACE_UNSET        #will get set in set_metadata if present
+        self._desktop_workspace = self.get_desktop_workspace()
+        workspacelog("init_window(..) workspace=%s, current workspace=%s", self._window_workspace, self._desktop_workspace)
         self.update_metadata(metadata)
+
+
+    def get_desktop_workspace(self):
+        return None
+
+    def get_window_workspace(self):
+        return None
+
 
     def new_backing(self, w, h):
         backing_class = self.get_backing_class()
@@ -225,6 +245,10 @@ class ClientWindowBase(ClientWidgetBase):
         if b"skip-pager" in metadata:
             self.set_skip_pager_hint(metadata.boolget("skip-pager"))
 
+        if b"workspace" in metadata:
+            self._window_workspace = metadata.intget("workspace")
+            self.set_workspace()
+
 
     def set_size_constraints(self, size_constraints, max_window_size):
         self._set_initial_position = size_constraints.get("set-initial-position")
@@ -296,6 +320,9 @@ class ClientWindowBase(ClientWidgetBase):
         log("set_window_type(%s) hints=%s", window_types, hints)
         if hints:
             self.set_type_hint(hints)
+
+    def set_worskpace(self):
+        pass
 
     def set_fullscreen(self, fullscreen):
         pass

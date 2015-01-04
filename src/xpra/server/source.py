@@ -48,8 +48,13 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
         if v is None:
             return {propname: ""}
         return {propname: v.encode("utf-8")}
-    elif propname == "pid":
-        return {"pid" : window.get_property("pid") or -1}
+    elif propname in ("pid", "workspace"):
+        v = window.get_property(propname)
+        assert v is not None, "%s is None!" % propname
+        if v<0:
+            #meaningless
+            return {}
+        return {propname : v}
     elif propname == "size-hints":
         hints = window.get_property("size-hints")
         if not hints:

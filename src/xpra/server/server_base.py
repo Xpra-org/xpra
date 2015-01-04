@@ -109,7 +109,7 @@ class ServerBase(ServerCore):
                     "sound-output",
                     "scaling", "scaling-control",
                     "suspend", "resume", "name", "ungrab",
-                    "key", "focus",
+                    "key", "focus", "workspace",
                     "client"]
         if self.start_new_commands:
             self.control_commands += ["start", "start-child"]
@@ -1127,6 +1127,20 @@ class ServerBase(ServerCore):
             wid = int(args[0])
             self._focus(None, wid, None)
             return 0, "gave focus to window %s" % wid
+        elif command=="workspace":
+            if len(args)!=2:
+                return argn_err(2)
+            wid = int(args[0])
+            workspace = int(args[1])
+            window = self._id_to_window.get(wid)
+            if not window:
+                return arg_err("window %s does not exist", wid)
+            if "workspace" not in window.get_property_names():
+                return arg_err("cannot set workspace on window %s", window)
+            if workspace<0:
+                return arg_err("invalid workspace value: %s", workspace)
+            window.set_property("workspace", workspace)
+            return 0, "window %s moved to workspace %s" % (wid, workspace)
         elif command=="client":
             if len(args)==0:
                 return argn_err("at least 1")
@@ -1638,6 +1652,9 @@ class ServerBase(ServerCore):
             #filter out encoding properties, which are expected to be set everytime:
             ncp = {}
             for k,v in new_client_properties.items():
+                if v is None:
+                    log.warn("removing invalid None property for %s", k)
+                    continue
                 if not k.startswith("encoding"):
                     ncp[k] = v
             log("set_client_properties updating window %s with %s", wid, ncp)

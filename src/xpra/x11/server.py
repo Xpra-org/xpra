@@ -43,6 +43,7 @@ windowlog = Logger("server", "window")
 cursorlog = Logger("server", "cursor")
 traylog = Logger("server", "tray")
 settingslog = Logger("x11", "xsettings")
+workspacelog = Logger("x11", "workspace")
 
 import xpra
 from xpra.util import nonl, typedict
@@ -739,6 +740,21 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._set_client_properties(proto, wid, window, packet[6])
         if window.is_tray() or (self._desktop_manager.visible(window) and (oww!=w or owh!=h)):
             self._damage(window, 0, 0, w, h)
+
+
+    def _set_client_properties(self, proto, wid, window, new_client_properties):
+        """
+        Override so we can update the workspace on the window directly,
+        instead of storing it as a client property
+        """
+        workspace = new_client_properties.get("workspace")
+        workspacelog("workspace from client properties %s: %s", new_client_properties, workspace)
+        if workspace is not None:
+            window.move_to_workspace(workspace)
+            #we have handled it on the window directly, so remove it from client properties
+            del new_client_properties["workspace"]
+        #handle the rest as normal:
+        X11ServerBase._set_client_properties(self, proto, wid, window, new_client_properties)
 
 
     """ override so we can raise the window under the cursor

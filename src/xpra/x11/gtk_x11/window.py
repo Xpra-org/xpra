@@ -32,8 +32,8 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                 calc_constrained_size,                      #@UnresolvedImport
                )
 from xpra.x11.gtk_x11.send_wm import (
-                send_wm_take_focus,                         #@UnresolvedImport
-                send_wm_delete_window)                      #@UnresolvedImport
+                send_wm_take_focus,
+                send_wm_delete_window)
 from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
                            one_arg_signal,
                            non_none_list_accumulator)
@@ -46,6 +46,7 @@ log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
 grablog = Logger("x11", "window", "grab")
 iconlog = Logger("x11", "window", "icon")
+workspacelog = Logger("x11", "window", "workspace")
 
 
 _NET_WM_STATE_REMOVE = 0
@@ -99,6 +100,9 @@ USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
 PROPERTIES_IGNORED = ("_NET_WM_OPAQUE_REGION", )
 #make it easier to debug property changes, just add them here:
 PROPERTIES_DEBUG = {}   #ie: {"WM_PROTOCOLS" : ["atom"]}
+
+
+WORKSPACE_UNSET = 65535
 
 
 # Todo:
@@ -303,6 +307,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Is the window's position fixed on the screen", "",
                        False,
                        gobject.PARAM_READWRITE),
+        "workspace": (gobject.TYPE_UINT,
+                "The workspace this window is on", "",
+                0, 2**32-1, WORKSPACE_UNSET,
+                gobject.PARAM_READWRITE),
         "override-redirect": (gobject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        False,
@@ -350,13 +358,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
-        self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "role", "group-leader", "xid", "has-alpha", "opacity"]
+        self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "role", "group-leader",
+                               "xid", "workspace", "has-alpha", "opacity"]
 
     def get_property_names(self):
         return self.property_names
 
     def get_dynamic_property_names(self):
-        return ("title", "size-hints", "fullscreen", "maximized", "opacity")
+        return ("title", "size-hints", "fullscreen", "maximized", "opacity", "workspace")
 
 
     def managed_connect(self, detailed_signal, handler, *args):
@@ -521,9 +530,24 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("xid", self.client_window.xid)
         self._internal_set_property("pid", self.prop_get("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", self.prop_get("WM_WINDOW_ROLE", "latin1"))
-        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY"]:
+        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_NET_WM_DESKTOP"]:
             self._call_property_handler(mutable)
 
+
+    def _handle_workspace_change(self):
+        workspace = self.prop_get("_NET_WM_DESKTOP", "u32", True) or WORKSPACE_UNSET
+        workspacelog("_NET_WM_DESKTOP=%s", workspace)
+        self._internal_set_property("workspace", workspace)
+    _property_handlers["_NET_WM_DESKTOP"] = _handle_workspace_change
+
+    def move_to_workspace(self, workspace):
+        #we send a message to ourselves, we could also just update the property
+        workspacelog("move_to_workspace(%s)", workspace)
+        with xswallow:
+            if workspace==WORKSPACE_UNSET:
+                X11Window.XDeleteProperty(self.client_window.xid, "_NET_WM_DESKTOP")
+            else:
+                prop_set(self.client_window, "_NET_WM_DESKTOP", "u32", workspace)
 
     def _handle_opacity_change(self):
         opacity = self.prop_get("_NET_WM_WINDOW_OPACITY", "u32", True) or -1
@@ -636,7 +660,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         #   _NET_WM_PING responses
         # and maybe:
         #   _NET_RESTACK_WINDOW
-        #   _NET_WM_DESKTOP
         #   _NET_WM_STATE (more fully)
         def update_wm_state(prop):
             current = self.get_property(prop)
@@ -693,6 +716,23 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         elif event.message_type=="_NET_CLOSE_WINDOW":
             log.info("_NET_CLOSE_WINDOW received by %s", self)
             self.request_close()
+        elif event.message_type=="_NET_WM_DESKTOP":
+            workspace = int(event.data[0])
+            #query the workspace count on the root window
+            #since we cannot access Wm from here..
+            root = self.client_window.get_screen().get_root_window()
+            ndesktops = prop_get(root, "_NET_NUMBER_OF_DESKTOPS", "u32", ignore_errors=True)
+            workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s", workspace, ndesktops)
+            if ndesktops>0 and (workspace==WORKSPACE_UNSET or (workspace>=0 and workspace<ndesktops)):
+                current = self.get_property("workspace")
+                if current==workspace:
+                    with xsync:
+                        prop_set(self.client_window, "_NET_WM_DESKTOP", "u32", workspace)
+                    workspacelog("workspace unchanged: %s", workspace)
+                else:
+                    self._internal_set_property("workspace", workspace)
+            else:
+                workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s", workspace, ndesktops)
         else:
             log("do_xpra_client_message_event(%s)", event)
 

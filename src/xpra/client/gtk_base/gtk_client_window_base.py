@@ -20,7 +20,7 @@ from xpra.util import AdHocStruct, bytestostr
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
-from xpra.client.client_window_base import ClientWindowBase
+from xpra.client.client_window_base import ClientWindowBase, WORKSPACE_UNSET
 from xpra.platform.gui import get_window_frame_sizes
 from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba    #@UnresolvedImport
 gtk     = import_gtk()
@@ -35,7 +35,8 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
         from xpra.x11.bindings.core_bindings import X11CoreBindings
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk_common.error import xsync, xswallow
+        from xpra.x11.gtk_x11.send_wm import send_wm_workspace
         X11Window = X11WindowBindings()
         X11Core = X11CoreBindings()
         HAS_X11_BINDINGS = True
@@ -97,11 +98,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def init_window(self, metadata):
         self._window_state = {}
         self._resize_counter = 0
-        self._window_workspace = self._client_properties.get("workspace", -1)
-        workspacelog("init_window(..) workspace=%s", self._window_workspace)
-        self._desktop_workspace = -1
-        ClientWindowBase.init_window(self, metadata)
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
+        ClientWindowBase.init_window(self, metadata)
 
     def _is_popup(self, metadata):
         #decide if the window type is POPUP or NORMAL
@@ -341,7 +339,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #call this method whenever something workspace related may have changed
         window_workspace = self.get_window_workspace()
         desktop_workspace = self.get_desktop_workspace()
-        workspacelog("do_worskpace_changed(%s) window/desktop: from %s to %s", info, (self._window_workspace, self._desktop_workspace), (window_workspace, desktop_workspace))
+        workspacelog("do_worskpace_changed(%s) (window, desktop): from %s to %s", info, (self._window_workspace, self._desktop_workspace), (window_workspace, desktop_workspace))
         if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
             #no change
             return
@@ -354,7 +352,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         client_properties = {"workspace" : window_workspace}
         options = {"refresh-now" : False}               #no need to refresh it
         suspend_resume = None
-        if desktop_workspace<0 or window_workspace<0:
+        if desktop_workspace<0 or window_workspace is None:
             #maybe the property has been cleared? maybe the window is being scrubbed?
             workspacelog("not sure if the window is shown or not: %s vs %s, resuming to be safe", desktop_workspace, window_workspace)
             suspend_resume = False
@@ -377,28 +375,36 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def set_workspace(self):
         if not self._can_set_workspace:
-            return -1
-        root = self.get_window().get_screen().get_root_window()
+            return None
         ndesktops = self.get_workspace_count()
+        if ndesktops is None or ndesktops<=1:
+            workspacelog("number of desktops not defined, cannot set workspace")
+            return None
+        if self._window_workspace<0:
+            #this should not happen, workspace is unsigned! (CARDINAL)
+            self._window_workspace = WORKSPACE_UNSET
+            workspacelog.warn("invalid workspace number: %s", self._window_workspace)
+            return None
         workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, self._window_workspace, ndesktops)
-        if ndesktops is None or ndesktops<=1 or self._window_workspace<0:
-            return  -1
-        workspace = max(0, min(ndesktops-1, self._window_workspace))
-        event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-
+        #we will need the gdk window:
+        if not self.is_realized():
+            self.realize()
+        gdkwin = self.get_window()
+        if self._window_workspace==WORKSPACE_UNSET:
+            #we want to remove the setting, so access the window property directly:
+            with xswallow:
+                X11Window.XDeleteProperty(gdkwin.xid, "_NET_WM_DESKTOP")
+            return self._window_workspace
+        #clamp to number of workspaces just in case we have a mismatch:
+        self._window_workspace = max(0, min(ndesktops-1, self._window_workspace))
+        if not gdkwin.is_visible():
+            #window is unmapped so we can set the window property directly:
+            prop_set(self.get_window(), "_NET_WM_DESKTOP", "u32", self._window_workspace)
+            return self._window_workspace
+        #the window is visible, so we have to ask the window manager politely
         with xsync:
-            from xpra.gtk_common.gobject_compat import get_xid
-            root_xid = get_xid(root)
-            xwin = get_xid(self.get_window())
-            X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_DESKTOP",
-                  workspace, CurrentTime, 0, 0, 0)
-        return workspace
-
-    def get_desktop_workspace(self):
-        return -1
-
-    def get_window_workspace(self):
-        return -1
+            send_wm_workspace(root, self.get_window(), self._window_workspace)
+        return self._window_workspace
 
 
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
@@ -480,15 +486,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._client_properties = {}
         self._window_state = {}
         if not self._been_mapped:
-            #this is the first time around, so set the workspace:
+            #this is the first time around, so save the workspace value:
             workspace = self.set_workspace()
         else:
             #window has been mapped, so these attributes can be read (if present):
             props["screen"] = self.get_screen().get_number()
             workspace = self.get_window_workspace()
-            if workspace<0:
+            if workspace is None:
+                #not set, so assume it is on the current workspace:
                 workspace = self.get_desktop_workspace()
-        if self._window_workspace!=workspace:
+        if self._window_workspace!=workspace and workspace is not None:
             workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, self._window_workspace, workspace)
             self._window_workspace = workspace
             props["workspace"] = workspace
@@ -520,7 +527,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #if the window has been mapped already, the workspace should be set:
             props["screen"] = self.get_screen().get_number()
             workspace = self.get_window_workspace()
-            if self._window_workspace!=workspace:
+            if self._window_workspace!=workspace and workspace is not None:
                 workspacelog("configure event: changed workspace from %s to %s", self._window_workspace, workspace)
                 self._window_workspace = workspace
                 props["workspace"] = workspace

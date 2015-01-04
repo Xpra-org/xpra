@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import gtk
 from gtk import gdk
 
@@ -13,6 +12,7 @@ from xpra.log import Logger
 log = Logger("window")
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
+from xpra.client.client_window_base import WORKSPACE_UNSET
 from xpra.platform.gui import add_window_hooks, remove_window_hooks
 
 
@@ -150,23 +150,25 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     def get_desktop_workspace(self):
         window = self.get_window()
-        root = window.get_screen().get_root_window()
+        if window:
+            root = window.get_screen().get_root_window()
+        else:
+            #if we are called during init.. we don't have a window
+            root = gtk.gdk.get_default_root_window()
         return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
 
     def get_window_workspace(self):
-        return self.do_get_workspace(self.get_window(), "_NET_WM_DESKTOP")
+        return self.do_get_workspace(self.get_window(), "_NET_WM_DESKTOP", WORKSPACE_UNSET)
 
-    def do_get_workspace(self, target, prop):
-        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            return  -1              #windows and OSX do not have workspaces
+    def do_get_workspace(self, target, prop, default_value=None):
+        if not self._can_set_workspace:
+            return  None              #windows and OSX do not have workspaces
         value = self.xget_u32_property(target, prop)
-        if value==(2**32-1):
-            value = -1
         if value is not None:
             log("do_get_workspace() found value=%s from %s / %s", value, target, prop)
             return value
         log("do_get_workspace() value not found!")
-        return  -1
+        return  default_value
 
 
     def is_mapped(self):
