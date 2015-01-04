@@ -32,7 +32,8 @@ focuslog = Logger("x11", "window", "focus")
 NotifyPointerRoot   = constants["NotifyPointerRoot"]
 NotifyDetailNone    = constants["NotifyDetailNone"]
 
-XPRA_FORCE_REPLACE_WM = os.environ.get("XPRA_FORCE_REPLACE_WM", "0")=="1"
+FORCE_REPLACE_WM = os.environ.get("XPRA_FORCE_REPLACE_WM", "0")=="1"
+LOG_MANAGE_FAILURES = os.environ.get("XPRA_LOG_MANAGE_FAILURES", "0")=="1"
 
 
 def wm_check(display, wm_name, upgrading=False):
@@ -68,7 +69,7 @@ def wm_check(display, wm_name, upgrading=False):
             else:
                 log.warn("Warning: found an existing window manager on screen %s using window %#x: %s", i, ewmh_wm.xid, name or "unknown")
             if (wm_so is None or wm_so==0) and (cwm_so is None or cwm_so==0):
-                if XPRA_FORCE_REPLACE_WM:
+                if FORCE_REPLACE_WM:
                     log.warn("XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")
                 else:
                     log.error("it does not own the selection '%s' or '%s' so we cannot take over and make it exit", wm_prop, cwm_prop)
@@ -316,7 +317,11 @@ class Wm(gobject.GObject):
             with xsync:
                 self.do_manage_client(gdkwindow)
         except Exception as e:
-            log("failed to manage client %s: %s", gdkwindow, e)
+            if LOG_MANAGE_FAILURES:
+                l = log.warn
+            else:
+                l = log
+            l("failed to manage client %s: %s", gdkwindow, e, exc_info=True)
 
     def do_manage_client(self, gdkwindow):
         try:
