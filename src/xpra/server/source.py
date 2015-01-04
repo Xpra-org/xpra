@@ -51,7 +51,8 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     elif propname in ("pid", "workspace"):
         v = window.get_property(propname)
         assert v is not None, "%s is None!" % propname
-        if v<0:
+        #we can't import WORKSPACE_UNSET from here... so duplicate the value
+        if v<0 or (v==65535 and propname=="workspace"):
             #meaningless
             return {}
         return {propname : v}
