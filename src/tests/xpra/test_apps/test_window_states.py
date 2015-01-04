@@ -4,7 +4,7 @@ import gtk.gdk
 
 def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	window.set_size_request(200, 80)
+	window.set_size_request(200, 600)
 	window.connect("delete_event", gtk.mainquit)
 	vbox = gtk.VBox(False, 0)
 
@@ -24,6 +24,32 @@ def main():
 
 	add_buttons("maximize", window.maximize, "unmaximize", window.unmaximize)
 	add_buttons("fullscreen", window.fullscreen, "unfullscreen", window.unfullscreen)
+	def decorate():
+		window.set_decorated(True)
+	def undecorate():
+		window.set_decorated(False)
+	add_buttons("decorate", decorate, "undecorate", undecorate)
+	def above():
+		window.set_keep_above(True)
+	def notabove():
+		window.set_keep_above(False)
+	add_buttons("keep above", above, "not above", notabove)
+	def below():
+		window.set_keep_below(True)
+	def notbelow():
+		window.set_keep_below(False)
+	add_buttons("keep below", below, "not below", notbelow)
+	add_buttons("stick", window.stick, "unstick", window.unstick)
+	def skip_pager():
+		window.set_skip_pager_hint(True)
+	def notskip_pager():
+		window.set_skip_pager_hint(False)
+	add_buttons("skip pager", skip_pager, "not skip pager", notskip_pager)
+	def skip_taskbar():
+		window.set_skip_taskbar_hint(True)
+	def notskip_taskbar():
+		window.set_skip_taskbar_hint(False)
+	add_buttons("skip taskbar", skip_taskbar, "not skip taskbar", notskip_taskbar)
 
 	def window_state(widget, event):
 		STATES = {
