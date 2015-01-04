@@ -373,30 +373,34 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return 1
         return self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
 
-    def set_workspace(self):
+    def set_workspace(self, workspace):
         if not self._can_set_workspace:
             return None
+        desktop = self.get_desktop_workspace()
+        if self._been_mapped and (workspace==desktop or desktop is None):
+            #window is back in view
+            self._client.control_refresh(self._id, False, False)
         ndesktops = self.get_workspace_count()
         if ndesktops is None or ndesktops<=1:
             workspacelog("number of desktops not defined, cannot set workspace")
             return None
-        if self._window_workspace<0:
+        if workspace<0:
             #this should not happen, workspace is unsigned! (CARDINAL)
-            self._window_workspace = WORKSPACE_UNSET
+            workspace = WORKSPACE_UNSET
             workspacelog.warn("invalid workspace number: %s", self._window_workspace)
-            return None
-        workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, self._window_workspace, ndesktops)
+        workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, workspace, ndesktops)
         #we will need the gdk window:
         if not self.is_realized():
             self.realize()
         gdkwin = self.get_window()
-        if self._window_workspace==WORKSPACE_UNSET:
+        if workspace==WORKSPACE_UNSET:
             #we want to remove the setting, so access the window property directly:
+            self._window_workspace = workspace
             with xswallow:
                 X11Window.XDeleteProperty(gdkwin.xid, "_NET_WM_DESKTOP")
             return self._window_workspace
         #clamp to number of workspaces just in case we have a mismatch:
-        self._window_workspace = max(0, min(ndesktops-1, self._window_workspace))
+        self._window_workspace = max(0, min(ndesktops-1, workspace))
         if not gdkwin.is_visible():
             #window is unmapped so we can set the window property directly:
             prop_set(self.get_window(), "_NET_WM_DESKTOP", "u32", self._window_workspace)
@@ -487,7 +491,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_state = {}
         if not self._been_mapped:
             #this is the first time around, so save the workspace value:
-            workspace = self.set_workspace()
+            workspace = self.set_workspace(self._window_workspace)
         else:
             #window has been mapped, so these attributes can be read (if present):
             props["screen"] = self.get_screen().get_number()

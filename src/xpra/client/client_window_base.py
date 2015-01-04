@@ -246,8 +246,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_skip_pager_hint(metadata.boolget("skip-pager"))
 
         if b"workspace" in metadata:
-            self._window_workspace = metadata.intget("workspace")
-            self.set_workspace()
+            self.set_workspace(metadata.intget("workspace"))
 
 
     def set_size_constraints(self, size_constraints, max_window_size):
@@ -321,7 +320,7 @@ class ClientWindowBase(ClientWidgetBase):
         if hints:
             self.set_type_hint(hints)
 
-    def set_worskpace(self):
+    def set_workspace(self, workspace):
         pass
 
     def set_fullscreen(self, fullscreen):
