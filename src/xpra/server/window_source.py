@@ -1088,6 +1088,8 @@ class WindowSource(object):
                     merged_rects = [merged]
                 merged_pixel_count = sum(r.width*r.height for r in merged_rects)
                 merged_bytes_cost = merged_pixel_count+self.small_packet_cost*len(merged_rects)
+                log("send_delayed_regions: merged=%s, merged_bytes_cost=%s, bytes_cost=%s, merged_pixel_count=%s, pixel_count=%s",
+                         merged_rects, merged_bytes_cost, bytes_cost, merged_pixel_count, pixel_count)
                 if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
                     #better, so replace with merged regions:
                     regions = merged_rects
@@ -1095,8 +1097,8 @@ class WindowSource(object):
             #check to see if the total amount of pixels makes us use a fullscreen update instead:
             if len(regions)>1:
                 pixel_count = sum(rect.width*rect.height for rect in regions)
-                log("send_delayed_regions: %s regions with %s pixels (coding=%s)", len(regions), pixel_count, coding)
                 actual_encoding = get_encoding(pixel_count)
+                log("send_delayed_regions: %s regions with %s pixels (encoding=%s, actual=%s)", len(regions), pixel_count, coding, actual_encoding)
                 if pixel_count>=ww*wh or self.must_encode_full_frame(window, actual_encoding):
                     #use full screen dimensions:
                     self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
