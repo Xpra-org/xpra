@@ -9,6 +9,7 @@ from xpra.log import Logger
 log = Logger("encoder", "webp")
 
 LOG_CONFIG = os.environ.get("XPRA_WEBP_LOG_CONFIG", "0")=="1"
+USE_THREADS = os.environ.get("XPRA_WEBP_THREADING", "1")=="1"
 
 
 from libc.stdint cimport uint8_t, uint32_t
@@ -366,6 +367,7 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     config.alpha_quality = quality * int(has_alpha)
     #hints: DEFAULT, PICTURE, PHOTO, GRAPH
     config.image_hint = WEBP_HINT_GRAPH
+    config.thread_level = USE_THREADS
 
     log("webp.compress config: lossless=%s, quality=%s, method=%s, alpha=%s,%s,%s", config.lossless, config.quality, config.method,
                     config.alpha_compression, config.alpha_filtering, config.alpha_quality)
