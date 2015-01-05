@@ -671,8 +671,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _raised_window(self, window, event):
-        windowlog("raised window: %s (%s)", window, event)
         wid = self._window_to_id[window]
+        windowlog("raised window: %s (%s) wid=%s, current focus=%s", window, event, wid, self._has_focus)
+        if self._has_focus==wid:
+            return
         for ss in self._server_sources.values():
             ss.raise_window(wid, window)
 
