@@ -19,7 +19,7 @@ import gtk.gdk
 import cairo
 import signal
 
-from xpra.util import nonl
+from xpra.util import nonl, WORKSPACE_UNSET
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
@@ -100,9 +100,6 @@ USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
 PROPERTIES_IGNORED = ("_NET_WM_OPAQUE_REGION", )
 #make it easier to debug property changes, just add them here:
 PROPERTIES_DEBUG = {}   #ie: {"WM_PROTOCOLS" : ["atom"]}
-
-
-WORKSPACE_UNSET = 65535
 
 
 # Todo:

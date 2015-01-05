@@ -33,7 +33,7 @@ from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, thread, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
-from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOUT
+from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET
 
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
@@ -51,8 +51,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     elif propname in ("pid", "workspace"):
         v = window.get_property(propname)
         assert v is not None, "%s is None!" % propname
-        #we can't import WORKSPACE_UNSET from here... so duplicate the value
-        if v<0 or (v==65535 and propname=="workspace"):
+        if v<0 or (v==WORKSPACE_UNSET and propname=="workspace"):
             #meaningless
             return {}
         return {propname : v}

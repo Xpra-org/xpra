@@ -16,11 +16,11 @@ log = Logger("window")
 keylog = Logger("keyboard")
 iconlog = Logger("icon")
 
-from xpra.util import AdHocStruct, bytestostr
+from xpra.util import AdHocStruct, bytestostr, WORKSPACE_UNSET
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
-from xpra.client.client_window_base import ClientWindowBase, WORKSPACE_UNSET
+from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import get_window_frame_sizes
 from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba    #@UnresolvedImport
 gtk     = import_gtk()

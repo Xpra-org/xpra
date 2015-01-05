@@ -35,6 +35,11 @@ NEW_CLIENT              = "new client"
 #client telling the server:
 CLIENT_EXIT             = "client exit"
 
+
+#magic value for "workspace" window property, means unset
+WORKSPACE_UNSET = 65535
+
+
 #convenience method based on the strings above:
 def disconnect_is_an_error(reason):
     return reason.find("error")>=0 or reason.find("timeout")>=0

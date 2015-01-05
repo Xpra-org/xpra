@@ -8,15 +8,13 @@
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.util import typedict, bytestostr
+from xpra.util import typedict, bytestostr, WORKSPACE_UNSET
 from xpra.log import Logger
 log = Logger("window")
 plog = Logger("paint")
 focuslog = Logger("focus")
 mouselog = Logger("mouse")
 workspacelog = Logger("workspace")
-
-WORKSPACE_UNSET = 65535
 
 
 class ClientWindowBase(ClientWidgetBase):

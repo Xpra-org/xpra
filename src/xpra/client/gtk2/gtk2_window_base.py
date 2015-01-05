@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("window")
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
-from xpra.client.client_window_base import WORKSPACE_UNSET
+from xpra.util import WORKSPACE_UNSET
 from xpra.platform.gui import add_window_hooks, remove_window_hooks
 
 
