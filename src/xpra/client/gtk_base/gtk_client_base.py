@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
 gtk = import_gtk()
@@ -18,7 +19,7 @@ cursorlog = Logger("gtk", "client", "cursor")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import bytestostr
+from xpra.util import bytestostr, DEFAULT_METADATA_SUPPORTED
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
@@ -31,6 +32,8 @@ from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import system_bell, get_workarea, get_workareas, get_fixed_cursor_size
 
 missing_cursor_names = set()
+
+METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
 
 
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
@@ -227,7 +230,16 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             icons += it.list_icons(context)
         log("icons: %s", icons)
         capabilities["theme.default.icons"] = list(set(icons))
-        capabilities["window.states"] = ["fullscreen", "maximized", "sticky", "above", "below", "iconified", "skip-taskbar", "skip-pager"]
+        if METADATA_SUPPORTED:
+            ms = [x.strip() for x in METADATA_SUPPORTED.split(",")]
+        else:
+            #this is currently unused, and slightly redundant because of metadata.supported below:
+            capabilities["window.states"] = ["fullscreen", "maximized", "sticky", "above", "below", "iconified", "skip-taskbar", "skip-pager"]
+            ms = list(DEFAULT_METADATA_SUPPORTED)
+            #added in 0.15:
+            ms += ["command", "workspace", "above", "below", "sticky"]
+        log("metadata.supported: %s", ms)
+        capabilities["metadata.supported"] = ms
         #window icon bits
         capabilities["encoding.icons.greedy"] = True            #we don't set a default window icon any more
         capabilities["encoding.icons.size"] = 64, 64            #size we want

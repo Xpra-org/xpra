@@ -39,6 +39,15 @@ CLIENT_EXIT             = "client exit"
 #magic value for "workspace" window property, means unset
 WORKSPACE_UNSET = 65535
 
+#this default value is based on 0.14 clients,
+#later clients should provide the 'metadata.supported" capability instead
+DEFAULT_METADATA_SUPPORTED = ("title", "icon-title", "pid",
+                              "size-hints", "class-instance", "client-machine",
+                              "transient-for", "window-type",
+                              "fullscreen", "maximized", "decorations", "skip-taskbar", "skip-pager",
+                              "has-alpha", "override-redirect", "tray", "modal",
+                              "role", "opacity", "xid", "group-leader")
+
 
 #convenience method based on the strings above:
 def disconnect_is_an_error(reason):
