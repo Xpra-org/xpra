@@ -368,6 +368,8 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     #hints: DEFAULT, PICTURE, PHOTO, GRAPH
     config.image_hint = WEBP_HINT_GRAPH
     config.thread_level = USE_THREADS
+    config.partitions = 3
+    config.partition_limit = max(0, min(100, 100-quality))
 
     log("webp.compress config: lossless=%s, quality=%s, method=%s, alpha=%s,%s,%s", config.lossless, config.quality, config.method,
                     config.alpha_compression, config.alpha_filtering, config.alpha_quality)
