@@ -3,8 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.log import Logger
 log = Logger("encoder", "webp")
+
+LOG_CONFIG = os.environ.get("XPRA_WEBP_LOG_CONFIG", "0")=="1"
 
 
 from libc.stdint cimport uint8_t, uint32_t
@@ -266,6 +270,14 @@ ERROR_TO_NAME = {
                 VP8_ENC_ERROR_USER_ABORT                : "abort request by user",
                 }
 
+IMAGE_HINT = {
+              WEBP_HINT_DEFAULT     : "default",
+              WEBP_HINT_PICTURE     : "picture",
+              WEBP_HINT_PHOTO       : "photo",
+              WEBP_HINT_GRAPH       : "graph",
+              }
+
+
 def get_encodings():
     return ["webp"]
 
@@ -286,6 +298,33 @@ cdef float fclamp(int v):
     elif v>100:
         v = 100
     return <float> v
+
+
+cdef get_config_info(WebPConfig *config):
+    return {"lossless"          : config.lossless,
+            "method"            : config.method,
+            "image_hint"        : IMAGE_HINT.get(config.image_hint, config.image_hint),
+            "target_size"       : config.target_size,
+            "target_PSNR"       : config.target_PSNR,
+            "segments"          : config.segments,
+            "sns_strength"      : config.sns_strength,
+            "filter_strength"   : config.filter_strength,
+            "filter_sharpness"  : config.filter_sharpness,
+            "filter_type"       : config.filter_type,
+            "autofilter"        : config.autofilter,
+            "alpha_compression" : config.alpha_compression,
+            "alpha_filtering"   : config.alpha_filtering,
+            "alpha_quality"     : config.alpha_quality,
+            #"pass"      : config._pass,
+            "show_compressed"   : config.show_compressed,
+            "preprocessing"     : config.preprocessing,
+            "partitions"        : config.partitions,
+            "partition_limit"   : config.partition_limit,
+            "emulate_jpeg_size" : config.emulate_jpeg_size,
+            "thread_level"      : config.thread_level,
+            "low_memory"        : config.low_memory,
+            }
+
 
 def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=False):
     cdef uint8_t *pic_buf
@@ -334,7 +373,8 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     #config.filter_sharpness = 6
     ret = WebPValidateConfig(&config)
     if not ret:
-        raise Exception("invalid webp configuration!")
+        info = get_config_info(&config)
+        raise Exception("invalid webp configuration: %s" % info)
 
     cdef WebPPicture pic
     ret = WebPPictureInit(&pic)
@@ -354,12 +394,14 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     pic.custom_ptr = <void*> &memory_writer
     ret = WebPEncode(&config, &pic)
     if not ret:
-        raise Exception("WebPEncode failed: %s" % ERROR_TO_NAME.get(pic.error_code, pic.error_code))
+        raise Exception("WebPEncode failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
 
     cdata = memory_writer.mem[:memory_writer.size]
     free(memory_writer.mem)
     WebPPictureFree(&pic)
     log("webp.compress ratio=%i%%", 100*memory_writer.size/c)
+    if LOG_CONFIG:
+        log("webp.compress used config: %s", get_config_info(&config))
     return cdata
 
 
