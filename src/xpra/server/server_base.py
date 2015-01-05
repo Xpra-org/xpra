@@ -125,9 +125,7 @@ class ServerBase(ServerCore):
                     "scaling", "scaling-control",
                     "suspend", "resume", "name", "ungrab",
                     "key", "focus", "workspace",
-                    "client"]
-        if self.start_new_commands:
-            self.control_commands += ["start", "start-child"]
+                    "client", "start", "start-child"]
 
         self.init_encodings()
         self.init_packet_handlers()
@@ -1166,6 +1164,8 @@ class ServerBase(ServerCore):
                     commandlog.warn("client %s does not support client command %s", source, client_command[0])
             return 0, "client control command '%s' forwarded to %s clients" % (client_command[0], count)
         elif command in ("start", "start-child"):
+            if self.start_new_commands:
+                return 1, "this feature is currently disabled"
             assert self.start_new_commands
             if len(args)==0:
                 return argn_err("at least 1")
