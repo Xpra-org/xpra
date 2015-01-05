@@ -627,7 +627,7 @@ class WindowSource(object):
                 return "webp"
         if "png" in self.common_encodings and quality>75:
             return "png"
-        for x in ("rgb32", "webp", "rgb32"):
+        for x in ("rgb32", "png", "webp", "rgb32"):
             if x in self.common_encodings:
                 return x
         return self.common_encodings[0]
