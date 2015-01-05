@@ -35,6 +35,20 @@ DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
 MAX_CONCURRENT_CONNECTIONS = 20
 
 
+def parse_env(env):
+    d = {}
+    try:
+        for e in env:
+            v = e.split("=", 1)
+            if len(v)!=2:
+                log.warn("invalid environment option: %s", e)
+                continue
+            d[v[0]] = v[1]
+    except Exception as e:
+        log.warn("error parsing child environment: %s", e)
+    return d
+
+
 class ServerBase(ServerCore):
     """
         This is the base class for servers.
@@ -83,6 +97,7 @@ class ServerBase(ServerCore):
         self.dbus_helper = None
         self.exit_with_children = False
         self.start_new_commands = False
+        self.env = []
         self.child_reaper = ChildReaper(self.reaper_exit)
         self.send_pings = False
         self.scaling_control = False
@@ -165,6 +180,7 @@ class ServerBase(ServerCore):
         self.supports_dbus_proxy = opts.dbus_proxy
         self.exit_with_children = opts.exit_with_children
         self.start_new_commands = opts.start_new_commands
+        self.env = parse_env(opts.env)
         self.send_pings = opts.pings
         self.notifications_forwarder = None
         self.notifications = opts.notifications
@@ -466,11 +482,7 @@ class ServerBase(ServerCore):
     def get_child_env(self):
         #subclasses may add more items (ie: fakexinerama)
         env = os.environ.copy()
-        #disable ubuntu's global menu using env vars:
-        if os.name=="posix":
-            env.update({
-                "UBUNTU_MENUPROXY"          : "",
-                "QT_X11_NO_NATIVE_MENUBAR"  : "1"})
+        env.update(self.env)
         return env
 
     def start_child(self, name, child_cmd, ignore=False):

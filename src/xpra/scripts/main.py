@@ -313,6 +313,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--start-new-commands", action="store", metavar="yes|no",
                       dest="start_new_commands", default=defaults.start_new_commands,
                       help="Allows clients to execute new commands on the server. Default: %s." % enabled_str(defaults.start_new_commands))
+    group.add_option("--env", action="append",
+                      dest="env", default=list(defaults.env or []),
+                      help="Define environment variables used with 'start-child' and 'start'. Default: %default.")
 
     if supports_server:
         group.add_option("--tcp-proxy", action="store",

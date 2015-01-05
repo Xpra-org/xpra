@@ -290,6 +290,13 @@ dbus-proxy = yes
 #input-method=uim
 input-method=none
 
+# Environment variables for children started
+# with 'start-child' or 'start':
+# (can be specified multiple times)
+#env = HOME=/home/alt
+#env = GDK_DEBUG=dnd
+%(env)s
+
 # Start a pulseaudio server with each session:
 pulseaudio = yes
 

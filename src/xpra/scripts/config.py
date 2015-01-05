@@ -323,6 +323,7 @@ OPTION_TYPES = {
                     "start"             : list,
                     "start-child"       : list,
                     "bind-tcp"          : list,
+                    "env"               : list,
                }
 
 GLOBAL_DEFAULTS = None
@@ -422,6 +423,7 @@ def get_defaults():
                     "bind-tcp"          : None,
                     "start"             : None,
                     "start-child"       : None,
+                    "env"               : None,
                     }
     return GLOBAL_DEFAULTS
 #fields that got renamed:

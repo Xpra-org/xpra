@@ -16,6 +16,7 @@ xpra \- viewer for remote, persistent X applications
 .HP \w'xpra\ 'u
 \fBxpra\fP \fBstart\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
+[\fB\-\-env\fP=\fIKEY=VALUE\fP]
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-use\-display\fP]
@@ -98,6 +99,7 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
 [\fB\-\-start\fP=\fICMD\fP]\fB .\|.\|.\fP
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
+[\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
@@ -528,6 +530,10 @@ start multiple children.
 \fB\-\-start\-child\fP=\fICMD\fP
 Identical to \fB\-\-start\fP, except the commands are taken into
 account by \fB\-\-exit\-with\-children\fP.
+.TP
+\fB\-\-env\fP=\fIKEY=VALUE\fP
+Extra environment variables which will only affect commands started using
+fB\-\-start\fP or fB\-\-start\-child\fP.
 .TP
 \fB\-\-exit\-with\-children\fP
 This option may only be used if \fB\-\-start\-child\fP is also
