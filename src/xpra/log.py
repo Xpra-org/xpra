@@ -70,12 +70,18 @@ def get_loggers_for_categories(*cat):
     return list(matches or [])
 
 def enable_debug_for(*cat):
-    for l in get_loggers_for_categories(*cat):
-        l.enable_debug()
+    loggers = get_loggers_for_categories(*cat)
+    for l in loggers:
+        if not l.is_debug_enabled():
+            l.enable_debug()
+    return loggers
 
 def disable_debug_for(*cat):
-    for l in get_loggers_for_categories(*cat):
-        l.disable_debug()
+    loggers = get_loggers_for_categories(*cat)
+    for l in loggers:
+        if l.is_debug_enabled():
+            l.disable_debug()
+    return loggers
 
 
 default_level = logging.DEBUG
