@@ -328,9 +328,15 @@ class WindowVideoSource(WindowSource):
             #(maybe this should be an 'assert' statement here?)
             return nonvideo()
 
-        if time.time()-self.statistics.last_resized<0.350:
+        now = time.time()
+        if now-self.statistics.last_resized<0.350:
             #window has just been resized, may still resize
             return nonvideo(q=quality-30)
+
+        lde = list(self.statistics.last_damage_events)
+        if len(lde)>=5 and lde[-5][0]<now-2:
+            #less than 10 damage events in the last 2 seconds
+            return nonvideo()
 
         if self._current_quality!=quality or self._current_speed!=speed:
             #quality or speed override, best not to force video encoder re-init
