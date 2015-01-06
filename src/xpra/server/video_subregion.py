@@ -98,19 +98,19 @@ class VideoSubregion(object):
         add_rectangle(self.refresh_regions, region)
         #do refresh any regions which are now outside the current video region:
         #(this can happen when the region moves or changes size)
-        refresh_now = []
+        non_video = []
         for r in self.refresh_regions:
             if not rect.contains_rect(r):
-                refresh_now += r.substract_rect(rect)
-        if refresh_now:
+                non_video += r.substract_rect(rect)
+        delay = max(150, self.auto_refresh_delay)
+        if non_video:
             #refresh via timeout_add so this will run in the UI thread:
-            self.timeout_add(0, self.refresh_cb, window, refresh_now)
+            self.timeout_add(delay, self.refresh_cb, window, non_video)
             #only keep the regions still in the video region:
             inrect = [rect.intersection_rect(r) for r in self.refresh_regions]
             self.refresh_regions = [r for r in inrect if r is not None]
         #re-schedule the video region refresh (if we have regions to fresh):
         if self.refresh_regions:
-            delay = max(150, self.auto_refresh_delay)
             def refresh():
                 #runs via timeout_add, safe to call UI!
                 self.refresh_timer = None
