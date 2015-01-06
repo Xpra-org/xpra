@@ -1,8 +1,8 @@
-Index: xpra/codecs/dec_avcodec2/decoder.pyx
+Index: src/xpra/codecs/dec_avcodec2/decoder.pyx
 ===================================================================
---- a/xpra/codecs/dec_avcodec2/decoder.pyx	(revision 6508)
+--- a/xpra/codecs/dec_avcodec2/decoder.pyx	(revision 8396)
 +++ b/xpra/codecs/dec_avcodec2/decoder.pyx	(working copy)
-@@ -57,8 +57,8 @@
+@@ -58,8 +58,8 @@
      int AV_PIX_FMT_YUV422P
      int AV_PIX_FMT_YUV444P
      int AV_PIX_FMT_RGB24
@@ -13,7 +13,7 @@ Index: xpra/codecs/dec_avcodec2/decoder.pyx
      int AV_PIX_FMT_ARGB
      int AV_PIX_FMT_BGRA
      int AV_PIX_FMT_GBRP
-@@ -94,7 +94,7 @@
+@@ -92,7 +92,7 @@
  
      AVPixelFormat PIX_FMT_NONE
      AVCodecID AV_CODEC_ID_H264
@@ -22,7 +22,7 @@ Index: xpra/codecs/dec_avcodec2/decoder.pyx
      AVCodecID AV_CODEC_ID_VP8
      AVCodecID AV_CODEC_ID_VP9
  
-@@ -121,8 +121,8 @@
+@@ -119,8 +119,8 @@
              "YUV422P"   : AV_PIX_FMT_YUV422P,
              "YUV444P"   : AV_PIX_FMT_YUV444P,
              "RGB"       : AV_PIX_FMT_RGB24,
@@ -33,7 +33,7 @@ Index: xpra/codecs/dec_avcodec2/decoder.pyx
              "ARGB"      : AV_PIX_FMT_ARGB,
              "BGRA"      : AV_PIX_FMT_BGRA,
              "GBRP"      : AV_PIX_FMT_GBRP,
-@@ -141,8 +141,8 @@
+@@ -139,8 +139,8 @@
      CODECS.append("vp8")
  if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
      CODECS.append("vp9")
@@ -44,12 +44,14 @@ Index: xpra/codecs/dec_avcodec2/decoder.pyx
  log("avcodec2.init_module: CODECS=%s", CODECS)
  
  
-@@ -316,7 +316,7 @@
-                 log.error("codec H264 not found!")
-                 return  False
-         elif self.encoding=="h265":
--            self.codec = avcodec_find_decoder(AV_CODEC_ID_H265)
-+            self.codec = NULL       #avcodec_find_decoder(AV_CODEC_ID_H265)
-             if self.codec==NULL:
-                 log.error("codec H265 (HEVC) not found!")
-                 return  False
+@@ -313,8 +313,8 @@
+         cdef AVCodecID CodecID
+         if self.encoding=="h264":
+             CodecID = AV_CODEC_ID_H264
+-        elif self.encoding=="h265":
+-            CodecID = AV_CODEC_ID_H265
++        #elif self.encoding=="h265":
++        #    CodecID = AV_CODEC_ID_H265
+         elif self.encoding=="vp8":
+             CodecID = AV_CODEC_ID_VP8
+         elif self.encoding=="vp9":
