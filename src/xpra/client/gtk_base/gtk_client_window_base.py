@@ -589,7 +589,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 window.move(ax, ay)
         if self._size!=(w, h):
             self._size = (w, h)
-            self.new_backing(w, h)
+            #re-init the backing with the new size
+            self._backing.init(w, h)
 
     def destroy(self):
         ClientWindowBase.destroy(self)
