@@ -172,7 +172,7 @@ class VideoSubregion(object):
             #how many damage events occurred since we chose this region:
             event_count = max(0, damage_events_count - self.set_at)
             #make the timeout longer when the region has worked longer:
-            slow_region_timeout = 10 + math.log(2+event_count, 1.5)
+            slow_region_timeout = 2 + math.log(2+event_count, 1.5)
             if rect and elapsed>=slow_region_timeout:
                 update_markers()
                 return self.novideoregion("too much time has passed (%is for %s %s events)", elapsed, event_types, event_count)
