@@ -547,12 +547,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 window.move(x+dx, y+dy)
         if (w, h) != self._size:
             self._size = (w, h)
-            self.new_backing(w, h)
+            self._backing.init(w, h)
 
     def resize(self, w, h, resize_counter=0):
         log("resize(%s, %s, %s)", w, h, resize_counter)
         self._resize_counter = resize_counter
         gtk.Window.resize(self, w, h)
+        self._backing.init(w, h)
 
     def move_resize(self, x, y, w, h, resize_counter=0):
         log("move_resize%s", (x, y, w, h, resize_counter))
@@ -564,33 +565,34 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #same location, just resize:
             if self._size!=(w, h):
                 self.resize(w, h)
-        else:
-            mw, mh = self._client.get_root_size()
-            if not self.is_realized():
-                self.realize()
-            #adjust for window frame:
-            ox, oy = window.get_origin()[-2:]
-            rx, ry = window.get_root_origin()
-            ax = x - (ox - rx)
-            ay = y - (oy - ry)
-            #validate against edge of screen (ensure window is shown):
-            if (ax + w)<0:
-                ax = -w + 1
-            elif ax >= mw:
-                ax = mw - 1
-            if (ay + h)<0:
-                ay = -y + 1
-            elif ay >= mh:
-                ay = mh -1
-            if self._size!=(w, h):
-                window.move_resize(ax, ay, w, h)
-            else:
-                #just move:
-                window.move(ax, ay)
-        if self._size!=(w, h):
-            self._size = (w, h)
-            #re-init the backing with the new size
-            self._backing.init(w, h)
+            return
+        #we have to move:
+        mw, mh = self._client.get_root_size()
+        if not self.is_realized():
+            self.realize()
+        #adjust for window frame:
+        ox, oy = window.get_origin()[-2:]
+        rx, ry = window.get_root_origin()
+        ax = x - (ox - rx)
+        ay = y - (oy - ry)
+        #validate against edge of screen (ensure window is shown):
+        if (ax + w)<0:
+            ax = -w + 1
+        elif ax >= mw:
+            ax = mw - 1
+        if (ay + h)<0:
+            ay = -y + 1
+        elif ay >= mh:
+            ay = mh -1
+        if self._size==(w, h):
+            #just move:
+            window.move(ax, ay)
+            return
+        #resize:
+        self._size = (w, h)
+        window.move_resize(ax, ay, w, h)
+        #re-init the backing with the new size
+        self._backing.init(w, h)
 
     def destroy(self):
         ClientWindowBase.destroy(self)
