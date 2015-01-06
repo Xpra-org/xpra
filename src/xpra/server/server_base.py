@@ -961,11 +961,12 @@ class ServerBase(ServerCore):
             from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
             if log_cmd=="enable":
                 add_debug_category(*categories)
-                enable_debug_for(*categories)
+                loggers = enable_debug_for(*categories)
             else:
                 assert log_cmd=="disable"
                 add_disabled_category(*categories)
-                disable_debug_for(*categories)
+                loggers = disable_debug_for(*categories)
+            log.info("%sd debugging for: %s", log_cmd, loggers)
             return 0, "logging %sd for %s" % (log_cmd, " + ".join(categories))
         elif command=="name":
             if len(args)!=1:
