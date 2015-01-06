@@ -198,7 +198,7 @@ class VideoSubregion(object):
             if h>=MIN_H:
                 hc.setdefault(h, dict()).setdefault(y, set()).add(r)
 
-        def score_region(info, region):
+        def score_region(info, region, ignore_size=0):
             #check if the region given is a good candidate, and if so we use it
             #clamp it:
             region.width = min(ww, region.width)
@@ -218,6 +218,9 @@ class VideoSubregion(object):
                     incount += inregion.width*inregion.height*int(count)
                 outregions = r.substract_rect(region)
                 for x in outregions:
+                    if ignore_size>0 and x.width*x.height<ignore_size:
+                        #skip small region outside rectangle
+                        continue
                     outcount += x.width*x.height*int(count)
             total = incount+outcount
             assert total>0
@@ -286,7 +289,7 @@ class VideoSubregion(object):
                     sslog("vertical regions of width %i at %i with at least %i hits: %s", w, x, min_count, keep)
                     if keep:
                         merged = merge_all(keep)
-                        scores[merged] = score_region("vertical", merged)
+                        scores[merged] = score_region("vertical", merged, 48*48)
         for h, d in hc.items():
             for y,regions in d.items():
                 if len(regions)>=2:
@@ -296,7 +299,7 @@ class VideoSubregion(object):
                     sslog("horizontal regions of height %i at %i with at least %i hits: %s", h, y, min_count, keep)
                     if keep:
                         merged = merge_all(keep)
-                        scores[merged] = score_region("horizontal", merged)
+                        scores[merged] = score_region("horizontal", merged, 48*48)
 
         sslog("merged regions scores: %s", scores)
         highscore = max(scores.values())
@@ -322,6 +325,6 @@ class VideoSubregion(object):
             merged = merge_all(damage_count.keys())
             score = score_region("merged", merged)
             if score>=110:
-                return setnewregion(merged, "merged all regions, score=%s", score)
+                return setnewregion(merged, "merged all regions, score=%s", score, 48*48)
 
         self.novideoregion("failed to identify a video region")
