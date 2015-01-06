@@ -1239,19 +1239,24 @@ class WindowSource(object):
                 pixels = region.width*region.height
                 ww, wh = window.get_dimensions()
                 pct = 100*pixels/(ww*wh)
+                #try to take into account speed and quality:
+                #delay more when quality is low
+                #delay less when speed is high
+                #(the resulting range is 100*100 to 200*200)
+                qsmult = (200-self._current_quality) * (100+self._current_speed)
                 #important: must check both, I think:
                 if target_time==0 or not self.refresh_timer:
                     #this means we must schedule the refresh
                     self.refresh_event_time = time.time()
                     #delay in milliseconds: always at least the settings,
                     #more if we have more than 50% of the window pixels to update:
-                    sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4))
+                    sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100)) 
                     self.refresh_target_time = now + sched_delay/1000.0
                     self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, window, options)
                     msg = "scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)
                 else:
                     #add to the target time, but this will not move it forwards for small updates following big ones:
-                    sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2))
+                    sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2) * qsmult / (200*100))
                     self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                     msg = "re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
         refreshlog("auto refresh: %5s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
