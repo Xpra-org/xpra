@@ -522,10 +522,9 @@ class X11ServerBase(GTKServerBase):
         if ss is None:
             return
         pos = gtk.gdk.get_default_root_window().get_pointer()[:2]
-        if pos==pointer:
-            return
-        with xswallow:
-            self._move_pointer(wid, pointer)
+        if pos!=pointer:
+            with xswallow:
+                self._move_pointer(wid, pointer)
         ss.make_keymask_match(modifiers)
 
     def _process_button_action(self, proto, packet):
