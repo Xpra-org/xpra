@@ -142,6 +142,8 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_sequence = False
         self.min_sound_sequence = 0
         self.sound_source = None
+        self.sound_in_bytecount = 0
+        self.sound_out_bytecount = 0
         self.server_pulseaudio_id = None
         self.server_pulseaudio_server = None
         self.server_sound_decoders = []
@@ -1636,12 +1638,15 @@ class UIXpraClient(XpraClientBase):
     def new_sound_buffer(self, sound_source, data, metadata):
         soundlog("new_sound_buffer(%s, %s, %s)", sound_source, len(data or []), metadata)
         if self.sound_source:
+            self.sound_out_bytecount += len(data)
             self.send("sound-data", self.sound_source.codec, compression.Compressed(self.sound_source.codec, data), metadata)
 
     def _process_sound_data(self, packet):
         codec, data, metadata = packet[1:4]
         codec = bytestostr(codec)
         metadata = typedict(metadata)
+        if data:
+            self.sound_in_bytecount += len(data)
         if not self.speaker_enabled:
             if metadata.boolget("start-of-stream"):
                 #server is asking us to start playing sound

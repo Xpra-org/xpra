@@ -28,6 +28,7 @@ log = Logger("info")
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True
+SHOW_SOUND_STATS = True
 
 
 def pixelstr(v):
@@ -377,6 +378,8 @@ class SessionInfo(gtk.Window):
         self.pixel_in_data = deque(maxlen=N_SAMPLES+4)
         self.net_in_bytecount = deque(maxlen=N_SAMPLES+4)
         self.net_out_bytecount = deque(maxlen=N_SAMPLES+4)
+        self.sound_in_bytecount = deque(maxlen=N_SAMPLES+4)
+        self.sound_out_bytecount = deque(maxlen=N_SAMPLES+4)
 
         self.set_border_width(15)
         self.add(self.tab_box)
@@ -497,9 +500,9 @@ class SessionInfo(gtk.Window):
         #record bytecount every second:
         self.net_in_bytecount.append(self.connection.input_bytecount)
         self.net_out_bytecount.append(self.connection.output_bytecount)
-        #pre-compute for graph:
-        self.net_in_scale, self.net_in_data = values_to_diff_scaled_values(list(self.net_in_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
-        self.net_out_scale, self.net_out_data = values_to_diff_scaled_values(list(self.net_out_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+        if SHOW_SOUND_STATS:
+            self.sound_in_bytecount.append(self.client.sound_in_bytecount)
+            self.sound_out_bytecount.append(self.client.sound_out_bytecount)
 
         #count pixels in the last second:
         since = time.time()-1
@@ -898,7 +901,8 @@ class SessionInfo(gtk.Window):
         h = max(200, h-bh-20, rect.height-bh-20)
         w = max(360, rect.width-20)
         #bandwidth graph:
-        if self.net_in_data and self.net_out_data:
+        labels, datasets = [], []
+        if self.net_in_bytecount and self.net_out_bytecount:
             def unit(scale):
                 if scale==1:
                     return ""
@@ -907,12 +911,24 @@ class SessionInfo(gtk.Window):
                     if value==1:
                         return str(unit)
                     return "x%s%s" % (int(value), unit)
-            labels = ["recv %sB/s" % unit(self.net_in_scale), "sent %sB/s" % unit(self.net_out_scale)]
-            datasets = [self.net_in_data, self.net_out_data]
-            if SHOW_PIXEL_STATS and self.client.windows_enabled:
-                pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
-                datasets.append(in_pixels)
-                labels.append("%s pixels/s" % unit(pixel_scale))
+            net_in_scale, net_in_data = values_to_diff_scaled_values(list(self.net_in_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            net_out_scale, net_out_data = values_to_diff_scaled_values(list(self.net_out_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            labels += ["recv %sB/s" % unit(net_in_scale), "sent %sB/s" % unit(net_out_scale)]
+            datasets += [net_in_data, net_out_data]
+        if SHOW_PIXEL_STATS and self.client.windows_enabled:
+            pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
+            datasets.append(in_pixels)
+            labels.append("%s pixels/s" % unit(pixel_scale))
+        if SHOW_SOUND_STATS and self.sound_in_bytecount:
+            sound_in_scale, sound_in_data =  values_to_diff_scaled_values(list(self.sound_in_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            datasets.append(sound_in_data)
+            labels.append("Speaker %sB/s" % unit(sound_in_scale))
+        if SHOW_SOUND_STATS and self.sound_out_bytecount:
+            sound_out_scale, sound_out_data =  values_to_diff_scaled_values(list(self.sound_out_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            datasets.append(sound_out_data)
+            labels.append("Mic %sB/s" % unit(sound_out_scale))
+
+        if labels and datasets:
             pixmap = make_graph_pixmap(datasets, labels=labels,
                                        width=w, height=h/2,
                                        title="Bandwidth", min_y_scale=10, rounding=10,
