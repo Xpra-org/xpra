@@ -51,6 +51,10 @@ class VideoSubregion(object):
         return "VideoSubregion(%s)" % self.get_info()
 
 
+    def set_auto_refresh_delay(self, d):
+        refreshlog("subregion auto-refresh delay: %s", d)
+        self.auto_refresh_delay = d
+
     def cancel_refresh_timer(self):
         rt = self.refresh_timer
         refreshlog("cancel_refresh_timer() timer=%s", rt)

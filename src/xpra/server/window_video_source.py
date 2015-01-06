@@ -126,6 +126,25 @@ class WindowVideoSource(WindowSource):
         self.video_encodings = []
         self.non_video_encodings = []
 
+    def set_auto_refresh_delay(self, d):
+        WindowSource.set_auto_refresh_delay(self, d)
+        r = self.video_subregion
+        if r:
+            r.set_auto_refresh_delay(d)
+
+    def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):
+        WindowSource.calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized)
+        vsr = self.video_subregion
+        bc = self.batch_config
+        if not bc.locked and vsr:
+            #we have a video subregion, update its refresh delay
+            r = vsr.rectangle
+            if r:
+                ww, wh = self.window_dimensions
+                pct = (100*r.width*r.height)/(ww*wh)
+                d = 2 * int(max(100, self.auto_refresh_delay * max(50, pct) / 50, bc.delay*4))
+                vsr.set_auto_refresh_delay(d)
+
 
     def get_client_info(self):
         info = {
