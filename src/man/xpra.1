@@ -90,6 +90,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
+[\fB\-\-mouse\-polling\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-mmap\-group\fP]
 [\fB\-\-pings\fP=\fIyes\fP|\fIno\fP]
@@ -655,6 +656,13 @@ This numeric value should be in the range 10 to 500 to be useful.
 Many applications will only read this value when starting up,
 so connecting to an existing session started with a different DPI
 value may not have the desired effect.
+.TP
+\fB\-\-mouse\-polling\fP=\fIVALUE\fP
+How often to poll the mouse position when the cursor is not hovering
+over one of our windows, this is measured in seconds.
+If you do not wish the server to be able to have a rough overview
+of your mouse movements, or if you simply wish to disable the feature,
+use the special value '0'.
 .TP
 \fB\-\-cursors\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of custom application mouse cursors.
