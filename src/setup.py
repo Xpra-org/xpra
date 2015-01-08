@@ -743,7 +743,7 @@ def build_xpra_conf(build_base):
         ssh_command = "plink -ssh -agent"
     else:
         ssh_command = "ssh -x"
-    env_strs = []
+    env_strs = {}
     if os.name=="posix":
         #disable ubuntu's global menu using env vars:
         env_strs = {"UBUNTU_MENUPROXY"          : "",
