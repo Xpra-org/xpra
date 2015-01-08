@@ -610,7 +610,7 @@ class ServerCore(object):
             command = args[0]
             error = 0
             if command not in self.control_commands:
-                commandlog.warn("invalid command: %s (must be one of: %s)", command, self.control_commands)
+                commandlog.warn("invalid command: '%s' (must be one of: %s)", command, ", ".join(self.control_commands))
                 error = 6
                 response = "invalid command"
             else:
