@@ -574,6 +574,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--window-icon", action="store",
                           dest="window_icon", default=defaults.window_icon,
                           help="Path to the default image which will be used for all windows (the application may override this)")
+    group.add_option("--mouse-polling", action="store",
+                          dest="mouse_polling", default=defaults.mouse_polling,
+                          help="How often to poll the mouse position when not hovering over one of our windows, this is measured in seconds, use 0 to disable. Default: %default.")
     # let the platform specific code add its own options:
     # adds "--no-tray" for platforms that support it
     add_client_options(cmdline, group, defaults)

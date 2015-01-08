@@ -240,6 +240,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             capabilities["window.raise"] = True
             capabilities["window.resize-counter"] = True
             capabilities["pointer.grabs"] = True
+            capabilities["pointer.polling"] = True
         return capabilities
 
 
@@ -267,6 +268,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             info["window-manager-name"] = wm.get_net_wm_name()
         #now cursor size info:
         display = gtk.gdk.display_get_default()
+        pos = display.get_default_screen().get_root_window().get_pointer()[:2]
+        info["cursor.position"] = pos
         for prop, size in {"default" : display.get_default_cursor_size(),
                            "max"     : display.get_maximal_cursor_size()}.items():
             if size is None:
@@ -762,12 +765,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
     """ override so we can raise the window under the cursor
         (gtk raise does not change window stacking, just focus) """
     def _move_pointer(self, wid, pos):
-        window = self._id_to_window.get(wid)
-        if not window:
-            mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
-        else:
-            mouselog("raising %s", window)
-            window.raise_window()
+        #pointer polling code may send wid=-1
+        if wid>0:
+            window = self._id_to_window.get(wid)
+            if not window:
+                mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
+            else:
+                mouselog("raising %s", window)
+                window.raise_window()
         X11ServerBase._move_pointer(self, wid, pos)
 
 

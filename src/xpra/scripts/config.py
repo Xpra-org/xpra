@@ -278,6 +278,7 @@ OPTION_TYPES = {
                     "min-speed"         : int,
                     "compression_level" : int,
                     "dpi"               : int,
+                    "mouse-polling"     : int,
                     #float options:
                     "max-bandwidth"     : float,
                     "auto-refresh-delay": float,
@@ -374,6 +375,7 @@ def get_defaults():
                     "min-speed"         : 0,
                     "compression_level" : 1,
                     "dpi"               : 0,
+                    "mouse-polling"     : 0.25,
                     "max-bandwidth"     : 0.0,
                     "auto-refresh-delay": 0.25,
                     "daemon"            : True,

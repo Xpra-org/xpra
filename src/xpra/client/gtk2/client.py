@@ -54,12 +54,14 @@ class XpraClient(GTKXpraClient):
 
         #avoid ugly "not implemented" warning on win32
         self.supports_group_leader = not sys.platform.startswith("win")
+        self.mouse_polling = 0.25
 
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
 
     def init(self, opts):
         GTKXpraClient.init(self, opts)
+        self.mouse_polling = max(0, min(1000, opts.mouse_polling))
         if opts.window_layout:
             assert opts.window_layout in WINDOW_LAYOUTS
             self.ClientWindowClass = WINDOW_LAYOUTS.get(opts.window_layout)
@@ -300,6 +302,7 @@ class XpraClient(GTKXpraClient):
         capabilities = GTKXpraClient.make_hello(self)
         capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()]
         capabilities["pointer.grabs"] = True
+        capabilities["pointer.polling"] = self.mouse_polling>0
         return capabilities
 
     def init_packet_handlers(self):
@@ -320,7 +323,21 @@ class XpraClient(GTKXpraClient):
                 self.send("suspend", True, self._id_to_window.keys())
             UI_watcher.add_resume_callback(UI_resumed)
             UI_watcher.add_fail_callback(UI_failed)
+        if self.server_capabilities.boolget("pointer.polling"):
+            #poll every second
+            self.timeout_add(int(self.mouse_polling*1000), self.poll_pointer)
 
+    def poll_pointer(self):
+        d = gtk.gdk.display_get_default()
+        w = d.get_window_at_pointer()
+        log("poll_pointer window at pointer: %s", w)
+        if w:
+            #one of our window is getting pointer events, nothing to do
+            return True
+        pointer = gtk.gdk.get_default_root_window().get_pointer()
+        self.send_mouse_position(["pointer-position", -1, pointer[:2], [], []])
+        log("poll_pointer sending: %s", pointer)
+        return True
 
     def get_root_window(self):
         return gdk.get_default_root_window()
