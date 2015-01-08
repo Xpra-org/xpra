@@ -618,7 +618,7 @@ class WindowSource(object):
 
     def get_transparent_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
-        if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or quality>=90 and speed>=90):
+        if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or (quality>=90 and speed>=90)):
             return "rgb32"
         #choose webp for limited sizes:
         if "webp" in self.common_encodings:
