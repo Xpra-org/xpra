@@ -362,7 +362,7 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     else:
         config.quality = fclamp(quality)
     config.method = max(0, min(6, 6-speed/16))
-    config.alpha_compression = int(quality>=90)
+    config.alpha_compression = has_alpha
     config.alpha_filtering = max(0, min(2, speed/50)) * int(has_alpha)
     config.alpha_quality = quality * int(has_alpha)
     #hints: DEFAULT, PICTURE, PHOTO, GRAPH
