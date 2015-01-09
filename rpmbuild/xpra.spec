@@ -13,12 +13,9 @@
 %define build_no 0
 %endif
 
-#the only build option we specify:
-%if 0%{?fedora}
-%define dummy --with-Xdummy
-%endif
 
 #some of these dependencies may get turned off (empty) on some platforms:
+%define dummy --with-Xdummy
 %define requires_websockify , python-websockify
 %define requires_lzo , python-lzo
 %define py3requires_lzo %{nil}
