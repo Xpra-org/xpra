@@ -960,7 +960,8 @@ class UIXpraClient(XpraClientBase):
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             "windows"                   : self.windows_enabled,
             "window.raise"              : True,
-            "window.initiate-moveresize": os.name=="posix",     #only implemented on posix (not sure it can be implemented anywhere else..)
+            #only implemented on posix (not sure it can be implemented anywhere else..)
+            "window.initiate-moveresize": os.name=="posix" and not sys.platform.startswith("darwin"),
             "raw_window_icons"          : True,
             "system_tray"               : self.client_supports_system_tray,
             "xsettings-tuple"           : True,
