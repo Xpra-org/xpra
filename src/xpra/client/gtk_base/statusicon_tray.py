@@ -108,10 +108,11 @@ class GTKStatusIconTray(TrayBase):
 
 
     def set_tooltip(self, text=None):
-        self.tray_widget.set_tooltip_text(text or "Xpra")
+        if self.tray_widget:
+            self.tray_widget.set_tooltip_text(text or "Xpra")
 
     def set_blinking(self, on):
-        if hasattr(self.tray_widget, "set_blinking"):
+        if self.tray_widget and hasattr(self.tray_widget, "set_blinking"):
             self.tray_widget.set_blinking(on)
 
 
@@ -124,8 +125,7 @@ class GTKStatusIconTray(TrayBase):
         self.set_icon_from_pixbuf(tray_icon)
 
     def set_icon_from_pixbuf(self, tray_icon):
-        assert self.tray_widget
-        if not tray_icon:
+        if not tray_icon or not self.tray_widget:
             return
         tw, th = self.get_geometry()[2:]
         w = tray_icon.get_width()
