@@ -240,6 +240,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             ms += ["command", "workspace", "above", "below", "sticky"]
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
+        #we need the bindings to support initiate-moveresize (posix only for now):
+        from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
+        capabilities["window.initiate-moveresize"] = HAS_X11_BINDINGS
         #window icon bits
         capabilities["encoding.icons.greedy"] = True            #we don't set a default window icon any more
         capabilities["encoding.icons.size"] = 64, 64            #size we want
