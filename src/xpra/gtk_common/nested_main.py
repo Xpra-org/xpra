@@ -159,8 +159,10 @@ class NestedMainLoop(object):
             log("%#x: returned from nested main loop", id(self))
         finally:
             assert self._stack.pop() is self
-            gobject.source_remove(soft)
-            gobject.source_remove(hard)
+            if not self._soft_timed_out:
+                gobject.source_remove(soft)
+            if not self._hard_timed_out:
+                gobject.source_remove(hard)
         log("%s: done=%#x, soft=%s, hard=%s, result=%s",
             id(self), self._done, self._soft_timed_out, self._hard_timed_out, self._result)
         return self._result
