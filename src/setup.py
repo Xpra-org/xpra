@@ -743,15 +743,25 @@ def build_xpra_conf(build_base):
         ssh_command = "plink -ssh -agent"
     else:
         ssh_command = "ssh -x"
-    env_strs = {}
+    env_strs = []
     if os.name=="posix":
-        #disable ubuntu's global menu using env vars:
-        env_strs = {"UBUNTU_MENUPROXY"          : "",
-                    "QT_X11_NO_NATIVE_MENUBAR"  : "1"}
+        env_strs += [
+             ("#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:", )
+             ("UBUNTU_MENUPROXY",           ""),
+             ("QT_X11_NO_NATIVE_MENUBAR",   "1"),
+             ("#fix for MainSoft's MainWin buggy window management:", ),
+             ("MWNOCAPTURE",                "true"),
+             ("MWNO_RIT",                   "true"),
+             ("MWWM",                       "allwm"),
+                    ]
+    def envstr(k, v=None):
+        if v is None:
+            return k
+        return "env = %s=%s" % (k,v)
     with open(build_base + "/xpra.conf", "w") as f_out:
         f_out.write(template % {'xvfb_command'  : xvfb_command,
                                 'ssh_command'   : ssh_command,
-                                'env'           : "\n".join("env = %s=%s" % (k,v) for k,v in env_strs.items()),
+                                'env'           : "\n".join(envstr(*x) for x in env_strs),
                                 'has_displayfd' : ["no", "yes"][int(has_displayfd)]})
 
 
