@@ -746,7 +746,7 @@ def build_xpra_conf(build_base):
     env_strs = []
     if os.name=="posix":
         env_strs += [
-             ("#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:", )
+             ("#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:", ),
              ("UBUNTU_MENUPROXY",           ""),
              ("QT_X11_NO_NATIVE_MENUBAR",   "1"),
              ("#fix for MainSoft's MainWin buggy window management:", ),
