@@ -491,7 +491,7 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         if self.paint_spinner:
             #add spinner:
-            dim = min(ww/3.0, wh/3.0, 100.0)
+            dim = min(ww/3.0, wh/3.0)
             t = time.time()
             count = int(t*4.0)
             bx = ww//2
