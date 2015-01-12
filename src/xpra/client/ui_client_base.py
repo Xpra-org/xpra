@@ -994,7 +994,7 @@ class UIXpraClient(XpraClientBase):
         for x in compression.ALL_COMPRESSORS:
             capabilities["encoding.rgb_%s" % x] = x in compression.get_enabled_compressors()
 
-        control_commands = ["show_session_info", "show_bug_report"]
+        control_commands = ["show_session_info", "show_bug_report", "debug"]
         for x in compression.get_enabled_compressors():
             control_commands.append("enable_"+x)
         for x in packet_encoding.get_enabled_encoders():
@@ -1488,6 +1488,26 @@ class UIXpraClient(XpraClientBase):
             self.session_name = args[2]
             log.info("session name updated from server: %s", self.session_name)
             #TODO: reset tray tooltip, session info title, etc..
+        elif command=="debug":
+            args = packet[2:]
+            if len(args)<2:
+                log.warn("not enough arguments for debug control command")
+                return
+            log_cmd = args[0]
+            if log_cmd not in ("enable", "disable"):
+                log.warn("invalid debug control mode: '%s' (must be 'enable' or 'disable')", log_cmd)
+                return
+            categories = args[1:]
+            from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
+            if log_cmd=="enable":
+                add_debug_category(*categories)
+                loggers = enable_debug_for(*categories)
+            else:
+                assert log_cmd=="disable"
+                add_disabled_category(*categories)
+                loggers = disable_debug_for(*categories)
+            log.info("%sd debugging for: %s", log_cmd, loggers)
+            return
         else:
             log.warn("received invalid control command from server: %s", command)
 
