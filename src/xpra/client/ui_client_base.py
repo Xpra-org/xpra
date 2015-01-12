@@ -9,9 +9,10 @@ import os
 import sys
 import time
 import datetime
+import traceback
 from collections import deque
 
-from xpra.log import Logger
+from xpra.log import Logger, set_global_logging_handler
 log = Logger("client")
 windowlog = Logger("client", "window")
 paintlog = Logger("client", "paint")
@@ -196,6 +197,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_cursors = False
         self.client_supports_bell = False
         self.client_supports_sharing = False
+        self.client_supports_remote_logging = False
         self.notifications_enabled = False
         self.clipboard_enabled = False
         self.cursors_enabled = False
@@ -212,6 +214,8 @@ class UIXpraClient(XpraClientBase):
         self.menu_helper = None
         self.tray = None
         self.notifier = None
+        self.in_remote_logging = False
+        self.local_logging = None
 
         #state:
         self._focused = None
@@ -271,6 +275,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing
+        self.client_supports_remote_logging = opts.remote_logging
 
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)
@@ -1231,6 +1236,10 @@ class UIXpraClient(XpraClientBase):
         if not XpraClientBase.parse_server_capabilities(self):
             return  False
         c = self.server_capabilities
+        #enable remote logging asap:
+        if self.client_supports_remote_logging and c.boolget("remote-logging"):
+            log.info("enabled remote logging, see server log file for output")
+            self.local_logging = set_global_logging_handler(self.remote_logging_handler)
         if not self.session_name:
             self.session_name = c.strget("session_name", "")
         set_application_name(self.session_name or "Xpra")
@@ -1391,6 +1400,23 @@ class UIXpraClient(XpraClientBase):
         if self.tray:
             self.tray.ready()
 
+
+    def remote_logging_handler(self, log, level, msg, *args, **kwargs):
+        #prevent loops (if our send call ends up firing another logging call):
+        if self.in_remote_logging:
+            return
+        self.in_remote_logging = True
+        try:
+            self.send("logging", level, msg % args)
+            exc_info = kwargs.get("exc_info")
+            if exc_info:
+                for x in traceback.format_tb(exc_info[2]):
+                    self.send("logging", level, x)
+        except Exception, e:
+            import logging
+            self.local_logging(logging.WARNING, "failed to send logging packet: %s" % e)
+        finally:
+            self.in_remote_logging = False
 
     def dbus_call(self, wid, bus_name, path, interface, function, reply_handler=None, error_handler=None, *args):
         if not self.server_dbus_proxy:

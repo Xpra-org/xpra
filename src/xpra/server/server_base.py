@@ -16,6 +16,7 @@ keylog = Logger("keyboard")
 focuslog = Logger("focus")
 commandlog = Logger("command")
 soundlog = Logger("sound")
+clientlog = Logger("client")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
@@ -97,6 +98,7 @@ class ServerBase(ServerCore):
         self.dbus_helper = None
         self.exit_with_children = False
         self.start_new_commands = False
+        self.remote_logging = False
         self.env = []
         self.child_reaper = ChildReaper(self.reaper_exit)
         self.send_pings = False
@@ -178,6 +180,7 @@ class ServerBase(ServerCore):
         self.supports_dbus_proxy = opts.dbus_proxy
         self.exit_with_children = opts.exit_with_children
         self.start_new_commands = opts.start_new_commands
+        self.remote_logging = opts.remote_logging
         self.env = parse_env(opts.env)
         self.send_pings = opts.pings
         self.notifications_forwarder = None
@@ -417,6 +420,7 @@ class ServerBase(ServerCore):
             "set-cursors":                          self._process_set_cursors,
             "set-notify":                           self._process_set_notify,
             "set-bell":                             self._process_set_bell,
+            "logging":                              self._process_logging,
             "command_request":                      self._process_command_request,
                                           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
@@ -877,12 +881,19 @@ class ServerBase(ServerCore):
                      "key_repeat_modifiers" : True})
         if server_source.wants_features:
             capabilities["clipboard"] = self._clipboard_helper is not None and self._clipboard_client == server_source
+            capabilities["remote-logging"] = self.remote_logging
         if self._reverse_aliases and server_source.wants_aliases:
             capabilities["aliases"] = self._reverse_aliases
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.hello(capabilities)
 
+
+    def _process_logging(self, proto, packet):
+        assert self.remote_logging
+        level, msg = packet[1:3]
+        for x in msg.splitlines():
+            clientlog.log(level, x)
 
     def _process_command_request(self, proto, packet):
         """ client sent a command request through its normal channel """

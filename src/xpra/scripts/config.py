@@ -311,6 +311,7 @@ OPTION_TYPES = {
                     "mdns"              : bool,
                     "swap-keys"         : bool,
                     "start-new-commands": bool,
+                    "remote-logging"    : bool,
                     #arrays of strings:
                     "encodings"         : list,
                     "video-encoders"    : list,
@@ -404,6 +405,7 @@ def get_defaults():
                     "exit-with-children": False,
                     "exit-with-client"  : False,
                     "start-new-commands": False,
+                    "remote-logging"    : sys.platform.startswith("win") or sys.platform.startswith("darwin"),
                     "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : False,

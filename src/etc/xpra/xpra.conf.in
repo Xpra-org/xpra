@@ -54,6 +54,10 @@ microphone = off
 # Send ping packets more regularly (every second):
 pings = no
 
+# Allow the client to forward its log output to the server:
+#remote-logging = yes
+remote-logging = %(remote_logging)s
+
 
 ################################################################################
 # Picture Encoding

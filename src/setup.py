@@ -758,11 +758,16 @@ def build_xpra_conf(build_base):
         if v is None:
             return k
         return "env = %s=%s" % (k,v)
+    def bstr(b):
+        return ["no", "yes"][int(b)]
+    env = "\n".join(envstr(*x) for x in env_strs)
+    conf = template % {'xvfb_command'   : xvfb_command,
+                       'ssh_command'    : ssh_command,
+                       'remote_logging' : bstr(OSX or WIN32),
+                       'env'            : env,
+                       'has_displayfd'  : bstr(has_displayfd)}
     with open(build_base + "/xpra.conf", "w") as f_out:
-        f_out.write(template % {'xvfb_command'  : xvfb_command,
-                                'ssh_command'   : ssh_command,
-                                'env'           : "\n".join(envstr(*x) for x in env_strs),
-                                'has_displayfd' : ["no", "yes"][int(has_displayfd)]})
+        f_out.write(conf)
 
 
 #*******************************************************************************

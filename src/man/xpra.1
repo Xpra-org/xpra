@@ -31,6 +31,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
 [\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
@@ -60,6 +61,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-tray\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
@@ -715,6 +717,9 @@ platforms.
 .TP
 \fB\-\-bell\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of the system bell.
+.TP
+\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP
+Allow the client to forward its log output to the server.
 
 .SS Options for attach
 .TP

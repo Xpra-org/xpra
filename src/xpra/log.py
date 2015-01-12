@@ -90,6 +90,20 @@ def set_default_level(level):
     default_level = level
 
 
+#this allows us to capture all logging and redirect it:
+def standard_logging(log, level, msg, *args, **kwargs):
+    #this is just the regular logging:
+    log(level, msg, *args, **kwargs)
+
+global_logging_handler = standard_logging
+
+def set_global_logging_handler(h):
+    global global_logging_handler
+    saved = global_logging_handler
+    global_logging_handler = h
+    return saved
+
+
 KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "video",
                  "score", "encoding", "scaling", "subregion", "regiondetect", "regionrefresh", "refresh", "compress", "mouse",
                  "error", "verbose",
@@ -167,7 +181,8 @@ class Logger(object):
     def log(self, level, msg, *args, **kwargs):
         if kwargs.get("exc_info") is True:
             kwargs["exc_info"] = sys.exc_info()
-        self.logger.log(level, msg, *args, **kwargs)
+        global global_logging_handler
+        global_logging_handler(self.logger.log, level, msg, *args, **kwargs)
 
     def __call__(self, msg, *args, **kwargs):
         if self.debug_enabled:
