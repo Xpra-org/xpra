@@ -994,12 +994,13 @@ class UIXpraClient(XpraClientBase):
         for x in compression.ALL_COMPRESSORS:
             capabilities["encoding.rgb_%s" % x] = x in compression.get_enabled_compressors()
 
-        control_commands = ["show_session_info", "enable_bencode", "enable_zlib"]
+        control_commands = ["show_session_info"]
         for x in compression.get_enabled_compressors():
             control_commands.append("enable_"+x)
         for x in packet_encoding.get_enabled_encoders():
             control_commands.append("enable_"+x)
         capabilities["control_commands"] = control_commands
+        log("control_commands=%s", control_commands)
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
         if self.encoding:
@@ -1472,14 +1473,14 @@ class UIXpraClient(XpraClientBase):
             args = packet[2:]
             log("calling show_session_info%s on server request", args)
             self.show_session_info(*args)
-        elif command in ("enable_%x" for x in compression.get_enabled_compressors()):
+        elif command in ("enable_%s" % x for x in compression.get_enabled_compressors()):
             compressor = command.split("_")[1]
             log.info("switching to %s on server request", compressor)
             self._protocol.enable_compressor(compressor)
-        elif command in ("enable_%x" for x in packet_encoding.get_enabled_encoders()):
-            packet_encoding = command.split("_")[1]
-            log.info("switching to %s on server request", packet_encoding)
-            self._protocol.enable_bencode()
+        elif command in ("enable_%s" % x for x in packet_encoding.get_enabled_encoders()):
+            pe = command.split("_")[1]
+            log.info("switching to %s on server request", pe)
+            self._protocol.enable_encoder(pe)
         elif command=="name":
             assert len(args)>=3
             self.session_name = args[2]
