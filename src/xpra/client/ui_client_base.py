@@ -994,7 +994,7 @@ class UIXpraClient(XpraClientBase):
         for x in compression.ALL_COMPRESSORS:
             capabilities["encoding.rgb_%s" % x] = x in compression.get_enabled_compressors()
 
-        control_commands = ["show_session_info"]
+        control_commands = ["show_session_info", "show_bug_report"]
         for x in compression.get_enabled_compressors():
             control_commands.append("enable_"+x)
         for x in packet_encoding.get_enabled_encoders():
@@ -1473,6 +1473,8 @@ class UIXpraClient(XpraClientBase):
             args = packet[2:]
             log("calling show_session_info%s on server request", args)
             self.show_session_info(*args)
+        elif command=="show_bug_report":
+            self.show_bug_report()
         elif command in ("enable_%s" % x for x in compression.get_enabled_compressors()):
             compressor = command.split("_")[1]
             log.info("switching to %s on server request", compressor)
