@@ -380,6 +380,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         try:
             with xsync:
                 self._geometry = X11Window.geometry_with_border(self.client_window.xid)
+                self._read_initial_X11_properties()
         except XError as e:
             raise Unmanageable(e)
         add_event_receiver(self.client_window, self)
@@ -523,12 +524,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         #normalize them (hide _NET_WM_WINDOW_TYPE prefix):
         window_types = [str(wt).replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for wt in window_types]
         self._internal_set_property("window-type", window_types)
-        self._internal_set_property("has-alpha", X11Window.get_depth(self.client_window.xid)==32)
         self._internal_set_property("xid", self.client_window.xid)
         self._internal_set_property("pid", self.prop_get("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", self.prop_get("WM_WINDOW_ROLE", "latin1"))
         for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_NET_WM_DESKTOP"]:
             self._call_property_handler(mutable)
+
+    def _read_initial_X11_properties(self):
+        self._internal_set_property("has-alpha", X11Window.get_depth(self.client_window.xid)==32)
 
 
     def _handle_workspace_change(self):
