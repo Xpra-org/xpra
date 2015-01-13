@@ -678,25 +678,28 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             return
 
         if event.message_type=="_NET_WM_STATE":
-            atoms = get_pyatom(event.window, event.data[1]), get_pyatom(event.window, event.data[2]) 
-            log("_NET_WM_STATE: %s", atoms)
-            if "_NET_WM_STATE_FULLSCREEN" in atoms:
+            atom1 = get_pyatom(event.window, event.data[1])
+            log("_NET_WM_STATE: %s", atom1)
+            if atom1=="_NET_WM_STATE_FULLSCREEN":
                 update_wm_state("fullscreen")
-            elif "_NET_WM_STATE_ABOVE" in atoms:
+            elif atom1=="_NET_WM_STATE_ABOVE":
                 update_wm_state("above")
-            elif "_NET_WM_STATE_BELOW" in atoms:
+            elif atom1=="_NET_WM_STATE_BELOW":
                 update_wm_state("below")
-            elif "_NET_WM_STATE_STICKY" in atoms:
+            elif atom1=="_NET_WM_STATE_STICKY":
                 update_wm_state("sticky")
-            elif "_NET_WM_STATE_SKIP_TASKBAR" in atoms:
+            elif atom1=="_NET_WM_STATE_SKIP_TASKBAR":
                 update_wm_state("skip-taskbar")
-            elif "_NET_WM_STATE_SKIP_PAGER" in atoms:
+            elif atom1=="_NET_WM_STATE_SKIP_PAGER":
                 update_wm_state("skip-pager")
-            elif "_NET_WM_STATE_MAXIMIZED_VERT" in atoms and "_NET_WM_STATE_MAXIMIZED_HORZ" in atoms:
+                get_pyatom(event.window, event.data[2])
+            elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
+                atom2 = get_pyatom(event.window, event.data[2])
                 #we only have one state for both, so we require both to be set:
-                update_wm_state("maximized")
+                if atom1!=atom2 and atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
+                    update_wm_state("maximized")
             else:
-                log.info("do_xpra_client_message_event(%s) unhandled atoms=%s", event, atoms)
+                log.info("do_xpra_client_message_event(%s) unhandled atom=%s", event, atom1)
         elif event.message_type=="WM_CHANGE_STATE":
             log("WM_CHANGE_STATE: %s", event.data[0])
             if event.data[0]==IconicState and event.serial>self.last_unmap_serial:
