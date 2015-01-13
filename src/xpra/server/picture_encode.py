@@ -72,7 +72,7 @@ def webp_encode(coding, image, rgb_formats, supports_transparency, quality, spee
     encs = get_PIL_encodings(PIL)
     for x in ("webp", "png"):
         if x in encs:
-            return PIL_encode(coding, image, quality, speed, supports_transparency)
+            return PIL_encode(x, image, quality, speed, supports_transparency)
     raise Exception("BUG: cannot use 'webp' encoding and none of the PIL fallbacks are available!")
 
 
