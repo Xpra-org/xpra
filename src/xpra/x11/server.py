@@ -736,8 +736,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         else:
             assert not window.is_OR()
             self.last_client_configure_event = time.time()
-            if len(packet)>=8:
-                self._set_window_state(proto, wid, window, packet[7])
+            if len(packet)>=9:
+                self._set_window_state(proto, wid, window, packet[8])
             owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
             windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
             self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)

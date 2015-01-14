@@ -536,9 +536,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 workspacelog("configure event: changed workspace from %s to %s", self._window_workspace, workspace)
                 self._window_workspace = workspace
                 props["workspace"] = workspace
-        packet = ["configure-window", self._id, x, y, w, h, props, state]
-        if self._resize_counter>0:
-            packet.append(self._resize_counter)
+        packet = ["configure-window", self._id, x, y, w, h, props, self._resize_counter, state]
         log("%s", packet)
         self.send(*packet)
         if dx!=0 or dy!=0:
