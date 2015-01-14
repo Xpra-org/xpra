@@ -20,9 +20,6 @@ class TestWindow(gtk.Window):
         self.index += 1
         return True
 
-    def on_key_press(self, *args):
-        self.rotate = not self.rotate
-
     def quit_cb(self, *args):
         gtk.main_quit()
 
