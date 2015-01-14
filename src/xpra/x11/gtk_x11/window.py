@@ -1482,6 +1482,8 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("client-machine", client_machine)
 
         command = pget("WM_COMMAND", "latin1")
+        if command:
+            command = command.strip("\0")
         self._internal_set_property("command", command)
 
         # WARNING: have to handle _NET_WM_STATE before we look at WM_HINTS;
