@@ -670,5 +670,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             loader.write(data)
             loader.close()
             pixbuf = loader.get_pixbuf()
+        #for debugging, save to a file so we can see it:
+        #pixbuf.save("C-%s-%s.png" % (self._id, int(time.time())), "png")
         iconlog("%s.set_icon(%s)", self, pixbuf)
         self.set_icon(pixbuf)

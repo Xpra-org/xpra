@@ -423,7 +423,10 @@ class WindowSource(object):
             #to make sure that the window icon does get set to something
             #(our icon is at least better than the window manager's default)
             surf = WindowSource.get_fallback_window_icon_surface()
+            iconlog("using fallback window icon")
         if surf:
+            #for debugging, save to a file so we can see it:
+            #surf.write_to_png("S-%s-%s.png" % (self.wid, int(time.time())))
             #extract the data from the cairo surface for processing in the work queue:
             import cairo
             assert surf.get_format() == cairo.FORMAT_ARGB32
