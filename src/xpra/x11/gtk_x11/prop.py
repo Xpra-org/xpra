@@ -9,6 +9,7 @@
 Everyone else should just use prop_set/prop_get with nice clean Python calling
 conventions, and if you need more (un)marshalling smarts, add them here."""
 
+import binascii
 import struct
 import gtk.gdk
 import cairo
@@ -91,8 +92,11 @@ class NetWMStrut(object):
 
 class MotifWMHints(object):
     def __init__(self, disp, data):
+        #some applications use the wrong size (ie: blender uses 16) so pad it:
+        pdata = _force_length("_MOTIF_WM_HINTS", data, 20, 16)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
-            struct.unpack("=IIIiI", data)
+            struct.unpack("=IIIiI", pdata)
+        log("MotifWMHints(%s)=%s", binascii.hexlify(data), self)
 
     def __str__(self):
         return "MotifWMHints(%s)" % {"flags"        : self.flags,
