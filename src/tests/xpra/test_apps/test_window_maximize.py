@@ -35,7 +35,7 @@ def main():
 		SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 		event_mask = SubstructureNotifyMask | SubstructureRedirectMask
 		X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_STATE", mode,
-			  "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ", 0)
+			  "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ", 0, 0)
 
 	def maximize_X11(*args):
 		send_maximized_wm_state(1)	#ADD
