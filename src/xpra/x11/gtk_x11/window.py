@@ -701,6 +701,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 #we only have one state for both, so we require both to be set:
                 if atom1!=atom2 and atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
                     update_wm_state("maximized")
+            elif atom1=="_NET_WM_STATE_HIDDEN":
+                log("ignoring 'HIDDEN' _NET_WM_STATE: %s", event)
+                #we don't honour those because they make little sense, see:
+                #https://mail.gnome.org/archives/wm-spec-list/2005-May/msg00004.html
+                pass
             else:
                 log.info("do_xpra_client_message_event(%s) unhandled atom=%s", event, atom1)
         elif event.message_type=="WM_CHANGE_STATE":
