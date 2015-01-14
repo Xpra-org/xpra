@@ -136,7 +136,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def set_decorated(self, decorated):
         was_decorated = self.get_decorated()
-        gtk.Window.set_decorated(self, decorated)
+        if self._fullscreen and was_decorated and not decorated:
+            #fullscreen windows aren't decorated anyway!
+            #calling set_decorated(False) would cause it to get unmapped! (why?)
+            pass
+        else:
+            gtk.Window.set_decorated(self, decorated)
         #win32 workaround for new window offsets:
         #keep the window contents where they were and adjust the frame
         #this generates a configure event which ensures the server has the correct window position
