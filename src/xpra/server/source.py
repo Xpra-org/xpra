@@ -1358,6 +1358,7 @@ class ServerSource(object):
             self.send_window_icon(wid, window)
         else:
             metadata = self._make_metadata(wid, window, prop)
+            log("make_metadata(%s, %s, %s)=%s", wid, window, prop, metadata)
             if len(metadata)>0:
                 self.send("window-metadata", wid, metadata)
 
