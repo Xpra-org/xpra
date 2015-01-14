@@ -4,7 +4,7 @@ import gtk.gdk
 
 def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	window.set_size_request(200, 80)
+	window.set_size_request(220, 120)
 	window.connect("delete_event", gtk.mainquit)
 	vbox = gtk.VBox(False, 0)
 
@@ -22,7 +22,28 @@ def main():
 		hbox.pack_start(b2, expand=True, fill=False, padding=5)
 		vbox.pack_start(hbox, expand=False, fill=False, padding=2)
 
+	def send_maximized_wm_state(mode):
+		from xpra.x11.gtk_x11 import gdk_display_source
+		assert gdk_display_source
+		from xpra.gtk_common.gobject_compat import get_xid
+		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
+		X11Window = X11WindowBindings()
+		root = window.get_window().get_screen().get_root_window()
+		root_xid = get_xid(root)
+		xwin = get_xid(window.get_window())
+		SubstructureNotifyMask = constants["SubstructureNotifyMask"]
+		SubstructureRedirectMask = constants["SubstructureRedirectMask"]
+		event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+		X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_STATE", mode,
+			  "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ", 0)
+
+	def maximize_X11(*args):
+		send_maximized_wm_state(1)	#ADD
+	def unmaximize_X11(*args):
+		send_maximized_wm_state(2)	#REMOVE
+
 	add_buttons("maximize", window.maximize, "unmaximize", window.unmaximize)
+	add_buttons("maximize X11", maximize_X11, "unmaximize X11", unmaximize_X11)
 	add_buttons("fullscreen", window.fullscreen, "unfullscreen", window.unfullscreen)
 
 	def window_state(widget, event):
