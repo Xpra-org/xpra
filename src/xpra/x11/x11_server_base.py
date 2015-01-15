@@ -534,6 +534,7 @@ class X11ServerBase(GTKServerBase):
         wid, button, pressed, pointer, modifiers = packet[1:6]
         self._process_mouse_common(proto, wid, pointer, modifiers)
         ss.user_event()
+        mouselog("xtest_fake_button(%s, %s) at %s", button, pressed, pointer)
         try:
             with xsync:
                 X11Keyboard.xtest_fake_button(button, pressed)
