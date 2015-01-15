@@ -256,6 +256,7 @@ class KeyboardHelper(object):
         log("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
         log("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
         log("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
+        log("xkbmap_mod_pointermissing: %s", self.xkbmap_mod_pointermissing)
         log("hash=%s", self.hash)
 
     def update(self):
