@@ -14,7 +14,7 @@ log = Logger("keyboard")
 
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.x11.gtk_x11.keys import grok_modifier_map
-from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, mask_to_names
+from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, \
                            get_modifiers_from_meanings, get_modifiers_from_keycodes, \
@@ -43,6 +43,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.xkbmap_mod_meanings = {}
         self.xkbmap_mod_managed = []
         self.xkbmap_mod_pointermissing = []
+        self.xkbmap_mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
         self.xkbmap_keycodes = []
         self.xkbmap_x11_keycodes = []
         self.xkbmap_layout = None
@@ -99,6 +100,10 @@ class KeyboardConfig(KeyboardConfigBase):
             v = getattr(self, "xkbmap_"+x)
             if v:
                 info[x] = v
+        for x in ("nuisance", ):
+            v = getattr(self, "xkbmap_mod_"+x)
+            if v:
+                info["modifiers."+x] = list(v)
         for x in ("managed", "pointermissing"):
             v = getattr(self, "xkbmap_mod_"+x)
             if v:
@@ -164,14 +169,18 @@ class KeyboardConfig(KeyboardConfigBase):
             for k,v in self.keycode_translation.items():
                 reverse_trans[v] = k
             self.modifier_client_keycodes = {}
+            self.xkbmap_mod_nuisance = set()
             for modifier, keys in server_mappings.items():
                 client_keycodes = []
                 for keycode,keyname in keys:
                     client_keycode = reverse_trans.get(keycode, keycode)
                     if client_keycode:
                         client_keycodes.append((client_keycode, keyname))
+                    if keyname in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
+                        self.xkbmap_mod_nuisance.add(modifier)
                 self.modifier_client_keycodes[modifier] = client_keycodes
             log("compute_client_modifier_keycodes() mappings=%s", self.modifier_client_keycodes)
+            log("compute_client_modifier_keycodes() mod nuisance=%s", self.xkbmap_mod_nuisance)
         except Exception as e:
             log.error("do_set_keymap: %s" % e, exc_info=True)
 
