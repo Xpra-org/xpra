@@ -139,7 +139,8 @@ class DesktopManager(gtk.Widget):
             return (-1, self)
 
     def take_window(self, model, window):
-        window.reparent(self.window, 0, 0)
+        root = self.window.get_screen().get_root_window()
+        window.reparent(root, 0, 0)
 
     def window_size(self, model):
         w, h = self._models[model].geom[2:4]
