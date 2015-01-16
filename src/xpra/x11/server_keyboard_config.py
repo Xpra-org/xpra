@@ -117,22 +117,24 @@ class KeyboardConfig(KeyboardConfigBase):
             to set the keyboard attributes """
         KeyboardConfigBase.parse_options(self, props)
         modded = []
-        for x in ("print", "query", "mod_meanings",
-                  "keycodes", "x11_keycodes"):
-            prop = "xkbmap_%s" % x
+        def parse_option(name, parse_fn):
+            prop = "xkbmap_%s" % name
             cv = getattr(self, prop)
-            nv = props.get(prop)
+            nv = parse_fn(prop)
             if cv!=nv:
                 setattr(self, prop, nv)
                 modded.append(prop)
-        #those must be list of strings:
-        for x in ("managed", "pointermissing"):
-            prop = "xkbmap_mod_%s" % x
-            cv = getattr(self, prop)
-            nv = props.strlistget(prop)
-            if cv!=nv:
-                setattr(self, prop, nv)
-                modded.append(prop)
+        #plain strings:
+        for x in ("print", "query"):
+            parse_option(x, props.strget)
+        #lists:
+        parse_option("keycodes", props.listget)
+        #dicts:
+        for x in ("mod_meanings", "x11_keycodes"):
+            parse_option(x, props.dictget)
+        #lists of strings:
+        for x in ("mod_managed", "mod_pointermissing"):
+            parse_option(x, props.strlistget)
         log("assign_keymap_options(..) modified %s", modded)
         return len(modded)>0
 
