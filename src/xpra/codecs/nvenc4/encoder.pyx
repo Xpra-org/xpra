@@ -92,6 +92,8 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT
         NV_ENC_CAPS_MB_NUM_MAX
         NV_ENC_CAPS_EXPOSED_COUNT
+        NV_ENC_CAPS_SUPPORT_YUV444_ENCODE
+        NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE
 
     ctypedef enum NV_ENC_DEVICE_TYPE:
         NV_ENC_DEVICE_TYPE_DIRECTX
@@ -782,6 +784,8 @@ CAPS_NAMES = {
         NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT        : "ASYNC_ENCODE_SUPPORT",
         NV_ENC_CAPS_MB_NUM_MAX                  : "MB_NUM_MAX",
         NV_ENC_CAPS_EXPOSED_COUNT               : "EXPOSED_COUNT",
+        NV_ENC_CAPS_SUPPORT_YUV444_ENCODE       : "SUPPORT_YUV444_ENCODE",
+        NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE     : "SUPPORT_LOSSLESS_ENCODE",
         }
 
 
@@ -1395,6 +1399,12 @@ cdef class Encoder:
             raiseNVENC(r, "initializing encoder")
             log("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
+            #test all caps:
+            for cap, descr in CAPS_NAMES.items():
+                if cap!=NV_ENC_CAPS_EXPOSED_COUNT:
+                    v = self.query_encoder_caps(codec, cap)
+                    log("%s=%s", descr, v)
+
             #register CUDA input buffer:
             memset(&registerResource, 0, sizeof(NV_ENC_REGISTER_RESOURCE))
             registerResource.version = NV_ENC_REGISTER_RESOURCE_VER
@@ -1998,7 +2008,7 @@ cdef class Encoder:
         log("nvEncGetEncodeCaps(%s, %#x, %#x)", guidstr(encode_GUID), <unsigned long> &encCaps, <unsigned long> &val)
         with nogil:
             r = self.functionList.nvEncGetEncodeCaps(self.context, encode_GUID, &encCaps, &val)
-        raiseNVENC(r, "getting encode caps")
+        raiseNVENC(r, "getting encode caps for %s" % CAPS_NAMES.get(caps_type, caps_type))
         log("query_encoder_caps(%s, %s) %s=%s", guidstr(encode_GUID), caps_type, CAPS_NAMES.get(caps_type, caps_type), val)
         return val
 
