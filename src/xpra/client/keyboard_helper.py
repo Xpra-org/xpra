@@ -255,8 +255,9 @@ class KeyboardHelper(object):
         log("print=%s, query=%s, struct=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query), nonl(self.xkbmap_query_struct))
         log("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
         log("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
-        log("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
-        log("xkbmap_mod_pointermissing: %s", self.xkbmap_mod_pointermissing)
+        log("mod managed: %s", self.xkbmap_mod_managed)
+        log("mod meanings: %s", self.xkbmap_mod_meanings)
+        log("mod pointermissing: %s", self.xkbmap_mod_pointermissing)
         log("hash=%s", self.hash)
 
     def update(self):
@@ -300,5 +301,9 @@ class KeyboardHelper(object):
         for x in ("layout", "variant", "print", "query", "query_struct", "mod_meanings",
                   "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes"):
             p = "xkbmap_%s" % x
-            props[p] = getattr(self, p) or ""
+            v = getattr(self, p)
+            #replace None with empty string:
+            if v is None:
+                v = ""
+            props[p] = v
         return  props
