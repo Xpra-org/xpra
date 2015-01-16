@@ -155,8 +155,9 @@ class WorldWindow(gtk.Window):
             send_wm_take_focus(self.window, CurrentTime)
 
     def do_focus_in_event(self, event):
-        focuslog("world window got focus: %s", event)
-        if not self.get_property("has-toplevel-focus"):
+        htf = self.get_property("has-toplevel-focus")
+        focuslog("world window got focus: %s, has-toplevel-focus=%s", event, htf)
+        if not htf:
             #super(WorldWindow, self).do_focus_in_event(*args)
             gtk.Window.do_focus_in_event(self, event)
             self.reset_x_focus()
