@@ -402,7 +402,7 @@ cdef object _get_pywindow(object display_source, Window xwindow):
     disp = get_display_for(display_source)
     win = gtk.gdk.window_foreign_new_for_display(disp, xwindow)
     if win is None:
-        verbose("cannot get gdk window for %s : %#x", display_source.get_name(), xwindow)
+        verbose("cannot get gdk window for %s : %#x", display_source, xwindow)
         raise XError(BadWindow)
     return win
 
