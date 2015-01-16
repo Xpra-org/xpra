@@ -512,10 +512,11 @@ class X11ServerBase(GTKServerBase):
 
 
     def _move_pointer(self, wid, pos):
+        #(this is called within an xswallow context)
         mouselog("move_pointer(%s, %s)", wid, pos)
         x, y = pos
-        display = gtk.gdk.display_get_default()
-        display.warp_pointer(display.get_default_screen(), x, y)
+        n = gtk.gdk.display_get_default().get_default_screen().get_number()
+        X11Keyboard.xtest_fake_motion(n, x, y)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         ss = self._server_sources.get(proto)

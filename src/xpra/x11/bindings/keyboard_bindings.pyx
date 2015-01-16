@@ -129,7 +129,8 @@ cdef extern from "X11/extensions/XTest.h":
                           Bool is_press, unsigned long delay)
     int XTestFakeButtonEvent(Display *, unsigned int button,
                              Bool is_press, unsigned long delay)
-
+    int XTestFakeMotionEvent(Display * display, int screen_number, int x, int y, unsigned long delay)
+    int XTestFakeRelativeMotionEvent(Display * display, int x, int y, unsigned long delay)
 
 cdef extern from "X11/extensions/Xfixes.h":
     ctypedef struct XFixesCursorNotify:
@@ -711,7 +712,11 @@ cdef class X11KeyboardBindings(X11CoreBindings):
     def xtest_fake_button(self, button, is_press):
         XTestFakeButtonEvent(self.display, button, is_press, 0)
 
+    def xtest_fake_motion(self, int screen, int x, int y, int delay=0):
+        XTestFakeMotionEvent(self.display, screen, x, y, delay)
 
+    def xtest_fake_relative_motion(self, int x, int y, int delay=0):
+        XTestFakeRelativeMotionEvent(self.display, x, y, delay)
 
 
     def get_key_repeat_rate(self):
