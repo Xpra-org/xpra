@@ -118,11 +118,18 @@ class KeyboardConfig(KeyboardConfigBase):
         KeyboardConfigBase.parse_options(self, props)
         modded = []
         for x in ("print", "query", "mod_meanings",
-                  "mod_managed", "mod_pointermissing",
                   "keycodes", "x11_keycodes"):
             prop = "xkbmap_%s" % x
             cv = getattr(self, prop)
             nv = props.get(prop)
+            if cv!=nv:
+                setattr(self, prop, nv)
+                modded.append(prop)
+        #those must be list of strings:
+        for x in ("managed", "pointermissing"):
+            prop = "xkbmap_mod_%s" % x
+            cv = getattr(self, prop)
+            nv = props.strlistget(prop)
             if cv!=nv:
                 setattr(self, prop, nv)
                 modded.append(prop)
