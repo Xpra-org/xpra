@@ -201,14 +201,23 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
     _cleanups.append(ap.stop)
 
 
-def create_unix_domain_socket(sockpath, mmap_group):
+def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
+    if mmap_group:
+        #when using the mmap group option, use '660'
+        umask = 0o117
+    else:
+        #parse octal mode given as config option:
+        try:
+            sperms = int(socket_permissions, 8)
+            assert sperms>=0 and sperms<=0o777
+        except ValueError:
+            raise ValueError("invalid socket permissions (must be an octal number): '%s'" % socket_permissions)
+        #now convert this to a umask!
+        umask = 0o777-sperms
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     #bind the socket, using umask to set the correct permissions
-    if mmap_group:
-        orig_umask = os.umask(0o117) #660
-    else:
-        orig_umask = os.umask(0o177) #600
+    orig_umask = os.umask(umask)
     listener.bind(sockpath)
     os.umask(orig_umask)
     return listener
@@ -257,7 +266,7 @@ def parse_bind_tcp(bind_tcp):
     return tcp_sockets
 
 
-def setup_local_socket(dotxpra, display_name, clobber, mmap_group):
+def setup_local_socket(dotxpra, display_name, clobber, mmap_group, socket_permissions):
     if sys.platform.startswith("win"):
         return None, None
     from xpra.log import Logger
@@ -272,7 +281,7 @@ def setup_local_socket(dotxpra, display_name, clobber, mmap_group):
                      % (display_name,))
     except Exception as e:
         raise Exception("socket path error: %s" % e)
-    sock = create_unix_domain_socket(sockpath, mmap_group)
+    sock = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
     def cleanup_socket():
         log.info("removing socket %s", sockpath)
         try:
@@ -802,7 +811,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         return  1
 
     #setup unix domain socket:
-    socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group)
+    socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group, opts.socket_permissions)
     if socket:      #win32 returns None!
         sockets.append(socket)
         if opts.mdns:

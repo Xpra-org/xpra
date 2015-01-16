@@ -166,6 +166,11 @@ mmap = yes
 # Use server group ownership for mmap file:
 mmap-group = no
 
+# The file permissions set on the server's unix domain socket
+# (ignored when mmap-group is enabled)
+#socket-permissions = 660
+socket-permissions = 600
+
 # Share session with other users:
 sharing = no
 

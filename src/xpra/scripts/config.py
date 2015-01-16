@@ -271,6 +271,7 @@ OPTION_TYPES = {
                     "microphone"        : str,
                     "speaker"           : str,
                     "sound-source"      : str,
+                    "socket-permissions": str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -370,6 +371,7 @@ def get_defaults():
                     "input-method"      : "none",
                     "sound-source"      : "",
                     "html"              : "",
+                    "socket-permissions": "660",
                     "quality"           : 0,
                     "min-quality"       : 30,
                     "speed"             : 0,

@@ -47,6 +47,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-input\-method\fP=\fIMETHOD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-permissions\fP=\fIACCESS\-MODE\fP]
+[\fB\-\-mmap\-group\fP]
 [\fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP]
 [\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fI[HOST]:PORT\fP]
 .HP
@@ -94,7 +96,6 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-mouse\-polling\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-mmap\-group\fP]
 [\fB\-\-pings\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
@@ -117,6 +118,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-permissions\fP=\fIACCESS\-MODE\fP]
+[\fB\-\-mmap\-group\fP]
 [\fB\-\-tcp\-proxy\fP=HOST:PORT\fP]
 [\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fI[HOST]:PORT\fP]
 .HP
@@ -481,7 +484,8 @@ open sessions.  Mixing different socket-dir options is not
 recommended.
 
 By specifying a shared directory this can be coupled with the
-mmap-group option to connect Xpra sessions across user accounts.
+\fImmap\-group\fP or \fIsocket\-permissions\fP option to connect
+Xpra sessions across user accounts.
 
 .SS Options for start, upgrade, proxy and shadow
 .TP
@@ -522,6 +526,7 @@ chooses the most appropriate system authentication module
 automatically (either \fBpam\fP or \fBwin32\fP)
 .RE
 .PP
+.TP
 
 .SS Options for start, upgrade
 .TP
@@ -562,7 +567,9 @@ This can also be used to specify Xdummy as an alternative to Xvfb,
 this requires Xorg server version 1.12 or later and the dummy driver
 version 0.3.5 or later.  For more information, see:
 https://xpra.org/Xdummy.html
+.TP
 
+.SS Options for start, upgrade, shadow
 .TP
 \fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP
 The xpra server always listens for connections on a local Unix domain
@@ -615,6 +622,17 @@ By default, all of them are loaded, but one may want to specify
 a more restrictive list of modules.
 Use the special value 'help' to get a list of options.
 Use the value 'none' to not load any colourspace conversion modules.
+
+\fB\-\-mmap\-group\fP
+Sets the mmap file's gid to match the socket file's gid and sets
+the mmap file's permissions to 660.
+This is necessary to share the mmap file across user accounts.
+.TP
+
+\fB\-\-socket\-permissions\fP=\fIACCESS\-MODE\fP
+Specifies the permissions on the server socket.
+Defaults to 600. This is ignored when \fImmap\-group\fP is enabled.
+.TP
 
 
 .SS Options for start, upgrade and attach
@@ -912,11 +930,6 @@ showing the system tray. (posix only)
 Specifies the icon shown in the dock/tray.
 By default it uses a simple default 'xpra' icon.
 (On Microsoft Windows, the icon must be in \fBico\fP format.)
-.TP
-\fB\-\-mmap\-group\fP
-Sets the mmap file's gid to match the socket file's gid and sets
-the mmap file's permissions to 660.
-This is necessary to share the mmap file across user accounts.
 .TP
 \fB\-\-enable\-pings\fP
 The client and server will exchange ping and echo packets

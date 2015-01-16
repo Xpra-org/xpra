@@ -629,9 +629,17 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--auth", action="store",
                       dest="auth", default=defaults.auth,
                       help="The authentication module (default: '%default')")
-    group.add_option("--mmap-group", action="store_true",
-                      dest="mmap_group", default=defaults.mmap_group,
-                      help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
+    if os.name=="posix":
+        group.add_option("--mmap-group", action="store_true",
+                          dest="mmap_group", default=defaults.mmap_group,
+                          help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
+        group.add_option("--socket-permissions", action="store",
+                          dest="socket_permissions", default=defaults.socket_permissions,
+                          help="When creating the server unix domain socket, what file access mode to use (default: '%default')")
+    else:
+        hidden_options["mmap_group"] = False
+        hidden_options["socket_permissions"] = 0o600
+
     replace_option("--enable-pings", "--pings=yes")
     group.add_option("--pings", action="store", metavar="yes|no",
                       dest="pings", default=defaults.pings,
