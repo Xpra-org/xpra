@@ -707,6 +707,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
+        iconified = bool(packet[2])
         window = self._id_to_window.get(wid)
         if not window:
             log("cannot map window %s: already removed!", wid)
@@ -716,7 +717,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for ss in self._server_sources.values():
             ss.unmap_window(wid, window)
         window.unmap()
-        if not window.get_property("iconic"):
+        if iconified and not window.get_property("iconic"):
             window.set_property("iconic", True)
         self._desktop_manager.hide_window(window)
 
