@@ -707,7 +707,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
-        iconified = bool(packet[2])
+        iconified = len(packet)>=3 and bool(packet[2])
         window = self._id_to_window.get(wid)
         if not window:
             log("cannot map window %s: already removed!", wid)
