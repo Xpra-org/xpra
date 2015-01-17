@@ -397,7 +397,9 @@ cdef class Encoder:
             assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
             pic_in[i] = pic_buf
             strides[i] = istrides[i]
-        return self.do_compress_image(pic_in, strides), {"frame" : self.frames}
+        return self.do_compress_image(pic_in, strides), {"frame"    : self.frames,
+                                                         "quality"  : min(99, self.quality),
+                                                         "speed"    : self.speed}
 
     cdef do_compress_image(self, uint8_t *pic_in[3], int strides[3]):
         #actual compression (no gil):

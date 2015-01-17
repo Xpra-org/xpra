@@ -1924,9 +1924,10 @@ cdef class Encoder:
         outdata = "".join(data)
         outsize = len(outdata)
         client_options = {
-                    "frame" : self.frames,
-                    "pts"   : image.get_timestamp()-self.first_frame_timestamp,
-                    "quality" : self.quality,
+                    "frame"     : self.frames,
+                    "pts"       : image.get_timestamp()-self.first_frame_timestamp,
+                    "quality"   : min(99, self.quality),        #cap at 99 because no lossless yet!
+                    "speed"     : self.speed,
                     }
         if self.scaling!=(1,1):
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
