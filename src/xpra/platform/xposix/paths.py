@@ -5,17 +5,14 @@
 
 import os.path
 import sys
+import site
 
 
 def get_install_prefix():
     #special case for "user" installations, ie:
     #$HOME/.local/lib/python2.7/site-packages/xpra/platform/paths.py
-    pos = __file__.find("/.local/lib")
-    if pos>0:
-        local_root = __file__[:pos]
-        local_prefix = os.path.join(local_root, ".local")
-        if os.path.exists(local_prefix):
-            return local_prefix
+    if __file__.startswith(site.getuserbase()):
+        return site.getuserbase()
     return sys.prefix
 
 def get_resources_dir():
