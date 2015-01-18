@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
 import gtk
+import gobject
+
 
 def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	window.set_size_request(400, 200)
+	window.set_size_request(400, 300)
 	window.connect("delete_event", gtk.mainquit)
 	vbox = gtk.VBox(False, 0)
-	hbox = gtk.HBox(False, 0)
-	vbox.pack_start(hbox, expand=False, fill=False, padding=10)
 
 	btn = gtk.Button("Create Transient")
 	def create_transient(*args):
@@ -19,7 +19,13 @@ def main():
 		tw.add(gtk.Label("Transient Window"))
 		tw.show_all()
 	btn.connect('clicked', create_transient)
-	hbox.pack_start(btn, expand=False, fill=False, padding=10)
+	vbox.pack_start(btn, expand=False, fill=False, padding=10)
+
+	btn = gtk.Button("Create Transient (with 5 second delay)")
+	def delayed_transient(*args):
+		gobject.timeout_add(5000, create_transient)
+	btn.connect('clicked', delayed_transient)
+	vbox.pack_start(btn, expand=False, fill=False, padding=10)
 
 	btn = gtk.Button("Create Root Transient")
 	def create_root_transient(*args):
@@ -31,7 +37,7 @@ def main():
 		tw.add(gtk.Label("Transient Root Window"))
 		tw.show_all()
 	btn.connect('clicked', create_root_transient)
-	hbox.pack_start(btn, expand=False, fill=False, padding=10)
+	vbox.pack_start(btn, expand=False, fill=False, padding=10)
 
 	window.add(vbox)
 	window.show_all()
