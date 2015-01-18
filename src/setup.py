@@ -633,7 +633,15 @@ def get_xorg_version(xorg_bin):
         print("failed to detect Xorg version: %s" % err)
     return xorg_version
 
-def detect_xorg_setup():
+
+def get_conf_dir(install_dir):
+    if install_dir and install_dir!="/usr":
+        return os.path.join(install_dir, "etc", "xpra")
+    if sys.prefix=="/usr":
+        return "/etc/xpra"
+    return os.path.join(sys.prefix, "etc", "xpra")
+
+def detect_xorg_setup(install_dir=None):
     #returns (xvfb_command, has_displayfd, use_dummmy_wrapper)
     if not server_ENABLED or WIN32:
         return ("", False, False)
@@ -658,10 +666,7 @@ def detect_xorg_setup():
         return Xvfb()
 
     def Xorg_suid_check():
-        xorg_conf = "/etc/xpra/xorg.conf"
-        if sys.prefix!="/usr":
-            #ie: /usr/local/etc/xpra/xorg.conf
-            xorg_conf = os.path.join(sys.prefix, xorg_conf)
+        xorg_conf = os.path.join(get_conf_dir(install_dir), "xorg.conf")
         Xorg_args = " ".join(["-noreset",
                               "-nolisten", "tcp",
                               "+extension", "GLX",
@@ -732,13 +737,11 @@ def detect_xorg_setup():
     print("found valid recent version of Xorg server: %s" % ".".join([str(x) for x in xorg_version]))
     return Xorg_suid_check()
 
-def build_xpra_conf(build_base):
+def build_xpra_conf(install_dir):
     #generates an actual config file from the template
-    xvfb_command, has_displayfd, _ = detect_xorg_setup()
+    xvfb_command, has_displayfd, _ = detect_xorg_setup(install_dir)
     with open("etc/xpra/xpra.conf.in", "r") as f_in:
         template  = f_in.read()
-    if not os.path.exists(build_base):
-        os.makedirs(build_base)
     if WIN32:
         ssh_command = "plink -ssh -agent"
     else:
@@ -761,12 +764,18 @@ def build_xpra_conf(build_base):
     def bstr(b):
         return ["no", "yes"][int(b)]
     env = "\n".join(envstr(*x) for x in env_strs)
-    conf = template % {'xvfb_command'   : xvfb_command,
-                       'ssh_command'    : ssh_command,
-                       'remote_logging' : bstr(OSX or WIN32),
-                       'env'            : env,
-                       'has_displayfd'  : bstr(has_displayfd)}
-    with open(build_base + "/xpra.conf", "w") as f_out:
+    conf_dir = get_conf_dir(install_dir)
+    SUBS = {'xvfb_command'   : xvfb_command,
+            'ssh_command'    : ssh_command,
+            'remote_logging' : bstr(OSX or WIN32),
+            'env'            : env,
+            'has_displayfd'  : bstr(has_displayfd),
+            'conf_dir'       : conf_dir}
+    #print("conf substitutions=%s" % SUBS)
+    conf = template % SUBS
+    if not os.path.exists(conf_dir):
+        os.makedirs(conf_dir)
+    with open(conf_dir + "/xpra.conf", "w") as f_out:
         f_out.write(conf)
 
 
@@ -1447,19 +1456,8 @@ else:
         def run(self):
             # Call parent
             install_data.run(self)
+            build_xpra_conf(self.install_dir)
 
-            # install xpra.conf we have generated in build_conf:
-            install_root = "/"
-            if "--user" in sys.argv:
-                install_root = ""
-            dst_dir = os.path.join(self.install_dir.rstrip("/usr") or install_root, "etc", "xpra")
-            dst_xpra_conf = os.path.join(dst_dir, "xpra.conf")
-            src_xpra_conf = os.path.join(self.distribution.command_obj['build'].build_base, "xpra.conf")
-
-            assert os.path.exists(src_xpra_conf), "cannot find '%s' from build step" % src_xpra_conf
-            if not os.path.exists(dst_dir):
-                os.makedirs(dst_dir)
-            shutil.copyfile(src_xpra_conf, dst_xpra_conf)
 
     # add build_conf to build step
     cmdclass.update({
