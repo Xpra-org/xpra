@@ -20,15 +20,21 @@ def get_default_conf_dir():
     #some platforms may also ship a default config with the application
     return None
 
+
+def get_install_prefix():
+    return sys.prefix
+
 def get_system_conf_dir():
+    env_conf_dir = os.environ.get("XPRA_SYSCONF_DIR")
+    if env_conf_dir is not None:
+        return env_conf_dir
+    prefix = get_install_prefix()
     #the system wide configuration directory
-    if sys.prefix == '/usr':
+    if prefix == '/usr':
         #default posix config location:
-        default_conf_dir = '/etc/xpra'
-    else:
-        #hope the prefix is something like "/usr/local":
-        default_conf_dir = sys.prefix + '/etc/xpra/'
-    return os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)
+        return '/etc/xpra'
+    #hope the prefix is something like "/usr/local" or "$HOME/.local":
+    return prefix + '/etc/xpra/'
 
 def get_user_conf_dir():
     #per-user configuration location:
@@ -44,7 +50,10 @@ def get_app_dir():
 
 def default_get_app_dir():
     if os.name=="posix":
-        for prefix in [sys.exec_prefix, "/usr", "/usr/local"]:
+        for prefix in [get_install_prefix(),
+                       sys.exec_prefix,
+                       "/usr",
+                       "/usr/local"]:
             adir = os.path.join(prefix, "share", "xpra")
             if valid_dir(adir):
                 return adir
@@ -124,6 +133,7 @@ platform_import(globals(), "paths", True,
                 "get_app_dir",
                 "get_icon_dir")
 platform_import(globals(), "paths", False,
+                "get_install_prefix",
                 "get_default_conf_dir",
                 "get_system_conf_dir",
                 "get_user_conf_dir",
@@ -131,6 +141,7 @@ platform_import(globals(), "paths", False,
 
 def get_info():
     return {
+            "install.prefix"    : get_install_prefix(),
             "default_conf.dir"  : get_default_conf_dir(),
             "system_conf.dir"   : get_system_conf_dir(),
             "user_conf.dir"     : get_user_conf_dir(),

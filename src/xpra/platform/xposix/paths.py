@@ -6,14 +6,28 @@
 import os.path
 import sys
 
+
+def get_install_prefix():
+    #special case for "user" installations, ie:
+    #$HOME/.local/lib/python2.7/site-packages/xpra/platform/paths.py
+    pos = __file__.find("/.local/lib")
+    if pos>0:
+        local_root = __file__[:pos]
+        local_prefix = os.path.join(local_root, ".local")
+        if os.path.exists(local_prefix):
+            return local_prefix
+    return sys.prefix
+
 def get_resources_dir():
     #is there a better/cleaner way?
-    options = [os.path.join(sys.exec_prefix, "share", "xpra"),
-               "/usr/share/xpra",
-               "/usr/local/share/xpra"]
+    options = [get_install_prefix(),
+               sys.exec_prefix,
+               "/usr",
+               "/usr/local"]
     for x in options:
-        if os.path.exists(x) and os.path.isdir(x):
-            return x
+        p = os.path.join(x, "share", "xpra")
+        if os.path.exists(p) and os.path.isdir(p):
+            return p
     try:
         # test for a local installation path (run from source tree):
         local_share_path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "..", "share", "xpra"))
