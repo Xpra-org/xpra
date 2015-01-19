@@ -28,7 +28,7 @@
 
 
 Name:           python-pillow
-Version:        2.6.2
+Version:        2.7.0
 Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
@@ -46,7 +46,6 @@ BuildRequires:  libjpeg-devel
 BuildRequires:  zlib-devel
 BuildRequires:  freetype-devel
 BuildRequires:  %{lcms}-devel
-BuildRequires:  sane-backends-devel
 %if %{with_webp} > 0
 BuildRequires:  libwebp-devel
 %endif
@@ -77,8 +76,8 @@ Python image processing library, fork of the Python Imaging Library (PIL)
 This library provides extensive file format support, an efficient
 internal representation, and powerful image processing capabilities.
 
-There are five subpackages: tk (tk interface), qt (PIL image wrapper for Qt),
-sane (scanning devices interface), devel (development) and doc (documentation).
+There are four subpackages: tk (tk interface), qt (PIL image wrapper for Qt),
+devel (development) and doc (documentation).
 
 
 %package devel
@@ -101,18 +100,6 @@ BuildArch:      noarch
 
 %description doc
 Documentation for %{name}.
-
-
-%package sane
-Summary:        Python module for using scanners
-Group:          System Environment/Libraries
-Requires:       %{name}%{?_isa} = %{version}-%{release}
-Provides:       python-imaging-sane = %{version}-%{release}
-Obsoletes:      python-imaging-sane <= 1.1.7-12
-
-%description sane
-This package contains the sane module for Python which provides access to
-various raster scanning devices such as flatbed scanners and digital cameras.
 
 
 %package tk
@@ -166,16 +153,6 @@ BuildArch:      noarch
 Documentation for %{name3}.
 
 
-%package -n %{name3}-sane
-Summary:        Python module for using scanners
-Group:          System Environment/Libraries
-Requires:       %{name3}%{?_isa} = %{version}-%{release}
-
-%description -n %{name3}-sane
-This package contains the sane module for Python which provides access to
-various raster scanning devices such as flatbed scanners and digital cameras.
-
-
 %package -n %{name3}-tk
 Summary:        Tk interface for %{name3}
 Group:          System Environment/Libraries
@@ -211,19 +188,11 @@ cp -a . %{py3dir}
 find -name '*.py' | xargs sed -i '1s|^#!.*python|#!%{__python}|'
 CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
 
-pushd Sane
-CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
-popd
-
 %if %{with_python3}
 # Build Python 3 modules
 pushd %{py3dir}
 find -name '*.py' | xargs sed -i '1s|^#!.*python|#!%{__python3}|'
 CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
-
-pushd Sane
-CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
-popd
 
 #building the html docs require a very specific version of sphinx, PITA
 #pushd docs
@@ -239,18 +208,12 @@ rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT/%{py2_incdir}/Imaging
 install -m 644 libImaging/*.h $RPM_BUILD_ROOT/%{py2_incdir}/Imaging
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
-pushd Sane
-%{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
-popd
 
 %if %{with_python3}
 pushd %{py3dir}
 install -d $RPM_BUILD_ROOT/%{py3_incdir}/Imaging
 install -m 644 libImaging/*.h $RPM_BUILD_ROOT/%{py3_incdir}/Imaging
 %{__python3} setup.py install --skip-build --root $RPM_BUILD_ROOT
-pushd Sane
-%{__python3} setup.py install --skip-build --root $RPM_BUILD_ROOT
-popd
 popd
 %endif
 
@@ -262,7 +225,6 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %doc README.rst CHANGES.rst docs/COPYING
 %{python_sitearch}/*
 # These are in subpackages
-%exclude %{python_sitearch}/*sane*
 %exclude %{python_sitearch}/PIL/_imagingtk*
 %exclude %{python_sitearch}/PIL/ImageTk*
 %exclude %{python_sitearch}/PIL/SpiderImagePlugin*
@@ -273,10 +235,6 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 
 %files doc
 %doc Scripts
-
-%files sane
-%doc Sane/CHANGES Sane/demo*.py Sane/sanedoc.txt
-%{python_sitearch}/*sane*
 
 %files tk
 %{python_sitearch}/PIL/_imagingtk*
@@ -291,7 +249,6 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %doc README.rst CHANGES.rst docs/COPYING
 %{python3_sitearch}/*
 # These are in subpackages
-%exclude %{python3_sitearch}/*sane*
 %exclude %{python3_sitearch}/PIL/_imagingtk*
 %exclude %{python3_sitearch}/PIL/ImageTk*
 %exclude %{python3_sitearch}/PIL/SpiderImagePlugin*
@@ -302,10 +259,6 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 
 %files -n %{name3}-doc
 %doc Scripts
-
-%files -n %{name3}-sane
-%doc Sane/CHANGES Sane/demo*.py Sane/sanedoc.txt
-%{python3_sitearch}/*sane*
 
 %files -n %{name3}-tk
 %{python3_sitearch}/PIL/_imagingtk*
@@ -318,6 +271,10 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Mon Jan 19 2015 Antoine Martin <antoine@devloop.org.uk - 2.7.0-1
+- new upstream release
+- remove sane packages which are no longer part of the main source distribution
+
 * Sun Jan 18 2015 Antoine Martin <antoine@devloop.org.uk - 2.6.2-1
 - new upstream release
 
