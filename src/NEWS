@@ -1,8 +1,18 @@
-v0.15.0 (2014-10-08)
+v0.15.0 (2015-01-19)
 ======================
 	-- dropped support for Python 2.5 and older, allowing many code cleanups and improvements
 	-- include manual in html format with MS Windows and OSX builds
+	-- client log output forwarding to the server (currently disabled by default)
 	-- fixed workarea coordinates detection for MS Windows clients
+	-- improved video region detection and handling
+	-- more complete support for window states (keep above, below, sticky, etc..)
+	-- allow environment variables passed to children to be specified in the config files
+	-- faster reformatting of window pixels before compression stage
+	-- support multiple delta region for better compression
+	-- allow new child commands to be started on the fly, also from the client (disabled by default)
+	-- detect mismatch between some codecs and their shared library dependencies
+	-- NVENC SDK version 4 support
+	-- add support for child commands that do not interfere with "exit-with-children"
 	-- add scaling command line and config file switch for controlling automatic scaling aggressiveness
 	-- add html command line switch for easily setting up an html5 xpra server
 	-- add more control over sound command line options, so sound can start disabled and still be turned on manually later
@@ -10,8 +20,11 @@ v0.15.0 (2014-10-08)
 	-- better window icon forwarding, especially for non X11 clients
 	-- optimized OpenGL rendering for X11 clients
 	-- handle screen update storms better
+	-- fixed drag and drop support with Java applications
 	-- GTK3 port improvements
 	-- added a few unit tests which are run during packaging
+	-- show sound bandwidth usage
+	-- more detailed information in xpra info (cursor, CPU, etc)
 	-- more detailed bug report information
 	-- more minimal MS Windows and OSX builds
 
