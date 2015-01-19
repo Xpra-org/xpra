@@ -910,9 +910,9 @@ if WIN32:
     x265_bin_dir        = x265_path
     #x264 (direct from build dir.. yuk - sorry!):
     x264_path ="C:\\x264"
-    x264_include_dir    = x264_path
-    x264_lib_dir        = x264_path
-    x264_bin_dir        = x264_path
+    x264_include_dir    = os.path.join(x264_path, "include")
+    x264_lib_dir        = os.path.join(x264_path, "lib")
+    x264_bin_dir        = os.path.join(x264_path, "bin")
     # Same for vpx:
     # http://code.google.com/p/webm/downloads/list
     #the path after installing may look like this:
