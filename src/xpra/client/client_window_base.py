@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import re
+import binascii
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.util import typedict, bytestostr, WORKSPACE_UNSET
@@ -152,7 +153,10 @@ class ClientWindowBase(ClientWidgetBase):
             except Exception as e:
                 log.error("error parsing window title: %s", e)
                 title = ""
-            self.set_title(title)
+            try:
+                self.set_title(title)
+            except Exception as e:
+                log.warn("failed to set window title to '%s': %s", binascii.hexlify(title), e)
 
         if b"icon-title" in metadata:
             icon_title = metadata.strget("icon-title")
