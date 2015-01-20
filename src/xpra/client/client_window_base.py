@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import re
-import binascii
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.util import typedict, bytestostr, WORKSPACE_UNSET
@@ -132,7 +131,10 @@ class ClientWindowBase(ClientWidgetBase):
             #if the wm_class value is set and matches something somewhere undocumented
             #(if the default is used, you cannot override the window icon)
             self.set_wmclass(*self._metadata.strlistget("class-instance", ("xpra", "Xpra")))
-        self.set_metadata(metadata)
+        try:
+            self.set_metadata(metadata)
+        except Exception as e:
+            log.warn("failed to set window metadata to '%s': %s", metadata, e)
 
     def set_metadata(self, metadata):
         log("set_metadata(%s)", metadata)
@@ -153,10 +155,7 @@ class ClientWindowBase(ClientWidgetBase):
             except Exception as e:
                 log.error("error parsing window title: %s", e)
                 title = ""
-            try:
-                self.set_title(title)
-            except Exception as e:
-                log.warn("failed to set window title to '%s': %s", binascii.hexlify(title), e)
+            self.set_title(title)
 
         if b"icon-title" in metadata:
             icon_title = metadata.strget("icon-title")
