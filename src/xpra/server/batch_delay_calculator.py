@@ -141,8 +141,24 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
     if statistics.avg_decode_speed:
         dec_lat = target_decode_speed/(statistics.avg_decode_speed or target_decode_speed)
 
+    #if we have more pixels to encode, we may need to go faster
+    #(this is important because the damage latency used by the other factors
+    # may aggregate multiple damage requests into one packet - which may skip frames)
+    #TODO: reconcile this with video regions
+    #only count the last second's worth:
+    now = time.time()
+    lim = now-1.0
+    lde = [w*h for t,_,_,w,h in list(statistics.last_damage_events) if t>=lim]
+    pixels = sum(lde)
+    mpixels_per_s = pixels/1024.0/1024.0
+    pps = 0.0
+    if len(lde)>5:
+        #above 50 MPixels/s, we should reach 100% speed
+        #(even x264 peaks at tens of MPixels/s)
+        pps = mpixels_per_s/50.0
+
     #combine factors: use the highest one:
-    target = min(1.0, max(dam_lat_abs, dam_lat_rel, dec_lat, 0.0))
+    target = min(1.0, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0.0))
 
     #scale target between min_speed and 100:
     ms = min(100.0, max(min_speed, 0.0))
@@ -153,6 +169,7 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
             "low_limit"                 : int(low_limit),
             "min_speed"                 : int(min_speed),
             "frame_delay"               : int(frame_delay),
+            "mpixels"                   : int(mpixels_per_s),
             "damage_latency.ref"        : int(1000.0*ref_damage_latency),
             "damage_latency.avg"        : int(1000.0*statistics.avg_damage_in_latency),
             "damage_latency.target"     : int(1000.0*target_damage_latency),
