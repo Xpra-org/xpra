@@ -102,6 +102,10 @@ PROPERTIES_IGNORED = ("_NET_WM_OPAQUE_REGION", )
 PROPERTIES_DEBUG = {}   #ie: {"WM_PROTOCOLS" : ["atom"]}
 
 
+def sanestr(s):
+    return (s or "").strip("\0").replace("\0", " ")
+
+
 # Todo:
 #   client focus hints
 #   _NET_WM_SYNC_REQUEST
@@ -555,13 +559,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     _property_handlers["_NET_WM_WINDOW_OPACITY"] = _handle_opacity_change
 
     def _handle_title_change(self):
-        net_wm_name = self.prop_get("_NET_WM_NAME", "utf8", True)
-        if net_wm_name is not None:
-            self._internal_set_property("title", net_wm_name)
-        else:
-            # may be None
-            wm_name = self.prop_get("WM_NAME", "latin1", True)
-            self._internal_set_property("title", wm_name)
+        name = self.prop_get("_NET_WM_NAME", "utf8", True)
+        if name is None:
+            name = self.prop_get("WM_NAME", "latin1", True)
+        self._internal_set_property("title", sanestr(name))
 
     _property_handlers["WM_NAME"] = _handle_title_change
     _property_handlers["_NET_WM_NAME"] = _handle_title_change
@@ -1384,15 +1385,11 @@ class WindowModel(BaseWindowModel):
     _property_handlers["WM_NORMAL_HINTS"] = _handle_wm_normal_hints
 
     def _handle_icon_title_change(self):
-        net_wm_icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
-        iconlog("_NET_WM_ICON_NAME=%s", net_wm_icon_name)
-        if net_wm_icon_name is not None:
-            self._internal_set_property("icon-title", net_wm_icon_name)
-        else:
-            # may be None
-            wm_icon_name = self.prop_get("WM_ICON_NAME", "latin1", True)
-            self._internal_set_property("icon-title", wm_icon_name)
-        self.notify("icon-title")
+        icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
+        iconlog("_NET_WM_ICON_NAME=%s", icon_name)
+        if icon_name is None:
+            icon_name = self.prop_get("WM_ICON_NAME", "latin1", True)
+        self._internal_set_property("icon-title", sanestr(icon_name))
 
     _property_handlers["WM_ICON_NAME"] = _handle_icon_title_change
     _property_handlers["_NET_WM_ICON_NAME"] = _handle_icon_title_change

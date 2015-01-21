@@ -140,7 +140,7 @@ class ClientWindowBase(ClientWidgetBase):
         log("set_metadata(%s)", metadata)
         if b"title" in metadata:
             try:
-                title = bytestostr(self._client.title)
+                title = bytestostr(self._client.title).replace("\0", "")
                 if title.find("@")>=0:
                     #perform metadata variable substitutions:
                     default_values = {"title"           : "<untitled window>",
