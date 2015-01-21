@@ -1413,7 +1413,7 @@ class UIXpraClient(XpraClientBase):
             if exc_info:
                 for x in traceback.format_tb(exc_info[2]):
                     self.send("logging", level, x)
-        except Exception, e:
+        except Exception as e:
             import logging
             self.local_logging(logging.WARNING, "failed to send logging packet: %s" % e)
         finally:
