@@ -895,6 +895,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         # start websockify?
         try:
             start_websockify(app.child_reaper, opts, bind_tcp)
+            #websockify overrides the tcp proxy, so we must re-set it:
+            app._tcp_proxy = opts.tcp_proxy
         except Exception as e:
             error_cb("failed to setup websockify html server: %s" % e)
         if opts.exit_with_children:
