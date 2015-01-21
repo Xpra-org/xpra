@@ -634,10 +634,25 @@ def get_xorg_version(xorg_bin):
     return xorg_version
 
 
-def get_conf_dir(install_dir):
-    if install_dir and install_dir!="/usr":
-        return os.path.join(install_dir, "etc", "xpra")
-    if sys.prefix=="/usr":
+def get_conf_dir(install_dir, stripbuildroot=True):
+    #in some cases we want to strip the buildroot (to generate paths in the config file)
+    #but in other cases we want the buildroot path (when writing out the config files)
+    #and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
+    #this is a bit hackish, but I can't think of a better way of detecting it
+    #(ie: "$HOME/rpmbuild/BUILDROOT/xpra-0.15.0-0.fc21.x86_64/usr")
+    if install_dir:
+        if not stripbuildroot:
+            #keep path relative to install_dir:
+            return os.path.join(install_dir, "etc", "xpra")
+        elif install_dir.endswith("/usr"):
+            return os.path.join("etc", "xpra")
+        elif install_dir.endswith("/usr/local"):
+            return os.path.join("usr", "local", "etc", "xpra")
+        else:
+            #not sure, just keep it:
+            return os.path.join(install_dir, "etc", "xpra")
+    #we don't have an install_dir, so we take a guess:
+    if sys.prefix.endswith("/usr"):
         return "/etc/xpra"
     return os.path.join(sys.prefix, "etc", "xpra")
 
@@ -773,6 +788,8 @@ def build_xpra_conf(install_dir):
             'conf_dir'       : conf_dir}
     #print("conf substitutions=%s" % SUBS)
     conf = template % SUBS
+    #get conf dir for install, without stripping the build root
+    conf_dir = get_conf_dir(install_dir, stripbuildroot=False)
     if not os.path.exists(conf_dir):
         os.makedirs(conf_dir)
     with open(conf_dir + "/xpra.conf", "w") as f_out:
