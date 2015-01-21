@@ -640,21 +640,14 @@ def get_conf_dir(install_dir, stripbuildroot=True):
     #and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
     #this is a bit hackish, but I can't think of a better way of detecting it
     #(ie: "$HOME/rpmbuild/BUILDROOT/xpra-0.15.0-0.fc21.x86_64/usr")
-    if install_dir:
-        if not stripbuildroot:
-            #keep path relative to install_dir:
-            return os.path.join(install_dir, "etc", "xpra")
-        elif install_dir.endswith("/usr"):
-            return os.path.join("etc", "xpra")
-        elif install_dir.endswith("/usr/local"):
-            return os.path.join("usr", "local", "etc", "xpra")
-        else:
-            #not sure, just keep it:
-            return os.path.join(install_dir, "etc", "xpra")
-    #we don't have an install_dir, so we take a guess:
-    if sys.prefix.endswith("/usr"):
-        return "/etc/xpra"
-    return os.path.join(sys.prefix, "etc", "xpra")
+    base_dir = install_dir or sys.prefix
+    if install_dir and stripbuildroot:
+        p = install_dir.find("/usr")
+        if p>0:
+            base_dir = install_dir[p:]
+    if base_dir.endswith("/usr"):
+        return base_dir[:-4]+"/etc/xpra"
+    return os.path.join(base_dir, "etc", "xpra")
 
 def detect_xorg_setup(install_dir=None):
     #returns (xvfb_command, has_displayfd, use_dummmy_wrapper)
