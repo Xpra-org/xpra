@@ -894,7 +894,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     if os.name=="posix" and not proxying and not upgrading and not shadowing:
         # start websockify?
         try:
-            start_websockify(app, opts, bind_tcp)
+            start_websockify(app.child_reaper, opts, bind_tcp)
         except Exception as e:
             error_cb("failed to setup websockify html server: %s" % e)
         if opts.exit_with_children:
