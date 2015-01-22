@@ -640,14 +640,27 @@ def get_conf_dir(install_dir, stripbuildroot=True):
     #and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
     #this is a bit hackish, but I can't think of a better way of detecting it
     #(ie: "$HOME/rpmbuild/BUILDROOT/xpra-0.15.0-0.fc21.x86_64/usr")
-    base_dir = install_dir or sys.prefix
+    dirs = (install_dir or sys.prefix).split(os.path.sep)
     if install_dir and stripbuildroot:
-        p = install_dir.find("/usr")
-        if p>0:
-            base_dir = install_dir[p:]
-    if base_dir.endswith("/usr"):
-        return base_dir[:-4]+"/etc/xpra"
-    return os.path.join(base_dir, "etc", "xpra")
+        if "BUILDROOT" in dirs:
+            #strip rpm style build root:
+            #[$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
+            dirs = dirs[dirs.index("BUILDROOT")+2:]
+        elif "usr" in dirs:
+            #ie: ["some", "path", "to", "usr"] -> ["usr"]
+            #assume "/usr" or "/usr/local" is the build root
+            dirs = dirs[dirs.index("usr"):]
+    #now deal with the fact that "/etc" is used for the "/usr" prefix
+    #but "/usr/local/etc" is used for the "/usr/local" prefix..
+    if dirs[-1]=="usr":
+        dirs = dirs[:-1]
+    #is this an absolute path?
+    if len(dirs)==0 or dirs[0]=="usr" or (install_dir or sys.prefix).startswith(os.path.sep):
+        #ie: ["/", "usr"] or ["/", "usr", "local"]
+        dirs.insert(0, os.path.sep)
+    dirs.append("etc")
+    dirs.append("xpra")
+    return os.path.join(*dirs)
 
 def detect_xorg_setup(install_dir=None):
     #returns (xvfb_command, has_displayfd, use_dummmy_wrapper)
