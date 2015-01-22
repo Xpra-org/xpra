@@ -98,6 +98,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def show_start_new_command(self, *args):
+        log("show_start_new_command%s current start_new_command=%s, flag=%s", args, self.start_new_command, self.start_new_commands)
         if self.start_new_command is None:
             from xpra.client.gtk_base.start_new_command import getStartNewCommand
             def run_command_cb(command):

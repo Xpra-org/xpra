@@ -121,6 +121,12 @@ class OSXMenuHelper(GTKTrayMenuBase):
             actions_menu = self.make_osxmenu("Actions")
             actions_menu.add(self.make_refreshmenuitem())
             actions_menu.add(self.make_raisewindowsmenuitem())
+            #set_sensitive(bool) does not work on OSX,
+            #so we only add the menu item if it does something
+            def addsnc(*args):
+                if self.client.start_new_commands:
+                    actions_menu.add(self.make_startnewcommandmenuitem(True))
+            self.client.connect("handshake-complete", addsnc)
         self.menu_bar.show_all()
 
     #these methods are called by the superclass
