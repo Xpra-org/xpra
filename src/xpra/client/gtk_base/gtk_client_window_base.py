@@ -272,7 +272,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                         def tell_server():
                             if self._iconified:
                                 self.send("unmap-window", self._id, True)
-                        self.timeout_add(50, tell_server)
+                        self.timeout_add(150, tell_server)
                 else:
                     self.process_map_event()
         self.after_window_state_updated()
