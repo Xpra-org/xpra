@@ -62,7 +62,7 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Thu Jan 22 2014 Antoine Martin <antoine@devloop.org.uk> - 0.22.beta0-0
+* Thu Jan 22 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22.beta0-0
 - new beta
 
 * Sun Dec 28 2014 Antoine Martin <antoine@devloop.org.uk> - 0.21.2-1
