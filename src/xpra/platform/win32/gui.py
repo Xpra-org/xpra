@@ -110,35 +110,37 @@ def add_window_hooks(window):
         handle = window.get_window().handle
     except:
         return
-    #override set_decorated so we can preserve the taskbar menu for undecorated windows
-    window.__set_decorated = window.set_decorated
-    def readd_window_options():
-        try:
-            style = win32api.GetWindowLong(handle, win32con.GWL_STYLE)
-            #re-add taskbar menu:
-            style |= win32con.WS_SYSMENU
-            if not window._maximized:
-                #can maximize if not maximized already:
-                style |= win32con.WS_MAXIMIZEBOX
-            #can always minimize:
-            style |= win32con.WS_MINIMIZEBOX
-            log("readd_window_options() using style=%s", style)
-            win32gui.SetWindowLong(handle, win32con.GWL_STYLE, style)
-        except Exception, e:
-            log.warn("failed to override window style: %s", e)
-    def set_decorated(b):
-        window.__set_decorated(b)
+    #OR windows never have any decorations or taskbar menu
+    if not window._override_redirect:
+        #override set_decorated so we can preserve the taskbar menu for undecorated windows
+        window.__set_decorated = window.set_decorated
+        def readd_window_options():
+            try:
+                style = win32api.GetWindowLong(handle, win32con.GWL_STYLE)
+                #re-add taskbar menu:
+                style |= win32con.WS_SYSMENU
+                if not window._maximized:
+                    #can maximize if not maximized already:
+                    style |= win32con.WS_MAXIMIZEBOX
+                #can always minimize:
+                style |= win32con.WS_MINIMIZEBOX
+                log("readd_window_options() using style=%s", style)
+                win32gui.SetWindowLong(handle, win32con.GWL_STYLE, style)
+            except Exception, e:
+                log.warn("failed to override window style: %s", e)
+        def set_decorated(b):
+            window.__set_decorated(b)
+            readd_window_options()
+        window.set_decorated = set_decorated
         readd_window_options()
-    window.set_decorated = set_decorated
-    readd_window_options()
-    #override after_window_state_updated so we can re-add the missing style options
-    #(somehow doing it from on_realize which calls add_window_hooks is not enough)
-    window.__after_window_state_updated = window.after_window_state_updated
-    def after_window_state_updated(*args):
-        log("after_window_state_updated%s", args)
-        window.__after_window_state_updated()
-        readd_window_options()
-    window.after_window_state_updated = after_window_state_updated
+        #override after_window_state_updated so we can re-add the missing style options
+        #(somehow doing it from on_realize which calls add_window_hooks is not enough)
+        window.__after_window_state_updated = window.after_window_state_updated
+        def after_window_state_updated(*args):
+            log("after_window_state_updated%s", args)
+            window.__after_window_state_updated()
+            readd_window_options()
+        window.after_window_state_updated = after_window_state_updated
 
     #glue code for gtk to win32 APIs:
     #add event hook class:
