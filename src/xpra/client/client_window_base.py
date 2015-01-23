@@ -31,6 +31,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.size_constraints = typedict()
         self.geometry_hints = None
         self._fullscreen = None
+        self._maximized = False
         self._above = False
         self._below = False
         self._sticky = False

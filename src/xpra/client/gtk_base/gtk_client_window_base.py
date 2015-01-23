@@ -252,9 +252,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #this may get sent now as part of map_event code below (and it is irrelevant for the unmap case),
             #or when we get the configure event - which should come straight after
             #if we're changing the maximized state
-            maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
-            self._window_state["maximized"] = maximized
-            log("maximized=%s", maximized)
+            self._maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
+            self._window_state["maximized"] = self._maximized
+            log("maximized=%s", self._maximized)
         if event.changed_mask & self.WINDOW_STATE_ICONIFIED:
             iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
             log("iconified=%s (was %s)", iconified, self._iconified)
@@ -277,6 +277,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 assert not iconified and self._iconified
                 self._iconified = False
                 self.process_map_event()
+        self.after_window_state_updated()
+
+    def after_window_state_updated(self):
+        #this is here to make it easier to hook some code
+        #after window_state_updated() has been called
+        #(used by the win32 platform workarounds)
+        pass
+
 
     def set_fullscreen(self, fullscreen):
         if self._fullscreen is None or self._fullscreen!=fullscreen:
