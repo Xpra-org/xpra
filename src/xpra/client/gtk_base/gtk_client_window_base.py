@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -225,58 +225,56 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def window_state_updated(self, widget, event):
         log("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s", self, widget, repr(event), event.changed_mask, event.new_window_state)
         if event.changed_mask & self.WINDOW_STATE_FULLSCREEN:
-            self._fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
-            log("fullscreen=%s", self._fullscreen)
+            fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
+            log("fullscreen=%s (was %s)", fullscreen, self._fullscreen)
+            if fullscreen!=self._fullscreen:
+                self._window_state["fullscreen"] = fullscreen
+                self._fullscreen = fullscreen
         if event.changed_mask & self.WINDOW_STATE_ABOVE:
             above = bool(event.new_window_state & self.WINDOW_STATE_ABOVE)
             log("above=%s (was %s)", above, self._above)
-            if above==self._above:
-                return      #unchanged!
-            self._window_state["above"] = above
-            self._above = above
+            if above!=self._above:
+                self._window_state["above"] = above
+                self._above = above
         if event.changed_mask & self.WINDOW_STATE_BELOW:
             below = bool(event.new_window_state & self.WINDOW_STATE_BELOW)
             log("below=%s (was %s)", below, self._below)
-            if below==self._below:
-                return      #unchanged!
-            self._window_state["below"] = below
-            self._below = below
+            if below!=self._below:
+                self._window_state["below"] = below
+                self._below = below
         if event.changed_mask & self.WINDOW_STATE_STICKY:
             sticky = bool(event.new_window_state & self.WINDOW_STATE_STICKY)
             log("sticky=%s (was %s)", sticky, self._sticky)
-            if sticky==self._sticky:
-                return      #unchanged!
-            self._window_state["sticky"] = sticky
-            self._sticky = sticky
+            if sticky!=self._sticky:
+                self._window_state["sticky"] = sticky
+                self._sticky = sticky
         if event.changed_mask & self.WINDOW_STATE_MAXIMIZED:
             #this may get sent now as part of map_event code below (and it is irrelevant for the unmap case),
             #or when we get the configure event - which should come straight after
             #if we're changing the maximized state
-            self._maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
-            self._window_state["maximized"] = self._maximized
-            log("maximized=%s", self._maximized)
+            maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
+            log("maximized=%s (was %s)", maximized, self._maximized)
+            if maximized!=self._maximized:
+                self._maximized = maximized
+                self._window_state["maximized"] = maximized
         if event.changed_mask & self.WINDOW_STATE_ICONIFIED:
             iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
             log("iconified=%s (was %s)", iconified, self._iconified)
-            if iconified==self._iconified:
-                return      #unchanged!
-            #handle iconification as map events:
-            assert not self._override_redirect
-            if iconified:
-                assert not self._iconified
-                #usually means it is unmapped
-                self._iconified = True
-                self._unfocus()
-                if not self._override_redirect:
-                    #tell server, but wait a bit to try to prevent races:
-                    def tell_server():
-                        if self._iconified:
-                            self.send("unmap-window", self._id, True)
-                    self.timeout_add(50, tell_server)
-            else:
-                assert not iconified and self._iconified
-                self._iconified = False
-                self.process_map_event()
+            if iconified!=self._iconified:
+                self._iconified = iconified
+                #handle iconification as map events:
+                assert not self._override_redirect
+                if iconified:
+                    #usually means it is unmapped
+                    self._unfocus()
+                    if not self._override_redirect:
+                        #tell server, but wait a bit to try to prevent races:
+                        def tell_server():
+                            if self._iconified:
+                                self.send("unmap-window", self._id, True)
+                        self.timeout_add(50, tell_server)
+                else:
+                    self.process_map_event()
         self.after_window_state_updated()
 
     def after_window_state_updated(self):
