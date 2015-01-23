@@ -224,6 +224,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         if b"decorations" in metadata:
             self.set_decorated(metadata.boolget("decorations"))
+            self.apply_geometry_hints(self.geometry_hints)
 
         if b"above" in metadata:
             self._above = metadata.boolget("above")

@@ -82,6 +82,28 @@ def gl_check():
     return None
 
 
+def get_monitor_workarea_for_window(handle):
+    try:
+        from win32con import MONITOR_DEFAULTTONEAREST       #@UnresolvedImport
+        monitor = win32api.MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST)
+        mi = win32api.GetMonitorInfo(monitor)
+        #absolute workarea / monitor coordinates:
+        #(all relative to 0,0 being top left)
+        wx1, wy1, wx2, wy2 = mi['Work']
+        mx1, my1, mx2, my2 = mi['Monitor']
+        assert mx1<mx2 and my1<my2, "invalid monitor coordinates"
+        #clamp to monitor, and make it all relative to monitor:
+        rx1 = max(0, min(mx2-mx1, wx1-mx1))
+        ry1 = max(0, min(my2-my1, wy1-my1))
+        rx2 = max(0, min(mx2-mx1, wx2-mx1))
+        ry2 = max(0, min(my2-my1, wy2-my1))
+        assert rx1<rx2 and ry1<ry2, "invalid relative workarea coordinates"
+        return rx1, ry1, rx2-rx1, ry2-ry1
+    except Exception as e:
+        log.warn("failed to query workareas: %s", e)
+        return None
+
+
 def add_window_hooks(window):
     #gtk2 to window handle:
     try:
@@ -89,7 +111,7 @@ def add_window_hooks(window):
     except:
         return
     #glue code for gtk to win32 APIs:
-    #add even hook class:
+    #add event hook class:
     win32hooks = Win32Hooks(handle)
     log("add_window_hooks(%s) added hooks for hwnd %#x: %s", window, handle, win32hooks)
     window.win32hooks = win32hooks
@@ -98,10 +120,23 @@ def add_window_hooks(window):
     window.__apply_geometry_hints = window.apply_geometry_hints
     #our function for taking gdk window hints and passing them to the win32 hooks class:
     def apply_maxsize_hints(hints):
+        workw, workh = 0, 0
+        if not window.get_decorated():
+            workarea = get_monitor_workarea_for_window(handle)
+            log("using workarea as window size limit for undecorated window: %s", workarea)
+            if workarea:
+                workw, workh = workarea[2:4]
         maxw = hints.get("max_width", 0)
         maxh = hints.get("max_height", 0)
+        if workw>0 and workh>0:
+            #clamp to workspace for undecorated windows:
+            if maxw>0 and maxh>0:
+                maxw = min(workw, maxw)
+                maxh = min(workh, maxh)
+            else:
+                maxw, maxh = workw, workh
         log("apply_maxsize_hints(%s) for window %s, found max: %sx%s", hints, window, maxw, maxh)
-        if maxw>0 or maxh>0:
+        if (maxw>0 and maxw<32767) or (maxh>0 and maxh<32767):
             window.win32hooks.max_size = (maxw or 32000), (maxh or 32000)
         elif window.win32hooks.max_size:
             #was set, clear it

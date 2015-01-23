@@ -54,9 +54,15 @@ class Win32Hooks(object):
         if self.max_size:
             info = ctypes.cast(lparam, ctypes.POINTER(MINMAXINFO)).contents
             width, height = self.max_size
-            point  = POINT(width + self.frame_width*2, height + self.caption_height + self.frame_height*2)
+            style = win32api.GetWindowLong(hwnd, win32con.GWL_STYLE)
+            if style & win32con.WS_BORDER:
+                fw, fh = self.frame_width, self.frame_height
+            else:
+                fw, fh = 0, 0
+            point  = POINT(width + fw*2, height + self.caption_height + fh*2)
             info.ptMaxSize       = point
             info.ptMaxTrackSize  = point
+            log("on_getminmaxinfo%s frame: %sx%s, point=%s", (hwnd, msg, wparam, lparam), fw, fh, point)
 
     def cleanup(self, *args):
         log("cleanup%s", args)
