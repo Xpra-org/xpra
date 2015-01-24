@@ -1191,8 +1191,12 @@ def run_client(error_cb, opts, extra_args, mode):
         if hasattr(app, "connect"):
             app.connect("handshake-complete", handshake_complete)
         app.init_ui(opts, extra_args)
-        conn = connect()
-        app.setup_connection(conn)
+        try:
+            conn = connect()
+            app.setup_connection(conn)
+        except Exception as e:
+            app.cleanup()
+            raise e
     return do_run_client(app)
 
 def make_client(error_cb, opts):
