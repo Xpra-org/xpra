@@ -38,6 +38,7 @@ CLIENT_EXIT             = "client exit"
 
 #magic value for "workspace" window property, means unset
 WORKSPACE_UNSET = 65535
+WORKSPACE_ALL = 0xffffffff
 
 #this default value is based on 0.14 clients,
 #later clients should provide the 'metadata.supported" capability instead

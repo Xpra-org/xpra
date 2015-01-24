@@ -19,7 +19,7 @@ import gtk.gdk
 import cairo
 import signal
 
-from xpra.util import nonl, WORKSPACE_UNSET
+from xpra.util import nonl, WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
@@ -100,6 +100,13 @@ USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
 PROPERTIES_IGNORED = ("_NET_WM_OPAQUE_REGION", )
 #make it easier to debug property changes, just add them here:
 PROPERTIES_DEBUG = {}   #ie: {"WM_PROTOCOLS" : ["atom"]}
+
+
+#add user friendly workspace logging:
+WORKSPACE_STR = {WORKSPACE_UNSET    : "UNSET",
+                 WORKSPACE_ALL      : "ALL"}
+def workspacestr(w):
+    return WORKSPACE_STR.get(w, w)
 
 
 def sanestr(s):
@@ -539,18 +546,26 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
 
     def _handle_workspace_change(self):
-        workspace = self.prop_get("_NET_WM_DESKTOP", "u32", True) or WORKSPACE_UNSET
-        workspacelog("_NET_WM_DESKTOP=%s", workspace)
+        workspace = self.prop_get("_NET_WM_DESKTOP", "u32", True)
+        if workspace is None:
+            workspace = WORKSPACE_UNSET
+        workspacelog("_NET_WM_DESKTOP=%s for window %#x", workspacestr(workspace), self.client_window.xid)
         self._internal_set_property("workspace", workspace)
     _property_handlers["_NET_WM_DESKTOP"] = _handle_workspace_change
 
     def move_to_workspace(self, workspace):
         #we send a message to ourselves, we could also just update the property
-        workspacelog("move_to_workspace(%s)", workspace)
+        current = self.get_property("workspace")
+        if current==workspace:
+            workspacelog("move_to_workspace(%s) unchanged", workspacestr(workspace))
+            return
+        workspacelog("move_to_workspace(%s) current=%s", workspacestr(workspace), workspacestr(current))
         with xswallow:
             if workspace==WORKSPACE_UNSET:
+                workspacelog("removing _NET_WM_DESKTOP property from window %#x", self.client_window.xid)
                 X11Window.XDeleteProperty(self.client_window.xid, "_NET_WM_DESKTOP")
             else:
+                workspacelog("setting _NET_WM_DESKTOP=%s on window %#x", workspacestr(workspace), self.client_window.xid)
                 prop_set(self.client_window, "_NET_WM_DESKTOP", "u32", workspace)
 
     def _handle_opacity_change(self):
@@ -731,17 +746,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             #since we cannot access Wm from here..
             root = self.client_window.get_screen().get_root_window()
             ndesktops = prop_get(root, "_NET_NUMBER_OF_DESKTOPS", "u32", ignore_errors=True)
-            workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s", workspace, ndesktops)
-            if ndesktops>0 and (workspace==WORKSPACE_UNSET or (workspace>=0 and workspace<ndesktops)):
-                current = self.get_property("workspace")
-                if current==workspace:
-                    with xsync:
-                        prop_set(self.client_window, "_NET_WM_DESKTOP", "u32", workspace)
-                    workspacelog("workspace unchanged: %s", workspace)
-                else:
-                    self._internal_set_property("workspace", workspace)
+            workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s", workspacestr(workspace), ndesktops)
+            if ndesktops>0 and (workspace in (WORKSPACE_UNSET, WORKSPACE_ALL) or (workspace>=0 and workspace<ndesktops)):
+                self.move_to_workspace(workspace)
             else:
-                workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s", workspace, ndesktops)
+                workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s", workspacestr(workspace), ndesktops)
         else:
             log("do_xpra_client_message_event(%s)", event)
 

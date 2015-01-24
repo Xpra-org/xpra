@@ -16,7 +16,7 @@ log = Logger("window")
 keylog = Logger("keyboard")
 iconlog = Logger("icon")
 
-from xpra.util import AdHocStruct, bytestostr, WORKSPACE_UNSET
+from xpra.util import AdHocStruct, bytestostr, WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
@@ -350,7 +350,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #call this method whenever something workspace related may have changed
         window_workspace = self.get_window_workspace()
         desktop_workspace = self.get_desktop_workspace()
-        workspacelog("do_worskpace_changed(%s) (window, desktop): from %s to %s", info, (self._window_workspace, self._desktop_workspace), (window_workspace, desktop_workspace))
+        workspacelog("do_workspace_changed(%s) (window, desktop): from %s to %s", info, (self._window_workspace, self._desktop_workspace), (window_workspace, desktop_workspace))
         if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
             #no change
             return
@@ -366,6 +366,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if desktop_workspace<0 or window_workspace is None:
             #maybe the property has been cleared? maybe the window is being scrubbed?
             workspacelog("not sure if the window is shown or not: %s vs %s, resuming to be safe", desktop_workspace, window_workspace)
+            suspend_resume = False
+        elif window_workspace==WORKSPACE_UNSET:
+            workspacelog("workspace unset: assume current")
+            suspend_resume = False
+        elif window_workspace==WORKSPACE_ALL:
+            workspacelog("window is on all workspaces")
             suspend_resume = False
         elif desktop_workspace!=window_workspace:
             workspacelog("window is on a different workspace, increasing its batch delay (desktop: %s, window: %s)", desktop_workspace, window_workspace)
@@ -411,7 +417,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 X11Window.XDeleteProperty(gdkwin.xid, "_NET_WM_DESKTOP")
             return self._window_workspace
         #clamp to number of workspaces just in case we have a mismatch:
-        self._window_workspace = max(0, min(ndesktops-1, workspace))
+        if workspace==WORKSPACE_ALL:
+            self._window_workspace = WORKSPACE_ALL
+        else:
+            self._window_workspace = max(0, min(ndesktops-1, workspace))
+        workspacelog("%s.set_workspace() clamped workspace=%s", self, self._window_workspace)
         if not gdkwin.is_visible():
             #window is unmapped so we can set the window property directly:
             prop_set(self.get_window(), "_NET_WM_DESKTOP", "u32", self._window_workspace)
