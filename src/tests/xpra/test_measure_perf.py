@@ -212,6 +212,15 @@ print ("XPRA_VERSION_NO=%s" % XPRA_VERSION_NO)
 XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
+STRICT_ENCODINGS = False
+if STRICT_ENCODINGS:
+    #beware: only enable this flag if the version being tested
+    # also supports the same environment overrides,
+    # or the comparison will not be fair.
+    os.environ["XPRA_ENCODING_STRICT_MODE"] = "1"
+    os.environ["XPRA_MAX_PIXELS_PREFER_RGB"] = "0"
+    os.environ["XPRA_MAX_NONVIDEO_PIXELS"] = "0"
+
 #webp leaks - don't test it:
 #if XPRA_VERSION_NO>=[0, 7]:
 #    XPRA_TEST_ENCODINGS.append("webp")
