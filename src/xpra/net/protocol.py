@@ -454,7 +454,7 @@ class Protocol(object):
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
             elif ti!=str:
-                log.warn("unexpected data type in %s packet: %s", packet[0], ti)
+                log.warn("unexpected data type %s in %s packet: %s", ti, packet[0], repr_ellipsized(item))
         #now the main packet (or what is left of it):
         packet_type = packet[0]
         self.output_stats[packet_type] = self.output_stats.get(packet_type, 0)+1

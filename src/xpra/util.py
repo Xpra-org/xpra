@@ -421,7 +421,7 @@ def detect_leaks(log, detailed=[]):
 
 
 def repr_ellipsized(obj, limit=100):
-    if isinstance(obj, str) and len(obj) > limit:
+    if (isinstance(obj, str) or isinstance(obj, unicode)) and len(obj) > limit:
         try:
             s = repr(obj[:limit])
             if len(obj)>limit:
