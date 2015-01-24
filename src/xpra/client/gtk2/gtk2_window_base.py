@@ -10,6 +10,10 @@ from gtk import gdk
 
 from xpra.log import Logger
 log = Logger("window")
+statelog = Logger("state")
+eventslog = Logger("events")
+workspacelog = Logger("workspace")
+
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.util import WORKSPACE_UNSET
@@ -111,11 +115,11 @@ class GTK2WindowBase(GTKClientWindowBase):
         self.connect('unrealize', self.on_unrealize)
 
     def on_realize(self, widget):
-        log("on_realize(%s)", widget)
+        eventslog("on_realize(%s)", widget)
         add_window_hooks(self)
 
     def on_unrealize(self, widget):
-        log("on_unrealize(%s)", widget)
+        eventslog("on_unrealize(%s)", widget)
         remove_window_hooks(self)
 
 
@@ -125,7 +129,7 @@ class GTK2WindowBase(GTKClientWindowBase):
         if rgba is None:
             log.error("enable_alpha() cannot handle window transparency on screen %s", screen)
             return  False
-        log("enable_alpha() using rgba colormap %s for wid %s", rgba, self._id)
+        statelog("enable_alpha() using rgba colormap %s for wid %s", rgba, self._id)
         self.set_colormap(rgba)
         return True
 
@@ -134,7 +138,7 @@ class GTK2WindowBase(GTKClientWindowBase):
         #all other windows we manage from receiving input
         #including other unrelated applications
         #what we want is "window-modal"
-        log("set_modal(%s) swallowed", modal)
+        statelog("set_modal(%s) swallowed", modal)
 
     def xget_u32_property(self, target, name):
         try:
@@ -165,9 +169,9 @@ class GTK2WindowBase(GTKClientWindowBase):
             return  None              #windows and OSX do not have workspaces
         value = self.xget_u32_property(target, prop)
         if value is not None:
-            log("do_get_workspace() found value=%s from %s / %s", value, target, prop)
+            workspacelog("do_get_workspace() found value=%s from %s / %s", value, target, prop)
             return value
-        log("do_get_workspace() value not found!")
+        workspacelog("do_get_workspace() value not found!")
         return  default_value
 
 
@@ -192,7 +196,7 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     def do_expose_event(self, event):
         #cannot use self
-        log("do_expose_event(%s) area=%s", event, event.area)
+        eventslog("do_expose_event(%s) area=%s", event, event.area)
         if not (self.flags() & gtk.MAPPED) or self._backing is None:
             return
         w,h = self.window.get_size()

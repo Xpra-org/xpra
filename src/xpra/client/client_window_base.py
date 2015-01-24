@@ -15,6 +15,7 @@ plog = Logger("paint")
 focuslog = Logger("focus")
 mouselog = Logger("mouse")
 workspacelog = Logger("workspace")
+metalog = Logger("metadata")
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -125,7 +126,7 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def update_metadata(self, metadata):
-        log("update_metadata(%s)", metadata)
+        metalog("update_metadata(%s)", metadata)
         self._metadata.update(metadata)
         if not self.is_realized():
             #Warning: window managers may ignore the icons we try to set
@@ -135,10 +136,10 @@ class ClientWindowBase(ClientWidgetBase):
         try:
             self.set_metadata(metadata)
         except Exception as e:
-            log.warn("failed to set window metadata to '%s': %s", metadata, e)
+            metalog.warn("failed to set window metadata to '%s': %s", metadata, e)
 
     def set_metadata(self, metadata):
-        log("set_metadata(%s)", metadata)
+        metalog("set_metadata(%s)", metadata)
         if b"title" in metadata:
             try:
                 title = bytestostr(self._client.title).replace("\0", "")
@@ -298,16 +299,16 @@ class ClientWindowBase(ClientWidgetBase):
             #not honouring "base" + "inc", but honouring just "min" instead:
             maxw = max(minw, maxw)
             maxh = max(minh, maxh)
-            log("modified hints for max window size %s: %s (rw=%s, rh=%s) -> max=%sx%s", max_window_size, hints, rw, rh, maxw, maxh)
+            metalog("modified hints for max window size %s: %s (rw=%s, rh=%s) -> max=%sx%s", max_window_size, hints, rw, rh, maxw, maxh)
             hints["max_width"] = maxw
             hints["max_height"] = maxh
         try:
-            log("calling: %s(%s)", self.apply_geometry_hints, hints)
+            metalog("calling: %s(%s)", self.apply_geometry_hints, hints)
             #save them so the window hooks can use the last value used:
             self.geometry_hints = hints
             self.apply_geometry_hints(hints)
         except:
-            log.error("with hints=%s", hints, exc_info=True)
+            metalog.error("with hints=%s", hints, exc_info=True)
         #TODO: handle gravity
         #gravity = size_metadata.get("gravity")
 

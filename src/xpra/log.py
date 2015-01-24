@@ -120,7 +120,7 @@ KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "vid
                  "osx", "win32",
                  "paint", "platform", "import",
                  "posix",
-                 "keyboard", "pointer", "focus",
+                 "keyboard", "pointer", "focus", "metadata", "state",
                  "server", "command",
                  "shadow",
                  "test",

@@ -15,6 +15,10 @@ workspacelog = Logger("workspace")
 log = Logger("window")
 keylog = Logger("keyboard")
 iconlog = Logger("icon")
+metalog = Logger("metadata")
+statelog = Logger("state")
+eventslog = Logger("events")
+
 
 from xpra.util import AdHocStruct, bytestostr, WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
@@ -107,9 +111,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return True
         window_types = metadata.get("window-type", [])
         popup_types = list(POPUP_TYPE_HINTS.intersection(window_types))
-        log("popup_types(%s)=%s", window_types, popup_types)
+        metalog("popup_types(%s)=%s", window_types, popup_types)
         if popup_types:
-            log("forcing POPUP window type for %s", popup_types)
+            metalog("forcing POPUP window type for %s", popup_types)
             return True
         return False
 
@@ -128,9 +132,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if ("NORMAL" not in window_types) and ("DIALOG" not in window_types) and metadata.intget("transient-for", -1)>0:
             return False
         undecorated_types = list(UNDECORATED_TYPE_HINTS.intersection(window_types))
-        log("undecorated_types(%s)=%s", window_types, undecorated_types)
+        metalog("undecorated_types(%s)=%s", window_types, undecorated_types)
         if undecorated_types:
-            log("not decorating window type %s", undecorated_types)
+            metalog("not decorating window type %s", undecorated_types)
             return False
         return True
 
@@ -194,7 +198,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #try to enable alpha on this window if needed,
         #and if the backing class can support it:
         bc = self.get_backing_class()
-        log("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s", self._has_alpha, bc, bc.HAS_ALPHA, self.is_realized())
+        metalog("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s", self._has_alpha, bc, bc.HAS_ALPHA, self.is_realized())
         #by default, only RGB (no transparency):
         #rgb_formats = list(BACKING_CLASS.RGB_MODES)
         self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
@@ -223,28 +227,28 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def window_state_updated(self, widget, event):
-        log("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s", self, widget, repr(event), event.changed_mask, event.new_window_state)
+        statelog("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s", self, widget, repr(event), event.changed_mask, event.new_window_state)
         if event.changed_mask & self.WINDOW_STATE_FULLSCREEN:
             fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
-            log("fullscreen=%s (was %s)", fullscreen, self._fullscreen)
+            statelog("fullscreen=%s (was %s)", fullscreen, self._fullscreen)
             if fullscreen!=self._fullscreen:
                 self._window_state["fullscreen"] = fullscreen
                 self._fullscreen = fullscreen
         if event.changed_mask & self.WINDOW_STATE_ABOVE:
             above = bool(event.new_window_state & self.WINDOW_STATE_ABOVE)
-            log("above=%s (was %s)", above, self._above)
+            statelog("above=%s (was %s)", above, self._above)
             if above!=self._above:
                 self._window_state["above"] = above
                 self._above = above
         if event.changed_mask & self.WINDOW_STATE_BELOW:
             below = bool(event.new_window_state & self.WINDOW_STATE_BELOW)
-            log("below=%s (was %s)", below, self._below)
+            statelog("below=%s (was %s)", below, self._below)
             if below!=self._below:
                 self._window_state["below"] = below
                 self._below = below
         if event.changed_mask & self.WINDOW_STATE_STICKY:
             sticky = bool(event.new_window_state & self.WINDOW_STATE_STICKY)
-            log("sticky=%s (was %s)", sticky, self._sticky)
+            statelog("sticky=%s (was %s)", sticky, self._sticky)
             if sticky!=self._sticky:
                 self._window_state["sticky"] = sticky
                 self._sticky = sticky
@@ -253,13 +257,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #or when we get the configure event - which should come straight after
             #if we're changing the maximized state
             maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
-            log("maximized=%s (was %s)", maximized, self._maximized)
+            statelog("maximized=%s (was %s)", maximized, self._maximized)
             if maximized!=self._maximized:
                 self._maximized = maximized
                 self._window_state["maximized"] = maximized
         if event.changed_mask & self.WINDOW_STATE_ICONIFIED:
             iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
-            log("iconified=%s (was %s)", iconified, self._iconified)
+            statelog("iconified=%s (was %s)", iconified, self._iconified)
             if iconified!=self._iconified:
                 self._iconified = iconified
                 #handle iconification as map events:
@@ -287,7 +291,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def set_fullscreen(self, fullscreen):
         if self._fullscreen is None or self._fullscreen!=fullscreen:
             #note: the "_fullscreen" flag is updated by the window-state-event, not here
-            log("%s.set_fullscreen(%s)", self, fullscreen)
+            statelog("%s.set_fullscreen(%s)", self, fullscreen)
             if fullscreen:
                 #we may need to temporarily remove the max-window-size restrictions
                 #to be able to honour the fullscreen request:
@@ -332,7 +336,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def property_changed(self, widget, event):
-        log("%s.property_changed(%s, %s) : %s", self, widget, event, event.atom)
+        statelog("%s.property_changed(%s, %s) : %s", self, widget, event, event.atom)
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
             self.do_workspace_changed(event)
         elif event.atom=="XKLAVIER_STATE":
@@ -433,7 +437,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
-        log("initiate_moveresize%s", (x_root, y_root, direction, button, source_indication))
+        statelog("initiate_moveresize%s", (x_root, y_root, direction, button, source_indication))
         assert HAS_X11_BINDINGS, "cannot handle initiate-moveresize without X11 bindings"
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
         with xsync:
@@ -525,7 +529,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, self._window_workspace, workspace)
             self._window_workspace = workspace
             props["workspace"] = workspace
-        log("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
+        eventslog("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
         self.send("map-window", self._id, x, y, w, h, props, state)
         self._pos = (x, y)
         self._size = (w, h)
@@ -533,7 +537,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_configure_event(self, event):
-        log("%s.do_configure_event(%s)", self, event)
+        eventslog("%s.do_configure_event(%s)", self, event)
         gtk.Window.do_configure_event(self, event)
         if not self._override_redirect and not self._iconified:
             self.process_configure_event()
@@ -558,7 +562,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self._window_workspace = workspace
                 props["workspace"] = workspace
         packet = ["configure-window", self._id, x, y, w, h, props, self._resize_counter, state]
-        log("%s", packet)
+        eventslog("%s", packet)
         self.send(*packet)
         if dx!=0 or dy!=0:
             #window has moved, also move any child OR window:
@@ -576,7 +580,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._backing.init(w, h)
 
     def move_resize(self, x, y, w, h, resize_counter=0):
-        log("move_resize%s", (x, y, w, h, resize_counter))
+        statelog("move_resize%s", (x, y, w, h, resize_counter))
         w = max(1, w)
         h = max(1, h)
         self._resize_counter = resize_counter
@@ -621,13 +625,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_unmap_event(self, event):
-        log("do_unmap_event(%s)", event)
+        eventslog("do_unmap_event(%s)", event)
         self._unfocus()
         if not self._override_redirect:
             self.send("unmap-window", self._id, False)
 
     def do_delete_event(self, event):
-        log("do_delete_event(%s)", event)
+        eventslog("do_delete_event(%s)", event)
         self.send("close-window", self._id)
         return True
 

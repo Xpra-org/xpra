@@ -18,6 +18,7 @@ elog = Logger("encoding")
 soundlog = Logger("sound")
 keylog = Logger("keyboard")
 cursorlog = Logger("cursor")
+metalog = Logger("metadata")
 
 from xpra.server import ClientException
 from xpra.server.source_stats import GlobalPerformanceStatistics
@@ -843,7 +844,7 @@ class ServerSource(object):
     # xpra window metadata values that depend on that property
     def _make_metadata(self, wid, window, propname):
         if propname not in self.metadata_supported:
-            log("make_metadata: client does not support %s, skipped", propname)
+            metalog("make_metadata: client does not support %s, skipped", propname)
             return {}
         return make_window_metadata(window, propname,
                                         get_transient_for=self.get_transient_for,
@@ -1358,7 +1359,7 @@ class ServerSource(object):
             self.send_window_icon(wid, window)
         else:
             metadata = self._make_metadata(wid, window, prop)
-            log("make_metadata(%s, %s, %s)=%s", wid, window, prop, metadata)
+            metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, metadata)
             if len(metadata)>0:
                 self.send("window-metadata", wid, metadata)
 
