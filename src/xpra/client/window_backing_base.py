@@ -273,7 +273,10 @@ class WindowBackingBase(object):
         except KeyboardInterrupt:
             raise
         except:
-            log.error("do_paint_rgb24 error", exc_info=True)
+            if not self._backing:
+                log("paint error on closed backing ignored")
+            else:
+                log.error("do_paint_rgb24 error", exc_info=True)
             fire_paint_callbacks(callbacks, False)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
