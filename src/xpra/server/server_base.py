@@ -1212,11 +1212,11 @@ class ServerBase(ServerCore):
 
     def _process_info_request(self, proto, packet):
         ss = self._server_sources.get(proto)
-        assert ss, "cannot find server source for %s" % proto
-        def info_callback(_proto, info):
-            assert proto==_proto
-            ss.send_info_response(info)
-        self.get_all_info(info_callback, proto, *packet[1:])
+        if ss:
+            def info_callback(_proto, info):
+                assert proto==_proto
+                ss.send_info_response(info)
+            self.get_all_info(info_callback, proto, *packet[1:])
 
     def send_hello_info(self, proto):
         log.info("processing info request from %s", proto._conn)
