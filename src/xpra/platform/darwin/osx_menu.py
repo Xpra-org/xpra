@@ -46,6 +46,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.hidden_window = None
         self.keyboard = None
         self.menus = {}
+        self.full = False
         self.set_client(client)
 
     def set_client(self, client):
@@ -93,6 +94,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
     def add_full_menu(self):
         log("OSXMenuHelper.add_full_menu()")
+        if self.full:
+            return
+        self.full = True
         assert self.client
         if SHOW_ABOUT_XPRA:
             _, info_menu = self.menus.get("Info")
