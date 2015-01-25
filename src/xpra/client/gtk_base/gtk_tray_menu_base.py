@@ -20,6 +20,8 @@ from xpra.log import Logger
 log = Logger("tray")
 
 
+HIDE_DISABLED_MENU_ENTRIES = sys.platform.startswith("darwin")
+
 #compression is fine with default value (3), no need to clutter the UI
 SHOW_COMPRESSION_MENU = False
 STARTSTOP_SOUND_MENU = os.environ.get("XPRA_SHOW_SOUND_MENU", "1")=="1"
@@ -186,6 +188,9 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
                 encodings_submenu.set_encoding(enc)
         log("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
         encoding_item.set_active(encoding==get_current_encoding())
+        sensitive = encoding in server_encodings
+        if not sensitive and HIDE_DISABLED_MENU_ENTRIES:
+            continue
         encoding_item.set_sensitive(encoding in server_encodings)
         encoding_item.set_draw_as_radio(True)
         encoding_item.connect("toggled", encoding_changed)
