@@ -9,6 +9,7 @@ import win32ts, win32con, win32api, win32gui        #@UnresolvedImport
 from xpra.log import Logger
 log = Logger("events", "win32")
 
+from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 
 #no idea where we're supposed to get those from:
 WM_WTSSESSION_CHANGE        = 0x02b1
@@ -32,10 +33,7 @@ LOG_EVENTS = {
             win32con.WM_TIMECHANGE          : "WM_TIMECHANGE: time change event",
             }
 KNOWN_WM_EVENTS = IGNORE_EVENTS.copy()
-for x in dir(win32con):
-    if x.startswith("WM_"):
-        v = getattr(win32con, x)
-        KNOWN_WM_EVENTS[v] = x
+KNOWN_WM_EVENTS.update(WNDPROC_EVENT_NAMES)
 NIN_BALLOONSHOW         = win32con.WM_USER + 2
 NIN_BALLOONHIDE         = win32con.WM_USER + 3
 NIN_BALLOONTIMEOUT      = win32con.WM_USER + 4
@@ -47,6 +45,12 @@ BALLOON_EVENTS = {
             NIN_BALLOONUSERCLICK        : "NIN_BALLOONUSERCLICK",
           }
 KNOWN_WM_EVENTS.update(BALLOON_EVENTS)
+
+#anything else we don't have yet:
+for x in dir(win32con):
+    if x.startswith("WM_") and x not in KNOWN_WM_EVENTS:
+        v = getattr(win32con, x)
+        KNOWN_WM_EVENTS[v] = x
 
 
 singleton = None
