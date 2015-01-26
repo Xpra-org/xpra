@@ -287,6 +287,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Does the window use transparency", "",
                        False,
                        gobject.PARAM_READABLE),
+        "bypass-compositor": (gobject.TYPE_INT,
+                       "hint that the window would benefit from running uncomposited ", "",
+                       0, 2, 0,
+                       gobject.PARAM_READABLE),
         "fullscreen": (gobject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
                        False,
@@ -366,14 +370,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
-        self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "role", "group-leader",
+        self.property_names = ["pid", "transient-for", "fullscreen", "bypass-compositor", "maximized", "window-type", "role", "group-leader",
                                "xid", "workspace", "has-alpha", "opacity"]
 
     def get_property_names(self):
         return self.property_names
 
     def get_dynamic_property_names(self):
-        return ("title", "size-hints", "fullscreen", "maximized", "opacity", "workspace")
+        return ("title", "size-hints", "fullscreen", "bypass-compositor", "maximized", "opacity", "workspace")
 
 
     def managed_connect(self, detailed_signal, handler, *args):
@@ -538,7 +542,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("xid", self.client_window.xid)
         self._internal_set_property("pid", self.prop_get("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", self.prop_get("WM_WINDOW_ROLE", "latin1"))
-        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_NET_WM_DESKTOP"]:
+        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_NET_WM_DESKTOP", "_NET_WM_BYPASS_COMPOSITOR"]:
             self._call_property_handler(mutable)
 
     def _read_initial_X11_properties(self):
@@ -567,6 +571,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             else:
                 workspacelog("setting _NET_WM_DESKTOP=%s on window %#x", workspacestr(workspace), self.client_window.xid)
                 prop_set(self.client_window, "_NET_WM_DESKTOP", "u32", workspace)
+
+
+    def _handle_bypass_compositor_change(self):
+        bypass = self.prop_get("_NET_WM_BYPASS_COMPOSITOR", "u32", True) or 0
+        self._internal_set_property("bypass-compositor", bypass)
+        log("bypass-compositor=%s", bypass)
+    _property_handlers["_NET_WM_BYPASS_COMPOSITOR"] = _handle_bypass_compositor_change
+
 
     def _handle_opacity_change(self):
         opacity = self.prop_get("_NET_WM_WINDOW_OPACITY", "u32", True) or -1

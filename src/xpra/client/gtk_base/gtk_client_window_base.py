@@ -288,6 +288,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         pass
 
 
+    def set_bypass_compositor(self, v):
+        if not HAS_X11_BINDINGS:
+            return
+        if v not in (0, 1, 2):
+            v = 0
+        if not self.is_realized():
+            self.realize()
+        prop_set(self.get_window(), "_NET_WM_BYPASS_COMPOSITOR", "u32", v)
+
+
     def set_fullscreen(self, fullscreen):
         if self._fullscreen is None or self._fullscreen!=fullscreen:
             #note: the "_fullscreen" flag is updated by the window-state-event, not here

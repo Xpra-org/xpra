@@ -252,6 +252,12 @@ class ClientWindowBase(ClientWidgetBase):
         if b"workspace" in metadata:
             self.set_workspace(metadata.intget("workspace"))
 
+        if b"bypass-compositor" in metadata:
+            self.set_bypass_compositor(metadata.intget("bypass-compositor"))
+
+
+    def set_bypass_compositor(self, v):
+        pass        #see gtk2 client
 
     def set_size_constraints(self, size_constraints, max_window_size):
         self._set_initial_position = size_constraints.get("set-initial-position")
