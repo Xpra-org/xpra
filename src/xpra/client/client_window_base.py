@@ -258,12 +258,18 @@ class ClientWindowBase(ClientWidgetBase):
         if b"strut" in metadata:
             self.set_strut(metadata.dictget("strut"))
 
+        if b"fullscreen-monitors" in metadata:
+            self.set_fullscreen_monitors(metadata.intlistget("fullscreen-monitors"))
+
 
     def set_bypass_compositor(self, v):
-        pass        #see gtk2 client
+        pass        #see gtk client window base
 
     def set_strut(self, d):
-        pass        #see gtk2 client
+        pass        #see gtk client window base
+
+    def set_fullscreen_monitors(self, fsm):
+        pass        #see gtk client window base
 
 
     def set_size_constraints(self, size_constraints, max_window_size):

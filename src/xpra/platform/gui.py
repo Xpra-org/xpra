@@ -113,6 +113,9 @@ def remove_window_hooks(window):
 def show_desktop(show):
     pass
 
+def set_fullscreen_monitors(window, fsm):
+    pass
+
 
 def gl_check():
     return None     #no problem
@@ -161,7 +164,7 @@ platform_import(globals(), "gui", False,
                 "do_ready",
                 "do_init",
                 "gl_check",
-                "show_desktop",
+                "show_desktop", "set_fullscreen_monitors",
                 "ClientExtras",
                 "take_screenshot",
                 "get_native_tray_menu_helper_classes",

@@ -301,6 +301,24 @@ def show_desktop(b):
         log.warn("failed to call show_desktop(%s): %s", b, e)
 
 
+def set_fullscreen_monitors(window, fsm):
+    try:
+        assert type(fsm) in (tuple, list), "invalid type for fullscreen-monitors: %s" % type(fsm)
+        assert len(fsm)==4, "invalid number of fullscreen-monitors: %s" % len(fsm)
+        xid = get_xid(window)
+        from xpra.x11.gtk_x11 import gdk_display_source
+        assert gdk_display_source
+        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
+        X11Window = X11WindowBindings()
+        root_xid = X11Window.getDefaultRootWindow()
+        SubstructureNotifyMask = constants["SubstructureNotifyMask"]
+        SubstructureRedirectMask = constants["SubstructureRedirectMask"]
+        event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+        X11Window.sendClientMessage(root_xid, xid, False, event_mask, "_NET_WM_FULLSCREEN_MONITORS", *fsm)
+    except Exception as e:
+        log.warn("failed to call set_fullscreen_monitors(%s, %s): %s", window, fsm, e)
+
+
 def get_info():
     from xpra.platform.gui import get_info_base
     i = get_info_base()

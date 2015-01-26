@@ -25,7 +25,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo,
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
-from xpra.platform.gui import get_window_frame_sizes
+from xpra.platform.gui import get_window_frame_sizes, set_fullscreen_monitors
 from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba    #@UnresolvedImport
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -320,6 +320,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if has_partial:
             prop_set(self.get_window(), "_NET_WM_STRUT_PARTIAL", ["u32"], values)
         prop_set(self.get_window(), "_NET_WM_STRUT", ["u32"], values[:4])
+
+
+    def set_fullscreen_monitors(self, fsm):
+        #platform specific code:
+        log("set_fullscreen_monitors(%s)", fsm)
+        if not self.is_realized():
+            self.realize()
+        set_fullscreen_monitors(self.get_window(), fsm)
 
 
     def set_fullscreen(self, fullscreen):

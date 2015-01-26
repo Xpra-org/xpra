@@ -295,6 +295,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Fullscreen-ness of window", "",
                        False,
                        gobject.PARAM_READWRITE),
+        "fullscreen-monitors": (gobject.TYPE_PYOBJECT,
+                         "List of 4 monitor indices indicating the top, bottom, left, and right edges of the window when the fullscreen state is enabled", "",
+                         gobject.PARAM_READABLE),
         "maximized": (gobject.TYPE_BOOLEAN,
                        "Is the window maximized", "",
                        False,
@@ -370,14 +373,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
-        self.property_names = ["pid", "transient-for", "fullscreen", "bypass-compositor", "maximized", "window-type", "role", "group-leader",
+        self.property_names = ["pid", "transient-for", "fullscreen", "fullscreen-monitors", "bypass-compositor", "maximized", "window-type", "role", "group-leader",
                                "xid", "workspace", "has-alpha", "opacity", "strut"]
 
     def get_property_names(self):
         return self.property_names
 
     def get_dynamic_property_names(self):
-        return ("title", "size-hints", "fullscreen", "bypass-compositor", "maximized", "opacity", "workspace", "strut")
+        return ("title", "size-hints", "fullscreen", "fullscreen-monitors", "bypass-compositor", "maximized", "opacity", "workspace", "strut")
 
 
     def managed_connect(self, detailed_signal, handler, *args):
@@ -542,7 +545,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("xid", self.client_window.xid)
         self._internal_set_property("pid", self.prop_get("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", self.prop_get("WM_WINDOW_ROLE", "latin1"))
-        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_NET_WM_DESKTOP", "_NET_WM_BYPASS_COMPOSITOR"]:
+        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_NET_WM_DESKTOP", "_NET_WM_BYPASS_COMPOSITOR", "_NET_WM_FULLSCREEN_MONITORS"]:
             self._call_property_handler(mutable)
 
     def _read_initial_X11_properties(self):
@@ -571,6 +574,13 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             else:
                 workspacelog("setting _NET_WM_DESKTOP=%s on window %#x", workspacestr(workspace), self.client_window.xid)
                 prop_set(self.client_window, "_NET_WM_DESKTOP", "u32", workspace)
+
+
+    def _handle_fullscreen_monitors_change(self):
+        fsm = self.prop_get("_NET_WM_FULLSCREEN_MONITORS", ["u32"], True)
+        self._internal_set_property("fullscreen-monitors", fsm)
+        log("fullscreen-monitors=%s", fsm)
+    _property_handlers["_NET_WM_FULLSCREEN_MONITORS"] = _handle_fullscreen_monitors_change
 
 
     def _handle_bypass_compositor_change(self):
@@ -763,6 +773,12 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 self.move_to_workspace(workspace)
             else:
                 workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s", workspacestr(workspace), ndesktops)
+        elif event.message_type=="_NET_WM_FULLSCREEN_MONITORS":
+            log("_NET_WM_FULLSCREEN_MONITORS: %s", event)
+            #TODO: we should validate the indexes instead of copying them blindly!
+            monitors = [event.data[0], event.data[1], event.data[2], event.data[3]]
+            log("_NET_WM_FULLSCREEN_MONITORS: monitors=%s", monitors)
+            prop_set(self.client_window, "_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
         else:
             log("do_xpra_client_message_event(%s)", event)
 

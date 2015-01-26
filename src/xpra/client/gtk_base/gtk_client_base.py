@@ -241,8 +241,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             ms += ["command", "workspace", "above", "below", "sticky"]
         if os.name=="posix":
             #this is only really supported on X11, but posix is easier to check for..
-            #strut could also be supported on other platforms I guess
-            ms += ["bypass-compositor", "strut"]
+            #"strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
+            ms += ["bypass-compositor", "strut", "fullscreen-monitors"]
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
         #we need the bindings to support initiate-moveresize (posix only for now):

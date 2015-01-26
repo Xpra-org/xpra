@@ -104,6 +104,8 @@ class Wm(gobject.GObject):
         "WM_CLIENT_MACHINE",
         "WM_STATE",
 
+        "_NET_WM_FULLSCREEN_MONITORS",
+
         "_NET_WM_ALLOWED_ACTIONS",
         "_NET_WM_ACTION_CLOSE",
         "_NET_WM_ACTION_FULLSCREEN",

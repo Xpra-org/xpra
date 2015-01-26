@@ -4,7 +4,7 @@ import gtk.gdk
 
 def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	window.set_size_request(200, 600)
+	window.set_size_request(320, 500)
 	window.connect("delete_event", gtk.mainquit)
 	vbox = gtk.VBox(False, 0)
 
@@ -23,6 +23,22 @@ def main():
 		vbox.pack_start(hbox, expand=False, fill=False, padding=2)
 
 	add_buttons("maximize", window.maximize, "unmaximize", window.unmaximize)
+	#fullscreen-monitors:
+	hbox = gtk.HBox()
+	fsm_entry = gtk.Entry()
+	fsm_entry.set_text("0,0,0,0")
+	hbox.add(fsm_entry)
+	def set_fsm(*args):
+		v = fsm_entry.get_text()
+		strs = v.split(",")
+		assert len(strs)==4, "the list of monitors must have 4 items!"
+		monitors = [int(x) for x in strs]
+		from xpra.platform.gui import set_fullscreen_monitors
+		set_fullscreen_monitors(window.get_window(), monitors)
+	set_fsm_btn = gtk.Button("Set Fullscreen Monitors")
+	set_fsm_btn.connect("clicked", set_fsm)
+	hbox.add(set_fsm_btn)
+	vbox.pack_start(hbox, expand=False, fill=False, padding=2)
 	add_buttons("fullscreen", window.fullscreen, "unfullscreen", window.unfullscreen)
 	def decorate():
 		window.set_decorated(True)
