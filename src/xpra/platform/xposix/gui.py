@@ -286,6 +286,21 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
         return False
 
 
+def show_desktop(b):
+    try:
+        from xpra.x11.gtk_x11 import gdk_display_source
+        assert gdk_display_source
+        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
+        X11Window = X11WindowBindings()
+        root_xid = X11Window.getDefaultRootWindow()
+        SubstructureNotifyMask = constants["SubstructureNotifyMask"]
+        SubstructureRedirectMask = constants["SubstructureRedirectMask"]
+        event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+        X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "_NET_SHOWING_DESKTOP", int(bool(b)))
+    except Exception as e:
+        log.warn("failed to call show_desktop(%s): %s", b, e)
+
+
 def get_info():
     from xpra.platform.gui import get_info_base
     i = get_info_base()

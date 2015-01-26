@@ -185,6 +185,7 @@ class Wm(gobject.GObject):
         "new-window": one_arg_signal,
         # X11 bell event:
         "bell": one_arg_signal,
+        "show-desktop": one_arg_signal,
         # You can emit this to cause the WM to quit, or the WM may
         # spontaneously raise it if another WM takes over the display.  By
         # default, unmanages all windows:
@@ -370,6 +371,9 @@ class Wm(gobject.GObject):
         #   _NET_WM_DESKTOP
         #   _NET_WM_STATE
         log("do_xpra_client_message_event(%s)", event)
+        if event.message_type=="_NET_SHOWING_DESKTOP":
+            show = bool(event.data[0])
+            self.emit("show-desktop", show)
 
     def _lost_wm_selection(self, selection):
         log.info("Lost WM selection %s, exiting", selection)

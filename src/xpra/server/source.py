@@ -285,6 +285,7 @@ class ServerSource(object):
         self.notify_startup_complete = False
         self.control_commands = []
         self.metadata_supported = []
+        self.show_desktop_allowed = False
         self.supports_transparency = False
         self.vrefresh = -1
         self.double_click_time  = -1
@@ -506,6 +507,7 @@ class ServerSource(object):
         self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.control_commands = c.strlistget("control_commands")
         self.metadata_supported = c.strlistget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
+        self.show_desktop_allowed = c.boolget("show-desktop")
         self.vrefresh = c.intget("vrefresh", -1)
         self.double_click_time = c.intget("double_click.time")
         self.double_click_distance = c.intpair("double_click.distance")
@@ -1347,6 +1349,10 @@ class ServerSource(object):
             return True
         return False
 
+
+    def show_desktop(self, show):
+        if self.show_desktop_allowed:
+            self.send("show-desktop", show)
 
     def initiate_moveresize(self, wid, window, x_root, y_root, direction, button, source_indication):
         if not self.can_send_window(window) or not self.window_initiate_moveresize:

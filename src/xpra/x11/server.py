@@ -212,6 +212,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
+        self._wm.connect("show-desktop", self._show_desktop)
 
         #save default xsettings:
         self.default_xsettings = XSettingsHelper().get_settings()
@@ -560,6 +561,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for ss in self._server_sources.values():
             ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
 
+
+    def _show_desktop(self, wm, show):
+        log("show_desktop(%s, %s)", wm, show)
+        for ss in self._server_sources.values():
+            ss.show_desktop(show)
 
 
     def _focus(self, server_source, wid, modifiers):

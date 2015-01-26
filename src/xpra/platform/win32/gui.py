@@ -380,6 +380,21 @@ def get_window_frame_sizes():
         log.warn("failed to get window frame size information: %s", e)
         return None
 
+def show_desktop(b):
+    #not defined in win32con..
+    MIN_ALL         = 419
+    MIN_ALL_UNDO    = 416
+    if bool(b):
+        v = MIN_ALL
+    else:
+        v = MIN_ALL_UNDO
+    try:
+        root = win32gui.FindWindow("Shell_TrayWnd", None)
+        assert root is not None, "cannot find 'Shell_TrayWnd'"
+        win32api.SendMessage(root, win32con.WM_COMMAND, v, 0)
+    except Exception as e:
+        log.warn("failed to call show_desktop(%s): %s", b, e)
+
 
 class ClientExtras(object):
     def __init__(self, client, opts):

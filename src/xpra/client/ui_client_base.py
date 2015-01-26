@@ -32,7 +32,7 @@ from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_application_name
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
-from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_double_click_time,
+from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_double_click_time, show_desktop,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
                                get_native_tray_menu_helper_classes, get_dpi, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, ClientExtras)
 from xpra.codecs.codec_constants import get_PIL_decodings
@@ -967,6 +967,7 @@ class UIXpraClient(XpraClientBase):
             "window.raise"              : True,
             #only implemented on posix with the gtk client:
             "window.initiate-moveresize": False,
+            "show-desktop"              : True,
             "raw_window_icons"          : True,
             "system_tray"               : self.client_supports_system_tray,
             "xsettings-tuple"           : True,
@@ -2005,6 +2006,12 @@ class UIXpraClient(XpraClientBase):
         #only implemented in gtk2 for now
         pass
 
+    def _process_show_desktop(self, packet):
+        show = packet[1]
+        log("calling %s(%s)", show_desktop, show) 
+        show_desktop(show)
+
+
     def _process_initiate_moveresize(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)
@@ -2089,6 +2096,7 @@ class UIXpraClient(XpraClientBase):
             "new-tray":             self._process_new_tray,
             "raise-window":         self._process_raise_window,
             "initiate-moveresize":  self._process_initiate_moveresize,
+            "show-desktop":         self._process_show_desktop,
             "window-move-resize":   self._process_window_move_resize,
             "window-resized":       self._process_window_resized,
             "cursor":               self._process_cursor,

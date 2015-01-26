@@ -110,6 +110,10 @@ def remove_window_hooks(window):
     pass
 
 
+def show_desktop(show):
+    pass
+
+
 def gl_check():
     return None     #no problem
 
@@ -157,6 +161,7 @@ platform_import(globals(), "gui", False,
                 "do_ready",
                 "do_init",
                 "gl_check",
+                "show_desktop",
                 "ClientExtras",
                 "take_screenshot",
                 "get_native_tray_menu_helper_classes",
