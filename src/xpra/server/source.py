@@ -61,6 +61,13 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
         if not hints:
             return {}
         return {"size-constraints": hints}
+    elif propname == "strut":
+        strut = window.get_property("strut")
+        if not strut:
+            strut = {}
+        else:
+            strut = strut.todict()
+        return {"strut": strut}
     elif propname == "class-instance":
         c_i = window.get_property("class-instance")
         if c_i is None:
