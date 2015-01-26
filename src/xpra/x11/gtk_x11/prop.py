@@ -72,23 +72,25 @@ class NetWMStrut(object):
     def __init__(self, disp, data):
         # This eats both _NET_WM_STRUT and _NET_WM_STRUT_PARTIAL.  If we are
         # given a _NET_WM_STRUT instead of a _NET_WM_STRUT_PARTIAL, then it
-        # will be only length 4 instead of 12, but _force_length will zero-pad
-        # and _NET_WM_STRUT is *defined* as a _NET_WM_STRUT_PARTIAL where the
-        # extra fields are zero... so it all works out.
-        data = _force_length("_NET_WM_STRUT or _NET_WM_STRUT_PARTIAL", data, 4 * 12)
-        (self.left, self.right, self.top, self.bottom,
-         self.left_start_y, self.left_end_y,
-         self.right_start_y, self.right_end_y,
-         self.top_start_x, self.top_end_x,
-         self.bottom_start_x, self.bottom_stop_x,
-         ) = struct.unpack("=" + "I" * 12, data)
+        # will be only length 4 instead of 12, we just don't define the other values
+        # and let the client deal with it appropriately
+        if len(data)==16:
+            self.left, self.right, self.top, self.bottom = struct.unpack("=IIII", data)
+        else:
+            data = _force_length("_NET_WM_STRUT or _NET_WM_STRUT_PARTIAL", data, 4 * 12)
+            (self.left, self.right, self.top, self.bottom,
+             self.left_start_y, self.left_end_y,
+             self.right_start_y, self.right_end_y,
+             self.top_start_x, self.top_end_x,
+             self.bottom_start_x, self.bottom_stop_x,
+             ) = struct.unpack("=" + "I" * 12, data)
+
+    def todict(self):
+        return self.__dict__
 
     def __str__(self):
-        return "NetWMStrut(%s)" % str(self.left, self.right, self.top, self.bottom,
-                                     self.left_start_y, self.left_end_y,
-                                     self.right_start_y, self.right_end_y,
-                                     self.top_start_x, self.top_end_x,
-                                     self.bottom_start_x, self.bottom_stop_x)
+        return "NetWMStrut(%s)" % self.todict()
+
 
 class MotifWMHints(object):
     def __init__(self, disp, data):

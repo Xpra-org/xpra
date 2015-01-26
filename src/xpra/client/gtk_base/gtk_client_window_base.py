@@ -20,7 +20,7 @@ statelog = Logger("state")
 eventslog = Logger("events")
 
 
-from xpra.util import AdHocStruct, bytestostr, WORKSPACE_UNSET, WORKSPACE_ALL
+from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
@@ -296,6 +296,30 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not self.is_realized():
             self.realize()
         prop_set(self.get_window(), "_NET_WM_BYPASS_COMPOSITOR", "u32", v)
+
+
+    def set_strut(self, strut):
+        if not HAS_X11_BINDINGS:
+            return
+        log("strut=%s", strut)
+        d = typedict(strut)
+        values = []
+        for x in ("left", "right", "top", "bottom"):
+            values.append(d.intget(x, 0))
+        has_partial = False
+        for x in ("left_start_y", "left_end_y",
+                  "right_start_y", "right_end_y",
+                  "top_start_x", "top_end_x",
+                  "bottom_start_x", "bottom_end_x"):
+            if x in d:
+                has_partial = True
+            values.append(d.intget(x, 0))
+        log("setting strut=%s, has partial=%s", values, has_partial)
+        if not self.is_realized():
+            self.realize()
+        if has_partial:
+            prop_set(self.get_window(), "_NET_WM_STRUT_PARTIAL", ["u32"], values)
+        prop_set(self.get_window(), "_NET_WM_STRUT", ["u32"], values[:4])
 
 
     def set_fullscreen(self, fullscreen):

@@ -371,13 +371,13 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
         self.property_names = ["pid", "transient-for", "fullscreen", "bypass-compositor", "maximized", "window-type", "role", "group-leader",
-                               "xid", "workspace", "has-alpha", "opacity"]
+                               "xid", "workspace", "has-alpha", "opacity", "strut"]
 
     def get_property_names(self):
         return self.property_names
 
     def get_dynamic_property_names(self):
-        return ("title", "size-hints", "fullscreen", "bypass-compositor", "maximized", "opacity", "workspace")
+        return ("title", "size-hints", "fullscreen", "bypass-compositor", "maximized", "opacity", "workspace", "strut")
 
 
     def managed_connect(self, detailed_signal, handler, *args):
