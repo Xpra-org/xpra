@@ -41,7 +41,6 @@ config = get_config(config_name)
 if (config==None):
     raise Exception("Could not load config file")
 config.print_options()
-sys.exit()
 
 if (len(sys.argv) > 2):
     csv_name = sys.argv[2]
