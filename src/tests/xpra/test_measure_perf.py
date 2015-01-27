@@ -12,7 +12,6 @@ import time
 
 from xpra.log import Logger
 log = Logger()
-HOME = os.path.expanduser("~/")
 
 def getoutput(cmd, env=None):
     try:
@@ -41,36 +40,6 @@ else:
 config = get_config(config_name)
 if (config==None):
     raise Exception("Could not load config file")
-
-XORG_CONFIG="%s/xorg.conf" % HOME
-XORG_LOG = "%s/Xorg.%s.log" % (HOME, config.DISPLAY_NO)
-PREVENT_SLEEP_COMMAND = ["xdotool", "keydown", "Shift_L", "keyup", "Shift_L"]
-
-#tools we use:
-IPTABLES_CMD = ["sudo", "/usr/sbin/iptables"]
-TRICKLE_BIN = "/usr/bin/trickle"
-TCBENCH = "/opt/VirtualGL/bin/tcbench"
-TCBENCH_LOG = "./tcbench.log"
-XORG_BIN = "/usr/bin/Xorg"
-VGLRUN_BIN = "/usr/bin/vglrun"
-
-#now we filter all the test commands and only keep the valid ones:
-print("Checking for test commands:")
-X11_TEST_COMMANDS = []
-for x in config.TEST_CANDIDATES:
-    if x is None:
-        continue
-    if type(x) in (list, tuple) and not os.path.exists(x[0]):
-        print("* WARNING: cannot find %s - removed from tests" % str(x))
-    else:
-        print("* adding test: %s" % str(x))
-        X11_TEST_COMMANDS.append(x)
-TEST_NAMES = {config.GTKPERF_TEST: "gtkperf",
-              config.MPLAYER_SOUND_LOOP_TEST : "mplayer sound",
-              config.VLC_SOUND_TEST : "vlc sound visual",
-              config.MPLAYER_VIDEO_TEST : "mplayer video",
-              config.VLC_VIDEO_TEST : "vlc video",
-              }
 
 XVNC_BIN = "/usr/bin/Xvnc"
 XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % config.PORT,
@@ -138,7 +107,7 @@ if (config.XPRA_USE_PASSWORD):
     with open(password_filename, 'wb') as f:
         f.write(uuid.uuid4().hex)
 
-check = [TRICKLE_BIN]
+check = [config.TRICKLE_BIN]
 if config.TEST_XPRA:
     check.append(XPRA_BIN)
 if config.TEST_VNC:
@@ -147,6 +116,9 @@ if config.TEST_VNC:
 for x in check:
     if not os.path.exists(x):
         raise Exception("cannot run tests: %s is missing!" % x)
+
+config.print_vars()
+#sys.exit()
 
 HEADERS = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
            "Encoding", "Quality", "Speed","OpenGL", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
@@ -224,7 +196,7 @@ def get_cpu_info():
     print("CPU_INFO=%s" % cpu_info)
     return  cpu_info, n
 
-XORG_VERSION = getoutput_line([XORG_BIN, "-version"], "X.Org X Server", "Cannot detect Xorg server version")
+XORG_VERSION = getoutput_line([config.XORG_BIN, "-version"], "X.Org X Server", "Cannot detect Xorg server version")
 print("XORG_VERSION=%s" % XORG_VERSION)
 CPU_INFO, N_CPUS = get_cpu_info()
 KERNEL_VERSION = getoutput(["uname", "-r"]).replace("\n", "").replace("\r", "")
@@ -295,7 +267,7 @@ def clean_sys_state():
 def zero_iptables():
     if not config.USE_IPTABLES:
         return
-    cmds = [IPTABLES_CMD+['-Z', 'INPUT'], IPTABLES_CMD+['-Z', 'OUTPUT']]
+    cmds = [config.IPTABLES_CMD+['-Z', 'INPUT'], config.IPTABLES_CMD+['-Z', 'OUTPUT']]
     for cmd in cmds:
         getoutput(cmd)
         #out = getoutput(cmd)
@@ -340,7 +312,7 @@ def compute_stat(prefix, time_total_diff, old_pid_stat, new_pid_stat):
             }
 
 def getiptables_line(chain, pattern, setup_info):
-    cmd = IPTABLES_CMD + ["-vnL", chain]
+    cmd = config.IPTABLES_CMD + ["-vnL", chain]
     line = getoutput_line(cmd, pattern, setup_info)
     if not line:
         raise Exception("no line found matching %s, make sure you have a rule like: %s" % (pattern, setup_info))
@@ -366,7 +338,6 @@ def get_iptables_INPUT_count():
 def get_iptables_OUTPUT_count():
     setup = "iptables -I OUTPUT -p tcp --sport %s -j ACCEPT" % config.PORT
     return  parse_ipt("OUTPUT", "tcp spt:%s" % config.PORT, setup)
-
 
 def measure_client(server_pid, name, cmd, get_stats_cb):
     print("starting client: %s" % cmd)
@@ -478,9 +449,9 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     #start the test command:
                     if config.USE_VIRTUALGL:
                         if type(test_command)==str:
-                            cmd = VGLRUN_BIN + " -- "+ test_command
+                            cmd = config.VGLRUN_BIN + " -- "+ test_command
                         elif type(test_command) in (list, tuple):
-                            cmd = [VGLRUN_BIN, "--"] + list(test_command)
+                            cmd = [config.VGLRUN_BIN, "--"] + list(test_command)
                         else:
                             raise Exception("invalid test command type: %s for %s" % (type(test_command), test_command))
                     else:
@@ -491,7 +462,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     test_command_process = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=shell)
 
                     if config.PREVENT_SLEEP:
-                        subprocess.Popen(PREVENT_SLEEP_COMMAND)
+                        subprocess.Popen(config.PREVENT_SLEEP_COMMAND)
 
                     time.sleep(test_command_settle_time)
                     code = test_command_process.poll()
@@ -558,11 +529,10 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
             break
     return results
 
-
 def trickle_command(down, up, latency):
     if down<=0 and up<=0 and latency<=0:
         return  []
-    cmd = [TRICKLE_BIN, "-s"]
+    cmd = [config.TRICKLE_BIN, "-s"]
     if down>0:
         cmd += ["-d", str(down)]
     if up>0:
@@ -579,7 +549,7 @@ def trickle_str(down, up, latency):
 
 def get_command_name(command_arg):
     try:
-        name = TEST_NAMES.get(command_arg)
+        name = config.TEST_NAMES.get(command_arg)
         if name:
             return  name
     except:
@@ -590,7 +560,6 @@ def get_command_name(command_arg):
         c = command_arg.split(" ")[0]   #"/usr/bin/xterm -e blah" -> "/usr/bin/xterm"
     assert type(c)==str
     return c.split("/")[-1]             #/usr/bin/xterm -> xterm
-
 
 def xpra_get_stats(initial_stats=None, all_stats=[]):
     if XPRA_VERSION_NO<[0, 3]:
@@ -713,7 +682,7 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
 def get_xpra_start_server_command():
     cmd = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % config.PORT]
     if config.XPRA_FORCE_XDUMMY:
-        cmd.append("--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_BIN, XORG_LOG, XORG_CONFIG))
+        cmd.append("--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (config.XORG_BIN, config.XORG_LOG, config.XORG_CONFIG))
     if XPRA_VERSION_NO>=[0, 5]:
         cmd.append("--no-notifications")
     if config.XPRA_USE_PASSWORD:
@@ -733,7 +702,7 @@ def test_xpra():
         if connect_option=="unix":
             shaping_options = [NO_SHAPING]
         for down,up,latency in shaping_options:
-            for x11_test_command in X11_TEST_COMMANDS:
+            for x11_test_command in config.X11_TEST_COMMANDS:
                 for encoding in config.XPRA_TEST_ENCODINGS:
                     if XPRA_VERSION_NO>=[0, 10]:
                         opengl_options = config.XPRA_OPENGL_OPTIONS.get(encoding, [True])
@@ -823,7 +792,6 @@ def test_xpra():
                                                                   (down,up,latency), x11_test_command, cmd))
     return with_server(get_xpra_start_server_command(), XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
-
 def get_x11_client_window_info(display, *app_name_strings):
     env = os.environ.copy()
     if display:
@@ -878,15 +846,15 @@ def get_vnc_stats(initial_stats=None, all_stats=[]):
             return  {}
         if test_window_info:
             _, _, _, w, h = test_window_info
-        command = [TCBENCH, "-wh%s" % wid, "-t%s" % (config.MEASURE_TIME-5)]
+        command = [config.TCBENCH, "-wh%s" % wid, "-t%s" % (config.MEASURE_TIME-5)]
         if w>0 and h>0:
             command.append("-x%s" % int(w/2))
             command.append("-y%s" % int(h/2))
-        if os.path.exists(TCBENCH_LOG):
-            os.unlink(TCBENCH_LOG)
-        tcbench_log  = open(TCBENCH_LOG, 'w')
+        if os.path.exists(config.TCBENCH_LOG):
+            os.unlink(config.TCBENCH_LOG)
+        tcbench_log  = open(config.TCBENCH_LOG, 'w')
         try:
-            print("tcbench starting: %s, logging to %s" % (command, TCBENCH_LOG))
+            print("tcbench starting: %s, logging to %s" % (command, config.TCBENCH_LOG))
             proc = subprocess.Popen(command, stdin=None, stdout=tcbench_log, stderr=tcbench_log)
             return {"tcbench" : proc}
         except Exception as e:
@@ -905,7 +873,7 @@ def get_vnc_stats(initial_stats=None, all_stats=[]):
             try_to_stop(process)
             try_to_kill(process, 2)
         else:
-            with open(TCBENCH_LOG, mode='rb') as f:
+            with open(config.TCBENCH_LOG, mode='rb') as f:
                 out = f.read()
             #print("get_vnc_stats(%s) tcbench output=%s" % (last_record, out))
             for line in out.splitlines():
@@ -925,7 +893,7 @@ def test_vnc():
     print("")
     tests = []
     for down,up,latency in config.TRICKLE_SHAPING_OPTIONS:
-        for x11_test_command in X11_TEST_COMMANDS:
+        for x11_test_command in config.X11_TEST_COMMANDS:
             for encoding in VNC_ENCODINGS:
                 for zlib in VNC_ZLIB_OPTIONS:
                     for compression in VNC_COMPRESSION_OPTIONS:
@@ -963,7 +931,6 @@ def test_vnc():
                                           encoding, False, compression, None, False, \
                                           (down,up,latency), x11_test_command, cmd))
     return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMANDS, tests, get_vnc_stats)
-
 
 def main():
     #before doing anything, check that the firewall is setup correctly:
