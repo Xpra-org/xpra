@@ -66,6 +66,13 @@ def main():
 	def notskip_taskbar():
 		window.set_skip_taskbar_hint(False)
 	add_buttons("skip taskbar", skip_taskbar, "not skip taskbar", notskip_taskbar)
+	def shade():
+		from xpra.platform.gui import set_shaded
+		set_shaded(window.get_window(), True)
+	def unshade():
+		from xpra.platform.gui import set_shaded
+		set_shaded(window.get_window(), False)
+	add_buttons("shade", shade, "unshade", unshade)
 
 	def window_state(widget, event):
 		STATES = {

@@ -235,14 +235,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             ms = [x.strip() for x in METADATA_SUPPORTED.split(",")]
         else:
             #this is currently unused, and slightly redundant because of metadata.supported below:
-            capabilities["window.states"] = ["fullscreen", "maximized", "sticky", "above", "below", "iconified", "skip-taskbar", "skip-pager"]
+            capabilities["window.states"] = ["fullscreen", "maximized", "sticky", "above", "below", "shaded", "iconified", "skip-taskbar", "skip-pager"]
             ms = list(DEFAULT_METADATA_SUPPORTED)
             #added in 0.15:
             ms += ["command", "workspace", "above", "below", "sticky"]
         if os.name=="posix":
             #this is only really supported on X11, but posix is easier to check for..
             #"strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
-            ms += ["bypass-compositor", "strut", "fullscreen-monitors"]
+            ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
         #we need the bindings to support initiate-moveresize (posix only for now):

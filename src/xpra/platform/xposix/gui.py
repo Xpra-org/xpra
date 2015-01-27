@@ -286,37 +286,45 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
         return False
 
 
-def show_desktop(b):
+def _send_client_message(window, message_type, *values):
     try:
         from xpra.x11.gtk_x11 import gdk_display_source
         assert gdk_display_source
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
         X11Window = X11WindowBindings()
         root_xid = X11Window.getDefaultRootWindow()
+        if window:
+            xid = get_xid(window)
+        else:
+            xid = root_xid
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]
         SubstructureRedirectMask = constants["SubstructureRedirectMask"]
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-        X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "_NET_SHOWING_DESKTOP", int(bool(b)))
+        X11Window.sendClientMessage(root_xid, xid, False, event_mask, message_type, *values)
     except Exception as e:
-        log.warn("failed to call show_desktop(%s): %s", b, e)
+        log.warn("failed to send client message '%s' with values=%s: %s", message_type, values, e)
 
+def show_desktop(b):
+    _send_client_message(None, "_NET_SHOWING_DESKTOP", int(bool(b)))
 
 def set_fullscreen_monitors(window, fsm):
-    try:
-        assert type(fsm) in (tuple, list), "invalid type for fullscreen-monitors: %s" % type(fsm)
-        assert len(fsm)==4, "invalid number of fullscreen-monitors: %s" % len(fsm)
-        xid = get_xid(window)
-        from xpra.x11.gtk_x11 import gdk_display_source
-        assert gdk_display_source
-        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
-        X11Window = X11WindowBindings()
-        root_xid = X11Window.getDefaultRootWindow()
-        SubstructureNotifyMask = constants["SubstructureNotifyMask"]
-        SubstructureRedirectMask = constants["SubstructureRedirectMask"]
-        event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-        X11Window.sendClientMessage(root_xid, xid, False, event_mask, "_NET_WM_FULLSCREEN_MONITORS", *fsm)
-    except Exception as e:
-        log.warn("failed to call set_fullscreen_monitors(%s, %s): %s", window, fsm, e)
+    if type(fsm) not in (tuple, list):
+        log.warn("invalid type for fullscreen-monitors: %s", type(fsm))
+        return
+    if len(fsm)!=4:
+        log.warn("invalid number of fullscreen-monitors: %s", len(fsm))
+        return
+    _send_client_message(window, "_NET_WM_FULLSCREEN_MONITORS", *fsm)
+
+def _toggle_wm_state(window, state, enabled):
+    if enabled:
+        action = 1  #"_NET_WM_STATE_ADD"
+    else:
+        action = 0  #"_NET_WM_STATE_REMOVE"
+    _send_client_message(window, "_NET_WM_STATE", action, state)
+
+def set_shaded(window, shaded):
+    _toggle_wm_state(window, "_NET_WM_STATE_SHADED", shaded)
 
 
 def get_info():

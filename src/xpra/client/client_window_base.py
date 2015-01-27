@@ -35,6 +35,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._maximized = False
         self._above = False
         self._below = False
+        self._shaded = False
         self._sticky = False
         self._iconified = False
         self.border = border
@@ -236,6 +237,10 @@ class ClientWindowBase(ClientWidgetBase):
             self._below = metadata.boolget("below")
             self.set_keep_below(self._below)
 
+        if b"shaded" in metadata:
+            self._shaded = metadata.boolget("shaded")
+            self.set_shaded(self._shaded)
+
         if b"sticky" in metadata:
             self._sticky = metadata.boolget("sticky")
             if self._sticky:
@@ -269,6 +274,9 @@ class ClientWindowBase(ClientWidgetBase):
         pass        #see gtk client window base
 
     def set_fullscreen_monitors(self, fsm):
+        pass        #see gtk client window base
+
+    def set_shaded(self, shaded):
         pass        #see gtk client window base
 
 

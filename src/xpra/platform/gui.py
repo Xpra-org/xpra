@@ -116,6 +116,9 @@ def show_desktop(show):
 def set_fullscreen_monitors(window, fsm):
     pass
 
+def set_shaded(window, shaded):
+    pass
+
 
 def gl_check():
     return None     #no problem
@@ -164,7 +167,7 @@ platform_import(globals(), "gui", False,
                 "do_ready",
                 "do_init",
                 "gl_check",
-                "show_desktop", "set_fullscreen_monitors",
+                "show_desktop", "set_fullscreen_monitors", "set_shaded",
                 "ClientExtras",
                 "take_screenshot",
                 "get_native_tray_menu_helper_classes",

@@ -25,7 +25,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo,
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
-from xpra.platform.gui import get_window_frame_sizes, set_fullscreen_monitors
+from xpra.platform.gui import get_window_frame_sizes, set_fullscreen_monitors, set_shaded
 from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba    #@UnresolvedImport
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -328,6 +328,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not self.is_realized():
             self.realize()
         set_fullscreen_monitors(self.get_window(), fsm)
+
+
+    def set_shaded(self, shaded):
+        #platform specific code:
+        log.info("set_shaded(%s)", shaded)
+        if not self.is_realized():
+            self.realize()
+        set_shaded(self.get_window(), shaded)
 
 
     def set_fullscreen(self, fullscreen):

@@ -310,6 +310,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Is the window below most windows", "",
                        False,
                        gobject.PARAM_READWRITE),
+        "shaded": (gobject.TYPE_BOOLEAN,
+                       "Is the window shaded", "",
+                       False,
+                       gobject.PARAM_READWRITE),
         "skip-taskbar": (gobject.TYPE_BOOLEAN,
                        "Should the window be included on a taskbar", "",
                        False,
@@ -727,6 +731,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 update_wm_state("above")
             elif atom1=="_NET_WM_STATE_BELOW":
                 update_wm_state("below")
+            elif atom1=="_NET_WM_STATE_SHADED":
+                update_wm_state("shaded")
             elif atom1=="_NET_WM_STATE_STICKY":
                 update_wm_state("sticky")
             elif atom1=="_NET_WM_STATE_SKIP_TASKBAR":
@@ -902,6 +908,16 @@ class WindowModel(BaseWindowModel):
 
     _NET_WM_ALLOWED_ACTIONS = [
         "_NET_WM_ACTION_CLOSE",
+        "_NET_WM_ACTION_MOVE",
+        "_NET_WM_ACTION_RESIZE",
+        "_NET_WM_ACTION_FULLSCREEN",
+        "_NET_WM_ACTION_MINIMIZE",
+        "_NET_WM_ACTION_SHADE",
+        "_NET_WM_ACTION_STICK",
+        "_NET_WM_ACTION_MAXIMIZE_HORZ",
+        "_NET_WM_ACTION_MAXIMIZE_VERT",
+        "_NET_WM_ACTION_CHANGE_DESKTOP",
+        #"_NET_WM_ACTION_ABOVE, _NET_WM_ACTION_BELOW
         ]
 
     __gproperties__ = {
@@ -1005,7 +1021,7 @@ class WindowModel(BaseWindowModel):
 
         self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "command",
                                 "modal", "decorations",
-                                "above", "below", "sticky", "skip-taskbar", "skip-pager"]
+                                "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager"]
         self.call_setup()
 
     def setup(self):
@@ -1068,7 +1084,7 @@ class WindowModel(BaseWindowModel):
 
     def get_dynamic_property_names(self):
         return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic", "decorations",
-                                                                       "above", "below", "sticky", "skip-taskbar", "skip-pager"]
+                                                                       "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager"]
 
 
     def is_OR(self):
@@ -1607,6 +1623,7 @@ class WindowModel(BaseWindowModel):
         "attention-requested"   : ("_NET_WM_STATE_DEMANDS_ATTENTION", ),
         "fullscreen"            : ("_NET_WM_STATE_FULLSCREEN", ),
         "maximized"             : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
+        "shaded"                : ("_NET_WM_STATE_SHADED", ),
         "above"                 : ("_NET_WM_STATE_ABOVE", ),
         "below"                 : ("_NET_WM_STATE_BELOW", ),
         "sticky"                : ("_NET_WM_STATE_STICKY", ),
