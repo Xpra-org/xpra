@@ -204,8 +204,9 @@ class Config():
     #VNC_JPEG_OPTIONS = [-1, 0, 8]
     VNC_JPEG_OPTIONS = [-1, 4]
 
-    def print_vars(self):
-        print("\nCurrent Settings:\n-----------------")
+    def print_options(self):
+        print("\nCurrent Settings:")
+        print("-"*80)
         print("CUSTOM_PARAMS: %s" % str(self.CUSTOM_PARAMS))
         print("GLX_TESTS: %s" % self.GLX_TESTS)
         print("X11_TESTS: %s" % self.X11_TESTS)
@@ -255,4 +256,4 @@ class Config():
         print("VNC_ZLIB_OPTIONS: %s" % self.VNC_ZLIB_OPTIONS)
         print("VNC_COMPRESSION_OPTIONS: %s" % self.VNC_COMPRESSION_OPTIONS)
         print("VNC_JPEG_OPTIONS: %s" % self.VNC_JPEG_OPTIONS)
-        print("-----------------")
+        print("-"*80)

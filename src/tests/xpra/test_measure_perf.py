@@ -40,6 +40,8 @@ else:
 config = get_config(config_name)
 if (config==None):
     raise Exception("Could not load config file")
+config.print_options()
+sys.exit()
 
 if (len(sys.argv) > 2):
     csv_name = sys.argv[2]
@@ -102,8 +104,6 @@ if config.TEST_VNC:
 for x in check:
     if not os.path.exists(x):
         raise Exception("cannot run tests: %s is missing!" % x)
-
-config.print_vars()
 
 HEADERS = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
            "Encoding", "Quality", "Speed","OpenGL", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
