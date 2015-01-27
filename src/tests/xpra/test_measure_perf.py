@@ -41,24 +41,10 @@ config = get_config(config_name)
 if (config==None):
     raise Exception("Could not load config file")
 
-XVNC_BIN = "/usr/bin/Xvnc"
-XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % config.PORT,
-                   "+extension", "GLX",
-                   "--SecurityTypes=None",
-                   "--SendCutText=0", "--AcceptCutText=0", "--AcceptPointerEvents=0", "--AcceptKeyEvents=0",
-                   "-screen", "0", "1240x900x24",
-                   ":%s" % config.DISPLAY_NO]
-XVNC_SERVER_STOP_COMMANDS = [["killall Xvnc"]]     #stopped via kill - beware, this will kill *all* Xvnc sessions!
-VNCVIEWER_BIN = "/usr/bin/vncviewer"
-
-#VNC_ENCODINGS = ["Tight", "ZRLE", "hextile", "raw", "auto"]
-VNC_ENCODINGS = ["auto"]
-#VNC_ZLIB_OPTIONS = [-1, 3, 6, 9]
-VNC_ZLIB_OPTIONS = [-1, 9]
-#VNC_COMPRESSION_OPTIONS = [0, 3, 8, 9]
-VNC_COMPRESSION_OPTIONS = [0, 3]
-#VNC_JPEG_OPTIONS = [-1, 0, 8]
-VNC_JPEG_OPTIONS = [-1, 4]
+if (len(sys.argv) > 2):
+    csv_name = sys.argv[2]
+else:
+    csv_name = None
 
 XPRA_BIN = "/usr/bin/xpra"
 XPRA_VERSION_OUTPUT = getoutput([XPRA_BIN, "--version"])
@@ -111,14 +97,13 @@ check = [config.TRICKLE_BIN]
 if config.TEST_XPRA:
     check.append(XPRA_BIN)
 if config.TEST_VNC:
-    check.append(XVNC_BIN)
-    check.append(VNCVIEWER_BIN)
+    check.append(config.XVNC_BIN)
+    check.append(config.VNCVIEWER_BIN)
 for x in check:
     if not os.path.exists(x):
         raise Exception("cannot run tests: %s is missing!" % x)
 
 config.print_vars()
-#sys.exit()
 
 HEADERS = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
            "Encoding", "Quality", "Speed","OpenGL", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
@@ -214,8 +199,8 @@ print("screen size=%s" % str(SCREEN_SIZE))
 #detect Xvnc version:
 XVNC_VERSION = ""
 VNCVIEWER_VERSION = ""
-DETECT_XVNC_VERSION_CMD = [XVNC_BIN, "--help"]
-DETECT_VNCVIEWER_VERSION_CMD = [VNCVIEWER_BIN, "--help"]
+DETECT_XVNC_VERSION_CMD = [config.XVNC_BIN, "--help"]
+DETECT_VNCVIEWER_VERSION_CMD = [config.VNCVIEWER_BIN, "--help"]
 def get_stderr(command):
     try:
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -401,7 +386,7 @@ def measure_client(server_pid, name, cmd, get_stats_cb):
             assert code is not None, "failed to stop client!"
 
 def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb):
-    tests = in_tests[:config.LIMIT_TESTS]
+    tests = in_tests[config.STARTING_TEST:config.LIMIT_TESTS]
     print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
     print("*******************************************")
     print("ETA: %s minutes" % int((config.SERVER_SETTLE_TIME+config.DEFAULT_TEST_COMMAND_SETTLE_TIME+config.SETTLE_TIME+config.MEASURE_TIME+1)*len(tests)/60))
@@ -700,7 +685,7 @@ def test_xpra():
     for connect_option, encryption in config.XPRA_CONNECT_OPTIONS:
         shaping_options = config.TRICKLE_SHAPING_OPTIONS
         if connect_option=="unix":
-            shaping_options = [NO_SHAPING]
+            shaping_options = [config.NO_SHAPING]
         for down,up,latency in shaping_options:
             for x11_test_command in config.X11_TEST_COMMANDS:
                 for encoding in config.XPRA_TEST_ENCODINGS:
@@ -894,15 +879,15 @@ def test_vnc():
     tests = []
     for down,up,latency in config.TRICKLE_SHAPING_OPTIONS:
         for x11_test_command in config.X11_TEST_COMMANDS:
-            for encoding in VNC_ENCODINGS:
-                for zlib in VNC_ZLIB_OPTIONS:
-                    for compression in VNC_COMPRESSION_OPTIONS:
+            for encoding in config.VNC_ENCODINGS:
+                for zlib in config.VNC_ZLIB_OPTIONS:
+                    for compression in config.VNC_COMPRESSION_OPTIONS:
                         jpeg_quality = [8]
                         if encoding=="Tight":
-                            jpeg_quality = VNC_JPEG_OPTIONS
+                            jpeg_quality = config.VNC_JPEG_OPTIONS
                         for jpegq in jpeg_quality:
                             cmd = trickle_command(down, up, latency)
-                            cmd += [VNCVIEWER_BIN, "%s::%s" % (config.IP, config.PORT),
+                            cmd += [config.VNCVIEWER_BIN, "%s::%s" % (config.IP, config.PORT),
                                    "--ViewOnly",
                                    "--ZlibLevel=%s" % str(zlib),
                                    "--CompressLevel=%s" % str(compression),
@@ -930,7 +915,7 @@ def test_vnc():
                             tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION, \
                                           encoding, False, compression, None, False, \
                                           (down,up,latency), x11_test_command, cmd))
-    return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMANDS, tests, get_vnc_stats)
+    return with_server(config.XVNC_SERVER_START_COMMAND, config.XVNC_SERVER_STOP_COMMANDS, tests, get_vnc_stats)
 
 def main():
     #before doing anything, check that the firewall is setup correctly:
@@ -946,7 +931,11 @@ def main():
     print("*"*80)
     print("RESULTS:")
     print("")
-    print(", ".join(HEADERS))
+    outline = ", ".join(HEADERS)
+    print outline
+    if (csv_name != None):
+        csv = open(csv_name, "w")
+        csv.write(outline+"\n")
     def s(x):
         if x is None:
             return ""
@@ -961,7 +950,10 @@ def main():
         else:
             return "unhandled-type: %s" % type(x)
     for result in xpra_results+vnc_results:
-        print ", ".join([s(x) for x in result])
+        outline = ", ".join([s(x) for x in result])
+        print(outline)
+        if (csv_name != None):
+            csv.write(outline+"\n")
 
 if __name__ == "__main__":
     main()

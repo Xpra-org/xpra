@@ -7,7 +7,6 @@ HOME = os.path.expanduser("~/")
 #the glx tests:
 GLX_SPHERES = ["/usr/bin/glxspheres"]
 GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
-NO_SHAPING = (0, 0, 0)
 
 #the plain X11 tests:
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
@@ -83,7 +82,7 @@ class Config():
     PREVENT_SLEEP_COMMAND = ["xdotool", "keydown", "Shift_L", "keyup", "Shift_L"]
 
     SETTLE_TIME = 3             #how long to wait before we start measuring
-    MEASURE_TIME = 5            #run for N seconds
+    MEASURE_TIME = 120          #run for N seconds
     COLLECT_STATS_TIME = 10     #collect statistics every N seconds
     SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
     DEFAULT_TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
@@ -95,9 +94,11 @@ class Config():
     USE_VIRTUALGL = True        #allows us to run GL games and benchmarks using the GPU
     PREVENT_SLEEP = True
 
-    LIMIT_TESTS = 20           #to limit the number of tests being run
+    STARTING_TEST = 0           #the index of the first test to run
+    LIMIT_TESTS = 999           #the limit of tests to be run
     MAX_ERRORS = 100            #allow this many tests to cause errors before aborting
 
+    NO_SHAPING = (0, 0, 0)
     #TRICKLE_SHAPING_OPTIONS = [NO_SHAPING]
     #TRICKLE_SHAPING_OPTIONS = [NO_SHAPING, (1024, 1024, 20)]
     #TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
@@ -110,7 +111,7 @@ class Config():
     #X11_TESTS = [X11_PERF, FAKE_CONSOLE_USER_TEST, GTKPERF_TEST]
     X11_TESTS = [X11_PERF, XTERM_TEST, FAKE_CONSOLE_USER_TEST, GTKPERF_TEST]
 
-    XPRA_USE_PASSWORD = False
+    XPRA_USE_PASSWORD = True
 
     #some commands (games especially) may need longer to startup:
     TEST_COMMAND_SETTLE_TIME = {}
@@ -184,6 +185,25 @@ class Config():
                   VLC_VIDEO_TEST : "vlc video",
                   }
 
+    XVNC_BIN = "/usr/bin/Xvnc"
+    XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % PORT,
+                   "+extension", "GLX",
+                   "--SecurityTypes=None",
+                   "--SendCutText=0", "--AcceptCutText=0", "--AcceptPointerEvents=0", "--AcceptKeyEvents=0",
+                   "-screen", "0", "1240x900x24",
+                   ":%s" % DISPLAY_NO]
+    XVNC_SERVER_STOP_COMMANDS = [["killall Xvnc"]]     #stopped via kill - beware, this will kill *all* Xvnc sessions!
+    VNCVIEWER_BIN = "/usr/bin/vncviewer"
+
+    #VNC_ENCODINGS = ["Tight", "ZRLE", "hextile", "raw", "auto"]
+    VNC_ENCODINGS = ["auto"]
+    #VNC_ZLIB_OPTIONS = [-1, 3, 6, 9]
+    VNC_ZLIB_OPTIONS = [-1, 9]
+    #VNC_COMPRESSION_OPTIONS = [0, 3, 8, 9]
+    VNC_COMPRESSION_OPTIONS = [0, 3]
+    #VNC_JPEG_OPTIONS = [-1, 0, 8]
+    VNC_JPEG_OPTIONS = [-1, 4]
+
     def print_vars(self):
         print("\nCurrent Settings:\n-----------------")
         print("CUSTOM_PARAMS: %s" % str(self.CUSTOM_PARAMS))
@@ -212,6 +232,7 @@ class Config():
         print("PREVENT_SLEEP: %s" % self.PREVENT_SLEEP)
         print("LIMIT_TESTS: %s" % self.LIMIT_TESTS)
         print("MAX_ERRORS: %s" % self.MAX_ERRORS)
+        print("NO_SHAPING: %s" % str(self.NO_SHAPING))
         print("TRICKLE_SHAPING_OPTIONS: %s" % self.TRICKLE_SHAPING_OPTIONS)
         print("XPRA_USE_PASSWORD: %s" % self.XPRA_USE_PASSWORD)
         print("XPRA_FORCE_XDUMMY: %s" % self.XPRA_FORCE_XDUMMY)
@@ -226,8 +247,12 @@ class Config():
         print("XPRA_OPENGL_OPTIONS: %s" % self.XPRA_OPENGL_OPTIONS)
         print("XPRA_MDNS: %s" % self.XPRA_MDNS)
         print("TEST_SOUND: %s" % self.TEST_SOUND)
-
-
-
-
-
+        print("XVNC_BIN: %s" % self.XVNC_BIN)
+        print("XVNC_SERVER_START_COMMAND: %s" % self.XVNC_SERVER_START_COMMAND)
+        print("XVNC_SERVER_STOP_COMMANDS: %s" % self.XVNC_SERVER_STOP_COMMANDS)
+        print("VNCVIEWER_BIN: %s" % self.VNCVIEWER_BIN)
+        print("VNC_ENCODINGS: %s" % self.VNC_ENCODINGS)
+        print("VNC_ZLIB_OPTIONS: %s" % self.VNC_ZLIB_OPTIONS)
+        print("VNC_COMPRESSION_OPTIONS: %s" % self.VNC_COMPRESSION_OPTIONS)
+        print("VNC_JPEG_OPTIONS: %s" % self.VNC_JPEG_OPTIONS)
+        print("-----------------")
