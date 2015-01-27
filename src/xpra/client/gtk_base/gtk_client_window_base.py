@@ -332,7 +332,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def set_shaded(self, shaded):
         #platform specific code:
-        log.info("set_shaded(%s)", shaded)
+        log("set_shaded(%s)", shaded)
         if not self.is_realized():
             self.realize()
         set_shaded(self.get_window(), shaded)
