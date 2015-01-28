@@ -935,11 +935,12 @@ def main():
     print("*"*80)
     print("RESULTS:")
     print("")
-    outline = ", ".join(HEADERS)
-    print outline
-    if (csv_name != None):
-        csv = open(csv_name, "w")
-        csv.write(outline+"\n")
+
+    out_lines = []
+    out_line = ", ".join(HEADERS)
+    print out_line
+    out_lines.append(out_line)
+
     def s(x):
         if x is None:
             return ""
@@ -953,11 +954,16 @@ def main():
             return str(x)
         else:
             return "unhandled-type: %s" % type(x)
+
     for result in xpra_results+vnc_results:
-        outline = ", ".join([s(x) for x in result])
-        print(outline)
-        if (csv_name != None):
-            csv.write(outline+"\n")
+        out_line = ", ".join([s(x) for x in result])
+        print(out_line)
+        out_lines.append(out_line)
+
+    if (csv_name != None):
+        with open(csv_name, "w") as csv:
+            for line in out_lines:
+                csv.write(line+"\n")
 
 if __name__ == "__main__":
     main()
