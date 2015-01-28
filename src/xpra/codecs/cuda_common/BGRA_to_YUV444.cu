@@ -1,13 +1,13 @@
 /*
  * This file is part of Xpra.
- * Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
  * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
  * later version. See the file COPYING for details.
  */
 
 #include <stdint.h>
 
-extern "C" __global__ void BGR_to_YUV444(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
+extern "C" __global__ void BGRA_to_YUV444(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
                              uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
                              int w, int h)
 {

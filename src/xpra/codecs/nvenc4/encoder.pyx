@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,14 +29,12 @@ import ctypes
 from ctypes import cdll as loader, POINTER
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
-FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
 CLIENT_KEYS_STR = get_nvenc_license_keys(4)
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
-
 #NVENC requires compute capability value 0x30 or above:
 MIN_COMPUTE = 0x30
-if FORCE:
-    MIN_COMPUTE = 0
+
+YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "80"))
 
 
 cdef extern from "string.h":
@@ -217,7 +215,8 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_PARAMS_RC_VBR_MINQP          #Variable bitrate mode with MinQP
         NV_ENC_PARAMS_RC_2_PASS_QUALITY     #Multi pass encoding optimized for image quality and works only with low latency mode
         NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP   #Multi pass encoding optimized for maintaining frame size and works only with low latency mode
-        NV_ENC_PARAMS_RC_CBR2               #Constant bitrate mode using two pass for IDR frame only
+        NV_ENC_PARAMS_RC_2_PASS_VBR         #Multi pass VBR
+        NV_ENC_PARAMS_RC_CBR2               #(deprecated)
 
     ctypedef struct NV_ENC_LOCK_BITSTREAM:
         uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_LOCK_BITSTREAM_VER.
@@ -900,8 +899,14 @@ if CLIENT_KEYS_STR:
     CLIENT_KEYS_STR = validated
 
 CODEC_GUIDS = {
-    guidstr(NV_ENC_CODEC_H264_GUID)     : "H264",
+    guidstr(NV_ENC_CODEC_H264_GUID)         : "H264",
+    "790CDC88-4522-4D7B-9425-BDA9975F7603"  : "unknown",        #found with driver 346.35 on Linux
     }
+
+cdef codecstr(GUID guid):
+    s = guidstr(guid)
+    return CODEC_GUIDS.get(s, s)
+
 
 CODEC_PROFILES_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID) : {
@@ -930,33 +935,41 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
     #new in SDK4:
-    guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)              : "lossless",
+    guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)              : "high-444",
     #this one is also lossless, apparently:
     "D5BFB716-C604-44E7-9BB8-DEA5510FC3AC"                  : "lossless",
     guidstr(NV_ENC_PRESET_LOSSLESS_HP_GUID)                 : "lossless-hp",
     "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "streaming",
     }
 
+YUV444_PRESETS = ("high-444", "lossless", "lossless-hp",)
+
+cdef presetstr(GUID preset):
+    s = guidstr(preset)
+    return CODEC_PRESETS_GUIDS.get(s, s)
+
 
 #try to map preset names to a "speed" value:
 PRESET_SPEED = {
-    "high-444"      : 0,
-    "bd"            : 10,
-    "hq"            : 20,
-    "default"       : 40,
-    "hp"            : 50,
-    "low-latency-hq": 60,
+    "lossless"      : 0,
+    "high-444"      : 20,
+    "bd"            : 40,
+    "hq"            : 50,
+    "default"       : 50,
+    "hp"            : 60,
+    "low-latency-hq": 70,
     "low-latency"   : 80,
     "low-latency-hp": 100,
     "streaming"     : -1000,    #disabled for now
     }
 PRESET_QUALITY = {
-    "high-444"      : 100,
-    "bd"            : 90,
-    "hq"            : 80,
-    "default"       : 60,
-    "hp"            : 50,
-    "low-latency-hq": 40,
+    "lossless"      : 100,
+    "high-444"      : 90,
+    "bd"            : 80,
+    "hq"            : 70,
+    "default"       : 50,
+    "hp"            : 40,
+    "low-latency-hq": 30,
     "low-latency"   : 20,
     "low-latency-hp": 0,
     "streaming"     : -1000,    #disabled for now
@@ -982,16 +995,10 @@ BUFFER_FORMAT = {
 
 
 YUV444P_ENABLED = None
-def is_YUV444P_ENABLED():
-    global YUV444P_ENABLED
-    if YUV444P_ENABLED is None:
-        #check version:
-        version = get_nvidia_module_version(True)
-        YUV444P_ENABLED = False     #must be checked against the card!?
-    return YUV444P_ENABLED
 
 def get_COLORSPACES():
-    if is_YUV444P_ENABLED():
+    global YUV444P_ENABLED
+    if YUV444P_ENABLED:
         COLORSPACES = {"BGRX" : ("YUV420P", "YUV444P")}
     else:
         COLORSPACES = {"BGRX" : ("YUV420P",)}
@@ -1119,6 +1126,9 @@ cpdef get_BGRA2V(int device_id):
 cpdef get_BGRA2NV12(int device_id):
     return get_CUDA_CSC_function(device_id, "BGRA_to_NV12")
 
+cpdef get_BGRA2YUV444(int device_id):
+    return get_CUDA_CSC_function(device_id, "BGRA_to_YUV444")
+
 
 cdef class Encoder:
     cdef int width
@@ -1127,7 +1137,6 @@ cdef class Encoder:
     cdef int input_height
     cdef int encoder_width
     cdef int encoder_height
-    cdef int separate_plane
     cdef object src_format
     cdef object scaling
     cdef int speed
@@ -1142,8 +1151,8 @@ cdef class Encoder:
     cdef object cuda_device
     cdef object cuda_context
     cdef void *cuda_context_ptr
-    cdef object kernels
-    cdef object kernel_names
+    cdef object kernel
+    cdef object kernel_name
     cdef object max_block_sizes
     cdef object max_grid_sizes
     cdef long max_threads_per_block
@@ -1195,17 +1204,20 @@ cdef class Encoder:
         for x in CODEC_PRESETS_GUIDS.values():
             preset_speed = PRESET_SPEED.get(x, 50)
             preset_quality = PRESET_QUALITY.get(x, 50)
+            pixel_format_score = (not self.pixel_format=="YUV444P" or x in YUV444_PRESETS) * 100
             if preset_speed>=0 and preset_quality>=0:
-                v = abs(preset_speed-self.speed) + abs(preset_quality-self.quality)
-                options.setdefault(v, []).append(x)
-        log("get_preset(%s) speed=%s, quality=%s, options=%s", guidstr(codec), self.speed, self.quality, options)
+                v = abs(preset_speed-self.speed) + abs(preset_quality-self.quality) + pixel_format_score
+                l = options.setdefault(v, [])
+                if x not in l:
+                    l.append(x)
+        log("get_preset(%s) speed=%s, quality=%s, options=%s", codecstr(codec), self.speed, self.quality, options)
         for v in sorted(options.keys()):
             for preset in options.get(v):
                 if preset and (preset in presets):
                     log("using preset '%s' for quality=%s, speed=%s", preset, self.speed, self.quality)
                     self.preset_name = preset
                     return c_parseguid(presets.get(preset))
-        raise Exception("no low-latency presets available for '%s'!?" % self.codec_name)
+        raise Exception("no matching presets available for '%s'!?" % self.codec_name)
 
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
         assert encoding in get_encodings(), "invalid encoding %s" % encoding
@@ -1227,23 +1239,25 @@ cdef class Encoder:
         self.frames = 0
         self.cuda_device = None
         self.cuda_context = None
-        self.separate_plane = options.get("video_separateplane", False)
         self.pixel_format = ""
         self.last_frame_times = deque(maxlen=200)
         self.update_bitrate()
         start = time.time()
 
-        if is_YUV444P_ENABLED() and "YUV444P" in dst_formats and ((self.separate_plane and quality>=50 and v==1 and u==1) or ("YUV420P" not in dst_formats)):
+        global YUV444P_ENABLED
+        if YUV444P_ENABLED and "YUV444P" in dst_formats and ((quality>=YUV444_THRESHOLD and v==1 and u==1) or ("YUV420P" not in dst_formats)):
             self.pixel_format = "YUV444P"
             #3 full planes:
             plane_size_div = 1
-        else:
-            assert "YUV420P" in dst_formats
+        elif "YUV420P" in dst_formats:
             self.pixel_format = "NV12"
             #1 full Y plane and 2 U+V planes subsampled by 4:
             plane_size_div = 2
+        else:
+            raise Exception("no compatible formats found!")
 
         self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
+        log("using pixel format %s with device %s", self.pixel_format, device_info(self.cuda_device))
         try:
             self.init_cuda()
 
@@ -1289,25 +1303,20 @@ cdef class Encoder:
         try:
             #if supported (separate plane flag), use YUV444P:
             if self.pixel_format=="YUV444P":
-                kernel_gen = (get_BGRA2Y, get_BGRA2U, get_BGRA2V)
+                kernel_gen = get_BGRA2YUV444
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_PL
                 #3 full planes:
                 plane_size_div = 1
             elif self.pixel_format=="NV12":
-                kernel_gen = (get_BGRA2NV12,)
+                kernel_gen = get_BGRA2NV12
                 self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
                 #1 full Y plane and 2 U+V planes subsampled by 4:
                 plane_size_div = 2
             else:
                 raise Exception("BUG: invalid dst format: %s" % self.pixel_format)
 
-            #generate and compile the kernels:
-            self.kernel_names = []
-            self.kernels = []
-            for genk in kernel_gen:
-                kernel_name, kernel = genk(self.cuda_device_id)
-                self.kernel_names.append(kernel_name)
-                self.kernels.append(kernel)
+            #load the kernel:
+            self.kernel_name, self.kernel = kernel_gen(self.cuda_device_id)
 
             #allocate CUDA input buffer (on device) 32-bit RGB
             #(and make it bigger just in case - subregions from XShm can have a huge rowstride):
@@ -1326,8 +1335,7 @@ cdef class Encoder:
             log("max_block_sizes=%s", self.max_block_sizes)
             log("max_grid_sizes=%s", self.max_grid_sizes)
 
-            #should be the same for all kernels... but cheap to be pedantic:
-            self.max_threads_per_block = min([kernel.get_attribute(driver.function_attribute.MAX_THREADS_PER_BLOCK) for kernel in self.kernels])
+            self.max_threads_per_block = self.kernel.get_attribute(driver.function_attribute.MAX_THREADS_PER_BLOCK)
             log("max_threads_per_block=%s", self.max_threads_per_block)
 
             #get the CUDA context (C pointer):
@@ -1349,7 +1357,6 @@ cdef class Encoder:
         cdef NV_ENC_REGISTER_RESOURCE registerResource
         cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
-        cdef NV_ENC_CONFIG_H264 *h264Config = NULL
         cdef long resource
         cdef Py_ssize_t size
         cdef unsigned char* cptr = NULL
@@ -1379,6 +1386,9 @@ cdef class Encoder:
             profiles = self.query_profiles(NV_ENC_CODEC_H264_GUID)
             #self.gopLength = presetConfig.presetCfg.gopLength
 
+            #3 for YUV444, 1 for NV12:
+            config.encodeCodecConfig.h264Config.chromaFormatIDC = 1+int(self.pixel_format=="YUV444P") * 2
+
             params.version = NV_ENC_INITIALIZE_PARAMS_VER
             params.encodeGUID = codec
             params.presetGUID = preset
@@ -1391,9 +1401,8 @@ cdef class Encoder:
             params.frameRateNum = 1
             params.frameRateDen = 30
             params.encodeConfig = config
-            log("nvEncInitializeEncoder using encode=%s, preset=%s", guidstr(codec), guidstr(preset))
 
-            log("nvEncInitializeEncoder(%#x)", <unsigned long> params)
+            log("nvEncInitializeEncoder using encode=%s, preset=%s", codecstr(codec), presetstr(preset))
             with nogil:
                 r = self.functionList.nvEncInitializeEncoder(self.context, params)
             raiseNVENC(r, "initializing encoder")
@@ -1525,7 +1534,6 @@ cdef class Encoder:
         self.input_height = 0
         self.encoder_width = 0
         self.encoder_height = 0
-        self.separate_plane = 0
         self.src_format = ""
         self.scaling = None
         self.speed = 0
@@ -1536,8 +1544,8 @@ cdef class Encoder:
         self.cuda_info = None
         self.cuda_device_info = None
         self.cuda_device = None
-        self.kernels = None
-        self.kernel_names = None
+        self.kernel = None
+        self.kernel_name = None
         self.max_block_sizes = 0
         self.max_grid_sizes = 0
         self.max_threads_per_block = 0
@@ -1721,24 +1729,21 @@ cdef class Encoder:
 
         #FIXME: find better values and validate against max_block/max_grid:
         if self.pixel_format=="NV12":
-            #just one pass with no offset:
-            offsets = [0]
             #(these values are derived from the kernel code - which we should know nothing about here..)
             #divide each dimension by 2 since we process 4 pixels at a time:
             dx, dy = 2, 2
-        else:
-            assert self.pixel_format=="YUV444P"
-            #3 passes, one for each of Y, U and V
-            offsets = [0, self.encoder_height*self.outputPitch, 2*self.encoder_height*self.outputPitch]
+        elif self.pixel_format=="YUV444P":
             #one pixel at a time:
             dx, dy = 1, 1
+        else:
+            raise Exception("bug: invalid pixel format '%s'" % self.pixel_format)
 
         #calculate grids/blocks:
         #a block is a group of threads: (blockw * blockh) threads
         #a grid is a group of blocks: (gridw * gridh) blocks
         blockw, blockh = 16, 16
         gridw = max(1, w/blockw/dx)
-        if gridw*2*blockw<w:
+        if gridw*dx*blockw<w:
             gridw += 1
         gridh = max(1, h/blockh/dy)
         #if dy made us round down, add one:
@@ -1749,103 +1754,94 @@ cdef class Encoder:
             #scaling so scale exact dimensions, not padded input dimensions:
             in_w, in_h = w, h
 
-        #for storing the results:
-        data = []
-        sizes = []
+        csc_start = time.time()
+        self.kernel(self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
+               self.cudaOutputBuffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(self.outputPitch),
+               numpy.int32(w), numpy.int32(h),
+               block=(blockw,blockh,1), grid=(gridw, gridh))
+        log("calling %s%s", self.kernel, (self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
+               self.cudaOutputBuffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(self.outputPitch),
+               numpy.int32(w), numpy.int32(h),
+               (blockw,blockh,1), (gridw, gridh)))
+        csc_end = time.time()
+        log("compress_image(..) kernel %s executed - CSC took %.1f ms", self.kernel_name, (csc_end - csc_start)*1000.0)
 
-        step = 0
-        for step in range(len(offsets)):
-            offset = offsets[step]
-            kernel = self.kernels[step]
-            kernel_name = self.kernel_names[step]
-            csc_start = time.time()
-            kernel(self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
-                   self.cudaOutputBuffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(self.outputPitch),
-                   numpy.int32(w), numpy.int32(h),
-                   block=(blockw,blockh,1), grid=(gridw, gridh))
-            csc_end = time.time()
-            log("compress_image(..) kernel %s executed - CSC took %.1f ms", kernel_name, (csc_end - csc_start)*1000.0)
+        #map buffer so nvenc can access it:
+        memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
+        mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
+        mapInputResource.registeredResource  = self.inputHandle
+        log("nvEncMapInputResource(%#x)", <unsigned long> &mapInputResource)
+        with nogil:
+            r = self.functionList.nvEncMapInputResource(self.context, &mapInputResource)
+        raiseNVENC(r, "mapping input resource")
+        log("compress_image(..) device buffer mapped to %#x", <unsigned long> mapInputResource.mappedResource)
 
-            #map buffer so nvenc can access it:
-            memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
-            mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
-            mapInputResource.registeredResource  = self.inputHandle
-            log("nvEncMapInputResource(%#x)", <unsigned long> &mapInputResource)
+        try:
+            memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
+            picParams.version = NV_ENC_PIC_PARAMS_VER
+            picParams.bufferFmt = self.bufferFmt
+            picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
+            picParams.inputWidth = self.encoder_width
+            picParams.inputHeight = self.encoder_height
+            picParams.inputPitch = self.outputPitch
+            picParams.inputBuffer = mapInputResource.mappedResource
+            picParams.outputBitstream = self.bitstreamBuffer
+            #picParams.pictureType: required when enablePTD is disabled
+            if self.frames==0:
+                #only the first frame needs to be IDR (as we never lose frames)
+                picParams.pictureType = NV_ENC_PIC_TYPE_IDR
+            else:
+                picParams.pictureType = NV_ENC_PIC_TYPE_P
+            picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
+            picParams.codecPicParams.h264PicParams.refPicFlag = self.frames==0
+            picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
+            picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
+            picParams.codecPicParams.h264PicParams.colourPlaneId = 0
+            #picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
+            picParams.frameIdx = self.frames
+            picParams.inputTimeStamp = image.get_timestamp()-self.first_frame_timestamp
+            #inputDuration = 0      #FIXME: use frame delay?
+            picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
+            picParams.rcParams.averageBitRate = self.target_bitrate
+            picParams.rcParams.maxBitRate = self.max_bitrate
+
+            log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
             with nogil:
-                r = self.functionList.nvEncMapInputResource(self.context, &mapInputResource)
-            raiseNVENC(r, "mapping input resource")
-            log("compress_image(..) device buffer mapped to %#x", <unsigned long> mapInputResource.mappedResource)
+                r = self.functionList.nvEncEncodePicture(self.context, &picParams)
+            raiseNVENC(r, "error during picture encoding")
+            encode_end = time.time()
+            log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
 
-            size = 0
-            try:
-                memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
-                picParams.version = NV_ENC_PIC_PARAMS_VER
-                picParams.bufferFmt = self.bufferFmt
-                picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
-                picParams.inputWidth = self.encoder_width
-                picParams.inputHeight = self.encoder_height
-                picParams.inputPitch = self.outputPitch
-                picParams.inputBuffer = mapInputResource.mappedResource
-                picParams.outputBitstream = self.bitstreamBuffer
-                #picParams.pictureType: required when enablePTD is disabled
-                if self.frames==0:
-                    #only the first frame needs to be IDR (as we never lose frames)
-                    picParams.pictureType = NV_ENC_PIC_TYPE_IDR
-                else:
-                    picParams.pictureType = NV_ENC_PIC_TYPE_P
-                picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
-                picParams.codecPicParams.h264PicParams.refPicFlag = self.frames==0
-                picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
-                picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
-                picParams.codecPicParams.h264PicParams.colourPlaneId = step
-                #picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
-                picParams.frameIdx = self.frames
-                picParams.inputTimeStamp = image.get_timestamp()-self.first_frame_timestamp
-                #inputDuration = 0      #FIXME: use frame delay?
-                picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
-                picParams.rcParams.averageBitRate = self.target_bitrate
-                picParams.rcParams.maxBitRate = self.max_bitrate
+            #lock output buffer:
+            memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
+            lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
+            lockOutputBuffer.doNotWait = 0
+            lockOutputBuffer.outputBitstream = self.bitstreamBuffer
+            log("nvEncLockBitstream(%#x)", <unsigned long> &lockOutputBuffer)
+            with nogil:
+                r = self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer)
+            raiseNVENC(r, "locking output buffer")
+            log("compress_image(..) output buffer locked, bitstreamBufferPtr=%#x", <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
 
-                log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
-                with nogil:
-                    r = self.functionList.nvEncEncodePicture(self.context, &picParams)
-                raiseNVENC(r, "error during picture encoding")
-                encode_end = time.time()
-                log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
-
-                #lock output buffer:
-                memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
-                lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
-                lockOutputBuffer.doNotWait = 0
-                lockOutputBuffer.outputBitstream = self.bitstreamBuffer
-                log("nvEncLockBitstream(%#x)", <unsigned long> &lockOutputBuffer)
-                with nogil:
-                    r = self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer)
-                raiseNVENC(r, "locking output buffer")
-                log("compress_image(..) output buffer locked, bitstreamBufferPtr=%#x", <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
-
-                #copy to python buffer:
-                size = lockOutputBuffer.bitstreamSizeInBytes
-                sizes.append(size)
-                self.bytes_out += size
-                data.append((<char *> lockOutputBuffer.bitstreamBufferPtr)[:size])
-            finally:
-                log("nvEncUnlockBitstream(%#x)", <unsigned long> self.bitstreamBuffer)
-                with nogil:
-                    r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
-                raiseNVENC(r, "unlocking output buffer")
-                log("nvEncUnmapInputResource(%#x)", <unsigned long> self.bitstreamBuffer)
-                with nogil:
-                    r = self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource)
-                raiseNVENC(r, "unmapping input resource")
+            #copy to python buffer:
+            size = lockOutputBuffer.bitstreamSizeInBytes
+            self.bytes_out += size
+            data = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
+        finally:
+            log("nvEncUnlockBitstream(%#x)", <unsigned long> self.bitstreamBuffer)
+            with nogil:
+                r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
+            raiseNVENC(r, "unlocking output buffer")
+            log("nvEncUnmapInputResource(%#x)", <unsigned long> self.bitstreamBuffer)
+            with nogil:
+                r = self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource)
+            raiseNVENC(r, "unmapping input resource")
 
         download_end = time.time()
         log("compress_image(..) download took %.1f ms", (download_end-encode_end)*1000.0)
         #update info:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
-        outdata = "".join(data)
-        outsize = len(outdata)
         client_options = {
                     "frame"     : self.frames,
                     "pts"       : image.get_timestamp()-self.first_frame_timestamp,
@@ -1854,17 +1850,12 @@ cdef class Encoder:
                     }
         if self.scaling!=(1,1):
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
-        if self.pixel_format=="YUV444P":
-            assert len(offsets)==3
-            #tell the client that the data contains 3 chunks
-            #and how to find them in the joined buffer:
-            client_options["plane_sizes"] = sizes
         end = time.time()
         self.frames += 1
         self.last_frame_times.append((start, end))
         self.time += end-start
-        log("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", outsize, 100.0*outsize/input_size, self.frames, 1000.0*(end-start))
-        return outdata, client_options
+        log("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
+        return data, client_options
 
 
     cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID):
@@ -1876,7 +1867,7 @@ cdef class Encoder:
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
-        log("nvEncGetEncodePresetConfig(%s, %s, %#x)", guidstr(encode_GUID), guidstr(preset_GUID), <unsigned long> presetConfig)
+        log("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
         r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
         if r!=0:
             log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(r, r))
@@ -1893,7 +1884,7 @@ cdef class Encoder:
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         presets = {}
-        log("nvEncGetEncodePresetCount(%s, %#x)", guidstr(encode_GUID), <unsigned long> &presetCount)
+        log("nvEncGetEncodePresetCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
         with nogil:
             r = self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount)
         raiseNVENC(r, "getting preset count for %s" % guidstr(encode_GUID))
@@ -1902,7 +1893,7 @@ cdef class Encoder:
         preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
         assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
         try:
-            log("nvEncGetEncodePresetGUIDs(%s, %#x)", guidstr(encode_GUID), <unsigned long> &presetCount)
+            log("nvEncGetEncodePresetGUIDs(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
             with nogil:
                 r = self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount)
             raiseNVENC(r, "getting encode presets")
@@ -1928,7 +1919,7 @@ cdef class Encoder:
                 log.warn("nvenc: found some unknown presets: %s", ", ".join(unknowns))
         finally:
             free(preset_GUIDs)
-        log("query_presets(%s)=%s", guidstr(encode_GUID), presets)
+        log("query_presets(%s)=%s", codecstr(encode_GUID), presets)
         return presets
 
     cdef object query_profiles(self, GUID encode_GUID):
@@ -1939,7 +1930,7 @@ cdef class Encoder:
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         profiles = {}
-        log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", guidstr(encode_GUID), <unsigned long> &profileCount)
+        log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &profileCount)
         with nogil:
             r = self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount)
         raiseNVENC(r, "getting profile count")
@@ -1949,7 +1940,7 @@ cdef class Encoder:
         assert profile_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
         PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
         try:
-            log("nvEncGetEncodeProfileGUIDs(%s, %#x, %#x)", guidstr(encode_GUID), <unsigned long> profile_GUIDs, <unsigned long> &profileCount)
+            log("nvEncGetEncodeProfileGUIDs(%s, %#x, %#x)", codecstr(encode_GUID), <unsigned long> profile_GUIDs, <unsigned long> &profileCount)
             with nogil:
                 r = self.functionList.nvEncGetEncodeProfileGUIDs(self.context, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount)
             raiseNVENC(r, "getting encode profiles")
@@ -1972,7 +1963,7 @@ cdef class Encoder:
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         input_formats = {}
-        log("nvEncGetInputFormatCount(%s, %#x)", guidstr(encode_GUID), <unsigned long> &inputFmtCount)
+        log("nvEncGetInputFormatCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &inputFmtCount)
         with nogil:
             r = self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount)
         raiseNVENC(r, "getting input format count")
@@ -1981,7 +1972,7 @@ cdef class Encoder:
         inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
         assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
         try:
-            log("nvEncGetInputFormats(%s, %#x, %i, %#x)", guidstr(encode_GUID), <unsigned long> inputFmts, inputFmtCount, <unsigned long> &inputFmtsRetCount)
+            log("nvEncGetInputFormats(%s, %#x, %i, %#x)", codecstr(encode_GUID), <unsigned long> inputFmts, inputFmtCount, <unsigned long> &inputFmtsRetCount)
             with nogil:
                 r = self.functionList.nvEncGetInputFormats(self.context, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount)
             raiseNVENC(r, "getting input formats")
@@ -2006,11 +1997,10 @@ cdef class Encoder:
         encCaps.version = NV_ENC_CAPS_PARAM_VER
         encCaps.capsToQuery = caps_type
 
-        log("nvEncGetEncodeCaps(%s, %#x, %#x)", guidstr(encode_GUID), <unsigned long> &encCaps, <unsigned long> &val)
         with nogil:
             r = self.functionList.nvEncGetEncodeCaps(self.context, encode_GUID, &encCaps, &val)
         raiseNVENC(r, "getting encode caps for %s" % CAPS_NAMES.get(caps_type, caps_type))
-        log("query_encoder_caps(%s, %s) %s=%s", guidstr(encode_GUID), caps_type, CAPS_NAMES.get(caps_type, caps_type), val)
+        log("query_encoder_caps(%s, %s) %s=%s", codecstr(encode_GUID), caps_type, CAPS_NAMES.get(caps_type, caps_type), val)
         return val
 
     cdef query_codecs(self, full_query=False):
@@ -2044,10 +2034,9 @@ cdef class Encoder:
                 maxw = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
                 maxh = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_HEIGHT_MAX)
                 async = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
-                sep_plane = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_SEPARATE_COLOUR_PLANE)
                 log(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
                 rate_countrol = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
-                log(" rate control: %s, separate colour plane: %s", rate_countrol, sep_plane)
+                log(" rate control: %s", rate_countrol)
 
                 if full_query:
                     presets = self.query_presets(encode_GUID)
@@ -2142,6 +2131,12 @@ def init_module():
                     if client_key:
                         log("the license key '%s' is valid", client_key)
                         valid_keys.append(client_key)
+                    #check for YUV444 support
+                    global YUV444P_ENABLED
+                    YUV444P_ENABLED = test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)
+                    log("YUV444 support: %s", YUV444P_ENABLED)
+                    #but disable it until we get it to work properly..
+                    YUV444P_ENABLED = False
                 except NVENCException as e:
                     log("encoder %s failed: %s", test_encoder, e)
                     #special handling for license key issues:
