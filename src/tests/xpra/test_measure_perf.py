@@ -40,12 +40,6 @@ else:
 config = get_config(config_name)
 if (config==None):
     raise Exception("Could not load config file")
-config.print_options()
-
-if (len(sys.argv) > 2):
-    csv_name = sys.argv[2]
-else:
-    csv_name = None
 
 XPRA_BIN = "/usr/bin/xpra"
 XPRA_VERSION_OUTPUT = getoutput([XPRA_BIN, "--version"])
@@ -458,7 +452,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                             "Remoting Tech"  : tech_name,
                             "Server Version" : server_version,
                             "Client Version" : client_version,
-                            "Custom Params"  : " ".join(config.CUSTOM_PARAMS),
+                            "Custom Params"  : config.CUSTOM_PARAMS,
                             "SVN Version"    : SVN_VERSION,
                             "Encoding"       : encoding,
                             "Quality"        : quality,
@@ -921,12 +915,23 @@ def main():
     get_iptables_INPUT_count()
     get_iptables_OUTPUT_count()
 
+    #If CUSTOM_PARAMS are supplied on the command line, they override what's in config
+    if (len(sys.argv) > 3):
+        config.CUSTOM_PARAMS = " ".join(sys.argv[3:])
+    config.print_options()
+
     xpra_results = []
     if config.TEST_XPRA:
         xpra_results = test_xpra()
     vnc_results = []
     if config.TEST_VNC:
         vnc_results = test_vnc()
+
+    if (len(sys.argv) > 2):
+        csv_name = sys.argv[2]
+    else:
+        csv_name = None
+
     print("*"*80)
     print("RESULTS:")
     print("")

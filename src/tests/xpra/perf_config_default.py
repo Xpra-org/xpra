@@ -59,7 +59,7 @@ class Config():
                 print("* adding test: %s" % str(x))
                 self.X11_TEST_COMMANDS.append(x)
 
-    CUSTOM_PARAMS = []
+    CUSTOM_PARAMS = ""
     TEST_CANDIDATES = []
     X11_TEST_COMMANDS = []
 
@@ -97,6 +97,7 @@ class Config():
     STARTING_TEST = 0           #the index of the first test to run
     LIMIT_TESTS = 999           #the limit of tests to be run
     MAX_ERRORS = 100            #allow this many tests to cause errors before aborting
+    XPRA_USE_PASSWORD = True
 
     NO_SHAPING = (0, 0, 0)
     #TRICKLE_SHAPING_OPTIONS = [NO_SHAPING]
@@ -110,8 +111,6 @@ class Config():
 
     #X11_TESTS = [X11_PERF, FAKE_CONSOLE_USER_TEST, GTKPERF_TEST]
     X11_TESTS = [X11_PERF, XTERM_TEST, FAKE_CONSOLE_USER_TEST, GTKPERF_TEST]
-
-    XPRA_USE_PASSWORD = True
 
     #some commands (games especially) may need longer to startup:
     TEST_COMMAND_SETTLE_TIME = {}
@@ -207,7 +206,7 @@ class Config():
     def print_options(self):
         print("\nCurrent Settings:")
         print("-"*80)
-        print("CUSTOM_PARAMS: %s" % str(self.CUSTOM_PARAMS))
+        print("CUSTOM_PARAMS: %s" % self.CUSTOM_PARAMS)
         print("GLX_TESTS: %s" % self.GLX_TESTS)
         print("X11_TESTS: %s" % self.X11_TESTS)
         print("GAMES_TESTS: %s" % self.GAMES_TESTS)
