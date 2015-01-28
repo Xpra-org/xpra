@@ -268,27 +268,37 @@ def get_workarea():
     #this is for x11 servers which can only use a single workarea,
     #calculate the total area:
     try:
+        #first we need to find the absolute top-left and bottom-right corners
+        #so we can make everything relative to 0,0
+        monitors = []
+        for m in win32api.EnumDisplayMonitors(None, None):
+            mi = win32api.GetMonitorInfo(m[0])
+            mx1, my1, mx2, my2 = mi['Monitor']
+            monitors.append((mx1, my1, mx2, my2))
+        minmx = min(x[0] for x in monitors)
+        minmy = min(x[1] for x in monitors)
+        maxmx = max(x[2] for x in monitors)
+        maxmy = max(x[3] for x in monitors)
+        log("get_workarea() absolute total monitor dimensions: %s", (maxmx, maxmy))
         workareas = []
         for m in win32api.EnumDisplayMonitors(None, None):
             mi = win32api.GetMonitorInfo(m[0])
             #absolute workarea / monitor coordinates:
-            #(all relative to 0,0 being top left)
             wx1, wy1, wx2, wy2 = mi['Work']
             workareas.append((wx1, wy1, wx2, wy2))
         assert len(workareas)>0
-        minx = min(w[0] for w in workareas)
-        miny = min(w[1] for w in workareas)
-        maxx = max(w[2] for w in workareas)
-        maxy = max(w[3] for w in workareas)
-        #win32 may give us negative coordinates
-        #when the leftmost monitor is not the primary one
-        if minx<0:
-            maxx += abs(minx)
-            minx = 0
-        if miny<0:
-            maxy += abs(miny)
-            miny = 0
-        return minx, miny, maxx, maxy
+        minwx = min(w[0] for w in workareas)
+        minwy = min(w[1] for w in workareas)
+        maxwx = max(w[2] for w in workareas)
+        maxwy = max(w[3] for w in workareas)
+        #sanity checks:
+        assert minwx>=minmx and minwy>=minmy and maxwx<=maxmx and maxwy<=maxmy, "workspace %s is outside monitor space %s" % ((minwx, minwy, maxwx, maxwy), (minmx, minmy, maxmx, maxmy))
+        #now make it relative to the monitor space:
+        wx1 = minwx - minmx
+        wy1 = minwy - minmy
+        wx2 = maxwx - minmx
+        wy2 = maxwy - minmy
+        return wx1, wy1, wx2, wy2
     except Exception as e:
         log.warn("failed to query workareas: %s", e)
         return []
@@ -301,7 +311,6 @@ def get_workareas():
         for m in win32api.EnumDisplayMonitors(None, None):
             mi = win32api.GetMonitorInfo(m[0])
             #absolute workarea / monitor coordinates:
-            #(all relative to 0,0 being top left)
             wx1, wy1, wx2, wy2 = mi['Work']
             mx1, my1, mx2, my2 = mi['Monitor']
             assert mx1<mx2 and my1<my2, "invalid monitor coordinates"
