@@ -36,6 +36,8 @@ MIN_COMPUTE = 0x30
 
 YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "80"))
 
+QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
+
 
 cdef extern from "string.h":
     void* memset(void * ptr, int value, size_t num)
@@ -1396,8 +1398,8 @@ cdef class Encoder:
             config.rcParams.enableMinQP = 1
             config.rcParams.enableMaxQP = 1
             #0=max quality, 63 lowest quality
-            qmin = 63-min(63, int(63.0*(self.quality+20)/100.0))
-            qmax = 63-max(0, int(63.0*(self.quality-20)/100.0))
+            qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)/100))
+            qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)/100))
             config.rcParams.minQP.qpInterB = qmin
             config.rcParams.minQP.qpInterP = qmin
             config.rcParams.minQP.qpIntra = qmin
@@ -1812,8 +1814,8 @@ cdef class Encoder:
             picParams.rcParams.enableMinQP = 1
             picParams.rcParams.enableMaxQP = 1
             #0=max quality, 63 lowest quality
-            qmin = 63-min(63, int(63.0*(self.quality+20)/100.0))
-            qmax = 63-max(0, int(63.0*(self.quality-20)/100.0))
+            qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)/100))
+            qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)/100))
             picParams.rcParams.minQP.qpInterB = qmin
             picParams.rcParams.minQP.qpInterP = qmin
             picParams.rcParams.minQP.qpIntra = qmin
@@ -2153,6 +2155,8 @@ def init_module():
                     global YUV444P_ENABLED
                     YUV444P_ENABLED = test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)
                     log("YUV444 support: %s", YUV444P_ENABLED)
+                    #but disable it until we get it to work properly..
+                    YUV444P_ENABLED = False
                 except NVENCException as e:
                     log("encoder %s failed: %s", test_encoder, e)
                     #special handling for license key issues:
