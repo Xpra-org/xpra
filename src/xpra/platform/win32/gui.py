@@ -298,7 +298,8 @@ def get_workarea():
         wy1 = minwy - minmy
         wx2 = maxwx - minmx
         wy2 = maxwy - minmy
-        return wx1, wy1, wx2, wy2
+        assert wx1<wx2 and wy1<wy2, "invalid workarea coordinates: %s" % (wx1, wy1, wx2, wy2)
+        return wx1, wy1, wx2-wx1, wy2-wy1
     except Exception as e:
         log.warn("failed to query workareas: %s", e)
         return []
