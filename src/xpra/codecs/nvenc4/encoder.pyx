@@ -1395,8 +1395,9 @@ cdef class Encoder:
             config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
             config.rcParams.enableMinQP = 1
             config.rcParams.enableMaxQP = 1
-            qmin = max(0, self.quality-20)
-            qmax = min(100, self.quality+20)
+            #0=max quality, 63 lowest quality
+            qmin = 63-min(63, int(63.0*(self.quality+20)/100.0))
+            qmax = 63-max(0, int(63.0*(self.quality-20)/100.0))
             config.rcParams.minQP.qpInterB = qmin
             config.rcParams.minQP.qpInterP = qmin
             config.rcParams.minQP.qpIntra = qmin
@@ -1810,8 +1811,9 @@ cdef class Encoder:
             picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
             picParams.rcParams.enableMinQP = 1
             picParams.rcParams.enableMaxQP = 1
-            qmin = max(0, self.quality-20)
-            qmax = min(100, self.quality+20)
+            #0=max quality, 63 lowest quality
+            qmin = 63-min(63, int(63.0*(self.quality+20)/100.0))
+            qmax = 63-max(0, int(63.0*(self.quality-20)/100.0))
             picParams.rcParams.minQP.qpInterB = qmin
             picParams.rcParams.minQP.qpInterP = qmin
             picParams.rcParams.minQP.qpIntra = qmin
@@ -2151,8 +2153,6 @@ def init_module():
                     global YUV444P_ENABLED
                     YUV444P_ENABLED = test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)
                     log("YUV444 support: %s", YUV444P_ENABLED)
-                    #but disable it until we get it to work properly..
-                    YUV444P_ENABLED = False
                 except NVENCException as e:
                     log("encoder %s failed: %s", test_encoder, e)
                     #special handling for license key issues:
