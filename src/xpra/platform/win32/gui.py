@@ -280,6 +280,14 @@ def get_workarea():
         miny = min(w[1] for w in workareas)
         maxx = max(w[2] for w in workareas)
         maxy = max(w[3] for w in workareas)
+        #win32 may give us negative coordinates
+        #when the leftmost monitor is not the primary one
+        if minx<0:
+            maxx += abs(minx)
+            minx = 0
+        if miny<0:
+            maxy += abs(miny)
+            miny = 0
         return minx, miny, maxx, maxy
     except Exception as e:
         log.warn("failed to query workareas: %s", e)
