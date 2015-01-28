@@ -953,8 +953,8 @@ cdef presetstr(GUID preset):
 
 #try to map preset names to a "speed" value:
 PRESET_SPEED = {
-    "lossless"      : 0,
-    "high-444"      : 20,
+    "lossless"      : -1000,
+    "high-444"      : 0,
     "bd"            : 40,
     "hq"            : 50,
     "default"       : 50,
@@ -965,8 +965,8 @@ PRESET_SPEED = {
     "streaming"     : -1000,    #disabled for now
     }
 PRESET_QUALITY = {
-    "lossless"      : 100,
-    "high-444"      : 90,
+    "lossless"      : -1000,
+    "high-444"      : 100,
     "bd"            : 80,
     "hq"            : 70,
     "default"       : 50,
@@ -1410,9 +1410,13 @@ cdef class Encoder:
             config.rcParams.maxBitRate = self.max_bitrate
             config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
 
-            config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 1
-            config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 1
- 
+            config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
+            config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
+
             log("nvEncInitializeEncoder using encode=%s, preset=%s", codecstr(codec), presetstr(preset))
             with nogil:
                 r = self.functionList.nvEncInitializeEncoder(self.context, params)
@@ -2155,8 +2159,6 @@ def init_module():
                     global YUV444P_ENABLED
                     YUV444P_ENABLED = test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)
                     log("YUV444 support: %s", YUV444P_ENABLED)
-                    #but disable it until we get it to work properly..
-                    YUV444P_ENABLED = False
                 except NVENCException as e:
                     log("encoder %s failed: %s", test_encoder, e)
                     #special handling for license key issues:
