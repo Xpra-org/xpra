@@ -659,39 +659,39 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef struct NV_ENCODE_API_FUNCTION_LIST:
         uint32_t    version         #[in]: Client should pass NV_ENCODE_API_FUNCTION_LIST_VER.
         uint32_t    reserved        #[in]: Reserved and should be set to 0.
-        PNVENCOPENENCODESESSION         nvEncOpenEncodeSession          #[out]: Client should access ::NvEncOpenEncodeSession() API through this pointer.
-        PNVENCGETENCODEGUIDCOUNT        nvEncGetEncodeGUIDCount         #[out]: Client should access ::NvEncGetEncodeGUIDCount() API through this pointer.
-        PNVENCGETENCODEPROFILEGUIDCOUNT nvEncGetEncodeProfileGUIDCount  #[out]: Client should access ::NvEncGetEncodeProfileGUIDCount() API through this pointer.
-        PNVENCGETENCODEPROFILEGUIDS     nvEncGetEncodeProfileGUIDs      #[out]: Client should access ::NvEncGetEncodeProfileGUIDs() API through this pointer.
-        PNVENCGETENCODEGUIDS            nvEncGetEncodeGUIDs             #[out]: Client should access ::NvEncGetEncodeGUIDs() API through this pointer.
-        PNVENCGETINPUTFORMATCOUNT       nvEncGetInputFormatCount        #[out]: Client should access ::NvEncGetInputFormatCount() API through this pointer.
-        PNVENCGETINPUTFORMATS           nvEncGetInputFormats            #[out]: Client should access ::NvEncGetInputFormats() API through this pointer.
-        PNVENCGETENCODECAPS             nvEncGetEncodeCaps              #[out]: Client should access ::NvEncGetEncodeCaps() API through this pointer.
-        PNVENCGETENCODEPRESETCOUNT      nvEncGetEncodePresetCount       #[out]: Client should access ::NvEncGetEncodePresetCount() API through this pointer.
-        PNVENCGETENCODEPRESETGUIDS      nvEncGetEncodePresetGUIDs       #[out]: Client should access ::NvEncGetEncodePresetGUIDs() API through this pointer.
-        PNVENCGETENCODEPRESETCONFIG     nvEncGetEncodePresetConfig      #[out]: Client should access ::NvEncGetEncodePresetConfig() API through this pointer.
-        PNVENCINITIALIZEENCODER         nvEncInitializeEncoder          #[out]: Client should access ::NvEncInitializeEncoder() API through this pointer.
-        PNVENCCREATEINPUTBUFFER         nvEncCreateInputBuffer          #[out]: Client should access ::NvEncCreateInputBuffer() API through this pointer.
-        PNVENCDESTROYINPUTBUFFER        nvEncDestroyInputBuffer         #[out]: Client should access ::NvEncDestroyInputBuffer() API through this pointer.
-        PNVENCCREATEBITSTREAMBUFFER     nvEncCreateBitstreamBuffer      #[out]: Client should access ::NvEncCreateBitstreamBuffer() API through this pointer.
-        PNVENCDESTROYBITSTREAMBUFFER    nvEncDestroyBitstreamBuffer     #[out]: Client should access ::NvEncDestroyBitstreamBuffer() API through this pointer.
-        PNVENCENCODEPICTURE             nvEncEncodePicture              #[out]: Client should access ::NvEncEncodePicture() API through this pointer.
-        PNVENCLOCKBITSTREAM             nvEncLockBitstream              #[out]: Client should access ::NvEncLockBitstream() API through this pointer.
-        PNVENCUNLOCKBITSTREAM           nvEncUnlockBitstream            #[out]: Client should access ::NvEncUnlockBitstream() API through this pointer.
-        PNVENCLOCKINPUTBUFFER           nvEncLockInputBuffer            #[out]: Client should access ::NvEncLockInputBuffer() API through this pointer.
-        PNVENCUNLOCKINPUTBUFFER         nvEncUnlockInputBuffer          #[out]: Client should access ::NvEncUnlockInputBuffer() API through this pointer.
-        PNVENCGETENCODESTATS            nvEncGetEncodeStats             #[out]: Client should access ::NvEncGetEncodeStats() API through this pointer.
-        PNVENCGETSEQUENCEPARAMS         nvEncGetSequenceParams          #[out]: Client should access ::NvEncGetSequenceParams() API through this pointer.
-        PNVENCREGISTERASYNCEVENT        nvEncRegisterAsyncEvent         #[out]: Client should access ::NvEncRegisterAsyncEvent() API through this pointer.
-        PNVENCUNREGISTERASYNCEVENT      nvEncUnregisterAsyncEvent       #[out]: Client should access ::NvEncUnregisterAsyncEvent() API through this pointer.
-        PNVENCMAPINPUTRESOURCE          nvEncMapInputResource           #[out]: Client should access ::NvEncMapInputResource() API through this pointer.
-        PNVENCUNMAPINPUTRESOURCE        nvEncUnmapInputResource         #[out]: Client should access ::NvEncUnmapInputResource() API through this pointer.
-        PNVENCDESTROYENCODER            nvEncDestroyEncoder             #[out]: Client should access ::NvEncDestroyEncoder() API through this pointer.
-        PNVENCINVALIDATEREFFRAMES       nvEncInvalidateRefFrames        #[out]: Client should access ::NvEncInvalidateRefFrames() API through this pointer.
-        PNVENCOPENENCODESESSIONEX       nvEncOpenEncodeSessionEx        #[out]: Client should access ::NvEncOpenEncodeSession() API through this pointer.
-        PNVENCREGISTERRESOURCE          nvEncRegisterResource           #[out]: Client should access ::NvEncRegisterResource() API through this pointer.
-        PNVENCUNREGISTERRESOURCE        nvEncUnregisterResource         #[out]: Client should access ::NvEncUnregisterResource() API through this pointer.
-        PNVENCRECONFIGUREENCODER        nvEncReconfigureEncoder         #[out]: Client should access ::NvEncReconfigureEncoder() API through this pointer.
+        PNVENCOPENENCODESESSION         nvEncOpenEncodeSession
+        PNVENCGETENCODEGUIDCOUNT        nvEncGetEncodeGUIDCount
+        PNVENCGETENCODEPROFILEGUIDCOUNT nvEncGetEncodeProfileGUIDCount
+        PNVENCGETENCODEPROFILEGUIDS     nvEncGetEncodeProfileGUIDs
+        PNVENCGETENCODEGUIDS            nvEncGetEncodeGUIDs
+        PNVENCGETINPUTFORMATCOUNT       nvEncGetInputFormatCount
+        PNVENCGETINPUTFORMATS           nvEncGetInputFormats
+        PNVENCGETENCODECAPS             nvEncGetEncodeCaps
+        PNVENCGETENCODEPRESETCOUNT      nvEncGetEncodePresetCount
+        PNVENCGETENCODEPRESETGUIDS      nvEncGetEncodePresetGUIDs
+        PNVENCGETENCODEPRESETCONFIG     nvEncGetEncodePresetConfig
+        PNVENCINITIALIZEENCODER         nvEncInitializeEncoder
+        PNVENCCREATEINPUTBUFFER         nvEncCreateInputBuffer
+        PNVENCDESTROYINPUTBUFFER        nvEncDestroyInputBuffer
+        PNVENCCREATEBITSTREAMBUFFER     nvEncCreateBitstreamBuffer
+        PNVENCDESTROYBITSTREAMBUFFER    nvEncDestroyBitstreamBuffer
+        PNVENCENCODEPICTURE             nvEncEncodePicture
+        PNVENCLOCKBITSTREAM             nvEncLockBitstream
+        PNVENCUNLOCKBITSTREAM           nvEncUnlockBitstream
+        PNVENCLOCKINPUTBUFFER           nvEncLockInputBuffer
+        PNVENCUNLOCKINPUTBUFFER         nvEncUnlockInputBuffer
+        PNVENCGETENCODESTATS            nvEncGetEncodeStats
+        PNVENCGETSEQUENCEPARAMS         nvEncGetSequenceParams
+        PNVENCREGISTERASYNCEVENT        nvEncRegisterAsyncEvent
+        PNVENCUNREGISTERASYNCEVENT      nvEncUnregisterAsyncEvent
+        PNVENCMAPINPUTRESOURCE          nvEncMapInputResource
+        PNVENCUNMAPINPUTRESOURCE        nvEncUnmapInputResource
+        PNVENCDESTROYENCODER            nvEncDestroyEncoder
+        PNVENCINVALIDATEREFFRAMES       nvEncInvalidateRefFrames
+        PNVENCOPENENCODESESSIONEX       nvEncOpenEncodeSessionEx
+        PNVENCREGISTERRESOURCE          nvEncRegisterResource
+        PNVENCUNREGISTERRESOURCE        nvEncUnregisterResource
+        PNVENCRECONFIGUREENCODER        nvEncReconfigureEncoder
         void*                           reserved2[285]                  #[in]:  Reserved and must be set to NULL
 
 include "constants.pxi"
@@ -1114,15 +1114,6 @@ cpdef get_CUDA_CSC_function(int device_id, function_name):
     return function_name, get_CUDA_function(device_id, function_name)
 
 
-cpdef get_BGRA2Y(int device_id):
-    return get_CUDA_CSC_function(device_id, "BGRA_to_Y")
-
-cpdef get_BGRA2U(int device_id):
-    return get_CUDA_CSC_function(device_id, "BGRA_to_U")
-
-cpdef get_BGRA2V(int device_id):
-    return get_CUDA_CSC_function(device_id, "BGRA_to_V")
-
 cpdef get_BGRA2NV12(int device_id):
     return get_CUDA_CSC_function(device_id, "BGRA_to_NV12")
 
@@ -1386,9 +1377,6 @@ cdef class Encoder:
             profiles = self.query_profiles(NV_ENC_CODEC_H264_GUID)
             #self.gopLength = presetConfig.presetCfg.gopLength
 
-            #3 for YUV444, 1 for NV12:
-            config.encodeCodecConfig.h264Config.chromaFormatIDC = 1+int(self.pixel_format=="YUV444P") * 2
-
             params.version = NV_ENC_INITIALIZE_PARAMS_VER
             params.encodeGUID = codec
             params.presetGUID = preset
@@ -1402,6 +1390,26 @@ cdef class Encoder:
             params.frameRateDen = 30
             params.encodeConfig = config
 
+            #3 for YUV444, 1 for NV12:
+            config.encodeCodecConfig.h264Config.chromaFormatIDC = 1+int(self.pixel_format=="YUV444P") * 2
+            config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
+            config.rcParams.enableMinQP = 1
+            config.rcParams.enableMaxQP = 1
+            qmin = max(0, self.quality-20)
+            qmax = min(100, self.quality+20)
+            config.rcParams.minQP.qpInterB = qmin
+            config.rcParams.minQP.qpInterP = qmin
+            config.rcParams.minQP.qpIntra = qmin
+            config.rcParams.maxQP.qpInterB = qmax
+            config.rcParams.maxQP.qpInterP = qmax
+            config.rcParams.maxQP.qpIntra = qmax
+            config.rcParams.averageBitRate = self.target_bitrate
+            config.rcParams.maxBitRate = self.max_bitrate
+            config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
+
+            config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 1
+            config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 1
+ 
             log("nvEncInitializeEncoder using encode=%s, preset=%s", codecstr(codec), presetstr(preset))
             with nogil:
                 r = self.functionList.nvEncInitializeEncoder(self.context, params)
@@ -1423,6 +1431,7 @@ cdef class Encoder:
             registerResource.width = self.encoder_width
             registerResource.height = self.encoder_height
             registerResource.pitch = self.outputPitch
+            registerResource.bufferFormat = self.bufferFmt
             log("nvEncRegisterResource(%#x)", <unsigned long> &registerResource)
             with nogil:
                 r = self.functionList.nvEncRegisterResource(self.context, &registerResource)
@@ -1434,11 +1443,8 @@ cdef class Encoder:
             memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
             createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
             #this is the uncompressed size - must be big enough for the compressed stream:
-            createBitstreamBufferParams.size = self.encoder_width*self.encoder_height*3/2
-            IF NV_WINDOWS:
-                createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
-            ELSE:
-                createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED
+            createBitstreamBufferParams.size = min(1024*1024*2, self.encoder_width*self.encoder_height*3/2)
+            createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
             log("nvEncCreateBitstreamBuffer(%#x)", <unsigned long> &createBitstreamBufferParams)
             with nogil:
                 r = self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams)
@@ -1797,11 +1803,21 @@ cdef class Encoder:
             picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
             picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
             picParams.codecPicParams.h264PicParams.colourPlaneId = 0
-            #picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
+            picParams.encodePicFlags = 0    #NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
             picParams.frameIdx = self.frames
             picParams.inputTimeStamp = image.get_timestamp()-self.first_frame_timestamp
             #inputDuration = 0      #FIXME: use frame delay?
             picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
+            picParams.rcParams.enableMinQP = 1
+            picParams.rcParams.enableMaxQP = 1
+            qmin = max(0, self.quality-20)
+            qmax = min(100, self.quality+20)
+            picParams.rcParams.minQP.qpInterB = qmin
+            picParams.rcParams.minQP.qpInterP = qmin
+            picParams.rcParams.minQP.qpIntra = qmin
+            picParams.rcParams.maxQP.qpInterB = qmax
+            picParams.rcParams.maxQP.qpInterP = qmax
+            picParams.rcParams.maxQP.qpIntra = qmax
             picParams.rcParams.averageBitRate = self.target_bitrate
             picParams.rcParams.maxBitRate = self.max_bitrate
 
