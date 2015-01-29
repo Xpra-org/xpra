@@ -505,7 +505,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Specify which video decoders to enable, to get a list of all the options specify 'help'")
     group.add_option("--scaling", action="store",
                       metavar="SCALING",
-                      dest="scaling", type="str", default=defaults.quality,
+                      dest="scaling", type="str", default=defaults.scaling,
                       help="How much automatic window downscaling should be used, from 1 (rarely) to 100 (aggressively), 0 to disable. Default: %default.")
     group.add_option("--min-quality", action="store",
                       metavar="MIN-LEVEL",
