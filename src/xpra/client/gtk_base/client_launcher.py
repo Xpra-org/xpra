@@ -14,6 +14,7 @@ import os.path
 import sys
 import shlex
 import signal
+import traceback
 
 from xpra.platform.gui import init as gui_init
 gui_init()
@@ -32,6 +33,7 @@ from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
                                     OptionMenu, choose_file, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
+                                    DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
 from xpra.os_util import thread
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
@@ -432,7 +434,6 @@ class ApplicationWindow:
         t = str(e)
         if self.config.debug:
             #in debug mode, include the full stacktrace:
-            import traceback
             t = traceback.format_exc()
         def ui_handle_exception():
             self.reset_client()
@@ -693,6 +694,20 @@ class ApplicationWindow:
         self.choose_session_file("Load session settings from file", FILE_CHOOSER_ACTION_OPEN, gtk.STOCK_OPEN, do_load)
 
 
+#on some platforms like win32, we don't have stdout
+#and this is a GUI application, so show a dialog with the error instead
+def exception_dialog(title):
+    md = gtk.MessageDialog(None, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, title)
+    md.format_secondary_text(traceback.format_exc())
+    md.show_all()
+    def close_dialog(*args):
+        md.destroy()
+        gtk.main_quit()
+    md.connect("response", close_dialog)
+    md.connect("close", close_dialog)
+    gtk_main()
+
+
 def main():
     from xpra.os_util import SIGNAMES
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
@@ -703,37 +718,44 @@ def main():
     platform_init("Xpra-Launcher", "Xpra Connection Launcher")
     gui_init()
 
-    #logging init:
-    from xpra.scripts.main import parse_cmdline, fixup_debug_option
-    options, args = parse_cmdline(sys.argv)
-    debug = fixup_debug_option(options.debug)
-    if debug:
-        for x in debug.split(","):
-            enable_debug_for(x)
-
-    app = ApplicationWindow()
-    def app_signal(signum, frame):
-        print("")
-        log("got signal %s" % SIGNAMES.get(signum, signum))
-        def show_signal():
-            app.show()
-            app.client.cleanup()
-            gobject.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
-            gobject.timeout_add(1000, app.set_info_color, True)
-        #call from UI thread:
-        gobject.idle_add(show_signal)
-    signal.signal(signal.SIGINT, app_signal)
-    signal.signal(signal.SIGTERM, app_signal)
-    has_file = len(args) == 1
-    if has_file:
-        app.update_options_from_file(args[0])
-    debug = fixup_debug_option(app.config.debug)
-    if debug:
-        for x in debug.split(","):
-            enable_debug_for(x)
-    app.create_window()
     try:
+        from xpra.scripts.main import parse_cmdline, fixup_debug_option
+        options, args = parse_cmdline(sys.argv)
+        debug = fixup_debug_option(options.debug)
+        if debug:
+            for x in debug.split(","):
+                enable_debug_for(x)
+    except Exception:
+        exception_dialog("Error parsing command line")
+        return 1
+
+    try:
+        app = ApplicationWindow()
+        def app_signal(signum, frame):
+            print("")
+            log("got signal %s" % SIGNAMES.get(signum, signum))
+            def show_signal():
+                app.show()
+                app.client.cleanup()
+                gobject.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
+                gobject.timeout_add(1000, app.set_info_color, True)
+            #call from UI thread:
+            gobject.idle_add(show_signal)
+        signal.signal(signal.SIGINT, app_signal)
+        signal.signal(signal.SIGTERM, app_signal)
+        has_file = len(args) == 1
+        if has_file:
+            app.update_options_from_file(args[0])
+        debug = fixup_debug_option(app.config.debug)
+        if debug:
+            for x in debug.split(","):
+                enable_debug_for(x)
+        app.create_window()
         app.update_gui_from_config()
+    except Exception:
+        exception_dialog("Error creating launcher form")
+        return 1
+    try:
         if app.config.autoconnect:
             #file says we should connect,
             #do that only (not showing UI unless something goes wrong):
