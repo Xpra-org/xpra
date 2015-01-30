@@ -267,7 +267,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         i=0
         screen_sizes = []
         n_screens = display.get_n_screens()
-        screenlog("get_screen_sizes() found % screens", n_screens)
+        screenlog("get_screen_sizes() found %s screens", n_screens)
         while i<n_screens:
             screen = display.get_screen(i)
             j = 0
