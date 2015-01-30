@@ -44,10 +44,12 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #sid:		,python-lz4
 #trusty:	,python-lzo
 #utopic:	,python-lzo
+#vivid:		,python-lzo
 #if you use Ubuntu, you will "want" this mess:
 #precise:	,python-appindicator
 #trusty:	,python-appindicator
 #utopic:	,python-appindicator
+#vivid:		,python-appindicator
 Recommends:
         libswscale2
 #version specific values (sigh), uncomment the one you need:
@@ -56,6 +58,7 @@ Recommends:
 #saucy:		,libx264-123
 #trusty:	,libx264-142
 #utopic:	,libx264-142
+#vivid:		,libx264-142
 #wheezy:	,libx264-123
 #jessie:	,libx264-142
 #sid:		,libx264-142
@@ -66,6 +69,7 @@ Recommends:
 #saucy:		,libwebp4
 #trusty:	,libwebp5
 #utopic:	,libwebp5
+#vivid:		,libwebp5
 # audio-related:
         ,gstreamer0.10-plugins-base
 #                 ^^ vorbis ^^
@@ -82,11 +86,13 @@ Recommends:
 #sid:		,python-lzo
 #trusty:	,python-lz4
 #utopic:	,python-lz4
+#vivid:		,python-lz4
 #for html5 support:
 #jessie:	,websockify
 #sid:		,websockify
 #trusty:	,websockify
 #utopic:	,websockify
+#vivid:		,websockify
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server
