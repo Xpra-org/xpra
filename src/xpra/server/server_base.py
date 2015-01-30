@@ -725,17 +725,21 @@ class ServerBase(ServerCore):
             try:
                 dw, dh = ss.desktop_size
                 if not ss.screen_sizes:
-                    log.info("client root window size is %sx%s", dw, dh)
+                    screenlog.info("client root window size is %sx%s", dw, dh)
                 else:
-                    log.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
+                    screenlog.info("client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
                     log_screen_sizes(dw, dh, ss.screen_sizes)
             except:
                 dw, dh = None, None
-        root_w, root_h = self.set_best_screen_size()
+        sw, sh = self.set_best_screen_size()
+        screenlog("set_best_screen_size()=%s", (sw, sh))
+        #prefer desktop size, fallback to screen size:
+        w = dw or sw
+        h = dh or sh
         self.calculate_desktops()
-        self.calculate_workarea()
-        self.set_desktop_geometry(dw or root_w, dh or root_h)
-        return root_w, root_h
+        self.calculate_workarea(w, h)
+        self.set_desktop_geometry(w, h)
+        return w, h
 
     def do_parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #process screen size (if needed)
@@ -1426,10 +1430,12 @@ class ServerBase(ServerCore):
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
 
-    def _screen_size_changed(self, *args):
-        screenlog("_screen_size_changed(%s)", args)
+    def _screen_size_changed(self, screen):
+        screenlog("_screen_size_changed(%s)", screen)
         #randr has resized the screen, tell the client (if it supports it)
-        self.calculate_workarea()
+        w, h = screen.get_width(), screen.get_height()
+        screenlog("new screen dimensions: %s", (w, h))
+        self.calculate_workarea(w, h)
         self.idle_add(self.send_updated_screen_size)
 
     def get_root_window_size(self):
@@ -1482,7 +1488,7 @@ class ServerBase(ServerCore):
             screenlog.info("received updated display dimensions")
             screenlog.info("client root window size is %sx%s with %s displays:", width, height, len(ss.screen_sizes))
             log_screen_sizes(width, height, ss.screen_sizes)
-            self.calculate_workarea()
+            self.calculate_workarea(width, height)
 
     def calculate_desktops(self):
         count = 1
@@ -1504,7 +1510,7 @@ class ServerBase(ServerCore):
     def set_desktops(self, names):
         pass
 
-    def calculate_workarea(self):
+    def calculate_workarea(self, w, h):
         raise NotImplementedError()
 
     def set_workarea(self, workarea):
