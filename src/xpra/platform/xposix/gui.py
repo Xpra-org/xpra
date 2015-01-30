@@ -7,7 +7,8 @@
 import struct
 from xpra.log import Logger
 log = Logger("posix")
-eventlog = Logger("events", "posix")
+eventlog = Logger("posix", "events")
+screenlog = Logger("posix", "screen")
 
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
@@ -111,10 +112,10 @@ def _get_randr_dpi():
         w, h =  randr_bindings.get_screen_size()
         dpix = int(w * 25.4 / wmm + 0.5)
         dpiy = int(h * 25.4 / hmm + 0.5)
-        log("dpix=%s, dpiy=%s", dpix, dpiy)
+        screenlog("dpix=%s, dpiy=%s", dpix, dpiy)
         return dpix, dpiy
     except Exception as e:
-        log.warn("failed to get dpi: %s", e)
+        screenlog.warn("failed to get dpi: %s", e)
     return -1, -1
 
 def get_xdpi():
@@ -168,7 +169,8 @@ def get_antialias_info():
                     if cval is not None:
                         info[name] = cval
     except Exception as e:
-        log.warn("failed to get antialias info from xsettings: %s", e)
+        screenlog.warn("failed to get antialias info from xsettings: %s", e)
+    screenlog("get_antialias_info()=%s", info)
     return info
 
 
@@ -188,17 +190,17 @@ def get_workarea():
         if d<0:
             return None
         workarea = _get_X11_root_property("_NET_WORKAREA", "CARDINAL")
-        log("get_workarea()=%s, len=%s", type(workarea), len(workarea))
+        screenlog("get_workarea()=%s, len=%s", type(workarea), len(workarea))
         #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
         if len(workarea)<(d+1)*4*4:
-            log.warn("get_workarea() invalid _NET_WORKAREA value")
+            screenlog.warn("get_workarea() invalid _NET_WORKAREA value")
         else:
             cur_workarea = workarea[d*4*4:(d+1)*4*4]
             v = struct.unpack("=IIII", cur_workarea)
-            log("get_workarea()=%s", v)
+            screenlog("get_workarea()=%s", v)
             return v
     except Exception as e:
-        log.warn("failed to get workarea: %s", e)
+        screenlog.warn("failed to get workarea: %s", e)
     return None
 
 
@@ -206,10 +208,10 @@ def get_number_of_desktops():
     try:
         d = _get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
         v = struct.unpack("=I", d)[0]
-        log("get_number_of_desktops()=%s", v)
+        screenlog("get_number_of_desktops()=%s", v)
         return v
     except Exception as e:
-        log.warn("failed to get number of desktop: %s", e)
+        screenlog.warn("failed to get number of desktop: %s", e)
     return 
 
 def get_desktop_names():
@@ -218,10 +220,10 @@ def get_desktop_names():
         v = d.split("\0")
         if len(v)>1 and v[-1]=="":
             v = v[:-1]
-        log("get_desktop_names()=%s", v)
+        screenlog("get_desktop_names()=%s", v)
         return v
     except Exception as e:
-        log.warn("failed to get current desktop: %s", e)
+        screenlog.warn("failed to get current desktop: %s", e)
     return ["Main"]
 
 
@@ -229,9 +231,11 @@ def get_vrefresh():
     try:
         from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
         randr = RandRBindings()
-        return randr.get_vrefresh()
+        v = randr.get_vrefresh()
+        screenlog("get_vrefresh()=%s", v)
+        return v
     except Exception as e:
-        log.warn("failed to get VREFRESH: %s", e)
+        screenlog.warn("failed to get VREFRESH: %s", e)
         return -1
 
 

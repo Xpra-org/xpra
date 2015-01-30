@@ -16,6 +16,7 @@ from xpra.log import Logger
 log = Logger("gtk", "main")
 opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
+screenlog = Logger("gtk", "client", "screen")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -265,7 +266,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         display = display_get_default()
         i=0
         screen_sizes = []
-        while i<display.get_n_screens():
+        n_screens = display.get_n_screens()
+        screenlog("get_screen_sizes() found % screens", n_screens)
+        while i<n_screens:
             screen = display.get_screen(i)
             j = 0
             monitors = []
@@ -273,9 +276,12 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             #native "get_workareas()" is only valid for a single screen (but describes all the monitors)
             #and it is only implemented on win32 right now
             #other platforms only implement "get_workarea()" instead, which is reported against the screen
-            if display.get_n_screens()==1:
+            n_monitors = screen.get_n_monitors()
+            screenlog("get_screen_sizes() screen %s has %s monitors", i, n_monitors)
+            if n_screens==1:
                 workareas = get_workareas()
-                if len(workareas)!=screen.get_n_monitors():
+                if len(workareas)!=n_monitors:
+                    screenlog("number of monitors does not match number of workareas!")
                     workareas = []
             while j<screen.get_n_monitors():
                 geom = screen.get_monitor_geometry(j)
@@ -289,6 +295,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 if hasattr(screen, "get_monitor_height_mm"):
                     hmm = screen.get_monitor_height_mm(j)
                 monitor = [plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm]
+                screenlog("get_screen_sizes() monitor %s: %s", j, monitor)
                 if workareas:
                     w = workareas[j]
                     monitor += list(w)
@@ -299,10 +306,12 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             workarea = get_workarea()
             if workarea:
                 work_x, work_y, work_width, work_height = workarea
+            screenlog("get_screen_sizes() workarea=%s", workarea)
             item = (screen.make_display_name(), screen.get_width(), screen.get_height(),
                         screen.get_width_mm(), screen.get_height_mm(),
                         monitors,
                         work_x, work_y, work_width, work_height)
+            screenlog("get_screen_sizes() screen %s: %s", i, item)
             screen_sizes.append(item)
             i += 1
         return screen_sizes

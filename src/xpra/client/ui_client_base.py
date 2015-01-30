@@ -24,6 +24,7 @@ workspacelog = Logger("client", "workspace")
 dbuslog = Logger("client", "dbus")
 grablog = Logger("client", "grab")
 iconlog = Logger("client", "icon")
+screenlog = Logger("client", "screen")
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -657,7 +658,7 @@ class UIXpraClient(XpraClientBase):
             win.workspace_changed()
 
     def screen_size_changed(self, *args):
-        log("screen_size_changed(%s) pending=%s", args, self.screen_size_change_pending)
+        screenlog("screen_size_changed(%s) pending=%s", args, self.screen_size_change_pending)
         if self.screen_size_change_pending:
             return
         def update_screen_size():
@@ -666,12 +667,14 @@ class UIXpraClient(XpraClientBase):
             ss = self.get_screen_sizes()
             ndesktops = get_number_of_desktops()
             desktop_names = get_desktop_names()
-            log("update_screen_size() sizes=%s, %s desktops: %s", ss, ndesktops, desktop_names)
+            screenlog("update_screen_size() sizes=%s, %s desktops: %s", ss, ndesktops, desktop_names)
             screen_settings = (root_w, root_h, ss, ndesktops, desktop_names)
+            screenlog("update_screen_size()     new settings=%s", screen_settings)
+            screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
             if self._last_screen_settings==screen_settings:
                 log("screen size unchanged")
                 return
-            log.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(ss))
+            screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(ss))
             log_screen_sizes(root_w, root_h, ss)
             self.send("desktop_size", *screen_settings)
             self.last_screen_settings = screen_settings

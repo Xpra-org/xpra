@@ -17,6 +17,7 @@ focuslog = Logger("focus")
 commandlog = Logger("command")
 soundlog = Logger("sound")
 clientlog = Logger("client")
+screenlog = Logger("screen")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
@@ -1426,7 +1427,7 @@ class ServerBase(ServerCore):
 
 
     def _screen_size_changed(self, *args):
-        log("_screen_size_changed(%s)", args)
+        screenlog("_screen_size_changed(%s)", args)
         #randr has resized the screen, tell the client (if it supports it)
         self.calculate_workarea()
         self.idle_add(self.send_updated_screen_size)
@@ -1475,11 +1476,11 @@ class ServerBase(ServerCore):
             self.calculate_desktops()
         if len(packet)>=4:
             ss.set_screen_sizes(packet[3])
-        log("client requesting new size: %sx%s", width, height)
+        screenlog("client requesting new size: %sx%s", width, height)
         self.set_screen_size(width, height)
         if len(packet)>=4:
-            log.info("received updated display dimensions")
-            log.info("client root window size is %sx%s with %s displays:", width, height, len(ss.screen_sizes))
+            screenlog.info("received updated display dimensions")
+            screenlog.info("client root window size is %sx%s with %s displays:", width, height, len(ss.screen_sizes))
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea()
 

@@ -241,7 +241,7 @@ def log_screen_sizes(root_w, root_h, sizes):
         do_log_screen_sizes(root_w, root_h, sizes)
     except Exception as e:
         from xpra.log import Logger
-        log = Logger("util")
+        log = Logger("screen")
         log.warn("failed to parse screen size information: %s", e, exc_info=True)
 
 def prettify_plug_name(s, default=""):

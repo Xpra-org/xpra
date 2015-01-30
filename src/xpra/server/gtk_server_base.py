@@ -12,6 +12,7 @@ gobject.threads_init()
 
 from xpra.log import Logger
 log = Logger("server", "gtk")
+screenlog = Logger("server", "screen")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -94,10 +95,11 @@ class GTKServerBase(ServerBase):
 
     def calculate_workarea(self):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        screenlog("calculate_workarea() root size: %s", (root_w, root_h))
         workarea = gtk.gdk.Rectangle(0, 0, root_w, root_h)
         for ss in self._server_sources.values():
             screen_sizes = ss.screen_sizes
-            log("calculate_workarea() screen_sizes(%s)=%s", ss, screen_sizes)
+            screenlog("calculate_workarea() screen_sizes(%s)=%s", ss, screen_sizes)
             if not screen_sizes:
                 continue
             for display in screen_sizes:
@@ -108,11 +110,11 @@ class GTKServerBase(ServerBase):
                 if len(display)>=10:
                     work_x, work_y, work_w, work_h = display[6:10]
                     display_workarea = gtk.gdk.Rectangle(work_x, work_y, work_w, work_h)
-                    log("calculate_workarea() found %s for display %s", display_workarea, display[0])
+                    screenlog("calculate_workarea() found %s for display %s", display_workarea, display[0])
                     workarea = workarea.intersect(display_workarea)
         #sanity checks:
         if workarea.width==0 or workarea.height==0:
-            log.warn("failed to calculate a common workarea - using the full display area")
+            screenlog.warn("failed to calculate a common workarea - using the full display area")
             workarea = gtk.gdk.Rectangle(0, 0, root_w, root_h)
         self.set_workarea(workarea)
 

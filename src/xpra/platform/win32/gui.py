@@ -9,6 +9,7 @@
 from xpra.log import Logger
 log = Logger("win32")
 grablog = Logger("win32", "grab")
+screenlog = Logger("win32", "screen")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
@@ -87,6 +88,7 @@ def get_monitor_workarea_for_window(handle):
         from win32con import MONITOR_DEFAULTTONEAREST       #@UnresolvedImport
         monitor = win32api.MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST)
         mi = win32api.GetMonitorInfo(monitor)
+        screenlog("get_monitor_workarea_for_window(%s) GetMonitorInfo(%s)=%s", handle, monitor, mi)
         #absolute workarea / monitor coordinates:
         #(all relative to 0,0 being top left)
         wx1, wy1, wx2, wy2 = mi['Work']
@@ -279,7 +281,7 @@ def get_workarea():
         minmy = min(x[1] for x in monitors)
         maxmx = max(x[2] for x in monitors)
         maxmy = max(x[3] for x in monitors)
-        log("get_workarea() absolute total monitor dimensions: %s", (maxmx, maxmy))
+        screenlog("get_workarea() absolute total monitor dimensions: %s", (maxmx, maxmy))
         workareas = []
         for m in win32api.EnumDisplayMonitors(None, None):
             mi = win32api.GetMonitorInfo(m[0])
@@ -301,7 +303,7 @@ def get_workarea():
         assert wx1<wx2 and wy1<wy2, "invalid workarea coordinates: %s" % (wx1, wy1, wx2, wy2)
         return wx1, wy1, wx2-wx1, wy2-wy1
     except Exception as e:
-        log.warn("failed to query workareas: %s", e)
+        screenlog.warn("failed to query workareas: %s", e)
         return []
 
 #ie: for a 60 pixel bottom bar on the second monitor at 1280x800:
@@ -311,6 +313,7 @@ def get_workareas():
         workareas = []
         for m in win32api.EnumDisplayMonitors(None, None):
             mi = win32api.GetMonitorInfo(m[0])
+            screenlog("get_workareas() GetMonitorInfo(%s)=%s", m[0], mi)
             #absolute workarea / monitor coordinates:
             wx1, wy1, wx2, wy2 = mi['Work']
             mx1, my1, mx2, my2 = mi['Monitor']
@@ -323,9 +326,10 @@ def get_workareas():
             assert rx1<rx2 and ry1<ry2, "invalid relative workarea coordinates"
             workareas.append((rx1, ry1, rx2-rx1, ry2-ry1))
         assert len(workareas)>0
+        screenlog("get_workareas()=%s", workareas)
         return workareas
     except Exception as e:
-        log.warn("failed to query workareas: %s", e)
+        screenlog.warn("failed to query workareas: %s", e)
         return []
 
 def _get_device_caps(constant):
@@ -340,7 +344,9 @@ def _get_device_caps(constant):
 
 def get_vrefresh():
     try:
-        return _get_device_caps(win32con.VREFRESH)
+        v = _get_device_caps(win32con.VREFRESH)
+        screenlog("get_vrefresh()=%s", v)
+        return v
     except Exception as e:
         log.warn("failed to get VREFRESH: %s", e)
         return -1
