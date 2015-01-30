@@ -27,6 +27,7 @@ X11Keyboard = X11KeyboardBindings()
 from xpra.log import Logger
 log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
+screenlog = Logger("x11", "window", "screen")
 
 
 NotifyPointerRoot   = constants["NotifyPointerRoot"]
@@ -279,12 +280,17 @@ class Wm(gobject.GObject):
         #(and will not be honoured by anything else..)
         self.root_set("dummy-constant-xdpi", "u32", xdpi)
         self.root_set("dummy-constant-ydpi", "u32", ydpi)
+        screenlog("set_dpi(%s, %s)", xdpi, ydpi)
 
     def set_workarea(self, x, y, width, height):
-        self.root_set("_NET_WORKAREA", ["u32"], [x, y, width, height])
+        v = [x, y, width, height]
+        screenlog("_NET_WORKAREA=%s", v)
+        self.root_set("_NET_WORKAREA", ["u32"], v)
 
     def set_desktop_geometry(self, width, height):
-        self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], [width, height])
+        v = [width, height]
+        screenlog("_NET_DESKTOP_GEOMETRY=%s", v)
+        self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
 
 
     def enableCursors(self, on):
