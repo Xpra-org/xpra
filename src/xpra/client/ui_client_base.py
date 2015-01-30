@@ -677,7 +677,7 @@ class UIXpraClient(XpraClientBase):
             screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(ss))
             log_screen_sizes(root_w, root_h, ss)
             self.send("desktop_size", *screen_settings)
-            self.last_screen_settings = screen_settings
+            self._last_screen_settings = screen_settings
             #update the max packet size (may have gone up):
             self.set_max_packet_size()
         #update via timer so the data is more likely to be final (up to date) when we query it,
