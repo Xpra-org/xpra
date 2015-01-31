@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
 import gobject
 try:
     #we *have to* do this as early as possible on win32..
@@ -51,9 +50,6 @@ class XpraClient(GTKXpraClient):
         self.border = None
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
-
-        #avoid ugly "not implemented" warning on win32
-        self.supports_group_leader = not sys.platform.startswith("win")
 
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
@@ -353,8 +349,6 @@ class XpraClient(GTKXpraClient):
 
 
     def get_group_leader(self, metadata, override_redirect):
-        if not self.supports_group_leader:
-            return None
         wid = metadata.intget("transient-for", -1)
         if wid>0:
             client_window = self._id_to_window.get(wid)

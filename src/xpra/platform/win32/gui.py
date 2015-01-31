@@ -106,12 +106,39 @@ def get_monitor_workarea_for_window(handle):
         return None
 
 
+def noop(*args):
+    pass
+
+
 def add_window_hooks(window):
+    #win32 cannot use set_group by default:
+    try:
+        window.get_window().set_group = noop
+    except:
+        pass
     #gtk2 to window handle:
     try:
         handle = window.get_window().handle
     except:
         return
+    #windows 7 onwards can use AppUserModel to emulate the group leader stuff:
+    try:
+        import win32com.propsys                 #@UnresolvedImport
+        from win32com.propsys import propsys    #@UnresolvedImport
+        def set_group(leader):
+            log("win32 hooks: set_group(%s)", leader)
+            try:
+                ps = propsys.SHGetPropertyStoreForWindow(handle)
+                key = propsys.PSGetPropertyKeyFromName("System.AppUserModel.ID")
+                value = propsys.PROPVARIANTType(leader.handle)
+                log("win32 hooks: calling %s(%s, %s)", ps.SetValue, key, value)
+                ps.SetValue(key, value)
+            except Exception as e:
+                log.error("failed to set group leader: %s", e)
+        window.get_window().set_group = set_group
+        log("hooked group leader override using %s", win32com.propsys)
+    except Exception as e:
+        log("unable to implement group leader: %s", e, exc_info=True)
     #OR windows never have any decorations or taskbar menu
     if not window._override_redirect:
         #override set_decorated so we can preserve the taskbar menu for undecorated windows

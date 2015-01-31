@@ -1181,6 +1181,30 @@ if WIN32:
                 add_exe(script, icon, base_name, base="Win32GUI")
             #END OF cx_freeze SECTION
         else:
+            #py2exe recipe for win32com:
+            # ModuleFinder can't handle runtime changes to __path__, but win32com uses them
+            try:
+                # py2exe 0.6.4 introduced a replacement modulefinder.
+                # This means we have to add package paths there, not to the built-in
+                # one.  If this new modulefinder gets integrated into Python, then
+                # we might be able to revert this some day.
+                # if this doesn't work, try import modulefinder
+                try:
+                    import py2exe.mf as modulefinder
+                except ImportError:
+                    import modulefinder
+                import win32com, sys
+                for p in win32com.__path__[1:]:
+                    modulefinder.AddPackagePath("win32com", p)
+                for extra in ["win32com.propsys"]: #,"win32com.mapi"
+                    __import__(extra)
+                    m = sys.modules[extra]
+                    for p in m.__path__[1:]:
+                        modulefinder.AddPackagePath(extra, p)
+            except ImportError:
+                # no build path setup, no worries.
+                pass
+
             import py2exe    #@UnresolvedImport
             assert py2exe is not None
             EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"]
@@ -1193,7 +1217,7 @@ if WIN32:
                               "packages"       : packages,
                               "includes"       : external_includes,
                               "excludes"       : excludes,
-                              "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll"],
+                              "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll", "propsys.dll"],
                              }
             if not zip_ENABLED:
                 #the filename is actually ignored because we specify "skip_archive"
