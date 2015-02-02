@@ -126,8 +126,8 @@ def add_window_hooks(window):
         import win32com.propsys                 #@UnresolvedImport
         from win32com.propsys import propsys    #@UnresolvedImport
         def set_group(leader):
-            log("win32 hooks: set_group(%s)", leader)
             try:
+                log("win32 hooks: set_group(%#x)", leader.handle)
                 ps = propsys.SHGetPropertyStoreForWindow(handle)
                 key = propsys.PSGetPropertyKeyFromName("System.AppUserModel.ID")
                 value = propsys.PROPVARIANTType(leader.handle)
