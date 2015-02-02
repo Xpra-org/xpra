@@ -366,7 +366,7 @@ class XpraClient(GTKXpraClient):
             return group_leader_window
         reftype = "xid"
         ref = leader_xid
-        if ref is None:
+        if ref<0:
             reftype = "pid"
             ref = pid
         if ref is None:
