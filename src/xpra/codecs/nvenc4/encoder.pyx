@@ -23,6 +23,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys
 
 from xpra.log import Logger
+from xpra.client.gtk_base.gtk_tray_menu_base import LOSSLESS
 log = Logger("encoder", "nvenc")
 
 import ctypes
@@ -35,6 +36,7 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 MIN_COMPUTE = 0x30
 
 YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "80"))
+LOSSLESS_THRESHOLD = int(os.environ.get("XPRA_NVENC_LOSSLESS_THRESHOLD", "100"))
 
 QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
 
@@ -937,14 +939,13 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
     guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
     #new in SDK4:
-    guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)              : "high-444",
-    #this one is also lossless, apparently:
-    "D5BFB716-C604-44E7-9BB8-DEA5510FC3AC"                  : "lossless",
+    guidstr(NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID)            : "lossless",
     guidstr(NV_ENC_PRESET_LOSSLESS_HP_GUID)                 : "lossless-hp",
     "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "streaming",
     }
 
 YUV444_PRESETS = ("high-444", "lossless", "lossless-hp",)
+LOSSLESS_PRESETS = ("lossless", "lossless-hp",)
 
 cdef presetstr(GUID preset):
     s = guidstr(preset)
@@ -953,8 +954,8 @@ cdef presetstr(GUID preset):
 
 #try to map preset names to a "speed" value:
 PRESET_SPEED = {
-    "lossless"      : -1000,
-    "high-444"      : 0,
+    "lossless"      : 0,
+    "lossless-hp"   : 30,
     "bd"            : 40,
     "hq"            : 50,
     "default"       : 50,
@@ -965,8 +966,8 @@ PRESET_SPEED = {
     "streaming"     : -1000,    #disabled for now
     }
 PRESET_QUALITY = {
-    "lossless"      : -1000,
-    "high-444"      : 100,
+    "lossless"      : 100,
+    "lossless-hp"   : 100,
     "bd"            : 80,
     "hq"            : 70,
     "default"       : 50,
@@ -1166,6 +1167,7 @@ cdef class Encoder:
     cdef object codec_name
     cdef object preset_name
     cdef object pixel_format
+    cdef uint8_t lossless
     #statistics, etc:
     cdef double time
     cdef uint64_t first_frame_timestamp
@@ -1184,11 +1186,9 @@ cdef class Encoder:
         return c_parseguid(codecs.get(self.codec_name))
 
     cdef GUID get_preset(self, GUID codec):
-        #PRESET:
         presets = self.query_presets(codec)
-        #presets={'low-latency': '49DF21C5-6DFA-4FEB-9787-6ACC9EFFB726', 'bd': '82E3E450-BDBB-4E40-989C-82A90DF9EF32', 'default': 'B2DFB705-4EBD-4C49-9B5F-24A777D3E587', 'hp': '60E4C59F-E846-4484-A56D-CD45BE9FDDF6', 'hq': '34DBA71D-A77B-4B8F-9C3E-B6D5DA24C012', 'low-latency-hp': '67082A44-4BAD-48FA-98EA-93056D150A58', 'low-latency-hq': 'C5F733B9-EA97-4CF9-BEC2-BF78A74FD105'}
-        self.preset_name = None
-
+        #import traceback
+        #traceback.print_stack()
         options = {}
         #if a preset was specified, give it the best score possible (-1):
         if DESIRED_PRESET:
@@ -1197,18 +1197,24 @@ cdef class Encoder:
         for x in CODEC_PRESETS_GUIDS.values():
             preset_speed = PRESET_SPEED.get(x, 50)
             preset_quality = PRESET_QUALITY.get(x, 50)
-            pixel_format_score = (not self.pixel_format=="YUV444P" or x in YUV444_PRESETS) * 100
+            #log("%s speed=%s, quality=%s, lossless=%s", x, preset_speed, preset_quality, x in LOSSLESS_PRESETS)
+            if x in LOSSLESS_PRESETS and self.pixel_format!="YUV444P":
+                continue
+            if self.lossless and (x not in LOSSLESS_PRESETS):
+                continue
+            if not self.lossless and (x in LOSSLESS_PRESETS):
+                continue
             if preset_speed>=0 and preset_quality>=0:
-                v = abs(preset_speed-self.speed) + abs(preset_quality-self.quality) + pixel_format_score
+                #quality (3) weighs more than speed (2):
+                v = 2 * abs(preset_speed-self.speed) + 3 * abs(preset_quality-self.quality)
                 l = options.setdefault(v, [])
                 if x not in l:
                     l.append(x)
-        log("get_preset(%s) speed=%s, quality=%s, options=%s", codecstr(codec), self.speed, self.quality, options)
+        log("get_preset(%s) speed=%s, quality=%s, lossless=%s, pixel_format=%s, options=%s", codecstr(codec), self.speed, self.quality, bool(self.lossless), self.pixel_format, options)
         for v in sorted(options.keys()):
             for preset in options.get(v):
                 if preset and (preset in presets):
-                    log("using preset '%s' for quality=%s, speed=%s", preset, self.speed, self.quality)
-                    self.preset_name = preset
+                    log("using preset '%s' for quality=%s, speed=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
                     return c_parseguid(presets.get(preset))
         raise Exception("no matching presets available for '%s'!?" % self.codec_name)
 
@@ -1237,11 +1243,13 @@ cdef class Encoder:
         self.update_bitrate()
         start = time.time()
 
-        global YUV444P_ENABLED
+        global YUV444P_ENABLED, LOSSLESS_ENABLED
         if YUV444P_ENABLED and "YUV444P" in dst_formats and ((quality>=YUV444_THRESHOLD and v==1 and u==1) or ("YUV420P" not in dst_formats)):
             self.pixel_format = "YUV444P"
             #3 full planes:
             plane_size_div = 1
+            if LOSSLESS_ENABLED and quality>=LOSSLESS_THRESHOLD:
+                self.lossless = 1
         elif "YUV420P" in dst_formats:
             self.pixel_format = "NV12"
             #1 full Y plane and 2 U+V planes subsampled by 4:
@@ -1343,7 +1351,6 @@ cdef class Encoder:
     cdef init_nvenc(self):
         cdef GUID codec
         cdef GUID preset
-        cdef GUID profile
         cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
         cdef NV_ENC_CONFIG *config = NULL
         cdef NV_ENC_PRESET_CONFIG *presetConfig = NULL  #@DuplicatedSignature
@@ -1361,6 +1368,7 @@ cdef class Encoder:
         self.open_encode_session()
         codec = self.get_codec()
         preset = self.get_preset(codec)
+        self.preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset), guidstr(preset))
 
         input_format = BUFFER_FORMAT[self.bufferFmt]
         input_formats = self.query_input_formats(codec)
@@ -1374,10 +1382,6 @@ cdef class Encoder:
             presetConfig = self.get_preset_config(self.preset_name, codec, preset)
             assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
             assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
-
-            #PROFILE
-            profiles = self.query_profiles(NV_ENC_CODEC_H264_GUID)
-            #self.gopLength = presetConfig.presetCfg.gopLength
 
             params.version = NV_ENC_INITIALIZE_PARAMS_VER
             params.encodeGUID = codec
@@ -1400,6 +1404,11 @@ cdef class Encoder:
             #0=max quality, 63 lowest quality
             qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)/100))
             qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)/100))
+            if self.lossless:
+                config.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1
+                config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
+                qmin = 0
+                qmax = 0
             config.rcParams.minQP.qpInterB = qmin
             config.rcParams.minQP.qpInterP = qmin
             config.rcParams.minQP.qpIntra = qmin
@@ -1476,7 +1485,8 @@ cdef class Encoder:
                 "codec"     : self.codec_name,
                 "encoder_width"     : self.encoder_width,
                 "encoder_height"    : self.encoder_height,
-                "bitrate"   : self.target_bitrate})
+                "bitrate"   : self.target_bitrate,
+                "lossless"  : self.lossless})
         if self.scaling!=(1,1):
             info.update({
                 "input_width"       : self.input_width,
@@ -1523,7 +1533,7 @@ cdef class Encoder:
         return info
 
     def __repr__(self):
-        return "nvenc(%s/%s - %sx%s)" % (self.src_format, self.pixel_format, self.width, self.height)
+        return "nvenc(%s/%s - %s - %sx%s)" % (self.src_format, self.pixel_format, self.preset_name, self.width, self.height)
 
     def is_closed(self):
         return self.context==NULL
@@ -2133,6 +2143,8 @@ def init_module():
     colorspaces = get_input_colorspaces()
     assert colorspaces, "cannot use NVENC: no colorspaces available"
 
+    global YUV444P_ENABLED, LOSSLESS_ENABLED
+    YUV444P_ENABLED, LOSSLESS_ENABLED = True, True
     success = False
     valid_keys = []
     failed_keys = []
@@ -2156,9 +2168,13 @@ def init_module():
                         log("the license key '%s' is valid", client_key)
                         valid_keys.append(client_key)
                     #check for YUV444 support
-                    global YUV444P_ENABLED
-                    YUV444P_ENABLED = test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)
-                    log("YUV444 support: %s", YUV444P_ENABLED)
+                    if not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE):
+                        YUV444P_ENABLED = False
+                    log("%s YUV444 support: %s", encoding, YUV444P_ENABLED)
+                    #check for lossless:
+                    if not YUV444P_ENABLED or not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE):
+                        LOSSLESS_ENABLED = False
+                    log("%s lossless support: %s", encoding, YUV444P_ENABLED)
                 except NVENCException as e:
                     log("encoder %s failed: %s", test_encoder, e)
                     #special handling for license key issues:
