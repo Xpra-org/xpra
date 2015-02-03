@@ -1048,7 +1048,7 @@ def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_COLORSPACES(), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES())
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
-    cs = video_codec_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace],
+    cs = video_codec_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace], has_lossless_mode=True,
                       codec_class=Encoder, codec_type=get_type(),
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
@@ -1259,7 +1259,7 @@ cdef class Encoder:
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
         self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
-        log("using pixel format %s with device %s", self.pixel_format, device_info(self.cuda_device))
+        log("using %s %s compression at %s%% quality with pixel format %s on device %s", ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format, device_info(self.cuda_device))
         try:
             self.init_cuda()
 
@@ -1287,7 +1287,8 @@ cdef class Encoder:
             raise Exception("no compatible formats found!")
 
     def get_target_lossless(self, pixel_format, quality):
-        if pixel_format!="YUV444":
+        #log("get_target_lossless(%s, %s) LOSSLESS_ENABLED=%s", pixel_format, quality, LOSSLESS_ENABLED)
+        if pixel_format!="YUV444P":
             return False
         if LOSSLESS_ENABLED and quality>=LOSSLESS_THRESHOLD:
             return True
@@ -1519,6 +1520,8 @@ cdef class Encoder:
                 "encoder_width"     : self.encoder_width,
                 "encoder_height"    : self.encoder_height,
                 "bitrate"   : self.target_bitrate,
+                "quality"   : self.quality,
+                "speed"     : self.speed,
                 "lossless"  : self.lossless})
         if self.scaling!=(1,1):
             info.update({
@@ -1688,6 +1691,7 @@ cdef class Encoder:
 
     def set_encoding_quality(self, quality):
         cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
+        log("set_encoding_quality(%s) current quality=%s", quality, self.quality)
         if self.quality!=quality:
             if quality<LOSSLESS_THRESHOLD:
                 #edge resistance:
@@ -1700,8 +1704,8 @@ cdef class Encoder:
                 target_quality = quality-delta
             else:
                 target_quality = 100
-            log("set_encoding_quality(%s) current quality=%s, target quality=%s", quality, self.quality, target_quality)
             self.quality = quality
+            log("set_encoding_quality(%s) target quality=%s", quality, target_quality)
             new_pixel_format = self.get_target_pixel_format(target_quality)
             new_lossless = self.get_target_lossless(new_pixel_format, target_quality)
             if new_pixel_format==self.pixel_format and new_lossless==self.lossless:

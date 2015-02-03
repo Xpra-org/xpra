@@ -247,6 +247,15 @@ class ServerBase(ServerCore):
                 add_encodings(["webp"])
                 if "webp" not in self.lossless_mode_encodings:
                     self.lossless_mode_encodings.append("webp")
+        #look for video encodings with lossless mode:
+        for e in ve:
+            for colorspace,especs in getVideoHelper().get_encoder_specs(e).items():
+                for espec in especs:
+                    if espec.has_lossless_mode:
+                        if e not in self.lossless_mode_encodings:
+                            log("found lossless mode for encoding %s with %s and colorspace %s", e, espec, colorspace)
+                            self.lossless_mode_encodings.append(e)
+                            break
         #now update the variables:
         self.encodings = encs
         self.core_encodings = core_encs
