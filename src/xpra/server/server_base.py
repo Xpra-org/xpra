@@ -245,12 +245,12 @@ class ServerBase(ServerCore):
             #(either "webp" or "png")
             if has_codec("enc_webp") and ("webp" in pil_encs or "png" in pil_encs):
                 add_encodings(["webp"])
-                self.lossless_mode_encodings.append("webp")
+                if "webp" not in self.lossless_mode_encodings:
+                    self.lossless_mode_encodings.append("webp")
         #now update the variables:
         self.encodings = encs
         self.core_encodings = core_encs
         self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb") or x=="webp")]
-        self.lossless_mode_encodings = []
         pref = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings]
         if pref:
             self.default_encoding = pref[0]
