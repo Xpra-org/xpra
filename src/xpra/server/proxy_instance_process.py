@@ -668,14 +668,9 @@ class ProxyInstanceProcess(Process):
             ve.init_context(width, height, rgb_format, dst_formats, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
             self.video_encoders_last_used_time[wid] = time.time()       #just to make sure this is always set
-        else:
-            if quality>=0:
-                ve.set_encoding_quality(quality)
-            if speed>=0:
-                ve.set_encoding_speed(speed)
         #actual video compression:
         log("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
-        data, client_options = ve.compress_image(image, encoder_options)
+        data, client_options = ve.compress_image(image, quality, speed, encoder_options)
         self.video_encoders_last_used_time[wid] = time.time()
         return send_updated(ve.get_encoding(), Compressed(encoding, data), client_options)
 

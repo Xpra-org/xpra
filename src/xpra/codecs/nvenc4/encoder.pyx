@@ -35,7 +35,7 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
 MIN_COMPUTE = 0x30
 
-YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "80"))
+YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "85"))
 LOSSLESS_THRESHOLD = int(os.environ.get("XPRA_NVENC_LOSSLESS_THRESHOLD", "100"))
 
 QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
@@ -1132,6 +1132,7 @@ cdef class Encoder:
     cdef int encoder_width
     cdef int encoder_height
     cdef object src_format
+    cdef object dst_formats
     cdef object scaling
     cdef int speed
     cdef int quality
@@ -1155,6 +1156,7 @@ cdef class Encoder:
     #NVENC:
     cdef NV_ENCODE_API_FUNCTION_LIST *functionList               #@DuplicatedSignature
     cdef void *context
+    cdef GUID codec
     cdef NV_ENC_REGISTERED_PTR inputHandle
     cdef object inputBuffer
     cdef object cudaInputBuffer
@@ -1179,11 +1181,15 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    cdef GUID get_codec(self):
+    cdef GUID init_codec(self):
         codecs = self.query_codecs()
         #codecs={'H264': '6BC82762-4E63-4CA4-AA85-1E50F321F6BF'}
         assert self.codec_name in codecs, "%s not supported!?" % self.codec_name
-        return c_parseguid(codecs.get(self.codec_name))
+        self.codec = c_parseguid(codecs.get(self.codec_name))
+        return self.codec
+
+    cdef GUID get_codec(self):
+        return self.codec
 
     cdef GUID get_preset(self, GUID codec):
         presets = self.query_presets(codec)
@@ -1233,6 +1239,7 @@ cdef class Encoder:
         self.encoder_width = roundup(width*v/u, 32)
         self.encoder_height = roundup(height*v/u, 32)
         self.src_format = src_format
+        self.dst_formats = dst_formats
         self.codec_name = "H264"
         self.preset_name = None
         self.frames = 0
@@ -1243,20 +1250,14 @@ cdef class Encoder:
         self.update_bitrate()
         start = time.time()
 
-        global YUV444P_ENABLED, LOSSLESS_ENABLED
-        if YUV444P_ENABLED and "YUV444P" in dst_formats and ((quality>=YUV444_THRESHOLD and v==1 and u==1) or ("YUV420P" not in dst_formats)):
-            self.pixel_format = "YUV444P"
-            #3 full planes:
-            plane_size_div = 1
-            if LOSSLESS_ENABLED and quality>=LOSSLESS_THRESHOLD:
-                self.lossless = 1
-        elif "YUV420P" in dst_formats:
-            self.pixel_format = "NV12"
+        plane_size_div = 1
+        if not YUV444P_ENABLED or "YUV444P" not in dst_formats:
+            #we don't need as much memory reserved with NV12 / YUV420:
             #1 full Y plane and 2 U+V planes subsampled by 4:
             plane_size_div = 2
-        else:
-            raise Exception("no compatible formats found!")
 
+        self.pixel_format = self.get_target_pixel_format(self.quality)
+        self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
         self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
         log("using pixel format %s with device %s", self.pixel_format, device_info(self.cuda_device))
         try:
@@ -1274,6 +1275,23 @@ cdef class Encoder:
 
         end = time.time()
         log("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
+
+    def get_target_pixel_format(self, quality):
+        global YUV444P_ENABLED, LOSSLESS_ENABLED
+        x,y = self.scaling
+        if YUV444P_ENABLED and ("YUV444P" in self.dst_formats) and ((quality>=YUV444_THRESHOLD and x==1 and y==1) or ("YUV420P" not in self.dst_formats)):
+            return "YUV444P"
+        elif "YUV420P" in self.dst_formats:
+            return "NV12"
+        else:
+            raise Exception("no compatible formats found!")
+
+    def get_target_lossless(self, pixel_format, quality):
+        if pixel_format!="YUV444":
+            return False
+        if LOSSLESS_ENABLED and quality>=LOSSLESS_THRESHOLD:
+            return True
+        return False
 
     cdef init_cuda(self):
         cdef int plane_size_div
@@ -1349,38 +1367,59 @@ cdef class Encoder:
             self.cuda_context.pop()
 
     cdef init_nvenc(self):
-        cdef GUID codec
-        cdef GUID preset
         cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
-        cdef NV_ENC_CONFIG *config = NULL
-        cdef NV_ENC_PRESET_CONFIG *presetConfig = NULL  #@DuplicatedSignature
-        cdef NV_ENC_REGISTER_RESOURCE registerResource
-        cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
-        cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
-        cdef long resource
-        cdef Py_ssize_t size
-        cdef unsigned char* cptr = NULL
         cdef NVENCSTATUS r
 
         self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> malloc(sizeof(NV_ENCODE_API_FUNCTION_LIST))
         memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
 
         self.open_encode_session()
-        codec = self.get_codec()
-        preset = self.get_preset(codec)
+
+        cdef GUID codec = self.init_codec()
+        params = <NV_ENC_INITIALIZE_PARAMS*> malloc(sizeof(NV_ENC_INITIALIZE_PARAMS))
+        assert params!=NULL
+        try:
+            self.init_params(codec, params)
+            log("nvEncInitializeEncoder using encode=%s", codecstr(codec))
+            with nogil:
+                r = self.functionList.nvEncInitializeEncoder(self.context, params)
+            raiseNVENC(r, "initializing encoder")
+            log("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
+
+            self.dump_caps(codec)
+            self.init_buffers()
+        finally:
+            if params.encodeConfig!=NULL:
+                free(params.encodeConfig)
+            free(params)
+
+    cdef dump_caps(self, GUID codec):
+        #test all caps:
+        for cap, descr in CAPS_NAMES.items():
+            if cap!=NV_ENC_CAPS_EXPOSED_COUNT:
+                v = self.query_encoder_caps(codec, cap)
+                log("%s=%s", descr, v)
+
+    cdef NV_ENC_INITIALIZE_PARAMS *init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params):
+        #caller must free the config!
+        cdef GUID preset
+        cdef NV_ENC_CONFIG *config = NULL
+        cdef NV_ENC_PRESET_CONFIG *presetConfig = NULL  #@DuplicatedSignature
+
+        preset = self.get_preset(self.codec)
         self.preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset), guidstr(preset))
+        log("init_params(%s) using preset=%s", codecstr(codec), presetstr(preset))
 
         input_format = BUFFER_FORMAT[self.bufferFmt]
         input_formats = self.query_input_formats(codec)
         assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
-        try:
-            #TODO: undo malloc and use local var
-            params = <NV_ENC_INITIALIZE_PARAMS*> malloc(sizeof(NV_ENC_INITIALIZE_PARAMS))
-            assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
-            config = <NV_ENC_CONFIG*> malloc(sizeof(NV_ENC_CONFIG))
 
-            presetConfig = self.get_preset_config(self.preset_name, codec, preset)
-            assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
+        assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
+        config = <NV_ENC_CONFIG*> malloc(sizeof(NV_ENC_CONFIG))
+
+        presetConfig = self.get_preset_config(self.preset_name, codec, preset)
+        assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
+        try:
             assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
 
             params.version = NV_ENC_INITIALIZE_PARAMS_VER
@@ -1425,55 +1464,49 @@ cdef class Encoder:
             #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
             #config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
             #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
-
-            log("nvEncInitializeEncoder using encode=%s, preset=%s", codecstr(codec), presetstr(preset))
-            with nogil:
-                r = self.functionList.nvEncInitializeEncoder(self.context, params)
-            raiseNVENC(r, "initializing encoder")
-            log("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
-
-            #test all caps:
-            for cap, descr in CAPS_NAMES.items():
-                if cap!=NV_ENC_CAPS_EXPOSED_COUNT:
-                    v = self.query_encoder_caps(codec, cap)
-                    log("%s=%s", descr, v)
-
-            #register CUDA input buffer:
-            memset(&registerResource, 0, sizeof(NV_ENC_REGISTER_RESOURCE))
-            registerResource.version = NV_ENC_REGISTER_RESOURCE_VER
-            registerResource.resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
-            resource = int(self.cudaOutputBuffer)
-            registerResource.resourceToRegister = <void *> resource
-            registerResource.width = self.encoder_width
-            registerResource.height = self.encoder_height
-            registerResource.pitch = self.outputPitch
-            registerResource.bufferFormat = self.bufferFmt
-            log("nvEncRegisterResource(%#x)", <unsigned long> &registerResource)
-            with nogil:
-                r = self.functionList.nvEncRegisterResource(self.context, &registerResource)
-            raiseNVENC(r, "registering CUDA input buffer")
-            self.inputHandle = registerResource.registeredResource
-            log("input handle for CUDA buffer: %#x", <unsigned long> self.inputHandle)
-
-            #allocate output buffer:
-            memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
-            createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
-            #this is the uncompressed size - must be big enough for the compressed stream:
-            createBitstreamBufferParams.size = min(1024*1024*2, self.encoder_width*self.encoder_height*3/2)
-            createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
-            log("nvEncCreateBitstreamBuffer(%#x)", <unsigned long> &createBitstreamBufferParams)
-            with nogil:
-                r = self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams)
-            raiseNVENC(r, "creating output buffer")
-            self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
-            log("output bitstream buffer=%#x", <unsigned long> self.bitstreamBuffer)
+            return params
         finally:
             if presetConfig!=NULL:
                 free(presetConfig)
-            if config!=NULL:
-                free(config)
-            if params!=NULL:
-                free(params)
+
+    def init_buffers(self):
+        cdef NV_ENC_REGISTER_RESOURCE registerResource
+        cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
+        cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
+        cdef long resource
+        cdef Py_ssize_t size
+        cdef unsigned char* cptr = NULL
+        cdef NVENCSTATUS r                  #
+        #register CUDA input buffer:
+        memset(&registerResource, 0, sizeof(NV_ENC_REGISTER_RESOURCE))
+        registerResource.version = NV_ENC_REGISTER_RESOURCE_VER
+        registerResource.resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
+        resource = int(self.cudaOutputBuffer)
+        registerResource.resourceToRegister = <void *> resource
+        registerResource.width = self.encoder_width
+        registerResource.height = self.encoder_height
+        registerResource.pitch = self.outputPitch
+        registerResource.bufferFormat = self.bufferFmt
+        log("nvEncRegisterResource(%#x)", <unsigned long> &registerResource)
+        with nogil:
+            r = self.functionList.nvEncRegisterResource(self.context, &registerResource)
+        raiseNVENC(r, "registering CUDA input buffer")
+        self.inputHandle = registerResource.registeredResource
+        log("input handle for CUDA buffer: %#x", <unsigned long> self.inputHandle)
+
+        #allocate output buffer:
+        memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
+        createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
+        #this is the uncompressed size - must be big enough for the compressed stream:
+        createBitstreamBufferParams.size = min(1024*1024*2, self.encoder_width*self.encoder_height*3/2)
+        createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
+        log("nvEncCreateBitstreamBuffer(%#x)", <unsigned long> &createBitstreamBufferParams)
+        with nogil:
+            r = self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams)
+        raiseNVENC(r, "creating output buffer")
+        self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
+        log("output bitstream buffer=%#x", <unsigned long> self.bitstreamBuffer)
+
 
     def get_info(self):                     #@DuplicatedSignature
         cdef double pps
@@ -1558,6 +1591,7 @@ cdef class Encoder:
         self.encoder_width = 0
         self.encoder_height = 0
         self.src_format = ""
+        self.dst_formats = []
         self.scaling = None
         self.speed = 0
         self.quality = 0
@@ -1648,11 +1682,45 @@ cdef class Encoder:
         return self.src_format
 
     def set_encoding_speed(self, speed):
-        self.speed = max(0, min(100, speed))
-        self.update_bitrate()
+        if self.speed!=speed:
+            self.speed = speed
+            self.update_bitrate()
 
     def set_encoding_quality(self, quality):
-        self.quality = max(0, min(100, quality))
+        cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
+        if self.quality!=quality:
+            if quality<LOSSLESS_THRESHOLD:
+                #edge resistance:
+                raw_delta = quality-self.quality
+                max_delta = max(-1, min(1, raw_delta))*10
+                if abs(raw_delta)<abs(max_delta):
+                    delta = raw_delta
+                else:
+                    delta = max_delta
+                target_quality = quality-delta
+            else:
+                target_quality = 100
+            log("set_encoding_quality(%s) current quality=%s, target quality=%s", quality, self.quality, target_quality)
+            self.quality = quality
+            new_pixel_format = self.get_target_pixel_format(target_quality)
+            new_lossless = self.get_target_lossless(new_pixel_format, target_quality)
+            if new_pixel_format==self.pixel_format and new_lossless==self.lossless:
+                log("set_encoding_quality(%s) keeping current: %s / %s", quality, self.pixel_format, self.lossless)
+                return
+            start = time.time()
+            reconfigure_params.version = NV_ENC_RECONFIGURE_PARAMS_VER
+            try:
+                params = self.init_params(self.codec, &reconfigure_params.reInitEncodeParams)
+                reconfigure_params.resetEncoder = 1
+                reconfigure_params.forceIDR = 1
+            finally:
+                if params.encodeConfig!=NULL:
+                    free(params.encodeConfig)
+            end = time.time()
+            log("set_encoding_quality(%s) reconfigured from %s / %s to: %s / %s (took %ims)", quality, self.pixel_format, bool(self.lossless), new_pixel_format, new_lossless, int(1000*(end-start)))
+            self.pixel_format = new_pixel_format
+            self.lossless = new_lossless
+
 
     def update_bitrate(self):
         #use an exponential scale so for a 1Kx1K image (after scaling), roughly:
@@ -1683,10 +1751,12 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image, options={}, retry=0):
+    def compress_image(self, image, quality=-1, speed=-1, options={}, retry=0):
         self.cuda_context.push()
         try:
             try:
+                self.set_encoding_quality(quality)
+                self.set_encoding_speed(speed)
                 return self.do_compress_image(image, options)
             finally:
                 self.cuda_context.pop()

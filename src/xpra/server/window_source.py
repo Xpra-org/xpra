@@ -741,6 +741,7 @@ class WindowSource(object):
 
 
     def update_quality(self):
+        log("update_quality() suspended=%s, mmap=%s, encoding=%s", self.suspended, self._mmap, self.encoding)
         if self.suspended or self._mmap:
             return
         if self.encoding in ("rgb", "png", "png/P", "png/L"):

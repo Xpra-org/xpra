@@ -383,7 +383,7 @@ cdef class Encoder:
         self.src_format = ""
 
 
-    def compress_image(self, image, options):
+    def compress_image(self, image, quality=-1, speed=-1, options={}):
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         cdef uint8_t *pic_buf = NULL
@@ -397,6 +397,8 @@ cdef class Encoder:
             assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
             pic_in[i] = pic_buf
             strides[i] = istrides[i]
+        self.set_encoding_speed(speed)
+        self.set_encoding_quality(quality)
         return self.do_compress_image(pic_in, strides), {"frame"    : self.frames,
                                                          "quality"  : min(99, self.quality),
                                                          "speed"    : self.speed}
@@ -483,7 +485,7 @@ def selftest():
             e.init_context(w, h, "YUV420P", ["YUV420P"], encoding, w, h, (1,1), {})
             from xpra.codecs.image_wrapper import ImageWrapper
             image = ImageWrapper(0, 0, w, h, [y, u ,v], "YUV420P", 32, [w, w/2, w/2], planes=ImageWrapper.PACKED, thread_safe=True)
-            c = e.compress_image(image, {})
+            c = e.compress_image(image)
             #import binascii
             #print("compressed data(%s)=%s" % (encoding, binascii.hexlify(str(c))))
         finally:

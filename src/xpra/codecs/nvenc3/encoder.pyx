@@ -1701,13 +1701,6 @@ cdef class Encoder:
     def get_src_format(self):
         return self.src_format
 
-    def set_encoding_speed(self, speed):
-        self.speed = max(0, min(100, speed))
-        self.update_bitrate()
-
-    def set_encoding_quality(self, quality):
-        self.quality = max(0, min(100, quality))
-
     def update_bitrate(self):
         #use an exponential scale so for a 1Kx1K image (after scaling), roughly:
         #speed=0   -> 1Mbit/s
@@ -1736,7 +1729,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image, options={}, retry=0):
+    def compress_image(self, image, quality=-1, speed=-1, options={}, retry=0):
         self.cuda_context.push()
         try:
             try:

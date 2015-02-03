@@ -117,10 +117,12 @@ class Encoder(object):
         self.time = 0
         self.first_frame_timestamp = 0
 
-    def compress_image(self, image, options={}):
+    def compress_image(self, image, quality=-1, speed=-1, options={}):
         log("compress_image(%s, %s)", image, options)
         #pass the pixels as they are
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
+        self.quality = quality
+        self.speed = speed
         pixels = str(image.get_pixels())
         #info used by proxy encoder:
         client_options = {
@@ -132,8 +134,8 @@ class Encoder(object):
                 #redundant metadata:
                 #"width"     : image.get_width(),
                 #"height"    : image.get_height(),
-                "quality"   : options.get("quality", self.quality),
-                "speed"     : options.get("speed", self.speed),
+                "quality"   : quality,
+                "speed"     : speed,
                 "timestamp" : image.get_timestamp(),
                 "rowstride" : image.get_rowstride(),
                 "depth"     : image.get_depth(),
@@ -150,9 +152,3 @@ class Encoder(object):
         self.last_frame_times.append(time.time())
         self.frames += 1
         return  pixels, client_options
-
-    def set_encoding_speed(self, pct):
-        self.speed = int(min(100, max(0, pct)))
-
-    def set_encoding_quality(self, pct):
-        self.quality = int(min(100, max(0, pct)))

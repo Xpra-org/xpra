@@ -1239,7 +1239,9 @@ class WindowVideoSource(WindowSource):
         csc_image, csc, enc_width, enc_height = self.csc_image(image, width, height)
 
         start = time.time()
-        ret = self._video_encoder.compress_image(csc_image, options)
+        quality = max(0, min(100, self._current_quality))
+        speed = max(0, min(100, self._current_speed))
+        ret = self._video_encoder.compress_image(csc_image, quality, speed, options)
         if ret is None:
             log.error("video_encode: ouch, %s compression failed", encoding)
             return None

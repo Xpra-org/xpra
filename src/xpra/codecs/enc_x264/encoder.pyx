@@ -424,7 +424,7 @@ cdef class Encoder:
         return profile
 
 
-    def compress_image(self, image, options={}):
+    def compress_image(self, image, quality=-1, speed=-1, options={}):
         cdef x264_nal_t *nals = NULL
         cdef int i_nals = 0
         cdef x264_picture_t pic_out
@@ -435,26 +435,16 @@ cdef class Encoder:
         cdef Py_ssize_t pic_buf_len = 0
         cdef char *out
 
-        cdef int quality_override = options.get("quality", -1)
-        cdef int speed_override = options.get("speed", -1)
-        cdef int saved_quality = self.quality
-        cdef int saved_speed = self.speed
         cdef int i                        #@DuplicatedSignature
         start = time.time()
 
         if self.frames==0:
             self.first_frame_timestamp = image.get_timestamp()
 
-        #deal with overriden speed or quality settings:
-        #(temporarily change the settings for this encode only):
-        speed = self.speed
-        if speed_override>=0 and saved_speed!=speed_override:
-            self.set_encoding_speed(speed_override)
-            speed = speed_override
-        quality = self.quality
-        if quality_override>=0 and saved_quality!=quality_override:
-            self.set_encoding_quality(quality_override)
-            quality = quality_override
+        if speed>=0 and abs(self.speed-speed)>5:
+            self.set_encoding_speed(speed)
+        if quality>=0 and abs(self.quality-quality)>5:
+            self.set_encoding_quality(quality)
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
@@ -482,32 +472,26 @@ cdef class Encoder:
         pic_in.img.i_plane = 3
         pic_in.i_pts = image.get_timestamp()-self.first_frame_timestamp
 
-        try:
-            with nogil:
-                frame_size = x264_encoder_encode(self.context, &nals, &i_nals, &pic_in, &pic_out)
-            if frame_size < 0:
-                log.error("x264 encoding error: frame_size is invalid!")
-                return None
-            out = <char *>nals[0].p_payload
-            cdata = out[:frame_size]
-            self.bytes_out += frame_size
-            #info for client:
-            client_options = {
-                    "frame"     : self.frames,
-                    "pts"       : pic_out.i_pts,
-                    "quality"   : min(99, quality),
-                    "speed"     : speed}
-            #accounting:
-            end = time.time()
-            self.time += end-start
-            self.frames += 1
-            self.last_frame_times.append((start, end))
-            return  cdata, client_options
-        finally:
-            if speed_override>=0 and saved_speed!=speed_override:
-                self.set_encoding_speed(saved_speed)
-            if quality_override>=0 and saved_quality!=quality_override:
-                self.set_encoding_quality(saved_quality)
+        with nogil:
+            frame_size = x264_encoder_encode(self.context, &nals, &i_nals, &pic_in, &pic_out)
+        if frame_size < 0:
+            log.error("x264 encoding error: frame_size is invalid!")
+            return None
+        out = <char *>nals[0].p_payload
+        cdata = out[:frame_size]
+        self.bytes_out += frame_size
+        #info for client:
+        client_options = {
+                "frame"     : self.frames,
+                "pts"       : pic_out.i_pts,
+                "quality"   : min(99, quality),
+                "speed"     : speed}
+        #accounting:
+        end = time.time()
+        self.time += end-start
+        self.frames += 1
+        self.last_frame_times.append((start, end))
+        return  cdata, client_options
 
 
     def set_encoding_speed(self, int pct):
@@ -560,7 +544,7 @@ def selftest():
             e.init_context(w, h, "YUV420P", ["YUV420P"], encoding, w, h, (1,1), {})
             from xpra.codecs.image_wrapper import ImageWrapper
             image = ImageWrapper(0, 0, w, h, [y, u ,v], "YUV420P", 32, [w, w/2, w/2], planes=ImageWrapper.PACKED, thread_safe=True)
-            c = e.compress_image(image, {})
+            c = e.compress_image(image)
             #import binascii
             #print("compressed data(%s)=%s" % (encoding, binascii.hexlify(str(c))))
         finally:

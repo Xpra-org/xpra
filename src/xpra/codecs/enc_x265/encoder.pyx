@@ -406,7 +406,7 @@ cdef class Encoder:
         return self.src_format
 
 
-    def compress_image(self, image, options={}):
+    def compress_image(self, image, quality=-1, speed=-1, options={}):
         cdef x265_nal *nal
         cdef uint32_t nnal = 0
         cdef int r = 0
@@ -486,10 +486,3 @@ cdef class Encoder:
         self.frames += 1
         log("x265 compressed data size: %s, client options=%s", frame_size, client_options)
         return  "".join(data), client_options
-
-
-    def set_encoding_speed(self, int pct):
-        pass
-
-    def set_encoding_quality(self, int pct):
-        pass
