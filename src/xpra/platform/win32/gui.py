@@ -110,6 +110,19 @@ def noop(*args):
     pass
 
 
+_propsys = None
+def get_propsys():
+    global _propsys
+    if _propsys is None:
+        try:
+            from win32com.propsys import propsys    #@UnresolvedImport
+            _propsys = propsys
+        except Exception as e:
+            log("unable to implement group leader: %s", e, exc_info=True)
+            _propsys = False
+    return _propsys
+
+
 def add_window_hooks(window):
     #win32 cannot use set_group by default:
     try:
@@ -122,9 +135,8 @@ def add_window_hooks(window):
     except:
         return
     #windows 7 onwards can use AppUserModel to emulate the group leader stuff:
-    try:
-        import win32com.propsys                 #@UnresolvedImport
-        from win32com.propsys import propsys    #@UnresolvedImport
+    propsys = get_propsys()
+    if propsys:
         def set_group(leader):
             try:
                 log("win32 hooks: set_group(%#x)", leader.handle)
@@ -136,25 +148,26 @@ def add_window_hooks(window):
             except Exception as e:
                 log.error("failed to set group leader: %s", e)
         window.get_window().set_group = set_group
-        log("hooked group leader override using %s", win32com.propsys)
-    except Exception as e:
-        log("unable to implement group leader: %s", e, exc_info=True)
+        log("hooked group leader override using %s", propsys)
     #OR windows never have any decorations or taskbar menu
+    readd_window_options = None
     if not window._override_redirect:
         #override set_decorated so we can preserve the taskbar menu for undecorated windows
         window.__set_decorated = window.set_decorated
         def readd_window_options():
             try:
-                style = win32api.GetWindowLong(handle, win32con.GWL_STYLE)
+                cur_style = win32api.GetWindowLong(handle, win32con.GWL_STYLE)
                 #re-add taskbar menu:
+                style = cur_style
                 style |= win32con.WS_SYSMENU
                 if not window._maximized:
                     #can maximize if not maximized already:
                     style |= win32con.WS_MAXIMIZEBOX
                 #can always minimize:
                 style |= win32con.WS_MINIMIZEBOX
-                log("readd_window_options() using style=%#x on window %#x", style, handle)
-                win32gui.SetWindowLong(handle, win32con.GWL_STYLE, style)
+                log("readd_window_options() using %s style=%#x on window %#x", ["unchanged", "new"][int(style!=cur_style)], style, handle)
+                if style!=cur_style:
+                    win32gui.SetWindowLong(handle, win32con.GWL_STYLE, style)
             except Exception, e:
                 log.warn("failed to override window style: %s", e)
         def set_decorated(b):
@@ -171,12 +184,26 @@ def add_window_hooks(window):
             readd_window_options()
         window.after_window_state_updated = after_window_state_updated
 
+        try:
+            import win32con                 #@Reimport @UnresolvedImport
+            el = get_win32_event_listener(True)
+            log("win32_event_listener=%s", el)
+            if el:
+                def activate_cb(*args):
+                    log("activate_cb%s", args)
+                    readd_window_options()
+                el.add_event_callback(win32con.WM_ACTIVATEAPP, activate_cb)
+                window.activate_app_hook = activate_cb
+        except:
+            log.warn("failed to add activateapp callback", exc_info=True)
+
     #glue code for gtk to win32 APIs:
     #add event hook class:
     win32hooks = Win32Hooks(handle)
     log("add_window_hooks(%s) added hooks for hwnd %#x: %s", window, handle, win32hooks)
     window.win32hooks = win32hooks
-    window.win32hooks.max_size = None
+    win32hooks.max_size = None
+
     #save original geometry function:
     window.__apply_geometry_hints = window.apply_geometry_hints
     #our function for taking gdk window hints and passing them to the win32 hooks class:
@@ -224,6 +251,12 @@ def remove_window_hooks(window):
             if win32hooks:
                 win32hooks.cleanup()
                 window.win32hooks = None
+        if hasattr(window, "activate_app_hook"):
+            activate_app_cb = window.activate_app_hook
+            if activate_app_cb:
+                el = get_win32_event_listener(True)
+                el.remove_event_callback(win32con.WM_ACTIVATEAPP, activate_app_cb)
+            window.activate_app_hook = None
     except:
         log.error("remove_window_hooks(%s)", exc_info=True)
 
