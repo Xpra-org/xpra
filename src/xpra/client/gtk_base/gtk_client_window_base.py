@@ -276,7 +276,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                         def tell_server():
                             if self._iconified:
                                 self.send("unmap-window", self._id, True)
-                        self.timeout_add(150, tell_server)
+                        #calculate a good delay to prevent races causing minimize/unminimize loops:
+                        delay = 150
+                        spl = list(self._client.server_ping_latency)
+                        if len(spl)>0:
+                            worst = max([x for _,x in spl])
+                            delay += int(1000*worst)
+                            delay = min(1000, delay)
+                        statelog("telling server about iconification with %sms delay", delay)
+                        self.timeout_add(delay, tell_server)
                 else:
                     self.process_map_event()
         self.after_window_state_updated()
