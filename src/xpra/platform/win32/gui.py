@@ -85,8 +85,7 @@ def gl_check():
 
 def get_monitor_workarea_for_window(handle):
     try:
-        from win32con import MONITOR_DEFAULTTONEAREST       #@UnresolvedImport
-        monitor = win32api.MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST)
+        monitor = win32api.MonitorFromWindow(handle, win32con.MONITOR_DEFAULTTONEAREST)
         mi = win32api.GetMonitorInfo(monitor)
         screenlog("get_monitor_workarea_for_window(%s) GetMonitorInfo(%s)=%s", handle, monitor, mi)
         #absolute workarea / monitor coordinates:
@@ -168,8 +167,8 @@ def add_window_hooks(window):
                 log("readd_window_options() using %s style=%#x on window %#x", ["unchanged", "new"][int(style!=cur_style)], style, handle)
                 if style!=cur_style:
                     win32gui.SetWindowLong(handle, win32con.GWL_STYLE, style)
-            except Exception, e:
-                log.warn("failed to override window style: %s", e)
+            except:
+                log.warn("failed to override window style", exc_info=True)
         def set_decorated(b):
             window.__set_decorated(b)
             readd_window_options()
@@ -185,7 +184,6 @@ def add_window_hooks(window):
         window.after_window_state_updated = after_window_state_updated
 
         try:
-            import win32con                 #@Reimport @UnresolvedImport
             el = get_win32_event_listener(True)
             log("win32_event_listener=%s", el)
             if el:
