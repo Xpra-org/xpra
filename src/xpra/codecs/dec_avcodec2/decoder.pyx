@@ -394,7 +394,8 @@ cdef class Decoder:
             self.weakref_images = []
             log("clean_decoder() cloning pixels for images still in use: %s", images)
             for img in images:
-                img.clone_pixel_data()
+                if not img.freed:
+                    img.clone_pixel_data()
 
         for i in range(3):
             if self.av_frames[i]!=NULL:
