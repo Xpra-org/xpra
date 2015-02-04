@@ -334,8 +334,10 @@ class WindowVideoSource(WindowSource):
             return nonvideo(q=quality-30)
 
         lde = list(self.statistics.last_damage_events)
-        if len(lde)>=5 and lde[-5][0]<now-2:
-            #less than 10 damage events in the last 2 seconds
+        lim = now-2
+        pixels_last_2secs = sum(w*h for when,_,_,w,h in lde if when>lim)
+        if pixels_last_2secs<5*ww*wh:
+            #less than 5 full window pixels in last 2 seconds
             return nonvideo()
 
         if self._current_quality!=quality or self._current_speed!=speed:
