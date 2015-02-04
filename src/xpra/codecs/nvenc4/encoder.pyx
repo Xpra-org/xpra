@@ -1953,9 +1953,13 @@ cdef class Encoder:
         client_options = {
                     "frame"     : self.frames,
                     "pts"       : image.get_timestamp()-self.first_frame_timestamp,
-                    "quality"   : min(99, self.quality),        #cap at 99 because no lossless yet!
                     "speed"     : self.speed,
                     }
+        if self.lossless:
+            client_options["quality"] = 100
+            client_options["lossless"] = True
+        else:
+            client_options["quality"] = min(99, self.quality)   #ensure we cap it at 99 because this is lossy
         if self.scaling!=(1,1):
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
         end = time.time()
