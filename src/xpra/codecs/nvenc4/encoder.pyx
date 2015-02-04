@@ -1441,6 +1441,8 @@ cdef class Encoder:
             config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
             config.rcParams.enableMinQP = 1
             config.rcParams.enableMaxQP = 1
+            config.frameIntervalP = 1
+            config.gopLength = NVENC_INFINITE_GOPLENGTH
             #0=max quality, 63 lowest quality
             qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)/100))
             qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)/100))
@@ -1887,6 +1889,7 @@ cdef class Encoder:
             if self.frames==0:
                 #only the first frame needs to be IDR (as we never lose frames)
                 picParams.pictureType = NV_ENC_PIC_TYPE_IDR
+                picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
             else:
                 picParams.pictureType = NV_ENC_PIC_TYPE_P
             picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
@@ -1894,7 +1897,6 @@ cdef class Encoder:
             picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
             picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
             picParams.codecPicParams.h264PicParams.colourPlaneId = 0
-            picParams.encodePicFlags = 0    #NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
             picParams.frameIdx = self.frames
             picParams.inputTimeStamp = image.get_timestamp()-self.first_frame_timestamp
             #inputDuration = 0      #FIXME: use frame delay?
