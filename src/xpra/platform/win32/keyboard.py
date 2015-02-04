@@ -9,7 +9,7 @@ from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.log import Logger
-log = Logger("keyboard", "win32")
+log = Logger("keyboard")
 
 
 class Keyboard(KeyboardBase):
