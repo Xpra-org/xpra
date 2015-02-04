@@ -62,9 +62,9 @@
   </autotools>
 
   <autotools id="orc" autogenargs="" autogen-sh="configure">
-    <branch module="/data/src/orc/orc-0.4.22.tar.xz"
-			version="0.4.22"
-                        hash="md5:eecd4788688a95aae97adf1125585cbf"
+    <branch module="/data/src/orc/orc-0.4.23.tar.xz"
+			version="0.4.23"
+                        hash="md5:72e0612ace54d77aa2f7a006348ee81a"
             repo="gstreamer.freedesktop.org"/>
   </autotools>
 
