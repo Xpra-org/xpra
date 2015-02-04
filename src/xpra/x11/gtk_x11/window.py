@@ -326,6 +326,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Is the window's position fixed on the screen", "",
                        False,
                        gobject.PARAM_READWRITE),
+        "strut": (gobject.TYPE_PYOBJECT,
+                  "Struts requested by window, or None", "",
+                  gobject.PARAM_READABLE),
         "workspace": (gobject.TYPE_UINT,
                 "The workspace this window is on", "",
                 0, 2**32-1, WORKSPACE_UNSET,
@@ -549,7 +552,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("xid", self.client_window.xid)
         self._internal_set_property("pid", self.prop_get("_NET_WM_PID", "u32") or -1)
         self._internal_set_property("role", self.prop_get("WM_WINDOW_ROLE", "latin1"))
-        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_NET_WM_DESKTOP", "_NET_WM_BYPASS_COMPOSITOR", "_NET_WM_FULLSCREEN_MONITORS"]:
+        for mutable in ["WM_NAME", "_NET_WM_NAME", "_NET_WM_WINDOW_OPACITY", "_NET_WM_DESKTOP",
+                        "_NET_WM_BYPASS_COMPOSITOR", "_NET_WM_FULLSCREEN_MONITORS",
+                        "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]:
             self._call_property_handler(mutable)
 
     def _read_initial_X11_properties(self):
@@ -592,6 +597,19 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("bypass-compositor", bypass)
         log("bypass-compositor=%s", bypass)
     _property_handlers["_NET_WM_BYPASS_COMPOSITOR"] = _handle_bypass_compositor_change
+
+
+    def _handle_wm_strut(self):
+        partial = self.prop_get("_NET_WM_STRUT_PARTIAL", "strut-partial")
+        if partial is not None:
+            self._internal_set_property("strut", partial)
+            return
+        full = self.prop_get("_NET_WM_STRUT", "strut")
+        # Might be None:
+        self._internal_set_property("strut", full)
+
+    _property_handlers["_NET_WM_STRUT"] = _handle_wm_strut
+    _property_handlers["_NET_WM_STRUT_PARTIAL"] = _handle_wm_strut
 
 
     def _handle_opacity_change(self):
@@ -938,9 +956,6 @@ class WindowModel(BaseWindowModel):
         "size-hints": (gobject.TYPE_PYOBJECT,
                        "Client hints on constraining its size", "",
                        gobject.PARAM_READABLE),
-        "strut": (gobject.TYPE_PYOBJECT,
-                  "Struts requested by window, or None", "",
-                  gobject.PARAM_READABLE),
         "class-instance": (gobject.TYPE_PYOBJECT,
                            "Classic X 'class' and 'instance'", "",
                            gobject.PARAM_READABLE),
@@ -1446,18 +1461,6 @@ class WindowModel(BaseWindowModel):
 
     _property_handlers["WM_ICON_NAME"] = _handle_icon_title_change
     _property_handlers["_NET_WM_ICON_NAME"] = _handle_icon_title_change
-
-    def _handle_wm_strut(self):
-        partial = self.prop_get("_NET_WM_STRUT_PARTIAL", "strut-partial")
-        if partial is not None:
-            self._internal_set_property("strut", partial)
-            return
-        full = self.prop_get("_NET_WM_STRUT", "strut")
-        # Might be None:
-        self._internal_set_property("strut", full)
-
-    _property_handlers["_NET_WM_STRUT"] = _handle_wm_strut
-    _property_handlers["_NET_WM_STRUT_PARTIAL"] = _handle_wm_strut
 
     def _handle_motif_wm_hints(self):
         #motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints")
