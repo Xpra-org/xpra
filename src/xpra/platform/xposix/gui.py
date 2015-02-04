@@ -212,7 +212,7 @@ def get_number_of_desktops():
         return v
     except Exception as e:
         screenlog.warn("failed to get number of desktop: %s", e)
-    return 
+    return
 
 def get_desktop_names():
     try:

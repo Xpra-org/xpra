@@ -107,7 +107,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.start_new_command = getStartNewCommand(run_command_cb)
         self.start_new_command.show()
         return self.start_new_command
-            
+
 
     def show_session_info(self, *args):
         if self.session_info and not self.session_info.is_closed:

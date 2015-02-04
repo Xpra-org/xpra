@@ -739,5 +739,5 @@ WNDPROC_EVENT_NAMES = {
     0x2138: "OCM_CTLCOLORSTATIC",
     0x2210: "OCM_PARENTNOTIFY",
     0x8000: "WM_APP",
-    0xcccd: "WM_RASDIALEVENT",                   
+    0xcccd: "WM_RASDIALEVENT",
 }

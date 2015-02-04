@@ -1079,7 +1079,7 @@ class WindowSource(object):
                 #and keep those that have damage areas in them:
                 regions = [x for x in non_exclude if len([y for y in regions if x.intersects_rect(y)])>0]
                 #TODO: should verify that is still better than what we had before..
-    
+
             elif len(regions)>1:
                 #try to merge all the regions to see if we save anything:
                 merged = regions[0].clone()
@@ -1097,7 +1097,7 @@ class WindowSource(object):
                 if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
                     #better, so replace with merged regions:
                     regions = merged_rects
-    
+
             #check to see if the total amount of pixels makes us use a fullscreen update instead:
             if len(regions)>1:
                 pixel_count = sum(rect.width*rect.height for rect in regions)
@@ -1254,7 +1254,7 @@ class WindowSource(object):
                     self.refresh_event_time = time.time()
                     #delay in milliseconds: always at least the settings,
                     #more if we have more than 50% of the window pixels to update:
-                    sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100)) 
+                    sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100))
                     self.refresh_target_time = now + sched_delay/1000.0
                     self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, window, options)
                     msg = "scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)

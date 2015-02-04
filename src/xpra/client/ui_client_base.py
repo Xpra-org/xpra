@@ -898,7 +898,7 @@ class UIXpraClient(XpraClientBase):
         root_w, root_h = self.get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
         ndesktops = get_number_of_desktops()
-        capabilities["desktops"] = ndesktops 
+        capabilities["desktops"] = ndesktops
         desktop_names = get_desktop_names()
         capabilities["desktop.names"] = desktop_names
         capabilities["desktop_size"] = [root_w, root_h]
@@ -2011,7 +2011,7 @@ class UIXpraClient(XpraClientBase):
 
     def _process_show_desktop(self, packet):
         show = packet[1]
-        log("calling %s(%s)", show_desktop, show) 
+        log("calling %s(%s)", show_desktop, show)
         show_desktop(show)
 
 
