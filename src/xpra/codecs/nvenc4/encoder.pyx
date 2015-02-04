@@ -997,11 +997,11 @@ BUFFER_FORMAT = {
         }
 
 
-YUV444P_ENABLED = None
+YUV444_ENABLED = None
 
 def get_COLORSPACES():
-    global YUV444P_ENABLED
-    if YUV444P_ENABLED:
+    global YUV444_ENABLED
+    if YUV444_ENABLED:
         COLORSPACES = {"BGRX" : ("YUV420P", "YUV444P")}
     else:
         COLORSPACES = {"BGRX" : ("YUV420P",)}
@@ -1251,7 +1251,7 @@ cdef class Encoder:
         start = time.time()
 
         plane_size_div = 1
-        if not YUV444P_ENABLED or "YUV444P" not in dst_formats:
+        if not YUV444_ENABLED or "YUV444P" not in dst_formats:
             #we don't need as much memory reserved with NV12 / YUV420:
             #1 full Y plane and 2 U+V planes subsampled by 4:
             plane_size_div = 2
@@ -1277,9 +1277,9 @@ cdef class Encoder:
         log("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
 
     def get_target_pixel_format(self, quality):
-        global YUV444P_ENABLED, LOSSLESS_ENABLED
+        global YUV444_ENABLED, LOSSLESS_ENABLED
         x,y = self.scaling
-        if YUV444P_ENABLED and ("YUV444P" in self.dst_formats) and ((quality>=YUV444_THRESHOLD and x==1 and y==1) or ("YUV420P" not in self.dst_formats)):
+        if YUV444_ENABLED and ("YUV444P" in self.dst_formats) and ((quality>=YUV444_THRESHOLD and x==1 and y==1) or ("YUV420P" not in self.dst_formats)):
             return "YUV444P"
         elif "YUV420P" in self.dst_formats:
             return "NV12"
@@ -1521,10 +1521,15 @@ cdef class Encoder:
                 "codec"     : self.codec_name,
                 "encoder_width"     : self.encoder_width,
                 "encoder_height"    : self.encoder_height,
-                "bitrate"   : self.target_bitrate,
-                "quality"   : self.quality,
-                "speed"     : self.speed,
-                "lossless"  : self.lossless})
+                "bitrate"           : self.target_bitrate,
+                "quality"           : self.quality,
+                "speed"             : self.speed,
+                "lossless"          : self.lossless,
+                "lossless.supported": LOSSLESS_ENABLED,
+                "lossless.threshold": LOSSLESS_THRESHOLD,
+                "yuv444.supported"  : YUV444_ENABLED,
+                "yuv444.threshold"  : YUV444_THRESHOLD,
+                })
         if self.scaling!=(1,1):
             info.update({
                 "input_width"       : self.input_width,
@@ -2223,8 +2228,8 @@ def init_module():
     colorspaces = get_input_colorspaces()
     assert colorspaces, "cannot use NVENC: no colorspaces available"
 
-    global YUV444P_ENABLED, LOSSLESS_ENABLED
-    YUV444P_ENABLED, LOSSLESS_ENABLED = True, True
+    global YUV444_ENABLED, LOSSLESS_ENABLED
+    YUV444_ENABLED, LOSSLESS_ENABLED = True, True
     success = False
     valid_keys = []
     failed_keys = []
@@ -2249,12 +2254,12 @@ def init_module():
                         valid_keys.append(client_key)
                     #check for YUV444 support
                     if not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE):
-                        YUV444P_ENABLED = False
-                    log("%s YUV444 support: %s", encoding, YUV444P_ENABLED)
+                        YUV444_ENABLED = False
+                    log("%s YUV444 support: %s", encoding, YUV444_ENABLED)
                     #check for lossless:
-                    if not YUV444P_ENABLED or not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE):
+                    if not YUV444_ENABLED or not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE):
                         LOSSLESS_ENABLED = False
-                    log("%s lossless support: %s", encoding, YUV444P_ENABLED)
+                    log("%s lossless support: %s", encoding, LOSSLESS_ENABLED)
                 except NVENCException as e:
                     log("encoder %s failed: %s", test_encoder, e)
                     #special handling for license key issues:
