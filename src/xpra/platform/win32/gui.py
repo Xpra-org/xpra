@@ -153,7 +153,7 @@ def add_window_hooks(window):
                     style |= win32con.WS_MAXIMIZEBOX
                 #can always minimize:
                 style |= win32con.WS_MINIMIZEBOX
-                log("readd_window_options() using style=%s", style)
+                log("readd_window_options() using style=%#x on window %#x", style, handle)
                 win32gui.SetWindowLong(handle, win32con.GWL_STYLE, style)
             except Exception, e:
                 log.warn("failed to override window style: %s", e)
