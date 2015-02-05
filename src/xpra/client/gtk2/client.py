@@ -348,10 +348,10 @@ class XpraClient(GTKXpraClient):
 
 
 
-    def get_group_leader(self, metadata, override_redirect):
-        wid = metadata.intget("transient-for", -1)
-        if wid>0:
-            client_window = self._id_to_window.get(wid)
+    def get_group_leader(self, wid, metadata, override_redirect):
+        transient_for = metadata.intget("transient-for", -1)
+        if transient_for>0:
+            client_window = self._id_to_window.get(transient_for)
             if client_window:
                 gdk_window = client_window.get_window()
                 if gdk_window:
@@ -374,11 +374,14 @@ class XpraClient(GTKXpraClient):
             elif pid>0:
                 reftype = "pid"
                 ref = pid
+            elif transient_for>0:
+                #this should have matched a client window above..
+                #but try to use it anyway:
+                reftype = "transient-for"
+                ref = transient_for
             else:
-                #no reference to use! invent a unique one for this window:
-                #(use its wid)
-                reftype = "wid"
-                ref = wid
+                #no reference to use
+                return None
         refkey = "%s:%s" % (reftype, ref)
         group_leader_window = self._ref_to_group_leader.get(refkey)
         if group_leader_window:
