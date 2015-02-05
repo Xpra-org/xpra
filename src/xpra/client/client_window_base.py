@@ -208,45 +208,58 @@ class ClientWindowBase(ClientWidgetBase):
 
         if b"maximized" in metadata:
             maximized = metadata.boolget("maximized")
-            if maximized:
-                self.maximize()
-            else:
-                self.unmaximize()
+            if maximized!=self._maximized:
+                self._maximized = maximized
+                if maximized:
+                    self.maximize()
+                else:
+                    self.unmaximize()
 
         if b"fullscreen" in metadata:
             fullscreen = metadata.boolget("fullscreen")
-            self.set_fullscreen(fullscreen)
+            if self._fullscreen is None or self._fullscreen!=fullscreen:
+                self._fullscreen = fullscreen
+                self.set_fullscreen(fullscreen)
 
         if b"iconic" in metadata:
-            if metadata.boolget("iconic"):
-                self._iconified = True
-                self.iconify()
-            else:
-                self._iconified = False
-                self.deiconify()
+            iconified = metadata.boolget("iconic")
+            if self._iconified!=iconified:
+                self._iconified = iconified
+                if self._iconified:
+                    self.iconify()
+                else:
+                    self.deiconify()
 
         if b"decorations" in metadata:
             self.set_decorated(metadata.boolget("decorations"))
             self.apply_geometry_hints(self.geometry_hints)
 
         if b"above" in metadata:
-            self._above = metadata.boolget("above")
-            self.set_keep_above(self._above)
+            above = metadata.boolget("above")
+            if self._above!=above:
+                self._above = above
+                self.set_keep_above(above)
 
         if b"below" in metadata:
-            self._below = metadata.boolget("below")
-            self.set_keep_below(self._below)
+            below = metadata.boolget("below")
+            if self._below!=below:
+                self._below = below
+                self.set_keep_below(below)
 
         if b"shaded" in metadata:
-            self._shaded = metadata.boolget("shaded")
-            self.set_shaded(self._shaded)
+            shaded = metadata.boolget("shaded")
+            if self._shaded!=shaded:
+                self._shaded = shaded
+                self.set_shaded(shaded)
 
         if b"sticky" in metadata:
-            self._sticky = metadata.boolget("sticky")
-            if self._sticky:
-                self.stick()
-            else:
-                self.unstick()
+            sticky = metadata.boolget("sticky")
+            if self._sticky!=sticky:
+                self._sticky = sticky
+                if sticky:
+                    self.stick()
+                else:
+                    self.unstick()
 
         if b"skip-taskbar" in metadata:
             self.set_skip_taskbar_hint(metadata.boolget("skip-taskbar"))
