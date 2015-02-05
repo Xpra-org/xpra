@@ -50,7 +50,6 @@ class Win32Hooks(object):
         log("Win32Hooks: window frame size is %sx%s", self.frame_width, self.frame_height)
 
     def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
-        log("on_getminmaxinfo%s max_size=%s", (hwnd, msg, wparam, lparam), self.max_size)
         if self.max_size:
             info = ctypes.cast(lparam, ctypes.POINTER(MINMAXINFO)).contents
             width, height = self.max_size
@@ -59,10 +58,14 @@ class Win32Hooks(object):
                 fw, fh = self.frame_width, self.frame_height
             else:
                 fw, fh = 0, 0
-            point  = POINT(width + fw*2, height + self.caption_height + fh*2)
+            w = width + fw*2
+            h = height + self.caption_height + fh*2
+            point  = POINT(w, h)
             info.ptMaxSize       = point
             info.ptMaxTrackSize  = point
-            log("on_getminmaxinfo%s frame: %sx%s, point=%s", (hwnd, msg, wparam, lparam), fw, fh, point)
+            log("on_getminmaxinfo%s max_size=%s, frame=%sx%s, minmaxinfo size=%sx%s", (hwnd, msg, wparam, lparam), self.max_size, fw, fh, w, h)
+        else:
+            log("on_getminmaxinfo%s max_size=%s", (hwnd, msg, wparam, lparam), self.max_size)
 
     def cleanup(self, *args):
         log("cleanup%s", args)
