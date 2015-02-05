@@ -367,13 +367,13 @@ class XpraClient(GTKXpraClient):
         reftype = "xid"
         ref = leader_xid
         if ref<0:
-            reftype = "pid"
-            ref = pid
-        if ref<0:
             ci = metadata.strlistget("class-instance")
             if ci:
                 reftype = "class"
                 ref = "|".join(ci)
+            elif pid>0:
+                reftype = "pid"
+                ref = pid
             else:
                 #no reference to use! invent a unique one for this window:
                 #(use its wid)
