@@ -347,9 +347,9 @@ class XpraClient(GTKXpraClient):
         gtk.gdk.keyboard_ungrab()
 
 
-
     def get_group_leader(self, wid, metadata, override_redirect):
         transient_for = metadata.intget("transient-for", -1)
+        log("get_group_leader: transient_for=%s", transient_for)
         if transient_for>0:
             client_window = self._id_to_window.get(transient_for)
             if client_window:
@@ -362,8 +362,9 @@ class XpraClient(GTKXpraClient):
         group_leader_window = self._id_to_window.get(leader_wid)
         if group_leader_window:
             #leader is another managed window
-            log("found group leader window %s for wid=%s", group_leader_window, pid)
+            log("found group leader window %s for wid=%s", group_leader_window, leader_wid)
             return group_leader_window
+        log("get_group_leader: leader pid=%s, xid=%s, wid=%s", pid, leader_xid, leader_wid)
         reftype = "xid"
         ref = leader_xid
         if ref<0:
