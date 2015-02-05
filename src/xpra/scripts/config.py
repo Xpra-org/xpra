@@ -280,7 +280,6 @@ OPTION_TYPES = {
                     "dpi"               : int,
                     "scaling"           : int,
                     #float options:
-                    "max-bandwidth"     : float,
                     "auto-refresh-delay": float,
                     #boolean options:
                     "daemon"            : bool,
@@ -378,7 +377,6 @@ def get_defaults():
                     "compression_level" : 1,
                     "dpi"               : 0,
                     "scaling"           : 1,
-                    "max-bandwidth"     : 0.0,
                     "auto-refresh-delay": 0.25,
                     "daemon"            : True,
                     "use-display"       : False,
