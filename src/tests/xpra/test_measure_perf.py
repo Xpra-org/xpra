@@ -3,6 +3,32 @@
 # Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+#
+# To create multiple output files which can be used to generate charts (using test_measure_perf_charts.py)
+# build a config class (copy from perf_config_default.py -- make changes as necessary).
+#
+# Then determine the values of the following variables:
+#   prefix: a string to identify the data set
+#   id: a string to identify the variable that the data set is testing (for example '14' because we're testing xpra v14 in this data set)
+#   repetitions: decide how many times you want to run the tests
+# 
+# The data file names you will produce will then be in the format:
+#   prefix_id_rep#.csv
+#
+# With this information in hand you can now create a script that will run the tests, containing commands like:
+#   ./test_measure_perf.py as an example:
+
+# For example: 
+#
+# ./test_measure_perf.py all_tests_40 ./data/all_tests_40_14_1.csv 1 14 > ./data//all_tests_40_14_1.log
+# ./test_measure_perf.py all_tests_40 ./data/all_tests_40_14_2.csv 2 14 > ./data//all_tests_40_14_2.log
+#
+# In this example script, I'm running test_measure_perf 2 times, using a config class named "all_tests_40.py",
+# and outputting the results to data files using the prefix "all_tests_40", the id of "14" and the current 
+# "repetition" for each file. Additionally, I'm sending the console output to logs similarly named.
+#
+# Once this script has run, you can open up test_measure_perf_charts.py and take a look at the 
+# instructions there for generating the charts.
 
 import re
 import sys

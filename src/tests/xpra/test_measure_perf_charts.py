@@ -14,6 +14,11 @@ from collections import defaultdict
 # from one or more runs of test_measure_perf.py.
 #
 # Data file naming convention: prefix_id_rep.csv
+#
+# This script takes no arguments. When it's run, it will
+# produce and HTML file called "test_perf_charts.html".
+#
+# Open that file in your browser to see the charts.
 #----------------------------------------------------------------
 #
 data_dir = "./data"
