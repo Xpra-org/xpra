@@ -369,11 +369,16 @@ class XpraClient(GTKXpraClient):
         if ref<0:
             reftype = "pid"
             ref = pid
-        if ref is None:
-            #no reference to use! invent a unique one for this window:
-            #(use its wid)
-            reftype = "wid"
-            ref = wid
+        if ref<0:
+            ci = metadata.strlistget("class-instance")
+            if ci:
+                reftype = "class"
+                ref = "|".join(ci)
+            else:
+                #no reference to use! invent a unique one for this window:
+                #(use its wid)
+                reftype = "wid"
+                ref = wid
         refkey = "%s:%s" % (reftype, ref)
         group_leader_window = self._ref_to_group_leader.get(refkey)
         if group_leader_window:
