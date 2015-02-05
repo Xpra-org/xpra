@@ -202,7 +202,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #by default, only RGB (no transparency):
         #rgb_formats = list(BACKING_CLASS.RGB_MODES)
         self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
-        if not self._has_alpha:
+        if not self._has_alpha or not bc.HAS_ALPHA:
             self._client_properties["encoding.transparency"] = False
             return
         if self._has_alpha and not self.is_realized():
