@@ -225,7 +225,7 @@ class ClientWindowBase(ClientWidgetBase):
             iconified = metadata.boolget("iconic")
             if self._iconified!=iconified:
                 self._iconified = iconified
-                if self._iconified:
+                if iconified:
                     self.iconify()
                 else:
                     self.deiconify()

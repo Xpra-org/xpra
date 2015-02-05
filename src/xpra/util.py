@@ -40,9 +40,9 @@ CLIENT_EXIT             = "client exit"
 WORKSPACE_UNSET = 65535
 WORKSPACE_ALL = 0xffffffff
 
-#this default value is based on 0.14 clients,
+#this default value is based on 0.14.19 clients,
 #later clients should provide the 'metadata.supported" capability instead
-DEFAULT_METADATA_SUPPORTED = ("title", "icon-title", "pid",
+DEFAULT_METADATA_SUPPORTED = ("title", "icon-title", "pid", "iconic",
                               "size-hints", "class-instance", "client-machine",
                               "transient-for", "window-type",
                               "fullscreen", "maximized", "decorations", "skip-taskbar", "skip-pager",
