@@ -1822,7 +1822,7 @@ class UIXpraClient(XpraClientBase):
     def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties):
         metadata = typedict(metadata)
         client_window_classes = self.get_client_window_classes(metadata, override_redirect)
-        group_leader_window = self.get_group_leader(metadata, override_redirect)
+        group_leader_window = self.get_group_leader(wid, metadata, override_redirect)
         #workaround for "popup" OR windows without a transient-for (like: google chrome popups):
         #prevents them from being pushed under other windows on OSX
         #find a "transient-for" value using the pid to find a suitable window
