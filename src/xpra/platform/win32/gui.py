@@ -159,9 +159,7 @@ def add_window_hooks(window):
                 #re-add taskbar menu:
                 style = cur_style
                 style |= win32con.WS_SYSMENU
-                if not window._maximized:
-                    #can maximize if not maximized already:
-                    style |= win32con.WS_MAXIMIZEBOX
+                style |= win32con.WS_MAXIMIZEBOX
                 #can always minimize:
                 style |= win32con.WS_MINIMIZEBOX
                 log("readd_window_options() using %s style=%#x on window %#x", ["unchanged", "new"][int(style!=cur_style)], style, handle)
