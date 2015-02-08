@@ -192,6 +192,10 @@ packet-encoders = rencode, bencode, yaml
 #socket-dir = /tmp
 #socket-dir = ~/.xpra
 
+# Idle timeout in seconds:
+#idle-timeout = 120
+idle-timeout = 0
+
 
 ################################################################################
 # Client Options
@@ -227,6 +231,7 @@ key-shortcut = Meta+Shift+F11:show_session_info
 #border=5,auto
 #border=1,red
 #border=no
+
 
 ########################################################################
 # Server Options:

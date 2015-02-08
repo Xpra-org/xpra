@@ -279,6 +279,7 @@ OPTION_TYPES = {
                     "compression_level" : int,
                     "dpi"               : int,
                     "scaling"           : int,
+                    "idle-timeout"      : int,
                     #float options:
                     "auto-refresh-delay": float,
                     #boolean options:
@@ -377,6 +378,7 @@ def get_defaults():
                     "compression_level" : 1,
                     "dpi"               : 0,
                     "scaling"           : 1,
+                    "idle-timeout"      : 0,
                     "auto-refresh-delay": 0.25,
                     "daemon"            : True,
                     "use-display"       : False,

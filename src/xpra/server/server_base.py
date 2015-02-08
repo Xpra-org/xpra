@@ -23,7 +23,7 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
 from xpra.server.child_reaper import ChildReaper
 from xpra.os_util import thread, get_hex_uuid
-from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE
+from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.scripts.config import python_platform, parse_bool_or_int
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, codec_versions, has_codec, get_codec
@@ -91,6 +91,7 @@ class ServerBase(ServerCore):
         self.xdpi = 0
         self.ydpi = 0
         self.antialias = {}
+        self.idle_timeout = 0
         #duplicated from Server Source...
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
@@ -127,7 +128,7 @@ class ServerBase(ServerCore):
                     "sound-output",
                     "scaling", "scaling-control",
                     "suspend", "resume", "name", "ungrab",
-                    "key", "focus", "workspace",
+                    "key", "focus", "workspace", "idle-timeout",
                     "client", "start", "start-child"]
 
         self.init_encodings()
@@ -176,6 +177,7 @@ class ServerBase(ServerCore):
         self.xdpi = 0
         self.ydpi = 0
         self.antialias = {}
+        self.idle_timeout = opts.idle_timeout
         self.supports_clipboard = opts.clipboard
         self.clipboard_filter_file = opts.clipboard_filter_file
         self.supports_dbus_proxy = opts.dbus_proxy
@@ -591,6 +593,13 @@ class ServerBase(ServerCore):
         self._focus(None, 0, [])
 
 
+    def idle_timeout_cb(self, source):
+        log("idle_timeout_cb(%s)", source)
+        p = source.protocol
+        if p:
+            self.disconnect_client(p, IDLE_TIMEOUT)
+
+
     def _process_disconnect(self, proto, packet):
         info = packet[1]
         if len(packet)>2:
@@ -696,6 +705,7 @@ class ServerBase(ServerCore):
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
+                          self.idle_timeout, self.idle_timeout_cb,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.supports_mmap,
@@ -1163,6 +1173,14 @@ class ServerBase(ServerCore):
             wid = int(args[0])
             self._focus(None, wid, None)
             return 0, "gave focus to window %s" % wid
+        elif command=="idle-timeout":
+            if len(args)!=1:
+                return argn_err(1)
+            t = int(args[0])
+            for csource in sources:
+                csource.idle_timeout = t
+                csource.schedule_idle_timeout()
+            return 0, "idle-timeout set to %s" % t
         elif command=="workspace":
             if len(args)!=2:
                 return argn_err(2)
@@ -1279,7 +1297,8 @@ class ServerBase(ServerCore):
              "pulseaudio"       : self.pulseaudio,
              "pulseaudio.command" : self.pulseaudio_command,
              "dbus_proxy"       : self.supports_dbus_proxy,
-             "clipboard"        : self.supports_clipboard}
+             "clipboard"        : self.supports_clipboard,
+             "idle_timeout"     : self.idle_timeout}
         for x in self.get_server_features():
             i[x] = True
         return i

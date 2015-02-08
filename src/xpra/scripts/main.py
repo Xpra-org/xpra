@@ -351,6 +351,9 @@ def do_parse_cmdline(cmdline, defaults):
                           help="Terminate the server when the last client disconnects. Default: %s" % enabled_str(defaults.exit_with_client))
     else:
         hidden_options["exit_with_client"] = False
+    group.add_option("--idle-timeout", action="store",
+                      dest="idle_timeout", type="int", default=defaults.idle_timeout,
+                      help="Disconnects the client when idle (0 to disable). Default: %s seconds" % defaults.idle_timeout)
     if supports_server:
         group.add_option("--use-display", action="store_true",
                           dest="use_display", default=defaults.use_display,

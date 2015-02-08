@@ -43,6 +43,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
+[\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-input\-method\fP=\fIMETHOD\fP]
@@ -117,6 +118,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
+[\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-permissions\fP=\fIACCESS\-MODE\fP]
 [\fB\-\-mmap\-group\fP]
@@ -663,6 +665,11 @@ with \fB\-\-encryption\fP.  The client and server must use the
 same keyfile contents.
 Instead of using this option, the key can be provided
 via the \fBXPRA_ENCRYPTION_KEY\fP environment variable.
+.TP
+\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP
+The connection will be terminated if there is no user activity
+(mouse clicks or key presses) for the given amount of time
+(in seconds). Use the value 0 to disable the timeout.
 .TP
 \fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP
 Name of a file containing regular expressions, any clipboard data

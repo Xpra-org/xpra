@@ -143,6 +143,7 @@ class ServerSource(object):
     """
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
+                 idle_timeout, idle_timeout_cb,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  supports_mmap,
@@ -153,6 +154,7 @@ class ServerSource(object):
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
         log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
+                 idle_timeout, idle_timeout_cb,
                  get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap,
@@ -169,6 +171,10 @@ class ServerSource(object):
         self.idle_add = idle_add
         self.timeout_add = timeout_add
         self.source_remove = source_remove
+        self.idle_timeout = idle_timeout
+        self.idle_timeout_cb = idle_timeout_cb
+        self.idle_timer = None
+        self.schedule_idle_timeout()
         #pass it to window source:
         WindowSource.staticinit(idle_add, timeout_add, source_remove)
         self.get_transient_for = get_transient_for
@@ -429,6 +435,19 @@ class ServerSource(object):
 
     def user_event(self):
         self.last_user_event = time.time()
+        self.schedule_idle_timeout()
+
+    def schedule_idle_timeout(self):
+        if self.idle_timer:
+            self.source_remove(self.idle_timer)
+            self.idle_timer = None
+        if self.idle_timeout>0:
+            self.idle_timer = self.timeout_add(self.idle_timeout*1000, self.idle_timedout)
+
+    def idle_timedout(self):
+        self.idle_timeout_cb(self)
+        self.schedule_idle_timeout()
+
 
     def parse_hello(self, c):
         #batch options:
