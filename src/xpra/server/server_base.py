@@ -1177,6 +1177,7 @@ class ServerBase(ServerCore):
             if len(args)!=1:
                 return argn_err(1)
             t = int(args[0])
+            self.idle_timeout = t
             for csource in sources:
                 csource.idle_timeout = t
                 csource.schedule_idle_timeout()
