@@ -21,15 +21,17 @@ from collections import defaultdict
 # Open that file in your browser to see the charts.
 #----------------------------------------------------------------
 #
-data_dir = "./data"
+data_dir = "./logs"
 
 # Data file prefix
 prefix = "all_tests_40"
 
 # id is the actual id string used in the data file name
 # display is how that parameter should be shown in the charts
-params = [{"id": "14", "display": "v14"},
-          {"id": "15", "display": "v15"}]
+params = [{"id": "16", "display": "v14.16"},
+          {"id": "14", "display": "v14.19"}]
+
+description = 'Comparison of v14.16 and v14.19'
 
 # The file name 'rep' value is the sequence number of that 
 # data file, when results of multiple files should be averaged
@@ -47,33 +49,33 @@ apps = {"glxgears": 1,
         "xterm": 1,
         "gtkperf": 0}
 
-metrics = {"Regions/s": 0, 
-           "Pixels/s Sent": 0,
+metrics = {"Regions/s": 1, 
+           "Pixels/s Sent": 1,
            "Encoding Pixels/s": 1, 
-           "Decoding Pixels/s": 0, 
-           "Application packets in/s": 0,
-           "Application bytes in/s": 0,
+           "Decoding Pixels/s": 1, 
+           "Application packets in/s": 1,
+           "Application bytes in/s": 1,
            "Application packets out/s": 1,
-           "Application bytes out/s": 0,
-           "client user cpu_pct": 0,
-           "client system cpu pct": 0,
-           "client number of threads": 0,
-           "client vsize (MB)": 0,
-           "client rss (MB)": 0,
+           "Application bytes out/s": 1,
+           "client user cpu_pct": 1,
+           "client system cpu pct": 1,
+           "client number of threads": 1,
+           "client vsize (MB)": 1,
+           "client rss (MB)": 1,
            "server user cpu_pct": 1,
-           "server system cpu pct": 0,
-           "server number of threads": 0,
-           "server vsize (MB)": 0,
-           "server rss (MB)": 0,
-           "Min Batch Delay (ms)": 0,
-           "Avg Batch Delay (ms)": 0,
-           "Max Batch Delay (ms)": 0,
-           "Min Damage Latency (ms)": 0,
-           "Avg Damage Latency (ms)": 0,
-           "Max Damage Latency (ms)": 0,
-           "Min Quality": 0,
-           "Avg Quality": 0,
-           "Max Quality": 0,
+           "server system cpu pct": 1,
+           "server number of threads": 1,
+           "server vsize (MB)": 1,
+           "server rss (MB)": 1,
+           "Min Batch Delay (ms)": 1,
+           "Avg Batch Delay (ms)": 1,
+           "Max Batch Delay (ms)": 1,
+           "Min Damage Latency (ms)": 1,
+           "Avg Damage Latency (ms)": 1,
+           "Max Damage Latency (ms)": 1,
+           "Min Quality": 1,
+           "Avg Quality": 1,
+           "Max Quality": 1,
            "Min Speed": 0,
            "Avg Speed": 0,
            "Max Speed": 0}
@@ -123,7 +125,7 @@ def accumulate_values(file_name, rep, param):
                             rgb_count = 0
                     for metric in metrics:
                         if (metrics[metric] == 1):
-                            row_value = float(get_value(row, metric))
+                            row_value = float(get_metric(row, metric))
                             if (encoding == ENCODING_RGB24):
                                 if (metric in rgb_values.keys()):
                                     rgb_values[metric] += row_value
@@ -204,30 +206,48 @@ def write_html():
         for encoding in sorted(tests[metric].keys()):
             ofile.write('        set_title(' + str(title_index) + ', "' + titles[title_index] + '");\n')
             title_index += 1
+
+    for mx in range(0, m_index):
+        ofile.write('$("#metric_link_'+str(mx)+'").click(function() {$("#metric_list").scrollTop(800*'+str(mx)+');});')
     ofile.write('    });\n')
 
     ofile.write('  </script>\n')
     ofile.write('</head>\n')
     ofile.write('<body>\n')
-    ofile.write('  <div id="header">\n')
-    ofile.write('    <h2>Xpra Performance Results</h2>\n')
-    ofile.write('  </div>\n')
-
+    ofile.write('  <div id="page">\n')
+    ofile.write('    <div id="header_box">\n')
+    ofile.write('      <div id="header">\n')
+    ofile.write('        <h2>Xpra Performance Results</h2>\n')
+    ofile.write('        <h3>' + description + '</h3>\n')
+    ofile.write('        <div id="help_text">Click a metric on the right to locate it in the results.</div>\n')
+    ofile.write('      </div>\n')
+    
+    ofile.write('      <div id="select_box">\n')
     m_index = 0
     for metric in sorted(tests.keys()):
-        ofile.write('  <div id="metric_box">\n')
-        ofile.write('    <div class="metric_label">' + metric + '</div>\n')
+        ofile.write('        <div id="metric_link_' + str(m_index) + '" style="float:left;height:20px;width:200px"><a href="#">' + metric + '</a></div>\n')
+        m_index += 1
+    ofile.write('      </div>\n')
+    ofile.write('    </div>\n')
 
+    ofile.write('    <div style="clear:both"></div>\n')
+    ofile.write('    <div id="metric_list">\n')
+    m_index = 0
+    for metric in sorted(tests.keys()):
+        ofile.write('      <div class="metric_box" id="metric_box_' + str(m_index) + '">\n')
+        ofile.write('        <div class="metric_label">' + metric + '</div>\n')
         e_index = 0
         for encoding in sorted(tests[metric].keys()):
-            ofile.write('    <div class="container">\n')
-            ofile.write('      <div id="placeholder_' + str(m_index) + '_' + str(e_index) + '" class="placeholder"></div>\n')
-            ofile.write('    </div>\n')
+            ofile.write('        <div class="container">\n')
+            ofile.write('          <div id="placeholder_' + str(m_index) + '_' + str(e_index) + '" class="placeholder"></div>\n')
+            ofile.write('        </div>\n')
             e_index += 1
 
-        ofile.write('  </div>\n')
+        ofile.write('      </div>\n')
         m_index += 1
-
+    ofile.write('      <div class="metric_box"></div>\n')
+    ofile.write('    </div>\n')
+    ofile.write('  </div>\n')
     ofile.write('</body>\n')
     ofile.write('</html>\n')
     ofile.close()
@@ -237,6 +257,12 @@ def col_index(label):
 
 def get_value(row, label):
     return row[col_index(label)].strip()
+    
+def get_metric(row, label):
+    cell = row[col_index(label)]
+    if cell is None or cell is '':
+        cell = '0'
+    return cell.strip()
     
 def get_headers(row):
     index = 0
