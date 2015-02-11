@@ -464,6 +464,9 @@ def print_bool(k, v, true_str='yes', false_str='no'):
     warn("Warning: cannot print value '%s' for '%s' as a boolean" % (v, k))
 
 def parse_bool_or_int(k, v):
+    return parse_bool_or_number(int, k, v)
+
+def parse_bool_or_number(numtype, k, v, auto=0):
     if type(v)==str:
         v = v.lower()
     if v in TRUE_OPTIONS:
@@ -471,11 +474,7 @@ def parse_bool_or_int(k, v):
     elif v in FALSE_OPTIONS:
         return 0
     else:
-        try:
-            return int(v)
-        except:
-            warn("Warning: invalid value for %s: %s" % (k, v))
-
+        return parse_number(numtype, k, v, auto)
 
 def parse_number(numtype, k, v, auto=0):
     if type(v)==str:
@@ -518,7 +517,7 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_valid
                 warn("invalid value for '%s': %s (string required)" % (k, type(v)))
                 continue
         elif vt==int:
-            v = parse_number(int, k, v)
+            v = parse_bool_or_number(int, k, v)
             if v==None:
                 continue
         elif vt==float:
