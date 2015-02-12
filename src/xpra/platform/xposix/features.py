@@ -3,19 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#preserve the spaces below to make it easier to apply patches:
-
-
-
-LOCAL_SERVERS_SUPPORTED = True
-
-
-
-SHADOW_SUPPORTED = True
-
-
-
 #don't bother trying to forward system tray with Ubuntu's "unity":
+LOCAL_SERVERS_SUPPORTED = True
+SHADOW_SUPPORTED = True
 from xpra.util import is_unity
 SYSTEM_TRAY_SUPPORTED = not is_unity()
 MMAP_SUPPORTED = True
