@@ -45,7 +45,7 @@
       <dep package='meta-glib-universal'/>
       <dep package="pango"/>
       <dep package="atk"/>
-      <dep package="gnome-icon-theme"/>
+      <dep package="adwaita-icon-theme"/>
       <dep package="gtk-ppc"/>
       <dep package="gtk-i386"/>
       <dep package="lipo-gtk"/>

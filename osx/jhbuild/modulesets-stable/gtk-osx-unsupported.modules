@@ -21,10 +21,11 @@
               href="http://curl.haxx.se/download/"/>
   <repository type="tarball" name="webkit.org"
               href="http://www.webkitgtk.org/releases/"/>
-  <repository type="svn" name="svn.webkit.org"
-	      href="http://svn.webkit.org/repository/"/>
-  <repository type='tarball' name='icu'
-	      href='http://download.icu-project.org/files/'/>
+  <repository type="tarball" name="p11-glue"
+              href="http://p11-glue.freedesktop.org/releases/"/>
+  <repository type="tarball" name="gnutls" href="ftp://ftp.gnutls.org/"/>
+  <repository type="tarball" name="webm"
+              href="http://downloads.webmproject.org/releases/"/>
 
   <metamodule id="meta-gtk-osx-unsupported">
     <dependencies>
@@ -58,22 +59,42 @@
   </autotools>
 
   <autotools id="iso-codes" autogen-sh="configure">
-    <branch module="iso-codes-3.51.tar.xz" version="3.51"
+    <branch module="iso-codes-3.57.tar.xz" version="3.57"
 	    repo="iso-codes"/>
   </autotools>
 
-  <autotools id="zlib" autogen-sh="configure" skip-autogen="never"
-	     supports-non-srcdir-builds="no">
-    <branch repo="sourceforge" version="1.2.7"
-	    module="libpng/zlib-1.2.7.tar.gz"/>
+  <autotools id="zlib" autogen-sh="configure" skip-autogen="never">
+    <branch repo="sourceforge" version="1.2.8"
+            module="libpng/zlib-1.2.8.tar.xz"/>
+  </autotools>
+
+  <autotools id="p11-kit" autogen-sh="configure"
+             autogenargs="--without-trust-paths">
+    <branch repo="p11-glue" version="0.22.1" module="p11-kit-0.22.1.tar.gz"/>
+    <dependencies>
+      <dep package="libtasn1"/>
+    </dependencies>
+  </autotools>
+
+  <!-- Rudely demands TeX to build documentation -->
+  <!-- Assembler files are missing md5-compress.asm for x86_64 -->
+  <autotools id="libnettle" autogen-sh="configure"
+       autogenargs="--disable-documentation --disable-assembler">
+    <!-- gnutls 3.3.x does not support nettle 3.0 -->
+    <branch repo="ftp.gnu.org" version="2.7.1"
+            module="nettle/nettle-2.7.1.tar.gz"/>
+    <dependencies>
+      <dep package="gmp"/>
+    </dependencies>
   </autotools>
 
   <autotools id="gnutls" autogen-sh="configure"
-	     autogenargs="--with-libgcrypt --without-p11-kit">
-    <branch repo='ftp.gnu.org' version='2.12.20'
-            module="gnutls/gnutls-2.12.20.tar.bz2"/>
+             autogenargs="--disable-gtk-doc-html">
+    <branch repo="gnutls" version="3.3.12"
+            module="gcrypt/gnutls/v3.3/gnutls-3.3.12.tar.xz"/>
     <dependencies>
-      <dep package="libgcrypt" />
+      <dep package="p11-kit"/>
+      <dep package="libnettle"/>
       <dep package="libtasn1" />
       <dep package="zlib"/>
     </dependencies>
@@ -102,21 +123,20 @@
 
   <autotools id="glib-networking" autogen-sh="configure"
 	     autogenargs="--without-ca-certificates set_more_warnings=no">
-    <branch module="glib-networking/2.34/glib-networking-2.34.0.tar.xz"
-	    version="2.34.0" hash="sha256:c56eb4161671bff9568f3a92a88531ca01217eb7ee8514bb6255730400f877f1"/>
+    <branch module="glib-networking/2.42/glib-networking-2.42.1.tar.xz"
+            hash="sha256:c06bf76da3353695fcc791b7b02e5d60c01c379e554f7841dc6cbca32f65f3a0"
+            version="2.42.1"/>
     <dependencies>
       <dep package="gnutls"/>
-      <dep package="libgcrypt"/>
     </dependencies>
   </autotools>
 
   <autotools id="libsoup" autogen-sh="configure" autogenargs="set_more_warnings=no">
-    <branch module="libsoup/2.40/libsoup-2.40.1.tar.xz"
-            version="2.40.1" hash="sha256:77a55d57e7e8055acd2f44e0cc889b9ba48052e8b7f07e829157d57417ac650a" />
+    <branch module="libsoup/2.48/libsoup-2.48.1.tar.xz" version="2.48.1"
+            hash="sha256:9b0d14b36e36a3131a06c6e3aa7245716e6904e3e636df81c0b6c8bd3f646f9a"/>
     <dependencies>
       <dep package="glib"/>
       <dep package="glib-networking"/>
-      <dep package="libgnome-keyring"/>
       <dep package='sqlite'/>
     </dependencies>
   </autotools>
@@ -126,6 +146,7 @@
     <branch module="1.6.0/enchant-1.6.0.tar.gz" version="1.6.0"
 	    repo="abisource/enchant">
  <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-gsize.patch" strip="1"/>
+ <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-env.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -134,15 +155,13 @@
 
    <autotools id="libgpg-error" autogen-sh="configure"
 	      supports-non-srdir-builds="no">
-    <branch repo='ftp.gnupg.org' version='1.10'
-	    module="gcrypt/libgpg-error/libgpg-error-1.10.tar.bz2"/>
+    <branch repo="ftp.gnupg.org" version="1.17"
+            module="gcrypt/libgpg-error/libgpg-error-1.17.tar.bz2"/>
   </autotools>
 
   <autotools id="libgcrypt" autogen-sh="configure" autogenargs="--disable-asm">
-    <branch repo='ftp.gnupg.org' version='1.5.3'
-	    module='gcrypt/libgcrypt/libgcrypt-1.5.3.tar.bz2'>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libgcrypt-build-clang.patch" strip="1"/>
-    </branch>
+    <branch repo="ftp.gnupg.org" version="1.6.2"
+            module="gcrypt/libgcrypt/libgcrypt-1.6.2.tar.bz2"/>
     <dependencies>
       <dep package="libgpg-error" />
     </dependencies>
@@ -150,8 +169,8 @@
 
   <autotools id="libtasn1" supports-non-srcdir-builds="no"
 	     autogen-sh="configure">
-    <branch repo="ftp.gnu.org" version='2.14'
-	    module="libtasn1/libtasn1-2.14.tar.gz"/>
+    <branch repo="ftp.gnu.org" version="4.2"
+	    module="libtasn1/libtasn1-4.2.tar.gz"/>
   </autotools>
 
    <!-- 10.5 has 7.16.3, which is too old for some things. Otherwise can be skipped. -->
@@ -159,50 +178,74 @@
     <branch repo="curl.haxx.se" module="curl-7.28.0.tar.bz2" version="7.28.0" />
   </autotools>
 
-  <autotools id="WebKit" autogen-sh="configure"
-	     autogenargs="--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=2.0">
-    <branch repo="webkit.org" module="webkit-1.6.1.tar.gz" version="1.6.1">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-no-x11.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-pango-includes.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-missing-icu-files.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-missing-utf8-include.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-enable-blob.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-gnome-3.6-fixup.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-clang-fixup.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-out-of-source-fixup.patch" strip="1"/>
+  <autotools id="libwebp" autogen-sh="configure">
+    <branch repo="webm" module="webp/libwebp-0.4.2.tar.gz" version="0.4.2"/>
+  </autotools>
+
+  <!-- This is WebKitGTK 1.x, for GTK 2.x.
+    disable-geolocation: Requires geoclue. No module for this yet.
+    disable-video: Requires gstreamer. If you want video, add to .jhbuildrc:
+      append_autogenargs('WebKit', '&#45;-enable-video')
+    Wno-c++11-extensions: Suppresses clang warning that makes output
+      inconvenient to read.
+    std=c99: Required for inline keyword in C.
+  -->
+  <autotools id="WebKit" autogen-sh="autoreconf"
+             autogenargs='--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=2.0 --disable-geolocation --disable-webkit2 CXXFLAGS="$CXXFLAGS -Wno-c++11-extensions" CFLAGS="$CFLAGS -std=c99"'>
+    <branch repo="webkit.org" module="webkitgtk-1.10.2.tar.xz" version="1.10.2">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-no-x11.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-88407-portable-echo-n.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-platform-fixes.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-pango-includes.patch"
+             strip="1"/>
     </branch>
     <dependencies>
       <dep package="enchant"/>
+      <dep package="icu"/>
       <dep package="libsoup"/>
       <dep package="meta-gtk-osx-freetype"/>
     </dependencies>
     <after>
       <dep package="meta-gtk-osx-core"/>
-      <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gstreamer-1.0"/>
     </after>
   </autotools>
 
-  <autotools id='icu' autogen-sh='source/configure'
-	     makeargs='CFLAGS="$CFLAGS -DU_CHARSET_IS_UTF8=1 -DU_USING_ICU_NAMESPACE=0"'>
-    <branch repo='icu' version='50.1.2' checkoutdir='icu'
-	    module='icu4c/50.1.2/icu4c-50_1_2-src.tgz'>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/icu-clang.patch" strip="1"/>
+  <!-- This is WebKitGTK 2.4.x, the last version that had the WebKit1 API.
+    disable-webkit2: Requires both GTK2 and 3. Currently not supported.
+    disable-credential-storage: Requires libsecret. No module for this yet.
+    disable-geolocation: Requires geoclue 1 or 2. No module for this yet.
+    disable-video, disable-web-audio: Requires gstreamer. If you want video and
+      audio, add this to your .jhbuildrc:
+      append_autogenargs('WebKit', '&#45;-enable-video')
+      append_autogenargs('WebKit', '&#45;-enable-web-audio')
+    -j1: Workaround for https://bugs.webkit.org/show_bug.cgi?id=140171
+  -->
+  <autotools id="webkit1gtk3" autogen-sh="autoreconf" makeargs="-j1"
+             autogenargs="--enable-quartz-target --with-gtk=3.0 --disable-webkit2 --disable-credential-storage --disable-geolocation --disable-video --disable-web-audio CXXFLAGS='-std=gnu++11'">
+    <branch repo="webkit.org" module="webkitgtk-2.4.8.tar.xz" version="2.4.8">
+      <patch file="file:///Users/john/Development/GTK-OSX/gtk-osx-build/patches/webkit-126324-clang-check.patch"
+             strip="1"/>
+      <patch file="file:///Users/john/Development/GTK-OSX/gtk-osx-build/patches/webkit-140167-disable-netscape-api.patch"
+             strip="1"/>
+      <patch file="file:///Users/john/Development/GTK-OSX/gtk-osx-build/patches/webkit-133293-cfi-clang-failure.patch"
+             strip="1"/>
+      <patch file="file:///Users/john/Development/GTK-OSX/gtk-osx-build/patches/webkit-126433-check-platform-gtk.patch"
+             strip="1"/>
     </branch>
-  </autotools>
-
-  <autotools id="WebKit-svn"
-	     autogenargs="--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=3.0">
-    <branch repo="svn.webkit.org" module="webkit/trunk" checkoutdir="WebKit"/>
     <dependencies>
-      <dep package="libsoup"/>
+      <dep package="libwebp"/>
       <dep package="enchant"/>
-      <!--dep package="libgail"/-->
+      <dep package="icu"/>
+      <dep package="libsoup"/>
+      <dep package="meta-gtk-osx-freetype"/>
     </dependencies>
     <after>
-      <dep package="meta-gtk-osx-core"/>
       <dep package="meta-gtk-osx-gtk3"/>
-      <!--dep package="gst-plugins-base"/-->
+      <dep package="meta-gstreamer-1.0"/>
     </after>
   </autotools>
-
 </moduleset>

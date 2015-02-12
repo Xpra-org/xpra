@@ -18,7 +18,7 @@
   <metamodule id="meta-gtk-osx-themes">
     <dependencies>
       <dep package="tango-icon-theme"/>
-      <dep package="gnome-icon-theme"/>
+      <dep package="adwaita-icon-theme"/>
       <dep package="icon-naming-utils"/>
       <dep package="gtk-engines"/>
     </dependencies>
@@ -27,7 +27,7 @@
   <metamodule id="meta-gtk-osx-gtk3-core-themes">
     <dependencies>
       <dep package="icon-naming-utils"/>
-      <dep package="gnome-icon-theme-symbolic"/>
+      <dep package="adwaita-icon-theme"/>
       <dep package="gnome-themes-standard"/>
     </dependencies>
   </metamodule>
@@ -52,38 +52,23 @@
     </dependencies>
   </autotools>
 
-  <autotools id="gnome-icon-theme" autogen-sh="configure">
-    <branch module="gnome-icon-theme/3.12/gnome-icon-theme-3.12.0.tar.xz"
-            version="3.12.0"/>
+  <autotools id="adwaita-icon-theme" autogen-sh="configure">
+    <branch module="adwaita-icon-theme/3.14/adwaita-icon-theme-3.14.1.tar.xz"
+            version="3.14.1" hash="sha256:b776a7ad58c97f4c1ede316e44d8d054105429cb4e3a8ec46616a14b11df48ee"/>
     <dependencies>
+      <dep package="librsvg"/>
       <dep package="hicolor-icon-theme"/>
       <dep package="icon-naming-utils"/>
     </dependencies>
   </autotools>
 
- <autotools id="gnome-icon-theme-symbolic" autogen-sh="configure">
-    <branch module="gnome-icon-theme-symbolic/3.12/gnome-icon-theme-symbolic-3.12.0.tar.xz"
-            version="3.12.0" />
-    <dependencies>
-      <dep package="gnome-icon-theme"/>
-    </dependencies>
-  </autotools>
-
- <autotools id="gnome-icon-theme-extras" autogen-sh="configure">
-    <branch module="gnome-icon-theme/3.12/gnome-icon-theme-3.12.0.tar.xz"
-            version="3.12.0" />
-    <dependencies>
-      <dep package="gnome-icon-theme"/>
-    </dependencies>
-  </autotools>
-
  <autotools id="gnome-themes-standard" autogen-sh="configure"
 	    autogenargs='--disable-gtk2-engine'>
-    <branch module="gnome-themes-standard/3.12/gnome-themes-standard-3.12.0.tar.xz"
-            version="3.12.0" />
+    <branch module="gnome-themes-standard/3.14/gnome-themes-standard-3.14.0.tar.xz"
+            version="3.14.0" hash="sha256:addd469f4ba746f8ebb03da8b5c67b7d8b6b2c979f7f07958455c7e33fbdbe09"/>
     <dependencies>
       <dep package="librsvg"/>
-      <dep package="gnome-icon-theme"/>
+      <dep package="adwaita-icon-theme"/>
     </dependencies>
   </autotools>
 
@@ -101,8 +86,8 @@
   </autotools>
 
   <autotools id="librsvg" autogenargs="--disable-Bsymbolic">
-    <branch module="librsvg/2.36/librsvg-2.36.4.tar.xz" version="2.36.4"
-	    hash="sha256:1021935204798f4f0ad3004a09b583668ea94a48593461b147fdcff68a18e6c2"/>
+    <branch module="librsvg/2.40/librsvg-2.40.5.tar.xz" version="2.40.5"
+	    hash="sha256:d14d7b3e25023ce34302022fd7c9b3a468629c94dff6c177874629686bfc71a7"/>
     <dependencies>
       <dep package="libcroco"/>
     </dependencies>

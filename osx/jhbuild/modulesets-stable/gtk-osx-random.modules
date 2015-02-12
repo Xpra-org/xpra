@@ -26,8 +26,6 @@
 	      href="ftp://ftp.gmplib.org/pub/"/>
   <repository type="git" name="git.gnome.org"
               href="git://git.gnome.org/"/>
-  <repository type="tarball" name="boehm"
-	      href="http://www.hboehm.info/"/>
   <repository type="tarball" name="itstool"
 	      href="http://files.itstool.org/"/>
 
@@ -81,9 +79,10 @@ Libglade itself is deprecated. This is the last release. -->
     </dependencies>
   </autotools>
 
-    <autotools id="vala" autogen-sh="configure">
-    <branch repo="ftp.gnome.org" module="vala/0.18/vala-0.18.0.tar.xz"
-            version="0.18.0" hash="sha256:18cb2220ce7352a9dd71be058530f7d4a6c8215a1d9c471430af60a04496a60b"/>
+  <autotools id="vala" autogen-sh="configure">
+    <branch repo="ftp.gnome.org" version="0.26.0"
+            module="vala/0.26/vala-0.26.0.tar.xz"
+            hash="sha256:c1d0a6a485d5cbfbe027483adfc5f7c80c2404b692375be80d75193d915dcd2f"/>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
       <dep package="meta-gtk-osx-core"/>
@@ -187,7 +186,7 @@ Libglade itself is deprecated. This is the last release. -->
 
 
   <autotools id="gtksourceview3"
-    autogen-template="gnome-autogen.sh --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s">
+    autogen-template="gnome-autogen.sh --prefix %(prefix)s  %(autogenargs)s">
     <branch module="gtksourceview/3.10/gtksourceview-3.10.1.tar.xz"
             version="3.6.0" hash="sha256:38de44f832b4110a3442af2fce58fce0a54f4b22a763c490bcdc1b1db2fb0b01">
     </branch>
@@ -270,9 +269,9 @@ Libglade itself is deprecated. This is the last release. -->
 
   <autotools id="shared-mime-info"  autogen-sh="configure"
              supports-non-srcdir-builds="no" >
-    <branch module="shared-mime-info-1.2.tar.xz" version="1.2"
+    <branch module="shared-mime-info-1.3.tar.xz" version="1.3"
             repo="hadess">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-70255-Build-fails-with-glib-2.38.patch" strip="1"/>
+      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-70255-Build-fails-with-glib-2.38.patch" strip="1"/-->
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -385,7 +384,10 @@ Libglade itself is deprecated. This is the last release. -->
 
   <autotools id="libgsf" autogenargs="--without-python">
     <branch  module="libgsf/1.14/libgsf-1.14.28.tar.xz" version="1.14.28"
-	     hash="sha256:ea94914f1fdaa5d4eb49149f0228ae6e41a54bdeb8caf52a7dd8acaa329fcbe4"/>
+	     hash="sha256:ea94914f1fdaa5d4eb49149f0228ae6e41a54bdeb8caf52a7dd8acaa329fcbe4">
+     <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gsf-memmove.patch" strip="1"/>
+
+    </branch>
   </autotools>
 
   <autotools id="gmp">
@@ -400,9 +402,16 @@ Libglade itself is deprecated. This is the last release. -->
     </branch>
   </autotools>
 
-  <autotools id="bdw-gc" autogen-sh="configure">
-    <branch repo="boehm" module="gc/gc_source/gc-7.2e.tar.gz" version="7.2e"
-	    checkoutdir="gc-7.2"/>
+  <autotools id="libatomic-ops">
+    <branch repo="github.com" module="ivmai/libatomic_ops"
+	    revision="libatomic_ops-7_2f"/>
+  </autotools>
+
+  <autotools id="bdw-gc" autogen-template="./autogen.sh &amp;&amp; automake-1.10 -ac &amp;&amp; ./configure --prefix %(prefix)s  %(autogenargs)s">
+    <branch repo="github.com" module="ivmai/bdwgc"  revision="gc7_2f" />
+    <dependencies>
+      <dep package="libatomic-ops"/>
+    </dependencies>
   </autotools>
 
   <autotools id="guile" autogen-sh="configure"
@@ -416,7 +425,9 @@ Libglade itself is deprecated. This is the last release. -->
 
   <autotools id="guile2" autogen-sh="configure">
     <branch repo="ftp.gnu.org" module="guile/guile-2.0.11.tar.gz"
-	    version="2.0.11"/>
+	    version="2.0.11">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/guile20-align-fix.patch" strip="1"/>
+    </branch>
     <dependencies>
       <dep package="libunistring"/>
       <dep package="gmp"/>

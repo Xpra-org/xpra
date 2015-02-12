@@ -67,10 +67,12 @@
     </after>
   </metamodule>
 
-  <autotools id="glib" autogen-sh="autoreconf" autogenargs="">
-    <branch module="glib/2.40/glib-2.40.0.tar.xz"  version="2.40.0"
-            hash="sha256:0d27f195966ecb1995dcce0754129fd66ebe820c7cd29200d264b02af1aa28b5">
-      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-724590-GSlice-slab_stack-corruption.patch" strip="1"/-->
+  <autotools id="glib" autogen-sh="autoreconf">
+    <branch module="glib/2.42/glib-2.42.1.tar.xz"  version="2.42.1"
+            hash="sha256:8f3f0865280e45b8ce840e176ef83bcfd511148918cc8d39df2ee89b67dcf89a">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-g_get_monotonic_time-on-non-Intel-Darwin.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-724590-GSlice-slab_stack-corruption.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gio-in-reserved-in-gcc-48.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="libffi"/>
@@ -82,8 +84,8 @@
 
   <autotools id="libffi" autogenargs="--disable-builddir"
              autogen-sh="configure">
-    <branch module="libffi/libffi-3.0.13.tar.gz" repo="sourceware.org"
-            version="3.0.13" checkoutdir="atgreen-libffi-873d687"/>
+    <branch module="libffi/libffi-3.2.1.tar.gz" repo="sourceware.org"
+            version="3.2.1"/>
   </autotools>
 
 <!-- This is the latest 0.10 version. Later versions are 1.29 and intended to work with glib 2.29; the minor version of gobject-introspection will track the minor version of glib that it's intended to work with. Note that in the unlikely event you need to introspect Gtk+-2.0, you need to build Glib 1.28 and use this gobject-introspection. The default is to *not* introspect Gtk+-2.0 and to use the latest GLib and Gobject-Introspection with Gtk3 -->
@@ -101,8 +103,9 @@
   </autotools>
 
   <autotools id="gobject-introspection" autogen-sh="configure">
-    <branch module="gobject-introspection/1.41/gobject-introspection-1.41.4.tar.xz"
-            version="1.41.4" >
+    <branch module="gobject-introspection/1.42/gobject-introspection-1.42.0.tar.xz"
+            version="1.42.0"
+            hash="sha256:3ba2edfad4f71d4f0de16960b5d5f2511335fa646b2c49bbb93ce5942b3f95f7">
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
     </branch>
     <dependencies>
@@ -115,8 +118,8 @@
   </autotools>
 
  <autotools id="pango"  autogen-sh="autoreconf">
-    <branch version="1.36.7" module="pango/1.36/pango-1.36.7.tar.xz">
-      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/pango_gir_cflags.patch" strip="1"/-->
+    <branch version="1.36.8" module="pango/1.36/pango-1.36.8.tar.xz"
+            hash="sha256:18dbb51b8ae12bae0ab7a958e7cf3317c9acfc8a1e1103ec2f147164a0fc2d07">
     </branch>
     <dependencies>
       <dep package="cairo"/>
@@ -130,11 +133,11 @@
   </autotools>
 
  <autotools id="atk" autogen-sh="configure">
-    <branch module="atk/2.12/atk-2.12.0.tar.xz" version="2.12.0"/>
+    <branch module="atk/2.14/atk-2.14.0.tar.xz" version="2.14.0"
+            hash="sha256:2875cc0b32bfb173c066c22a337f79793e0c99d2cc5e81c4dac0d5a523b8fbad"/>
     <dependencies>
     </dependencies>
     <after>
-      <dep package="glib"/>
       <dep package="glib"/>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
@@ -172,8 +175,9 @@
 
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.12/gtk+-3.12.2.tar.xz" version="3.12.2">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-gtk3-gtkselection-return-value.patch" strip="1"/>
+    <branch module="gtk+/3.14/gtk+-3.14.5.tar.xz" version="3.14.5"
+            hash="sha256:ba70f5ccde6646c6d8aa5a6398794b7bcf23fc45af22580a215d258f392dbbe2">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gtk+-Bug-739885-GtkPlug-is-conditionally-supported-on-X11-only.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -189,34 +193,35 @@
 
   <autotools id="pixman" autogenargs="--disable-gtk" autogen-sh="configure">
     <branch version="0.32.6" module="pixman-0.32.6.tar.gz"
-            repo="cairographics" />
+            repo="cairographics"
+            hash="sha1:8791343cbf6d99451f4d08e8209d6ac11bf96df2"/>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
   </autotools>
 
+  <!-- enable-fc and enable-ft required for librsvg's pixbuf loader -->
   <autotools id="cairo"  autogen-sh="configure"
-             autogenargs="--enable-pdf --enable-quartz --enable-xlib=no --without-x">
-    <branch module="cairo-1.12.16.tar.xz"  version="1.12.16"
+             autogenargs="--enable-pdf --enable-quartz --enable-ft --enable-fc --disable-xlib --without-x">
+    <branch module="cairo-1.14.0.tar.xz"  version="1.14.0"
             repo="cairographics"
-            hash="sha1:4f6e337d5d3edd7ea79d1426f575331552b003ec">
+            hash="sha1:53cf589b983412ea7f78feee2e1ba9cea6e3ebae">
     </branch>
     <dependencies>
       <dep package="pixman"/>
+      <dep package="fontconfig"/>
+      <dep package="freetype"/>
     </dependencies>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
-      <dep package="fontconfig"/>
-      <dep package="freetype"/>
     </after>
   </autotools>
 
   <autotools id="gtk-mac-integration" autogen-sh="configure"
              autogenargs="--disable-python">
-    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.5.tar.xz"
-            version="2.0.5"
-            hash="sha256:6c4ff7501d7ff35e49068052d80fcf76ce494e5953c5f3967e4958b1b0c67b9f">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-unhandled-exception-from-attempting-to-access-me.patch" strip="1"/>
+    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.7.tar.xz"
+            version="2.0.7"
+            hash="sha256:e6de70da740b452f18c113a7ebb6772936a0fb9873137514090849820e296eb7">
     </branch>
     <dependencies>
     </dependencies>

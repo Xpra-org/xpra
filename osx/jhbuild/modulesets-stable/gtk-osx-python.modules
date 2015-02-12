@@ -41,9 +41,10 @@
     </dependencies>
   </metamodule>
 
+<!--Note the leading ; in autogen-template. It's there on purpose in case the user has set nice_build so that the nice prepended to the command doesn't eat the cd. -->
   <autotools id="berkeleydb" autogen-sh="configure"
 	     supports-non-srcdir-builds="no"  makeargs="-C build_unix"
-	     autogen-template="cd build_unix; ../dist/%(autogen-sh)s --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s"
+	     autogen-template="cd .;cd build_unix; ../dist/%(autogen-sh)s --prefix %(prefix)s  %(autogenargs)s"
 	     makeinstallargs="-C build_unix install">
 
     <branch module="berkeley-db/db-4.8.30.NC.tar.gz" version="4.8.30"
@@ -59,7 +60,7 @@
        build directory with most of the other modules, use this module
        instead. -->
   <autotools id="berkeleydb-nonsrctree" autogen-sh="configure"
-         autogen-template="%(srcdir)s/dist/%(autogen-sh)s --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s" >
+         autogen-template="%(srcdir)s/dist/%(autogen-sh)s --prefix %(prefix)s  %(autogenargs)s" >
 
     <branch module="berkeley-db/db-4.8.30.NC.tar.gz" version="4.8.30"
         repo="oracle" >
@@ -68,7 +69,7 @@
   </autotools>
 
   <autotools id="python" autogenargs="--enable-shared"
-	     autogen-sh="configure">
+	     autogen-sh="configure" supports-non-srcdir-builds="no">
     <branch repo="python"
 	    module="2.7.9/Python-2.7.9.tar.xz" version="2.7.9">
     </branch>
@@ -138,7 +139,7 @@
   </autotools>
 
 <!-- Pycairo-python3 for those who've made the leap. -->
-  <waf id="pycairo-python3" autogen-sh="configure">
+  <waf id="pycairo-python3" autogen-sh="configure" python-command="python3">
     <branch module="pycairo-1.10.0.tar.bz2" repo="cairographics.org"
             version="1.10.0"
 	    hash="sha1:b4283aa1cc9aafd12fd72ad371303a486da1d014"/>
@@ -169,7 +170,8 @@
   </autotools>
 
    <autotools id="pygobject3" autogen-sh="configure" >
-    <branch version="3.12.2" module="pygobject/3.12/pygobject-3.12.2.tar.xz" />
+    <branch version="3.14.0" module="pygobject/3.14/pygobject-3.14.0.tar.xz"
+            hash="sha256:779effa93f4b59cdb72f4ab0128fb3fd82900bf686193b570fd3a8ce63392d54"/>
     <dependencies>
       <dep package="meta-gtk-osx-gtk3"/>
     </dependencies>
@@ -198,10 +200,9 @@
 
   <autotools id="gtk-mac-integration-python" autogen-sh="configure"
              autogenargs="--enable-python">
-    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.5.tar.xz"
-            version="2.0.5"
-            hash="sha256:6c4ff7501d7ff35e49068052d80fcf76ce494e5953c5f3967e4958b1b0c67b9f">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-unhandled-exception-from-attempting-to-access-me.patch" strip="1"/>
+    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.7.tar.xz"
+            version="2.0.7"
+            hash="sha256:e6de70da740b452f18c113a7ebb6772936a0fb9873137514090849820e296eb7">
     </branch>
     <dependencies>
     </dependencies>

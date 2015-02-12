@@ -24,19 +24,18 @@
               href="http://www.freedesktop.org/software/harfbuzz/release/"/>
   <repository type="tarball" name="cups"
 	      href="http://ftp.easysw.com/pub/"/>
+  <repository type="tarball" name="itstool" href="http://files.itstool.org/"/>
+  <repository type="tarball" name="icu"
+              href="http://download.icu-project.org/files/"/>
 
   <autotools id='readline' autogen-sh="configure">
-    <branch repo="ftp.gnu.org" module="readline/readline-6.2.tar.gz"
-	    version="6.2">
-      <patch file="http://ftp.gnu.org/gnu/readline/readline-6.2-patches/readline62-001" strip="0"/>
-      <patch file="http://ftp.gnu.org/gnu/readline/readline-6.2-patches/readline62-002" strip="0"/>
-      <patch file="http://ftp.gnu.org/gnu/readline/readline-6.2-patches/readline62-003" strip="0"/>
-      <patch file="http://ftp.gnu.org/gnu/readline/readline-6.2-patches/readline62-004" strip="0"/>
+    <branch repo="ftp.gnu.org" module="readline/readline-6.3.tar.gz"
+	    version="6.3">
     </branch>
   </autotools>
 
   <autotools id="libpng" autogenargs="--enable-shared" autogen-sh="configure">
-    <branch version="1.6.13" module="project/libpng/libpng16/1.6.13/libpng-1.6.13.tar.xz"
+    <branch version="1.6.14" module="libpng/libpng-1.6.14.tar.xz"
 	    repo="sourceforge"/>
   </autotools>
 
@@ -46,8 +45,7 @@
     </branch>
   </autotools>
 
-  <autotools id="libtiff" autogen-sh="configure"
-	     autogenargs="--without-x --without-apple-opengl-framework">
+  <autotools id="libtiff" autogen-sh="configure" autogenargs="--without-x">
     <branch version="4.0.3" module="libtiff/tiff-4.0.3.tar.gz"
 	    repo="libtiff"/>
     <dependencies>
@@ -58,14 +56,12 @@
   <!-- The python package is in gtk-osx-python.modules. If you're
        building "native" you can safely add python to the skip list, but
        otherwise the links in the SDKs are messed up and libxml's python
-       module won't link. In case you're wondering, gnome-doc-utils
+       module won't link. In case you're wondering, itstool
        needs libxml2's python module. -->
 
   <autotools id="libxml2" autogen-sh="configure" autogenargs="--with-python">
-    <branch version="2.9.1" module="libxml2-2.9.1.tar.gz"
-	    repo="xmlsoft.org">
-      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libxml2-Bug-686118-pthreads_once_init.patch" strip="1"/-->
-    </branch>
+    <branch version="2.9.2" module="libxml2-2.9.2.tar.gz"
+	    repo="xmlsoft.org"/>
     <after>
       <dep package="python"/>
       <dep package="python3"/>
@@ -80,21 +76,6 @@
     </dependencies>
   </autotools>
 
-<!-- Yes, this is a tool and it should be in bootstrap.modules, but it
-     needs libxslt and libxml2, both of which are dependencies for a
-     lot of packages. -->
-<!-- This has python bits that don't work in a separate build
-     dir. Until a better solution is found, just copy the source into
-     the build and try again.-->
-  <autotools id="gnome-doc-utils" autogenargs="--disable-scrollkeeper"
-	     autogen-sh="configure" supports-non-srcdir-builds="no">
-    <branch module="gnome-doc-utils/0.20/gnome-doc-utils-0.20.10.tar.xz"
-	    version="0.20.10" hash="sha256:cb0639ffa9550b6ddf3b62f3b1add92fb92ab4690d351f2353cffe668be8c4a6"/>
-    <dependencies>
-      <dep package="libxslt"/>
-    </dependencies>
-  </autotools>
-
   <!-- Cups is needed *only* for Tiger, and skipped otherwise -->
   <autotools id='cups' autogen-sh='configure' skip-autogen='never'
 	     autogenargs='DSOFLAGS="$LDFLAGS"'>
@@ -105,12 +86,71 @@
     </dependencies>
   </autotools>
 
-  <autotools id="harfbuzz" autogen-sh="configure" autogenargs="--with-coretext">
-    <branch repo="harfbuzz" module="harfbuzz-0.9.26.tar.bz2" version="0.9.26"/>
+  <autotools id="itstool" autogen-sh="configure">
+    <branch module="itstool/itstool-2.0.2.tar.bz2" version="2.0.2"
+            repo="itstool"/>
     <dependencies>
-      <dep package="freetype"/>
-      <dep package="fontconfig"/>
+      <dep package="libxml2"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="yelp-xsl">
+    <branch version="3.14.0" module="yelp-xsl/3.14/yelp-xsl-3.14.0.tar.xz"
+            hash="sha256:8f5b6793cd600f8308e4ac93da68009169fa6d590eb71ed4a8e98bafe541a87e"/>
+    <dependencies>
+      <dep package="libxml2"/>
+      <dep package="libxslt"/>
+      <dep package="itstool"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="yelp-tools">
+    <branch version="3.14.1" module="yelp-tools/3.14/yelp-tools-3.14.1.tar.xz"
+            hash="sha256:000222baf5d2db394df6025591054976b5cecd0b27872601de7538f36520f60f"/>
+    <dependencies>
+      <dep package="libxml2"/>
+      <dep package="libxslt"/>
+      <dep package="itstool"/>
+      <dep package="yelp-xsl"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="gtk-doc" autogen-sh="configure"
+             autogenargs="--with-xml-catalog=$JHBUILD_PREFIX/share/xml/catalog">
+    <branch version="1.21" module="gtk-doc/1.21/gtk-doc-1.21.tar.xz"
+            hash="sha256:5d934d012ee08edd1585544792efa80da271652587ba5b843d2cea8e8b80ee3e"/>
+    <dependencies>
+      <dep package="libxml2"/>
+      <dep package="itstool"/>
+      <dep package="yelp-tools"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="icu" autogen-sh="source/configure"
+             makeargs='CFLAGS="$CFLAGS -DU_CHARSET_IS_UTF8=1 -DU_USING_ICU_NAMESPACE=0"'>
+    <branch repo="icu" version="54.1" checkoutdir="icu"
+            module="icu4c/54.1/icu4c-54_1-src.tgz"/>
+  </autotools>
+
+  <autotools id="harfbuzz" autogen-sh="configure"
+             autogenargs="--with-coretext --with-freetype --with-icu">
+    <branch repo="harfbuzz" module="harfbuzz-0.9.35.tar.bz2" version="0.9.35">
+       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/harfbuzz-kCTTypesetterOptionForcedEmbeddingLevel-Leopard.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="freetype-no-harfbuzz"/>
       <dep package="glib"/>
+      <dep package="icu"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="freetype-no-harfbuzz" autogen-sh="configure"
+             skip-autogen="never"
+             autogenargs="--without-bzip2 --without-harfbuzz">
+    <branch module="freetype/freetype-2.5.3.tar.gz" version="2.5.3"
+            repo="sourceforge"/>
+    <dependencies>
+      <dep package="zlib"/>
     </dependencies>
   </autotools>
 
@@ -120,33 +160,30 @@
             repo="sourceforge">
     </branch>
     <dependencies>
+      <dep package="harfbuzz"/>
       <dep package="zlib"/>
     </dependencies>
   </autotools>
 
   <autotools id="fontconfig" autogen-sh="autoreconf"
 	     autogenargs="--disable-docs">
-    <branch repo="fontconfig" version="2.11.1" module="fontconfig-2.11.1.tar.gz"/>
+    <branch repo="fontconfig" version="2.11.1"
+            module="fontconfig-2.11.1.tar.bz2"/>
     <dependencies>
       <dep package="freetype"/>
     </dependencies>
   </autotools>
 
-<!-- Another one that won't build in a separate directory -->
-  <autotools id="hicolor-icon-theme" autogen-sh="configure"
-	     supports-non-srcdir-builds="no">
+  <autotools id="hicolor-icon-theme" autogen-sh="configure">
     <branch module="hicolor-icon-theme-0.13.tar.gz" repo="icon-theme"
-	    version="0.13" />
-
+            version="0.13"/>
   </autotools>
 
   <autotools id="gettext-runtime" autogen-sh="configure"
 	     autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp">
     <branch repo="ftp.gnu.org" source-subdir="gettext-runtime"
-	    module="gettext/gettext-0.18.1.1.tar.gz" version="0.18.1.1"
-            size="15139737" md5sum="3dd55b952826d2b32f51308f2f91aa89">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gettext-bug33999-stpncpy.patch" strip="1"/>
-    </branch>
+            module="gettext/gettext-0.19.3.tar.xz" version="0.19.3"
+            size="6628460" md5sum="092c3f460553ceb4a638ff81d36434c4"/>
   </autotools>
 
   <metamodule id="meta-gtk-osx-bootstrap">
@@ -157,8 +194,8 @@
       <dep package="libjpeg"/>
       <dep package="libtiff"/>
       <dep package="gettext-runtime"/>
-      <dep package="gnome-doc-utils"/>
       <dep package="hicolor-icon-theme"/>
+      <dep package="gtk-doc"/>
     </dependencies>
   </metamodule>
 
