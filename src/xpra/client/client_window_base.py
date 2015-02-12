@@ -459,7 +459,9 @@ class ClientWindowBase(ClientWidgetBase):
     def get_mouse_event_wid(self):
         #on OSX, the mouse events are reported against the wrong window by GTK,
         #so we have to use the currently focused window
-        return self._client._focused or self._id
+        if sys.platform.startswith("darwin"):
+            return self._client._focused or self._id
+        return self._id
 
     def do_motion_notify_event(self, event):
         if self._client.readonly:
