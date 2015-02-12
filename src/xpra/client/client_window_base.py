@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
@@ -153,12 +154,15 @@ class ClientWindowBase(ClientWidgetBase):
                         var = atvar[1:len(atvar)-1]     #ie: 'title'
                         default_value = default_values.get(var, "<unknown %s>" % var)
                         value = self._metadata.strget(var, default_value)
+                        if sys.version<'3':
+                            value = value.decode("utf-8")
                         return value
                     title = re.sub("@[\w\-]*@", metadata_replace, title)
+                    utf8_title = title.encode("utf-8")
             except Exception as e:
                 log.error("error parsing window title: %s", e)
-                title = ""
-            self.set_title(title)
+                utf8_title = ""
+            self.set_title(utf8_title)
 
         if b"icon-title" in metadata:
             icon_title = metadata.strget("icon-title")
