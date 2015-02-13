@@ -135,6 +135,7 @@ def add_window_hooks(window):
         return
     #windows 7 onwards can use AppUserModel to emulate the group leader stuff:
     propsys = get_propsys()
+    log("win32 hooks: propsys=%s", propsys)
     if propsys:
         def set_group(leader):
             try:
