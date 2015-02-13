@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -1854,7 +1854,7 @@ class UIXpraClient(XpraClientBase):
         window.show()
         return window
 
-    def get_group_leader(self, metadata, override_redirect):
+    def get_group_leader(self, wid, metadata, override_redirect):
         #subclasses that wish to implement the feature may override this method
         return None
 

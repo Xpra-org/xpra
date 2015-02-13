@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -169,7 +169,7 @@ PACKET_KIND = {
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES = {"YUV420P" : ["YUV420P"]}
+COLORSPACES = {b"YUV420P" : [b"YUV420P"]}
 
 CODECS = []
 IF ENABLE_VP8 == True:
@@ -474,11 +474,13 @@ cdef class Encoder:
 
 
 def selftest():
+    import sys
+    assert sys.version[0]!='3', "currently broken with python3.."
     #fake empty buffer:
     w, h = 24, 16
-    y = "\0" * (w*h)
-    u = "\0" * (w*h/4)
-    v = "\0" * (w*h/4)
+    y = bytearray(b"\0" * (w*h))
+    u = bytearray(b"\0" * (w*h//4))
+    v = bytearray(b"\0" * (w*h//4))
     for encoding in get_encodings():
         e = Encoder()
         try:

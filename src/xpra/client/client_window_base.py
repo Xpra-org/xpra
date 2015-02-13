@@ -137,8 +137,8 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_wmclass(*self._metadata.strlistget("class-instance", ("xpra", "Xpra")))
         try:
             self.set_metadata(metadata)
-        except Exception as e:
-            metalog.warn("failed to set window metadata to '%s': %s", metadata, e)
+        except Exception:
+            metalog.warn("failed to set window metadata to '%s'", metadata, exc_info=True)
 
     def set_metadata(self, metadata):
         metalog("set_metadata(%s)", metadata)
@@ -147,6 +147,7 @@ class ClientWindowBase(ClientWidgetBase):
                 title = bytestostr(self._client.title).replace("\0", "")
                 if title.find("@")>=0:
                     #perform metadata variable substitutions:
+                    #full of py3k unicode headaches that don't need to be
                     default_values = {"title"           : "<untitled window>",
                                       "client-machine"  : "<unknown machine>"}
                     def metadata_replace(match):
@@ -158,10 +159,13 @@ class ClientWindowBase(ClientWidgetBase):
                             value = value.decode("utf-8")
                         return value
                     title = re.sub("@[\w\-]*@", metadata_replace, title)
-                    utf8_title = title.encode("utf-8")
+                    if sys.version<'3':
+                        utf8_title = title.encode("utf-8")
+                    else:
+                        utf8_title = title
             except Exception as e:
                 log.error("error parsing window title: %s", e)
-                utf8_title = ""
+                utf8_title = b""
             self.set_title(utf8_title)
 
         if b"icon-title" in metadata:

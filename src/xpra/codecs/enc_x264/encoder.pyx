@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -535,9 +535,9 @@ cdef class Encoder:
 def selftest():
     #fake empty buffer:
     w, h = 24, 16
-    y = "\0" * (w*h)
-    u = "\0" * (w*h/4)
-    v = "\0" * (w*h/4)
+    y = bytearray(b"\0" * (w*h))
+    u = bytearray(b"\0" * (w*h//4))
+    v = bytearray(b"\0" * (w*h//4))
     for encoding in get_encodings():
         e = Encoder()
         try:

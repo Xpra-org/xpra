@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014, 2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -338,7 +338,8 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     if width*height<8192:
         preset = WEBP_PRESET_ICON
 
-    assert object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)==0
+    i = object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)
+    assert i>=0, "failed to get buffer from pixel object: %s" % type(pixels)
     log("webp.compress(%s bytes, %s, %s, %s, %s, %s, %s) buf=%#x", len(pixels), width, height, stride, quality, speed, has_alpha, <unsigned long> pic_buf)
     c = (stride or (width*4)) * height
     assert pic_buf_len>=c, "pixel buffer is too small: expected at least %s bytes but got %s" % (c, pic_buf_len)
@@ -412,7 +413,7 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
 def selftest():
     #fake empty buffer:
     w, h = 24, 16
-    pixels = "\0" * w*h*4
+    pixels = bytearray(b"\0" * w*h*4)
     for has_alpha in (True, False):
         r = compress(pixels, w, h, w, quality=50, speed=50, has_alpha=has_alpha)
         assert len(r)>0

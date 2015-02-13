@@ -544,7 +544,7 @@ def start_Xvfb(xvfb_str, display_name):
                 MAXFD = os.sysconf("SC_OPEN_MAX")
             except:
                 MAXFD = 256
-            for i in xrange(3, MAXFD):
+            for i in range(3, MAXFD):
                 if i not in (r_pipe, w_pipe):
                     try:
                         os.close(i)
