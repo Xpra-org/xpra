@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013, 2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -32,6 +32,7 @@ SERVER_SHUTDOWN         = "server shutdown"
 CLIENT_REQUEST          = "client request"
 DETACH_REQUEST          = "detach request"
 NEW_CLIENT              = "new client"
+IDLE_TIMEOUT            = "idle timeout"
 #client telling the server:
 CLIENT_EXIT             = "client exit"
 
@@ -52,7 +53,7 @@ DEFAULT_METADATA_SUPPORTED = ("title", "icon-title", "pid", "iconic",
 
 #convenience method based on the strings above:
 def disconnect_is_an_error(reason):
-    return reason.find("error")>=0 or reason.find("timeout")>=0
+    return reason.find("error")>=0 or (reason.find("timeout")>=0 and reason!=IDLE_TIMEOUT)
 
 
 if sys.version > '3':
