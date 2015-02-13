@@ -347,22 +347,21 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def set_fullscreen(self, fullscreen):
-        if self._fullscreen is None or self._fullscreen!=fullscreen:
-            #note: the "_fullscreen" flag is updated by the window-state-event, not here
-            statelog("%s.set_fullscreen(%s)", self, fullscreen)
-            if fullscreen:
-                #we may need to temporarily remove the max-window-size restrictions
-                #to be able to honour the fullscreen request:
-                w, h = self.max_window_size
-                if w>0 and h>0:
-                    self.set_size_constraints(self.size_constraints, (0, 0))
-                self.fullscreen()
-            else:
-                self.unfullscreen()
-                #re-apply size restrictions:
-                w, h = self.max_window_size
-                if w>0 and h>0:
-                    self.set_size_constraints(self.size_constraints, self.max_window_size)
+        #note: the "_fullscreen" flag is updated by the window-state-event, not here
+        statelog("%s.set_fullscreen(%s)", self, fullscreen)
+        if fullscreen:
+            #we may need to temporarily remove the max-window-size restrictions
+            #to be able to honour the fullscreen request:
+            w, h = self.max_window_size
+            if w>0 and h>0:
+                self.set_size_constraints(self.size_constraints, (0, 0))
+            self.fullscreen()
+        else:
+            self.unfullscreen()
+            #re-apply size restrictions:
+            w, h = self.max_window_size
+            if w>0 and h>0:
+                self.set_size_constraints(self.size_constraints, self.max_window_size)
 
     def set_xid(self, xid):
         if HAS_X11_BINDINGS and self.is_realized():
