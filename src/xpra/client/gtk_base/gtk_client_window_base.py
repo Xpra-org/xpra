@@ -347,7 +347,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def set_fullscreen(self, fullscreen):
-        #note: the "_fullscreen" flag is updated by the window-state-event, not here
         statelog("%s.set_fullscreen(%s)", self, fullscreen)
         if fullscreen:
             #we may need to temporarily remove the max-window-size restrictions
