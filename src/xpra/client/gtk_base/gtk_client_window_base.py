@@ -275,7 +275,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                         #tell server, but wait a bit to try to prevent races:
                         def tell_server():
                             if self._iconified:
-                                self.send("unmap-window", self._id, True)
+                                self.send("unmap-window", self._id, True, self._window_state)
                         #calculate a good delay to prevent races causing minimize/unminimize loops:
                         delay = 150
                         spl = list(self._client.server_ping_latency)
@@ -288,6 +288,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 else:
                     self.process_map_event()
         self.after_window_state_updated()
+        #if we have state updates, send them back to the server using a configure window packet:
+        if self._window_state:
+            self.process_configure_event()
 
     def after_window_state_updated(self):
         #this is here to make it easier to hook some code
