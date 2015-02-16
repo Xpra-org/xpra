@@ -1190,7 +1190,7 @@ class UIXpraClient(XpraClientBase):
 
 
     def _process_server_event(self, packet):
-        log(": ".join((str(x) for x in packet[1:])))
+        log(u": ".join((str(x) for x in packet[1:])))
 
 
     def _process_info_response(self, packet):

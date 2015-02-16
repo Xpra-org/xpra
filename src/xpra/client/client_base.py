@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -15,6 +15,8 @@ gobject = import_gobject()
 
 from xpra.log import Logger
 log = Logger("client")
+printlog = Logger("printing")
+filelog = Logger("file")
 
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.scripts.config import ENCRYPTION_CIPHERS
@@ -76,6 +78,9 @@ class XpraClientBase(object):
         self.min_quality = 0
         self.speed = 0
         self.min_speed = -1
+        self.file_transfer = False
+        self.printing = False
+        self.open_command = None
         #protocol stuff:
         self._protocol = None
         self._priority_packets = []
@@ -108,6 +113,9 @@ class XpraClientBase(object):
         self.min_quality = opts.min_quality
         self.speed = opts.speed
         self.min_speed = opts.min_speed
+        self.file_transfer = opts.file_transfer
+        self.printing = opts.printing and self.file_transfer
+        self.open_command = opts.open_command
 
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
@@ -184,7 +192,9 @@ class XpraClientBase(object):
 
     def init_packet_handlers(self):
         self._packet_handlers = {
-            "hello": self._process_hello,
+            "hello"             : self._process_hello,
+            "query-printers"    : self._process_query_printers,
+            "send-file"         : self._process_send_file,
             }
         self._ui_packet_handlers = {
             "challenge":                self._process_challenge,
@@ -242,6 +252,8 @@ class XpraClientBase(object):
                 "version"               : local_version,
                 "encoding.generic"      : True,
                 "namespace"             : True,
+                "file-transfer"         : self.file_transfer,
+                "printing"              : self.printing,
                 "hostname"              : socket.gethostname(),
                 "uuid"                  : self.uuid,
                 "username"              : self.username,
@@ -561,6 +573,121 @@ class XpraClientBase(object):
     def _process_set_deflate(self, packet):
         #legacy, should not be used for anything
         pass
+
+
+    def _process_query_printers(self, packet):
+        from xpra.platform.printing import get_printers
+        printers = get_printers()
+        printlog("process_query_printers(%s) found printers=%s", packet, printers)
+        #remove xpra forwarded ones to avoid loops and multi-forwards:
+        exported_printers = {}
+        for k,v in printers.items():
+            device_uri = v.get("device-uri", "")
+            if device_uri:
+                printlog("process_query_printers: device-uri(%s)=%s", k, device_uri)
+                if device_uri.startswith("xpraforwarder"):
+                    printlog("process_query_printers skipping xpra forwarded printer=%s", k)
+                    continue
+            state = v.get("printer-state")
+            if state==5:
+                printlog("process_query_printers skipping stopped printer=%s", k)
+                continue
+            #"3" if the destination is idle, "4" if the destination is printing a job, and "5" if the destination is stopped.
+            exported_printers[k.encode("utf8")] = v
+        printlog("process_query_printers(%s) exported printers=%s", packet, ", ".join(str(x) for x in exported_printers.keys()))
+        self.send("printers", exported_printers)
+
+
+    def _process_send_file(self, packet):
+        #send-file basefilename, printit, openit, filesize, 0, data)
+        from xpra.platform.features import DOWNLOAD_PATH
+        basefilename, printit, openit, filesize, file_data, maxbitrate, options = packet[1:10]
+        options = typedict(options)
+        assert maxbitrate>=0
+        if printit:
+            assert self.printing
+        else:
+            assert self.file_transfer
+        assert filesize>0 and file_data
+        #make sure we use a filename that does not exist already:
+        wanted_filename = os.path.abspath(os.path.join(os.path.expanduser(DOWNLOAD_PATH), os.path.basename(basefilename)))
+        filename = wanted_filename
+        base = 0
+        while os.path.exists(filename):
+            filelog("cannot save file as %s: file already exists", filename)
+            root, ext = os.path.splitext(wanted_filename)
+            base += 1
+            filename = root+("-%s" % base)+ext
+        #maybe use mkstemp instead of EXCL?
+        fd = os.open(filename, os.O_CREAT | os.O_RDWR | os.O_EXCL)
+        f = os.fdopen(fd,'wb')
+        try:
+            f.write(file_data)
+        finally:
+            f.close()
+        filelog.info("downloaded %s bytes to %s", filesize, filename)
+        if printit:
+            printer = options.strget("printer")
+            title   = options.strget("title")
+            print_options = options.dictget("options")
+            #TODO: how do we print multiple copies?
+            #copies = options.intget("copies")
+            #whitelist of options we can forward:
+            safe_print_options = dict((k,v) for k,v in print_options.items() if k in ("PageSize", "Resolution"))
+            printlog("safe print options(%s) = %s", options, safe_print_options)
+            self._print_file(filename, printer, title, safe_print_options)
+            return
+        elif openit:
+            #run the command in a new thread
+            #so we can block waiting for the subprocess to exit
+            #(ensures that we do reap the process)
+            import thread
+            thread.start_new_thread(self._open_file, (filename, ))
+
+    def _print_file(self, filename, printer, title, options):
+        import time
+        from xpra.platform.printing import print_files, printing_finished
+        job = print_files(printer, [filename], title, options)
+        printlog("printing %s, job=%s", filename, job)
+        if not job:
+            return
+        start = time.time()
+        def delfile():
+            try:
+                os.unlink(filename)
+            except:
+                printlog("failed to delete print job file '%s'", filename)
+            return False
+        def check_printing_finished():
+            done = printing_finished(job)
+            printlog("printing_finished(%s)=%s", job, done)
+            if done:
+                delfile()
+                return False
+            if time.time()-start>10*60:
+                printlog.warn("print job %s timed out", job)
+                delfile()
+                return False
+            return True #try again..
+        if check_printing_finished():
+            self.timeout_add(10000, check_printing_finished)
+
+    def _open_file(self, filename):
+        import subprocess
+        PIPE = subprocess.PIPE
+        process = subprocess.Popen([self.open_command, filename], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        out, err = process.communicate()
+        r = process.wait()
+        filelog.info("opened file %s with %s, exit code: %s", filename, self.open_command, r)
+        if r!=0:
+            l = filelog.warn
+        else:
+            l = filelog
+        if out:
+            l("stdout=%s", nonl(out)[:512])
+        if err:
+            l("stderr=%s", nonl(err)[:512])
+
 
     def _process_gibberish(self, packet):
         (_, message, data) = packet

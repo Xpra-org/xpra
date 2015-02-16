@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -265,6 +265,9 @@ OPTION_TYPES = {
                     "window-layout"     : str,
                     "display"           : str,
                     "tcp-proxy"         : str,
+                    "download-path"     : str,
+                    "open-command"      : str,
+                    "lpadmin"           : str,
                     "debug"             : str,
                     "input-method"      : str,
                     "microphone"        : str,
@@ -279,6 +282,7 @@ OPTION_TYPES = {
                     "compression_level" : int,
                     "dpi"               : int,
                     "scaling"           : int,
+                    "file-size-limit"   : int,
                     "idle-timeout"      : int,
                     #float options:
                     "auto-refresh-delay": float,
@@ -309,6 +313,9 @@ OPTION_TYPES = {
                     "exit-ssh"          : bool,
                     "opengl"            : bool,
                     "mdns"              : bool,
+                    "file-transfer"     : bool,
+                    "printing"          : bool,
+                    "open-files"        : bool,
                     "swap-keys"         : bool,
                     "start-new-commands": bool,
                     "remote-logging"    : bool,
@@ -335,7 +342,7 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform.features import DEFAULT_SSH_CMD, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_XVFB_COMMAND
+    from xpra.platform.features import DEFAULT_SSH_CMD, DOWNLOAD_PATH, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_XVFB_COMMAND
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -366,6 +373,9 @@ def get_defaults():
                     "window-layout"     : "",
                     "display"           : "",
                     "tcp-proxy"         : "",
+                    "download-path"     : DOWNLOAD_PATH,
+                    "open-command"      : OPEN_COMMAND,
+                    "lpadmin"           : "lpadmin",
                     "debug"             : "",
                     "input-method"      : "none",
                     "sound-source"      : "",
@@ -378,6 +388,7 @@ def get_defaults():
                     "compression_level" : 1,
                     "dpi"               : 0,
                     "scaling"           : 1,
+                    "file-size-limit"   : 10,
                     "idle-timeout"      : 0,
                     "auto-refresh-delay": 0.25,
                     "daemon"            : True,
@@ -410,6 +421,9 @@ def get_defaults():
                     "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : False,
+                    "file-transfer"     : True,
+                    "printing"          : True,
+                    "open-files"        : False,
                     "swap-keys"         : sys.platform.startswith("darwin"),    #only used on osx
                     "encodings"         : ["all"],
                     "video-encoders"    : ["all"],

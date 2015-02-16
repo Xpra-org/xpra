@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -22,16 +22,25 @@ BUGGY_PYTHON = sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
 USE_PROCESS_POLLING = os.name!="posix" or os.environ.get("XPRA_USE_PROCESS_POLLING")=="1" or BUGGY_PYTHON
 
 
+singleton = None
+def getChildReaper(quit_cb=None):
+    global singleton
+    if singleton is None:
+        singleton = ChildReaper(quit_cb)
+    return singleton
+
+
 # Note that this class has async subtleties -- e.g., it is possible for a
 # child to exit and us to receive the SIGCHLD before our fork() returns (and
 # thus before we even know the pid of the child).  So be careful:
 class ChildReaper(object):
     #note: the quit callback will fire only once!
-    def __init__(self, quit_cb):
+    def __init__(self, quit_cb=None):
         self._quit = quit_cb
         self._children_pids = {}
         self._dead_pids = set()
         self._ignored_pids = set()
+        self._forget_pids = set()
         if USE_PROCESS_POLLING:
             POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
             if BUGGY_PYTHON:
@@ -58,13 +67,15 @@ class ChildReaper(object):
                 return False # Only call once
             gobject.timeout_add(0, check_once)
 
-    def add_process(self, process, name, command, ignore=False):
+    def add_process(self, process, name, command, ignore=False, forget=False):
         process.command = command
         process.name = name
         assert process.pid>0
         self._children_pids[process.pid] = process
         if ignore:
             self._ignored_pids.add(process.pid)
+        if forget:
+            self._forget_pids.add(process.pid)
         log("add_process(%s, %s, %s, %s) pid=%s", process, name, command, ignore, process.pid)
 
     def check(self):
@@ -89,8 +100,12 @@ class ChildReaper(object):
 
     def add_dead_pid(self, pid):
         log("add_dead_pid(%s)", pid)
+        proc = self._children_pids.get(pid)
+        if pid in self._forget_pids:
+            #forget it:
+            self._forget_pids.remove(pid)
+            del self._children_pids[pid]
         if pid not in self._dead_pids:
-            proc = self._children_pids.get(pid)
             if proc:
                 if pid in self._ignored_pids:
                     log("child '%s' with pid %s has terminated (ignored)", proc.name, pid)
@@ -121,4 +136,5 @@ class ChildReaper(object):
             info["child[%i].pid" % i]   = pid
             info["child[%i].command" % i]   = proc.command
             info["child[%i].ignored" % i] = pid in self._ignored_pids
+            info["child[%i].forget" % i] = pid in self._forget_pids
         return info

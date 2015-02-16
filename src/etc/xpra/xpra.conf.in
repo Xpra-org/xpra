@@ -60,6 +60,35 @@ remote-logging = %(remote_logging)s
 
 
 ################################################################################
+# File transfer
+
+# Receive files
+file-transfer = yes
+
+# Location where files are received:
+#download-path = ~/Downloads
+#download-path = ~/Deskto
+#download-path = /tmp
+
+# File size limit in MB
+file-size-limit = 10
+
+# Print support:
+printing = no
+
+# To manage printers:
+#lpadmin = /usr/bin/lpadmin
+#lpadmin = sudo lpadmin
+lpadmin = lpadmin
+
+# How to open filee:
+#open-command = xdg-open
+
+# Open files
+open-files = no
+
+
+################################################################################
 # Picture Encoding
 
 # Encodings allowed:

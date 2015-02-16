@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -18,10 +18,11 @@ commandlog = Logger("command")
 soundlog = Logger("sound")
 clientlog = Logger("client")
 screenlog = Logger("screen")
+printlog = Logger("printing")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
-from xpra.server.child_reaper import ChildReaper
+from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.scripts.config import python_platform, parse_bool_or_int
@@ -98,11 +99,14 @@ class ServerBase(ServerCore):
         self.supports_clipboard = False
         self.supports_dbus_proxy = False
         self.dbus_helper = None
+        self.file_transfer = False
+        self.printing = False
+        self.lpadmin = ""
         self.exit_with_children = False
         self.start_new_commands = False
         self.remote_logging = False
         self.env = []
-        self.child_reaper = ChildReaper(self.reaper_exit)
+        self.child_reaper = getChildReaper(self.reaper_exit)
         self.send_pings = False
         self.scaling_control = False
 
@@ -129,7 +133,8 @@ class ServerBase(ServerCore):
                     "scaling", "scaling-control",
                     "suspend", "resume", "name", "ungrab",
                     "key", "focus", "workspace", "idle-timeout",
-                    "client", "start", "start-child"]
+                    "client", "start", "start-child",
+                    "send-file", "print"]
 
         self.init_encodings()
         self.init_packet_handlers()
@@ -186,6 +191,16 @@ class ServerBase(ServerCore):
         self.remote_logging = opts.remote_logging
         self.env = parse_env(opts.env)
         self.send_pings = opts.pings
+        self.file_transfer = opts.file_transfer
+        self.lpadmin = opts.lpadmin
+        #server-side printer handling is only for posix via pycups for now:
+        if os.name=="posix" and opts.printing:
+            try:
+                from xpra.platform import pycups_printing
+                pycups_printing.set_lpadmin_command(self.lpadmin)
+                self.printing = True
+            except Exception as e:
+                printlog.warn("cannot set lpadmin command: %s", e)
         self.notifications_forwarder = None
         self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("scaling", opts.scaling)
@@ -434,6 +449,7 @@ class ServerBase(ServerCore):
             "set-bell":                             self._process_set_bell,
             "logging":                              self._process_logging,
             "command_request":                      self._process_command_request,
+            "printers":                             self._process_printers,
                                           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -475,6 +491,7 @@ class ServerBase(ServerCore):
             "disconnect":                           self._process_disconnect,
             "info-request":                         self._process_info_request,
             "start-command":                        self._process_start_command,
+            "print":                                self._process_print,
             # Note: "clipboard-*" packets are handled via a special case..
             })
 
@@ -630,7 +647,8 @@ class ServerBase(ServerCore):
         stop_request    = c.boolget("stop_request", False)
         exit_request    = c.boolget("exit_request", False)
         event_request   = c.boolget("event_request", False)
-        is_request = detach_request or stop_request or exit_request or event_request
+        print_request   = c.boolget("print_request", False)
+        is_request = detach_request or stop_request or exit_request or event_request or print_request
         if not is_request:
             #"normal" connection, so log welcome message:
             log.info("Handshake complete; enabling connection")
@@ -705,7 +723,7 @@ class ServerBase(ServerCore):
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
-                          self.idle_timeout, self.idle_timeout_cb,
+                          self.idle_timeout, self.idle_timeout_cb, self._socket_dir,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.supports_mmap,
@@ -806,6 +824,9 @@ class ServerBase(ServerCore):
             # now we can set the modifiers to match the client
             self.send_windows_and_cursors(ss, share_count>0)
 
+            if self.printing and ss.printing:
+                ss.query_printers()
+
         ss.startup_complete()
         self.server_event("startup-complete", ss.uuid)
 
@@ -871,6 +892,8 @@ class ServerBase(ServerCore):
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
+                 "file-transfer"                : self.file_transfer,
+                 "printing"                     : self.printing,
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
                  })
@@ -918,6 +941,14 @@ class ServerBase(ServerCore):
         level, msg = packet[1:3]
         for x in msg.splitlines():
             clientlog.log(level, x)
+
+    def _process_printers(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        printers = packet[1]
+        ss.set_printers(printers)
+
 
     def _process_command_request(self, proto, packet):
         """ client sent a command request through its normal channel """
@@ -975,6 +1006,27 @@ class ServerBase(ServerCore):
                 except:
                     raise Exception("invalid window id: %s" % x)
             return wids
+
+        def get_sources(client_uuids_str, attr=None):
+            #find the client uuid specified:
+            if client_uuids_str=="UI":
+                sources = [ss for ss in self._server_sources.values() if ss.ui_client]
+                client_uuids = [ss.uuid for ss in sources]
+                notfound = []
+            elif client_uuids_str=="*":
+                sources = self._server_sources.values()
+                client_uuids = [ss.uuid for ss in sources]
+            else:
+                client_uuids = client_uuids_str.split(",")
+                sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
+                notfound = [x for x in client_uuids if x not in [ss.uuid for ss in sources]]
+                if notfound:
+                    commandlog.warn("client connection not found for uuid(s): %s", notfound)
+            if attr:
+                attrerr = [x for x in client_uuids if (x not in notfound and not getattr(ss, attr))]
+                if attrerr:
+                    commandlog.warn("client connections do not support %s: %s", attr, attrerr)
+            return sources
 
         #handle commands that either don't require a client,
         #or can work on more than one connected client:
@@ -1219,6 +1271,68 @@ class ServerBase(ServerCore):
             if not proc:
                 return 1, "failed to start new child command %s" % str(cmd)
             return 0, "new child started"
+        elif command=="send-file":
+            #ie: send-file filename open|noopen client_uuids maxbitrate
+            if len(args)!=4:
+                return argn_err(4)
+            filename = os.path.abspath(os.path.expanduser(args[0]))
+            if not os.path.exists(filename):
+                return arg_err("file '%s' does not exist" % filename)
+            openit = args[1] in ("open", "true", "1")
+            #find the client uuid specified:
+            client_uuids = args[2]
+            sources = get_sources(client_uuids, "file_transfer")
+            if not sources:
+                return arg_err("no clients found matching: %s" % client_uuids)
+            maxbitrate = args[3]
+            for ss in sources:
+                assert ss.file_transfer
+                ss.send_file(filename, False, openit, ss, maxbitrate)
+            return 0, "file transfer to %s initiated" % client_uuids
+        elif command=="print":
+            #ie: print filename printer client_uuids maxbitrate title *options
+            if len(args)<4:
+                return argn_err("at least 4")
+            filename = os.path.abspath(os.path.expanduser(args[0]))
+            def exec_command(command, env=os.environ.copy()):
+                #print("exec_command(%s)" % command)
+                import subprocess
+                PIPE = subprocess.PIPE
+                proc = subprocess.Popen(command, stdout=PIPE, stderr=PIPE, env=env, shell=True)
+                out,err = proc.communicate()
+                printlog("returncode(%s)=%s", command, proc.returncode)
+                printlog("stdout=%s" % out)
+                printlog("stderr=%s" % err)
+                return proc.returncode
+            exec_command("ls -laZ %s" % filename)
+            try:
+                stat = os.stat(filename)
+                printlog("os.stat(%s)=%s", filename, stat)
+            except os.error as e:
+                printlog("os.stat(%s)", filename, exc_info=True)
+            if not os.path.exists(filename):
+                return arg_err("file '%s' does not exist" % filename)
+            printer = args[1]
+            #find the client uuid specified:
+            client_uuids = args[2]
+            sources = get_sources(client_uuids, "printing")
+            if not sources:
+                return arg_err("no clients found matching: %s" % client_uuids)
+            maxbitrate = args[3]
+            title = ""
+            options = {}
+            if len(args)>=5:
+                title = args[4]
+            if len(args)>=6:
+                for arg in args[5:]:
+                    argp = arg.split("=", 1)
+                    if len(argp)==2 and len(argp[0])>0:
+                        options[argp[0]] = argp[1]
+            for ss in sources:
+                ss = sources[0]
+                assert ss.printing
+                ss.send_file(filename, True, True, ss, maxbitrate, printer, title, options)
+            return 0, "printing to %s initiated" % client_uuids
         else:
             return ServerCore.do_handle_command_request(self, command, args)
 
@@ -1235,6 +1349,39 @@ class ServerBase(ServerCore):
         except Exception as e:
             log.error("failed to capture screenshot", exc_info=True)
             self.send_disconnect(proto, "screenshot failed: %s" % e)
+
+
+    def _process_print(self, proto, packet):
+        #ie: from the xpraforwarder we get:
+        #command = ["xpra", "--socket-dir=%s" % socket_dir, "print", display, output_file, source, title, printer]
+        #which ends up as:
+        #self.send("print", self.filename, self.file_data, *self.command)
+        assert self.printing
+        #printlog("_process_print(%s, %s)", proto, packet)
+        filename, file_data, source_uuid, title, printer, no_copies, print_options_str = packet[1:8]
+        printlog("process_print: got %s bytes for file %s", len(file_data), filename)
+        #parse the print options:
+        print_options = {}
+        for x in print_options_str.split(" "):
+            parts = x.split("=", 1)
+            if len(parts)==2:
+                print_options[parts[0]] = parts[1]
+        maxbitrate = 10000
+        options = {"printer"    : printer,
+                   "title"      : title,
+                   "copies"     : no_copies,
+                   "options"    : print_options}
+        printlog("parsed printer options: %s", options)
+        for ss in self._server_sources.values():
+            if ss.uuid!=source_uuid:
+                printlog("not sending to %s (wanted uuid=%s)", ss, source_uuid)
+                continue
+            if not ss.printing:
+                printlog.warn("not sending to %s - printing is disabled for this connection!", ss)
+                continue
+            assert ss.file_transfer
+            printlog("sending file for printing to %s", ss)
+            ss.send_file(filename, file_data, True, True, maxbitrate, options)
 
 
     def _process_start_command(self, proto, packet):
@@ -1288,6 +1435,10 @@ class ServerBase(ServerCore):
         log("get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 
+
+    def get_printing_info(self):
+        return {"enabled"   : self.printing,
+                "lpadmin"   : self.lpadmin}
 
     def get_features_info(self):
         i = {
@@ -1344,6 +1495,7 @@ class ServerBase(ServerCore):
         def up(prefix, d, suffix=""):
             updict(info, prefix, d, suffix)
 
+        up("printing",  self.get_printing_info())
         up("features",  self.get_features_info())
         up("clipboard", self.get_clipboard_info())
         up("keyboard",  self.get_keyboard_info())

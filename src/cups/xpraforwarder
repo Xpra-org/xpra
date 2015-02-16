@@ -1,0 +1,129 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# xpraforwarder - A CUPS backend written in Python.
+# Forwards the print job via xpra.
+#
+# It is based on pdf2email by Georde Notaras.
+#
+# Copyright (c) George Notaras <George [D.O.T.] Notaras [A.T.] gmail [D.O.T.] com>
+# Copyright (C) 2014, 2015 Antoine Martin <antoine@devloop.org.uk>
+#
+# License: GPLv2
+#
+# This program is released with absolutely no warranty, expressed or implied,
+# and absolutely no support.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the:
+#
+# Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston,
+# MA 02111-1307  USA
+#
+
+
+import sys, os, syslog
+import subprocess, traceback
+import urlparse
+
+__version__ = "0.15.0"
+
+
+#Writes a syslog entry (msg) at the default facility:
+def debug(msg):
+	syslog.syslog(syslog.LOG_DEBUG, "xpraforwarder cups backend: %s" % msg)
+
+def info(msg):
+	syslog.syslog(syslog.LOG_INFO, "xpraforwarder cups backend: %s" % msg)
+
+def err(msg):
+	syslog.syslog(syslog.LOG_ERR, "xpraforwarder cups backend: %s" % msg)
+
+
+def exec_command(command, env=os.environ.copy(), shell=True):
+	#print("exec_command(%s)" % command)
+	syslog.syslog(syslog.LOG_INFO, "xpraforwarder running: %s" % command)
+	PIPE = subprocess.PIPE
+	proc = subprocess.Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, env=env, shell=shell)
+	out,err = proc.communicate()
+	info("returncode=%s" % proc.returncode)
+	info("stdout=%s" % out)
+	info("stderr=%s" % err)
+	return proc.returncode
+
+def xpra_print(filename, username, display, source, title, printer, no_copies, print_options, socket_dir):
+	command = ["xpra", "--socket-dir=%s" % socket_dir, "print", display, filename, source, title, printer, no_copies, print_options]
+	#in this case, running as root cannot be avoided, so skip the warning:
+	#(using "su" causes even more problems)
+	env = os.environ.copy()
+	env["NO_ROOT_WARNING"] = "1"
+	return exec_command(command, env=env, shell=False)
+
+
+def do_main():
+	info("xpraforwarder: %s" % str(sys.argv))
+	if len(sys.argv) == 1:
+		# Without arguments should give backend info.
+		# This is also used when lpinfo -v is issued, where it should include "direct this_backend"
+		sys.stdout.write("direct %s \"Unknown\" \"Direct PDF Printing/Forwarding to host via xpra\"\n" % os.path.basename(sys.argv[0]))
+		sys.stdout.flush()
+		sys.exit(0)
+	if len(sys.argv) not in (5,6):
+		sys.stdout.write("Usage: %s job-id user title copies options [file]\n" % os.path.basename(sys.argv[0]))
+		sys.stdout.flush()
+		err("Wrong number of arguments. Usage: %s job-id user title copies options [file]" % sys.argv[0])
+		sys.exit(1)
+	#job_id = sys.argv[1]
+	username = sys.argv[2]
+	title = sys.argv[3]
+	no_copies = sys.argv[4]
+	print_options = sys.argv[5]
+	info("username: %s" % username)
+	info("title: %s" % title)
+
+	dev_uri = os.environ['DEVICE_URI']
+	parsed_url = urlparse.urlparse(dev_uri)
+	info("urlparse(%s)=%s" % (dev_uri, parsed_url))
+	#write_dir = parsed_url.path
+	attributes = urlparse.parse_qs(parsed_url.query)
+	def aget(k, default_value):
+		v =  attributes.get(k)
+		if v is None:
+			return default_value
+		assert len(v)==1
+		return v[0]
+	display = aget("display", os.environ.get("DISPLAY"))
+	socket_dir = aget("socket-dir", "/tmp")
+	printer = aget("remote-printer", "")
+	source = aget("source", "")
+	if not source:
+		raise Exception("Device URI: client source uuid is missing")
+	if not display:
+		raise Exception("Device URI: display number not specified!")
+	info("display: %s" % display)
+	#exec_command("cp %s /tmp/print.pdf" % output_file)
+	#exec_command("ls -la %s /tmp/print.pdf" % output_file)
+	xpra_print("-", username, display, source, title, printer, no_copies, print_options, socket_dir)
+
+def main():
+	try:
+		do_main()
+	except Exception as e:
+		err("failure in xpraforwarder main: %s" % e)
+		for x in traceback.format_tb(sys.exc_info[2]):
+			err(x)
+
+
+if __name__=='__main__':
+	main()

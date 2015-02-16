@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -51,7 +51,6 @@ class ProxyServer(ServerCore):
         self.timeout_add = gobject.timeout_add
         self.source_remove = gobject.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
-        self._socket_dir = None
         self.control_commands = ["hello", "stop"]
         #ensure we cache the platform info before intercepting SIGCHLD
         #as this will cause a fork and SIGCHLD to be emitted:
@@ -63,7 +62,6 @@ class ProxyServer(ServerCore):
         log("ProxyServer.init(%s)", opts)
         if not opts.auth:
             raise Exception("The proxy server requires an authentication mode (use 'none' to disable authentication)")
-        self._socket_dir = opts.socket_dir
         self.video_encoders = opts.video_encoders
         self.csc_modules = opts.csc_modules
         ServerCore.init(self, opts)

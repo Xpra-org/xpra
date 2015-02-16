@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -232,6 +232,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/applications/xpra_launcher.desktop
 %{_datadir}/applications/xpra.desktop
 %{_datadir}/icons/xpra.png
+/usr/lib/cups/backend/xpraforwarder
 %dir %{_sysconfdir}/xpra
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config(noreplace) %{_sysconfdir}/xpra/xpra.conf
@@ -267,6 +268,7 @@ popd
 %post
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+/bin/chmod 700 /usr/lib/cups/backend/xpraforwarder
 
 
 %postun

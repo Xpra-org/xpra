@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -118,6 +118,7 @@ Xdummy_wrapper_ENABLED  = None          #None means auto-detect
 if WIN32 or OSX:
     Xdummy_ENABLED = False
 sound_ENABLED           = True
+printing_ENABLED        = not WIN32
 
 enc_proxy_ENABLED       = True
 enc_x264_ENABLED        = True          #too important to detect
@@ -165,7 +166,7 @@ SWITCHES = ["enc_x264", "enc_x265",
             "clipboard",
             "server", "client", "x11", "gtk_x11",
             "gtk2", "gtk3", "html5",
-            "sound", "opengl",
+            "sound", "opengl", "printing",
             "rebuild",
             "warn", "strict", "shadow", "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests"]
@@ -1598,6 +1599,12 @@ if html5_ENABLED:
         if (k!=""):
             k = os.sep+k
         add_data_files(html5_dir+k, v)
+
+
+if printing_ENABLED:
+    #"/usr/lib/cups/backend":
+    cups_backend_dir = os.path.join(sys.prefix, "lib", "cups", "backend")
+    add_data_files(cups_backend_dir, ["cups/xpraforwarder"])
 
 
 

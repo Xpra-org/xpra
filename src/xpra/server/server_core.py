@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -128,6 +128,7 @@ class ServerCore(object):
         self.socket_types = {}
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout = 0.1
+        self._socket_dir = None
 
         self.session_name = ""
 
@@ -159,6 +160,7 @@ class ServerCore(object):
         self.session_name = opts.session_name
         set_application_name(self.session_name or "Xpra")
 
+        self._socket_dir = opts.socket_dir
         self._tcp_proxy = opts.tcp_proxy
         self.encryption_keyfile = opts.encryption_keyfile
         self.password_file = opts.password_file

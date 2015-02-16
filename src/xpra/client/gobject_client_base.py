@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -291,6 +291,50 @@ class ControlXpraClient(CommandConnectClient):
         capabilities = GObjectXpraClient.make_hello(self)
         log("make_hello() adding command request '%s' to %s", self.command, capabilities)
         capabilities["command_request"] = self.command
+        return capabilities
+
+
+class PrintClient(CommandConnectClient):
+    """ Allows us to send a file to the server for printing.
+    """
+    def set_command_args(self, command):
+        log("set_command_args(%s)", command)
+        self.filename = command[0]
+        self.command = command[1:]
+        #FIXME: load as needed...
+        from xpra.os_util import load_binary_file
+        if self.filename=="-":
+            #replace with filename proposed
+            self.filename = command[2]
+            #read file from stdin
+            self.file_data = sys.stdin.read()
+        else:
+            self.file_data = load_binary_file(self.filename)
+        assert self.file_data, "no data found for '%s'" % self.filename
+        self.file_transfer = True
+        self.printing = True
+
+    def client_type(self):
+        return "Python/GObject/Print"
+
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not respond")
+
+    def do_command(self):
+        printing = self.server_capabilities.boolget("printing")
+        if not printing:
+            self.warn_and_quit(EXIT_UNSUPPORTED, "server does not support printing")
+            return
+        #TODO: compress file data? (this should run locally most of the time anyway)
+        from xpra.net.compression import Compressed
+        blob = Compressed("print", self.file_data)
+        self.send("print", self.filename, blob, *self.command)
+        gobject.idle_add(self.send, "disconnect", DONE, "detaching")
+
+    def make_hello(self):
+        capabilities = CommandConnectClient.make_hello(self)
+        capabilities["wants_features"] = True   #so we know if printing is supported or not
+        capabilities["print_request"] = True    #marker to skip full setup
         return capabilities
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -31,6 +31,7 @@ from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
 
 SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
 TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
+NO_ROOT_WARNING = int(os.environ.get("XPRA_NO_ROOT_WARNING", "0"))
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -264,6 +265,7 @@ def do_parse_cmdline(cmdline, defaults):
                         "\t%prog screenshot filename [DISPLAY]\n",
                         "\t%prog info [DISPLAY]\n",
                         "\t%prog control DISPLAY command [arg1] [arg2]..\n",
+                        "\t%prog print DISPLAY filename",
                         "\t%prog version [DISPLAY]\n"
                       ]
     server_modes = []
@@ -343,6 +345,26 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         hidden_options["daemon"] = False
         hidden_options["log_file"] = defaults.log_file
+
+    #FIXME: file tranfer command line options:
+    legacy_bool_parse("printing")
+    legacy_bool_parse("file-transfer")
+    group.add_option("--file-transfer", action="store", metavar="yes|no",
+                      dest="file_transfer", default=defaults.file_transfer,
+                      help="Support file transfers. Default: %s." % enabled_str(defaults.file_transfer))
+    group.add_option("--printing", action="store", metavar="yes|no",
+                      dest="printing", default=defaults.printing,
+                      help="Support printing. Default: %s." % enabled_str(defaults.printing))
+    if supports_server:
+        group.add_option("--lpadmin", action="store",
+                          dest="lpadmin", default=defaults.lpadmin,
+                          metavar="COMMAND",
+                          help="Specify the lpadmin command to use. Default: '%default'.")
+    else:
+        hidden_options["lpadmin"] = defaults.lpadmin
+    hidden_options["file_size_limit"] = defaults.file_size_limit
+    hidden_options["open_command"] = defaults.open_command
+    hidden_options["open_files"] = defaults.open_files
 
     if (supports_server or supports_shadow):
         legacy_bool_parse("exit-with-client")
@@ -809,7 +831,7 @@ def configure_logging(options, mode):
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
-    if os.name=="posix" and os.getuid()==0 and mode!="proxy":
+    if os.name=="posix" and os.getuid()==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
     configure_logging(options, mode)
@@ -823,7 +845,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             nox()
             from xpra.scripts.server import run_server
             return run_server(error_cb, options, mode, script_file, args)
-        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor"):
+        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print"):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit") and (supports_server or supports_shadow):
             nox()
@@ -1156,6 +1178,14 @@ def run_client(error_cb, opts, extra_args, mode):
         args = extra_args[1:]
         extra_args = extra_args[:1]
         app = ControlXpraClient(connect(), opts)
+        app.set_command_args(args)
+    elif mode=="print":
+        from xpra.client.gobject_client_base import PrintClient
+        if len(extra_args)<=1:
+            error_cb("not enough arguments for 'print' mode")
+        args = extra_args[1:]
+        extra_args = extra_args[:1]
+        app = PrintClient(connect(), opts)
         app.set_command_args(args)
     elif mode=="version":
         from xpra.client.gobject_client_base import VersionXpraClient

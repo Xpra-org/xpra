@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -19,6 +19,8 @@ soundlog = Logger("sound")
 keylog = Logger("keyboard")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
+printlog = Logger("printing")
+
 
 from xpra.server import ClientException
 from xpra.server.source_stats import GlobalPerformanceStatistics
@@ -41,6 +43,7 @@ NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
 MAX_CLIPBOARD_PER_SECOND = int(os.environ.get("XPRA_CLIPBOARD_LIMIT", "10"))
+ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
@@ -143,7 +146,7 @@ class ServerSource(object):
     """
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 idle_timeout, idle_timeout_cb,
+                 idle_timeout, idle_timeout_cb, socket_dir,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  supports_mmap,
@@ -154,7 +157,7 @@ class ServerSource(object):
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
         log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 idle_timeout, idle_timeout_cb,
+                 idle_timeout, idle_timeout_cb, socket_dir,
                  get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap,
@@ -175,6 +178,7 @@ class ServerSource(object):
         self.idle_timeout_cb = idle_timeout_cb
         self.idle_timer = None
         self.schedule_idle_timeout()
+        self.socket_dir = socket_dir
         #pass it to window source:
         WindowSource.staticinit(idle_add, timeout_add, source_remove)
         self.get_transient_for = get_transient_for
@@ -293,6 +297,9 @@ class ServerSource(object):
         self.metadata_supported = []
         self.show_desktop_allowed = False
         self.supports_transparency = False
+        self.file_transfer = False
+        self.printing = False
+        self.printers = {}
         self.vrefresh = -1
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
@@ -337,6 +344,7 @@ class ServerSource(object):
             self.mmap = None
             self.mmap_size = 0
         self.stop_sending_sound()
+        self.remove_printers()
 
 
     def recalculate_delays(self):
@@ -520,6 +528,8 @@ class ServerSource(object):
         self.clipboard_notifications = c.boolget("clipboard.notifications")
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
         self.share = c.boolget("share")
+        self.file_transfer = c.boolget("file-transfer")
+        self.printing = c.boolget("printing")
         self.named_cursors = c.boolget("named_cursors")
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
@@ -593,7 +603,7 @@ class ServerSource(object):
         self.generic_encodings = c.boolget("encoding.generic")
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
-            log.info("windows/pixels forwarding is disabled for this client")
+            log("windows/pixels forwarding is disabled for this client")
         else:
             self.parse_encoding_caps(c)
 
@@ -691,6 +701,12 @@ class ServerSource(object):
                         setattr(spec, k, v)
                     log("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
                     self.video_helper.add_encoder_spec(encoding, colorspace, spec)
+
+
+    def query_printers(self):
+        assert self.printing
+        if self.machine_id!=get_machine_id() or ADD_LOCAL_PRINTERS:
+            self.send("query-printers")
 
 
     def startup_complete(self):
@@ -1100,7 +1116,8 @@ class ServerSource(object):
             info[k] = bool(getattr(self, prop))
         for prop in ("named_cursors", "share", "randr_notify",
                      "clipboard_notifications", "system_tray",
-                     "lz4", "lzo"):
+                     "lz4", "lzo",
+                     "printing", "file_transfer"):
             battr(prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
                            "send_windows"       : "windows",
@@ -1112,6 +1129,8 @@ class ServerSource(object):
                            "double_click_time"      : "double_click.time",
                            "double_click_distance"  : "double_click.distance"}.items():
             info[name] = getattr(self, prop)
+        if self.printers:
+            info["printers"] = self.printers
         return info
 
     def get_sound_info(self):
@@ -1315,6 +1334,62 @@ class ServerSource(object):
     def set_deflate(self, level):
         self.send("set_deflate", level)
 
+
+    def set_printers(self, printers):
+        printlog("set_printers(%s)", printers)
+        if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
+            printlog("not adding local printers")
+            return
+        from xpra.platform.pycups_printing import add_printer, remove_printer
+        for k in self.printers:
+            if k not in printers:
+                try:
+                    remove_printer(k)
+                except Exception as e:
+                    printlog.warn("failed to remove printer %s: %s", k, e)
+        location = "via xpra"
+        if self.hostname:
+            location = "on %s (via xpra)" % self.hostname
+        #expand it here so the xpraforwarder doesn't need to import anything xpra:
+        from xpra.dotxpra import osexpand
+        from xpra.platform.paths import get_default_socket_dir
+        socket_dir = osexpand(self.socket_dir or get_default_socket_dir())
+        attributes = {"display"         : os.environ.get("DISPLAY"),
+                      "source"          : self.uuid,
+                      "socket-dir"      : socket_dir}
+        for k,v in printers.items():
+            if k not in self.printers:
+                info = v.get("printer-info", "")
+                attrs = attributes.copy()
+                attrs["remote-printer"] = k
+                attrs["remote-device-uri"] = v.get("device-uri")
+                try:
+                    add_printer(k, v, info, location, attrs)
+                except Exception as e:
+                    printlog.warn("failed to add printer %s: %s", k, e)
+        self.printers = printers
+
+    def remove_printers(self):
+        for k in self.printers:
+            from xpra.platform.pycups_printing import remove_printer
+            remove_printer(k)
+        self.printers = {}
+
+
+    def send_file(self, filename, data, printit, openit, maxbitrate=0, options={}):
+        assert self.file_transfer
+        log("send_file%s", (filename, "%s bytes" % len(data), printit, openit, maxbitrate, options))
+        #TODO:
+        # * client ACK
+        # * stream it (don't load the whole file!)
+        # * timeouts
+        # * checksum
+        # * rate control
+        # * xpra info with queue and progress
+        basefilename = os.path.basename(filename)
+        filesize = len(data)
+        cdata = compressed_wrapper("file-data", data, level=5, lz4=self.lz4)
+        self.send("send-file", basefilename, printit, openit, filesize, cdata, maxbitrate, options)
 
     def send_client_command(self, *args):
         self.send("control", *args)
