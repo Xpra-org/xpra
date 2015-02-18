@@ -386,7 +386,7 @@
   <distutils id="python-rencode">
      <branch repo="xpra.org"
 	     module="/src/rencode-1.0.3.tar.xz"
-             hash="md5:e7922adc800c440ec21d74506bad1767"
+             hash="md5:b4c37bdd81e814587196afac06c71142"
 	     version="1.0.3"/>
   </distutils>
 
