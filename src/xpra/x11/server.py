@@ -247,6 +247,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def do_get_info(self, proto, server_sources, window_ids):
         info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
+        info["focused"] = self._has_focus
+        info["grabbed"] = self._has_grab
         log("do_get_info: adding cursor=%s", self.last_cursor_data)
         #copy to prevent race:
         cd = self.last_cursor_data
