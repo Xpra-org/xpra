@@ -343,7 +343,9 @@ class ServerBase(ServerCore):
             try:
                 self.pulseaudio_proc.terminate()
             except:
-                log.warn("error trying to stop pulseaudio", exc_info=True)
+                #only log the full stacktrace if the process failed to terminate:
+                full_trace = self.is_child_alive(self.pulseaudio_proc)
+                log.warn("error trying to stop pulseaudio", exc_info=full_trace)
 
     def init_sound_options(self, sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
         try:
