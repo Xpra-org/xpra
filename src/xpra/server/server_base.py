@@ -1882,6 +1882,9 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss:
             self._focus(ss, wid, modifiers)
+            #if the client focused one of our windows, count this as a user event:
+            if wid>0:
+                ss.user_event()
 
     def _process_layout(self, proto, packet):
         layout, variant = packet[1:3]

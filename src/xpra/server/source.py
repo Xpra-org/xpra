@@ -20,6 +20,7 @@ keylog = Logger("keyboard")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 printlog = Logger("printing")
+timeoutlog = Logger("timeout")
 
 
 from xpra.server import ClientException
@@ -442,10 +443,12 @@ class ServerSource(object):
 
 
     def user_event(self):
+        timeoutlog("user_event()")
         self.last_user_event = time.time()
         self.schedule_idle_timeout()
 
     def schedule_idle_timeout(self):
+        timeoutlog("schedule_idle_timeout() idle_timer=%s, idle_timeout=%s", self.idle_timer, self.idle_timeout)
         if self.idle_timer:
             self.source_remove(self.idle_timer)
             self.idle_timer = None
@@ -453,6 +456,7 @@ class ServerSource(object):
             self.idle_timer = self.timeout_add(self.idle_timeout*1000, self.idle_timedout)
 
     def idle_timedout(self):
+        timeoutlog("idle_timedout() callback=%s", self.idle_timeout_cb)
         self.idle_timeout_cb(self)
         self.schedule_idle_timeout()
 

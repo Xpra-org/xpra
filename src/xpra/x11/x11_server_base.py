@@ -527,6 +527,8 @@ class X11ServerBase(GTKServerBase):
             with xswallow:
                 self._move_pointer(wid, pointer)
         ss.make_keymask_match(modifiers)
+        if wid==self.get_focus():
+            ss.user_event()
 
     def _process_button_action(self, proto, packet):
         ss = self._server_sources.get(proto)
