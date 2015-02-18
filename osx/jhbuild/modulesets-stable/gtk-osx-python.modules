@@ -200,9 +200,10 @@
 
   <autotools id="gtk-mac-integration-python" autogen-sh="configure"
              autogenargs="--enable-python">
-    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.7.tar.xz"
-            version="2.0.7"
+    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.5.tar.xz"
+            version="2.0.5"
             hash="sha256:e6de70da740b452f18c113a7ebb6772936a0fb9873137514090849820e296eb7">
+       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-unhandled-exception-from-attempting-to-access-me.patch" strip="1"/>
     </branch>
     <dependencies>
     </dependencies>
