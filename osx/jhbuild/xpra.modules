@@ -29,22 +29,6 @@
   <repository type="tarball" name="sourceforge" href="http://downloads.sourceforge.net/sourceforge/"/>
   <repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
 
-  <autotools id="gtk-osx-docbook" autogen-sh="configure"
-             supports-non-srcdir-builds="no" >
-     <branch repo="sourceforge" module="gtk-osx/gtk-osx-docbook-1.1.tar.gz"
-             version="1.1"/>
-  </autotools>
-
-  <autotools id="gtk-doc" autogenargs="--disable-scrollkeeper --with-xml-catalog=$JHBUILD_PREFIX/etc/xml/catalog"
-             makeargs="-k -i" makeinstallargs="-k -i install"
-             autogen-sh="configure">
-    <branch version="1.21" module="gtk-doc/1.21/gtk-doc-1.21.tar.xz"
-            hash="sha256:5d934d012ee08edd1585544792efa80da271652587ba5b843d2cea8e8b80ee3e"/>
-    <dependencies>
-      <dep package="gtk-osx-docbook"/>
-    </dependencies>
-  </autotools>
-
   <autotools id="yasm" autogenargs="--build=i386-darwin CC='gcc -arch i386' CXX='g++ -arch i386'" autogen-sh="configure">
     <branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
 			version="1.3.0"
