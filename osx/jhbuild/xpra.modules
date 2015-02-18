@@ -494,6 +494,7 @@
       <dep package="python-pyobjc-framework-quartz"/>
       <dep package="gtkglext"/>
       <dep package="pygtkglext"/>
+      <dep package="gtk-mac-bundler"/>
     </dependencies>
   </metamodule>
 
