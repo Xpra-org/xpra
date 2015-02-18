@@ -417,7 +417,7 @@
              version="2.3.4"/>
   </distutils>
 
-  <autotools id="serf" autogenargs="" autogen-sh="scons">
+  <autotools id="serf" autogenargs="" autogen-sh="configure">
     <branch module="/files/serf-1.2.1.tar.bz2"
                         hash="md5:4f8e76c9c6567aee1d66aba49f76a58b"
 			version="1.2.1"
