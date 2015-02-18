@@ -11,8 +11,12 @@ import site
 def get_install_prefix():
     #special case for "user" installations, ie:
     #$HOME/.local/lib/python2.7/site-packages/xpra/platform/paths.py
-    if __file__.startswith(site.getuserbase()):
-        return site.getuserbase()
+    try:
+        base = site.getuserbase()
+    except:
+        base = site.USER_BASE
+    if __file__.startswith(base):
+        return base
     return sys.prefix
 
 def get_resources_dir():
