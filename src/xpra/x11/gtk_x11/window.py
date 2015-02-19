@@ -768,6 +768,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 #we don't honour those because they make little sense, see:
                 #https://mail.gnome.org/archives/wm-spec-list/2005-May/msg00004.html
                 pass
+            elif atom1=="_NET_WM_STATE_MODAL":
+                update_wm_state("modal")
             else:
                 log.info("do_xpra_client_message_event(%s) unhandled atom=%s", event, atom1)
         elif event.message_type=="WM_CHANGE_STATE":
@@ -1098,7 +1100,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("actual-size", (nw, nh))
 
     def get_dynamic_property_names(self):
-        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic", "decorations",
+        return list(BaseWindowModel.get_dynamic_property_names(self))+["icon", "icon-title", "size-hints", "iconic", "decorations", "modal",
                                                                        "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager"]
 
 
@@ -1632,6 +1634,7 @@ class WindowModel(BaseWindowModel):
         "sticky"                : ("_NET_WM_STATE_STICKY", ),
         "skip-taskbar"          : ("_NET_WM_STATE_SKIP_TASKBAR", ),
         "skip-pager"            : ("_NET_WM_STATE_SKIP_PAGER", ),
+        "modal"                 : ("_NET_WM_STATE_MODAL", ),
         }
 
     _state_properties_reversed = {}
