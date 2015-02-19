@@ -73,6 +73,11 @@ def main():
 		from xpra.platform.gui import set_shaded
 		set_shaded(window.get_window(), False)
 	add_buttons("shade", shade, "unshade", unshade)
+	def modal():
+		window.set_modal(True)
+	def notmodal():
+		window.set_modal(False)
+	add_buttons("modal", modal, "not modal", notmodal)
 
 	def window_state(widget, event):
 		STATES = {

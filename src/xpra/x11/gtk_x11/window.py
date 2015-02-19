@@ -346,7 +346,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                           gobject.PARAM_READABLE),
         "modal": (gobject.TYPE_PYOBJECT,
                           "Modal (boolean)", "",
-                          gobject.PARAM_READABLE),
+                          gobject.PARAM_READWRITE),
         "window-type": (gobject.TYPE_PYOBJECT,
                         "Window type",
                         "NB, most preferred comes first, then fallbacks",
