@@ -174,7 +174,6 @@ class ClientWindowBase(ClientWidgetBase):
 
         if b"size-constraints" in metadata:
             self.size_constraints = typedict(metadata.dictget("size-constraints"))
-            self._set_initial_position = self.size_constraints.get("set-initial-position")
             self.set_size_constraints(self.size_constraints, self.max_window_size)
 
         if b"transient-for" in metadata:
