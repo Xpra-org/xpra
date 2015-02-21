@@ -1412,11 +1412,11 @@ class UIXpraClient(XpraClientBase):
             return
         self.in_remote_logging = True
         try:
-            self.send("logging", level, msg % args)
+            self.send("logging", level, str(msg % args))
             exc_info = kwargs.get("exc_info")
             if exc_info:
                 for x in traceback.format_tb(exc_info[2]):
-                    self.send("logging", level, x)
+                    self.send("logging", level, str(x))
         except Exception as e:
             import logging
             self.local_logging(logging.WARNING, "failed to send logging packet: %s" % e)
