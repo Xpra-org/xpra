@@ -9,6 +9,8 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x264")
 X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
+X264_LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
+
 
 from xpra.codecs.codec_constants import get_subsampling_divs, video_codec_spec
 from collections import deque
@@ -17,6 +19,8 @@ from collections import deque
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
     void * memset ( void * ptr, int value, size_t num )
+    int vsnprintf ( char * s, size_t n, const char * format, va_list arg )
+
 
 from libc.stdint cimport int64_t, uint64_t, uint8_t
 
@@ -28,6 +32,15 @@ cdef extern from "stdint.h":
 cdef extern from "inttypes.h":
     pass
 
+cdef extern from "stdarg.h":
+    ctypedef struct va_list:
+        pass
+    ctypedef struct fake_type:
+        pass
+    void va_start(va_list, void* arg)
+    void* va_arg(va_list, fake_type)
+    void va_end(va_list)
+    fake_type int_type "int"
 
 cdef extern from "../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
@@ -36,6 +49,9 @@ cdef extern from "x264.h":
 
     int X264_BUILD
 
+    int X264_LOG_DEBUG
+    int X264_LOG_INFO
+    int X264_LOG_WARNING
     int X264_LOG_ERROR
 
     int X264_CSP_I420
@@ -99,6 +115,7 @@ cdef extern from "x264.h":
         int i_frame_total       #number of frames to encode if known, else 0
 
         int i_log_level
+        void* pf_log
 
         #Bitstream parameters
         int i_frame_reference   #Maximum number of reference frames
@@ -258,6 +275,39 @@ def get_spec(encoding, colorspace):
                             codec_class=Encoder, codec_type=get_type(), speed=0, setup_cost=50, width_mask=0xFFFE, height_mask=0xFFFE)
 
 
+#maps a log level to one of our logger functions:
+LOGGERS = {
+           X264_LOG_ERROR   : log.error,
+           X264_LOG_WARNING : log.warn,
+           X264_LOG_INFO    : log.info,
+           X264_LOG_DEBUG   : log.debug,
+           }
+
+#maps a log level string to the actual constant:
+LOG_LEVEL = {
+             "ERROR"    : X264_LOG_ERROR,
+             "WARNING"  : X264_LOG_WARNING,
+             "WARN"     : X264_LOG_WARNING,
+             "INFO"     : X264_LOG_INFO,
+             #getting segfaults with "DEBUG" level logging...
+             #so this is currently disabled
+             #"DEBUG"    : X264_LOG_DEBUG,
+             }.get(X264_LOGGING.upper(), X264_LOG_WARNING)
+
+
+#the static logging function we want x264 to use:
+cdef X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg):
+    cdef char buffer[256]
+    cdef int r
+    r = vsnprintf(buffer, 256, psz_fmt, arg)
+    if r<0:
+        log.error("X264_log: vsnprintf returned %s on format string '%s'", r, psz_fmt)
+        return
+    s = str(buffer[:r]).rstrip("\n\r")
+    logger = LOGGERS.get(level, log.info)
+    logger("X264: %s", s)
+
+
 cdef class Encoder:
     cdef unsigned long frames
     cdef x264_t *context
@@ -314,14 +364,16 @@ cdef class Encoder:
         param.i_height = self.height
         param.i_csp = self.colorspace
         set_f_rf(&param, get_x264_quality(self.quality))
-        param.i_log_level = X264_LOG_ERROR
         #we never lose frames or use seeking, so no need for regular I-frames:
         param.i_keyint_max = 999999
         #we don't want IDR frames either:
         param.i_keyint_min = 999999
         param.b_intra_refresh = 0   #no intra refresh
         param.b_open_gop = 1        #allow open gop
+        #param.p_log_private = 
         x264_param_apply_profile(&param, self.profile)
+        param.pf_log = <void *> X264_log
+        param.i_log_level = LOG_LEVEL
         self.context = x264_encoder_open(&param)
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
