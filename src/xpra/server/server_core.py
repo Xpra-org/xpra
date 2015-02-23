@@ -115,6 +115,7 @@ class ServerCore(object):
         log("ServerCore.__init__()")
         self.start_time = time.time()
         self.auth_class = None
+        self.tcp_auth_class = None
         self._when_ready = []
         self.child_reaper = None
 
@@ -170,56 +171,58 @@ class ServerCore(object):
         self.init_auth(opts)
 
     def init_auth(self, opts):
-        auth = opts.auth
-        if not auth and opts.password_file:
+        self.auth_class = self.get_auth_module(opts.auth, opts.password_file)
+        self.tcp_auth_class = self.get_auth_module(opts.tcp_auth or opts.auth, opts.password_file)
+        log("init_auth(%s) auth class=%s, tcp auth class=%s", opts, self.auth_class, self.tcp_auth_class)
+
+    def get_auth_module(self, auth, password_file):
+        if not auth and password_file:
             log.warn("no authentication module specified with 'password_file', using 'file' based authentication")
             auth = "file"
         if not auth and os.environ.get('XPRA_PASSWORD'):
             log.warn("no authentication module specified with 'XPRA_PASSWORD', using 'file' based authentication")
             auth = "file"
         if auth=="":
-            return
+            return None
         elif auth=="sys":
+            #resolve virtual "sys" auth:
             if sys.platform.startswith("win"):
                 auth = "win32"
             else:
                 auth = "pam"
             log("will try to use sys auth module '%s' for %s", auth, sys.platform)
-        if auth=="fail":
-            from xpra.server.auth import fail_auth
-            auth_module = fail_auth
-        elif auth=="reject":
-            from xpra.server.auth import reject_auth
-            auth_module = reject_auth
-        elif auth=="allow":
-            from xpra.server.auth import allow_auth
-            auth_module = allow_auth
-        elif auth=="none":
-            from xpra.server.auth import none_auth
-            auth_module = none_auth
-        elif auth=="file":
-            from xpra.server.auth import file_auth
-            auth_module = file_auth
-        elif auth=="pam":
+        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth
+        AUTH_MODULES = {
+                        "fail"      : fail_auth,
+                        "reject"    : reject_auth,
+                        "allow"     : allow_auth,
+                        "none"      : none_auth,
+                        "file"      : file_auth
+                        }
+        try:
             from xpra.server.auth import pam_auth
-            auth_module = pam_auth
-        elif auth=="win32":
-            from xpra.server.auth import win32_auth
-            auth_module = win32_auth
-        else:
-            raise Exception("invalid auth module: %s" % auth)
-        try:
-            auth_module.init(opts)
+            AUTH_MODULES["pam"] = pam_auth
         except Exception as e:
-            raise Exception("failed to initialize %s module: %s" % (auth_module, e))
+            log("cannot load pam auth: %s", e)
         try:
-            self.auth_class = getattr(auth_module, "Authenticator")
+            from xpra.server.auth import win32_auth
+            AUTH_MODULES["win32"] = win32_auth
+        except Exception as e:
+            log("cannot load win32 auth: %s", e)
+        auth_module = AUTH_MODULES.get(auth.lower())
+        if not auth_module:
+            raise Exception("cannot find authentication module '%s' (supported: %s)", auth, AUTH_MODULES.keys())
+        try:
+            auth_class = getattr(auth_module, "Authenticator")
+            return auth_class
         except Exception as e:
             raise Exception("Authenticator class not found in %s" % auth_module)
+
 
     def init_sockets(self, sockets):
         ### All right, we're ready to accept customers:
         for socktype, sock in sockets:
+            log("init_sockets(%s) will add %s socket %s", sockets, socktype, sock)
             self.idle_add(self.add_listen_socket, socktype, sock)
 
     def init_when_ready(self, callbacks):
@@ -339,7 +342,8 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def _new_connection(self, listener, *args):
-        socktype = self.socket_types.get(listener, "")
+        socktype = self.socket_types.get(listener)
+        assert socktype, "cannot find socket type for %s" % listener
         sock, address = listener.accept()
         if len(self._potential_protocols)>=self._max_connections:
             log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
@@ -358,6 +362,11 @@ class ServerCore(object):
         protocol = Protocol(self, sc, self.process_packet)
         protocol.large_packets.append("info-response")
         protocol.authenticator = None
+        if socktype=="tcp":
+            protocol.auth_class = self.tcp_auth_class
+        else:
+            protocol.auth_class = self.auth_class
+        protocol.socket_type = socktype
         protocol.invalid_header = self.invalid_header
         protocol.receive_aliases.update(self._aliases)
         self._potential_protocols.append(protocol)
@@ -514,11 +523,11 @@ class ServerCore(object):
 
         #authenticator:
         username = c.strget("username")
-        if proto.authenticator is None and self.auth_class:
+        if proto.authenticator is None and proto.auth_class:
             try:
-                proto.authenticator = self.auth_class(username)
+                proto.authenticator = proto.auth_class(username)
             except Exception as e:
-                log.warn("error instantiating %s: %s", self.auth_class, e)
+                log.warn("error instantiating %s: %s", proto.auth_class, e)
                 auth_failed("authentication failed")
                 return False
         self.digest_modes = c.get("digest", ("hmac", ))

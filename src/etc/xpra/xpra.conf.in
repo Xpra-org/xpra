@@ -282,6 +282,17 @@ exit-with-children = no
 #start-new-commands = yes
 start-new-commands = no
 
+# Authentication module to use:
+#auth=fail
+#auth=reject
+#auth=allow
+#auth=file
+#auth=sys
+auth=none
+
+# Authentication module to use for TCP sockets:
+#tcp-auth=none
+
 # Set the _NET_WM_NAME,
 # used by some application that make too many assumptions (ie: Java)
 # To workaround JDK6 window positioning issues, use:

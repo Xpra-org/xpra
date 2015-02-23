@@ -651,7 +651,10 @@ def do_parse_cmdline(cmdline, defaults):
                       help="The username supplied by the client for authentication. Default: '%default'.")
     group.add_option("--auth", action="store",
                       dest="auth", default=defaults.auth,
-                      help="The authentication module (default: '%default')")
+                      help="The authentication module to use (default: '%default')")
+    group.add_option("--tcp-auth", action="store",
+                      dest="tcp_auth", default=defaults.tcp_auth,
+                      help="The authentication module to use for TCP sockets (default: '%default')")
     if os.name=="posix":
         group.add_option("--mmap-group", action="store_true",
                           dest="mmap_group", default=defaults.mmap_group,
