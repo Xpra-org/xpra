@@ -42,6 +42,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
+[\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
@@ -117,6 +118,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
+[\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
@@ -528,6 +530,10 @@ chooses the most appropriate system authentication module
 automatically (either \fBpam\fP or \fBwin32\fP)
 .RE
 .PP
+.TP
+\fB\-\-tcp\-auth\fP=\fIMODULE\fP
+Just like the \fBauth\fP switch, except this one only applies
+to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
 .TP
 
 .SS Options for start, upgrade
