@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os
 import gobject
 try:
@@ -395,8 +396,10 @@ class XpraClient(GTKXpraClient):
         title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
         group_leader_window = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_ONLY, title)
         self._ref_to_group_leader[refkey] = group_leader_window
-        #spec says window should point to itself
-        group_leader_window.set_group(group_leader_window)
+        #avoid warning on win32...
+        if not sys.platform.startswith("win"):
+            #X11 spec says window should point to itself:
+            group_leader_window.set_group(group_leader_window)
         log("new hidden group leader window %s for ref=%s", group_leader_window, refkey)
         self._group_leader_wids.setdefault(group_leader_window, []).append(wid)
         return group_leader_window
