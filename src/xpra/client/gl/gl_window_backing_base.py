@@ -37,7 +37,7 @@ def get_fcolor(encoding):
         c = color_parse(color_name)
     except:
         c = color_parse("black")
-    return c.red_float, c.green_float, c.blue_float, 0.3
+    return c.red/65536.0, c.green/65536.0, c.blue/65536.0, 0.3
 _DEFAULT_BOX_COLOR = get_fcolor("black")
 BOX_COLORS = {}
 for x in _DEFAULT_BOX_COLORS.keys():

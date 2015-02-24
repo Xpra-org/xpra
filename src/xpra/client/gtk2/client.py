@@ -113,7 +113,7 @@ class XpraClient(GTKXpraClient):
             if size<=0:
                 log("border size is %s, disabling it", size)
                 return
-        self.border = WindowBorder(True, color.red_float, color.green_float, color.blue_float, alpha, size)
+        self.border = WindowBorder(True, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
         log("parse_border(%s)=%s", border_str, self.border)
 
 
