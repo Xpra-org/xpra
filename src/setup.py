@@ -1502,10 +1502,11 @@ else:
 
     class install_data_override(install_data):
         def run(self):
-            # Call parent
             install_data.run(self)
             build_xpra_conf(self.install_dir)
-
+            for fn in self.get_outputs():
+                if fn.endswith("/xpraforwarder"):
+                    os.chmod(fn, 0o700)
 
     # add build_conf to build step
     cmdclass.update({
