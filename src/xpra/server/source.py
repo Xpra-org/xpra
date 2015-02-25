@@ -459,7 +459,8 @@ class ServerSource(object):
         self.idle_timer = None
         timeoutlog("idle_timedout() callback=%s", self.idle_timeout_cb)
         self.idle_timeout_cb(self)
-        self.schedule_idle_timeout()
+        if not self.is_closed():
+            self.schedule_idle_timeout()
 
 
     def parse_hello(self, c):
