@@ -10,6 +10,7 @@ import sys
 import time
 import datetime
 import traceback
+import logging
 from collections import deque
 
 from xpra.log import Logger, set_global_logging_handler
@@ -1418,7 +1419,9 @@ class UIXpraClient(XpraClientBase):
                 for x in traceback.format_tb(exc_info[2]):
                     self.send("logging", level, str(x))
         except Exception as e:
-            import logging
+            if self.exit_code is not None:
+                #errors can happen during exit, don't care
+                return
             self.local_logging(logging.WARNING, "failed to send logging packet: %s" % e)
         finally:
             self.in_remote_logging = False
