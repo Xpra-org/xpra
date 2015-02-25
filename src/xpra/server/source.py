@@ -179,6 +179,7 @@ class ServerSource(object):
         self.idle_add = idle_add
         self.timeout_add = timeout_add
         self.source_remove = source_remove
+        self.idle = False
         self.idle_timeout = idle_timeout
         self.idle_timeout_cb = idle_timeout_cb
         self.idle_grace_timeout_cb = idle_grace_timeout_cb
@@ -449,11 +450,30 @@ class ServerSource(object):
         self.send_cursor()
 
 
+    def go_idle(self):
+        #usually fires from the server's idle_grace_timeout_cb
+        if self.idle:
+            return
+        self.idle = True
+        for window_source in self.window_sources.values():
+            window_source.go_idle()
+
+    def no_idle(self):
+        #on user event, we stop being idle
+        if not self.idle:
+            return
+        self.idle = False
+        for window_source in self.window_sources.values():
+            window_source.no_idle()
+
+
     def user_event(self):
         timeoutlog("user_event()")
         self.last_user_event = time.time()
         self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
+        if self.idle:
+            self.no_idle()
 
     def schedule_idle_timeout(self):
         timeoutlog("schedule_idle_timeout() idle_timer=%s, idle_timeout=%s", self.idle_timer, self.idle_timeout)
@@ -1104,6 +1124,7 @@ class ServerSource(object):
                 "platform_name"     : platform_name(self.client_platform, self.client_release),
                 "uuid"              : self.uuid,
                 "idle_time"         : int(time.time()-self.last_user_event),
+                "idle"              : self.idle,
                 "hostname"          : self.hostname,
                 "auto_refresh"      : self.auto_refresh_delay,
                 "desktop_size"      : self.desktop_size or "",

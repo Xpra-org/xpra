@@ -624,6 +624,7 @@ class ServerBase(ServerCore):
         log("idle_grace_timeout_cb(%s)", source)
         timeout_nid = 2**16 + 2**8 + 1
         source.notify(0, timeout_nid, "xpra", 0, "", "This Xpra session will timeout soon", "Activate one of the windows to avoid this timeout", 10)
+        source.go_idle()
 
 
     def _process_disconnect(self, proto, packet):

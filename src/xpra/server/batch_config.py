@@ -55,6 +55,7 @@ class DamageBatchConfig(object):
         self.max_delay = self.MAX_DELAY
         self.timeout_delay = self.TIMEOUT_DELAY
         self.delay = self.START_DELAY
+        self.saved = self.START_DELAY
         self.locked = False                             #to force a specific delay
         self.last_delays = deque(maxlen=64)             #the delays we have tried to use (milliseconds)
         self.last_actual_delays = deque(maxlen=64)      #the delays we actually used (milliseconds)

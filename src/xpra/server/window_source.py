@@ -361,6 +361,15 @@ class WindowSource(object):
                 }
 
 
+    def go_idle(self):
+        self.batch_config.locked = True
+        self.batch_config.saved = self.batch_config.delay
+        self.batch_config.delay = max(500, self.batch_config.delay)
+
+    def no_idle(self):
+        self.batch_config.locked = False
+        self.batch_config.delay = self.batch_config.saved
+
 
     def suspend(self):
         self.cancel_damage()
