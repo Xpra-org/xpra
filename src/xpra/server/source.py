@@ -456,6 +456,7 @@ class ServerSource(object):
             self.idle_timer = self.timeout_add(self.idle_timeout*1000, self.idle_timedout)
 
     def idle_timedout(self):
+        self.idle_timer = None
         timeoutlog("idle_timedout() callback=%s", self.idle_timeout_cb)
         self.idle_timeout_cb(self)
         self.schedule_idle_timeout()
