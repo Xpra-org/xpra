@@ -45,6 +45,10 @@ debug = log.debug
 
 MAX_CLIPBOARD_PER_SECOND = int(os.environ.get("XPRA_CLIPBOARD_LIMIT", "10"))
 ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
+try:
+    GRACE_PERCENT = int(os.environ.get("XPRA_GRACE_PERCENT", "90"))
+except:
+    GRACE_PERCENT = 90
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
@@ -147,7 +151,7 @@ class ServerSource(object):
     """
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 idle_timeout, idle_timeout_cb, socket_dir,
+                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  supports_mmap,
@@ -158,7 +162,7 @@ class ServerSource(object):
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
         log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 idle_timeout, idle_timeout_cb, socket_dir,
+                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir,
                  get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap,
@@ -177,7 +181,10 @@ class ServerSource(object):
         self.source_remove = source_remove
         self.idle_timeout = idle_timeout
         self.idle_timeout_cb = idle_timeout_cb
+        self.idle_grace_timeout_cb = idle_grace_timeout_cb
         self.idle_timer = None
+        self.idle_grace_timer = None
+        self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
         self.socket_dir = socket_dir
         #pass it to window source:
@@ -445,6 +452,7 @@ class ServerSource(object):
     def user_event(self):
         timeoutlog("user_event()")
         self.last_user_event = time.time()
+        self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
 
     def schedule_idle_timeout(self):
@@ -454,6 +462,21 @@ class ServerSource(object):
             self.idle_timer = None
         if self.idle_timeout>0:
             self.idle_timer = self.timeout_add(self.idle_timeout*1000, self.idle_timedout)
+
+    def schedule_idle_grace_timeout(self):
+        timeoutlog("schedule_idle_grace_timeout() grace timer=%s, idle_timeout=%s", self.idle_grace_timer, self.idle_timeout)
+        if self.idle_grace_timer:
+            self.source_remove(self.idle_grace_timer)
+            self.idle_grace_timer = None
+        if self.idle_timeout>0 and not self.is_closed():
+            #grace timer is 90% of real timer:
+            grace = int(self.idle_timeout*1000*GRACE_PERCENT/100)
+            self.idle_grace_timer = self.timeout_add(grace, self.idle_grace_timedout)
+
+    def idle_grace_timedout(self):
+        self.idle_grace_timer = None
+        timeoutlog("idle_grace_timedout() callback=%s", self.idle_grace_timeout_cb)
+        self.idle_grace_timeout_cb(self)
 
     def idle_timedout(self):
         self.idle_timer = None

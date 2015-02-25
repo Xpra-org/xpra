@@ -620,6 +620,11 @@ class ServerBase(ServerCore):
         if p:
             self.disconnect_client(p, IDLE_TIMEOUT)
 
+    def idle_grace_timeout_cb(self, source):
+        log("idle_grace_timeout_cb(%s)", source)
+        timeout_nid = 2**16 + 2**8 + 1
+        source.notify(0, timeout_nid, "xpra", 0, "", "This Xpra session will timeout soon", "Activate one of the windows to avoid this timeout", 10)
+
 
     def _process_disconnect(self, proto, packet):
         info = packet[1]
@@ -727,7 +732,7 @@ class ServerBase(ServerCore):
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
-                          self.idle_timeout, self.idle_timeout_cb, self._socket_dir,
+                          self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb, self._socket_dir,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.supports_mmap,
