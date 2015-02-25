@@ -897,7 +897,7 @@ class ServerBase(ServerCore):
         if source.wants_features:
             capabilities.update({
                  "clipboards"                   : self._clipboards,
-                 "notifications"                : self.notifications_forwarder is not None,
+                 "notifications"                : self.notifications,
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
