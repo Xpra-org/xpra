@@ -130,24 +130,26 @@ class Win32EventListener(object):
             log.error("failed to hook session notifications: %s", e)
 
     def MyWndProc(self, hWnd, msg, wParam, lParam):
-        assert hWnd==self.hwnd, "invalid hwnd: %s (expected %s)" % (hWnd, self.hwnd)
         callbacks = self.event_callbacks.get(msg)
         event_name = KNOWN_WM_EVENTS.get(msg, msg)
         log("callbacks for event %s: %s", event_name, callbacks)
-        if callbacks:
-            for c in callbacks:
-                try:
-                    c(wParam, lParam)
-                except:
-                    log.error("error in callback %s", c, exc_info=True)
-        elif msg in IGNORE_EVENTS:
-            log("%s: %s / %s", IGNORE_EVENTS.get(msg), wParam, lParam)
-        elif msg in LOG_EVENTS:
-            log.info("%s: %s / %s", LOG_EVENTS.get(msg), wParam, lParam)
-        #elif msg==win32con.WM_ACTIVATEAPP:
-        #    log("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
+        if hWnd==self.hwnd:
+            if callbacks:
+                for c in callbacks:
+                    try:
+                        c(wParam, lParam)
+                    except:
+                        log.error("error in callback %s", c, exc_info=True)
+            elif msg in IGNORE_EVENTS:
+                log("%s: %s / %s", IGNORE_EVENTS.get(msg), wParam, lParam)
+            elif msg in LOG_EVENTS:
+                log.info("%s: %s / %s", LOG_EVENTS.get(msg), wParam, lParam)
+            #elif msg==win32con.WM_ACTIVATEAPP:
+            #    log("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
+            else:
+                log.warn("unexpected message: %s / %s / %s", event_name, wParam, lParam)
         else:
-            log.warn("unexpected message: %s / %s / %s", event_name, wParam, lParam)
+            log.warn("invalid hwnd: %s (expected %s)", hWnd, self.hwnd)
         # Pass all messages to the original WndProc
         try:
             return win32gui.CallWindowProc(self.old_win32_proc, hWnd, msg, wParam, lParam)
