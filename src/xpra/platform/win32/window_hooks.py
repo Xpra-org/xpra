@@ -12,6 +12,8 @@ vlog = Logger("verbose")
 import win32gui, win32con, win32api     #@UnresolvedImport
 import ctypes
 from ctypes.wintypes import POINT
+from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
+
 
 class MINMAXINFO(ctypes.Structure):
     _fields_ = [
@@ -33,8 +35,9 @@ class MINMAXINFO(ctypes.Structure):
 class Win32Hooks(object):
 
     def __init__(self, hwnd):
+        self._hwnd = hwnd
         self._message_map = {
-                     win32con.WM_GETMINMAXINFO:  self.on_getminmaxinfo,
+                     win32con.WM_GETMINMAXINFO          : self.on_getminmaxinfo,
                      }
         self.max_size = None
         self._oldwndproc = win32gui.SetWindowLong(hwnd, win32con.GWL_WNDPROC, self._wndproc)
@@ -70,10 +73,19 @@ class Win32Hooks(object):
     def cleanup(self, *args):
         log("cleanup%s", args)
         self._message_map = {}
-        #no need to restore old wndproc since we assume the window is closed
+        #since we assume the window is closed, restoring the wnd proc may be redundant here:
+        if not self.old_win32_proc or not self._hwnd:
+            return
+        try:
+            win32api.SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
+            self.old_win32_proc = None
+            self._hwnd = None
+        except:
+            log.error("cleanup", exc_info=True)
 
     def _wndproc(self, hwnd, msg, wparam, lparam):
-        vlog("_wndproc%s", (hwnd, msg, wparam, lparam))
+        event_name = WNDPROC_EVENT_NAMES.get(msg, msg)
+        vlog("_wndproc%s event name=%s", (hwnd, msg, wparam, lparam), event_name)
         v = win32gui.CallWindowProc(self._oldwndproc, hwnd, msg, wparam, lparam)
         callback = self._message_map.get(msg)
         vlog("_wndproc%s return value=%s, callback=%s", (hwnd, msg, wparam, lparam), v, callback)
