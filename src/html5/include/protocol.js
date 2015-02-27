@@ -111,7 +111,9 @@ function process_buffer() {
 	//debug("packet_size="+packet_size+", level="+level+", index="+index);
 
 	// wait for packet to be complete
-	if (ws.rQlen() < packet_size-8) {
+	// the header is still on the buffer so wait for packetsize+headersize bytes!
+	if (wsock.rQlen() < packet_size+8) {
+		// we already shifted the header off the buffer?
 		debug("packet is not complete yet");
 		return;
 	}
