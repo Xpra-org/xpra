@@ -12,6 +12,7 @@ recursive-include man *
 recursive-include patches *
 recursive-include etc *
 recursive-include xdg *
+recursive-include cups *
 recursive-include icons *
 recursive-include scripts *
 global-include *.py *.txt *.pyx *.pxd
