@@ -23,7 +23,7 @@ function Protocol() {
 "use strict";
 
 var api = {},         // Public API
-	ws,
+	wsock,
 	raw_packets = {},
 	packet_handlers = {},
 	log_packets = true,
@@ -66,7 +66,7 @@ function on_message() {
 	// websock on_message event is simply a notification
 	// that data is available on the recieve queue
 	// check for 8 bytes on buffer
-	if(ws.rQwait("", 8, 0) == false) {
+	if(wsock.rQwait("", 8, 0) == false) {
 		//got a complete header, try and parse
 		process_buffer();
 	}
@@ -90,7 +90,7 @@ function on_error(e) {
 function process_buffer() {
 	"use strict";
 	//debug("peeking at first 8 bytes of buffer...")
-	var buf = ws.rQpeekBytes(8);
+	var buf = wsock.rQpeekBytes(8);
 
 	if (buf[0]!=ord("P")) {
 		throw "invalid packet header format: "+hex2(buf[0]);
@@ -119,9 +119,9 @@ function process_buffer() {
 	}
 
 	// packet is complete but header is still on buffer
-	ws.rQshiftBytes(8);
+	wsock.rQshiftBytes(8);
 	//debug("got a full packet, shifting off "+packet_size);
-	var packet_data = ws.rQshiftBytes(packet_size);
+	var packet_data = wsock.rQshiftBytes(packet_size);
 
 	//decompress it if needed:
 	if (level!=0) {
@@ -153,7 +153,7 @@ function process_buffer() {
 	}
 
 	// see if buffer still has unread packets
-	if (ws.rQlen() > 8) {
+	if (wsock.rQlen() > 8) {
 		process_buffer();
 	}
 
@@ -209,7 +209,7 @@ function send(packet) {
 	//been optimised out by the JS compiler anyway, but it's worth a shot
 	header = header.concat(cdata);
 	//debug("send("+packet+") "+data.byteLength+" bytes in packet for: "+bdata.substring(0, 32)+"..");
-	ws.send(header);
+	wsock.send(header);
 }
 
 
@@ -222,23 +222,23 @@ function set_packet_handler(packet_type, handler) {
 
 function open(uri) {
 	"use strict";
-	if (ws!=null) {
+	if (wsock!=null) {
 		debug("opening a new uri, closing current websocket connection");
 		close();
 	}
-	ws = new Websock();
-	ws.on('open', on_open);
-	ws.on('close', on_close);
-	ws.on('error', on_error);
-	ws.on('message', on_message);
-	ws.open(uri, ['binary']);
+	wsock = new Websock();
+	wsock.on('open', on_open);
+	wsock.on('close', on_close);
+	wsock.on('error', on_error);
+	wsock.on('message', on_message);
+	wsock.open(uri, ['binary']);
 }
 
 function close() {
 	"use strict";
-	if (ws!=null) {
-		ws.close();
-		ws = null;
+	if (wsock!=null) {
+		wsock.close();
+		wsock = null;
 	}
 }
 
