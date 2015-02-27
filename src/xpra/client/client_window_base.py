@@ -425,7 +425,7 @@ class ClientWindowBase(ClientWidgetBase):
     def can_have_spinner(self):
         if self._backing is None:
             return False
-        window_types = self._metadata.get("window-type")
+        window_types = self._metadata.strlistget("window-type")
         if not window_types:
             return False
         return ("NORMAL" in window_types) or \
