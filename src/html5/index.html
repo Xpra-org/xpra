@@ -718,18 +718,37 @@
 				"use strict";
 				show("start()");
 
-				/* 
-				 * We need to either load protocol.js (non-worker method) or if the browser is WebKit based
-				 * load protocol_host.js which is the WebWorker implementation
-				 */
-				if(window.webkitConvertPointFromNodeToPage) {
-					debug("webkit based browser, using web workers");
-					var protoscript = 'include/protocol_host.js';
+				// detect websocket in webworker support and degrade gracefully
+				if(window.Worker) {
+					show("we have webworker support");
+					// spawn worker that checks for a websocket
+					var worker = new Worker('include/wsworker_check.js');
+					worker.addEventListener('message', function(e) {
+						var data = e.data;
+						switch (data['result']) {
+						case true:
+							// yey, we can use websocket in worker!
+							show("we can use websocket in webworker");
+							start_protocol(params, 'include/protocol_host.js');
+							break;
+						case false:
+							show("we can't use websocket in webworker, won't use webworkers");
+							start_protocol(params, 'include/protocol.js');
+							break;
+						default:
+							debug("client got unknown message from worker");
+						};
+					}, false);
+					// ask the worker to check for websocket support, when we recieve a reply
+					// through the eventlistener above, start_protocol() will finish the job
+					worker.postMessage({'cmd': 'check'});
 				} else {
-					debug("not using web worker implementation");
-					var protoscript = 'include/protocol.js';
+					// no webworker support
+					start_protocol(params, 'include/protocol.js');
 				}
+			}
 
+			function start_protocol(params, protoscript) {
 				jQuery.getScript(protoscript)
 					.done(function() {
 						//hook document and window events:
