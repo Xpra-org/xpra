@@ -74,11 +74,11 @@ class Win32Hooks(object):
         log("cleanup%s", args)
         self._message_map = {}
         #since we assume the window is closed, restoring the wnd proc may be redundant here:
-        if not self.old_win32_proc or not self._hwnd:
+        if not self._oldwndproc or not self._hwnd:
             return
         try:
             win32api.SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
-            self.old_win32_proc = None
+            self._oldwndproc = None
             self._hwnd = None
         except:
             log.error("cleanup", exc_info=True)
