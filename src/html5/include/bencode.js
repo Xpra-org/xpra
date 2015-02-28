@@ -40,8 +40,9 @@ function bencode(obj) {
 // decode a bencoded string into a javascript object
 function bdecode(buf) {
     var dec = bparse(buf);
-    if(dec != null && dec[1].length==0)
+    if(dec != null && dec[1].length==0) {
         return dec[0];
+    }
     return null;
 }
 
@@ -69,7 +70,19 @@ function bparse(buf) {
 }
 
 function uintToString(uintArray) {
-    return String.fromCharCode.apply(null, uintArray);
+    // apply in chunks of 10400 to avoid call stack overflow
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
+    var s = ""
+    var skip = 10400;
+    var slice = uintArray.slice;
+    for (var i=0, len=uintArray.length; i<len; i+=skip) {
+        if(!slice) {
+            s += String.fromCharCode.apply(null, uintArray.subarray(i, Math.min(i + skip, len)));
+        } else {
+            s += String.fromCharCode.apply(null, uintArray.slice(i, Math.min(i + skip, len)));
+        }
+    }
+    return s
 }
 
 
