@@ -1423,6 +1423,7 @@ class UIXpraClient(XpraClientBase):
                 #errors can happen during exit, don't care
                 return
             self.local_logging(log, logging.WARNING, "failed to send logging packet: %s" % e)
+            self.local_logging(log, level, msg, *args, **kwargs)
         finally:
             self.in_remote_logging = False
 
