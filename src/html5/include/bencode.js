@@ -72,17 +72,18 @@ function bparse(buf) {
 function uintToString(uintArray) {
     // apply in chunks of 10400 to avoid call stack overflow
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
-    var s = ""
+    var s = "";
     var skip = 10400;
-    var slice = uintArray.slice;
-    for (var i=0, len=uintArray.length; i<len; i+=skip) {
-        if(!slice) {
+    if (uintArray.subarray) {
+        for (var i=0, len=uintArray.length; i<len; i+=skip) {
             s += String.fromCharCode.apply(null, uintArray.subarray(i, Math.min(i + skip, len)));
-        } else {
+        }
+    } else {
+        for (var i=0, len=uintArray.length; i<len; i+=skip) {
             s += String.fromCharCode.apply(null, uintArray.slice(i, Math.min(i + skip, len)));
         }
     }
-    return s
+    return s;
 }
 
 
