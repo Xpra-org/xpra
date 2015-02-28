@@ -60,9 +60,6 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	this.topoffset = parseInt(jQuery(this.div).css('border-top-width'), 10);
 	this.bottomoffset = parseInt(jQuery(this.div).css('border-bottom-width'), 10);
 
-	// update metadata
-	this.update_metadata(metadata);
-
 	// Hook up the events we want to receive:
 	this.event_listeners = []
 	var listeners = [
@@ -80,6 +77,9 @@ function XpraWindow(canvas_state, wid, x, y, w, h, metadata, override_redirect, 
 	this.mouse_move_cb = mouse_move_cb || null;
 	this.mouse_click_cb = mouse_click_cb || null;
 	this.window_closed_cb = window_closed_cb || null;
+
+	// update metadata
+	this.update_metadata(metadata);
 
 	// create the decoration as part of the window, style is in CSS
 	jQuery(this.div).addClass("window");
