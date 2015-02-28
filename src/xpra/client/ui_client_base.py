@@ -1422,7 +1422,7 @@ class UIXpraClient(XpraClientBase):
             if self.exit_code is not None:
                 #errors can happen during exit, don't care
                 return
-            self.local_logging(logging.WARNING, "failed to send logging packet: %s" % e)
+            self.local_logging(log, logging.WARNING, "failed to send logging packet: %s" % e)
         finally:
             self.in_remote_logging = False
 
