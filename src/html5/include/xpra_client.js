@@ -427,13 +427,13 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 		this._window_mouse_move,
 		this._window_mouse_click,
 		this._window_set_focus,
-		this._window_window_closed
+		this._window_closed
 		);
 	this.id_to_window[wid] = win;
 	var geom = win.get_internal_geometry();
 	if (!override_redirect) {
 		this.protocol.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
-		//this.set_focus(wid);
+		this._window_set_focus(win);
 	}
 }
 
@@ -458,7 +458,7 @@ XpraClient.prototype._new_window_common = function(packet, override_redirect) {
 }
 
 XpraClient.prototype._window_closed = function(win) {
-	send(["close-window", win.wid]);
+	win.client.protocol.send(["close-window", win.wid]);
 }
 
 XpraClient.prototype._get_client_properties = function(win) {
