@@ -7,6 +7,9 @@
  * xpra window
  *
  * Based on shape.js but no longer requires it
+ *
+ * requires:
+ *   jQueryUI
  */
 
 /**

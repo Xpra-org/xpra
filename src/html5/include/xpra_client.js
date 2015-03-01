@@ -8,7 +8,7 @@
  *
  * requires:
  *	xpra_protocol.js
- *  window.js
+ *  xpra_window.js
  *  keycodes.js
  */
 
@@ -51,7 +51,8 @@ function XpraClient(container) {
 		'window-metadata': this._process_window_metadata,
 		'lost-window': this._process_lost_window,
 		'raise-window': this._process_raise_window,
-		'window-resized': this._process_window_resized
+		'window-resized': this._process_window_resized,
+		'draw': this._process_draw
 	};
 	// assign the keypress callbacks
 	document.onkeydown = function (e) {
@@ -503,6 +504,10 @@ XpraClient.prototype._window_set_focus = function(win) {
 	}
 }
 
+XpraClient.prototype._window_send_damage_sequence = function(win, packet_sequence, width, height, decode_time) {
+	win.client.protocol.send(["damage-sequence", packet_sequence, win.wid, width, height, decode_time]);
+}
+
 /*
  * packet processing functions start here 
  */
@@ -607,4 +612,42 @@ XpraClient.prototype._process_window_resized = function(packet, ctx) {
 	if (win!=null) {
 		win.resize(width, height);
 	}
+}
+
+XpraClient.prototype._process_draw = function(packet, ctx) {
+	var start = new Date().getTime(),
+		wid = packet[1],
+		x = packet[2],
+		y = packet[3],
+		width = packet[4],
+		height = packet[5],
+		coding = packet[6],
+		data = packet[7],
+		packet_sequence = packet[8],
+		rowstride = packet[9],
+		options = {};
+	if (packet.length>10)
+		options = packet[10];
+	if (coding in ctx.OLD_ENCODING_NAMES_TO_NEW)
+		coding = ctx.OLD_ENCODING_NAMES_TO_NEW[coding];
+	var win = ctx.id_to_window[wid];
+	var decode_time = -1;
+	if (win) {
+		// win.paint draws the update to the window's off-screen buffer and returns true if it
+		// was changed.
+		var redraw = win.paint(x, y, width, height, coding, data, packet_sequence, rowstride, options);
+		decode_time = new Date().getTime() - start;
+		// request that drawing to screen takes place at next available opportunity if possible
+		if(redraw) {
+			if(requestAnimationFrame) {
+				requestAnimationFrame(function() {
+					win.draw();
+				});
+			} else {
+				// requestAnimationFrame is not available, draw immediately
+				win.draw();
+			}
+		}
+	}
+	ctx._window_send_damage_sequence(win, packet_sequence, width, height, decode_time);
 }
