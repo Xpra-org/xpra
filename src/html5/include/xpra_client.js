@@ -15,6 +15,7 @@ XPRA_CLIENT_FORCE_NO_WORKER = true;
 
 function XpraClient(container) {
 	// state
+	var me = this;
 	this.host = null;
 	this.port = null;
 	this.ssl = null;
@@ -32,6 +33,10 @@ function XpraClient(container) {
 	}
 	// a list of our windows
 	this.id_to_window = {};
+	// basic window management
+	this.topwindow = null;
+	this.topindex = 0;
+	this.focus = -1;
 	// the protocol
 	this.protocol = null;
 	// the client holds a list of packet handlers
@@ -40,6 +45,16 @@ function XpraClient(container) {
 		'startup-complete': this._process_startup_complete,
 		'hello': this._process_hello,
 		'ping': this._process_ping
+	};
+	// assign the keypress callbacks
+	document.onkeydown = function (e) {
+		me._keyb_onkeydown(e, me);
+	};
+	document.onkeyup = function (e) {
+		me._keyb_onkeyup(e, me);
+	};
+	document.onkeypress = function (e) {
+		me._keyb_onkeypress(e, me);
 	};
 }
 
@@ -121,6 +136,104 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 		throw e;
 	}
 }
+
+XpraClient.prototype._keyb_get_modifiers = function(event) {
+	/**
+	 * Returns the modifiers set for the current event.
+	 * We get the list of modifiers using "get_event_modifiers"
+	 * then translate "alt" and "meta" into their keymap name.
+	 * (usually "mod1")
+	 */
+	//convert generic modifiers "meta" and "alt" into their x11 name:
+	var modifiers = get_event_modifiers(event);
+	//FIXME: look them up!
+	var alt = "mod1";
+	var meta = "mod1";
+	var index = modifiers.indexOf("alt");
+	if (index>=0)
+		modifiers[index] = alt;
+	index = modifiers.indexOf("meta");
+	if (index>=0)
+		modifiers[index] = meta;
+	//show("get_modifiers() modifiers="+modifiers.toSource());
+	return modifiers;
+}
+
+XpraClient.prototype._keyb_process = function(pressed, event) {
+	/**
+	 * Process a key event: key pressed or key released.
+	 * Figure out the keycode, keyname, modifiers, etc
+	 * And send the event to the server.
+	 */
+	// MSIE hack
+	if (window.event)
+		event = window.event;
+	//show("processKeyEvent("+pressed+", "+event+") keyCode="+event.keyCode+", charCode="+event.charCode+", which="+event.which);
+
+	var keyname = "";
+	var keycode = 0;
+	if (event.which)
+		keycode = event.which;
+	else
+		keycode = event.keyCode;
+	if (keycode in CHARCODE_TO_NAME)
+		keyname = CHARCODE_TO_NAME[keycode];
+	var DOM_KEY_LOCATION_RIGHT = 2;
+	if (keyname.match("_L$") && event.location==DOM_KEY_LOCATION_RIGHT)
+		keyname = keyname.replace("_L", "_R")
+
+	var modifiers = this._keyb_get_modifiers(event);
+	if (this.caps_lock)
+		modifiers.push("lock");
+	var keyval = keycode;
+	var str = String.fromCharCode(event.which);
+	var group = 0;
+
+	var shift = modifiers.indexOf("shift")>=0;
+	if ((this.caps_lock && shift) || (!this.caps_lock && !shift))
+		str = str.toLowerCase();
+
+	if (this.topwindow != null) {
+		//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
+		var packet = ["key-action", topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
+		this.protocol.send(packet);
+	}
+}
+
+XpraClient.prototype._keyb_onkeydown = function(event, ctx) {
+	ctx._keyb_process(true, event);
+	return false;
+};
+XpraClient.prototype._keyb_onkeyup = function(event, ctx) {
+	ctx._keyb_process(false, event);
+	return false;
+};
+
+XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
+	/**
+	 * This function is only used for figuring out the caps_lock state!
+	 * onkeyup and onkeydown give us the raw keycode,
+	 * whereas here we get the keycode in lowercase/uppercase depending
+	 * on the caps_lock and shift state, which allows us to figure
+	 * out caps_lock state since we have shift state.
+	 */
+	var keycode = 0;
+	if (event.which)
+		keycode = event.which;
+	else
+		keycode = event.keyCode;
+	var modifiers = ctx._keyb_get_modifiers(event);
+
+	/* PITA: this only works for keypress event... */
+	caps_lock = false;
+	var shift = modifiers.indexOf("shift")>=0;
+	if (keycode>=97 && keycode<=122 && shift)
+		caps_lock = true;
+	else if (keycode>=65 && keycode<=90 && !shift)
+		caps_lock = true;
+	//show("caps_lock="+caps_lock);
+	return false;
+};
 
 XpraClient.prototype._guess_platform_processor = function() {
 	//mozilla property:
