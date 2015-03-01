@@ -8,6 +8,7 @@
  *
  * requires:
  *	xpra_protocol.js
+ *  window.js
  *  keycodes.js
  */
 
@@ -44,7 +45,13 @@ function XpraClient(container) {
 		'open': this._process_open,
 		'startup-complete': this._process_startup_complete,
 		'hello': this._process_hello,
-		'ping': this._process_ping
+		'ping': this._process_ping,
+		'new-window': this._process_new_window,
+		'new-override-redirect': this._process_new_override_redirect,
+		'window-metadata': this._process_window_metadata,
+		'lost-window': this._process_lost_window,
+		'raise-window': this._process_raise_window,
+		'window-resized': this._process_window_resized
 	};
 	// assign the keypress callbacks
 	document.onkeydown = function (e) {
@@ -397,6 +404,109 @@ XpraClient.prototype._make_hello = function() {
 	};
 }
 
+/*
+ * Window callbacks
+ */
+
+XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_redirect, client_properties) {
+	// each window needs their own DIV that contains a canvas
+	var mydiv = document.createElement("div");
+	mydiv.id = String(wid);
+	var mycanvas = document.createElement("canvas");
+	mydiv.appendChild(mycanvas);
+	document.body.appendChild(mydiv);
+	// set initial sizes
+	mycanvas.width = w;
+	mycanvas.height = h;
+	// create the XpraWindow object to own the new div
+	var win = new XpraWindow(this, mycanvas, wid, x, y, w, h,
+		metadata,
+		override_redirect,
+		client_properties,
+		this._window_geometry_changed,
+		this._window_mouse_move,
+		this._window_mouse_click,
+		this._window_set_focus,
+		this._window_window_closed
+		);
+	this.id_to_window[wid] = win;
+	var geom = win.get_internal_geometry();
+	if (!override_redirect) {
+		this.protocol.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
+		//this.set_focus(wid);
+	}
+}
+
+XpraClient.prototype._new_window_common = function(packet, override_redirect) {
+	var wid, x, y, w, h, metadata;
+	wid = packet[1];
+	x = packet[2];
+	y = packet[3];
+	w = packet[4];
+	h = packet[5];
+	metadata = packet[6];
+	if (wid in this.id_to_window)
+		throw "we already have a window " + wid;
+	if (w<=0 || h<=0) {
+		console.error("window dimensions are wrong: "+w+"x"+h);
+		w, h = 1, 1;
+	}
+	var client_properties = {}
+	if (packet.length>=8)
+		client_properties = packet[7];
+	this._new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
+}
+
+XpraClient.prototype._window_closed = function(win) {
+	send(["close-window", win.wid]);
+}
+
+XpraClient.prototype._get_client_properties = function(win) {
+	var cp = win.client_properties;
+	cp["encodings.rgb_formats"] = this.RGB_FORMATS;
+	return cp;
+}
+
+XpraClient.prototype._window_geometry_changed = function(win) {
+	// window callbacks are called from the XpraWindow function context
+	// so use win.client instead of `this` to refer to the client
+	var geom = win.get_internal_geometry();
+	var wid = win.wid;
+	
+	if (!win.override_redirect) {
+		win.client._window_set_focus(win);
+	}
+	win.client.protocol.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client._get_client_properties(win)]);
+}
+
+XpraClient.prototype._window_mouse_move = function(win, x, y, modifiers, buttons) {
+	var wid = win.wid;
+	win.client.protocol.send(["pointer-position", wid, [x, y], modifiers, buttons]);
+}
+
+XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, modifiers, buttons) {
+	var wid = win.wid;
+	win.client._window_set_focus(win);
+	win.client.protocol.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
+}
+
+XpraClient.prototype._window_set_focus = function(win) {
+	var wid = win.wid;
+	focus = wid;
+	topwindow = wid;
+	win.client.protocol.send(["focus", focus, []]);
+	//set the focused flag on all windows:
+	for (var i in win.client.id_to_window) {
+		var iwin = win.client.id_to_window[i];
+		iwin.focused = (i==wid);
+		iwin.updateFocus();
+	}
+}
+
+/*
+ * packet processing functions start here 
+ */
+
 XpraClient.prototype._process_open = function(packet, ctx) {
 	console.log("sending hello");
 	var hello = ctx._make_hello();
@@ -456,4 +566,45 @@ XpraClient.prototype._process_ping = function(packet, ctx) {
 	var echotime = packet[1];
 	var l1=0, l2=0, l3=0;
 	ctx.protocol.send(["ping_echo", echotime, l1, l2, l3, 0]);
+}
+
+XpraClient.prototype._process_new_window = function(packet, ctx) {
+	ctx._new_window_common(packet, false);
+}
+
+XpraClient.prototype._process_new_override_redirect = function(packet, ctx) {
+	ctx._new_window_common(packet, true);
+}
+
+XpraClient.prototype._process_window_metadata = function(packet, ctx) {
+	var wid = packet[1],
+		metadata = packet[2],
+		win = ctx.id_to_window[wid];
+    win.update_metadata(metadata);
+}
+
+XpraClient.prototype._process_lost_window = function(packet, ctx) {
+	var wid = packet[1];
+	var win = ctx.id_to_window[wid];
+	if (win!=null) {
+		win.destroy();
+	}
+}
+
+XpraClient.prototype._process_raise_window = function(packet, ctx) {
+	var wid = packet[1];
+	var win = ctx.id_to_window[wid];
+	if (win!=null) {
+		ctx._window_set_focus(win);
+	}
+}
+
+XpraClient.prototype._process_window_resized = function(packet, ctx) {
+	var wid = packet[1];
+	var width = packet[2];
+	var height = packet[3];
+	var win = ctx.id_to_window[wid];
+	if (win!=null) {
+		win.resize(width, height);
+	}
 }
