@@ -210,7 +210,7 @@ XpraProtocol.prototype._process = function() {
 		for (var index in this.raw_packets) {
 			packet[index] = this.raw_packets[index];
 		}
-		raw_packets = {}
+		this.raw_packets = {}
 		// pass to our packet handler
 		this.packet_handler(packet, this.packet_ctx);
 	}
