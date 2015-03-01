@@ -55,15 +55,29 @@ function XpraClient(container) {
 		'draw': this._process_draw
 	};
 	// assign the keypress callbacks
-	document.onkeydown = function (e) {
-		me._keyb_onkeydown(e, me);
-	};
-	document.onkeyup = function (e) {
-		me._keyb_onkeyup(e, me);
-	};
-	document.onkeypress = function (e) {
-		me._keyb_onkeypress(e, me);
-	};
+	// if we detect jQuery, use that to assign them instead
+	// to allow multiple clients on the same page
+	if (window.jQuery) {
+		jQuery(document).keydown(function (e) {
+			me._keyb_onkeydown(e, me);
+		});
+		jQuery(document).keyup(function (e) {
+			me._keyb_onkeyup(e, me);
+		});
+		jQuery(document).keypress(function (e) {
+			me._keyb_onkeypress(e, me);
+		});
+	} else {
+		document.onkeydown = function (e) {
+			me._keyb_onkeydown(e, me);
+		};
+		document.onkeyup = function (e) {
+			me._keyb_onkeyup(e, me);
+		};
+		document.onkeypress = function (e) {
+			me._keyb_onkeypress(e, me);
+		};
+	}
 }
 
 XpraClient.prototype.connect = function(host, port, ssl) {
@@ -203,7 +217,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 
 	if (this.topwindow != null) {
 		//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
-		var packet = ["key-action", topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
+		var packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
 		this.protocol.send(packet);
 	}
 }
@@ -493,9 +507,9 @@ XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, 
 
 XpraClient.prototype._window_set_focus = function(win) {
 	var wid = win.wid;
-	focus = wid;
-	topwindow = wid;
-	win.client.protocol.send(["focus", focus, []]);
+	win.client.focus = wid;
+	win.client.topwindow = wid;
+	win.client.protocol.send(["focus", win.client.focus, []]);
 	//set the focused flag on all windows:
 	for (var i in win.client.id_to_window) {
 		var iwin = win.client.id_to_window[i];
