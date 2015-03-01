@@ -50,11 +50,15 @@ def add_printer(name, options, info, location, attributes={}):
     command = ["-p", "Xpra:"+sanitize_name(name),
                "-E",
                "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urllib.urlencode(attributes),
-               "-P", PPD_FILE,
                "-D", info,
                "-L", location,
                "-o", "printer-is-shared=false",
                "-u", "allow:%s" % ALLOW]
+    if PPD_FILE:
+        command += ["-P", PPD_FILE]
+    else:
+        command += ["-o", "raw"]
+    log("pycups_printing adding printer: %s", command)
     exec_lpadmin(command)
 
 def remove_printer(name):
