@@ -418,10 +418,11 @@ XpraWindow.prototype.fill_screen = function() {
 	// should be as simple as this
 	// in future we may have a taskbar for minimized windows
 	// which should be subtracted from screen size
+	var screen_size = this.client._get_desktop_size();
 	this.x = 0 + this.leftoffset;
 	this.y = 0 + this.topoffset;
-	this.w = (screen_width - this.leftoffset) - this.rightoffset;
-	this.h = (screen_height - this.topoffset) - this.bottomoffset;
+	this.w = (screen_size[0] - this.leftoffset) - this.rightoffset;
+	this.h = (screen_size[1] - this.topoffset) - this.bottomoffset;
 };
 
 /**
