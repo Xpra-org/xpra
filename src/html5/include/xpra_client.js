@@ -18,6 +18,12 @@ function XpraClient(container) {
 	this.host = null;
 	this.port = null;
 	this.ssl = null;
+	// some client stuff
+	this.OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
+	this.RGB_FORMATS = ["RGBX", "RGBA"];
+	this.caps_lock = null;
+	this.alt_modifier = null;
+	this.meta_modifier = null;
 	// the container div is the "screen" on the HTML page where we
 	// are able to draw our windows in.
 	this.container = document.getElementById(container);
@@ -31,11 +37,10 @@ function XpraClient(container) {
 	// the client holds a list of packet handlers
 	this.packet_handlers = {
 		'open': this._process_open,
+		'startup-complete': this._process_startup_complete,
+		'hello': this._process_hello,
 		'ping': this._process_ping
 	};
-	// some client stuff
-	this.OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
-	this.RGB_FORMATS = ["RGBX", "RGBA"];
 }
 
 XpraClient.prototype.connect = function(host, port, ssl) {
@@ -90,6 +95,12 @@ XpraClient.prototype._do_connect = function(with_worker) {
 	uri += ":" + this.port;
 	// do open
 	this.protocol.open(uri);
+}
+
+XpraClient.prototype.close = function() {
+	// close all windows
+	// close protocol
+	this.protocol.close();
 }
 
 XpraClient.prototype._route_packet = function(packet, ctx) {
@@ -277,6 +288,55 @@ XpraClient.prototype._process_open = function(packet, ctx) {
 	console.log("sending hello");
 	var hello = ctx._make_hello();
 	ctx.protocol.send(["hello", hello]);
+}
+
+XpraClient.prototype._process_startup_complete = function(packet, ctx) {
+	console.log("startup complete");
+}
+
+XpraClient.prototype._process_hello = function(packet, ctx) {
+	//show("process_hello("+packet+")");
+	var hello = packet[1];
+	var version = hello["version"];
+	try {
+		var vparts = version.split(".");
+		var vno = [];
+		for (var i=0; i<vparts.length;i++) {
+			vno[i] = parseInt(vparts[i]);
+		}
+		if (vno[0]<=0 && vno[1]<10) {
+			throw "unsupported version: " + version;
+			this.close();
+			return;
+		}
+	}
+	catch (e) {
+		throw "error parsing version number '" + version + "'";
+		this.close();
+		return;
+	}
+	console.log("got hello: server version "+version+" accepted our connection");
+	//figure out "alt" and "meta" keys:
+	if ("modifier_keycodes" in hello) {
+		var modifier_keycodes = hello["modifier_keycodes"];
+		for (var mod in modifier_keycodes) {
+			//show("modifier_keycode["+mod+"]="+modifier_keycodes[mod].toSource());
+			var keys = modifier_keycodes[mod];
+			for (var i=0; i<keys.length; i++) {
+				var key = keys[i];
+				//the first value is usually the integer keycode,
+				//the second one is the actual key name,
+				//doesn't hurt to test both:
+				for (var j=0; j<key.length; j++) {
+					if ("Alt_L"==key[j])
+						this.alt_modifier = mod;
+					if ("Meta_L"==key[j])
+						this.meta_modifier = mod;
+				}
+			}
+		}
+	}
+	//show("alt="+alt_modifier+", meta="+meta_modifier);
 }
 
 XpraClient.prototype._process_ping = function(packet, ctx) {
