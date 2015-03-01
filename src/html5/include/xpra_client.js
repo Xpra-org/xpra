@@ -501,20 +501,26 @@ XpraClient.prototype._window_mouse_move = function(win, x, y, modifiers, buttons
 
 XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, modifiers, buttons) {
 	var wid = win.wid;
-	win.client._window_set_focus(win);
+	// dont call set focus unless the focus has actually changed
+	if(win.client.focus != wid) {
+		win.client._window_set_focus(win);
+	}
 	win.client.protocol.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
 }
 
 XpraClient.prototype._window_set_focus = function(win) {
-	var wid = win.wid;
-	win.client.focus = wid;
-	win.client.topwindow = wid;
-	win.client.protocol.send(["focus", win.client.focus, []]);
-	//set the focused flag on all windows:
-	for (var i in win.client.id_to_window) {
-		var iwin = win.client.id_to_window[i];
-		iwin.focused = (i==wid);
-		iwin.updateFocus();
+	// don't send focus packet for override_redirect windows!
+	if(!win.override_redirect) {
+		var wid = win.wid;
+		win.client.focus = wid;
+		win.client.topwindow = wid;
+		win.client.protocol.send(["focus", wid, []]);
+		//set the focused flag on all windows:
+		for (var i in win.client.id_to_window) {
+			var iwin = win.client.id_to_window[i];
+			iwin.focused = (i==wid);
+			iwin.updateFocus();
+		}
 	}
 }
 
