@@ -59,12 +59,15 @@ function XpraClient(container) {
 	// to allow multiple clients on the same page
 	if (window.jQuery) {
 		jQuery(document).keydown(function (e) {
+			e.preventDefault();
 			me._keyb_onkeydown(e, me);
 		});
 		jQuery(document).keyup(function (e) {
+			e.preventDefault();
 			me._keyb_onkeyup(e, me);
 		});
 		jQuery(document).keypress(function (e) {
+			e.preventDefault();
 			me._keyb_onkeypress(e, me);
 		});
 	} else {
