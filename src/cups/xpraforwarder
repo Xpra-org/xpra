@@ -79,7 +79,7 @@ def do_main():
 		sys.stdout.write("direct %s \"Unknown\" \"Direct PDF Printing/Forwarding to host via xpra\"\n" % os.path.basename(sys.argv[0]))
 		sys.stdout.flush()
 		sys.exit(0)
-	if len(sys.argv) not in (5,6):
+	if len(sys.argv) not in (6,7):
 		sys.stdout.write("Usage: %s job-id user title copies options [file]\n" % os.path.basename(sys.argv[0]))
 		sys.stdout.flush()
 		err("Wrong number of arguments. Usage: %s job-id user title copies options [file]" % sys.argv[0])
@@ -89,6 +89,10 @@ def do_main():
 	title = sys.argv[3]
 	no_copies = sys.argv[4]
 	print_options = sys.argv[5]
+	if len(sys.argv)==7:
+		filename = sys.argv[6]
+	else:
+		filename = "-"
 	info("username: %s" % username)
 	info("title: %s" % title)
 
@@ -114,7 +118,7 @@ def do_main():
 	info("display: %s" % display)
 	#exec_command("cp %s /tmp/print.pdf" % output_file)
 	#exec_command("ls -la %s /tmp/print.pdf" % output_file)
-	xpra_print("-", username, display, source, title, printer, no_copies, print_options, socket_dir)
+	xpra_print(filename, username, display, source, title, printer, no_copies, print_options, socket_dir)
 
 def main():
 	try:
