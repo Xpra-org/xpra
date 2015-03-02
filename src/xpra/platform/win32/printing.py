@@ -57,6 +57,7 @@ def print_files(printer, filenames, title, options):
         command += [filename]
         log("print command: %s", command)
         process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=gsprint_dir)
+        process.print_filename = filename
         #we just let it run, no need for reaping the process on win32
         processes.append(process)
     JOB_ID +=1
@@ -70,8 +71,8 @@ def printing_finished(jobid):
     if not processes:
         log.warn("win32.printing_finished(%s) job not found!", jobid)
         return True
-    log("win32.printing_finished(%s) processes: %s", jobid, processes)
-    pending = [proc for proc in processes if proc.poll() is None]
+    log("win32.printing_finished(%s) processes: %s", jobid, [x.print_filename for x in processes])
+    pending = [proc.print_filename for proc in processes if proc.poll() is None]
     log("win32.printing_finished(%s) still pending: %s", jobid, pending)
     #return finished when all the processes have terminated
     return len(pending)==0
