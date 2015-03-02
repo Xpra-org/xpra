@@ -1368,7 +1368,10 @@ class ServerBase(ServerCore):
         #self.send("print", self.filename, self.file_data, *self.command)
         assert self.printing
         #printlog("_process_print(%s, %s)", proto, packet)
-        filename, file_data, source_uuid, title, printer, no_copies, print_options_str = packet[1:8]
+        assert len(packet)>=9, "invalid print packet: %s" % str(packet[:3]+[len(packet[3])]+packet[4:])
+        filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
+        assert len(mimetype)<128, "invalid packet format!"
+        printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data), source_uuid, title, printer, no_copies, print_options_str))
         printlog("process_print: got %s bytes for file %s", len(file_data), filename)
         #parse the print options:
         print_options = {}
@@ -1376,7 +1379,6 @@ class ServerBase(ServerCore):
             parts = x.split("=", 1)
             if len(parts)==2:
                 print_options[parts[0]] = parts[1]
-        maxbitrate = 10000
         options = {"printer"    : printer,
                    "title"      : title,
                    "copies"     : no_copies,
@@ -1391,7 +1393,7 @@ class ServerBase(ServerCore):
                 continue
             assert ss.file_transfer
             printlog("sending file for printing to %s", ss)
-            ss.send_file(filename, file_data, True, True, maxbitrate, options)
+            ss.send_file(filename, mimetype, file_data, True, True, options)
 
 
     def _process_start_command(self, proto, packet):

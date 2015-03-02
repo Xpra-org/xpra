@@ -601,9 +601,9 @@ class XpraClientBase(object):
     def _process_send_file(self, packet):
         #send-file basefilename, printit, openit, filesize, 0, data)
         from xpra.platform.features import DOWNLOAD_PATH
-        basefilename, printit, openit, filesize, file_data, maxbitrate, options = packet[1:10]
+        basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:11]
+        filelog("received file: %s", [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         options = typedict(options)
-        assert maxbitrate>=0
         if printit:
             assert self.printing
         else:
@@ -611,6 +611,12 @@ class XpraClientBase(object):
         assert filesize>0 and file_data
         #make sure we use a filename that does not exist already:
         wanted_filename = os.path.abspath(os.path.join(os.path.expanduser(DOWNLOAD_PATH), os.path.basename(basefilename)))
+        if mimetype=="application/postscript":
+            #on some platforms (win32),
+            #we want to force a ".ps" extension for postscript files
+            #so that the file manager can display them properly when you click on them
+            if not wanted_filename.endswith(".ps"):
+                wanted_filename += ".ps"
         filename = wanted_filename
         base = 0
         while os.path.exists(filename):

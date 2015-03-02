@@ -40,8 +40,17 @@ platform_import(globals(), "printing", False,
 
 def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
-        from xpra.log import add_debug_category
-        add_debug_category("util")
+        from xpra.log import add_debug_category, enable_debug_for
+        add_debug_category("printing")
+        enable_debug_for("printing")
+        try:
+            sys.argv.remove("-v")
+        except:
+            pass
+        try:
+            sys.argv.remove("--verbose")
+        except:
+            pass
 
     from xpra.util import nonl, pver
     def print_dict(d):
@@ -51,7 +60,11 @@ def main():
     from xpra.platform import init, clean
     try:
         init("Printing", "Printing")
-        print_dict(get_printers())
+        if len(sys.argv)<3:
+            print_dict(get_printers())
+        else:
+            printer = sys.argv[1]
+            print_files(printer, sys.argv[2:], "Print Command", {})
     finally:
         clean()
 

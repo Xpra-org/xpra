@@ -118,7 +118,7 @@ Xdummy_wrapper_ENABLED  = None          #None means auto-detect
 if WIN32 or OSX:
     Xdummy_ENABLED = False
 sound_ENABLED           = True
-printing_ENABLED        = not WIN32
+printing_ENABLED        = True
 
 enc_proxy_ENABLED       = True
 enc_x264_ENABLED        = True          #too important to detect
@@ -1307,6 +1307,10 @@ if WIN32:
             add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
+        if printing_ENABLED:
+            add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
+            GSVIEW = "C:\\Program Files\\Ghostgum\\gsview"
+            add_data_files('gsview', glob.glob(GSVIEW+'\\*.*'))
 
 
     #always include those files:
@@ -1602,7 +1606,7 @@ if html5_ENABLED:
         add_data_files(html5_dir+k, v)
 
 
-if printing_ENABLED:
+if printing_ENABLED and os.name=="posix":
     #"/usr/lib/cups/backend":
     cups_backend_dir = os.path.join(sys.prefix, "lib", "cups", "backend")
     add_data_files(cups_backend_dir, ["cups/xpraforwarder"])

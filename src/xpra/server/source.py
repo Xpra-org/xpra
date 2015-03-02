@@ -20,6 +20,7 @@ keylog = Logger("keyboard")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 printlog = Logger("printing")
+filelog = Logger("file")
 timeoutlog = Logger("timeout")
 
 
@@ -1426,9 +1427,9 @@ class ServerSource(object):
         self.printers = {}
 
 
-    def send_file(self, filename, data, printit, openit, maxbitrate=0, options={}):
+    def send_file(self, filename, mimetype, data, printit, openit, options={}):
         assert self.file_transfer
-        log("send_file%s", (filename, "%s bytes" % len(data), printit, openit, maxbitrate, options))
+        filelog("send_file%s", (filename, mimetype, "%s bytes" % len(data), printit, openit, options))
         #TODO:
         # * client ACK
         # * stream it (don't load the whole file!)
@@ -1439,7 +1440,7 @@ class ServerSource(object):
         basefilename = os.path.basename(filename)
         filesize = len(data)
         cdata = compressed_wrapper("file-data", data, level=5, lz4=self.lz4)
-        self.send("send-file", basefilename, printit, openit, filesize, cdata, maxbitrate, options)
+        self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options)
 
     def send_client_command(self, *args):
         self.send("control", *args)

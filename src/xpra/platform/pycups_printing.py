@@ -21,6 +21,10 @@ FORWARDER_BACKEND = "xpraforwarder"
 FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
 PPD_FILE = os.environ.get("XPRA_PPD_FILE", "/usr/share/cups/model/CUPS-PDF.ppd")
 
+#PRINTER_PREFIX = "Xpra:"
+PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", "")
+
+
 #allows us to inject the lpadmin command
 def set_lpadmin_command(lpadmin):
     global LPADMIN
@@ -47,7 +51,7 @@ def sanitize_name(name):
 
 def add_printer(name, options, info, location, attributes={}):
     log("add_printer(%s, %s)", name, options)
-    command = ["-p", "Xpra:"+sanitize_name(name),
+    command = ["-p", PRINTER_PREFIX+sanitize_name(name),
                "-E",
                "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urllib.urlencode(attributes),
                "-D", info,
@@ -63,7 +67,7 @@ def add_printer(name, options, info, location, attributes={}):
 
 def remove_printer(name):
     log("remove_printer(%s)", name)
-    exec_lpadmin(["-x", "Xpra:"+sanitize_name(name)])
+    exec_lpadmin(["-x", PRINTER_PREFIX+sanitize_name(name)])
 
 
 def get_printers():
