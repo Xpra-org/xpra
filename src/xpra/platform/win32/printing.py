@@ -22,6 +22,10 @@ except Exception as e:
     gsprint_dir, gsprint_exe = None, None
 
 
+#allows us to skip some printers we don't want to export
+SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft-XPS-Document-Writer").split(",")
+
+
 #emulate pycups job id
 JOB_ID = 0
 PROCESSES = {}
@@ -34,6 +38,9 @@ def get_printers():
     #default_printer = win32print.GetDefaultPrinter()
     for p in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL, None, 1):
         flags, desc, name, comment = p
+        if name in SKIPPED_PRINTERS:
+            log("skipped printer: %s, %s, %s, %s", flags, desc, name, comment)
+            continue
         log("found printer: %s, %s, %s, %s", flags, desc, name, comment)
         #strip duplicated and empty strings from the description:
         desc_els = []
