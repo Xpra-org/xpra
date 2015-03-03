@@ -155,6 +155,9 @@ class XpraClientBase(object):
         signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
 
+    def signal_disconnect_and_quit(self, exit_code, reason):
+        self.idle_add(self.disconnect_and_quit, exit_code, reason)
+
     def disconnect_and_quit(self, exit_code, reason):
         #try to tell the server we're going, then quit
         log("disconnect_and_quit(%s, %s)", exit_code, reason)
