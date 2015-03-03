@@ -9,6 +9,7 @@
 import os.path
 import sys
 import time
+import hashlib
 
 from xpra.log import Logger
 log = Logger("server")
@@ -1380,11 +1381,16 @@ class ServerBase(ServerCore):
             parts = x.split("=", 1)
             if len(parts)==2:
                 print_options[parts[0]] = parts[1]
+        u = hashlib.sha1()
+        u.update(file_data)
+        printlog("sha1 digest: %s", u.hexdigest())
         options = {"printer"    : printer,
                    "title"      : title,
                    "copies"     : no_copies,
-                   "options"    : print_options}
+                   "options"    : print_options,
+                   "sha1"       : u.hexdigest()}
         printlog("parsed printer options: %s", options)
+
         for ss in self._server_sources.values():
             if ss.uuid!=source_uuid:
                 printlog("not sending to %s (wanted uuid=%s)", ss, source_uuid)

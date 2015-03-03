@@ -612,14 +612,27 @@ class XpraClientBase(object):
         else:
             assert self.file_transfer
         assert filesize>0 and file_data
+        #check digest if present:
+        digest = options.get("sha1")
+        if digest:
+            import hashlib
+            u = hashlib.sha1()
+            u.update(file_data)
+            filelog("sha1 digest: %s - expected: %s", u.hexdigest(), digest)
+            assert digest==u.hexdigest(), "invalid file digest %s (expected %s)" % (u.hexdigest(), digest)
+
         #make sure we use a filename that does not exist already:
         wanted_filename = os.path.abspath(os.path.join(os.path.expanduser(DOWNLOAD_PATH), os.path.basename(basefilename)))
-        if mimetype=="application/postscript":
+        EXTS = {"application/postscript"    : "ps",
+                "application/pdf"           : "pdf",
+                }
+        ext = EXTS.get(mimetype)
+        if ext:
             #on some platforms (win32),
-            #we want to force a ".ps" extension for postscript files
-            #so that the file manager can display them properly when you click on them
-            if not wanted_filename.endswith(".ps"):
-                wanted_filename += ".ps"
+            #we want to force an extension
+            #so that the file manager can display them properly when you double-click on them
+            if not wanted_filename.endswith("."+ext):
+                wanted_filename += "."+ext
         filename = wanted_filename
         base = 0
         while os.path.exists(filename):
@@ -627,14 +640,17 @@ class XpraClientBase(object):
             root, ext = os.path.splitext(wanted_filename)
             base += 1
             filename = root+("-%s" % base)+ext
-        #maybe use mkstemp instead of EXCL?
-        fd = os.open(filename, os.O_CREAT | os.O_RDWR | os.O_EXCL)
-        f = os.fdopen(fd,'wb')
+        flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
         try:
-            f.write(file_data)
+            flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
+        except:
+            pass
+        fd = os.open(filename, flags)
+        try:
+            os.write(fd, file_data)
         finally:
-            f.close()
-        filelog.info("downloaded %s bytes to %s", filesize, filename)
+            os.close(fd)
+        filelog.info("downloaded %s bytes to %s file %s", filesize, mimetype, filename)
         if printit:
             printer = options.strget("printer")
             title   = options.strget("title")

@@ -20,7 +20,7 @@ def print_files(printer, filenames, title, options):
 
 def printing_finished(printpid):
     return True
-    
+
 
 #default implementation uses pycups:
 from xpra.platform import platform_import
@@ -67,6 +67,7 @@ def main():
             print_files(printer, sys.argv[2:], "Print Command", {})
     finally:
         clean()
+
 
 if __name__ == "__main__":
     main()

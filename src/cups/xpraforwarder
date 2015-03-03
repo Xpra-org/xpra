@@ -39,21 +39,19 @@ import urlparse
 
 __version__ = "0.15.0"
 
-
 #Writes a syslog entry (msg) at the default facility:
 def debug(msg):
-	syslog.syslog(syslog.LOG_DEBUG, "xpraforwarder cups backend: %s" % msg)
+	syslog.syslog(syslog.LOG_DEBUG, msg)
 
 def info(msg):
-	syslog.syslog(syslog.LOG_INFO, "xpraforwarder cups backend: %s" % msg)
+	syslog.syslog(syslog.LOG_INFO, msg)
 
 def err(msg):
-	syslog.syslog(syslog.LOG_ERR, "xpraforwarder cups backend: %s" % msg)
+	syslog.syslog(syslog.LOG_ERR, msg)
 
 
 def exec_command(command, env=os.environ.copy(), shell=True):
-	#print("exec_command(%s)" % command)
-	syslog.syslog(syslog.LOG_INFO, "xpraforwarder running: %s" % command)
+	info("running: %s" % command)
 	PIPE = subprocess.PIPE
 	proc = subprocess.Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, env=env, shell=shell)
 	out,err = proc.communicate()
@@ -67,12 +65,12 @@ def xpra_print(socket_dir, display, filename, mimetype, source, title, printer, 
 	#in this case, running as root cannot be avoided, so skip the warning:
 	#(using "su" causes even more problems)
 	env = os.environ.copy()
-	env["NO_ROOT_WARNING"] = "1"
+	env["XPRA_NO_ROOT_WARNING"] = "1"
 	return exec_command(command, env=env, shell=False)
 
 
 def do_main():
-	info("xpraforwarder: %s" % str(sys.argv))
+	info(" ".join(["'%s'" % x for x in sys.argv]))
 	if len(sys.argv) == 1:
 		# Without arguments should give backend info.
 		# This is also used when lpinfo -v is issued, where it should include "direct this_backend"
@@ -84,23 +82,19 @@ def do_main():
 		sys.stdout.flush()
 		err("Wrong number of arguments. Usage: %s job-id user title copies options [file]" % sys.argv[0])
 		sys.exit(1)
-	#job_id = sys.argv[1]
-	username = sys.argv[2]
-	title = sys.argv[3]
-	no_copies = sys.argv[4]
-	print_options = sys.argv[5]
+	job_id, username, title, no_copies, print_options = sys.argv[1:6]
 	if len(sys.argv)==7:
 		filename = sys.argv[6]
 	else:
 		filename = "-"
-	info("username: %s" % username)
-	info("title: %s" % title)
+	info("username: %s, title: %s, filename: %s, job_id: %s" % (username, title, filename, job_id))
 
 	dev_uri = os.environ['DEVICE_URI']
 	parsed_url = urlparse.urlparse(dev_uri)
 	info("urlparse(%s)=%s" % (dev_uri, parsed_url))
 	#write_dir = parsed_url.path
 	attributes = urlparse.parse_qs(parsed_url.query)
+	info("attributes(%s)=%s" % (parsed_url.query, attributes))
 	def aget(k, default_value):
 		v =  attributes.get(k)
 		if v is None:
@@ -115,10 +109,9 @@ def do_main():
 		raise Exception("Device URI: client source uuid is missing")
 	if not display:
 		raise Exception("Device URI: display number not specified!")
-	info("display: %s" % display)
-	#exec_command("cp %s /tmp/print.pdf" % output_file)
-	#exec_command("ls -la %s /tmp/print.pdf" % output_file)
-	xpra_print(socket_dir, display, filename, "application/postscript", source, title, printer, no_copies, print_options)
+	info("xpra display: %s" % display)
+
+	xpra_print(socket_dir, display, filename, "application/pdf", source, title, printer, no_copies, print_options)
 
 
 def main():
