@@ -24,7 +24,8 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid
-from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
+from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
+    repr_ellipsized
 from xpra.scripts.config import python_platform, parse_bool_or_int
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, codec_versions, has_codec, get_codec
@@ -1368,7 +1369,7 @@ class ServerBase(ServerCore):
         #self.send("print", self.filename, self.file_data, *self.command)
         assert self.printing
         #printlog("_process_print(%s, %s)", proto, packet)
-        assert len(packet)>=9, "invalid print packet: %s" % str(packet[:3]+[len(packet[3])]+packet[4:])
+        assert len(packet)>=9, "invalid print packet: %s" % str(repr_ellipsized(x) for x in packet)
         filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
         assert len(mimetype)<128, "invalid packet format!"
         printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data), source_uuid, title, printer, no_copies, print_options_str))
