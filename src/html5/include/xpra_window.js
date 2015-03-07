@@ -67,16 +67,15 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.bottomoffset = parseInt(jQuery(this.div).css('border-bottom-width'), 10);
 
 	// Hook up the events we want to receive:
-	this.event_listeners = []
-	var listeners = [
-			['mousedown'	, true],
-			['mouseup'		, true],
-			['mousemove'	, true]
-			];
-	for (i = 0; i < listeners.length; i += 1) {
-		var l = listeners[i];
-		this.registerEventListener(l[0], l[1]);
-	}
+	jQuery(this.canvas).mousedown(function (e) {
+		me.on_mousedown(e);
+	});
+	jQuery(this.canvas).mouseup(function (e) {
+		me.on_mouseup(e);
+	});
+	jQuery(this.canvas).mousemove(function (e) {
+		me.on_mousemove(e);
+	});
 
 	// now safe to assign the callbacks:
 	this.geometry_cb = geometry_cb || null;
@@ -191,18 +190,6 @@ XpraWindow.prototype.updateFocus = function() {
 		jQuery(this.div).removeClass("windowinfocus");
 	}
 }
-
-XpraWindow.prototype.registerEventListener = function(event_type, useCapture) {
-	var self = this;
-	var fn_name = "on_"+event_type;
-	var handler = self[fn_name];
-	var fn = function(e) {
-		handler.call(self, e);
-	};
-	this.event_listeners[event_type] = fn;
-	// attach event listener to visible canvas
-	this.canvas["on"+event_type] = fn;
-};
 
 XpraWindow.prototype.getMouse = function(e) {
 	"use strict";
