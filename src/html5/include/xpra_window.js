@@ -24,9 +24,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	var me = this;
 	// there might be more than one client
 	this.client = client;
-	//keep reference both the internal canvas and screen drawn canvas:
+	//keep reference to screen drawn canvas:
 	this.canvas = canvas_state;
-	this.offscreen_canvas = document.createElement("canvas");
+	this.damaged = false;
 	//enclosing div in page DOM
 	this.div = jQuery("#" + String(wid));
 
@@ -161,12 +161,6 @@ XpraWindow.prototype.updateCSSGeometry = function() {
 	if(this.canvas.height != this.h) {
 		this.canvas.height = this.h;
 	}
-	if(this.offscreen_canvas.width != this.w) {
-		this.offscreen_canvas.width = this.w;
-	}
-	if(this.offscreen_canvas.height != this.h) {
-		this.offscreen_canvas.height = this.h;
-	}
 	// work out outer size
 	this.outerH = this.h + this.topoffset + this.bottomoffset;
 	this.outerW = this.w + this.leftoffset + this.rightoffset;
@@ -211,12 +205,12 @@ XpraWindow.prototype.getMouse = function(e) {
 
 XpraWindow.prototype.on_mousemove = function(e) {
 	var mouse = this.getMouse(e),
-			mx = mouse.x,
-			my = mouse.y;
+	mx = mouse.x,
+	my = mouse.y;
 
-			var modifiers = [];
-			var buttons = [];
-			this.handle_mouse_move(mx, my, modifiers, buttons);
+	var modifiers = [];
+	var buttons = [];
+	this.handle_mouse_move(mx, my, modifiers, buttons);
 
 };
 
@@ -264,11 +258,11 @@ XpraWindow.prototype.create_image_backing = function() {
 	var previous_image = this.image;
 	var img_geom = this.get_internal_geometry();
 	//show("createImageData: "+img_geom.toSource());
-	// this should draw to the offscreen canvas
-	this.image = this.offscreen_canvas.getContext('2d').createImageData(img_geom.w, img_geom.h);
+	// this is the offscreen image buffer
+	this.image = this.canvas.getContext('2d').createImageData(img_geom.w, img_geom.h);
 	if (previous_image) {
 		//copy previous pixels to new image, ignoring bit gravity
-		this.offscreen_canvas.getContext('2d').putImageData(previous_image, 0, 0);
+		this.canvas.getContext('2d').putImageData(previous_image, 0, 0);
 	}
 };
 
@@ -548,7 +542,7 @@ XpraWindow.prototype.update_icon = function(w, h, pixel_format, data) {
 }
 
 /**
- * This function draws the contents of the off-screen canvas to the visible
+ * This function draws the contents of the off-screen buffer to the visible
  * canvas. However the drawing is requested by requestAnimationFrame which allows
  * the browser to group screen redraws together, and automatically adjusts the
  * framerate e.g if the browser window/tab is not visible.
@@ -558,7 +552,7 @@ XpraWindow.prototype.draw = function() {
 	//get visible canvas context
 	var ctx = this.canvas.getContext('2d');
 	//pass the 'buffer' canvas directly, nice
-	ctx.drawImage(this.offscreen_canvas, 0, 0);
+	ctx.putImageData(this.image, 0, 0);
 };
 
 
@@ -589,52 +583,25 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
 		img_data = inflated;
 	}
-	//force set alpha to 1.0
-	//for (var a=0; a<width*height; a++) {
-	//	img_data[a*4+3] = 255;
-	//}
+
 	var data = this.image.data;
 	var stride = this.image.width*4;
-	//and we can paint the canvas with it
-	//(if we have transparency, we should probably repaint what is underneath...)
-	var ctx = this.offscreen_canvas.getContext('2d');
 
 	// redraw entire window
 	if (x==0 && width==this.image.width && y+height<=this.image.height) {
 		//take a shortcut: copy all lines
 		data.set(img_data, y*stride);
-
-		if (this.focused) {
-			//shortcut: paint canvas directly
-			ctx.putImageData(this.image, 0, 0);
-			return true;
-		} else {
-			// window is not in focus but should we draw it anyway?
-			ctx.putImageData(this.image, 0, 0);
-			return true;
-		}
+		return true;
 	}
-	// draw window portion
-	else if (x+width<=this.image.width && y+height<=this.image.height) {
+	// assume draw window portion
+	else {
 		var line;
 		var in_stride = width*4;
-
 		for (var i=0; i<height; i++) {
 			line = img_data.subarray(i*in_stride, (i+1)*in_stride);
 			data.set(line, (y+i)*stride + x*4);
 		}
-		var img = ctx.createImageData(width, height);
-		img.data.set(img_data);
-
-		if (this.focused) {
-			//shortcut: paint canvas directly
-			ctx.putImageData(img, x, y);
-			return true;
-		} else {
-			// window is not in focus but should we draw it anyway?
-			ctx.putImageData(img, x, y);
-			return true;
-		}
+		return true;
 	}
 	//no action taken, no need to invalidate
 	return false;
