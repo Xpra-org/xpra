@@ -39,7 +39,12 @@ def exec_lpadmin(args):
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
     cr = getChildReaper()
-    cr.add_process(proc, "lpadmin", command, ignore=True, forget=True)
+    def check_returncode(proc):
+        returncode = proc.returncode
+        if returncode is not None and returncode!=0:
+            log.warn("lpadmin failed and returned error code: %s", returncode)
+            log.warn("you may want to check that this user has the required permissions for using this command")
+    cr.add_process(proc, "lpadmin", command, ignore=True, forget=True, callback=check_returncode)
     assert proc.poll() in (None, 0)
 
 

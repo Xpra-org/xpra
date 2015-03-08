@@ -41,6 +41,7 @@ class ChildReaper(object):
         self._dead_pids = set()
         self._ignored_pids = set()
         self._forget_pids = set()
+        self._callbacks = {}
         if USE_PROCESS_POLLING:
             POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
             if BUGGY_PYTHON:
@@ -67,7 +68,7 @@ class ChildReaper(object):
                 return False # Only call once
             gobject.timeout_add(0, check_once)
 
-    def add_process(self, process, name, command, ignore=False, forget=False):
+    def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
         process.command = command
         process.name = name
         assert process.pid>0
@@ -76,6 +77,8 @@ class ChildReaper(object):
             self._ignored_pids.add(process.pid)
         if forget:
             self._forget_pids.add(process.pid)
+        if callback:
+            self._callbacks[process.pid] = callback
         log("add_process(%s, %s, %s, %s) pid=%s", process, name, command, ignore, process.pid)
 
     def check(self):
@@ -101,6 +104,9 @@ class ChildReaper(object):
     def add_dead_pid(self, pid):
         log("add_dead_pid(%s)", pid)
         proc = self._children_pids.get(pid)
+        callback = self._callbacks.get(pid)
+        if callback and proc:
+            callback(proc)
         if pid in self._forget_pids:
             #forget it:
             self._forget_pids.remove(pid)

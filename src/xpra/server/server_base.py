@@ -538,8 +538,8 @@ class ServerBase(ServerCore):
             sys.stderr.write("Error spawning child '%s': %s\n" % (child_cmd, e))
             return None
 
-    def add_process(self, process, name, command, ignore=False):
-        self.child_reaper.add_process(process, name, command, ignore)
+    def add_process(self, process, name, command, ignore=False, callback=None):
+        self.child_reaper.add_process(process, name, command, ignore, callback)
 
     def is_child_alive(self, proc):
         return proc is not None and proc.poll() is None and proc.pid not in self.child_reaper._dead_pids
