@@ -1103,7 +1103,7 @@ class ServerBase(ServerCore):
                 return arg_err("more than 1")
             msg = []
             for csource in sources:
-                msg.append("%s : %s" % (csource, csource.sound_control(*args[1:])))
+                msg.append("%s : %s" % (csource, csource.sound_control(*args)))
             return 0, ", ".join(msg)
         elif command=="suspend":
             for csource in sources:
