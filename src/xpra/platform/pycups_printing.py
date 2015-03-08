@@ -35,6 +35,7 @@ def exec_lpadmin(args):
     command = shlex.split(LPADMIN)+args
     def preexec():
         os.setsid()
+    log("exec_lpadmin(%s) command=%s", args, command)
     proc = subprocess.Popen(command, stdin=None, stdout=None, stderr=None, shell=False, close_fds=True, preexec_fn=preexec)
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
