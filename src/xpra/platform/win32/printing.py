@@ -6,8 +6,10 @@
 from xpra.log import Logger
 log = Logger("printing")
 
-import win32print       #@UnresolvedImport
 import subprocess
+import win32print       #@UnresolvedImport
+import win32con         #@UnresolvedImport
+from ctypes import c_wchar_p
 
 
 #ensure we can find gsprint.exe in a subdirectory:
@@ -29,6 +31,33 @@ SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Docume
 #emulate pycups job id
 JOB_ID = 0
 PROCESSES = {}
+
+printers_modified_callback = None
+def on_printers_modified(callback):
+    global printers_modified_callback
+    log("on_printers_modified(%s) printers_modified_callback=%s", callback, printers_modified_callback)
+    printers_modified_callback = callback
+    try:
+        init_winspool_listener()
+    except Exception:
+        log.error("failed to register for print spooler changes", exc_info=True)
+
+def init_winspool_listener():
+    from xpra.platform.win32.win32_events import get_win32_event_listener
+    el = get_win32_event_listener()
+    el.add_event_callback(win32con.WM_DEVMODECHANGE, on_devmodechange)
+
+def on_devmodechange(wParam, lParam):
+    log.info("on_devmodechange(%s, %s)", wParam, lParam)
+    if lParam>0:
+        name = c_wchar_p(lParam)
+        log("device changed: %s", name)
+        #log("device changed: %s", name.value)
+        #log("device changed: %s", name.value.encode('utf8'))
+        global printers_modified_callback
+        if printers_modified_callback:
+            printers_modified_callback()
+
 
 def get_printers():
     printers = {}
