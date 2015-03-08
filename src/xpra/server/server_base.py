@@ -836,9 +836,6 @@ class ServerBase(ServerCore):
             # now we can set the modifiers to match the client
             self.send_windows_and_cursors(ss, share_count>0)
 
-            if self.printing and ss.printing:
-                ss.query_printers()
-
         ss.startup_complete()
         self.server_event("startup-complete", ss.uuid)
 

@@ -196,7 +196,6 @@ class XpraClientBase(object):
     def init_packet_handlers(self):
         self._packet_handlers = {
             "hello"             : self._process_hello,
-            "query-printers"    : self._process_query_printers,
             "send-file"         : self._process_send_file,
             }
         self._ui_packet_handlers = {
@@ -522,10 +521,42 @@ class XpraClientBase(object):
         if not self.parse_encryption_capabilities():
             log("server_connection_established() failed encryption capabilities")
             return False
+        self.parse_printing_capabilities()
         log("server_connection_established() adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True
 
+
+    def parse_printing_capabilities(self):
+        if self.printing:
+            if self.server_capabilities.boolget("printing"):
+                try:
+                    self.send_printers()
+                except Exception:
+                    log.warn("failed to send printers", exc_info=True)
+
+    def send_printers(self):
+        from xpra.platform.printing import get_printers
+        printers = get_printers()
+        printlog("send_printers() found printers=%s", printers)
+        #remove xpra forwarded ones to avoid loops and multi-forwards:
+        exported_printers = {}
+        for k,v in printers.items():
+            device_uri = v.get("device-uri", "")
+            if device_uri:
+                printlog("send_printers: device-uri(%s)=%s", k, device_uri)
+                if device_uri.startswith("xpraforwarder"):
+                    printlog("process_query_printers skipping xpra forwarded printer=%s", k)
+                    continue
+            state = v.get("printer-state")
+            if state==5:
+                printlog("send_printers skipping stopped printer=%s", k)
+                continue
+            #"3" if the destination is idle, "4" if the destination is printing a job, and "5" if the destination is stopped.
+            exported_printers[k.encode("utf8")] = v
+        printlog("send_printers() exported printers=%s", ", ".join(str(x) for x in exported_printers.keys()))
+        self.send("printers", exported_printers)
+                
 
     def parse_version_capabilities(self):
         c = self.server_capabilities
@@ -576,29 +607,6 @@ class XpraClientBase(object):
     def _process_set_deflate(self, packet):
         #legacy, should not be used for anything
         pass
-
-
-    def _process_query_printers(self, packet):
-        from xpra.platform.printing import get_printers
-        printers = get_printers()
-        printlog("process_query_printers(%s) found printers=%s", packet, printers)
-        #remove xpra forwarded ones to avoid loops and multi-forwards:
-        exported_printers = {}
-        for k,v in printers.items():
-            device_uri = v.get("device-uri", "")
-            if device_uri:
-                printlog("process_query_printers: device-uri(%s)=%s", k, device_uri)
-                if device_uri.startswith("xpraforwarder"):
-                    printlog("process_query_printers skipping xpra forwarded printer=%s", k)
-                    continue
-            state = v.get("printer-state")
-            if state==5:
-                printlog("process_query_printers skipping stopped printer=%s", k)
-                continue
-            #"3" if the destination is idle, "4" if the destination is printing a job, and "5" if the destination is stopped.
-            exported_printers[k.encode("utf8")] = v
-        printlog("process_query_printers(%s) exported printers=%s", packet, ", ".join(str(x) for x in exported_printers.keys()))
-        self.send("printers", exported_printers)
 
 
     def _process_send_file(self, packet):

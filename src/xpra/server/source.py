@@ -753,12 +753,6 @@ class ServerSource(object):
                     self.video_helper.add_encoder_spec(encoding, colorspace, spec)
 
 
-    def query_printers(self):
-        assert self.printing
-        if self.machine_id!=get_machine_id() or ADD_LOCAL_PRINTERS:
-            self.send("query-printers")
-
-
     def startup_complete(self):
         log("startup_complete()")
         if self.notify_startup_complete:
