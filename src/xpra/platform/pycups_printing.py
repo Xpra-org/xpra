@@ -95,8 +95,8 @@ def init_dbus_listener():
         log.error("failed to initialize dbus cups event listener", exc_info=True)
 
 def on_printers_modified(callback):
-    log("on_printers_modified(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     global printers_modified_callback
+    log("on_printers_modified(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
     init_dbus_listener()
 
