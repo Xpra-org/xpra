@@ -70,6 +70,37 @@ def remove_printer(name):
     exec_lpadmin(["-x", PRINTER_PREFIX+sanitize_name(name)])
 
 
+dbus_init = False
+printers_modified_callback = None
+DBUS_PATH="/com/redhat/PrinterSpooler"
+DBUS_IFACE="com.redhat.PrinterSpooler"
+def handle_dbus_signal(*args):
+    global printers_modified_callback
+    log.info("handle_dbus_signal(%s) printers_modified_callback=%s", args, printers_modified_callback)
+    printers_modified_callback()
+
+def init_dbus_listener():
+    global dbus_init
+    log("init_dbus_listener() dbus_init=%s", dbus_init)
+    if dbus_init:
+        return
+    dbus_init = True
+    try:
+        from xpra.x11.dbus_common import  init_system_bus
+        system_bus = init_system_bus()
+        log("system bus: %s", system_bus)
+        sig_match = system_bus.add_signal_receiver(handle_dbus_signal, path=DBUS_PATH, dbus_interface=DBUS_IFACE)
+        log("system_bus.add_signal_receiver(..)=%s", sig_match)
+    except Exception:
+        log.error("failed to initialize dbus cups event listener", exc_info=True)
+
+def on_printers_modified(callback):
+    log("on_printers_modified(%s) printers_modified_callback=%s", callback, printers_modified_callback)
+    global printers_modified_callback
+    printers_modified_callback = callback
+    init_dbus_listener()
+
+
 def get_printers():
     conn = cups.Connection()
     printers = conn.getPrinters()

@@ -80,6 +80,7 @@ class XpraClientBase(object):
         self.min_speed = -1
         self.file_transfer = False
         self.printing = False
+        self.send_printers_pending = False
         self.open_command = None
         #protocol stuff:
         self._protocol = None
@@ -531,11 +532,23 @@ class XpraClientBase(object):
         if self.printing:
             if self.server_capabilities.boolget("printing"):
                 try:
-                    self.send_printers()
+                    from xpra.platform.printing import on_printers_modified
+                    printlog("on_printers_modified=%s", on_printers_modified)
+                    on_printers_modified(self.send_printers)
+                    self.do_send_printers()
                 except Exception:
                     log.warn("failed to send printers", exc_info=True)
 
-    def send_printers(self):
+    def send_printers(self, *args):
+        #dbus can fire dozens of times for a single printer change
+        #so we wait a bit and fire via a timer to try to batch things together:
+        if self.send_printers_pending:
+            return
+        self.send_printers_pending = True
+        self.timeout_add(500, self.do_send_printers)
+
+    def do_send_printers(self):
+        self.send_printers_pending = False
         from xpra.platform.printing import get_printers
         printers = get_printers()
         printlog("send_printers() found printers=%s", printers)
