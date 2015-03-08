@@ -903,6 +903,7 @@ class ServerBase(ServerCore):
                  "dbus_proxy"                   : self.supports_dbus_proxy,
                  "file-transfer"                : self.file_transfer,
                  "printing"                     : self.printing,
+                 "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
                  })

@@ -1403,15 +1403,20 @@ class ServerSource(object):
                       "source"          : self.uuid,
                       "socket-dir"      : socket_dir}
         for k,v in printers.items():
-            if k not in self.printers:
-                info = v.get("printer-info", "")
-                attrs = attributes.copy()
-                attrs["remote-printer"] = k
-                attrs["remote-device-uri"] = v.get("device-uri")
+            if k in self.printers:
+                #remove existing definition:
                 try:
-                    add_printer(k, v, info, location, attrs)
+                    remove_printer(k)
                 except Exception as e:
-                    printlog.warn("failed to add printer %s: %s", k, e)
+                    printlog.warn("failed to remove previous definition for printer %s: %s", k, e)
+            info = v.get("printer-info", "")
+            attrs = attributes.copy()
+            attrs["remote-printer"] = k
+            attrs["remote-device-uri"] = v.get("device-uri")
+            try:
+                add_printer(k, v, info, location, attrs)
+            except Exception as e:
+                printlog.warn("failed to add printer %s: %s", k, e)
         self.printers = printers
 
     def remove_printers(self):

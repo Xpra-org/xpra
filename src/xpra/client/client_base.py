@@ -80,6 +80,7 @@ class XpraClientBase(object):
         self.min_speed = -1
         self.file_transfer = False
         self.printing = False
+        self.printer_attributes = []
         self.send_printers_pending = False
         self.exported_printers = None
         self.open_command = None
@@ -532,6 +533,7 @@ class XpraClientBase(object):
     def parse_printing_capabilities(self):
         if self.printing:
             if self.server_capabilities.boolget("printing"):
+                self.printer_attributes = self.server_capabilities.strlistget("printer.attributes", ["printer-info", "device-uri"])
                 try:
                     from xpra.platform.printing import on_printers_modified
                     printlog("on_printers_modified=%s", on_printers_modified)
@@ -556,7 +558,13 @@ class XpraClientBase(object):
             printlog("do_send_printers() found printers=%s", printers)
             #remove xpra-forwarded printers to avoid loops and multi-forwards,
             #also ignore stopped printers
+            #and only keep the attributes that the server cares about (self.printer_attributes)
             exported_printers = {}
+            def used_attrs(d):
+                #filter attributes so that we only compare things that are actually used
+                if not d:
+                    return d
+                return dict((k,v) for k,v in d if k in self.printer_attributes)
             for k,v in printers.items():
                 device_uri = v.get("device-uri", "")
                 if device_uri:
@@ -572,7 +580,7 @@ class XpraClientBase(object):
                 if state==5:
                     printlog("do_send_printers() skipping stopped printer=%s", k)
                     continue
-                exported_printers[k.encode("utf8")] = v
+                exported_printers[k.encode("utf8")] = used_attrs(v)
             if self.exported_printers is None:
                 #not been sent yet, ensure we can use the dict below:
                 self.exported_printers = {}
@@ -586,7 +594,7 @@ class XpraClientBase(object):
             removed = [k for k in self.exported_printers.keys() if k not in exported_printers]
             if removed:
                 printlog("do_send_printers() printers removed: %s", removed)
-            modified = [k for k,v in exported_printers.items() if self.exported_printers.get(k)!=v]
+            modified = [k for k,v in exported_printers.items() if self.exported_printers.get(k)!=v and k not in added]
             if modified:
                 printlog("do_send_printers() printers modified: %s", modified)
             printlog("do_send_printers() exported printers=%s", ", ".join(str(x) for x in exported_printers.keys()))
