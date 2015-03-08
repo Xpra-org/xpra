@@ -104,7 +104,7 @@ XpraProtocol.prototype.open = function(uri) {
             me.rQ.push(u8[i]);
         }
         // wait for 8 bytes
-        if (me.rQ.length > 8) {
+        if (me.rQ.length >= 8) {
 	        me._process();
 	    }
 	};
@@ -200,27 +200,26 @@ XpraProtocol.prototype._process = function() {
 	if (index>0) {
 		//debug("added raw packet for index "+index);
 		this.raw_packets[index] = packet_data;
-		return;
-	}
-
-	//decode raw packet string into objects:
-	var packet = null;
-	try {
-		packet = bdecode(packet_data);
-		for (var index in this.raw_packets) {
-			packet[index] = this.raw_packets[index];
+	} else {
+		//decode raw packet string into objects:
+		var packet = null;
+		try {
+			packet = bdecode(packet_data);
+			for (var index in this.raw_packets) {
+				packet[index] = this.raw_packets[index];
+			}
+			this.raw_packets = {}
+			// pass to our packet handler
+			this.packet_handler(packet, this.packet_ctx);
 		}
-		this.raw_packets = {}
-		// pass to our packet handler
-		this.packet_handler(packet, this.packet_ctx);
-	}
-	catch (e) {
-		console.error("error processing packet " + e)
-		//console.error("packet_data="+packet_data);
+		catch (e) {
+			console.error("error processing packet " + e)
+			//console.error("packet_data="+packet_data);
+		}
 	}
 
 	// see if buffer still has unread packets
-	if (this.rQ.length > 8) {
+	if (this.rQ.length >= 8) {
 		this._process();
 	}
 
