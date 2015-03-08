@@ -46,14 +46,13 @@ def init_winspool_listener():
     el.add_event_callback(win32con.WM_DEVMODECHANGE, on_devmodechange)
 
 def on_devmodechange(wParam, lParam):
-    log("on_devmodechange(%s, %s)", wParam, lParam)
-    if lParam>0:
-        #from ctypes import c_wchar_p
-        #name = c_wchar_p(lParam)
-        #log("device changed: %s", name)
-        global printers_modified_callback
-        if printers_modified_callback:
-            printers_modified_callback()
+    global printers_modified_callback
+    log("on_devmodechange(%s, %s) printers_modified_callback=%s", wParam, lParam, printers_modified_callback)
+    #from ctypes import c_wchar_p
+    #name = c_wchar_p(lParam)
+    #log("device changed: %s", name)
+    if lParam>0 and printers_modified_callback:
+        printers_modified_callback()
 
 
 def get_printers():
@@ -71,9 +70,10 @@ def get_printers():
         #strip duplicated and empty strings from the description:
         desc_els = []
         [desc_els.append(x) for x in desc.split(",") if (x and not desc_els.count(x))]
-        printers[name] = {"printer-info"            : ",".join(desc_els)}
+        info = {"printer-info"            : ",".join(desc_els)}
         if comment:
-            printers["printer-make-and-model"] = comment
+            info["printer-make-and-model"] = comment
+        printers[name] = info
     log("win32.get_printers()=%s", printers)
     return printers
 
