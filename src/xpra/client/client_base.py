@@ -564,7 +564,7 @@ class XpraClientBase(object):
                 #filter attributes so that we only compare things that are actually used
                 if not d:
                     return d
-                return dict((k,v) for k,v in d if k in self.printer_attributes)
+                return dict((k,v) for k,v in d.items() if k in self.printer_attributes)
             for k,v in printers.items():
                 device_uri = v.get("device-uri", "")
                 if device_uri:
@@ -597,6 +597,7 @@ class XpraClientBase(object):
             modified = [k for k,v in exported_printers.items() if self.exported_printers.get(k)!=v and k not in added]
             if modified:
                 printlog("do_send_printers() printers modified: %s", modified)
+            printlog("do_send_printers() printers=%s", exported_printers.keys())
             printlog("do_send_printers() exported printers=%s", ", ".join(str(x) for x in exported_printers.keys()))
             self.exported_printers = exported_printers
             self.send("printers", self.exported_printers)
