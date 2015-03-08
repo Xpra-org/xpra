@@ -1313,7 +1313,7 @@ class ServerBase(ServerCore):
                 printlog("stdout=%s" % out)
                 printlog("stderr=%s" % err)
                 return proc.returncode
-            exec_command("ls -laZ %s" % filename)
+            #exec_command("ls -laZ %s" % filename)
             try:
                 stat = os.stat(filename)
                 printlog("os.stat(%s)=%s", filename, stat)
