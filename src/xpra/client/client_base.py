@@ -534,13 +534,16 @@ class XpraClientBase(object):
         if self.printing:
             if self.server_capabilities.boolget("printing"):
                 self.printer_attributes = self.server_capabilities.strlistget("printer.attributes", ["printer-info", "device-uri"])
-                try:
-                    from xpra.platform.printing import on_printers_modified
-                    printlog("on_printers_modified=%s", on_printers_modified)
-                    on_printers_modified(self.send_printers)
-                    self.do_send_printers()
-                except Exception:
-                    log.warn("failed to send printers", exc_info=True)
+                self.timeout_add(1000, self.init_printing)
+
+    def init_printing(self):
+        try:
+            from xpra.platform.printing import on_printers_modified
+            printlog("on_printers_modified=%s", on_printers_modified)
+            on_printers_modified(self.send_printers)
+            self.do_send_printers()
+        except Exception:
+            log.warn("failed to send printers", exc_info=True)
 
     def send_printers(self, *args):
         #dbus can fire dozens of times for a single printer change
