@@ -81,6 +81,7 @@ class XpraClientBase(object):
         self.file_transfer = False
         self.printing = False
         self.send_printers_pending = False
+        self.exported_printers = None
         self.open_command = None
         #protocol stuff:
         self._protocol = None
@@ -548,28 +549,52 @@ class XpraClientBase(object):
         self.timeout_add(500, self.do_send_printers)
 
     def do_send_printers(self):
-        self.send_printers_pending = False
-        from xpra.platform.printing import get_printers
-        printers = get_printers()
-        printlog("send_printers() found printers=%s", printers)
-        #remove xpra forwarded ones to avoid loops and multi-forwards:
-        exported_printers = {}
-        for k,v in printers.items():
-            device_uri = v.get("device-uri", "")
-            if device_uri:
-                printlog("send_printers: device-uri(%s)=%s", k, device_uri)
-                if device_uri.startswith("xpraforwarder"):
-                    printlog("process_query_printers skipping xpra forwarded printer=%s", k)
+        try:
+            self.send_printers_pending = False
+            from xpra.platform.printing import get_printers
+            printers = get_printers()
+            printlog("do_send_printers() found printers=%s", printers)
+            #remove xpra-forwarded printers to avoid loops and multi-forwards,
+            #also ignore stopped printers
+            exported_printers = {}
+            for k,v in printers.items():
+                device_uri = v.get("device-uri", "")
+                if device_uri:
+                    #this is cups specific.. oh well
+                    printlog("do_send_printers() device-uri(%s)=%s", k, device_uri)
+                    if device_uri.startswith("xpraforwarder"):
+                        printlog("do_send_printers() skipping xpra forwarded printer=%s", k)
+                        continue
+                state = v.get("printer-state")
+                #"3" if the destination is idle,
+                #"4" if the destination is printing a job,
+                #"5" if the destination is stopped.
+                if state==5:
+                    printlog("do_send_printers() skipping stopped printer=%s", k)
                     continue
-            state = v.get("printer-state")
-            if state==5:
-                printlog("send_printers skipping stopped printer=%s", k)
-                continue
-            #"3" if the destination is idle, "4" if the destination is printing a job, and "5" if the destination is stopped.
-            exported_printers[k.encode("utf8")] = v
-        printlog("send_printers() exported printers=%s", ", ".join(str(x) for x in exported_printers.keys()))
-        self.send("printers", exported_printers)
-                
+                exported_printers[k.encode("utf8")] = v
+            if self.exported_printers is None:
+                #not been sent yet, ensure we can use the dict below:
+                self.exported_printers = {}
+            elif exported_printers==self.exported_printers:
+                printlog("do_send_printers() exported printers unchanged: %s", self.exported_printers)
+                return
+            #show summary of what has changed:
+            added = [k for k in exported_printers.keys() if k not in self.exported_printers]
+            if added:
+                printlog("do_send_printers() new printers: %s", added)
+            removed = [k for k in self.exported_printers.keys() if k not in exported_printers]
+            if removed:
+                printlog("do_send_printers() printers removed: %s", removed)
+            modified = [k for k,v in exported_printers.items() if self.exported_printers.get(k)!=v]
+            if modified:
+                printlog("do_send_printers() printers modified: %s", modified)
+            printlog("do_send_printers() exported printers=%s", ", ".join(str(x) for x in exported_printers.keys()))
+            self.exported_printers = exported_printers
+            self.send("printers", self.exported_printers)
+        except:
+            log.error("do_send_printers()", exc_info=True)
+
 
     def parse_version_capabilities(self):
         c = self.server_capabilities
