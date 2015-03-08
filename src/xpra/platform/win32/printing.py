@@ -9,8 +9,6 @@ log = Logger("printing")
 import subprocess
 import win32print       #@UnresolvedImport
 import win32con         #@UnresolvedImport
-from ctypes import c_wchar_p
-
 
 #ensure we can find gsprint.exe in a subdirectory:
 try:
@@ -48,12 +46,11 @@ def init_winspool_listener():
     el.add_event_callback(win32con.WM_DEVMODECHANGE, on_devmodechange)
 
 def on_devmodechange(wParam, lParam):
-    log.info("on_devmodechange(%s, %s)", wParam, lParam)
+    log("on_devmodechange(%s, %s)", wParam, lParam)
     if lParam>0:
-        name = c_wchar_p(lParam)
-        log("device changed: %s", name)
-        #log("device changed: %s", name.value)
-        #log("device changed: %s", name.value.encode('utf8'))
+        #from ctypes import c_wchar_p
+        #name = c_wchar_p(lParam)
+        #log("device changed: %s", name)
         global printers_modified_callback
         if printers_modified_callback:
             printers_modified_callback()
