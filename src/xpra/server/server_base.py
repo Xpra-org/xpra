@@ -328,28 +328,38 @@ class ServerBase(ServerCore):
         soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if not self.pulseaudio:
             return
-        self.pulseaudio_proc = self.start_child("pulseaudio", self.pulseaudio_command, True)
+        started_at = time.time()
+        def pulseaudio_ended(proc):
+            soundlog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s", proc, self.pulseaudio_proc, proc.returncode)
+            if self.pulseaudio_proc is None:
+                #cleared by cleanup already, ignore
+                return
+            elapsed = time.time()-started_at
+            if elapsed<2:
+                soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
+                soundlog.warn(" Either fix the pulseaudio command line or use the 'pulseaudio=no' option to avoid this warning.")
+                soundlog.warn(" usually, only a single pulseaudio instance can be running for each user account, and one may be running already")
+            else:
+                soundlog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
+            self.pulseaudio_proc = None
+        self.pulseaudio_proc = self.start_child("pulseaudio", self.pulseaudio_command, True, callback=pulseaudio_ended)
         if self.pulseaudio_proc:
-            log.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
-        def check_pa_start():
-            if not self.is_child_alive(self.pulseaudio_proc):
-                log.warn("Warning: pulseaudio has terminated. Either fix the pulseaudio command line or use the 'pulseaudio=no' option to avoid this warning.")
-                log.warn(" usually, only a single pulseaudio instance can be running for each user account, and one may be running already")
-            return False
-        self.timeout_add(1000*2, check_pa_start)
+            soundlog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
 
     def cleanup_pulseaudio(self):
-        if not self.pulseaudio_proc:
+        proc = self.pulseaudio_proc
+        if not proc:
             return
-        log("cleanup_pa() process.poll()=%s, pid=%s", self.pulseaudio_proc.poll(), self.pulseaudio_proc.pid)
-        if self.is_child_alive(self.pulseaudio_proc):
-            log.info("stopping pulseaudio with pid %s", self.pulseaudio_proc.pid)
+        soundlog("cleanup_pa() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
+        if self.is_child_alive(proc):
+            soundlog.info("stopping pulseaudio with pid %s", proc.pid)
             try:
-                self.pulseaudio_proc.terminate()
+                self.pulseaudio_proc = None
+                proc.terminate()
             except:
                 #only log the full stacktrace if the process failed to terminate:
-                full_trace = self.is_child_alive(self.pulseaudio_proc)
-                log.warn("error trying to stop pulseaudio", exc_info=full_trace)
+                full_trace = self.is_child_alive(proc)
+                soundlog.warn("error trying to stop pulseaudio", exc_info=full_trace)
 
     def init_sound_options(self, sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
         try:
@@ -522,24 +532,24 @@ class ServerBase(ServerCore):
         env.update(self.env)
         return env
 
-    def start_child(self, name, child_cmd, ignore=False):
+    def start_child(self, name, child_cmd, ignore=False, callback=None):
         log("start_child(%s, %s, %s)", name, child_cmd, ignore)
         import subprocess
         env = self.get_child_env()
         try:
             proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
-            self.add_process(proc, name, child_cmd, ignore)
+            self.add_process(proc, name, child_cmd, ignore=ignore, callback=callback)
             if ignore:
                 log("started child '%s' with pid %s (ignored)", child_cmd, proc.pid)
             else:
                 log.info("started child '%s' with pid %s", child_cmd, proc.pid)
             return proc
         except OSError as e:
-            sys.stderr.write("Error spawning child '%s': %s\n" % (child_cmd, e))
+            log.error("Error spawning child '%s': %s\n" % (child_cmd, e))
             return None
 
     def add_process(self, process, name, command, ignore=False, callback=None):
-        self.child_reaper.add_process(process, name, command, ignore, callback)
+        self.child_reaper.add_process(process, name, command, ignore, callback=callback)
 
     def is_child_alive(self, proc):
         return proc is not None and proc.poll() is None and proc.pid not in self.child_reaper._dead_pids

@@ -102,9 +102,13 @@ class ChildReaper(object):
         self.reap()
 
     def add_dead_pid(self, pid):
-        log("add_dead_pid(%s)", pid)
+        already_seen = pid in self._dead_pids
+        log("add_dead_pid(%s) already_seen=%s", pid, already_seen)
+        if already_seen:
+            return
         proc = self._children_pids.get(pid)
         callback = self._callbacks.get(pid)
+        log("add_dead_pid(%s) process=%s, callback=%s", pid, proc, callback)
         if callback and proc:
             callback(proc)
         if pid in self._forget_pids:
