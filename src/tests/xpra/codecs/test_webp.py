@@ -65,6 +65,13 @@ def test_encode():
     w, h = img.size
     do_test_encode(rgb_data, w, h)
 
+def test_alpha():
+    #webp seems to have problems with empty alpha?
+    w = 640
+    h = 480
+    rgb_data = "\0"*w*h*4
+    do_test_encode(rgb_data, w, h, N=2, Q=[0, 50, 100], S=[0, 3, 6], has_alpha=True)
+
 def test_files(filenames=[], d="", extensions=[".png", ".jpg"], recurse=True):
     for x in filenames:
         p = os.path.join(d, x)
@@ -94,6 +101,7 @@ def main():
         filenames = sys.argv[1:]
         print("testing with folders/files: %s" % ", ".join(filenames))
         test_files(filenames)
+    test_alpha()
 
 
 if __name__ == "__main__":
