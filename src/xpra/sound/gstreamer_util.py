@@ -421,6 +421,20 @@ DEFAULT_SRC_PLUGIN_OPTIONS = {
     "pulse"                 : get_pulse_defaults,
     }
 
+
+def parse_element_options(options_str):
+    #parse the options string and add the pairs:
+    options = {}
+    for s in options_str.split(","):
+        if not s:
+            continue
+        try:
+            k,v = s.split("=", 1)
+            options[k] = v
+        except Exception as e:
+            log.warn("failed to parse plugin option '%s': %s", s, e)
+    return options
+
 def get_sound_source_options(plugin, options_str, remote):
     """
         Given a plugin (short name), options string and remote info,
@@ -438,15 +452,7 @@ def get_sound_source_options(plugin, options_str, remote):
             return None
     else:
         options = {}
-    #parse the options string and add the pairs:
-    for s in options_str.split(","):
-        if not s:
-            continue
-        try:
-            k,v = s.split("=", 1)
-            options[k] = v
-        except Exception as e:
-            log.warn("failed to parse plugin option '%s': %s", s, e)
+    options.update(parse_element_options(options_str))
     return options
 
 def parse_sound_source(sound_source_plugin, remote):
