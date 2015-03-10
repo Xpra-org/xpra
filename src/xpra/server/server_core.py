@@ -52,7 +52,7 @@ def get_server_info():
     up("build",     get_version_info())
     return info
 
-def get_thread_info(proto=None):
+def get_thread_info(proto=None, protocols=[]):
     #threads:
     info_threads = proto.get_threads()
     info = {
@@ -71,6 +71,13 @@ def get_thread_info(proto=None):
     for i, t in enumerate(info_threads):
         info["info[%s]" % i] = t.getName()
         thread_ident[t.ident] = t.getName()
+    for p in protocols:
+        try:
+            threads = p.get_threads()
+            for t in threads:
+                thread_ident[t.ident] = t.getName()
+        except:
+            pass
     #all non-info threads:
     for i, t in enumerate((x for x in threading.enumerate() if x not in info_threads)):
         info[str(i)] = t.getName()
@@ -702,6 +709,9 @@ class ServerCore(object):
         #this function is for info which MUST be collected from the UI thread
         return {}
 
+    def get_thread_info(self, proto):
+        return get_thread_info(proto)
+
     def get_info(self, proto, *args):
         #this function is for non UI thread info
         info = {}
@@ -715,7 +725,7 @@ class ServerCore(object):
 
         up("network",   get_network_caps())
         up("server",    get_server_info())
-        up("threads",   get_thread_info(proto))
+        up("threads",   self.get_thread_info(proto))
         up("env",       filtered_env)
         up("server", {
                 "mode"              : self.get_server_mode(),

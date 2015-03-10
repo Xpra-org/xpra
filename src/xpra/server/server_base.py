@@ -22,7 +22,7 @@ screenlog = Logger("screen")
 printlog = Logger("printing")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
-from xpra.server.server_core import ServerCore
+from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
@@ -1439,6 +1439,10 @@ class ServerBase(ServerCore):
         #window info:
         self.add_windows_info(info, wids)
         return info
+
+    def get_thread_info(self, proto):
+        return get_thread_info(proto, list(self._server_sources.keys()))
+
 
     def get_info(self, proto, client_uuids=None, wids=None, *args):
         start = time.time()
