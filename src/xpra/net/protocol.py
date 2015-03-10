@@ -243,7 +243,7 @@ class Protocol(object):
             log("send_now(%s ...) connection is closed already, not sending", packet[0])
             return
         log("send_now(%s ...)", packet[0])
-        assert self._get_packet_cb==None, "cannot use send_now when a packet source exists!"
+        assert self._get_packet_cb==None, "cannot use send_now when a packet source exists! (set to %s)" % self._get_packet_cb
         def packet_cb():
             self._get_packet_cb = None
             return (packet, )
