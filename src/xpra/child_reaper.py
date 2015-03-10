@@ -80,6 +80,9 @@ class ChildReaper(object):
         if callback:
             self._callbacks[process.pid] = callback
         log("add_process(%s, %s, %s, %s) pid=%s", process, name, command, ignore, process.pid)
+        #could have died already:
+        if process.poll() is not None:
+            self.check()
 
     def check(self):
         pids = set(self._children_pids.keys()) - self._ignored_pids

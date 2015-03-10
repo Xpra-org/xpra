@@ -8,7 +8,6 @@
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000041.html
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
 # (also do not import anything that imports gtk)
-import gobject
 import subprocess
 import sys
 import os.path
@@ -342,18 +341,22 @@ def start_websockify(child_reaper, opts, tcp_sockets):
     websockify_command = ["websockify", "--web", www_dir, "%s:%s" % (html_host, html_port), "127.0.0.1:%s" % xpra_tcp_port]
     log("websockify_command: %s", websockify_command)
     websockify_proc = subprocess.Popen(websockify_command, close_fds=True)
-    child_reaper.add_process(websockify_proc, "websockify", websockify_command, ignore=True)
-    log.info("websockify started, serving %s on %s:%s", www_dir, html_host, html_port)
-    def check_websockify_start():
-        if websockify_proc.poll() is not None or websockify_proc.pid in child_reaper._dead_pids:
+    websockify_proc._closed = False
+    start_time = time.time()
+    def websockify_ended(proc):
+        elapsed = time.time()-start_time
+        log("websockify_ended(%s) after %i seconds", elapsed)
+        if not websockify_proc._closed:
             log.warn("Warning: websockify has terminated, the html web server will not be available.")
         return False
-    gobject.timeout_add(1000*2, check_websockify_start)
+    child_reaper.add_process(websockify_proc, "websockify", websockify_command, ignore=True, callback=websockify_ended)
+    log.info("websockify started, serving %s on %s:%s", www_dir, html_host, html_port)
     def cleanup_websockify():
         log("cleanup_websockify() process.poll()=%s, pid=%s, dead_pids=%s", websockify_proc.poll(), websockify_proc.pid, child_reaper._dead_pids)
         if websockify_proc.poll() is None and websockify_proc.pid not in child_reaper._dead_pids:
             log.info("stopping websockify with pid %s", websockify_proc.pid)
             try:
+                websockify_proc._closed = True
                 websockify_proc.terminate()
             except:
                 log.warn("error trying to stop websockify", exc_info=True)
