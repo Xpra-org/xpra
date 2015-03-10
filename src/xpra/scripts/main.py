@@ -121,8 +121,12 @@ def main(script_file, cmdline):
         except InitInfo as e:
             command_info("%s" % e)
             return 0
-        except (InitException, AssertionError) as e:
+        except InitException as e:
             command_error("xpra initialization error: %s" % e)
+            return 1
+        except AssertionError as e:
+            command_error("xpra initialization error: %s" % e)
+            traceback.print_tb(sys.exc_info()[2])
             return 1
         except Exception:
             command_error("xpra main error:\n%s" % traceback.format_exc())
@@ -859,6 +863,11 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode in ("_proxy", "_proxy_start", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
+        elif mode in ("_sound_record", "_sound_play"):
+            if not has_sound_support:
+                error_cb("no sound support!")
+            from xpra.sound.wrapper import run_sound
+            return run_sound(mode, error_cb, options, args)
         elif mode == "initenv":
             from xpra.scripts.server import xpra_runner_shell_script, write_runner_shell_script
             script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
