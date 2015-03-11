@@ -1310,7 +1310,9 @@ if WIN32:
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             GSVIEW = "C:\\Program Files\\Ghostgum\\gsview"
+            GHOSTSCRIPT = "C:\\Program Files\\gs\\gs9.15\\bin"
             add_data_files('gsview', glob.glob(GSVIEW+'\\*.*'))
+            add_data_files('gsview', glob.glob(GHOSTSCRIPT+'\\*.*'))
 
 
     #always include those files:

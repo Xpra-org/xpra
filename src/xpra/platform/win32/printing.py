@@ -14,12 +14,15 @@ import win32con         #@UnresolvedImport
 try:
     from xpra.platform.paths import get_app_dir
     import os.path
-    gsprint_dir = os.path.join(get_app_dir(), "gsview")
-    gsprint_exe = os.path.join(gsprint_dir, "gsprint.exe")
-    assert os.path.exists(gsprint_dir), "cannot find gsview directory in '%s'" % gsprint_dir
+    gsview_dir = os.path.join(get_app_dir(), "gsview")
+    gsprint_exe = os.path.join(gsview_dir, "gsprint.exe")
+    gswin32c_exe = os.path.join(gsview_dir, "gswin32c.exe")
+    assert os.path.exists(gsview_dir), "cannot find gsview directory in '%s'" % gsview_dir
+    assert os.path.exists(gsprint_exe), "cannot find gsprint_exe in '%s'" % gsview_dir
+    assert os.path.exists(gswin32c_exe), "cannot find gswin32c_exe in '%s'" % gsview_dir
 except Exception as e:
-    log.warn("failed to setup gsprint path!")
-    gsprint_dir, gsprint_exe = None, None
+    log.warn("failed to setup gsprint path: %s", e)
+    gsview_dir, gsprint_exe, gswin32c_exe = None, None, None
 
 
 #allows us to skip some printers we don't want to export
@@ -57,7 +60,7 @@ def on_devmodechange(wParam, lParam):
 
 def get_printers():
     printers = {}
-    if not gsprint_dir:
+    if not gsview_dir:
         #without gsprint, we can't handle printing!
         return printers
     #default_printer = win32print.GetDefaultPrinter()
@@ -79,17 +82,21 @@ def get_printers():
 
 def print_files(printer, filenames, title, options):
     log("win32.print_files%s", (printer, filenames, title, options))
-    assert gsprint_dir, "cannot print files without gsprint!"
+    assert gsview_dir, "cannot print files without gsprint!"
     global JOB_ID, PROCESSES
     processes = []
     for filename in filenames:
         #command = ["C:\\Program Files\\Xpra\\gsview\\gsprint.exe"]
-        command = [gsprint_exe]
+        command = [gsprint_exe, "-ghostscript", gswin32c_exe]
         if printer:
             command += ["-printer", printer]
         command += [filename]
         log("print command: %s", command)
-        process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=gsprint_dir)
+        #add gsview directory
+        PATH = os.environ.get("PATH")
+        os.environ["PATH"] = str(PATH+";"+gsview_dir)
+        log("environment: %s", os.environ)
+        process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=gsview_dir)
         process.print_filename = filename
         #we just let it run, no need for reaping the process on win32
         processes.append(process)
