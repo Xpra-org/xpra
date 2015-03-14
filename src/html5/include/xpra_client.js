@@ -376,12 +376,12 @@ XpraClient.prototype._make_hello = function() {
 		"notify-startup-complete"	: true,
 		"generic-rgb-encodings"		: true,
 		"window.raise"				: true,
-		"encodings"					: ["rgb"],
+		"encodings"					: ["jpeg", "png", "rgb"],
 		"raw_window_icons"			: true,
 		//rgb24 is not efficient in HTML so don't use it:
 		//png and jpeg will need extra code
 		//"encodings.core"			: ["rgb24", "rgb32", "png", "jpeg"],
-		"encodings.core"			: ["rgb32"],
+		"encodings.core"			: ["rgb32", "png", "jpeg"],
 		"encodings.rgb_formats"	 	: this.RGB_FORMATS,
 		"encoding.generic"	  		: true,
 		"encoding.transparency"		: true,

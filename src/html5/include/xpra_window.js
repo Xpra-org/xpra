@@ -561,6 +561,23 @@ XpraWindow.prototype.draw = function() {
 	ctx.drawImage(this.offscreen_canvas, 0, 0);
 };
 
+XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
+    // apply in chunks of 10400 to avoid call stack overflow
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
+    var s = "";
+    var skip = 10400;
+    if (uintArray.subarray) {
+        for (var i=0, len=uintArray.length; i<len; i+=skip) {
+            s += String.fromCharCode.apply(null, uintArray.subarray(i, Math.min(i + skip, len)));
+        }
+    } else {
+        for (var i=0, len=uintArray.length; i<len; i+=skip) {
+            s += String.fromCharCode.apply(null, uintArray.slice(i, Math.min(i + skip, len)));
+        }
+    }
+    return window.btoa(s);
+}
+
 /**
  * Updates the window image with new pixel data
  * we have received from the server.
@@ -592,6 +609,14 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		// set the imagedata rgb32 method
 		img.data.set(img_data);
 		this.offscreen_canvas_ctx.putImageData(img, x, y);
+	}
+	else if (coding=="jpeg" || coding=="png") {
+		var j = new Image();
+		j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
+		var me = this;
+	    j.onload = function () {
+	        me.offscreen_canvas_ctx.drawImage(j, x, y);
+	    };
 	}
 	else {
 		throw "unsupported coding " + coding;
