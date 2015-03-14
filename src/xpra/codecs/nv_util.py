@@ -39,7 +39,7 @@ def get_nvidia_module_version(probe=True):
     return nvidia_module_version
 
 nvenc_license_keys = {}
-def get_nvenc_license_keys(nvenc_version):
+def get_nvenc_license_keys(nvenc_version=0):
     global nvenc_license_keys
     keys = nvenc_license_keys.get(nvenc_version)
     if keys is not None:

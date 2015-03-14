@@ -29,7 +29,7 @@ from ctypes import cdll as loader, POINTER
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
 FORCE = os.environ.get("XPRA_NVENC_FORCE", "0")=="1"
-CLIENT_KEYS_STR = get_nvenc_license_keys(3)
+CLIENT_KEYS_STR = get_nvenc_license_keys(3) + get_nvenc_license_keys()
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 YUV444P_USER_OVERRIDE = os.environ.get("XPRA_NVENC_YUV444P", "")
 
