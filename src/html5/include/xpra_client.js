@@ -12,7 +12,7 @@
  *  keycodes.js
  */
 
-XPRA_CLIENT_FORCE_NO_WORKER = true;
+XPRA_CLIENT_FORCE_NO_WORKER = false;
 
 function XpraClient(container) {
 	// state
