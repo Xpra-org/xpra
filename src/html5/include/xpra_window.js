@@ -24,9 +24,10 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	var me = this;
 	// there might be more than one client
 	this.client = client;
-	//keep reference to screen drawn canvas:
+	//keep reference both the internal canvas and screen drawn canvas:
 	this.canvas = canvas_state;
-	this.damaged = false;
+	this.offscreen_canvas = document.createElement("canvas");
+	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('2d');
 	//enclosing div in page DOM
 	this.div = jQuery("#" + String(wid));
 
@@ -35,9 +36,6 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.mouse_move_cb = null;
 	this.mouse_click_cb = null;
 	this.window_closed_cb = null;
-
-	//the window "backing":
-	this.image = null;
 
 	//xpra specific attributes:
 	this.wid = wid;
@@ -161,6 +159,12 @@ XpraWindow.prototype.updateCSSGeometry = function() {
 	if(this.canvas.height != this.h) {
 		this.canvas.height = this.h;
 	}
+	if(this.offscreen_canvas.width != this.w) {
+		this.offscreen_canvas.width = this.w;
+	}
+	if(this.offscreen_canvas.height != this.h) {
+		this.offscreen_canvas.height = this.h;
+	}
 	// work out outer size
 	this.outerH = this.h + this.topoffset + this.bottomoffset;
 	this.outerW = this.w + this.leftoffset + this.rightoffset;
@@ -205,12 +209,12 @@ XpraWindow.prototype.getMouse = function(e) {
 
 XpraWindow.prototype.on_mousemove = function(e) {
 	var mouse = this.getMouse(e),
-	mx = mouse.x,
-	my = mouse.y;
+			mx = mouse.x,
+			my = mouse.y;
 
-	var modifiers = [];
-	var buttons = [];
-	this.handle_mouse_move(mx, my, modifiers, buttons);
+			var modifiers = [];
+			var buttons = [];
+			this.handle_mouse_move(mx, my, modifiers, buttons);
 
 };
 
@@ -258,12 +262,14 @@ XpraWindow.prototype.create_image_backing = function() {
 	var previous_image = this.image;
 	var img_geom = this.get_internal_geometry();
 	//show("createImageData: "+img_geom.toSource());
-	// this is the offscreen image buffer
-	this.image = this.canvas.getContext('2d').createImageData(img_geom.w, img_geom.h);
-	if (previous_image) {
+	// this should draw to the offscreen canvas
+	//this.image = this.offscreen_canvas.getContext('2d').createImageData(img_geom.w, img_geom.h);
+	//if (previous_image) {
 		//copy previous pixels to new image, ignoring bit gravity
-		this.canvas.getContext('2d').putImageData(previous_image, 0, 0);
-	}
+	//	this.offscreen_canvas.getContext('2d').putImageData(previous_image, 0, 0);
+	//}
+
+	// this should copy canvas pixel data since a canvas is the backing!
 };
 
 /**
@@ -542,7 +548,7 @@ XpraWindow.prototype.update_icon = function(w, h, pixel_format, data) {
 }
 
 /**
- * This function draws the contents of the off-screen buffer to the visible
+ * This function draws the contents of the off-screen canvas to the visible
  * canvas. However the drawing is requested by requestAnimationFrame which allows
  * the browser to group screen redraws together, and automatically adjusts the
  * framerate e.g if the browser window/tab is not visible.
@@ -552,9 +558,8 @@ XpraWindow.prototype.draw = function() {
 	//get visible canvas context
 	var ctx = this.canvas.getContext('2d');
 	//pass the 'buffer' canvas directly, nice
-	ctx.putImageData(this.image, 0, 0);
+	ctx.drawImage(this.offscreen_canvas, 0, 0);
 };
-
 
 /**
  * Updates the window image with new pixel data
@@ -563,48 +568,34 @@ XpraWindow.prototype.draw = function() {
  */
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options) {
 	"use strict";
-	//show("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
-	if (coding!="rgb32")
-		throw Exception("invalid encoding: "+coding);
+	//console.log("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
 
-	//if the pixel data is not in an array buffer already, convert it:
-	//(this happens with inlined pixel data)
-	if (typeof img_data==='string') {
-		var uint = new Uint8Array(img_data.length);
-		for(var i=0,j=img_data.length;i<j;++i) {
-			uint[i] = img_data.charCodeAt(i);
+	var img = this.offscreen_canvas_ctx.createImageData(width, height);
+
+	if (coding=="rgb32") {
+		//if the pixel data is not in an array buffer already, convert it:
+		//(this happens with inlined pixel data)
+		if (typeof img_data==='string') {
+			var uint = new Uint8Array(img_data.length);
+			for(var i=0,j=img_data.length;i<j;++i) {
+				uint[i] = img_data.charCodeAt(i);
+			}
+			img_data = uint;
 		}
-		img_data = uint;
+		//show("options="+(options).toSource());
+		if (options!=null && options["zlib"]>0) {
+			//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
+			var inflated = new Zlib.Inflate(img_data).decompress();
+			//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
+			img_data = inflated;
+		}
+		// set the imagedata rgb32 method
+		img.data.set(img_data);
+		this.offscreen_canvas_ctx.putImageData(img, x, y);
 	}
-	//show("options="+(options).toSource());
-	if (options!=null && options["zlib"]>0) {
-		//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
-		var inflated = new Zlib.Inflate(img_data).decompress();
-		//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
-		img_data = inflated;
-	}
-
-	var data = this.image.data;
-	var stride = this.image.width*4;
-
-	// redraw entire window
-	if (x==0 && width==this.image.width && y+height<=this.image.height) {
-		//take a shortcut: copy all lines
-		data.set(img_data, y*stride);
-		return true;
-	}
-	// assume draw window portion
 	else {
-		var line;
-		var in_stride = width*4;
-		for (var i=0; i<height; i++) {
-			line = img_data.subarray(i*in_stride, (i+1)*in_stride);
-			data.set(line, (y+i)*stride + x*4);
-		}
-		return true;
+		throw "unsupported coding " + coding;
 	}
-	//no action taken, no need to invalidate
-	return false;
 };
 
 /**

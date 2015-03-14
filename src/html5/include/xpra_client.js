@@ -527,8 +527,10 @@ XpraClient.prototype._window_set_focus = function(win) {
 	}
 }
 
-XpraClient.prototype._window_send_damage_sequence = function(win, packet_sequence, width, height, decode_time) {
-	win.client.protocol.send(["damage-sequence", packet_sequence, win.wid, width, height, decode_time]);
+XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequence, width, height, decode_time) {
+	// this function requires wid as arugment because it may be called
+	// without a valid client side window
+	this.protocol.send(["damage-sequence", packet_sequence, wid, width, height, decode_time]);
 }
 
 /*
@@ -658,19 +660,17 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 	if (win) {
 		// win.paint draws the update to the window's off-screen buffer and returns true if it
 		// was changed.
-		var redraw = win.paint(x, y, width, height, coding, data, packet_sequence, rowstride, options);
+		win.paint(x, y, width, height, coding, data, packet_sequence, rowstride, options);
 		decode_time = new Date().getTime() - start;
 		// request that drawing to screen takes place at next available opportunity if possible
-		if(redraw) {
-			if(requestAnimationFrame) {
-				requestAnimationFrame(function() {
-					win.draw();
-				});
-			} else {
-				// requestAnimationFrame is not available, draw immediately
+		if(requestAnimationFrame) {
+			requestAnimationFrame(function() {
 				win.draw();
-			}
+			});
+		} else {
+			// requestAnimationFrame is not available, draw immediately
+			win.draw();
 		}
 	}
-	ctx._window_send_damage_sequence(win, packet_sequence, width, height, decode_time);
+	ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time);
 }
