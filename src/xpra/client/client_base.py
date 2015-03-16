@@ -46,6 +46,7 @@ EXIT_INTERNAL_ERROR = 14
 EXTRA_TIMEOUT = 10
 ALLOW_UNENCRYPTED_PASSWORDS = os.environ.get("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", "0")=="1"
 DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
+DELETE_PRINTER_FILE = os.environ.get("XPRA_DELETE_PRINTER_FILE", "1")=="1"
 
 
 class XpraClientBase(object):
@@ -736,6 +737,8 @@ class XpraClientBase(object):
             return
         start = time.time()
         def delfile():
+            if not DELETE_PRINTER_FILE:
+                return
             try:
                 os.unlink(filename)
             except:
