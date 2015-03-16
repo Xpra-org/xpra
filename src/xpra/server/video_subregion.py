@@ -73,7 +73,7 @@ class VideoSubregion(object):
                 "height"    : r.height,
                 "counter"   : self.counter,
                 "set_at"    : self.set_at,
-                "time"      : self.time,
+                "time"      : int(self.time),
                 "non_waited": self.non_waited,
                 "non_max_wait" :  self.non_max_wait}
         rr = list(self.refresh_regions)
