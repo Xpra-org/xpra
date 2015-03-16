@@ -48,7 +48,7 @@ if sys.platform.startswith("win"):
 
 
 def untilConcludes(is_active_cb, f, *a, **kw):
-    wait = continue_wait
+    wait = 0
     while is_active_cb():
         try:
             return f(*a, **kw)
