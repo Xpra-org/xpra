@@ -74,7 +74,7 @@ file-transfer = yes
 file-size-limit = 10
 
 # Print support:
-printing = no
+printing = yes
 
 # To manage printers:
 #lpadmin = /usr/bin/lpadmin
