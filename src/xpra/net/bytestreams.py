@@ -21,6 +21,15 @@ ABORT = {
     errno.ECONNRESET    : "ECONNRESET",
     errno.EPIPE         : "EPIPE"}
 continue_wait = 0
+
+#default to using os.read and os.write for both tty devices and regular streams
+#(but overriden for win32 below for tty devices to workaround an OS "feature")
+OS_READ = os.read
+OS_WRITE = os.write
+TTY_READ = os.read
+TTY_WRITE = os.write
+
+
 if sys.platform.startswith("win"):
     #on win32, we have to deal with a few more odd error codes:
     #(it would be nicer if those were wrapped using errno instead..)
@@ -45,6 +54,16 @@ if sys.platform.startswith("win"):
     #on win32, we want to wait just a little while,
     #to prevent servers spinning wildly on non-blocking sockets:
     continue_wait = 5
+    if sys.version[0]<"3":
+        #win32 has problems writing more than 32767 characters to stdout!
+        #see: http://bugs.python.org/issue11395
+        #(this is fixed in python 3.2 and we don't care about 3.0 or 3.1)
+        def win32ttywrite(fd, buf):
+            #this awful limitation only applies to tty devices:
+            if len(buf)>32767:
+                buf = buf[:32767]
+            return os.write(fd, buf)
+        TTY_WRITE = win32ttywrite
 
 
 def untilConcludes(is_active_cb, f, *a, **kw):
@@ -120,6 +139,16 @@ class TwoFileConnection(Connection):
         Connection.__init__(self, target, info)
         self._writeable = writeable
         self._readable = readable
+        self._read_fd = self._readable.fileno()
+        self._write_fd = self._writeable.fileno()
+        if os.isatty(self._read_fd):
+            self._osread = TTY_READ
+        else:
+            self._osread = OS_READ
+        if os.isatty(self._write_fd):
+            self._oswrite = TTY_WRITE
+        else:
+            self._oswrite = OS_WRITE
         self._abort_test = abort_test
         self._close_cb = close_cb
 
@@ -130,17 +159,20 @@ class TwoFileConnection(Connection):
 
     def read(self, n):
         self.may_abort("read")
-        return self._read(os.read, self._readable.fileno(), n)
+        return self._read(self._osread, self._read_fd, n)
 
     def write(self, buf):
         self.may_abort("write")
-        return self._write(os.write, self._writeable.fileno(), buf)
+        return self._write(self._oswrite, self._write_fd, buf)
 
     def close(self):
         Connection.close(self)
         try:
-            self._writeable.close()
             self._readable.close()
+        except:
+            pass
+        try:
+            self._writeable.close()
         except:
             pass
         if self._close_cb:

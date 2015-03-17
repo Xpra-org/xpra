@@ -173,6 +173,26 @@ def force_quit(status=1):
     os._exit(status)
 
 
+def disable_stdout_buffering():
+    import gc
+    # Appending to gc.garbage is a way to stop an object from being
+    # destroyed.  If the old sys.stdout is ever collected, it will
+    # close() stdout, which is not good.
+    gc.garbage.append(sys.stdout)
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
+def setbinarymode(fd):
+    if sys.platform.startswith("win"):
+        #turn on binary mode:
+        try:
+            import msvcrt
+            msvcrt.setmode(fd, os.O_BINARY)         #@UndefinedVariable
+        except:
+            from xpra.log import Logger
+            log = Logger("util")
+            log.error("setting stdin to binary mode failed", exc_info=True)
+
+
 def find_lib(libname):
     #it would be better to rely on dlopen to find the paths
     #but I cannot find a way of getting ctypes to tell us the path

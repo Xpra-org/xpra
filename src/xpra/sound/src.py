@@ -5,10 +5,12 @@
 # later version. See the file COPYING for details.
 
 import sys
+import time
 
+from xpra.os_util import SIGNAMES
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, get_queue_time, normv, MP3, CODECS, QUEUE_LEAK
+from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, get_queue_time, normv, MP3, CODECS, CODEC_ORDER, QUEUE_LEAK
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -25,13 +27,32 @@ class SoundSource(SoundPipeline):
         "new-buffer"    : n_arg_signal(2),
         })
 
-    def __init__(self, src_type, src_options={}, codec=MP3, volume=1.0, encoder_options={}):
+    def __init__(self, src_type=None, src_options={}, codecs=CODECS, codec_options={}, volume=1.0):
+        if not src_type:
+            from xpra.sound.pulseaudio_util import get_pa_device_options
+            monitor_devices = get_pa_device_options(True, False)
+            log.info("found pulseaudio monitor devices: %s", monitor_devices)
+            if len(monitor_devices)==0:
+                log.warn("could not detect any pulseaudio monitor devices - will use a test source")
+                src_type = "audiotestsrc"
+                default_src_options = {"wave":2, "freq":100, "volume":0.4}
+            else:
+                monitor_device = monitor_devices.items()[0][0]
+                log.info("using pulseaudio source device: %s", monitor_device)
+                src_type = "pulsesrc"
+                default_src_options = {"device" : monitor_device}
+            src_options = default_src_options
+            src_options.update(src_options)
         assert src_type in get_source_plugins(), "invalid source plugin '%s'" % src_type
+        matching = [x for x in CODEC_ORDER if (x in codecs and x in CODECS)]
+        log("SoundSource(..) found matching codecs %s", matching)
+        assert len(matching)>0, "no matching codecs between arguments %s and supported list %s" % (codecs, CODECS)
+        codec = matching[0]
         encoder, fmt = get_encoder_formatter(codec)
         SoundPipeline.__init__(self, codec)
         self.src_type = src_type
         source_str = plugin_str(src_type, src_options)
-        encoder_str = plugin_str(encoder, encoder_options)
+        encoder_str = plugin_str(encoder, codec_options)
         pipeline_els = [source_str]
         if AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
@@ -55,9 +76,9 @@ class SoundSource(SoundPipeline):
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
         self.sink.set_property("emit-signals", True)
-        self.sink.set_property("max-buffers", 10)
+        self.sink.set_property("max-buffers", 10)       #0?
         self.sink.set_property("drop", False)
-        self.sink.set_property("sync", True)
+        self.sink.set_property("sync", True)            #False?
         self.sink.set_property("qos", False)
         try:
             #Gst 1.0:
@@ -70,15 +91,6 @@ class SoundSource(SoundPipeline):
 
     def __repr__(self):
         return "SoundSource('%s' - %s)" % (self.pipeline_str, self.state)
-
-    def set_volume(self, volume=1.0):
-        if self.sink and self.volume:
-            self.volume.set_property("volume", volume)
-
-    def get_volume(self):
-        if self.sink and self.volume:
-            return self.volume.get_property("volume")
-        return 0
 
     def cleanup(self):
         SoundPipeline.cleanup(self)
@@ -102,7 +114,8 @@ class SoundSource(SoundPipeline):
         size = buf.get_size()
         data = buf.extract_dup(0, size)
         self.do_emit_buffer(data, {"timestamp"  : normv(buf.pts),
-                                   "duration"   : normv(buf.duration)})
+                                   "duration"   : normv(buf.duration),
+                                   })
 
 
     def on_new_preroll0(self, appsink):
@@ -125,82 +138,107 @@ class SoundSource(SoundPipeline):
         #            "duration"  : buf.duration,
         #            "offset"    : buf.offset,
         #            "offset_end": buf.offset_end}
-        self.do_emit_buffer(buf.data, {"timestamp" : normv(buf.timestamp),
-                                       "duration"  : normv(buf.duration)})
+        self.do_emit_buffer(buf.data, {
+                                       "caps"      : buf.get_caps().to_string(),
+                                       "timestamp" : normv(buf.timestamp),
+                                       "duration"  : normv(buf.duration)
+                                       })
 
 
     def do_emit_buffer(self, data, metadata={}):
         self.buffer_count += 1
         self.byte_count += len(data)
-        self.emit("new-buffer", data, metadata)
+        metadata["time"] = int(time.time()*1000)
+        self.idle_emit("new-buffer", data, metadata)
+
 
 gobject.type_register(SoundSource)
 
 
 def main():
     from xpra.platform import init, clean
-    init("Sound-Play")
+    init("Xpra-Sound-Source")
     try:
         import os.path
+        if "-v" in sys.argv:
+            log.enable_debug()
+            sys.argv.remove("-v")
+
         if len(sys.argv) not in (2, 3):
-            print("usage: %s filename [codec]" % sys.argv[0])
+            log.error("usage: %s filename [codec] [--encoder=rencode]", sys.argv[0])
             return 1
         filename = sys.argv[1]
-        if os.path.exists(filename):
-            print("file %s already exists" % filename)
-            return 2
+        if filename=="-":
+            from xpra.os_util import disable_stdout_buffering
+            disable_stdout_buffering()
+        elif os.path.exists(filename):
+            log.error("file %s already exists", filename)
+            return 1
         codec = None
+
         if len(sys.argv)==3:
             codec = sys.argv[2]
             if codec not in CODECS:
-                print("invalid codec: %s, codecs supported: %s" % (codec, CODECS))
-                return 2
+                log.error("invalid codec: %s, codecs supported: %s", codec, CODECS)
+                return 1
         else:
             parts = filename.split(".")
             if len(parts)>1:
                 extension = parts[-1]
                 if extension.lower() in CODECS:
                     codec = extension.lower()
-                    print("guessed codec %s from file extension %s" % (codec, extension))
+                    log.info("guessed codec %s from file extension %s", codec, extension)
             if codec is None:
                 codec = MP3
-                print("using default codec: %s" % codec)
+                log.info("using default codec: %s", codec)
 
-        log.enable_debug()
+        #in case we're running against pulseaudio,
+        #try to setup the env:
+        try:
+            from xpra.platform.paths import get_icon_filename
+            f = get_icon_filename("xpra.png")
+            from xpra.sound.pulseaudio_util import add_audio_tagging_env
+            add_audio_tagging_env(f)
+        except Exception as e:
+            log.warn("failed to setup pulseaudio tagging: %s", e)
+
         from threading import Lock
-        f = open(filename, "wb")
-        from xpra.sound.pulseaudio_util import get_pa_device_options
-        monitor_devices = get_pa_device_options(True, False)
-        log.info("found pulseaudio monitor devices: %s", monitor_devices)
-        if len(monitor_devices)==0:
-            log.warn("could not detect any pulseaudio monitor devices - will use a test source")
-            ss = SoundSource("audiotestsrc", src_options={"wave":2, "freq":100, "volume":0.4}, codec=codec)
+        if filename=="-":
+            f = sys.stdout
         else:
-            monitor_device = monitor_devices.items()[0][0]
-            log.info("using pulseaudio source device: %s", monitor_device)
-            ss = SoundSource("pulsesrc", {"device" : monitor_device}, codec)
+            f = open(filename, "wb")
+        ss = SoundSource(codecs=[codec])
         lock = Lock()
         def new_buffer(ss, data, metadata):
-            log.info("new buffer: %s bytes, metadata=%s" % (len(data), metadata))
+            log.info("new buffer: %s bytes (%s), metadata=%s", len(data), type(data), metadata)
             with lock:
                 if f:
                     f.write(data)
-        ss.connect("new-buffer", new_buffer)
-        ss.start()
+                    f.flush()
 
         gobject_mainloop = gobject.MainLoop()
         gobject.threads_init()
 
+        ss.connect("new-buffer", new_buffer)
+        ss.start()
+
         import signal
-        def deadly_signal(*args):
+        def deadly_signal(sig, frame):
+            log.warn("got deadly signal %s", SIGNAMES.get(sig, sig))
+            gobject.idle_add(ss.stop)
             gobject.idle_add(gobject_mainloop.quit)
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
 
-        gobject_mainloop.run()
+        try:
+            gobject_mainloop.run()
+        except Exception as e:
+            log.error("main loop error: %s", e)
+        ss.stop()
 
         f.flush()
-        log.info("wrote %s bytes to %s", f.tell(), filename)
+        if f!=sys.stdout:
+            log.info("wrote %s bytes to %s", f.tell(), filename)
         with lock:
             f.close()
             f = None

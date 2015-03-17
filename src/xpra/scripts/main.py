@@ -803,7 +803,7 @@ def dump_frames(*arsg):
 
 
 def configure_logging(options, mode):
-    if mode in ("start", "upgrade", "attach", "shadow", "proxy"):
+    if mode in ("start", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             from xpra.sound.gstreamer_util import show_sound_codec_help
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)

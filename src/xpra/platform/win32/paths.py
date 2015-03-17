@@ -77,3 +77,6 @@ def get_app_dir():
         return APP_DIR
     from xpra.platform.paths import default_get_app_dir   #imported here to prevent import loop
     return default_get_app_dir()
+
+def get_sound_executable():
+    return os.environ.get("XPRA_SOUND_EXECUTABLE", "xpra_cmd.exe")

@@ -7,7 +7,6 @@
 import sys
 import os
 
-from xpra.util import AdHocStruct
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -87,7 +86,8 @@ CODEC_OPTIONS = [
             ]
 CODECS = {}
 
-CODEC_ORDER = [MP3, WAVPACK, WAV, FLAC, SPEEX]
+#CODEC_ORDER = [MP3, WAVPACK, WAV, FLAC, SPEEX]
+CODEC_ORDER = [MP3, FLAC, SPEEX]
 
 
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
@@ -484,40 +484,6 @@ def parse_sound_source(sound_source_plugin, remote):
         #means error
         return None, {}
     return gst_sound_source_plugin, options
-
-
-def start_sending_sound(sound_source_plugin, codec, volume, remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
-    assert has_gst
-    try:
-        #info about the remote end:
-        remote = AdHocStruct()
-        remote.pulseaudio_server = remote_pulseaudio_server
-        remote.pulseaudio_id = remote_pulseaudio_id
-        remote.remote_decoders = remote_decoders
-        plugin, options = parse_sound_source(sound_source_plugin, remote)
-        if not plugin:
-            log.error("failed to setup '%s' sound stream source", (sound_source_plugin or "auto"))
-            return  None
-        log("parsed '%s':", sound_source_plugin)
-        log("plugin=%s", plugin)
-        log("options=%s", options)
-        matching_codecs = [x for x in remote_decoders if x in local_decoders]
-        ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
-        if len(ordered_codecs)==0:
-            log.error("no matching codecs between remote (%s) and local (%s) - sound disabled", remote_decoders, local_decoders)
-            return    None
-        if codec is not None and codec not in matching_codecs:
-            log.warn("invalid codec specified: %s", codec)
-            codec = None
-        if codec is None:
-            codec = ordered_codecs[0]
-        log("using sound codec %s", codec)
-        from xpra.sound.src import SoundSource
-        log.info("starting sound stream capture using %s source", PLUGIN_TO_DESCRIPTION.get(plugin, plugin))
-        return SoundSource(plugin, options, codec, volume, {})
-    except Exception as e:
-        log.error("error setting up sound: %s", e, exc_info=True)
-        return    None
 
 
 def get_info(receive=True, send=True, receive_codecs=[], send_codecs=[]):

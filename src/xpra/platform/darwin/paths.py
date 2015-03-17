@@ -67,3 +67,8 @@ def get_system_conf_dir():
     #the system wide configuration directory
     default_conf_dir = "/Library/Application Support/Xpra"
     return os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)
+
+
+def get_sound_executable():
+    helper = os.path.join(get_app_dir(), "MacOS", "Xpra")
+    return os.environ.get("XPRA_SOUND_EXECUTABLE", helper)

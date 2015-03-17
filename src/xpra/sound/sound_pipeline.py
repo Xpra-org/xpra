@@ -20,6 +20,7 @@ class SoundPipeline(gobject.GObject):
         "state-changed"     : one_arg_signal,
         "bitrate-changed"   : one_arg_signal,
         "error"             : one_arg_signal,
+        "new-stream"        : one_arg_signal,
         }
 
     def __init__(self, codec):
@@ -37,6 +38,9 @@ class SoundPipeline(gobject.GObject):
         self.buffer_count = 0
         self.byte_count = 0
 
+    def idle_emit(self, sig, *args):
+        gobject.idle_add(self.emit, sig, *args)
+
     def get_info(self):
         info = {"codec"             : self.codec,
                 "codec_description" : self.codec_description,
@@ -44,6 +48,7 @@ class SoundPipeline(gobject.GObject):
                 "buffers"           : self.buffer_count,
                 "bytes"             : self.byte_count,
                 "pipeline"          : self.pipeline_str,
+                "volume"            : self.get_volume(),
                 }
         if self.codec_mode:
             info["codec_mode"] = self.codec_mode
@@ -79,25 +84,48 @@ class SoundPipeline(gobject.GObject):
         log("new bitrate: %s", self.bitrate)
         #self.emit("bitrate-changed", new_bitrate)
 
+
+    def set_volume(self, volume=100):
+        if self.volume:
+            self.volume.set_property("volume", volume/100.0)
+
+    def get_volume(self):
+        if self.volume:
+            return int(self.volume.get_property("volume")*100)
+        return 0
+
+
     def start(self):
         log("SoundPipeline.start()")
+        self.idle_emit("new-stream", self.codec)
         self.state = "active"
         self.pipeline.set_state(gst.STATE_PLAYING)
         log("SoundPipeline.start() done")
 
     def stop(self):
+        if not self.pipeline:
+            return
         log("SoundPipeline.stop()")
+        #uncomment this to see why we end up calling stop()
+        #import traceback
+        #for x in traceback.format_stack():
+        #    for s in x.split("\n"):
+        #        v = s.replace("\r", "").replace("\n", "")
+        #        if v:
+        #            log(v)
         self.state = "stopped"
         self.pipeline.set_state(gst.STATE_NULL)
+        self.volume = None
         log("SoundPipeline.stop() done")
 
     def cleanup(self):
-        log("SoundPipeline.cleanup()")
         self.stop()
-        if self.bus:
-            self.bus.remove_signal_watch()
-            if self.bus_message_handler_id:
-                self.bus.disconnect(self.bus_message_handler_id)
+        if not self.bus:
+            return
+        log("SoundPipeline.cleanup()")
+        self.bus.remove_signal_watch()
+        if self.bus_message_handler_id:
+            self.bus.disconnect(self.bus_message_handler_id)
         self.bus = None
         self.pipeline = None
         self.codec = None
@@ -112,13 +140,13 @@ class SoundPipeline(gobject.GObject):
             self.pipeline.set_state(gst.STATE_NULL)
             log.info("sound source EOS")
             self.state = "stopped"
-            self.emit("state-changed", self.state)
+            self.idle_emit("state-changed", self.state)
         elif t == gst.MESSAGE_ERROR:
             self.pipeline.set_state(gst.STATE_NULL)
             err, details = message.parse_error()
             log.error("sound source pipeline error: %s / %s", err, details)
             self.state = "error"
-            self.emit("state-changed", self.state)
+            self.idle_emit("state-changed", self.state)
         elif t == gst.MESSAGE_TAG:
             try:
                 #Gst 0.10:
@@ -138,12 +166,15 @@ class SoundPipeline(gobject.GObject):
                 _, new_state, _ = message.parse_state_changed()
                 log("new-state=%s", gst.element_state_get_name(new_state))
                 self.state = self.do_get_state(new_state)
-                self.emit("state-changed", self.state)
+                self.idle_emit("state-changed", self.state)
             else:
                 log("state changed: %s", message)
         elif t == gst.MESSAGE_DURATION:
             d = message.parse_duration()
-            log("duration changed: %s", d)
+            try:
+                log("duration changed: %s", d[1])
+            except:
+                log("duration changed: %s", d)
         elif t == gst.MESSAGE_LATENCY:
             log.info("Latency message from %s: %s", message.src, message)
         elif t == gst.MESSAGE_INFO:

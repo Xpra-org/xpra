@@ -8,7 +8,7 @@ import sys, os, time
 
 from xpra.sound.sound_pipeline import SoundPipeline, gobject, one_arg_signal
 from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, MP3, CODECS, gst, QUEUE_LEAK, MS_TO_NS
+from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, MP3, CODECS, CODEC_ORDER, gst, QUEUE_LEAK, MS_TO_NS
 
 from xpra.os_util import thread
 from xpra.log import Logger
@@ -28,8 +28,13 @@ elif sys.platform.startswith("win"):
 if os.name=="posix":
     SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
 
-SINK_SHARED_DEFAULT_ATTRIBUTES = {"sync" : False,
-                                  "async" : True}
+#SINK_SHARED_DEFAULT_ATTRIBUTES = {"sync" : False,
+#                                  "async" : True}
+SINK_SHARED_DEFAULT_ATTRIBUTES = {"sync"    : False,
+                                  "async"   : True,
+                                  "qos"     : True
+                                  }
+
 SINK_DEFAULT_ATTRIBUTES = {
                            "pulsesink"  : {"client" : "Xpra"}
                            }
@@ -40,7 +45,10 @@ if DEFAULT_SINK not in SINKS:
     DEFAULT_SINK = SINKS[0]
 QUEUE_SILENT = 0
 QUEUE_TIME = get_queue_time(450)
+QUEUE_MIN = QUEUE_TIME//2
 
+
+GST_FORMAT_BUFFERS = 4
 
 def sink_has_device_attribute(sink):
     return sink not in ("autoaudiosink", "jackaudiosink", "directsoundsink")
@@ -55,12 +63,18 @@ class SoundSink(SoundPipeline):
         "eos"       : one_arg_signal,
         })
 
-    def __init__(self, sink_type=DEFAULT_SINK, options={}, codec=MP3, decoder_options={}):
+    def __init__(self, sink_type=None, sink_options={}, codecs=CODECS, codec_options={}, volume=1.0):
+        if not sink_type:
+            sink_type = DEFAULT_SINK
         assert sink_type in SINKS, "invalid sink: %s" % sink_type
+        matching = [x for x in CODEC_ORDER if (x in codecs and x in CODECS)]
+        log("SoundSink(..) found matching codecs %s", matching)
+        assert len(matching)>0, "no matching codecs between arguments %s and supported list %s" % (codecs, CODECS)
+        codec = matching[0]
         decoder, parser = get_decoder_parser(codec)
         SoundPipeline.__init__(self, codec)
         self.sink_type = sink_type
-        decoder_str = plugin_str(decoder, decoder_options)
+        decoder_str = plugin_str(decoder, codec_options)
         pipeline_els = []
         pipeline_els.append("appsrc"+
                             " name=src"+
@@ -69,13 +83,15 @@ class SoundSink(SoundPipeline):
                             " block=0"+
                             " is-live=0"+
                             " stream-type=stream"+
-                            " format=4")
+                            " format=%s" % GST_FORMAT_BUFFERS)
         pipeline_els.append(parser)
         pipeline_els.append(decoder_str)
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
+        pipeline_els.append("volume name=volume volume=%s" % volume)
         queue_el =  ["queue",
                     "name=queue",
+                    "min-threshold-time=%s" % QUEUE_MIN,
                     "max-size-buffers=0",
                     "max-size-bytes=0",
                     "max-size-time=%s" % QUEUE_TIME,
@@ -85,11 +101,13 @@ class SoundSink(SoundPipeline):
         pipeline_els.append(" ".join(queue_el))
         sink_attributes = SINK_SHARED_DEFAULT_ATTRIBUTES.copy()
         sink_attributes.update(SINK_DEFAULT_ATTRIBUTES.get(sink_type, {}))
+        sink_attributes.update(sink_options)
         sink_str = plugin_str(sink_type, sink_attributes)
         pipeline_els.append(sink_str)
         self.setup_pipeline_and_bus(pipeline_els)
-        self.src = self.pipeline.get_by_name("src")
-        self.queue = self.pipeline.get_by_name("queue")
+        self.volume = self.pipeline.get_by_name("volume")
+        self.src    = self.pipeline.get_by_name("src")
+        self.queue  = self.pipeline.get_by_name("queue")
         self.overruns = 0
         self.queue_state = "starting"
         if QUEUE_SILENT==0:
@@ -101,6 +119,12 @@ class SoundSink(SoundPipeline):
     def __repr__(self):
         return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
 
+    def cleanup(self):
+        SoundPipeline.cleanup(self)
+        self.sink_type = ""
+        self.src = None
+
+
     def queue_pushing(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
         log("sound sink queue pushing: level=%s", ltime)
@@ -109,11 +133,19 @@ class SoundSink(SoundPipeline):
     def queue_running(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
         log("sound sink queue running: level=%s", ltime)
+        if self.queue_state=="underrun":
+            #lift min time restrictions:
+            #gobject.timeout_add(400, self.queue.set_property, "min-threshold-time", 0)
+            self.queue.set_property("min-threshold-time", 0)
+            #pass
         self.queue_state = "running"
 
     def queue_underrun(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
         log("sound sink queue underrun: level=%s", ltime)
+        if self.queue_state!="underrun":
+            #lift min time restrictions:
+            self.queue.set_property("min-threshold-time", QUEUE_MIN)
         self.queue_state = "underrun"
 
     def queue_overrun(self, *args):
@@ -121,17 +153,12 @@ class SoundSink(SoundPipeline):
         self.queue_state = "overrun"
         #no overruns for the first 2 seconds:
         elapsed = time.time()-self.start_time
-        if elapsed<2.0 or ltime<(QUEUE_TIME/MS_TO_NS/2*75/100):
+        if ltime<(QUEUE_TIME/MS_TO_NS/2*75/100):
             log("sound sink queue overrun ignored: level=%s, elapsed time=%.1f", ltime, elapsed)
             return
         log("sound sink queue overrun: level=%s", ltime)
         self.overruns += 1
         self.emit("overrun", ltime)
-
-    def cleanup(self):
-        SoundPipeline.cleanup(self)
-        self.sink_type = ""
-        self.src = None
 
     def eos(self):
         log("eos()")
@@ -150,10 +177,18 @@ class SoundSink(SoundPipeline):
 
     def add_data(self, data, metadata=None):
         #debug("sound sink: adding %s bytes to %s, metadata: %s, level=%s", len(data), self.src, metadata, int(self.queue.get_property("current-level-time")/MS_TO_NS))
+        log("add_data(%s bytes, %s) queue_state=%s, src=%s", len(data), metadata, self.queue_state, self.src)
         if not self.src:
             return
+        if self.queue_state == "overrun":
+            clt = self.queue.get_property("current-level-time")
+            qpct = int(min(QUEUE_TIME, clt)*100.0/QUEUE_TIME)
+            if qpct<50:
+                self.queue_state = "running"
+            else:
+                log("dropping new data because of overrun: %s%%", qpct)
+                return
         buf = gst.new_buffer(data)
-        d = 10*MS_TO_NS
         if metadata:
             ts = metadata.get("timestamp")
             if ts is not None:
@@ -161,7 +196,15 @@ class SoundSink(SoundPipeline):
             d = metadata.get("duration")
             if d is not None:
                 buf.duration = normv(d)
-        log("add_data(..) queue_state=%s", self.queue_state)
+            #for seeing how the elapsed time evolves
+            #(cannot be used for much else as client and server may have different times!)
+            #t = metadata.get("time")
+            #if t:
+            #    log("elapsed=%s    (..)", int(time.time()*1000)-t)
+            #if we have caps, use them:
+            #caps = metadata.get("caps")
+            #if caps:
+            #    buf.set_caps(gst.caps_from_string(caps))
         if self.push_buffer(buf):
             self.buffer_count += 1
             self.byte_count += len(data)

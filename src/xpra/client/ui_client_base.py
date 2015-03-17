@@ -45,7 +45,7 @@ from xpra.scripts.config import parse_bool_or_int
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import thread, Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
+from xpra.os_util import Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
 from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, CLIENT_EXIT
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -1551,8 +1551,8 @@ class UIXpraClient(XpraClientBase):
         def sound_source_bitrate_changed(*args):
             self.emit("microphone-changed")
         try:
-            from xpra.sound.gstreamer_util import start_sending_sound
-            self.sound_source = start_sending_sound(self.sound_source_plugin, None, 1.0, self.server_sound_decoders, self.microphone_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
+            from xpra.sound.wrapper import start_sending_sound
+            self.sound_source = start_sending_sound(self.sound_source_plugin, None, 1.0, self.server_sound_decoders, self.server_pulseaudio_server, self.server_pulseaudio_id)
             if not self.sound_source:
                 return False
             self.sound_source.connect("new-buffer", self.new_sound_buffer)
@@ -1571,15 +1571,11 @@ class UIXpraClient(XpraClientBase):
         ss = self.sound_source
         self.microphone_enabled = False
         self.sound_source = None
-        def stop_sending_sound_thread():
-            soundlog("UIXpraClient.stop_sending_sound_thread()")
-            if ss is None:
-                log.warn("stop_sending_sound: sound not started!")
-                return
-            ss.cleanup()
-            self.emit("microphone-changed")
-            soundlog("UIXpraClient.stop_sending_sound_thread() done")
-        thread.start_new_thread(stop_sending_sound_thread, ())
+        if ss is None:
+            log.warn("stop_sending_sound: sound not started!")
+            return
+        ss.cleanup()
+        self.emit("microphone-changed")
 
     def start_receiving_sound(self):
         """ ask the server to start sending sound and emit the client signal """
@@ -1617,15 +1613,8 @@ class UIXpraClient(XpraClientBase):
         if ss is None:
             return
         self.sound_sink = None
-        def stop_receiving_sound_thread():
-            soundlog("UIXpraClient.stop_receiving_sound_thread()")
-            if ss is None:
-                log("stop_receiving_sound: sound not started!")
-                return
-            ss.cleanup()
-            self.emit("speaker-changed")
-            soundlog("UIXpraClient.stop_receiving_sound_thread() done")
-        thread.start_new_thread(stop_receiving_sound_thread, ())
+        ss.cleanup()
+        self.emit("speaker-changed")
 
     def bump_sound_sequence(self):
         if self.server_sound_sequence:
@@ -1652,14 +1641,17 @@ class UIXpraClient(XpraClientBase):
         #not shown in the UI, so don't bother with emitting a signal:
         #self.emit("speaker-changed")
     def sound_sink_error(self, sound_sink, error):
-        log.warn("stopping speaker because of error: %s", error)
+        soundlog.warn("stopping speaker because of error: %s", error)
+        self.stop_receiving_sound()
+    def sound_process_stopped(self, sound_sink, *args):
+        soundlog("the sound sink process has stopped (%s)", args)
         self.stop_receiving_sound()
 
     def sound_sink_overrun(self, *args):
         if self.sink_restart_pending:
             soundlog("overrun re-start is already pending")
             return
-        log.warn("re-starting speaker because of overrun")
+        soundlog.warn("re-starting speaker because of overrun")
         codec = self.sound_sink.codec
         self.sink_restart_pending = True
         if self.server_sound_sequence:
@@ -1680,12 +1672,16 @@ class UIXpraClient(XpraClientBase):
         assert self.sound_sink is None, "sound sink already exists!"
         try:
             soundlog("starting %s sound sink", codec)
-            from xpra.sound.sink import SoundSink
-            self.sound_sink = SoundSink(codec=codec)
+            from xpra.sound.wrapper import start_receiving_sound
+            self.sound_sink = start_receiving_sound(codec)
+            if not self.sound_sink:
+                return False
             self.sound_sink.connect("state-changed", self.sound_sink_state_changed)
             self.sound_sink.connect("bitrate-changed", self.sound_sink_bitrate_changed)
             self.sound_sink.connect("error", self.sound_sink_error)
             self.sound_sink.connect("overrun", self.sound_sink_overrun)
+            from xpra.net.protocol import Protocol
+            self.sound_sink.connect(Protocol.CONNECTION_LOST, self.sound_process_stopped)
             self.sound_sink.start()
             soundlog("%s sound sink started", codec)
             return True

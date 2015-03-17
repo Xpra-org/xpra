@@ -36,7 +36,7 @@ from xpra.codecs.codec_constants import codec_spec
 from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import platform_name, thread, Queue, get_machine_id, get_user_uuid
+from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
 from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
 
@@ -764,7 +764,8 @@ class ServerSource(object):
             log.warn("not starting sound as we are suspended")
             return
         try:
-            from xpra.sound.gstreamer_util import start_sending_sound, ALLOW_SOUND_LOOP
+            from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP
+            from xpra.sound.wrapper import start_sending_sound
             if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
                 #looks like we're on the same machine, verify it's a different user:
                 if self.uuid==get_user_uuid():
@@ -773,16 +774,11 @@ class ServerSource(object):
             assert self.supports_speaker, "cannot send sound: support not enabled on the server"
             assert self.sound_source is None, "a sound source already exists"
             assert self.sound_receive, "cannot send sound: support is not enabled on the client"
-            self.sound_source = start_sending_sound(self.sound_source_plugin, codec, volume, self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
+            self.sound_source = start_sending_sound(self.sound_source_plugin, codec, volume, self.sound_decoders, self.pulseaudio_server, self.pulseaudio_id)
             soundlog("start_sending_sound() sound source=%s", self.sound_source)
             if self.sound_source:
-                if self.server_driven:
-                    #tell the client this is the start:
-                    self.send("sound-data", self.sound_source.codec, "",
-                              {"start-of-stream"    : True,
-                               "codec"              : self.sound_source.codec,
-                               "sequence"           : self.sound_source_sequence})
                 self.sound_source.connect("new-buffer", self.new_sound_buffer)
+                self.sound_source.connect("new-stream", self.new_stream)
                 self.sound_source.start()
         except Exception as e:
             log.error("error setting up sound: %s", e, exc_info=True)
@@ -795,11 +791,17 @@ class ServerSource(object):
             if self.server_driven:
                 #tell the client this is the end:
                 self.send("sound-data", ss.codec, "", {"end-of-stream" : True})
-            def stop_sending_sound_thread(*args):
-                soundlog("stop_sending_sound_thread(%s)", args)
-                ss.cleanup()
-                soundlog("stop_sending_sound_thread(%s) done", args)
-            thread.start_new_thread(stop_sending_sound_thread, ())
+            ss.cleanup()
+
+    def new_stream(self, sound_source, codec):
+        soundlog("new_stream(%s)", codec)
+        self.sound_source.codec = codec
+        if self.server_driven:
+            #tell the client this is the start:
+            self.send("sound-data", self.sound_source.codec, "",
+                      {"start-of-stream"    : True,
+                       "codec"              : self.sound_source.codec,
+                       "sequence"           : self.sound_source_sequence})
 
     def new_sound_buffer(self, sound_source, data, metadata):
         soundlog("new_sound_buffer(%s, %s, %s) suspended=%s, sequence=%s",
@@ -815,11 +817,7 @@ class ServerSource(object):
         soundlog("stop_receiving_sound() sound_sink=%s", ss)
         if ss:
             self.sound_sink = None
-            def stop_receiving_sound_thread(*args):
-                soundlog("stop_receiving_sound_thread() sound_sink=%s", ss)
-                ss.cleanup()
-                soundlog("stop_receiving_sound_thread() done")
-            thread.start_new_thread(stop_receiving_sound_thread, ())
+            ss.cleanup()
 
 
     def sound_control(self, action, *args):
