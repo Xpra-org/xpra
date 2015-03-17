@@ -624,6 +624,12 @@ class SessionInfo(gtk.Window):
             if state!="active":
                 return state
             s = "%s: %s" % (state, sound_pipeline.codec_description)
+            try:
+                pid = sound_pipeline.get_info().get("pid")
+                if pid:
+                    s += " (pid=%s)" % pid
+            except:
+                pass
             #if sound_pipeline.bitrate>0:
             #    s += " / %sbit/s" % std_unit(sound_pipeline.bitrate)
             return s
