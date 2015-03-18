@@ -87,7 +87,7 @@ def print_files(printer, filenames, title, options):
     processes = []
     for filename in filenames:
         #command = ["C:\\Program Files\\Xpra\\gsview\\gsprint.exe"]
-        command = [gsprint_exe, "-ghostscript", gswin32c_exe]
+        command = [gsprint_exe, "-ghostscript", gswin32c_exe, "-colour"]
         if printer:
             command += ["-printer", printer]
         command += [filename]
