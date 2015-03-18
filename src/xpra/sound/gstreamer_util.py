@@ -21,8 +21,8 @@ if QUEUE_LEAK not in (GST_QUEUE_NO_LEAK, GST_QUEUE_LEAK_UPSTREAM, GST_QUEUE_LEAK
     log.error("invalid leak option %s", QUEUE_LEAK)
     QUEUE_LEAK = GST_QUEUE_LEAK_DEFAULT
 
-def get_queue_time(default_value=450):
-    queue_time = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", default_value))*MS_TO_NS
+def get_queue_time(default_value=450, prefix=""):
+    queue_time = int(os.environ.get("XPRA_SOUND_QUEUE_%sTIME" % prefix, default_value))*MS_TO_NS
     queue_time = max(0, queue_time)
     return queue_time
 

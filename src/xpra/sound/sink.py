@@ -45,7 +45,8 @@ if DEFAULT_SINK not in SINKS:
     DEFAULT_SINK = SINKS[0]
 QUEUE_SILENT = 0
 QUEUE_TIME = get_queue_time(450)
-QUEUE_MIN = QUEUE_TIME//2
+QUEUE_MIN_TIME = get_queue_time(QUEUE_TIME//2//MS_TO_NS, "MIN")
+assert QUEUE_MIN_TIME<=QUEUE_TIME
 
 
 GST_FORMAT_BUFFERS = 4
@@ -91,7 +92,7 @@ class SoundSink(SoundPipeline):
         pipeline_els.append("volume name=volume volume=%s" % volume)
         queue_el =  ["queue",
                     "name=queue",
-                    "min-threshold-time=%s" % QUEUE_MIN,
+                    "min-threshold-time=%s" % QUEUE_MIN_TIME,
                     "max-size-buffers=0",
                     "max-size-bytes=0",
                     "max-size-time=%s" % QUEUE_TIME,
@@ -145,7 +146,7 @@ class SoundSink(SoundPipeline):
         log("sound sink queue underrun: level=%s", ltime)
         if self.queue_state!="underrun":
             #lift min time restrictions:
-            self.queue.set_property("min-threshold-time", QUEUE_MIN)
+            self.queue.set_property("min-threshold-time", QUEUE_MIN_TIME)
         self.queue_state = "underrun"
 
     def queue_overrun(self, *args):
@@ -170,6 +171,8 @@ class SoundSink(SoundPipeline):
         info = SoundPipeline.get_info(self)
         if QUEUE_TIME>0:
             clt = self.queue.get_property("current-level-time")
+            info["queue.time"]  = int(QUEUE_TIME/MS_TO_NS)
+            info["queue.min_time"]  = int(QUEUE_MIN_TIME/MS_TO_NS)
             info["queue.used_pct"] = int(min(QUEUE_TIME, clt)*100.0/QUEUE_TIME)
             info["queue.overruns"] = self.overruns
             info["queue.state"] = self.queue_state
