@@ -45,7 +45,7 @@ if DEFAULT_SINK not in SINKS:
     DEFAULT_SINK = SINKS[0]
 QUEUE_SILENT = 0
 QUEUE_TIME = get_queue_time(450)
-QUEUE_MIN_TIME = get_queue_time(QUEUE_TIME//2//MS_TO_NS, "MIN")
+QUEUE_MIN_TIME = get_queue_time(QUEUE_TIME//4//MS_TO_NS, "MIN")
 assert QUEUE_MIN_TIME<=QUEUE_TIME
 
 
