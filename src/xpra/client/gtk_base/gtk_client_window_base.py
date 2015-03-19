@@ -276,6 +276,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                         def tell_server():
                             if self._iconified:
                                 self.send("unmap-window", self._id, True, self._window_state)
+                                self._window_state = {}
                         #calculate a good delay to prevent races causing minimize/unminimize loops:
                         delay = 150
                         spl = list(self._client.server_ping_latency)
