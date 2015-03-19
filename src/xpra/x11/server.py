@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -699,7 +699,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _set_window_state(self, proto, wid, window, new_window_state):
         #only used for setting maximized state:
         if "maximized" in new_window_state:
-            window.set_property("maximized", bool(new_window_state.get("maximized", False)))
+            new_state = bool(new_window_state.get("maximized", False))
+            cur_state = bool(window.get_property("maximized"))
+            if cur_state!=new_state:
+                window.set_property("maximized", new_state)
+        #TODO: also sync "above", "below", "sticky" and "fullscreen"
 
     def _process_map_window(self, proto, packet):
         wid, x, y, width, height = packet[1:6]
