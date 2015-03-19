@@ -6,6 +6,7 @@
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
+import os
 from xpra.log import Logger
 log = Logger("win32")
 grablog = Logger("win32", "grab")
@@ -16,6 +17,8 @@ from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct
 import ctypes
 from ctypes import windll, byref
+
+WINDOW_HOOKS = os.environ.get("XPRA_WIN32_WINDOW_HOOKS", "1")=="1"
 
 
 KNOWN_EVENTS = {}
@@ -38,7 +41,6 @@ except Exception as e:
 def do_init():
     #tell win32 we handle dpi
     try:
-        import os
         if os.environ.get("XPRA_DPI_AWARE", "1")!="1":
             log.warn("SetProcessDPIAware not set due to environment override")
             return
@@ -123,6 +125,9 @@ def get_propsys():
 
 
 def add_window_hooks(window):
+    if not WINDOW_HOOKS:
+        #allows us to disable the win32 hooks for testing
+        return
     #win32 cannot use set_group by default:
     try:
         window.get_window().set_group = noop
