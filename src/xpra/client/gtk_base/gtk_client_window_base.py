@@ -285,7 +285,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #if we have state updates, send them back to the server using a configure window packet:
         def send_updated_window_state():
             if self._window_state:
-                self.process_configure_event()
+                self.process_configure_event(True)
         if self._window_state:
             self.timeout_add(25, send_updated_window_state)
 
@@ -416,7 +416,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return
         if not self._client.window_refresh_config:
             workspacelog("sending configure event to update workspace value")
-            self.process_configure_event()
+            self.process_configure_event(True)
             return
         #we can tell the server using a "buffer-refresh" packet instead
         #and also take care of tweaking the batch config
@@ -598,7 +598,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not self._override_redirect and not self._iconified:
             self.process_configure_event()
 
-    def process_configure_event(self):
+    def process_configure_event(self, skip_geometry=False):
         x, y, w, h = self.get_window_geometry()
         w = max(1, w)
         h = max(1, h)
@@ -617,7 +617,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 workspacelog("configure event: changed workspace from %s to %s", self._window_workspace, workspace)
                 self._window_workspace = workspace
                 props["workspace"] = workspace
-        packet = ["configure-window", self._id, x, y, w, h, props, self._resize_counter, state]
+        packet = ["configure-window", self._id, x, y, w, h, props, self._resize_counter, state, skip_geometry]
         eventslog("%s", packet)
         self.send(*packet)
         if dx!=0 or dy!=0:

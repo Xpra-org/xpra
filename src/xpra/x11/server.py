@@ -747,6 +747,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         resize_counter = 0
         if len(packet)>=8:
             resize_counter = packet[7]
+        #some "configure-window" packets are only meant for metadata updates:
+        skip_geometry = len(packet)>=10 and packet[9]
         window = self._id_to_window.get(wid)
         windowlog("client configured window %s - %s, at: %s", wid, window, (x, y, w, h))
         if not window:
@@ -754,19 +756,21 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         if window.is_tray():
             assert self._tray
-            traylog("tray %s configured to: %s", window, (x, y, w, h))
-            self._tray.move_resize(window, x, y, w, h)
+            if not skip_geometry:
+                traylog("tray %s configured to: %s", window, (x, y, w, h))
+                self._tray.move_resize(window, x, y, w, h)
         else:
             assert not window.is_OR()
             self.last_client_configure_event = time.time()
             if len(packet)>=9:
                 self._set_window_state(proto, wid, window, packet[8])
-            owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
-            windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-            self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)
+            if not skip_geometry:
+                owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
+                windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
+                self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
-        if window.is_tray() or (self._desktop_manager.visible(window) and (oww!=w or owh!=h)):
+        if not skip_geometry and (window.is_tray() or (self._desktop_manager.visible(window) and (oww!=w or owh!=h))):
             self._damage(window, 0, 0, w, h)
 
 
