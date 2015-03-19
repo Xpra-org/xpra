@@ -237,25 +237,31 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             state_updates["below"] = bool(event.new_window_state & self.WINDOW_STATE_BELOW)
         if event.changed_mask & self.WINDOW_STATE_STICKY:
             state_updates["sticky"] = bool(event.new_window_state & self.WINDOW_STATE_STICKY)
+        if event.changed_mask & self.WINDOW_STATE_ICONIFIED:
+            state_updates["iconified"] = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
         if event.changed_mask & self.WINDOW_STATE_MAXIMIZED:
             #this may get sent now as part of map_event code below (and it is irrelevant for the unmap case),
             #or when we get the configure event - which should come straight after
             #if we're changing the maximized state
             state_updates["maximized"] = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
+        self.update_window_state(state_updates)
+
+    def update_window_state(self, state_updates):
         #decide if this is really an update by comparing with our local state vars:
         #(could just be a notification of a state change we already know about)
         actual_updates = {}
-        for var,value in state_updates.items():
-            cur = getattr(self, "_%s" % var)        #ie: self._maximized
+        for state,value in state_updates.items():
+            var = "_" + state.replace("-", "_")     #ie: "skip-pager" -> "_skip_pager"
+            cur = getattr(self, var)                #ie: self._maximized
             if cur!=value:
-                setattr(self, "_%s" % var, value)   #ie: self._maximized = True
-                actual_updates[cur] = value
+                setattr(self, var, value)           #ie: self._maximized = True
+                actual_updates[state] = value
                 statelog("%s=%s (was %s)", var, value, cur)
         statelog("window_state_updated(..) state updates: %s, actual updates: %s", state_updates, actual_updates)
         self._window_state.update(actual_updates)
         #iconification is handled a bit differently...
-        if event.changed_mask & self.WINDOW_STATE_ICONIFIED:
-            iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
+        if "iconified" in actual_updates:
+            iconified = actual_updates.get("iconified")
             statelog("iconified=%s (was %s)", iconified, self._iconified)
             if iconified!=self._iconified:
                 self._iconified = iconified
@@ -399,7 +405,32 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #unused for now, but log it:
             xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
             keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
-
+        elif event.atom=="_NET_WM_STATE":
+            wm_state_atoms = prop_get(self.get_window(), "_NET_WM_STATE", ["atom"], ignore_errors=False)
+            #code mostly duplicated from gtk_x11/window.py:
+            WM_STATE_NAME = {
+                             "fullscreen"            : ("_NET_WM_STATE_FULLSCREEN", ),
+                             "maximized"             : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
+                             "shaded"                : ("_NET_WM_STATE_SHADED", ),
+                             "sticky"                : ("_NET_WM_STATE_STICKY", ),
+                             "skip-pager"            : ("_NET_WM_STATE_SKIP_PAGER", ),
+                             "skip-taskbar"          : ("_NET_WM_STATE_SKIP_TASKBAR", ),
+                             "above"                 : ("_NET_WM_STATE_ABOVE", ),
+                             "below"                 : ("_NET_WM_STATE_BELOW", ),
+                             }
+            state_atoms = set(wm_state_atoms)
+            state_updates = {}
+            for state, atoms in WM_STATE_NAME.items():
+                var = "_" + state.replace("-", "_")           #ie: "skip-pager" -> "_skip_pager"
+                cur_state = getattr(self, var)
+                wm_state_is_set = set(atoms).issubset(state_atoms)
+                if wm_state_is_set and not cur_state:
+                    state_updates[state] = True
+                elif cur_state and not wm_state_is_set:
+                    state_updates[state] = False
+            log("_NET_WM_STATE=%s, state_updates=%s", wm_state_atoms, state_updates)
+            if state_updates:
+                self.update_window_state(state_updates)
 
     def workspace_changed(self):
         #on X11 clients, this fires from the root window property watcher

@@ -697,13 +697,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):
-        #only used for setting maximized state:
-        if "maximized" in new_window_state:
-            new_state = bool(new_window_state.get("maximized", False))
-            cur_state = bool(window.get_property("maximized"))
-            if cur_state!=new_state:
-                window.set_property("maximized", new_state)
-        #TODO: also sync "above", "below", "sticky" and "fullscreen"
+        for k in ("maximized", "above", "below", "fullscreen", "sticky", "shaded", "skip-pager", "skip-taskbar"):
+            if k in new_window_state:
+                new_state = bool(new_window_state.get(k, False))
+                cur_state = bool(window.get_property(k))
+                log("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
+                if cur_state!=new_state:
+                    window.set_property(k, new_state)
 
     def _process_map_window(self, proto, packet):
         wid, x, y, width, height = packet[1:6]

@@ -38,6 +38,9 @@ class ClientWindowBase(ClientWidgetBase):
         self._below = False
         self._shaded = False
         self._sticky = False
+        self._skip_pager = False
+        self._skip_taskbar = False
+        self._sticky = False
         self._iconified = False
         self.border = border
         self.max_window_size = max_window_size
@@ -269,10 +272,16 @@ class ClientWindowBase(ClientWidgetBase):
                     self.unstick()
 
         if b"skip-taskbar" in metadata:
-            self.set_skip_taskbar_hint(metadata.boolget("skip-taskbar"))
+            skip_taskbar = metadata.boolget("skip-taskbar")
+            if self._skip_taskbar!=skip_taskbar:
+                self._skip_taskbar = skip_taskbar
+                self.set_skip_taskbar_hint(skip_taskbar)
 
         if b"skip-pager" in metadata:
-            self.set_skip_pager_hint(metadata.boolget("skip-pager"))
+            skip_pager = metadata.boolget("skip-pager")
+            if self._skip_pager!=skip_pager:
+                self._skip_pager = skip_pager
+                self.set_skip_taskbar_hint(skip_pager)
 
         if b"workspace" in metadata:
             self.set_workspace(metadata.intget("workspace"))
