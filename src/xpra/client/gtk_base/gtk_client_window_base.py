@@ -228,39 +228,32 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def window_state_updated(self, widget, event):
         statelog("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s", self, widget, repr(event), event.changed_mask, event.new_window_state)
+        state_updates = {}
         if event.changed_mask & self.WINDOW_STATE_FULLSCREEN:
-            fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
-            statelog("fullscreen=%s (was %s)", fullscreen, self._fullscreen)
-            if fullscreen!=self._fullscreen:
-                self._window_state["fullscreen"] = fullscreen
-                self._fullscreen = fullscreen
+            state_updates["fullscreen"] = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
         if event.changed_mask & self.WINDOW_STATE_ABOVE:
-            above = bool(event.new_window_state & self.WINDOW_STATE_ABOVE)
-            statelog("above=%s (was %s)", above, self._above)
-            if above!=self._above:
-                self._window_state["above"] = above
-                self._above = above
+            state_updates["above"] = bool(event.new_window_state & self.WINDOW_STATE_ABOVE)
         if event.changed_mask & self.WINDOW_STATE_BELOW:
-            below = bool(event.new_window_state & self.WINDOW_STATE_BELOW)
-            statelog("below=%s (was %s)", below, self._below)
-            if below!=self._below:
-                self._window_state["below"] = below
-                self._below = below
+            state_updates["below"] = bool(event.new_window_state & self.WINDOW_STATE_BELOW)
         if event.changed_mask & self.WINDOW_STATE_STICKY:
-            sticky = bool(event.new_window_state & self.WINDOW_STATE_STICKY)
-            statelog("sticky=%s (was %s)", sticky, self._sticky)
-            if sticky!=self._sticky:
-                self._window_state["sticky"] = sticky
-                self._sticky = sticky
+            state_updates["sticky"] = bool(event.new_window_state & self.WINDOW_STATE_STICKY)
         if event.changed_mask & self.WINDOW_STATE_MAXIMIZED:
             #this may get sent now as part of map_event code below (and it is irrelevant for the unmap case),
             #or when we get the configure event - which should come straight after
             #if we're changing the maximized state
-            maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
-            statelog("maximized=%s (was %s)", maximized, self._maximized)
-            if maximized!=self._maximized:
-                self._maximized = maximized
-                self._window_state["maximized"] = maximized
+            state_updates["maximized"] = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
+        #decide if this is really an update by comparing with our local state vars:
+        #(could just be a notification of a state change we already know about)
+        actual_updates = {}
+        for var,value in state_updates.items():
+            cur = getattr(self, "_%s" % var)        #ie: self._maximized
+            if cur!=value:
+                setattr(self, "_%s" % var, value)   #ie: self._maximized = True
+                actual_updates[cur] = value
+                statelog("%s=%s (was %s)", var, value, cur)
+        statelog("window_state_updated(..) state updates: %s, actual updates: %s", state_updates, actual_updates)
+        self._window_state.update(actual_updates)
+        #iconification is handled a bit differently...
         if event.changed_mask & self.WINDOW_STATE_ICONIFIED:
             iconified = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
             statelog("iconified=%s (was %s)", iconified, self._iconified)
