@@ -283,8 +283,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     self.process_map_event()
         self.after_window_state_updated()
         #if we have state updates, send them back to the server using a configure window packet:
+        def send_updated_window_state():
+            if self._window_state:
+                self.process_configure_event()
         if self._window_state:
-            self.process_configure_event()
+            self.timeout_add(25, send_updated_window_state)
 
     def after_window_state_updated(self):
         #this is here to make it easier to hook some code
