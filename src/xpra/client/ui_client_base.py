@@ -372,7 +372,6 @@ class UIXpraClient(XpraClientBase):
             self.stop_sending_sound()
         if self.sound_sink:
             self.stop_receiving_sound()
-        time.sleep(0.2)
         log("UIXpraClient.cleanup() done")
 
     def destroy_all_windows(self):
