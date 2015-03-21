@@ -152,7 +152,9 @@ class subprocess_callee(object):
             args = args[:1]+[binascii.hexlify(str(x)[:32]) for x in args[1:]]
         log("send: adding '%s' message (%s items already in queue)", args[0], self.send_queue.qsize())
         self.send_queue.put(args)
-        self.protocol.source_has_more()
+        p = self.protocol
+        if p:
+            p.source_has_more()
 
     def get_packet(self):
         try:
@@ -260,9 +262,10 @@ class subprocess_caller(object):
         return (item, None, None, self.send_queue.qsize()>0)
 
     def send(self, *packet_data):
-        assert self.protocol
         self.send_queue.put(packet_data)
-        self.protocol.source_has_more()
+        p = self.protocol
+        if p:
+            p.source_has_more()
 
     def process_packet(self, proto, packet):
         if DEBUG_WRAPPER:
