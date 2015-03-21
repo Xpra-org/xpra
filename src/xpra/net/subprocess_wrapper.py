@@ -193,10 +193,11 @@ class subprocess_caller(object):
     (there is no validation of which signals are valid or not)
     """
 
-    def __init__(self):
+    def __init__(self, description="wrapper"):
         self.process = None
         self.protocol = None
         self.command = None
+        self.description = description
         self.send_queue = Queue()
         self.signal_callbacks = {}
         #hook a default packet handlers:
@@ -218,7 +219,7 @@ class subprocess_caller(object):
 
     def make_protocol(self):
         #make a connection using the process stdin / stdout
-        conn = TwoFileConnection(self.process.stdin, self.process.stdout, abort_test=None, target="sound", info="sound", close_cb=self.subprocess_exit)
+        conn = TwoFileConnection(self.process.stdin, self.process.stdout, abort_test=None, target=self.description, info=self.description, close_cb=self.subprocess_exit)
         conn.timeout = 0
         protocol = Protocol(gobject, conn, self.process_packet, get_packet_cb=self.get_packet)
         #we assume the other end has the same encoders (which is reasonable):
@@ -241,12 +242,20 @@ class subprocess_caller(object):
 
     def stop(self):
         log("%s.stop()", self)
-        if self.process:
+        proc = self.process
+        if proc:
             try:
-                self.process.terminate()
-                self.protocol.close()
+                proc.terminate()
+                self.process = None
             except Exception as e:
-                log.warn("failed to stop sound process %s: %s", self.process, e)
+                log.warn("failed to stop the wrapped subprocess %s: %s", proc, e)
+        p = self.protocol
+        if p:
+            try:
+                p.close()
+                self.protocol = None
+            except Exception as e:
+                log.warn("failed to close the subprocess connection: %s", p, e)
 
 
     def connection_lost(self, *args):

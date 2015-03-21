@@ -117,7 +117,7 @@ def run_sound(mode, error_cb, options, args):
 class sound_subprocess_wrapper(subprocess_caller):
 
     def __init__(self):
-        subprocess_caller.__init__(self)
+        subprocess_caller.__init__(self, description="sound")
         self.state = "stopped"
         self.codec = "unknown"
         self.codec_description = ""
