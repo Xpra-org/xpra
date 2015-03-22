@@ -105,6 +105,7 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 				break;
 				case false:
 				console.log("we can't use websocket in webworker, won't use webworkers");
+				me._do_connect(false);
 				break;
 				default:
 				console.log("client got unknown message from worker");
