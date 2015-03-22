@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 #default implementation using pycups
+import sys
 import os
 import cups
 import subprocess
@@ -98,7 +99,10 @@ def init_dbus_listener():
         sig_match = system_bus.add_signal_receiver(handle_dbus_signal, path=DBUS_PATH, dbus_interface=DBUS_IFACE)
         log("system_bus.add_signal_receiver(..)=%s", sig_match)
     except Exception:
-        log.error("failed to initialize dbus cups event listener", exc_info=True)
+        if sys.platform.startswith("darwin"):
+            log("no dbus on osx")
+        else:
+            log.error("failed to initialize dbus cups event listener", exc_info=True)
 
 def on_printers_modified(callback):
     global printers_modified_callback
