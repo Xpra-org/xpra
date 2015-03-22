@@ -108,6 +108,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         features_menu.add(self.make_notificationsmenuitem())
         features_menu.add(self.make_swapkeysmenuitem())
         features_menu.add(self.make_numlockmenuitem())
+        features_menu.add(self.make_openglmenuitem())
         if SHOW_SOUND_MENU:
             sound_menu = self.make_osxmenu("Sound")
             if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
