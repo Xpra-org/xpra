@@ -26,6 +26,8 @@ function XpraClient(container) {
 	this.caps_lock = null;
 	this.alt_modifier = null;
 	this.meta_modifier = null;
+	// audio stuff
+	this.audio_ctx = null;
 	// the container div is the "screen" on the HTML page where we
 	// are able to draw our windows in.
 	this.container = document.getElementById(container);
@@ -52,7 +54,8 @@ function XpraClient(container) {
 		'lost-window': this._process_lost_window,
 		'raise-window': this._process_raise_window,
 		'window-resized': this._process_window_resized,
-		'draw': this._process_draw
+		'draw': this._process_draw,
+		'sound-data': this._process_sound_data
 	};
 	// assign the keypress callbacks
 	// if we detect jQuery, use that to assign them instead
@@ -394,8 +397,9 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.video_scaling"	: false,
 		"encoding.csc_modes"		: [],
 		//sound (not yet):
-		"sound.receive"				: false,
+		"sound.receive"				: true,
 		"sound.send"				: false,
+		"sound.decoders"			: ["mp3"],
 		//compression bits:
 		"zlib"						: true,
 		"lz4"						: false,
@@ -534,6 +538,16 @@ XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequenc
 	this.protocol.send(["damage-sequence", packet_sequence, wid, width, height, decode_time]);
 }
 
+XpraClient.prototype._sound_start_receiving = function() {
+	try {
+		this.audio_ctx = new AudioContext();
+	} catch(e) {
+	    console.error('Web Audio API is not supported in this browser, will not start sound.');
+	    return;
+	}
+	this.protocol.send(["sound-control", "start", "mp3"]);
+}
+
 /*
  * packet processing functions start here 
  */
@@ -591,6 +605,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		}
 	}
 	//show("alt="+alt_modifier+", meta="+meta_modifier);
+	//ctx._sound_start_receiving();
 }
 
 XpraClient.prototype._process_ping = function(packet, ctx) {
@@ -674,4 +689,16 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 		}
 	}
 	ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time);
+}
+
+XpraClient.prototype._process_sound_data = function(packet, ctx) {
+	ctx.audio_ctx.decodeAudioData(packet[2], function(buffer) {
+		/*var source = ctx.audio_ctx.createBufferSource();
+		source.buffer = buffer;
+		source.connect(ctx.audio_ctx.destination);
+		source.start(0);*/
+		console.log("decoded audio data");
+    }, function() {
+    	console.error("Error processing sound data")
+    });
 }
