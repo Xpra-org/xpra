@@ -15,7 +15,7 @@ log = Logger("tray", "osx")
 
 
 #control which menus are shown in the OSX global menu:
-SHOW_SOUND_MENU = False
+SHOW_SOUND_MENU = True
 SHOW_ENCODINGS_MENU = True
 SHOW_ACTIONS_MENU = True
 SHOW_ABOUT_XPRA = True
