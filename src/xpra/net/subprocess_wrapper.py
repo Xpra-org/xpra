@@ -234,6 +234,7 @@ class subprocess_caller(object):
         kwargs = {}
         if os.name=="posix":
             kwargs["close_fds"] = True
+        log("exec_subprocess() command=%s, kwargs=%s", self.command, kwargs)
         return subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), **kwargs)
 
 
