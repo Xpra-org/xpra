@@ -48,6 +48,8 @@ QUEUE_TIME = get_queue_time(450)
 QUEUE_MIN_TIME = get_queue_time(QUEUE_TIME//4//MS_TO_NS, "MIN")
 assert QUEUE_MIN_TIME<=QUEUE_TIME
 
+VARIABLE_MIN_QUEUE = os.environ.get("XPRA_VARIABLE_MIN_QUEUE", "1")=="1"
+
 
 GST_FORMAT_BUFFERS = 4
 
@@ -134,7 +136,7 @@ class SoundSink(SoundPipeline):
     def queue_running(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
         log("sound sink queue running: level=%s", ltime)
-        if self.queue_state=="underrun":
+        if self.queue_state=="underrun" and VARIABLE_MIN_QUEUE:
             #lift min time restrictions:
             #gobject.timeout_add(400, self.queue.set_property, "min-threshold-time", 0)
             self.queue.set_property("min-threshold-time", 0)
@@ -144,7 +146,7 @@ class SoundSink(SoundPipeline):
     def queue_underrun(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
         log("sound sink queue underrun: level=%s", ltime)
-        if self.queue_state!="underrun":
+        if self.queue_state!="underrun" and VARIABLE_MIN_QUEUE:
             #lift min time restrictions:
             self.queue.set_property("min-threshold-time", QUEUE_MIN_TIME)
         self.queue_state = "underrun"
