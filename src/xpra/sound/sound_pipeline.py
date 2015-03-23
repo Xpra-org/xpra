@@ -174,7 +174,9 @@ class SoundPipeline(gobject.GObject):
         elif t == gst.MESSAGE_DURATION:
             d = message.parse_duration()
             try:
-                log("duration changed: %s", d[1])
+                v = d[1]
+                if v>0:
+                    log("duration changed: %s", v)
             except:
                 log("duration changed: %s", d)
         elif t == gst.MESSAGE_LATENCY:

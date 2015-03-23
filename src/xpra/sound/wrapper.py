@@ -146,7 +146,15 @@ class sound_subprocess_wrapper(subprocess_caller):
         #hook some default packet handlers:
         self.connect("state-changed", self.state_changed)
         self.connect("info", self.info_update)
-        
+
+    def exec_kwargs(self):
+        #override so we can add the skip-ui flag needed for OSX to behave properly
+        kwargs = subprocess_caller.exec_kwargs(self)
+        env = os.environ.copy()
+        env["XPRA_SKIP_UI"] = "1"
+        kwargs["env"] = env
+        return kwargs
+
 
     def state_changed(self, sink, new_state):
         self.state = new_state

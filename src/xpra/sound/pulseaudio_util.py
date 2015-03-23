@@ -62,13 +62,13 @@ def pactl_output(log_errors=True, *pactl_args):
         return  -1, None
 
 def get_x11_property(atom_name):
-    if sys.platform.startswith("win"):
+    if sys.platform.startswith("darwin") or sys.platform.startswith("win"):
         return ""
     try:
         from gtk import gdk
         root = gdk.get_default_root_window()
-        pulse_server_atom = gdk.atom_intern(atom_name)
-        p = root.property_get(pulse_server_atom)
+        atom = gdk.atom_intern(atom_name)
+        p = root.property_get(atom)
         if p is None:
             return ""
         v = p[2]
@@ -78,8 +78,6 @@ def get_x11_property(atom_name):
         return ""
 
 def has_pa_x11_property():
-    if os.name!="posix":
-        return False
     #try root window property (faster)
     ps = get_x11_property("PULSE_SERVER")
     return len(ps)>0

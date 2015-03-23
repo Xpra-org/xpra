@@ -231,11 +231,14 @@ class subprocess_caller(object):
 
 
     def exec_subprocess(self):
-        kwargs = {}
-        if os.name=="posix":
-            kwargs["close_fds"] = True
+        kwargs = self.exec_kwargs()
         log("exec_subprocess() command=%s, kwargs=%s", self.command, kwargs)
         return subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), **kwargs)
+
+    def exec_kwargs(self):
+        if os.name=="posix":
+            return {"close_fds" : True}
+        return {}
 
 
     def cleanup(self):

@@ -158,6 +158,18 @@ cp ../src/build/xpra.conf ${RSCDIR}/etc/
 
 echo
 echo "*******************************************************************************"
+echo "Xpra without a tray..."
+for app in Xpra_NoDock.app; do
+	SUB_APP="${IMAGE_DIR}/Contents/${app}"
+	rsync -rplvtog ${app} ${IMAGE_DIR}/Contents/
+	ln -sf ../../Resources ${SUB_APP}/Contents/Resources
+	ln -sf ../../MacOS ${SUB_APP}/Contents/MacOS
+	ln -sf ../../Helpers ${SUB_APP}/Contents/Helpers
+done
+
+
+echo
+echo "*******************************************************************************"
 echo "Hacks"
 #HACKS
 #no idea why I have to do this by hand

@@ -16,21 +16,30 @@ def debug(*msg):
 def get_resources_dir():
     rsc = None
     RESOURCES = "/Resources/"
-    try:
-        import gtkosx_application        #@UnresolvedImport
+    #FUGLY warning: importing gtkosx_application causes the dock to appear,
+    #and in some cases we don't want that.. so use the env var XPRA_SKIP_UI as workaround for such cases:
+    if os.environ.get("XPRA_SKIP_UI", "0")=="0":
         try:
-            rsc = gtkosx_application.gtkosx_application_get_resource_path()
-            debug("get_resources_dir() gtkosx_application_get_resource_path=%s", rsc)
-            if rsc:
-                i = rsc.rfind(RESOURCES)
-                if i<=0:
-                    rsc = None
+            import gtkosx_application        #@UnresolvedImport
+            try:
+                rsc = gtkosx_application.gtkosx_application_get_resource_path()
+                debug("get_resources_dir() gtkosx_application_get_resource_path=%s", rsc)
+            except:
+                #maybe we're not running from an app bundle?
+                pass
         except:
-            #maybe we're not running from an app bundle?
-            pass
-    except:
-        print("ERROR: gtkosx_application module is missing - trying to continue anyway")
-    if not rsc:
+            #delayed import to prevent cycles:
+            from xpra.log import Logger
+            log = Logger("util")
+            log.error("ERROR: gtkosx_application module is missing - trying to continue anyway")
+    else:
+        debug("XPRA_SKIP_UI is set, not importing gtkosx_application")
+    if rsc is None:
+        #try using the path to this file to find the resource path:
+        rsc = __file__
+    i = rsc.rfind(RESOURCES)
+    if i<=0:
+        #last fallback: try the default app dir
         from xpra.platform.paths import default_get_app_dir
         rsc = default_get_app_dir()
         debug("get_resources_dir() default_get_app_dir()=%s", rsc)
@@ -70,5 +79,10 @@ def get_system_conf_dir():
 
 
 def get_sound_executable():
-    helper = os.path.join(get_app_dir(), "MacOS", "Xpra")
+    #try to use the subapp:
+    base = get_app_dir()
+    subapp = os.path.join(base, "Xpra_NoDock.app", "Contents")
+    if os.path.exists(subapp) and os.path.isdir(subapp):
+        base = subapp
+    helper = os.path.join(subapp, "MacOS", "Xpra")
     return os.environ.get("XPRA_SOUND_EXECUTABLE", helper)

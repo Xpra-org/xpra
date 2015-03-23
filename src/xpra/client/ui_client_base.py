@@ -1684,8 +1684,9 @@ class UIXpraClient(XpraClientBase):
             self.sound_sink.start()
             soundlog("%s sound sink started", codec)
             return True
-        except:
+        except Exception as e:
             log.error("failed to start sound sink", exc_info=True)
+            self.sound_sink_error(self.sound_sink, e)
             return False
 
     def new_sound_buffer(self, sound_source, data, metadata):
