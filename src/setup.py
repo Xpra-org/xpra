@@ -140,7 +140,8 @@ csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32
 csc_cython_ENABLED      = True
 nvenc3_ENABLED          = pkg_config_ok("--exists", "nvenc3")
 nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
-cuda_ENABLED            = nvenc3_ENABLED or nvenc4_ENABLED
+nvenc5_ENABLED          = pkg_config_ok("--exists", "nvenc5")
+cuda_ENABLED            = nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED
 #elif os.path.exists("C:\\nvenc_3.0_windows_sdk")
 #...
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
@@ -157,7 +158,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265",
-            "nvenc3", "nvenc4", "cuda",
+            "nvenc3", "nvenc4", "nvenc5", "cuda",
             "vpx", "webp",
             "dec_avcodec2", "csc_swscale",
             "csc_opencl", "csc_cython",
@@ -835,6 +836,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/nvenc3/constants.pxi",
                    "xpra/codecs/nvenc4/encoder.c",
                    "xpra/codecs/nvenc4/constants.pxi",
+                   "xpra/codecs/nvenc5/encoder.c",
+                   "xpra/codecs/nvenc5/constants.pxi",
                    "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_U.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_V.fatbin",
@@ -1387,7 +1390,7 @@ if WIN32:
             add_keywords([webp_bin_dir], [webp_include_dir],
                          [webp_lib_dir],
                          webp_lib_names, nocmt=True)
-        elif ("nvenc3" in pkgs_options[0]) or ("nvenc4" in pkgs_options[0]):
+        elif ("nvenc3" in pkgs_options[0]) or ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]):
             add_keywords([nvenc_bin_dir, cuda_bin_dir], [nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir],
                          [cuda_lib_dir],
                          nvenc_lib_names)
@@ -1753,8 +1756,9 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvenc3_ENABLED, "xpra.codecs.nvenc3")
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
+toggle_packages(nvenc5_ENABLED, "xpra.codecs.nvenc5")
 toggle_packages(nvenc3_ENABLED or nvenc4_ENABLED, "xpra.codecs.cuda_common")
-if nvenc3_ENABLED or nvenc4_ENABLED:
+if nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED:
     #find nvcc:
     nvcc = None
     options = ["/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc"]
@@ -1810,7 +1814,9 @@ if nvenc3_ENABLED or nvenc4_ENABLED:
             sys.exit(1)
     add_data_files("share/xpra/cuda",
                    ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
-    for nvenc_version, _nvenc_version_enabled in {3 : nvenc3_ENABLED, 4 : nvenc4_ENABLED}.items():
+    for nvenc_version, _nvenc_version_enabled in {3 : nvenc3_ENABLED,
+                                                  4 : nvenc4_ENABLED,
+                                                  5 : nvenc4_ENABLED}.items():
         if not _nvenc_version_enabled:
             continue
         nvencmodule = "nvenc%s" % nvenc_version

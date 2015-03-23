@@ -18,7 +18,7 @@ from xpra.codecs.loader import get_codec, get_codec_error, load_codecs
 CODEC_TO_MODULE = {"vpx"        : ["vpx"],
                    "x264"       : ["enc_x264"],
                    "x265"       : ["enc_x265"],
-                   "nvenc"      : ["nvenc4", "nvenc3"],
+                   "nvenc"      : ["nvenc4", "nvenc3", "nvenc5"],
                    "swscale"    : ["csc_swscale"],
                    "cython"     : ["csc_cython"],
                    "opencl"     : ["csc_opencl"],
@@ -65,7 +65,7 @@ log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 
 def get_encoder_module_names(x):
     if x=="nvenc":
-        return ["nvenc4", "nvenc3"]
+        return ["nvenc4", "nvenc3", "nvenc5"]
     elif x.find("enc")>=0:
         return [x]              #ie: "nvenc" or "enc_vpx"
     return ["enc_"+x]           #ie: "enc_x264"
