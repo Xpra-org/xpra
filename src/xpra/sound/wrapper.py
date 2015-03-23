@@ -60,13 +60,16 @@ class sound_subprocess(subprocess_callee):
         subprocess_callee.start(self)
 
     def stop(self):
-        if self.wrapped_object:
-            self.wrapped_object.stop()
+        wo = self.wrapped_object
+        if wo:
+            wo.stop()
             self.wrapped_object = None
         subprocess_callee.stop(self)
 
     def export_info(self):
-        self.send("info", self.wrapped_object.get_info())
+        wo = self.wrapped_object
+        if wo:
+            self.send("info", wo.get_info())
 
 
 class sound_record(sound_subprocess):
