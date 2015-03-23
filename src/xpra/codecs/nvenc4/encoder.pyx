@@ -1232,8 +1232,8 @@ cdef class Encoder:
         self.height = height
         self.speed = speed
         self.quality = quality
-        self.scaling = scaling
-        v, u = scaling or (1,1)
+        self.scaling = scaling or (1, 1)
+        v, u = self.scaling
         self.input_width = roundup(width, 32)
         self.input_height = roundup(height, 32)
         self.encoder_width = roundup(width*v/u, 32)
