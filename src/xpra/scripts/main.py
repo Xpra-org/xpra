@@ -1246,14 +1246,6 @@ def run_client(error_cb, opts, extra_args, mode):
     return do_run_client(app)
 
 def make_client(error_cb, opts):
-    def check_toolkit(*modules):
-        try:
-            for x in modules:
-                __import__(x, {}, {}, [])
-            return True
-        except:
-            return False
-
     if sys.version<'3':
         client_module = "xpra.client.gtk2.client"
     else:
