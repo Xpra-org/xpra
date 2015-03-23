@@ -42,6 +42,16 @@ EXPORT_INFO_TIME = int(os.environ.get("XPRA_SOUND_INFO_TIME", "1000"))
 # The input can be a regular xpra packet, those are converted into method calls
 
 class sound_subprocess(subprocess_callee):
+    """ Utility superclass for sound subprocess wrappers
+        (see sound_record and sound_play below)
+    """
+    def __init__(self, wrapped_object, method_whitelist, exports_list):
+        #add bits common to both record and play:
+        methods = method_whitelist+["set_volume", "stop"]
+        exports = ["state-changed", "bitrate-changed", "error"] + exports_list
+        subprocess_callee.__init__(self, wrapped_object=wrapped_object, method_whitelist=methods)
+        for x in exports:
+            self.connect_export(x)
 
     def start(self):
         if EXPORT_INFO_TIME>0:
@@ -55,33 +65,40 @@ class sound_subprocess(subprocess_callee):
             self.wrapped_object = None
         subprocess_callee.stop(self)
 
-    def make_protocol(self):
-        p = subprocess_callee.make_protocol(self)
-        p.large_packets = ["new-buffer"]
-        return p
-
     def export_info(self):
         self.send("info", self.wrapped_object.get_info())
 
 
-def run_sound(mode, error_cb, options, args):
-    assert len(args)>=6, "not enough arguments"
-    #common to both sink and src:
-    exports = ["state-changed", "bitrate-changed",
-               "error"]
-    methods = ["set_volume", "stop"]
-    if mode=="_sound_record":
+class sound_record(sound_subprocess):
+    """ wraps SoundSource as a subprocess """
+    def __init__(self, *pipeline_args):
         from xpra.sound.src import SoundSource
-        gst_wrapper = SoundSource
-        exports += ["new-stream", "new-buffer"]
-    elif mode=="_sound_play":
+        sound_pipeline = SoundSource(*pipeline_args)
+        sound_subprocess.__init__(self, sound_pipeline, [], ["new-stream", "new-buffer"])
+
+    def make_protocol(self):
+        #overriden so we can tell that "new-buffer" is a large packet:
+        p = subprocess_callee.make_protocol(self)
+        p.large_packets = ["new-buffer"]
+        return p
+
+class sound_play(sound_subprocess):
+    """ wraps SoundSink as a subprocess """
+    def __init__(self, *pipeline_args):
         from xpra.sound.sink import SoundSink
-        gst_wrapper = SoundSink
-        #def eos(*args):
-        #    gobject.idle_add(mainloop.quit)
-        #signal_handlers["eos"] = eos
-        methods += ["add_data"]
-        exports += ["underrun", "overrun"]
+        sound_pipeline = SoundSink(*pipeline_args)
+        sound_subprocess.__init__(self, sound_pipeline, ["add_data"], ["underrun", "overrun"])
+
+
+def run_sound(mode, error_cb, options, args):
+    """ this function just parses command line arguments to feed into the sound subprocess class,
+        which in turn just feeds them into the sound pipeline class (sink.py or src.py)
+    """
+    assert len(args)>=6, "not enough arguments"
+    if mode=="_sound_record":
+        subproc = sound_record
+    elif mode=="_sound_play":
+        subproc = sound_play
     else:
         raise Exception("unknown mode: %s" % mode)
 
@@ -100,22 +117,26 @@ def run_sound(mode, error_cb, options, args):
     except:
         volume = 1.0
 
+    ss = None
     try:
-        pipeline = gst_wrapper(plugin, options, codecs, codec_options, volume)
-        ss = sound_subprocess(wrapped_object=pipeline, method_whitelist=methods)
-        for x in exports:
-            ss.connect_export(x)
+        ss = subproc(plugin, options, codecs, codec_options, volume)
         ss.start()
         return 0
     except Exception:
         log.error("run_sound%s error", (mode, error_cb, options, args), exc_info=True)
         return 1
     finally:
-        ss.stop()
+        if ss:
+            ss.stop()
 
 
 class sound_subprocess_wrapper(subprocess_caller):
-
+    """ This utility superclass deals with the caller side of the sound subprocess wrapper:
+        * starting the wrapper subprocess
+        * handling state-changed signal so we have a local copy of the current value ready
+        * handle "info" packets so we have a cached copy
+        * forward get/set volume calls (get_volume uses the value found in "info")
+    """
     def __init__(self):
         subprocess_caller.__init__(self, description="sound")
         self.state = "stopped"
@@ -150,13 +171,6 @@ class sound_subprocess_wrapper(subprocess_caller):
         return self.last_info.get("volume", 100)/100.0
 
 
-    def make_protocol(self):
-        """ add some 'large packets' to the list """
-        protocol = subprocess_caller.make_protocol(self)
-        protocol.large_packets = ["new-buffer", "add_data"]
-        return protocol
-
-
     def _add_debug_args(self):
         from xpra.log import debug_enabled_categories
         debug = SUBPROCESS_DEBUG[:]
@@ -173,6 +187,11 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
         self.command = [get_sound_executable(), "_sound_record", "-", "-", plugin or "", "", ",".join(codecs), "", str(volume)]
         self._add_debug_args()
 
+    def make_protocol(self):
+        protocol = subprocess_caller.make_protocol(self)
+        protocol.large_packets = ["new-buffer"]
+        return protocol
+
     def __repr__(self):
         return "source_subprocess_wrapper(%s)" % self.process
 
@@ -184,6 +203,11 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
         self.codec = codec
         self.command = [get_sound_executable(), "_sound_play", "-", "-", plugin or "", "", codec, "", str(volume)]
         self._add_debug_args()
+
+    def make_protocol(self):
+        protocol = subprocess_caller.make_protocol(self)
+        protocol.large_packets = ["add_data"]
+        return protocol
 
     def add_data(self, data, metadata):
         if DEBUG_SOUND:
