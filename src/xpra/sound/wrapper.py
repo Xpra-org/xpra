@@ -6,10 +6,7 @@
 import os
 import time
 
-import gobject
-gobject.threads_init()
-
-from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee
+from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, gobject
 from xpra.platform.paths import get_sound_executable
 from xpra.util import AdHocStruct
 from xpra.log import Logger
@@ -156,6 +153,13 @@ class sound_subprocess_wrapper(subprocess_caller):
         env = os.environ.copy()
         env["XPRA_SKIP_UI"] = "1"
         kwargs["env"] = env
+        #let's make things more complicated than they should be:
+        #on win32, the environment can end up containing unicode, and subprocess chokes on it
+        for k,v in env.items():
+            try:
+                env[k] = v.encode("utf8")
+            except:
+                env[k] = str(v)
         return kwargs
 
 

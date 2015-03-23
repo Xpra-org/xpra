@@ -11,7 +11,10 @@
 
 import os, sys
 import signal
-import gobject
+
+from xpra.gtk_common.gobject_compat import import_gobject
+gobject = import_gobject()
+gobject.threads_init()
 
 from xpra.log import Logger
 log = Logger("server", "util")
