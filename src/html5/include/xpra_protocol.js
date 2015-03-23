@@ -191,11 +191,18 @@ XpraProtocol.prototype._process = function() {
 
 	//decompress it if needed:
 	if (level!=0) {
-		var inflated = new Zlib.Inflate(packet_data).decompress();
+		if (level & 0x10) {
+			// lz4
+		} else if (level & 0x20) {
+			// lzo
+		} else {
+			// zlib
+			var inflated = new Zlib.Inflate(packet_data).decompress();
+		}
 		//debug("inflated("+packet_data+")="+inflated);
 		packet_data = inflated;
 	}
-
+	
 	//save it for later? (partial raw packet)
 	if (index>0) {
 		//debug("added raw packet for index "+index);

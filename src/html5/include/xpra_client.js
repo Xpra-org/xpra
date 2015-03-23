@@ -403,6 +403,7 @@ XpraClient.prototype._make_hello = function() {
 		//compression bits:
 		"zlib"						: true,
 		"lz4"						: false,
+		"lzo"						: false,
 		"compression_level"	 		: 1,
 		"compressible_cursors"		: true,
 		"encoding.rgb24zlib"		: true,
