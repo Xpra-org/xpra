@@ -131,7 +131,7 @@ def get_CG_imagewrapper():
 
 def take_screenshot():
     log("grabbing screenshot")
-    from PIL import Image
+    from PIL import Image                       #@UnresolvedImport
     from xpra.os_util import StringIOClass
     image = get_CG_imagewrapper()
     w = image.get_width()
