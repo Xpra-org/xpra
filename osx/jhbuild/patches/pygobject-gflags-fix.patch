@@ -1,0 +1,32 @@
+@@ -, +, @@ 
+ gio/gio-types.defs |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+--- a/gio/gio-types.defs	
++++ a/gio/gio-types.defs	
+@@ -526,7 +526,7 @@ 
+   )
+ )
+ 
+-(define-enum MountMountFlags
++(define-flags MountMountFlags
+   (in-module "gio")
+   (c-name "GMountMountFlags")
+   (gtype-id "G_TYPE_MOUNT_MOUNT_FLAGS")
+@@ -545,7 +545,7 @@ 
+   )
+ )
+ 
+-(define-enum DriveStartFlags
++(define-flags DriveStartFlags
+   (in-module "gio")
+   (c-name "GDriveStartFlags")
+   (gtype-id "G_TYPE_DRIVE_START_FLAGS")
+@@ -770,7 +770,7 @@ 
+   )
+ )
+ 
+-(define-enum SocketMsgFlags
++(define-flags SocketMsgFlags
+   (in-module "gio")
+   (c-name "GSocketMsgFlags")
+   (gtype-id "G_TYPE_SOCKET_MSG_FLAGS")
