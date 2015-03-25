@@ -395,7 +395,7 @@ XpraClient.prototype._make_hello = function() {
 		//video stuff we may handle later:
 		"encoding.video_reinit"		: false,
 		"encoding.video_scaling"	: false,
-		"encoding.csc_modes"		: [],
+		"encoding.csc_modes"		: ["YUV420P"],
 		//sound (not yet):
 		"sound.receive"				: true,
 		"sound.send"				: false,

@@ -31,6 +31,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	//enclosing div in page DOM
 	this.div = jQuery("#" + String(wid));
 
+	// h264 video stuff
+	this.avc = null;
+
 	//callbacks start null until we finish init:
 	this.geometry_cb = null;
 	this.mouse_move_cb = null;
@@ -578,6 +581,88 @@ XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
     return window.btoa(s);
 }
 
+XpraWindow.prototype._init_avc = function() {
+	this.avc = new Avc();
+    this.avc.configure({
+        filter: "original",
+        filterHorLuma: "optimized",
+        filterVerLumaEdge: "optimized",
+        getBoundaryStrengthsA: "optimized"
+    });
+    this.avc.onPictureDecoded = function(buffer, width, height) {
+        console.log("decoded frame w:"+width+", h:"+height);
+    };
+    console.log(this.avc.onPictureDecoded);
+}
+
+XpraWindow.prototype._h264_process_nal = function(data) {
+
+	var s = 0;
+
+	if(data[2]==0) {
+		s = 4
+	} else {
+		s = 3;
+	}
+
+	if(data[s]==0x67) {
+		console.log("got SPS NAL bytes:"+data.length);
+	}
+	else if (data[s]==0x68) {
+		console.log("got PPS NAL bytes:"+data.length);
+	} else if (data[s]==0x65) {
+		console.log("got IDR picture NAL unit bytes:"+data.length);
+	} else if (data[s]==0x41) {
+		console.log("got Non-IDR picture NAL unit bytes:"+data.length);
+	} else {
+		console.warn("got unknown NAL type "+data[s]);
+	}
+
+	this.avc.decode(new Uint8Array(data.slice(s, data.length)));
+}
+
+XpraWindow.prototype._h264_process_raw = function(data) {
+      var b = 0;
+      var offset = 0;
+      var l = data.length;
+      var zeroCnt = 0;
+      var nals = null;
+      var nale = null;
+
+      for (b; b < l; ++b){
+        if (data[b] === 0){
+          zeroCnt++;
+        }else{
+          if (data[b] == 1){
+            if (zeroCnt >= 2){
+            	if(nals==null) {
+            		// this is the first nal occurance
+            		// we don't know how long the first data is yet
+            		nals = b-(zeroCnt);
+            	} else {
+            		if(nale==null) {
+            			// we found the next occurance
+            			// now we know how long the first is
+            			nale = b-(zeroCnt);
+            			console.log("got nal from "+nals+ " to "+nale);
+            			this._h264_process_nal(data.slice(nals, nale));
+            			nals = b-(zeroCnt);
+            			nale = null;
+            		}
+            	}
+            };
+          };
+          zeroCnt = 0;
+        };
+
+        if(b==(l-1)) {
+        	console.log("got nal from "+nals+" to "+(l-1));
+        	this._h264_process_nal(data.slice(nals, l));
+        }
+      };
+
+}
+
 /**
  * Updates the window image with new pixel data
  * we have received from the server.
@@ -617,6 +702,12 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 	    j.onload = function () {
 	        me.offscreen_canvas_ctx.drawImage(j, x, y);
 	    };
+	}
+	else if (coding=="h264") {
+		if(!this.avc) {
+			this._init_avc();
+		}
+		this._h264_process_raw(img_data);
 	}
 	else {
 		throw "unsupported coding " + coding;
