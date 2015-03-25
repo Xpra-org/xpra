@@ -142,6 +142,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 XpraWindow.prototype._init_2d_canvas = function() {
 	this.offscreen_canvas_mode = '2d';
 	this.offscreen_canvas = document.createElement("canvas");
+	this.updateCanvasGeometry();
 	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('2d');
 }
 
@@ -149,6 +150,7 @@ XpraWindow.prototype._init_3d_canvas = function() {
 	// if we couldn't init the 3d context, we should fall back gracefully!
 	this.offscreen_canvas_mode = '3d';
 	this.offscreen_canvas = document.createElement("canvas");
+	this.updateCanvasGeometry();
 	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('webgl');
 }
 
@@ -170,7 +172,7 @@ XpraWindow.prototype.ensure_visible = function() {
 	return true;
 }
 
-XpraWindow.prototype.updateCSSGeometry = function() {
+XpraWindow.prototype.updateCanvasGeometry = function() {
 	// set size of both canvas if needed
 	if(this.canvas.width != this.w) {
 		this.canvas.width = this.w;
@@ -184,6 +186,11 @@ XpraWindow.prototype.updateCSSGeometry = function() {
 	if(this.offscreen_canvas.height != this.h) {
 		this.offscreen_canvas.height = this.h;
 	}
+}
+
+XpraWindow.prototype.updateCSSGeometry = function() {
+	// set size of canvas
+	this.updateCanvasGeometry();
 	// work out outer size
 	this.outerH = this.h + this.topoffset + this.bottomoffset;
 	this.outerW = this.w + this.leftoffset + this.rightoffset;
