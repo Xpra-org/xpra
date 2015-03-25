@@ -708,6 +708,9 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 
 	if (coding=="rgb32") {
 		// create image data
+		if(this.offscreen_canvas_mode!='2d') {
+	    	this._init_2d_canvas();
+	    }
 		var img = this.offscreen_canvas_ctx.createImageData(width, height);
 		//if the pixel data is not in an array buffer already, convert it:
 		//(this happens with inlined pixel data)
@@ -731,6 +734,9 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 	}
 	else if (coding=="jpeg" || coding=="png") {
 		// create image data
+		if(this.offscreen_canvas_mode!='2d') {
+	    	this._init_2d_canvas();
+	    }
 		var img = this.offscreen_canvas_ctx.createImageData(width, height);
 		// decode image
 		var j = new Image();
