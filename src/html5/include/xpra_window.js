@@ -33,6 +33,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 
 	// h264 video stuff
 	this.avc = null;
+	this.glcanvas = null;
 
 	//callbacks start null until we finish init:
 	this.geometry_cb = null;
@@ -581,7 +582,11 @@ XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
     return window.btoa(s);
 }
 
+/**
+ * The following functions handle h264 decoder
+ */
 XpraWindow.prototype._init_avc = function() {
+	// configure the AVC decoder
 	this.avc = new Avc();
     this.avc.configure({
         filter: "original",
@@ -592,11 +597,11 @@ XpraWindow.prototype._init_avc = function() {
     this.avc.onPictureDecoded = function(buffer, width, height) {
         console.log("decoded frame w:"+width+", h:"+height);
     };
-    console.log(this.avc.onPictureDecoded);
+    // configure the GL Canvas
+    this.glcanvas = new YUVWebGLCanvas(this.canvas, new Size(this.w, this.h));
 }
 
 XpraWindow.prototype._h264_process_nal = function(data) {
-
 	var s = 0;
 
 	if(data[2]==0) {
@@ -623,44 +628,47 @@ XpraWindow.prototype._h264_process_nal = function(data) {
 }
 
 XpraWindow.prototype._h264_process_raw = function(data) {
-      var b = 0;
-      var offset = 0;
-      var l = data.length;
-      var zeroCnt = 0;
-      var nals = null;
-      var nale = null;
+	// the purpose of this function is to split the stream
+	// into the individual NAL units
+	// it's useful for debugging but not required in production
+	var b = 0;
+	var offset = 0;
+	var l = data.length;
+	var zeroCnt = 0;
+	var nals = null;
+	var nale = null;
 
-      for (b; b < l; ++b){
-        if (data[b] === 0){
-          zeroCnt++;
-        }else{
-          if (data[b] == 1){
-            if (zeroCnt >= 2){
-            	if(nals==null) {
-            		// this is the first nal occurance
-            		// we don't know how long the first data is yet
-            		nals = b-(zeroCnt);
-            	} else {
-            		if(nale==null) {
-            			// we found the next occurance
-            			// now we know how long the first is
-            			nale = b-(zeroCnt);
-            			console.log("got nal from "+nals+ " to "+nale);
-            			this._h264_process_nal(data.slice(nals, nale));
-            			nals = b-(zeroCnt);
-            			nale = null;
-            		}
-            	}
-            };
-          };
-          zeroCnt = 0;
-        };
+	for (b; b < l; ++b){
+		if (data[b] === 0){
+			zeroCnt++;
+		}else{
+			if (data[b] == 1){
+				if (zeroCnt >= 2) {
+					if(nals==null) {
+			    		// this is the first nal occurance
+			    		// we don't know how long the first data is yet
+			    		nals = b-(zeroCnt);
+			    	} else {
+			    		if(nale==null) {
+			    			// we found the next occurance
+			    			// now we know how long the first is
+			    			nale = b-(zeroCnt);
+			    			console.log("got nal from "+nals+ " to "+nale);
+			    			this._h264_process_nal(data.slice(nals, nale));
+			    			nals = b-(zeroCnt);
+			    			nale = null;
+			    		}
+			    	}
+		    	}
+			}
+			zeroCnt = 0;
+		}
 
-        if(b==(l-1)) {
-        	console.log("got nal from "+nals+" to "+(l-1));
-        	this._h264_process_nal(data.slice(nals, l));
-        }
-      };
+		if(b==(l-1)) {
+			console.log("got nal from "+nals+" to "+(l-1));
+			this._h264_process_nal(data.slice(nals, l));
+		}
+	}
 
 }
 
@@ -708,7 +716,10 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		if(!this.avc) {
 			this._init_avc();
 		}
-		this._h264_process_raw(img_data);
+		// we can pass a buffer full of NALs to avc.decode directly
+		// as long as they are framed properly with the NAL header
+		this.avc.decode(new Uint8Array(img_data));
+		//this._h264_process_raw(img_data);
 	}
 	else {
 		throw "unsupported coding " + coding;
