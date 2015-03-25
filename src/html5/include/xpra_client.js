@@ -55,7 +55,9 @@ function XpraClient(container) {
 		'raise-window': this._process_raise_window,
 		'window-resized': this._process_window_resized,
 		'draw': this._process_draw,
-		'sound-data': this._process_sound_data
+		'sound-data': this._process_sound_data,
+		'clipboard-token': this._process_clipboard_token,
+		'set-clipboard-enabled': this._process_set_clipboard_enabled
 	};
 	// assign the keypress callbacks
 	// if we detect jQuery, use that to assign them instead
@@ -418,7 +420,7 @@ XpraClient.prototype._make_hello = function() {
 		"screen_sizes"				: this._get_screen_sizes(),
 		"dpi"						: this._get_DPI(),
 		//not handled yet, but we will:
-		"clipboard_enabled"			: false,
+		"clipboard_enabled"			: true,
 		"notifications"				: true,
 		"cursors"					: true,
 		"bell"						: true,
@@ -702,4 +704,12 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
     }, function() {
     	console.error("Error processing sound data")
     });
+}
+
+XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
+	console.log(packet);
+}
+
+XpraClient.prototype._process_set_clipboard_enabled = function(packet, ctx) {
+	console.warn("server set clipboard state to "+packet[1]+" reason was: "+packet[2]);
 }
