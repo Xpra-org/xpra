@@ -432,9 +432,9 @@
   </autotools>
 
   <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
-    <branch module="/dist/subversion/subversion-1.8.10.tar.bz2"
-                        hash="md5:3068256761b40863df96128834d6b71b"
-			version="1.8.10"
+    <branch module="/dist/subversion/subversion-1.8.11.tar.bz2"
+                        hash="md5:766a89bbbb388f8eb76166672d3b9e49"
+			version="1.8.11"
             repo="www.eu.apache.org"/>
      <dependencies>
       <dep package="db"/>
