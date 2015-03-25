@@ -26,8 +26,10 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.client = client;
 	//keep reference both the internal canvas and screen drawn canvas:
 	this.canvas = canvas_state;
-	this.offscreen_canvas = document.createElement("canvas");
-	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('2d');
+	this.offscreen_canvas = null;
+	this.offscreen_canvas_ctx = null;
+	this.offscreen_canvas_mode = null;
+	this._init_2d_canvas();
 	//enclosing div in page DOM
 	this.div = jQuery("#" + String(wid));
 
@@ -136,6 +138,19 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	//create the image holding the pixels (the "backing"):
 	this.create_image_backing();
 };
+
+XpraWindow.prototype._init_2d_canvas = function() {
+	this.offscreen_canvas_mode = '2d';
+	this.offscreen_canvas = document.createElement("canvas");
+	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('2d');
+}
+
+XpraWindow.prototype._init_3d_canvas = function() {
+	// if we couldn't init the 3d context, we should fall back gracefully!
+	this.offscreen_canvas_mode = '3d';
+	this.offscreen_canvas = document.createElement("canvas");
+	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('webgl');
+}
 
 XpraWindow.prototype.ensure_visible = function() {
 	var oldx = this.x;
@@ -586,6 +601,7 @@ XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
  * The following functions handle h264 decoder
  */
 XpraWindow.prototype._init_avc = function() {
+	var me = this;
 	// configure the AVC decoder
 	this.avc = new Avc();
     this.avc.configure({
@@ -594,11 +610,20 @@ XpraWindow.prototype._init_avc = function() {
         filterVerLumaEdge: "optimized",
         getBoundaryStrengthsA: "optimized"
     });
-    this.avc.onPictureDecoded = function(buffer, width, height) {
-        console.log("decoded frame w:"+width+", h:"+height);
+    this.avc.onPictureDecoded = function(buffer, bufWidth, bufHeight) {
+        var lumaSize = bufWidth * bufHeight,
+                chromaSize = lumaSize >> 2;
+
+        me.glcanvas.YTexture.fill(buffer.subarray(0, lumaSize));
+        me.glcanvas.UTexture.fill(buffer.subarray(lumaSize, lumaSize + chromaSize));
+        me.glcanvas.VTexture.fill(buffer.subarray(lumaSize + chromaSize, lumaSize + 2 * chromaSize));
+        me.glcanvas.drawScene();
     };
     // configure the GL Canvas
-    this.glcanvas = new YUVWebGLCanvas(this.canvas, new Size(this.w, this.h));
+    if(this.offscreen_canvas_mode!='3d') {
+	    this._init_3d_canvas();
+	    this.glcanvas = new YUVWebGLCanvas(this.offscreen_canvas, new Size(this.w, this.h));
+	}
 }
 
 XpraWindow.prototype._h264_process_nal = function(data) {
@@ -681,9 +706,9 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 	"use strict";
 	//console.log("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
 
-	var img = this.offscreen_canvas_ctx.createImageData(width, height);
-
 	if (coding=="rgb32") {
+		// create image data
+		var img = this.offscreen_canvas_ctx.createImageData(width, height);
 		//if the pixel data is not in an array buffer already, convert it:
 		//(this happens with inlined pixel data)
 		if (typeof img_data==='string') {
@@ -705,6 +730,9 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		this.offscreen_canvas_ctx.putImageData(img, x, y);
 	}
 	else if (coding=="jpeg" || coding=="png") {
+		// create image data
+		var img = this.offscreen_canvas_ctx.createImageData(width, height);
+		// decode image
 		var j = new Image();
 		j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
 		var me = this;
