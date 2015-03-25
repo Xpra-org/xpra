@@ -607,13 +607,14 @@ XpraWindow.prototype._h264_process_nal = function(data) {
 
 	if(data[s]==0x67) {
 		console.log("got SPS NAL bytes:"+data.length);
-	}
-	else if (data[s]==0x68) {
+	} else if (data[s]==0x68) {
 		console.log("got PPS NAL bytes:"+data.length);
 	} else if (data[s]==0x65) {
 		console.log("got IDR picture NAL unit bytes:"+data.length);
 	} else if (data[s]==0x41) {
 		console.log("got Non-IDR picture NAL unit bytes:"+data.length);
+	} else if (data[s]==0x06) {
+		console.log("got an access unit delimiter NAL unit bytes:"+data.length);
 	} else {
 		console.warn("got unknown NAL type "+data[s]);
 	}
