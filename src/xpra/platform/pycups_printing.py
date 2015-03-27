@@ -23,7 +23,12 @@ FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDI
 PPD_FILE = os.environ.get("XPRA_PPD_FILE", "/usr/share/cups/model/CUPS-PDF.ppd")
 
 #PRINTER_PREFIX = "Xpra:"
-PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", "")
+ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
+PRINTER_PREFIX = ""
+if ADD_LOCAL_PRINTERS:
+    #this prevents problems where we end up deleting local printers!
+    PRINTER_PREFIX = "Xpra:"
+PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", PRINTER_PREFIX)
 
 
 #allows us to inject the lpadmin command
