@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2015 Antoine Martin <antoine@devloop.org.uk> -->
+<component type="desktop">
+ <id>xpra.desktop</id>
+ <metadata_license>CC0-1.0</metadata_license>
+ <project_license>GPL-2.0+</project_license>
+ <name>Xpra</name>
+ <summary>Screen for X11</summary>
+ <description>
+  <p>
+   Xpra gives you "persistent remote applications" for X11.
+  </p>
+  <p>
+   Xpra allows you to forward applications or full desktops to remote clients,
+   including sound, clipboard, printing, etc
+  </p>
+ </description>
+ <screenshots>
+  <screenshot type="default">
+   <image>http://xpra.org/screenshots/xpra-session-info.png</image>
+   <caption>The session information dialog showing bandwidth usage and latency</caption>
+  </screenshot>
+  <screenshot>
+   <image>http://xpra.org/screenshots/xpra-launcher.png</image>
+   <caption>The session launcher dialog running on Windows XP</caption>
+  </screenshot>
+ </screenshots>
+ <url type="homepage">http://xpra.org/</url>
+ <updatecontact>shifter-users@lists.devloop.org.uk</updatecontact>
+</component>

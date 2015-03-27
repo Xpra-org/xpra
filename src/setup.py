@@ -1492,6 +1492,7 @@ else:
     add_data_files("share/xpra/icons",    glob.glob("icons/*"))
     add_data_files("share/applications",  ["xdg/xpra_launcher.desktop", "xdg/xpra.desktop"])
     add_data_files("share/icons",         ["xdg/xpra.png"])
+    add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
     html5_dir = "share/xpra/www"
 
     #here, we override build and install so we can
