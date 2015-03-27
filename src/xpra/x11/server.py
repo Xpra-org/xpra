@@ -295,16 +295,20 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def set_desktops(self, names):
-        self._wm.set_desktop_list(names)
+        if self._wm:
+            self._wm.set_desktop_list(names)
 
     def set_workarea(self, workarea):
-        self._wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
+        if self._wm:
+            self._wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
 
     def set_desktop_geometry(self, width, height):
-        self._wm.set_desktop_geometry(width, height)
+        if self._wm:
+            self._wm.set_desktop_geometry(width, height)
 
     def set_dpi(self, xdpi, ydpi):
-        self._wm.set_dpi(xdpi, ydpi)
+        if self._wm:
+            self._wm.set_dpi(xdpi, ydpi)
 
 
     def get_transient_for(self, window):
