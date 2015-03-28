@@ -764,7 +764,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 traylog("tray %s configured to: %s", window, (x, y, w, h))
                 self._tray.move_resize(window, x, y, w, h)
         else:
-            assert not window.is_OR(), "received a configure packet for OR window %s from %s" % (window, proto)
+            assert not window.is_OR(), "received a configure packet for OR window %s from %s: %s" % (window, proto, packet)
             self.last_client_configure_event = time.time()
             if len(packet)>=9:
                 self._set_window_state(proto, wid, window, packet[8])
