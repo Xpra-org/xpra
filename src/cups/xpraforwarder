@@ -111,7 +111,7 @@ def do_main():
 		raise Exception("Device URI: display number not specified!")
 	info("xpra display: %s" % display)
 
-	xpra_print(socket_dir, display, filename, "application/pdf", source, title, printer, no_copies, print_options)
+	xpra_print(socket_dir, display, filename, "application/postscript", source, title, printer, no_copies, print_options)
 
 
 def main():
