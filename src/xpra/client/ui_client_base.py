@@ -1249,6 +1249,7 @@ class UIXpraClient(XpraClientBase):
             self.session_name = c.strget("session_name", "")
         set_application_name(self.session_name or "Xpra")
         self.window_unmap = c.boolget("window_unmap")
+        self.window_configure_skip_geometry = c.boolget("window.configure.skip-geometry")
         self.force_ungrab = c.boolget("force_ungrab")
         self.window_refresh_config = c.boolget("window_refresh_config")
         self.suspend_resume = c.boolget("suspend-resume")
