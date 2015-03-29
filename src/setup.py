@@ -1762,7 +1762,7 @@ toggle_packages(nvenc3_ENABLED or nvenc4_ENABLED, "xpra.codecs.cuda_common")
 if nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED:
     #find nvcc:
     nvcc = None
-    options = ["/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc"]
+    options = os.environ.get("PATH", "").split(os.path.pathsep)+["/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc"]
     try:
         code, out, err = get_status_output(["which", "nvcc"])
         if code==0:
