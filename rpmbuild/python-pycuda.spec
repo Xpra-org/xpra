@@ -3,9 +3,13 @@
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %endif
 
+#we don't want to depend on libcuda via RPM dependencies
+#so that we can install NVidia drivers without using RPM packages:
+%define __requires_exclude ^libcuda.*$
+
 Name:           python-pycuda
 Version:        2014.1
-Release:        2
+Release:        3
 Url:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
@@ -59,6 +63,9 @@ rm -rf %{buildroot}
 %{python2_sitearch}/pycuda*
 
 %changelog
+
+* Sun Mar 29 2015 Antoine Martin <antoine@devloop.org.uk - 2014.1-3
+- remove dependency on libcuda so the package can be installed without using the RPM drivers
 
 * Fri Nov 07 2014 Antoine Martin <antoine@devloop.org.uk - 2014.1-2
 - remove curand bindings which require libcurand found in full CUDA SDK
