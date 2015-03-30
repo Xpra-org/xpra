@@ -21,22 +21,25 @@ def print_files(printer, filenames, title, options):
 def printing_finished(printpid):
     return True
 
-def on_printers_modified(callback):
+def init_printing(printers_modified_callback=None):
     pass
 
+def cleanup_printing():
+    pass
 
 #default implementation uses pycups:
 from xpra.platform import platform_import
 try:
-    from xpra.platform.pycups_printing import get_printers, print_files, printing_finished, on_printers_modified
-    assert get_printers and print_files and printing_finished and on_printers_modified
+    from xpra.platform.pycups_printing import get_printers, print_files, printing_finished, init_printing, cleanup_printing
+    assert get_printers and print_files and printing_finished and init_printing, cleanup_printing
 except Exception as e:
     #ignore the error on win32:
     if not sys.platform.startswith("win"):
         err("cannot use pycups for printing: %s", e)
 
 platform_import(globals(), "printing", False,
-                "on_printers_modified",
+                "init_printing",
+                "cleanup_printing",
                 "get_printers",
                 "print_files",
                 "printing_finished")

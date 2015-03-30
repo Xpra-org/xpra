@@ -30,6 +30,14 @@ if ADD_LOCAL_PRINTERS:
     PRINTER_PREFIX = "Xpra:"
 PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", PRINTER_PREFIX)
 
+DEFAULT_CUPS_DBUS = str(int(not sys.platform.startswith("darwin")))
+CUPS_DBUS = os.environ.get("XPRA_CUPS_DBUS", DEFAULT_CUPS_DBUS)=="1"
+POLLING_DELAY = int(os.environ.get("XPRA_CUPS_POLLING_DELAY", "60"))
+log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s", DEFAULT_CUPS_DBUS, CUPS_DBUS, POLLING_DELAY)
+log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s", PRINTER_PREFIX, ADD_LOCAL_PRINTERS)
+log("pycups settings: PPD_FILE=%s, ALLOW=%s", PPD_FILE, ALLOW)
+log("pycups settings: FORWARDER_TMPDIR=%s", FORWARDER_TMPDIR)
+
 
 #allows us to inject the lpadmin command
 def set_lpadmin_command(lpadmin):
@@ -82,7 +90,7 @@ def remove_printer(name):
     exec_lpadmin(["-x", PRINTER_PREFIX+sanitize_name(name)])
 
 
-dbus_init = False
+dbus_init = None
 printers_modified_callback = None
 DBUS_PATH="/com/redhat/PrinterSpooler"
 DBUS_IFACE="com.redhat.PrinterSpooler"
@@ -92,28 +100,58 @@ def handle_dbus_signal(*args):
     printers_modified_callback()
 
 def init_dbus_listener():
+    if not CUPS_DBUS:
+        return False
     global dbus_init
     log("init_dbus_listener() dbus_init=%s", dbus_init)
-    if dbus_init:
-        return
-    dbus_init = True
-    try:
-        from xpra.x11.dbus_common import  init_system_bus
-        system_bus = init_system_bus()
-        log("system bus: %s", system_bus)
-        sig_match = system_bus.add_signal_receiver(handle_dbus_signal, path=DBUS_PATH, dbus_interface=DBUS_IFACE)
-        log("system_bus.add_signal_receiver(..)=%s", sig_match)
-    except Exception:
-        if sys.platform.startswith("darwin"):
-            log("no dbus on osx")
-        else:
-            log.error("failed to initialize dbus cups event listener", exc_info=True)
+    if dbus_init is None:
+        try:
+            from xpra.x11.dbus_common import init_system_bus
+            system_bus = init_system_bus()
+            log("system bus: %s", system_bus)
+            sig_match = system_bus.add_signal_receiver(handle_dbus_signal, path=DBUS_PATH, dbus_interface=DBUS_IFACE)
+            log("system_bus.add_signal_receiver(..)=%s", sig_match)
+            dbus_init = True
+        except Exception:
+            if sys.platform.startswith("darwin"):
+                log("no dbus on osx")
+            else:
+                log.error("failed to initialize dbus cups event listener", exc_info=True)
+            dbus_init = False
+    return dbus_init
 
-def on_printers_modified(callback):
+def check_printers():
     global printers_modified_callback
-    log("on_printers_modified(%s) printers_modified_callback=%s", callback, printers_modified_callback)
+    #we don't actually check anything here and just
+    #fire the callback every time, relying in client_base
+    #to notice that nothing has changed and avoid sending the same printers to the server
+    log("check_printers() printers_modified_callback=%s", printers_modified_callback)
+    printers_modified_callback()
+    schedule_polling_timer()
+
+_polling_timer = None
+def schedule_polling_timer():
+    #fallback to polling:
+    import threading
+    global _polling_timer
+    _polling_timer = threading.Timer(POLLING_DELAY, check_printers)
+    _polling_timer.start()
+
+def init_printing(callback):
+    global printers_modified_callback
+    log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
-    init_dbus_listener()
+    if not init_dbus_listener():
+        log("init_printing(%s) will use polling", callback)
+        schedule_polling_timer()
+
+def cleanup_printing():
+    global _polling_timer
+    try:
+        _polling_timer.cancel()
+        _polling_timer = None
+    except:
+        pass
 
 
 def get_printers():

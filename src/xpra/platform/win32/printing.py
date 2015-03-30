@@ -34,9 +34,9 @@ JOB_ID = 0
 PROCESSES = {}
 
 printers_modified_callback = None
-def on_printers_modified(callback):
+def init_printing(callback):
     global printers_modified_callback
-    log("on_printers_modified(%s) printers_modified_callback=%s", callback, printers_modified_callback)
+    log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
     try:
         init_winspool_listener()

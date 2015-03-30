@@ -26,6 +26,13 @@ from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
 from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error
 
+try:
+    import xpra.platform.printing
+    assert xpra.platform.printing
+    HAS_PRINTING = True
+except:
+    HAS_PRINTING = False
+
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
 EXIT_TIMEOUT = 2
@@ -350,6 +357,7 @@ class XpraClientBase(object):
         if self._protocol:
             self._protocol.close()
             self._protocol = None
+        self.cleanup_printing()
 
     def glib_init(self):
         try:
@@ -538,13 +546,25 @@ class XpraClientBase(object):
                 self.timeout_add(1000, self.init_printing)
 
     def init_printing(self):
+        if not HAS_PRINTING:
+            return
         try:
-            from xpra.platform.printing import on_printers_modified
-            printlog("on_printers_modified=%s", on_printers_modified)
-            on_printers_modified(self.send_printers)
+            from xpra.platform.printing import init_printing
+            printlog("init_printing=%s", init_printing)
+            init_printing(self.send_printers)
             self.do_send_printers()
         except Exception:
             log.warn("failed to send printers", exc_info=True)
+
+    def cleanup_printing(self):
+        if not HAS_PRINTING:
+            return
+        try:
+            from xpra.platform.printing import cleanup_printing
+            printlog("cleanup_printing=%s", cleanup_printing)
+            cleanup_printing()
+        except Exception:
+            log.warn("failed to cleanup printing subsystem", exc_info=True)
 
     def send_printers(self, *args):
         #dbus can fire dozens of times for a single printer change
