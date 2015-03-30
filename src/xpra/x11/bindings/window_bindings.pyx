@@ -9,6 +9,7 @@ import struct
 import time
 
 from xpra.gtk_common.error import trap, XError
+from xpra.os_util import strtobytes
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "window")
@@ -409,8 +410,8 @@ cdef class X11WindowBindings(X11CoreBindings):
             assert l>=0, "invalid long atom value %s" % str_or_int
             return <Atom> l
         assert isinstance(str_or_int, str), "argument is not a string or number: %s" % type(str_or_int)
-        string = str_or_int
-        return XInternAtom(self.display, string, False)
+        atom_string = strtobytes(str_or_int)
+        return XInternAtom(self.display, atom_string, False)
 
     def getDefaultRootWindow(self):
         return XDefaultRootWindow(self.display)
