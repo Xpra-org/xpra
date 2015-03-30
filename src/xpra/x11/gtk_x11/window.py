@@ -937,7 +937,8 @@ class WindowModel(BaseWindowModel):
         "_NET_WM_ACTION_MAXIMIZE_HORZ",
         "_NET_WM_ACTION_MAXIMIZE_VERT",
         "_NET_WM_ACTION_CHANGE_DESKTOP",
-        #"_NET_WM_ACTION_ABOVE, _NET_WM_ACTION_BELOW
+        "_NET_WM_ACTION_ABOVE",
+        "_NET_WM_ACTION_BELOW",
         ]
 
     __gproperties__ = {
