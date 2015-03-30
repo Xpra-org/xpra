@@ -16,7 +16,7 @@ gobject.threads_init()
 
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.protocol import Protocol
-from xpra.os_util import Queue, setbinarymode, SIGNAMES
+from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr
 from xpra.log import Logger
 log = Logger("util")
 
@@ -105,13 +105,13 @@ class subprocess_callee(object):
         #figure out where we read from and write to:
         if self.input_filename=="-":
             #disable stdin buffering:
-            self._input = os.fdopen(sys.stdin.fileno(), 'r', 0)
+            self._input = os.fdopen(sys.stdin.fileno(), 'rb', 0)
             setbinarymode(self._input.fileno())
         else:
             self._input = open(self.input_filename, 'rb')
         if self.output_filename=="-":
             #disable stdout buffering:
-            self._output = os.fdopen(sys.stdout.fileno(), 'w', 0)
+            self._output = os.fdopen(sys.stdout.fileno(), 'wb', 0)
             setbinarymode(self._output.fileno())
         else:
             self._output = open(self.output_filename, 'wb')
@@ -165,7 +165,7 @@ class subprocess_callee(object):
         return (item, None, None, self.send_queue.qsize()>0)
 
     def process_packet(self, proto, packet):
-        command = packet[0]
+        command = bytestostr(packet[0])
         if command==Protocol.CONNECTION_LOST:
             log("connection-lost: %s, calling stop", packet[1:])
             self.stop()
@@ -284,7 +284,7 @@ class subprocess_caller(object):
     def process_packet(self, proto, packet):
         if DEBUG_WRAPPER:
             log("process_packet(%s, %s)", proto, [str(x)[:32] for x in packet])
-        command = packet[0]
+        command = bytestostr(packet[0])
         callbacks = self.signal_callbacks.get(command)
         log("process_packet callbacks(%s)=%s", command, callbacks)
         if callbacks:

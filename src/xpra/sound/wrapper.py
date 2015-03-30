@@ -9,6 +9,7 @@ import time
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, gobject
 from xpra.platform.paths import get_sound_executable
 from xpra.util import AdHocStruct
+from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -157,9 +158,9 @@ class sound_subprocess_wrapper(subprocess_caller):
         #on win32, the environment can end up containing unicode, and subprocess chokes on it
         for k,v in env.items():
             try:
-                env[k] = v.encode("utf8")
+                env[k] = bytestostr(v.encode("utf8"))
             except:
-                env[k] = str(v)
+                env[k] = bytestostr(v)
         return kwargs
 
 
