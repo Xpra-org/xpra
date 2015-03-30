@@ -14,7 +14,7 @@ log = Logger("keyboard")
 KEY_TRANSLATIONS = {}
 
 
-def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"]):
+def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
         by adding the keyval_name.
