@@ -86,8 +86,8 @@ CODEC_OPTIONS = [
             ]
 CODECS = {}
 
-#CODEC_ORDER = [MP3, WAVPACK, WAV, FLAC, SPEEX]
-CODEC_ORDER = [MP3, FLAC, SPEEX]
+CODEC_ORDER = [MP3, WAVPACK, WAV, FLAC, SPEEX]
+#CODEC_ORDER = [MP3, FLAC, SPEEX]
 
 
 #code to temporarily redirect stderr and restore it afterwards, adapted from:

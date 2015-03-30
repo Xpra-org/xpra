@@ -1591,7 +1591,7 @@ class UIXpraClient(XpraClientBase):
         matching_codecs = [x for x in self.server_sound_encoders if x in self.speaker_codecs]
         ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
         if len(ordered_codecs)==0:
-            log.error("no matching codecs between server (%s) and client (%s)", self.server_sound_encoders, self.speaker_codecs)
+            log.error("no matching codecs between server (%s) and client (%s)", ",".join(self.server_sound_encoders), ",".join(self.speaker_codecs))
             return
         codec = ordered_codecs[0]
         self.speaker_enabled = True
