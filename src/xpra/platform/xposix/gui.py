@@ -58,7 +58,7 @@ def _get_X11_root_property(name, req_type):
         except PropertyError as e:
             log("_get_X11_root_property(%s, %s): %s", name, req_type, e)
     except Exception as e:
-        log.warn("failed to get workarea: %s", e)
+        log.warn("failed to get X11 root property %s: %s", name, e)
     return None
 
 
