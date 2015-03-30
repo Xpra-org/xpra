@@ -1,11 +1,14 @@
 xpra (0.15.0-1) UNRELEASED; urgency=low
-  * dropped support for Python 2.5 and older, allowing many code cleanups and improvements
+  * dropped support for Python 2.5 and older,
+    allowing many code cleanups and improvements
   * include manual in html format with MS Windows and OSX builds
   * fixed workarea coordinates detection for MS Windows clients
-  * add scaling command line and config file switch for controlling automatic scaling aggressiveness
+  * add scaling command line and config file switch for controlling
+    automatic scaling aggressiveness
   * add html command line switch for easily setting up an html5 xpra server
-  * add more control over sound command line options, so sound can start disabled and still be turned on manually later
-  * add command line option for selecting the sound source (pulseaudio, alsa, etc)
+  * add more control over sound command line options,
+    so sound can start disabled and still be turned on manually later
+  * add command line option for selecting the sound source
   * better window icon forwarding, especially for non X11 clients
   * optimized OpenGL rendering for X11 clients
   * handle screen update storms better
