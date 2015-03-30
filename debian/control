@@ -108,6 +108,11 @@ Suggests: openssh-server
 		,python-netifaces
 # only useful when connecting using a JSON / YAML only client:
 		,python-yaml
+#nvenc support requires pycuda (and its huge list of dependencies!)
+#utopic:	,python-pycuda
+#vivid:		,python-pycuda
+#jessie:	,python-pycuda
+#sid:		,python-pycuda
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
