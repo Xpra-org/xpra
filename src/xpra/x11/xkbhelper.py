@@ -347,12 +347,15 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
     def assign(client_keycode, entries):
         if len(entries)==0:
             return 0
-        if len(preserve_keycode_entries)==0:
-            return do_assign(client_keycode, client_keycode, entries)
         #all the keysyms for this keycode:
         keysyms = set([keysym for keysym, _ in entries])
         if len(keysyms)==0:
             return 0
+        if len(keysyms)==1 and list(keysyms)[0]=='0xffffff':
+            log("skipped invalid keysym: %s / %s", client_keycode, entries)
+            return 0
+        if len(preserve_keycode_entries)==0:
+            return do_assign(client_keycode, client_keycode, entries)
         if len(keysyms)==1:
             #only one keysym, replace with single entry
             entries = set([(list(keysyms)[0], 0)])
