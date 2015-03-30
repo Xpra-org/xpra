@@ -1758,7 +1758,7 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 toggle_packages(nvenc3_ENABLED, "xpra.codecs.nvenc3")
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
 toggle_packages(nvenc5_ENABLED, "xpra.codecs.nvenc5")
-toggle_packages(nvenc3_ENABLED or nvenc4_ENABLED, "xpra.codecs.cuda_common")
+toggle_packages(nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED, "xpra.codecs.cuda_common")
 if nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED:
     #find nvcc:
     nvcc = None
@@ -1817,7 +1817,7 @@ if nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED:
                    ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
     for nvenc_version, _nvenc_version_enabled in {3 : nvenc3_ENABLED,
                                                   4 : nvenc4_ENABLED,
-                                                  5 : nvenc4_ENABLED}.items():
+                                                  5 : nvenc5_ENABLED}.items():
         if not _nvenc_version_enabled:
             continue
         nvencmodule = "nvenc%s" % nvenc_version
