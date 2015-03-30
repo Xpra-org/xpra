@@ -37,6 +37,18 @@ def get_fcolor(encoding):
         c = color_parse(color_name)
     except:
         c = color_parse("black")
+    #try and hope this works:
+    try:
+        return c.red/65536.0, c.green/65536.0, c.blue/65536.0, 0.3
+    except:
+        pass
+    try:
+        #it seems that in some GDK versions, we get a return value
+        #made of (boolean, GDK.Color), we only want the color..
+        c = c[1]
+    except:
+        log.warn("failed to parse color %s", color_name)
+        return 0, 0, 0
     return c.red/65536.0, c.green/65536.0, c.blue/65536.0, 0.3
 _DEFAULT_BOX_COLOR = get_fcolor("black")
 BOX_COLORS = {}
