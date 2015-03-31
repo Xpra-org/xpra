@@ -39,7 +39,7 @@
   <autotools id="nasm" autogenargs="" autogen-sh="configure">
     <branch module="/pub/nasm/releasebuilds/2.11.08/nasm-2.11.08.tar.bz2"
 			version="2.11.08"
-                        hash="md5:76ee9da3d286430d9aa65076612442dd"
+                        hash="md5:7aae5cb8e03fac48029c82a7470ab066"
             repo="www.nasm.us">
     <patch file="nasm-makefile-destdir.patch" strip="0" />
     </branch>
