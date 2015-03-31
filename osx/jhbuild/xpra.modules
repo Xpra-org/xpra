@@ -37,9 +37,9 @@
   </autotools>
 
   <autotools id="nasm" autogenargs="" autogen-sh="configure">
-    <branch module="/pub/nasm/releasebuilds/2.11.05/nasm-2.11.05.tar.bz2"
-			version="2.11.04"
-                        hash="md5:f6b1db2858cad82bbb0c8c6f3e2b0fb2"
+    <branch module="/pub/nasm/releasebuilds/2.11.08/nasm-2.11.08.tar.bz2"
+			version="2.11.08"
+                        hash="md5:76ee9da3d286430d9aa65076612442dd"
             repo="www.nasm.us">
     <patch file="nasm-makefile-destdir.patch" strip="0" />
     </branch>
