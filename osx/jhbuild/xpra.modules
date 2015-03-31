@@ -351,8 +351,9 @@
 
   <distutils id="python-altgraph">
      <branch repo="pypi.python.org"
-	     module="/packages/source/a/altgraph/altgraph-0.11.tar.gz"
-	     version="0.11"/>
+             module="/packages/source/a/altgraph/altgraph-0.12.tar.gz"
+             hash="md5:916dca277fb2b747d5b1ec05b54a0825"
+	     version="0.12"/>
   </distutils>
 
   <distutils id="python-pyopengl">
