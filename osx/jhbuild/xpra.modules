@@ -109,9 +109,9 @@
   </autotools>
 
   <autotools id="flac" autogenargs="--disable-asm-optimizations" autogen-sh="configure">
-    <branch module="/releases/flac/flac-1.3.0.tar.xz"
-			version="1.3.0"
-                        hash="md5:13b5c214cee8373464d3d65dee362cdd"
+    <branch module="/releases/flac/flac-1.3.1.tar.xz"
+			version="1.3.1"
+                        hash="md5:b9922c9a0378c88d3e901b234f852698"
             repo="downloads.xiph.org"/>
   </autotools>
 
