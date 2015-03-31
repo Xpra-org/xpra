@@ -297,8 +297,9 @@
 
   <distutils id="python-py2app">
      <branch repo="pypi.python.org"
-	     module="/packages/source/p/py2app/py2app-0.8.1.tar.gz"
-	     version="0.8.1"/>
+	     module="/packages/source/p/py2app/py2app-0.9.tar.gz"
+             hash="md5:eb31f5fefcf80aeaf4d02ec68d5978b4"
+	     version="0.9"/>
   </distutils>
 
   <distutils id="python-cython">
