@@ -440,9 +440,9 @@
   </autotools>
 
   <autotools id="sqlite" autogenargs="" autogen-sh="configure">
-    <branch module="/2014/sqlite-autoconf-3080500.tar.gz"
-                        hash="md5:0544ef6d7afd8ca797935ccc2685a9ed"
-			version="3080500"
+    <branch module="/2014/sqlite-autoconf-3080803.tar.gz"
+                        hash="md5:51272e875879ee893e51070b07c33888"
+			version="3080803"
             repo="sqlite.org"/>
   </autotools>
 
