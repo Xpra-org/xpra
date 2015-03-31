@@ -344,8 +344,9 @@
 
   <distutils id="python-modulegraph">
      <branch repo="pypi.python.org"
-	     module="/packages/source/m/modulegraph/modulegraph-0.11.tar.gz"
-	     version="0.11"/>
+	     module="/packages/source/m/modulegraph/modulegraph-0.12.tar.gz"
+             hash="md5:188bfb66058f7f446f04145d0ac63359"
+	     version="0.12"/>
   </distutils>
 
   <distutils id="python-altgraph">
