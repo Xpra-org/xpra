@@ -337,8 +337,9 @@
 
   <distutils id="python-macholib">
      <branch repo="pypi.python.org"
-	     module="/packages/source/m/macholib/macholib-1.6.tar.gz"
-	     version="1.6"/>
+	     module="/packages/source/m/macholib/macholib-1.7.tar.gz"
+             hash="md5:cf03a55323d5b7ca59be530ba0b01032"
+	     version="1.7"/>
   </distutils>
 
   <distutils id="python-modulegraph">
