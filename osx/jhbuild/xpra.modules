@@ -372,23 +372,23 @@
 
   <distutils id="python-pyobjc-core">
      <branch repo="pypi.python.org"
-	     module="/packages/source/p/pyobjc-core/pyobjc-core-3.0.3.tar.gz"
-             hash="md5:18c65d71382caee9a0c88cd0864ef7aa"
-	     version="3.0.3"/>
+	     module="/packages/source/p/pyobjc-core/pyobjc-core-3.0.4.tar.gz"
+             hash="md5:6baaa0d2533cc9c26ad9f889ca9ecb01"
+	     version="3.0.4"/>
   </distutils>
 
   <distutils id="python-pyobjc-framework-cocoa">
      <branch repo="pypi.python.org"
-	     module="/packages/source/p/pyobjc-framework-Cocoa/pyobjc-framework-Cocoa-3.0.3.tar.gz"
-             hash="md5:9482991921aad5c04399b4b00727eece"
-	     version="3.0.3"/>
+	     module="/packages/source/p/pyobjc-framework-Cocoa/pyobjc-framework-Cocoa-3.0.4.tar.gz"
+             hash="md5:5df56f66608812d6db42aa6e554f1529"
+	     version="3.0.4"/>
   </distutils>
 
   <distutils id="python-pyobjc-framework-quartz">
      <branch repo="pypi.python.org"
-	     module="/packages/source/p/pyobjc-framework-Quartz/pyobjc-framework-Quartz-3.0.3.tar.gz"
-             hash="md5:75ff54e1d8920a32d5a1750b3a757f00"
-	     version="3.0.3"/>
+	     module="/packages/source/p/pyobjc-framework-Quartz/pyobjc-framework-Quartz-3.0.4.tar.gz"
+             hash="md5:85d82afedef8ecf7e20344890a543312"
+	     version="3.0.4"/>
   </distutils>
 
   <distutils id="python-rencode">
