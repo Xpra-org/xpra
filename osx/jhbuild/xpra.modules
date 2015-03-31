@@ -266,8 +266,8 @@
 
   <distutils id="python-netifaces">
      <branch repo="pypi.python.org"
-	     module="/packages/source/n/netifaces/netifaces-0.8.tar.gz"
-	     version="0.8"/>
+	     module="/packages/source/n/netifaces/netifaces-0.10.4.tar.gz"
+	     version="0.10.4"/>
   </distutils>
 
   <distutils id="python-pam">
@@ -290,9 +290,9 @@
 
   <distutils id="python-pillow">
      <branch repo="pypi.python.org"
-	     module="/packages/source/P/Pillow/Pillow-2.5.3.zip"
-             hash="md5:9879437c28ee0ad6ea04b93d0be2c2d7"
-	     version="2.5.3"/>
+	     module="/packages/source/P/Pillow/Pillow-2.7.0.zip"
+             hash="md5:da10ee9d0c0712c942224300c2931a1a"
+	     version="2.7.0"/>
   </distutils>
 
   <distutils id="python-py2app">
@@ -303,14 +303,16 @@
 
   <distutils id="python-cython">
      <branch repo="pypi.python.org"
-	     module="/packages/source/C/Cython/Cython-0.21.tar.gz"
-	     version="0.21"/>
+	     module="/packages/source/C/Cython/Cython-0.22.tar.gz"
+             hash="md5:1ae25add4ef7b63ee9b4af697300d6b6"
+	     version="0.22"/>
   </distutils>
 
   <distutils id="python-numpy">
      <branch repo="pypi.python.org"
-	     module="/packages/source/n/numpy/numpy-1.8.1.tar.gz"
-	     version="1.8.1"/>
+	     module="/packages/source/n/numpy/numpy-1.9.2.tar.gz"
+             hash="md5:a1ed53432dbcd256398898d35bc8e645"
+	     version="1.9.2"/>
   </distutils>
 
   <distutils id="python-twisted">
@@ -388,6 +390,13 @@
 	     module="/src/rencode-1.0.3.tar.xz"
              hash="md5:b4c37bdd81e814587196afac06c71142"
 	     version="1.0.3"/>
+  </distutils>
+
+  <distutils id="python-pycups">
+     <branch repo="pypi.python.org"
+	     module="/packages/source/p/pycups/pycups-1.9.72.tar.bz2"
+             hash="md5:c790bfbf4a3e9da2412c12c860fe191f"
+	     version="1.9.72"/>
   </distutils>
 
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
