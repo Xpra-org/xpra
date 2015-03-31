@@ -143,9 +143,9 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-pic --enable-shared --enable-static --host=i386-apple-darwin"
              autogen-sh="configure">
-    <branch module="/pub/x264/snapshots/x264-snapshot-20141215-2245-stable.tar.bz2"
-			version="20141215-2245-stable"
-                        hash="md5:63055571f311ffba0b5a7b567b0e77d1"
+    <branch module="/pub/x264/snapshots/x264-snapshot-20141218-2245-stable.tar.bz2"
+			version="20141218-2245-stable"
+                        hash="md5:f82e4f39453ba8f25a9b614a96741ee3"
             repo="download.videolan.org"/>
   </autotools>
 
