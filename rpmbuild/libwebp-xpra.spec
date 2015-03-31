@@ -66,7 +66,7 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Tue Mar 31 2014 Antoine Martin <antoine@devloop.org.uk> 0.4.3-1
+* Tue Mar 31 2015 Antoine Martin <antoine@devloop.org.uk> 0.4.3-1
 - new upstream release
 
 * Sat Oct 25 2014 Antoine Martin <antoine@devloop.org.uk> 0.4.2-1
