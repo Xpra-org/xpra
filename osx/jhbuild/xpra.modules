@@ -304,7 +304,7 @@
 
   <distutils id="python-cython">
      <branch repo="pypi.python.org"
-	     module="/packages/source/C/Cython/Cython-0.22.tar.gz"
+	     module="/packages/source/C/Cython/cython-0.22.tar.gz"
              hash="md5:1ae25add4ef7b63ee9b4af697300d6b6"
 	     version="0.22"/>
   </distutils>
