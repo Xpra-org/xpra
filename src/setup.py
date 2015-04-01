@@ -1313,7 +1313,15 @@ if WIN32:
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             GSVIEW = "C:\\Program Files\\Ghostgum\\gsview"
-            GHOSTSCRIPT = "C:\\Program Files\\gs\\gs9.15\\bin"
+            GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files\\gs"
+            GHOSTSCRIPT = None
+            for x in reversed(sorted(os.listdir(GHOSTSCRIPT_PARENT_DIR))):
+                f = os.path.join(GHOSTSCRIPT_PARENT_DIR, x)
+                if os.path.isdir(f):
+                    GHOSTSCRIPT = os.path.join(f, "bin")
+                    print("found ghoscript: %s" % GHOSTSCRIPT)
+                    break
+            assert GHOSTSCRIPT is not None, "cannot find ghostscript installation directory in %s" % GHOSTSCRIPT_PARENT_DIR
             add_data_files('gsview', glob.glob(GSVIEW+'\\*.*'))
             add_data_files('gsview', glob.glob(GHOSTSCRIPT+'\\*.*'))
 
