@@ -22,6 +22,8 @@
 #OpenGL bits:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext, numpy
 %define py3requires_opengl , python3-PyOpenGL, python3-PyOpenGL-accelerate, numpy
+%define requires_printing , python-cups
+%define py3requires_printing %{nil}
 #Anything extra (distro specific):
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils
 %define py3requires_sound , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils
@@ -52,6 +54,8 @@
 #distro version is too old replace with our private libraries
 %define libvpx libvpx-xpra
 %define libwebp libwebp-xpra
+#no pycups available in repos:
+%define requires_printing %{nil}
 #only v6.4 onwards have Xdummy support:
 %if %(egrep -q 'release 6.0|release 6.1|release 6.2|release 6.3' /etc/redhat-release && echo 1 || echo 0)
 %define dummy --without-Xdummy
@@ -60,6 +64,11 @@
 %if %(egrep -q 'release 6.0|release 6.1|release 6.2|release 6.3|release 6.4' /etc/redhat-release && echo 1 || echo 0)
 %define requires_opengl %{nil}
 %endif
+%endif
+
+#the only distro to provide py3k cups bindings:
+%if 0%{?fedora} >= 21
+%define py3requires_printing , python3-cups
 %endif
 
 
@@ -77,7 +86,7 @@ Vendor: http://xpra.org/
 Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
-Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify}
+Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing}
 Requires: python-lz4
 Requires: pygtk2
 Requires: dbus-python
@@ -143,7 +152,7 @@ This package contains the files which are common to both the Python 2 and Python
 %package -n python3-xpra
 Summary: Xpra gives you "persistent remote applications" for X.
 Group: Networking
-Requires: python %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo}
+Requires: python %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo} %{py3requires_printing}
 Requires: python3-lz4
 Requires: python3-gobject
 Requires: python3-pillow
