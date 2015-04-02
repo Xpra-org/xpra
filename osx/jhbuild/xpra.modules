@@ -311,9 +311,8 @@
 
   <distutils id="python-numpy">
      <branch repo="pypi.python.org"
-	     module="/packages/source/n/numpy/numpy-1.9.2.tar.gz"
-             hash="md5:a1ed53432dbcd256398898d35bc8e645"
-	     version="1.9.2"/>
+	     module="/packages/source/n/numpy/numpy-1.8.1.tar.gz"
+	     version="1.8.1"/>
   </distutils>
 
   <distutils id="python-twisted">
