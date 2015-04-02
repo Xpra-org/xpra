@@ -237,6 +237,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/man/man1/xpra*
 %{_datadir}/applications/xpra_launcher.desktop
 %{_datadir}/applications/xpra.desktop
+%{_datadir}/appdata/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 /usr/lib/cups/backend/xpraforwarder
 %dir %{_sysconfdir}/xpra
