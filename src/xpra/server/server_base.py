@@ -197,14 +197,19 @@ class ServerBase(ServerCore):
         self.lpadmin = opts.lpadmin
         #server-side printer handling is only for posix via pycups for now:
         if os.name=="posix" and opts.printing:
-            if opts.auth and opts.auth!="none":
-                log.warn("printing conflict with authentication module '%s'", opts.auth)
             try:
                 from xpra.platform import pycups_printing
                 pycups_printing.set_lpadmin_command(self.lpadmin)
-                self.printing = True
-            except Exception as e:
-                printlog.warn("cannot set lpadmin command: %s", e)
+                self.printing = pycups_printing.validate_setup()
+            except ImportError as e:
+                printlog("printing module is not installed: %s", e)
+                self.printing = False
+            except Exception:
+                printlog.warn("cannot set lpadmin command", exc_info=True)
+                self.printing = False
+            if self.printing and opts.auth and opts.auth!="none":
+                log.warn("printing conflicts with authentication module '%s'", opts.auth)
+                self.printing = False
         self.notifications_forwarder = None
         self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("scaling", opts.scaling)

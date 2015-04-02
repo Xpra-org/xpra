@@ -44,6 +44,13 @@ def set_lpadmin_command(lpadmin):
     global LPADMIN
     LPADMIN = lpadmin
 
+def validate_setup():
+    #very simple check
+    if PPD_FILE and (not os.path.exists(PPD_FILE) or not os.path.isfile(PPD_FILE)):
+        log.warn("Printer forwarding cannot be enabled, the PPD file '%s' is missing", PPD_FILE)
+        return False
+    return True
+
 
 def exec_lpadmin(args):
     command = shlex.split(LPADMIN)+args
