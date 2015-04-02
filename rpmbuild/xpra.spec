@@ -22,7 +22,7 @@
 #OpenGL bits:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext, numpy
 %define py3requires_opengl , python3-PyOpenGL, python3-PyOpenGL-accelerate, numpy
-%define requires_printing , python-cups
+%define requires_printing , python-cups, cups-pdf
 %define py3requires_printing %{nil}
 #Anything extra (distro specific):
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils
@@ -40,6 +40,8 @@
 #not available:
 %define requires_websockify %{nil}
 %define requires_lzo %{nil}
+#cups-pdf is not in the regular repos, so remove it from dependencies:
+%define requires_printing , python-cups
 #do not disable sound support, but do not declare deps for it either
 #(so it can be installed if desired):
 %define requires_sound %{nil}
