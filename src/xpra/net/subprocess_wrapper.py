@@ -33,6 +33,8 @@ log = Logger("util")
 DEBUG_WRAPPER = os.environ.get("XPRA_WRAPPER_DEBUG", "0")=="1"
 #to make it possible to inspect files (more human readable):
 HEXLIFY_PACKETS = os.environ.get("XPRA_HEXLIFY_PACKETS", "0")=="1"
+#avoids showing a new console window on win32:
+WIN32_SHOWWINDOW = os.environ.get("XPRA_WIN32_SHOWWINDOW", "0")=="1"
 
 
 class subprocess_callee(object):
@@ -239,6 +241,11 @@ class subprocess_caller(object):
     def exec_kwargs(self):
         if os.name=="posix":
             return {"close_fds" : True}
+        elif sys.platform.startswith("win"):
+            if not WIN32_SHOWWINDOW:
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                return {"startupinfo" : startupinfo}
         return {}
 
 
