@@ -6,7 +6,6 @@
 import os
 import sys
 import signal
-import time
 import subprocess
 import binascii
 
@@ -37,6 +36,17 @@ HEXLIFY_PACKETS = os.environ.get("XPRA_HEXLIFY_PACKETS", "0")=="1"
 WIN32_SHOWWINDOW = os.environ.get("XPRA_WIN32_SHOWWINDOW", "0")=="1"
 
 
+#this allows us to use the gtk main loop instead:
+#import gtk
+#gtk.threads_init()
+#class mainloop(object):
+#    def run(self):
+#        gtk.main()
+#    def quit(self):
+#        gtk.main_quit()
+mainloop = gobject.mainloop
+
+
 class subprocess_callee(object):
     """
     This is the callee side, wrapping the gobject we want to interact with.
@@ -47,7 +57,7 @@ class subprocess_callee(object):
     (there is no validation of which signals are valid or not)
     """
     def __init__(self, input_filename="-", output_filename="-", wrapped_object=None, method_whitelist=None):
-        self.mainloop = gobject.MainLoop()
+        self.mainloop = mainloop()
         self.name = ""
         self.input_filename = input_filename
         self.output_filename = output_filename
@@ -118,7 +128,7 @@ class subprocess_callee(object):
         else:
             self._output = open(self.output_filename, 'wb')
         #stdin and stdout wrapper:
-        conn = TwoFileConnection(self._output, self._input, abort_test=None, target=self.name, info=self.name, close_cb=self.stop)
+        conn = TwoFileConnection(self._output, self._input, abort_test=None, target=self.name, info=self.name, close_cb=self.net_stop)
         conn.timeout = 0
         protocol = Protocol(gobject, conn, self.process_packet, get_packet_cb=self.get_packet)
         try:
@@ -133,20 +143,35 @@ class subprocess_callee(object):
         self.mainloop.run()
 
 
-    def stop(self):
-        if self.protocol:
-            self.protocol.close()
-            self.protocol = None
-        self.mainloop.quit()
+    def net_stop(self):
+        #this is called from the network thread,
+        #we use idle add to ensure we clean things up from the main thread
+        log("net_stop() will call stop from main thread")
+        gobject.idle_add(self.stop)
 
+    def stop(self):
+        p = self.protocol
+        log("stop() protocol=%s", p)
+        if p:
+            self.protocol = None
+            p.close()
+        self.mainloop.quit()
 
     def handle_signal(self, sig, frame):
         """ This is for OS signals SIGINT and SIGTERM """
+        #next time, just stop:
+        signal.signal(signal.SIGINT, self.signal_stop)
+        signal.signal(signal.SIGTERM, self.signal_stop)        
         signame = SIGNAMES.get(sig, sig)
-        log("handle_signal(%s, %s) calling stop", signame, frame)
+        log("handle_signal(%s, %s) calling stop from main thread", signame, frame)
         self.send("signal", signame)
         #give time for the network layer to send the signal message
-        time.sleep(0.1)
+        gobject.timeout_add(150, self.stop)
+
+    def signal_stop(self, sig, frame):
+        """ This time we really want to exit without waiting """
+        signame = SIGNAMES.get(sig, sig)
+        log("signal_stop(%s, %s) calling stop", signame, frame)
         self.stop()
 
 
