@@ -44,7 +44,7 @@ WIN32_SHOWWINDOW = os.environ.get("XPRA_WIN32_SHOWWINDOW", "0")=="1"
 #        gtk.main()
 #    def quit(self):
 #        gtk.main_quit()
-mainloop = gobject.mainloop
+mainloop = gobject.MainLoop
 
 
 class subprocess_callee(object):
@@ -288,9 +288,9 @@ class subprocess_caller(object):
                 log.warn("failed to stop the wrapped subprocess %s: %s", proc, e)
         p = self.protocol
         if p:
+            self.protocol = None
             try:
                 p.close()
-                self.protocol = None
             except Exception as e:
                 log.warn("failed to close the subprocess connection: %s", p, e)
 
