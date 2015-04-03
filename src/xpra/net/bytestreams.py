@@ -175,8 +175,10 @@ class TwoFileConnection(Connection):
             self._writeable.close()
         except:
             pass
-        if self._close_cb:
-            self._close_cb()
+        cc = self._close_cb
+        if cc:
+            self._close_cb = None
+            cc()
 
     def __repr__(self):
         return "TwoFileConnection(%s)" % str(self.target)
