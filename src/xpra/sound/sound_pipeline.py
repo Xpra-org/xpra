@@ -105,7 +105,9 @@ class SoundPipeline(gobject.GObject):
         log("SoundPipeline.start() done")
 
     def stop(self):
-        if not self.pipeline:
+        p = self.pipeline
+        self.pipeline = None
+        if not p:
             return
         log("SoundPipeline.stop()")
         #uncomment this to see why we end up calling stop()
@@ -116,7 +118,7 @@ class SoundPipeline(gobject.GObject):
         #        if v:
         #            log(v)
         self.state = "stopped"
-        self.pipeline.set_state(gst.STATE_NULL)
+        p.set_state(gst.STATE_NULL)
         self.volume = None
         log("SoundPipeline.stop() done")
 

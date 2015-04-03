@@ -60,7 +60,7 @@ class sound_subprocess(subprocess_callee):
     def stop(self):
         wo = self.wrapped_object
         if wo:
-            wo.stop()
+            wo.cleanup()
             self.wrapped_object = None
         subprocess_callee.stop(self)
 
