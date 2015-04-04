@@ -27,7 +27,7 @@ This package contains the development files for %{name}.
 
 
 %prep
-%setup -q -n libvpx-v%{version}
+%setup -q -n libvpx-%{version}
 
 
 %build
