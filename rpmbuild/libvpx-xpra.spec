@@ -1,12 +1,12 @@
 Name:	     libvpx-xpra	
-Version:     1.3.0
+Version:     1.4.0
 Release:     1%{?dist}
 Summary:     vpx library for xpra
 
 Group:       Applications/Multimedia
 License:     BSD
 URL:	     http://www.webmproject.org/code/
-Source0:     https://webm.googlecode.com/files/libvpx-v%{version}.tar.bz2
+Source0:     http://downloads.webmproject.org/releases/webm/libvpx-v%{version}.tar.bz2
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
@@ -73,5 +73,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Apr 04 2015 Antoine Martin <antoine@devloop.org.uk> 1.4.0-1
+- new upstream release
+
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>
 - initial package
