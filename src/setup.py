@@ -946,7 +946,7 @@ if WIN32:
     #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
     #but we use something more generic, without the version numbers:
     vpx_path = ""
-    for p in ("C:\\vpx-1.3", "C:\\vpx-1.2", "C:\\vpx-1.1", "C:\\vpx-vp8"):
+    for p in ("C:\\vpx-1.4", "C:\\vpx-1.3"):
         if os.path.exists(p) and os.path.isdir(p):
             vpx_path = p
             break
