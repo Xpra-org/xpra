@@ -133,7 +133,9 @@ def get_input_colorspaces(encoding):
 
 def get_output_colorspace(encoding, csc):
     #same as input
-    assert encoding in CODECS and csc in COLORSPACES
+    assert encoding in CODECS
+    colorspaces = COLORSPACES.get(encoding)
+    assert csc in colorspaces, "invalid colorspace '%s' for encoding '%s' (must be one of %s)" % (csc, encoding, colorspaces)
     return csc
 
 

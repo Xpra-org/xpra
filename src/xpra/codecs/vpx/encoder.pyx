@@ -295,6 +295,7 @@ cdef class Encoder:
         assert encoding in get_encodings()
         assert src_format in get_input_colorspaces(encoding)
         self.src_format = src_format
+        #log("vpx_encoder.init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
 
         cdef const vpx_codec_iface_t *codec_iface = make_codec_cx(encoding)
         self.encoding = encoding
@@ -323,7 +324,7 @@ cdef class Encoder:
 
         self.update_cfg()
         self.cfg.g_usage = USAGE_STREAM_FROM_SERVER
-        self.cfg.g_profile = 0                      #use 1 for YUV444P and RGB support
+        self.cfg.g_profile = int(bool(self.src_format==b"YUV444P"))           #use 1 for YUV444P and RGB support
         self.cfg.g_w = width
         self.cfg.g_h = height
         cdef vpx_rational_t timebase
