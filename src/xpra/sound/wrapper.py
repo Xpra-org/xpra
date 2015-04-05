@@ -138,8 +138,9 @@ class sound_subprocess_wrapper(subprocess_caller):
         * handle "info" packets so we have a cached copy
         * forward get/set volume calls (get_volume uses the value found in "info")
     """
-    def __init__(self):
+    def __init__(self, name):
         subprocess_caller.__init__(self, description="sound")
+        self.name = name
         self.state = "stopped"
         self.codec = "unknown"
         self.codec_description = ""
@@ -153,6 +154,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         kwargs = subprocess_caller.exec_kwargs(self)
         env = os.environ.copy()
         env["XPRA_SKIP_UI"] = "1"
+        env["XPRA_LOG_PREFIX"] = "%s " % self.name
         kwargs["env"] = env
         #let's make things more complicated than they should be:
         #on win32, the environment can end up containing unicode, and subprocess chokes on it
@@ -199,7 +201,7 @@ class sound_subprocess_wrapper(subprocess_caller):
 class source_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, options, codecs, volume, element_options):
-        sound_subprocess_wrapper.__init__(self)
+        sound_subprocess_wrapper.__init__(self, "sound-source")
         self.command = [get_sound_executable(), "_sound_record", "-", "-", plugin or "", "", ",".join(codecs), "", str(volume)]
         self._add_debug_args()
 
@@ -215,7 +217,7 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
 class sink_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, options, codec, volume, element_options):
-        sound_subprocess_wrapper.__init__(self)
+        sound_subprocess_wrapper.__init__(self, "sound-sink")
         self.codec = codec
         self.command = [get_sound_executable(), "_sound_play", "-", "-", plugin or "", "", codec, "", str(volume)]
         self._add_debug_args()

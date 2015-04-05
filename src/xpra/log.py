@@ -13,6 +13,8 @@ import weakref
 logging.basicConfig(format="%(asctime)s %(message)s")
 logging.root.setLevel(logging.INFO)
 
+LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", "")
+
 #so we can keep a reference to all the loggers in use
 #we may have multiple loggers for the same key, so use a dict
 #but we don't want to prevent garbage collection so use a list of weakrefs
@@ -182,6 +184,8 @@ class Logger(object):
         if kwargs.get("exc_info") is True:
             kwargs["exc_info"] = sys.exc_info()
         global global_logging_handler
+        if LOG_PREFIX:
+            msg = LOG_PREFIX+msg
         global_logging_handler(self.logger.log, level, msg, *args, **kwargs)
 
     def __call__(self, msg, *args, **kwargs):
