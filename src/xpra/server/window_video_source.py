@@ -748,29 +748,34 @@ class WindowVideoSource(WindowSource):
         """
         if not force_refresh and (time.time()-self.last_pipeline_time<1) and self.last_pipeline_params and self.last_pipeline_params==(encoding, width, height, src_format):
             #keep existing scores
-            scorelog("get_video_pipeline_options%s using cached values from %sms ago", (encoding, width, height, src_format, force_refresh), 1000.0*(time.time()-self.last_pipeline_time))
+            scorelog("get_video_pipeline_options%s using cached values from %ims ago", (encoding, width, height, src_format, force_refresh), 1000.0*(time.time()-self.last_pipeline_time))
             return self.last_pipeline_scores
 
         #these are the CSC modes the client can handle for this encoding:
         #we must check that the output csc mode for each encoder is one of those
         supported_csc_modes = self.full_csc_modes.get(encoding, self.csc_modes)
         if not supported_csc_modes:
+            scorelog("get_video_pipeline_options: no supported csc modes for %s / %s", encoding, self.csc_modes)
             return []
         encoder_specs = self.video_helper.get_encoder_specs(encoding)
         if not encoder_specs:
+            scorelog("get_video_pipeline_options: no encoder specs for %s", encoding)
             return []
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), self._current_speed, self._fixed_min_speed, int(self._current_quality), self._fixed_min_quality)
         scores = []
         def add_scores(info, csc_spec, enc_in_format):
+            scorelog("add_scores(%s, %s, %s)", info, csc_spec, enc_in_format)
             #find encoders that take 'enc_in_format' as input:
             colorspace_specs = encoder_specs.get(enc_in_format)
             if not colorspace_specs:
+                scorelog("add_scores: no matching colorspace specs for %s", enc_in_format)
                 return
             #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
             for encoder_spec in colorspace_specs:
                 #ensure that the output of the encoder can be processed by the client:
                 matches = set(encoder_spec.output_colorspaces) & set(supported_csc_modes)
                 if not matches:
+                    scorelog("add_scores: no matches for %s (%s and %s)", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes)
                     continue
                 scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
                 score_data = self.get_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling)
