@@ -13,7 +13,7 @@ log = Logger("encoder", "vpx")
 VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
 
 DEF ENABLE_VP8 = True
-DEF ENABLE_VP9 = False
+DEF ENABLE_VP9 = True
 
 
 from libc.stdint cimport int64_t
@@ -277,6 +277,7 @@ cdef class Encoder:
             raise Exception("failed to allocate memory for vpx encoder config")
         if vpx_codec_enc_config_default(codec_iface, self.cfg, 0)!=0:
             free(self.cfg)
+            self.cfg = NULL
             raise Exception("failed to create vpx encoder config")
         log("%s codec defaults:", self.encoding)
         self.log_cfg()
