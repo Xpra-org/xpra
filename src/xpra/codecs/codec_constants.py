@@ -13,6 +13,10 @@ def do_get_PIL_codings(PIL, attr="SAVE"):
     if PIL is None:
         return []
     pi = PIL.Image
+    import os
+    if os.environ.get("PIL_DEBUG", "0")=="1":
+        log.info("enabling PIL.DEBUG")
+        pi.DEBUG = 1
     pi.init()
     avalue = getattr(pi, attr)
     log("PIL.Image.%s=%s", attr, avalue)
