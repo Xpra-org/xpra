@@ -13,7 +13,7 @@ log = Logger("encoder", "vpx")
 VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
 
 DEF ENABLE_VP8 = True
-DEF ENABLE_VP9 = False
+DEF ENABLE_VP9 = True
 
 
 from libc.stdint cimport int64_t
@@ -326,7 +326,7 @@ cdef class Encoder:
 
     cdef update_cfg(self):
         self.cfg.rc_undershoot_pct = 100
-        self.cfg.rc_overshoot_pct = 200
+        self.cfg.rc_overshoot_pct = 100
         self.cfg.rc_target_bitrate = int(self.width * self.height * self.initial_bitrate_per_pixel)
         self.cfg.g_threads = self.max_threads
         self.cfg.rc_max_quantizer = int(max(0, min(63, self.quality * 0.63)))
