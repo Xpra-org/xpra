@@ -13,7 +13,7 @@ log = Logger("encoder", "vpx")
 VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
 
 DEF ENABLE_VP8 = True
-DEF ENABLE_VP9 = True
+DEF ENABLE_VP9 = False
 
 
 from libc.stdint cimport int64_t
