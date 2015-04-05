@@ -228,7 +228,7 @@ def get_output_colorspaces(encoding, input_colorspace):
     csdict = COLORSPACES[input_colorspace]
     assert input_colorspace in csdict, "invalid input colorspace: %s" % input_colorspace
     #always unchanged in output:
-    return input_colorspace
+    return [input_colorspace]
 
 
 def get_info():
@@ -254,7 +254,7 @@ def get_spec(encoding, colorspace):
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
     #quality: we only handle YUV420P but this is already accounted for by the subsampling factor
     #setup cost is reasonable (usually about 5ms)
-    return video_codec_spec(encoding=encoding, output_colorspaces=colorspace,
+    return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace],
                             codec_class=Encoder, codec_type=get_type(), setup_cost=40)
 
 
