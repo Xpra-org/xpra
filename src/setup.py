@@ -245,7 +245,7 @@ if "clean" not in sys.argv:
 
 external_includes = ["Crypto", "Crypto.Cipher",
                      "hashlib",
-                     "PIL", "PIL.Image",
+                     "PIL", "PIL.Image", "PIL.WebPImagePlugin",
                      "ctypes", "platform"]
 if gtk3_ENABLED:
     external_includes += ["gi"]
