@@ -18,10 +18,10 @@ try:
 except:
     try:
         import multiprocessing
-        multiprocessing.cpu_count()
+        cpus = multiprocessing.cpu_count()
     except:
         pass
-VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", cpus)
+VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1))
 
 DEF ENABLE_VP8 = True
 DEF ENABLE_VP9 = True
