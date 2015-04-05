@@ -304,7 +304,7 @@ cdef class Encoder:
         self.context = <vpx_codec_ctx_t *> xmemalign(sizeof(vpx_codec_ctx_t))
         if self.context==NULL:
             free(self.cfg)
-            self.cfg = None
+            self.cfg = NULL
             raise Exception("failed to allocate memory for vpx encoder context")
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
 
@@ -312,7 +312,7 @@ cdef class Encoder:
         self.log_cfg()
         if vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)!=0:
             free(self.context)
-            self.context = None
+            self.context = NULL
             raise Exception("failed to initialized vpx encoder: %s" % vpx_codec_error(self.context))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
 
