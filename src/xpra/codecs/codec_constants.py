@@ -19,9 +19,11 @@ def do_get_PIL_codings(PIL, attr="SAVE"):
     encodings = []
     test_options = ["png", "png/L", "png/P", "jpeg", "webp"]
     if attr=="OPEN":
-        #don't open 'webp' images as this leaks memory in
-        #all versions of PIL and Pillow so far!
-        test_options.remove("webp")
+        try:
+            assert pi.PILLOW_VERSION>='2.8', "version %s leaks memory with webp" % pi.PILLOW_VERSION
+        except Exception as e:
+            log("Pillow support for opening webp images has been disabled: %s", e)
+            test_options.remove("webp")
     for encoding in test_options:
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
