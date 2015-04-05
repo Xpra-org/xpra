@@ -1129,15 +1129,17 @@ def get_COLORSPACES():
         COLORSPACES = {"BGRX" : ("YUV420P",)}
     return COLORSPACES
 
-def get_input_colorspaces():
+def get_input_colorspaces(encoding):
     return get_COLORSPACES().keys()
 
-def get_output_colorspaces(input_colorspace):
-    assert input_colorspace in get_COLORSPACES(), "invalid input colorspace: %s (must be one of: %s)" % (input_colorspace, get_COLORSPACES())
+def get_output_colorspaces(encoding, input_colorspace):
+    assert encoding in get_encodings()
+    out = get_COLORSPACES().get(input_colorspace)
+    assert out, "invalid input colorspace: %s (must be one of: %s)" % (input_colorspace, get_COLORSPACES())
     #the output will actually be in one of those two formats once decoded
     #because internally that's what we convert to before encoding
     #(well, NV12... which is equivallent to YUV420P here...)
-    return get_COLORSPACES()[input_colorspace]
+    return out
 
 
 WIDTH_MASK = 0xFFFE
@@ -2176,9 +2178,6 @@ def init_module():
     #load the library / DLL:
     init_nvencode_library()
 
-    colorspaces = get_input_colorspaces()
-    assert colorspaces, "cannot use NVENC: no colorspaces available"
-
     success = False
     valid_keys = []
     failed_keys = []
@@ -2192,8 +2191,10 @@ def init_module():
 
         test_encoder = Encoder()
         for encoding in get_encodings():
+            colorspaces = get_input_colorspaces(encoding)
+            assert colorspaces, "cannot use NVENC: no colorspaces available"
             src_format = colorspaces[0]
-            dst_formats = get_output_colorspaces(src_format)
+            dst_formats = get_output_colorspaces(encoding, src_format)
             try:
                 try:
                     test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})

@@ -276,13 +276,11 @@ class VideoHelper(object):
             log("exception in %s module %s initialization %s: %s", encoder_type, encoder_module.__name__, encoder_module.init_module, e, exc_info=True)
             log.warn("Warning: %s video encoder failed: %s", encoder_type, e)
             raise e
-        colorspaces = encoder_module.get_input_colorspaces()
-        log("init_video_encoder_option(%s) %s input colorspaces=%s", encoder_module, encoder_type, colorspaces)
         encodings = encoder_module.get_encodings()
         log("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
         for encoding in encodings:
-            #we assume that all encodings support all colorspaces here...
-            #which may not be the case in the future!
+            colorspaces = encoder_module.get_input_colorspaces(encoding)
+            log("init_video_encoder_option(%s) %s input colorspaces(%s)=%s", encoder_module, encoder_type, encoding, colorspaces)
             for colorspace in colorspaces:
                 spec = encoder_module.get_spec(encoding, colorspace)
                 self.add_encoder_spec(encoding, colorspace, spec)

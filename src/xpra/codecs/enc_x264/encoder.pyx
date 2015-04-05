@@ -258,11 +258,12 @@ def get_info():
 def get_encodings():
     return ["h264"]
 
-def get_input_colorspaces():
-    global COLORSPACES
+def get_input_colorspaces(encoding):
+    assert encoding in get_encodings()
     return  COLORSPACES.keys()
 
-def get_output_colorspaces(input_colorspace):
+def get_output_colorspaces(encoding, input_colorspace):
+    assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
     return COLORSPACE_FORMATS[input_colorspace]
 

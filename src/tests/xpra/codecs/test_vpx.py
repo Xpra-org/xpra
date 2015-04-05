@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from tests.xpra.codecs.test_video_codec import do_test_codec_roundtrip
+from xpra.codecs.vpx import encoder as vpx_encoder     #@UnresolvedImport
 from xpra.codecs.vpx.decoder import Decoder     #@UnresolvedImport
 from xpra.codecs.vpx.encoder import Encoder     #@UnresolvedImport
 
@@ -13,7 +14,10 @@ def test_roundtrip():
         print("")
         print("test_roundtrip() %s" % encoding)
         for populate in (True, False):
-            do_test_codec_roundtrip(Encoder, Decoder, encoding, "YUV420P", 640, 480, populate)
+            src_formats = vpx_encoder.get_input_colorspaces(encoding)
+            print("test_roundtrip() src_formats(%s)=%s" % (encoding, src_formats))
+            for src_format in src_formats:
+                do_test_codec_roundtrip(Encoder, Decoder, encoding, src_format, [src_format], 640, 480, populate)
 
 
 def main():

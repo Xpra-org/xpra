@@ -11,7 +11,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from tests.xpra.codecs.test_codec import make_rgb_input, make_planar_input
 
 
-def do_test_codec_roundtrip(encoder_class, decoder_class, encoding, src_format, w, h, populate):
+def do_test_codec_roundtrip(encoder_class, decoder_class, encoding, src_format, dst_formats, w, h, populate):
     if src_format.find("RGB")>=0 or src_format.find("BGR")>=0:
         pixels = make_rgb_input(src_format, w, h, populate=populate)
         isize = len(pixels)
@@ -31,7 +31,8 @@ def do_test_codec_roundtrip(encoder_class, decoder_class, encoding, src_format, 
 
     start = time.time()
     encoder = encoder_class()
-    encoder.init_context(w, h, src_format, encoding, quality, speed, scaling, options)
+    #print("%s%s" % (encoder.init_context, (w, h, src_format, dst_formats, encoding, quality, speed, scaling, options)))
+    encoder.init_context(w, h, src_format, dst_formats, encoding, quality, speed, scaling, options)
     end = time.time()
     print("encoder %s initialized in %.1fms" % (encoder, 1000.0*(end-start)))
 
@@ -43,7 +44,7 @@ def do_test_codec_roundtrip(encoder_class, decoder_class, encoding, src_format, 
 
     print("using %s to compress %s" % (encoder, image))
     start = time.time()
-    data, options = encoder.compress_image(image, {})
+    data, options = encoder.compress_image(image)
     end = time.time()
     assert data is not None, "compression failed"
     print("compressed %s bytes down to %s (%.1f%%) in %.1fms" % (isize, len(data), 100.0*len(data)/isize, 1000.0*(end-start)))

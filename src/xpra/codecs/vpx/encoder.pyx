@@ -10,10 +10,22 @@ from xpra.codecs.codec_constants import video_codec_spec
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
-VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
+
+#sensible default:
+cpus = 2
+try:
+    cpus = os.cpu_count()
+except:
+    try:
+        import multiprocessing
+        multiprocessing.cpu_count()
+    except:
+        pass
+VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", cpus)
 
 DEF ENABLE_VP8 = True
 DEF ENABLE_VP9 = True
+DEF ENABLE_VP9_YUV444 = True
 
 
 from libc.stdint cimport int64_t
@@ -45,6 +57,7 @@ cdef extern from "vpx/vpx_codec.h":
     ctypedef int vpx_codec_err_t
     ctypedef struct vpx_codec_ctx_t:
         pass
+    const char *vpx_codec_err_to_string(vpx_codec_err_t err)
     const char *vpx_codec_error(vpx_codec_ctx_t  *ctx)
     vpx_codec_err_t vpx_codec_destroy(vpx_codec_ctx_t *ctx)
     const char *vpx_codec_version_str()
@@ -52,6 +65,7 @@ cdef extern from "vpx/vpx_codec.h":
 
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
+    cdef int VPX_IMG_FMT_I444
     ctypedef struct vpx_image_t:
         unsigned int w
         unsigned int h
@@ -169,13 +183,20 @@ PACKET_KIND = {
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES = {b"YUV420P" : [b"YUV420P"]}
+COLORSPACES = {}
 
 CODECS = []
 IF ENABLE_VP8 == True:
     CODECS.append("vp8")
+    COLORSPACES["vp8"] = [b"YUV420P"]
 IF ENABLE_VP9 == True:
     CODECS.append("vp9")
+    vp9_cs = [b"YUV420P"]
+    #this is the ABI version with libvpx 1.4.0:
+    IF ENABLE_VP9_YUV444:
+        if VPX_ENCODER_ABI_VERSION>=10:
+            vp9_cs.append(b"YUV444P")
+    COLORSPACES["vp9"] = vp9_cs
 
 
 def init_module():
@@ -198,11 +219,16 @@ def get_type():
 def get_encodings():
     return CODECS
 
-def get_input_colorspaces():
-    return COLORSPACES.keys()
+def get_input_colorspaces(encoding):
+    assert encoding in get_encodings(), "invalid encoding: %s" % encoding
+    return COLORSPACES[encoding]
 
-def get_output_colorspaces(input_colorspace):
-    return COLORSPACES[input_colorspace]
+def get_output_colorspaces(encoding, input_colorspace):
+    assert encoding in get_encodings(), "invalid encoding: %s" % encoding
+    csdict = COLORSPACES[input_colorspace]
+    assert input_colorspace in csdict, "invalid input colorspace: %s" % input_colorspace
+    #always unchanged in output:
+    return input_colorspace
 
 
 def get_info():
@@ -225,16 +251,25 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
 
 def get_spec(encoding, colorspace):
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
+    assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
     #quality: we only handle YUV420P but this is already accounted for by the subsampling factor
     #setup cost is reasonable (usually about 5ms)
-    return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
+    return video_codec_spec(encoding=encoding, output_colorspaces=colorspace,
                             codec_class=Encoder, codec_type=get_type(), setup_cost=40)
 
 
-cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
-    assert colorspace in COLORSPACES
-    return VPX_IMG_FMT_I420
+cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
+    if colorspace==b"YUV420P":
+        return VPX_IMG_FMT_I420
+    elif colorspace==b"YUV444P":
+        return VPX_IMG_FMT_I444
+    raise Exception("invalid colorspace %s" % colorspace)
+
+def get_error_string(int err):
+    estr = vpx_codec_err_to_string(<vpx_codec_err_t> err)[:]
+    if not estr:
+        return err
+    return estr
 
 
 cdef class Encoder:
@@ -253,9 +288,14 @@ cdef class Encoder:
 
     cdef object __weakref__
 
+#init_context(w, h, src_format, encoding, quality, speed, scaling, options)
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
         assert encoding in CODECS, "invalid encoding: %s" % encoding
         assert scaling==(1,1), "vpx does not handle scaling"
+        assert encoding in get_encodings()
+        assert src_format in get_input_colorspaces(encoding)
+        self.src_format = src_format
+
         cdef const vpx_codec_iface_t *codec_iface = make_codec_cx(encoding)
         self.encoding = encoding
         self.width = width
@@ -263,8 +303,6 @@ cdef class Encoder:
         self.speed = speed
         self.quality = quality
         self.frames = 0
-        assert src_format=="YUV420P" and "YUV420P" in dst_formats
-        self.src_format = "YUV420P"
         self.pixfmt = get_vpx_colorspace(self.src_format)
         try:
             self.max_threads = max(0, min(32, int(options.get("threads", VPX_THREADS))))
@@ -311,9 +349,11 @@ cdef class Encoder:
 
         log("our configuration:")
         self.log_cfg()
-        if vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)!=0:
+        cdef int ret = vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)
+        if ret!=0:
             free(self.context)
             self.context = NULL
+            log.warn("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
             raise Exception("failed to initialized vpx encoder: %s" % vpx_codec_error(self.context))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
 
@@ -428,8 +468,15 @@ cdef class Encoder:
         image.d_h = self.height
         #this is the chroma shift for YUV420P:
         #both X and Y are downscaled by 2^1
-        image.x_chroma_shift = 1
-        image.y_chroma_shift = 1
+        if self.src_format==b"YUV420P":
+            image.x_chroma_shift = 1
+            image.y_chroma_shift = 1
+        elif self.src_format==b"YUV444P":
+            image.x_chroma_shift = 0
+            image.y_chroma_shift = 0
+        else:
+            raise Exception("invalid colorspace: %s" % self.src_format)
+            
         image.bps = 0
         if self.frames==0:
             flags |= VPX_EFLAG_FORCE_KF
@@ -446,7 +493,7 @@ cdef class Encoder:
             ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
         if ret!=0:
             free(image)
-            log.error("%s codec encoding error: %s", self.encoding, vpx_codec_destroy(self.context))
+            log.error("%s codec encoding error %s: %s", self.encoding, get_error_string(ret), vpx_codec_destroy(self.context))
             return None
         end = time.time()
         log("vpx_codec_encode for %s took %.1fms (deadline=%sms for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline/1000, self.speed, self.quality)

@@ -13,7 +13,7 @@ log = Logger("decoder", "vpx")
 VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
 
 DEF ENABLE_VP8 = True
-DEF ENABLE_VP9 = False
+DEF ENABLE_VP9 = True
 
 
 from libc.stdint cimport int64_t
@@ -91,15 +91,20 @@ cdef extern from "vpx/vpx_decoder.h":
     vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
 
 
+#https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
+#"RGB is not supported.  You need to convert your source to YUV, and then compress that."
+COLORSPACES = {}
 CODECS = []
 IF ENABLE_VP8 == True:
     CODECS.append("vp8")
+    COLORSPACES["vp8"] = [b"YUV420P"]
 IF ENABLE_VP9 == True:
     CODECS.append("vp9")
-
-#https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
-#"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES = ["YUV420P"]
+    vp9_cs = [b"YUV420P"]
+    #this is the ABI version with libvpx 1.4.0:
+    if VPX_DECODER_ABI_VERSION>=9:
+        vp9_cs.append(b"YUV444P")
+    COLORSPACES["vp9"] = vp9_cs
 
 
 def init_module():
@@ -123,8 +128,8 @@ def get_encodings():
     return CODECS
 
 def get_input_colorspaces(encoding):
-    assert encoding in ("vp8", "vp9")
-    return COLORSPACES
+    assert encoding in CODECS
+    return COLORSPACES.get(encoding)
 
 def get_output_colorspace(encoding, csc):
     #same as input
@@ -138,13 +143,6 @@ def get_info():
             "encodings"     : CODECS,
             "abi_version"   : get_abi_version(),
             "build_config"  : vpx_codec_build_config()}
-
-
-def get_spec(colorspace):
-    assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
-    #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
-    #setup cost is reasonable (usually about 5ms)
-    return codec_spec(Decoder, codec_type="vpx", setup_cost=40)
 
 
 cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
@@ -201,12 +199,11 @@ cdef class Decoder:
 
     def init_context(self, encoding, width, height, colorspace):
         assert encoding in CODECS
-        assert colorspace=="YUV420P"
-        assert colorspace in COLORSPACES
+        assert colorspace in get_input_colorspaces(encoding)
         cdef int flags = 0
         cdef const vpx_codec_iface_t *codec_iface = make_codec_dx(encoding)
         self.encoding = encoding
-        self.dst_format = "YUV420P"
+        self.dst_format = colorspace
         self.pixfmt = get_vpx_colorspace(self.dst_format)
         self.width = width
         self.height = height

@@ -220,10 +220,12 @@ def get_type():
 def get_encodings():
     return ["h265"]
 
-def get_input_colorspaces():
+def get_input_colorspaces(encoding):
+    assert encoding in get_encodings()
     return COLORSPACES
 
-def get_output_colorspaces(input_colorspace):
+def get_output_colorspaces(encoding, input_colorspace):
+    assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
     return (input_colorspace, )
 

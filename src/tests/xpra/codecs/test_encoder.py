@@ -46,7 +46,7 @@ def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS,
     log("input colorspaces=%s", ics)
     for ic in ics:
         for encoding in encoder_module.get_encodings():
-            ocs = encoder_module.get_output_colorspaces(ic)
+            ocs = encoder_module.get_output_colorspaces(encoding, ic)
             for c in ocs:
                 log("spec(%s)=%s" % (c, encoder_module.get_spec(encoding, ic)))
     log("version=%s" % str(encoder_module.get_version()))

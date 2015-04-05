@@ -103,7 +103,7 @@ def test_context_limits():
         for w,h in TEST_DIMENSIONS:
             log("test_context_limits() %s @ %sx%s" % (encoding, w, h))
             src_format = encoder_module.get_input_colorspaces()[0]
-            dst_formats = encoder_module.get_output_colorspaces(src_format)
+            dst_formats = encoder_module.get_output_colorspaces(encoding, src_format)
             for device_id in cuda_devices:
                 device_info = get_device_info(device_id)
                 options = {"cuda_device" : device_id}
@@ -134,7 +134,7 @@ def test_parallel_encode():
     IMAGE_COUNT = 40
     ENCODER_CONTEXTS_PER_DEVICE = 10
     src_format = encoder_module.get_input_colorspaces()[0]
-    dst_formats = encoder_module.get_output_colorspaces(src_format)
+    dst_formats = encoder_module.get_output_colorspaces(encoding, src_format)
     log("generating %s images..." % IMAGE_COUNT)
     images = []
     for _ in range(IMAGE_COUNT):
