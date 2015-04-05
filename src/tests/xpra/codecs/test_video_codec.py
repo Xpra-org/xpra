@@ -42,17 +42,19 @@ def do_test_codec_roundtrip(encoder_class, decoder_class, encoding, src_format, 
     end = time.time()
     print("decoder %s initialized in %.1fms" % (decoder, 1000.0*(end-start)))
 
-    print("using %s to compress %s" % (encoder, image))
-    start = time.time()
-    data, options = encoder.compress_image(image)
-    end = time.time()
-    assert data is not None, "compression failed"
-    print("compressed %s bytes down to %s (%.1f%%) in %.1fms" % (isize, len(data), 100.0*len(data)/isize, 1000.0*(end-start)))
-
-    print("uncompressing %s bytes using %s" % (len(data), decoder))
-    options['csc'] = src_format
-    start = time.time()
-    out_image = decoder.decompress_image(data, options)
-    end = time.time()
-    assert out_image is not None, "decompression failed"
-    print("uncompressed to %s in %.1fms" % (str(out_image), 1000.0*(end-start)))
+    for i in range(2):
+        print("FRAME %s" % i)
+        print("using %s to compress %s" % (encoder, image))
+        start = time.time()
+        data, options = encoder.compress_image(image)
+        end = time.time()
+        assert data is not None, "compression failed"
+        print("compressed %s bytes down to %s (%.1f%%) in %.1fms" % (isize, len(data), 100.0*len(data)/isize, 1000.0*(end-start)))
+    
+        print("uncompressing %s bytes using %s" % (len(data), decoder))
+        options['csc'] = src_format
+        start = time.time()
+        out_image = decoder.decompress_image(data, options)
+        end = time.time()
+        assert out_image is not None, "decompression failed"
+        print("uncompressed to %s in %.1fms" % (str(out_image), 1000.0*(end-start)))
