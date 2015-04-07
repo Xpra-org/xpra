@@ -235,10 +235,13 @@ def get_output_colorspaces(encoding, input_colorspace):
 
 def get_info():
     global CODECS
-    return {"version"       : get_version(),
+    info = {"version"       : get_version(),
             "encodings"     : CODECS,
             "abi_version"   : get_abi_version(),
             "build_config"  : vpx_codec_build_config()}
+    for k,v in COLORSPACES.items():
+        info["%s.colorspaces" % k] = v
+    return info
 
 
 cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
