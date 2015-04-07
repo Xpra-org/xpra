@@ -1644,8 +1644,10 @@ class UIXpraClient(XpraClientBase):
         soundlog.warn("stopping speaker because of error: %s", error)
         self.stop_receiving_sound()
     def sound_process_stopped(self, sound_sink, *args):
-        soundlog("the sound sink process has stopped (%s)", args)
-        self.stop_receiving_sound()
+        soundlog("the sound sink process %s has stopped, current sound sink=%s", sound_sink, self.sound_sink)
+        if not self.sink_restart_pending and sound_sink==self.sound_sink:
+            soundlog.warn("the sound process has stopped")
+            self.stop_receiving_sound()
 
     def sound_sink_overrun(self, *args):
         if self.sink_restart_pending:
@@ -1659,11 +1661,11 @@ class UIXpraClient(XpraClientBase):
         #Note: the next sound packet will take care of starting a new pipeline
         self.stop_receiving_sound()
         def restart():
+            self.sink_restart_pending = False
             soundlog("restart() sound_sink=%s, codec=%s, server_sound_sequence=%s", self.sound_sink, codec, self.server_sound_sequence)
             if self.server_sound_sequence:
                 self.send_new_sound_sequence()
             self.start_receiving_sound()
-            self.sink_restart_pending = False
             return False
         self.timeout_add(200, restart)
 
