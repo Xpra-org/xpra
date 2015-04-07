@@ -62,6 +62,7 @@ class subprocess_callee(object):
         self.input_filename = input_filename
         self.output_filename = output_filename
         self.method_whitelist = None
+        self.large_packets = []
         #the gobject instance which is wrapped:
         self.wrapped_object = wrapped_object
         self.send_queue = Queue()
@@ -136,6 +137,7 @@ class subprocess_callee(object):
         except Exception as e:
             log.warn("failed to enable rencode: %s", e)
         protocol.enable_compressor("none")
+        protocol.large_packets = self.large_packets
         return protocol
 
 
@@ -228,6 +230,7 @@ class subprocess_caller(object):
         self.description = description
         self.send_queue = Queue()
         self.signal_callbacks = {}
+        self.large_packets = []
         #hook a default packet handlers:
         self.connect(Protocol.CONNECTION_LOST, self.connection_lost)
 
@@ -255,6 +258,7 @@ class subprocess_caller(object):
         protocol.enable_encoder("rencode")
         #we assume this is local, so no compression:
         protocol.enable_compressor("none")
+        protocol.large_packets = self.large_packets
         return protocol
 
 

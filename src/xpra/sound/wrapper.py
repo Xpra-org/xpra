@@ -44,7 +44,7 @@ class sound_subprocess(subprocess_callee):
     """
     def __init__(self, wrapped_object, method_whitelist, exports_list):
         #add bits common to both record and play:
-        methods = method_whitelist+["set_volume", "stop"]
+        methods = method_whitelist+["set_volume", "stop", "cleanup"]
         exports = ["state-changed", "bitrate-changed", "error"] + exports_list
         subprocess_callee.__init__(self, wrapped_object=wrapped_object, method_whitelist=methods)
         for x in exports:
@@ -77,12 +77,7 @@ class sound_record(sound_subprocess):
         from xpra.sound.src import SoundSource
         sound_pipeline = SoundSource(*pipeline_args)
         sound_subprocess.__init__(self, sound_pipeline, [], ["new-stream", "new-buffer"])
-
-    def make_protocol(self):
-        #overriden so we can tell that "new-buffer" is a large packet:
-        p = subprocess_callee.make_protocol(self)
-        p.large_packets = ["new-buffer"]
-        return p
+        self.large_packets = ["new-buffer"]
 
 class sound_play(sound_subprocess):
     """ wraps SoundSink as a subprocess """
@@ -187,13 +182,9 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, options, codecs, volume, element_options):
         sound_subprocess_wrapper.__init__(self, "sound-source")
+        self.large_packets = ["new-buffer"]
         self.command = [get_sound_executable(), "_sound_record", "-", "-", plugin or "", "", ",".join(codecs), "", str(volume)]
         self._add_debug_args()
-
-    def make_protocol(self):
-        protocol = subprocess_caller.make_protocol(self)
-        protocol.large_packets = ["new-buffer"]
-        return protocol
 
     def __repr__(self):
         return "source_subprocess_wrapper(%s)" % self.process
@@ -203,14 +194,10 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, options, codec, volume, element_options):
         sound_subprocess_wrapper.__init__(self, "sound-sink")
+        self.large_packets = ["add_data"]
         self.codec = codec
         self.command = [get_sound_executable(), "_sound_play", "-", "-", plugin or "", "", codec, "", str(volume)]
         self._add_debug_args()
-
-    def make_protocol(self):
-        protocol = subprocess_caller.make_protocol(self)
-        protocol.large_packets = ["add_data"]
-        return protocol
 
     def add_data(self, data, metadata):
         if DEBUG_SOUND:
