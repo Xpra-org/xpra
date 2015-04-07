@@ -101,6 +101,7 @@ cdef extern from "vpx/vpx_encoder.h":
     int VP8E_SET_CPUUSED
     #function to enable/disable periodic Q boost:
     int VP9E_SET_FRAME_PERIODIC_BOOST
+    int VP9E_SET_LOSSLESS
     #vpx_enc_pass:
     int VPX_RC_ONE_PASS
     int VPX_RC_FIRST_PASS
@@ -558,6 +559,8 @@ cdef class Encoder:
         return img
 
     def set_encoding_speed(self, int pct):
+        if self.speed==pct:
+            return
         self.speed = pct
         #Valid range for VP8: -16..16
         #Valid range for VP9: -8..8
@@ -568,8 +571,11 @@ cdef class Encoder:
         self.codec_control("cpu speed", VP8E_SET_CPUUSED, value)
 
     def set_encoding_quality(self, int pct):
+        if self.quality==pct:
+            return
         self.quality = pct
         self.update_cfg()
+        self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100)
         cdef vpx_codec_err_t ret = vpx_codec_enc_config_set(self.context, self.cfg)
         assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
 
