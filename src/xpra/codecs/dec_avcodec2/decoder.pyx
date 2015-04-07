@@ -179,7 +179,7 @@ def get_input_colorspaces(encoding):
     assert encoding=="vp9"
     #we only handle YUV420P encoding at present,
     #but we ought to be able to support the other YUV modes out of the box already:
-    return ["YUV420P", "YUV422P", "YUV444P"]
+    return ["YUV420P"]
 
 def get_output_colorspace(encoding, csc):
     if encoding not in CODECS:
