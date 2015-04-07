@@ -145,6 +145,12 @@ class sound_subprocess_wrapper(subprocess_caller):
         self.connect("info", self.info_update)
 
 
+    def cleanup(self):
+        log("cleanup() sending request to cleanup")
+        self.send("cleanup")
+        gobject.timeout_add(200, self.stop)
+
+
     def state_changed(self, sink, new_state):
         self.state = new_state
 
