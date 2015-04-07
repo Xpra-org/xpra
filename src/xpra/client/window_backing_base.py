@@ -362,7 +362,11 @@ class WindowBackingBase(object):
                     log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
                 elif self._video_decoder.get_colorspace()!=input_colorspace:
-                    log("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), input_colorspace)
+                    #this should only happen on encoder restart, which means this should be the first frame:
+                    l = log
+                    if options.get("frame", 0)>1:
+                        l = log.warn
+                    l("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), input_colorspace)
                     self.do_clean_video_decoder()
                 elif options.get("frame")==0:
                     log("paint_with_video_decoder: first frame of new stream")
