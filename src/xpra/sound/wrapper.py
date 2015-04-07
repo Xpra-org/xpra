@@ -15,6 +15,7 @@ log = Logger("sound")
 DEBUG_SOUND = os.environ.get("XPRA_SOUND_DEBUG", "0")=="1"
 SUBPROCESS_DEBUG = os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",")
 EXPORT_INFO_TIME = int(os.environ.get("XPRA_SOUND_INFO_TIME", "1000"))
+FAKE_OVERRUN = int(os.environ.get("XPRA_FAKE_OVERRUN", "0"))
 
 
 #this wrapper takes care of launching src.py or sink.py
@@ -85,6 +86,10 @@ class sound_play(sound_subprocess):
         from xpra.sound.sink import SoundSink
         sound_pipeline = SoundSink(*pipeline_args)
         sound_subprocess.__init__(self, sound_pipeline, ["add_data"], ["underrun", "overrun"])
+        if FAKE_OVERRUN>0:
+            def fake_overrun(*args):
+                self.wrapped_object.emit("overrun", 500)
+            gobject.timeout_add(FAKE_OVERRUN*1000, fake_overrun)
 
 
 def run_sound(mode, error_cb, options, args):
