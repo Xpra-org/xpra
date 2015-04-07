@@ -68,6 +68,7 @@ class sound_subprocess(subprocess_callee):
         wo = self.wrapped_object
         if wo:
             self.send("info", wo.get_info())
+        return wo is not None
 
 
 class sound_record(sound_subprocess):
