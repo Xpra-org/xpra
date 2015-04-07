@@ -178,7 +178,7 @@ def get_input_colorspaces(encoding):
         return ["YUV420P"]
     assert encoding=="vp9"
     #we only handle YUV420P encoding at present,
-    #but we ought to be able to support the other YUV modes out of the box already:
+    #(YUV444P seems to cause errors: "[vp9 @ ...] Invalid compressed header size")
     return ["YUV420P"]
 
 def get_output_colorspace(encoding, csc):
