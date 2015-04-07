@@ -199,7 +199,7 @@ cdef class Decoder:
     cdef int height
     cdef int max_threads
     cdef vpx_img_fmt_t pixfmt
-    cdef char* dst_format
+    cdef object dst_format
     cdef object encoding
 
     cdef object __weakref__
