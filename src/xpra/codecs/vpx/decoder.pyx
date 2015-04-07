@@ -108,8 +108,10 @@ IF ENABLE_VP9 == True:
 
 
 def init_module():
-    log("vpx.decoder.init_module()")
+    log("vpx.decoder.init_module() info=%s", get_info())
     assert len(CODECS)>0, "no supported encodings!"
+    log("supported codecs: %s", CODECS)
+    log("supported colorspaces: %s", COLORSPACES)
 
 def cleanup_module():
     log("vpx.decoder.cleanup_module()")
