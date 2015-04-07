@@ -261,7 +261,20 @@ class subprocess_caller(object):
     def exec_subprocess(self):
         kwargs = self.exec_kwargs()
         log("exec_subprocess() command=%s, kwargs=%s", self.command, kwargs)
-        return subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), **kwargs)
+        return subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=self.get_env(), **kwargs)
+
+    def get_env(self):
+        env = os.environ.copy()
+        env["XPRA_SKIP_UI"] = "1"
+        env["XPRA_LOG_PREFIX"] = "%s " % self.description
+        #let's make things more complicated than they should be:
+        #on win32, the environment can end up containing unicode, and subprocess chokes on it
+        for k,v in env.items():
+            try:
+                env[k] = bytestostr(v.encode("utf8"))
+            except:
+                env[k] = bytestostr(v)
+        return env
 
     def exec_kwargs(self):
         if os.name=="posix":

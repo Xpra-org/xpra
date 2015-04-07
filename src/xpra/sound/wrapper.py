@@ -9,7 +9,6 @@ import time
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, gobject
 from xpra.platform.paths import get_sound_executable
 from xpra.util import AdHocStruct
-from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -59,6 +58,7 @@ class sound_subprocess(subprocess_callee):
 
     def stop(self):
         wo = self.wrapped_object
+        log("stop() wrapped object=%s", wo)
         if wo:
             wo.cleanup()
             self.wrapped_object = None
@@ -139,9 +139,8 @@ class sound_subprocess_wrapper(subprocess_caller):
         * handle "info" packets so we have a cached copy
         * forward get/set volume calls (get_volume uses the value found in "info")
     """
-    def __init__(self, name):
-        subprocess_caller.__init__(self, description="sound")
-        self.name = name
+    def __init__(self, description):
+        subprocess_caller.__init__(self, description)
         self.state = "stopped"
         self.codec = "unknown"
         self.codec_description = ""
@@ -149,22 +148,6 @@ class sound_subprocess_wrapper(subprocess_caller):
         #hook some default packet handlers:
         self.connect("state-changed", self.state_changed)
         self.connect("info", self.info_update)
-
-    def exec_kwargs(self):
-        #override so we can add the skip-ui flag needed for OSX to behave properly
-        kwargs = subprocess_caller.exec_kwargs(self)
-        env = os.environ.copy()
-        env["XPRA_SKIP_UI"] = "1"
-        env["XPRA_LOG_PREFIX"] = "%s " % self.name
-        kwargs["env"] = env
-        #let's make things more complicated than they should be:
-        #on win32, the environment can end up containing unicode, and subprocess chokes on it
-        for k,v in env.items():
-            try:
-                env[k] = bytestostr(v.encode("utf8"))
-            except:
-                env[k] = bytestostr(v)
-        return kwargs
 
 
     def state_changed(self, sink, new_state):
@@ -178,6 +161,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         return self.last_info
 
     def info_update(self, sink, info):
+        log("info_update(%s, %s)", sink, info)
         self.last_info = info
         self.last_info["time"] = int(time.time())
         self.codec_description = info.get("codec_description")
