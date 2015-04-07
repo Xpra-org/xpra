@@ -25,7 +25,9 @@ VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1))
 
 DEF ENABLE_VP8 = True
 DEF ENABLE_VP9 = True
-DEF ENABLE_VP9_YUV444 = True
+
+ENABLE_VP9_YUV444 = os.environ.get("XPRA_VP9_YUV444", "1")=="1"
+ENABLE_VP9_TILING = os.environ.get("XPRA_VP9_TILING", "0")=="1"
 
 
 from libc.stdint cimport int64_t
@@ -62,6 +64,9 @@ cdef extern from "vpx/vpx_codec.h":
     vpx_codec_err_t vpx_codec_destroy(vpx_codec_ctx_t *ctx)
     const char *vpx_codec_version_str()
     const char *vpx_codec_build_config()
+    #this should be a vararg function, but we only use it in one place for an int,
+    #so define it that way:
+    vpx_codec_err_t vpx_codec_control_(vpx_codec_ctx_t *ctx, int ctrl_id, int value)    
 
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
@@ -90,6 +95,8 @@ cdef extern from "vpx/vpx_encoder.h":
     int VPX_VBR         #Variable Bit Rate (VBR) mode
     int VPX_CBR         #Constant Bit Rate (CBR) mode
     int VPX_CQ          #Constant Quality (CQ) mode
+    #function to set number of tile columns:
+    int VP9E_SET_TILE_COLUMNS
     #vpx_enc_pass:
     int VPX_RC_ONE_PASS
     int VPX_RC_FIRST_PASS
@@ -193,9 +200,11 @@ IF ENABLE_VP9 == True:
     CODECS.append("vp9")
     vp9_cs = [b"YUV420P"]
     #this is the ABI version with libvpx 1.4.0:
-    IF ENABLE_VP9_YUV444:
+    if ENABLE_VP9_YUV444:
         if VPX_ENCODER_ABI_VERSION>=10:
             vp9_cs.append(b"YUV444P")
+        else:
+            log("encoder abi is too low to enable YUV444P: %s", VPX_ENCODER_ABI_VERSION)
     COLORSPACES["vp9"] = vp9_cs
 
 
@@ -314,7 +323,7 @@ cdef class Encoder:
             self.max_threads = max(0, min(32, int(options.get("threads", VPX_THREADS))))
         except Exception as e:
             log.warn("error parsing number of threads: %s", e)
-            self.max_threads =2
+            self.max_threads = 2
 
         self.cfg = <vpx_codec_enc_cfg_t *> xmemalign(sizeof(vpx_codec_enc_cfg_t))
         if self.cfg==NULL:
@@ -362,6 +371,17 @@ cdef class Encoder:
             log.warn("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
             raise Exception("failed to initialized vpx encoder: %s" % vpx_codec_error(self.context))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
+        cdef vpx_codec_err_t ctrl
+        if encoding=="vp9" and ENABLE_VP9_TILING:
+            tile_columns = 0
+            if width>=512:
+                tile_columns = 1
+            elif width>=1024:
+                tile_columns = 2
+            ctrl = vpx_codec_control_(self.context, VP9E_SET_TILE_COLUMNS, tile_columns)    
+            if ret!=0:
+                log.warn("failed to set tile columns: %s", get_error_string(ret))
+        
 
     def log_cfg(self):
         log(" target_bitrate=%s", self.cfg.rc_target_bitrate)
