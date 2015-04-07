@@ -97,6 +97,10 @@ cdef extern from "vpx/vpx_encoder.h":
     int VPX_CQ          #Constant Quality (CQ) mode
     #function to set number of tile columns:
     int VP9E_SET_TILE_COLUMNS
+    #function to set encoder internal speed settings:
+    int VP8E_SET_CPUUSED
+    #function to enable/disable periodic Q boost:
+    int VP9E_SET_FRAME_PERIODIC_BOOST
     #vpx_enc_pass:
     int VPX_RC_ONE_PASS
     int VPX_RC_FIRST_PASS
@@ -372,16 +376,25 @@ cdef class Encoder:
             raise Exception("failed to initialized vpx encoder: %s" % vpx_codec_error(self.context))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
         cdef vpx_codec_err_t ctrl
-        if encoding=="vp9" and ENABLE_VP9_TILING:
+        if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
             tile_columns = 0
-            if width>=512:
+            if width>=256:
                 tile_columns = 1
-            elif width>=1024:
+            elif width>=512:
                 tile_columns = 2
-            ctrl = vpx_codec_control_(self.context, VP9E_SET_TILE_COLUMNS, tile_columns)    
-            if ret!=0:
-                log.warn("failed to set tile columns: %s", get_error_string(ret))
-        
+            elif width>=1024:
+                tile_columns = 3
+            self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, tile_columns)
+        #disable periodic Q boost which causes latency spikes:
+        self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
+
+
+    def codec_control(self, info, int attr, int value):
+        cdef vpx_codec_err_t ctrl = vpx_codec_control_(self.context, attr, value)
+        log("%s setting %s to %s", self.encoding, info, value)    
+        if ctrl!=0:
+            log.warn("failed to set %s to %s: %s", info, value, get_error_string(ctrl))
+
 
     def log_cfg(self):
         log(" target_bitrate=%s", self.cfg.rc_target_bitrate)
@@ -541,6 +554,12 @@ cdef class Encoder:
 
     def set_encoding_speed(self, int pct):
         self.speed = pct
+        #Valid range for VP8: -16..16
+        #Valid range for VP9: -8..8
+        range = 8*(1+int(self.encoding=="vp8"))
+        cdef int value = int((pct-50)*range/100)
+        value = min(range, max(-range, value))
+        self.codec_control("cpu speed", VP8E_SET_CPUUSED, value)
 
     def set_encoding_quality(self, int pct):
         self.quality = pct
