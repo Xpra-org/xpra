@@ -1634,23 +1634,33 @@ class UIXpraClient(XpraClientBase):
 
 
     def sound_sink_state_changed(self, sound_sink, state):
+        if sound_sink!=self.sound_sink:
+            soundlog("sound_sink_state_changed(%s, %s) not the current sink, ignoring it", sound_sink, state)
+            return
         soundlog("sound_sink_state_changed(%s, %s) on_sink_ready=%s", sound_sink, state, self.on_sink_ready)
         if state=="ready" and self.on_sink_ready:
             if not self.on_sink_ready():
                 self.on_sink_ready = None
         self.emit("speaker-changed")
     def sound_sink_bitrate_changed(self, sound_sink, bitrate):
+        if sound_sink!=self.sound_sink:
+            soundlog("sound_sink_bitrate_changed(%s, %s) not the current sink, ignoring it", sound_sink, bitrate)
+            return
         soundlog("sound_sink_bitrate_changed(%s, %s)", sound_sink, bitrate)
         #not shown in the UI, so don't bother with emitting a signal:
         #self.emit("speaker-changed")
     def sound_sink_error(self, sound_sink, error):
+        if sound_sink!=self.sound_sink:
+            soundlog("sound_sink_error(%s, %s) not the current sink, ignoring it", sound_sink, error)
+            return
         soundlog.warn("stopping speaker because of error: %s", error)
         self.stop_receiving_sound()
     def sound_process_stopped(self, sound_sink, *args):
-        soundlog("the sound sink process %s has stopped, current sound sink=%s", sound_sink, self.sound_sink)
-        if sound_sink==self.sound_sink:
-            soundlog.warn("the sound process has stopped")
-            self.stop_receiving_sound()
+        if sound_sink!=self.sound_sink:
+            soundlog("sound_process_stopped(%s, %s) not the current sink, ignoring it", sound_sink, args)
+            return
+        soundlog.warn("the sound process has stopped")
+        self.stop_receiving_sound()
 
     def sound_sink_overrun(self, sound_sink, *args):
         if sound_sink!=self.sound_sink:
@@ -1678,16 +1688,17 @@ class UIXpraClient(XpraClientBase):
         try:
             soundlog("starting %s sound sink", codec)
             from xpra.sound.wrapper import start_receiving_sound
-            self.sound_sink = start_receiving_sound(codec)
-            if not self.sound_sink:
+            ss = start_receiving_sound(codec)
+            if not ss:
                 return False
-            self.sound_sink.connect("state-changed", self.sound_sink_state_changed)
-            self.sound_sink.connect("bitrate-changed", self.sound_sink_bitrate_changed)
-            self.sound_sink.connect("error", self.sound_sink_error)
-            self.sound_sink.connect("overrun", self.sound_sink_overrun)
+            self.sound_sink = ss
+            ss.connect("state-changed", self.sound_sink_state_changed)
+            ss.connect("bitrate-changed", self.sound_sink_bitrate_changed)
+            ss.connect("error", self.sound_sink_error)
+            ss.connect("overrun", self.sound_sink_overrun)
             from xpra.net.protocol import Protocol
-            self.sound_sink.connect(Protocol.CONNECTION_LOST, self.sound_process_stopped)
-            self.sound_sink.start()
+            ss.connect(Protocol.CONNECTION_LOST, self.sound_process_stopped)
+            ss.start()
             soundlog("%s sound sink started", codec)
             return True
         except Exception as e:
@@ -1710,7 +1721,7 @@ class UIXpraClient(XpraClientBase):
         #verify sequence number if present:
         seq = metadata.intget("sequence", -1)
         if self.min_sound_sequence>0 and seq>=0 and seq<self.min_sound_sequence:
-            soundlog("ignoring sound data with old sequence number %s", seq)
+            soundlog("ignoring sound data with old sequence number %s (now on %s)", seq, self.min_sound_sequence)
             return
 
         if not self.speaker_enabled:
