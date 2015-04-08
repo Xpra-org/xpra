@@ -130,12 +130,12 @@ class SoundSink(SoundPipeline):
 
     def queue_pushing(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        log("sound sink queue pushing: level=%s", ltime)
+        log("queue pushing: level=%s", ltime)
         self.queue_state = "pushing"
 
     def queue_running(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        log("sound sink queue running: level=%s", ltime)
+        log("queue running: level=%s", ltime)
         if self.queue_state=="underrun" and VARIABLE_MIN_QUEUE:
             #lift min time restrictions:
             #gobject.timeout_add(400, self.queue.set_property, "min-threshold-time", 0)
@@ -145,7 +145,7 @@ class SoundSink(SoundPipeline):
 
     def queue_underrun(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        log("sound sink queue underrun: level=%s", ltime)
+        log("queue underrun: level=%s", ltime)
         if self.queue_state!="underrun" and VARIABLE_MIN_QUEUE:
             #lift min time restrictions:
             self.queue.set_property("min-threshold-time", QUEUE_MIN_TIME)
@@ -157,9 +157,9 @@ class SoundSink(SoundPipeline):
         #no overruns for the first 2 seconds:
         elapsed = time.time()-self.start_time
         if ltime<(QUEUE_TIME/MS_TO_NS/2*75/100):
-            log("sound sink queue overrun ignored: level=%s, elapsed time=%.1f", ltime, elapsed)
+            log("queue overrun ignored: level=%s, elapsed time=%.1f", ltime, elapsed)
             return
-        log("sound sink queue overrun: level=%s", ltime)
+        log("queue overrun: level=%s", ltime)
         self.overruns += 1
         self.emit("overrun", ltime)
 
@@ -181,7 +181,7 @@ class SoundSink(SoundPipeline):
         return info
 
     def add_data(self, data, metadata=None):
-        #debug("sound sink: adding %s bytes to %s, metadata: %s, level=%s", len(data), self.src, metadata, int(self.queue.get_property("current-level-time")/MS_TO_NS))
+        #debug("adding %s bytes to %s, metadata: %s, level=%s", len(data), self.src, metadata, int(self.queue.get_property("current-level-time")/MS_TO_NS))
         if not self.src:
             log("add_data(..) dropped")
             return
@@ -215,7 +215,7 @@ class SoundSink(SoundPipeline):
             self.buffer_count += 1
             self.byte_count += len(data)
             ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-            log("sound sink: pushed %s bytes, new buffer level: %sms", len(data), ltime)
+            log("pushed %s bytes, new buffer level: %sms", len(data), ltime)
 
     def push_buffer(self, buf):
         #buf.size = size
