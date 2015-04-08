@@ -25,6 +25,7 @@ VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1))
 
 DEF ENABLE_VP8 = True
 DEF ENABLE_VP9 = True
+include "constants.pxi"
 
 ENABLE_VP9_YUV444 = os.environ.get("XPRA_VP9_YUV444", "1")=="1"
 ENABLE_VP9_TILING = os.environ.get("XPRA_VP9_TILING", "0")=="1"
@@ -99,8 +100,9 @@ cdef extern from "vpx/vpx_encoder.h":
     int VP9E_SET_TILE_COLUMNS
     #function to set encoder internal speed settings:
     int VP8E_SET_CPUUSED
-    #function to enable/disable periodic Q boost:
-    int VP9E_SET_FRAME_PERIODIC_BOOST
+    IF LIBVPX14:
+        #function to enable/disable periodic Q boost:
+        int VP9E_SET_FRAME_PERIODIC_BOOST
     int VP9E_SET_LOSSLESS
     #vpx_enc_pass:
     int VPX_RC_ONE_PASS
@@ -255,6 +257,8 @@ def get_info():
             "build_config"  : vpx_codec_build_config()}
     for k,v in COLORSPACES.items():
         info["%s.colorspaces" % k] = v
+    IF LIBVPX14:
+        info["libvpx14"] = True
     return info
 
 
@@ -386,8 +390,9 @@ cdef class Encoder:
             elif width>=1024:
                 tile_columns = 3
             self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, tile_columns)
-        #disable periodic Q boost which causes latency spikes:
-        self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
+        IF LIBVPX14:
+            #disable periodic Q boost which causes latency spikes:
+            self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
 
 
     def codec_control(self, info, int attr, int value):

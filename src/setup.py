@@ -456,31 +456,33 @@ def make_constants_pxi(constants_path, pxi_path, **kwargs):
                 constants.append(data)
 
     with open(pxi_path, "w") as out:
-        out.write("cdef extern from *:\n")
-        ### Apparently you can't use | on enum's?!
-        # out.write("    enum MagicNumbers:\n")
-        # for const in constants:
-        #     if isinstance(const, tuple):
-        #         out.write('        %s %s\n' % const)
-        #     else:
-        #         out.write('        %s\n' % (const,))
-        for const in constants:
-            if isinstance(const, tuple):
-                out.write('    unsigned int %s %s\n' % const)
-            else:
-                out.write('    unsigned int %s\n' % (const,))
-
-        out.write("constants = {\n")
-        for const in constants:
-            if isinstance(const, tuple):
-                pyname = const[0]
-            else:
-                pyname = const
-            out.write('    "%s": %s,\n' % (pyname, pyname))
-        out.write("}\n")
+        if constants:
+            out.write("cdef extern from *:\n")
+            ### Apparently you can't use | on enum's?!
+            # out.write("    enum MagicNumbers:\n")
+            # for const in constants:
+            #     if isinstance(const, tuple):
+            #         out.write('        %s %s\n' % const)
+            #     else:
+            #         out.write('        %s\n' % (const,))
+            for const in constants:
+                if isinstance(const, tuple):
+                    out.write('    unsigned int %s %s\n' % const)
+                else:
+                    out.write('    unsigned int %s\n' % (const,))
+    
+            out.write("constants = {\n")
+            for const in constants:
+                if isinstance(const, tuple):
+                    pyname = const[0]
+                else:
+                    pyname = const
+                out.write('    "%s": %s,\n' % (pyname, pyname))
+            out.write("}\n")
+            if kwargs:
+                out.write("\n\n")
 
         if kwargs:
-            out.write("\n\n")
             for k, v in kwargs.items():
                 out.write('DEF %s = %s\n' % (k, v))
 
@@ -1893,6 +1895,7 @@ if csc_cython_ENABLED:
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
+    make_constants("xpra", "codecs", "vpx", "constants", LIBVPX14=pkg_config_ok("--atleast-version=1.4", "libvpx"))
     vpx_pkgconfig = pkgconfig("vpx")
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx"]+membuffers_c,
