@@ -1730,13 +1730,12 @@ class UIXpraClient(XpraClientBase):
                 soundlog("speaker is now disabled - dropping packet")
                 return
         ss = self.sound_sink
-        if metadata.boolget("end-of-stream"):
-            if ss:
-                soundlog("server sent end-of-stream for sequence %s, closing sound pipeline", seq)
-                self.stop_receiving_sound(False)
-            return
         if ss is None:
             soundlog("no sound sink to process sound data, dropping it")
+            return
+        if metadata.boolget("end-of-stream"):
+            soundlog("server sent end-of-stream for sequence %s, closing sound pipeline", seq)
+            self.stop_receiving_sound(False)
             return
         if codec!=ss.codec:
             log.error("sound codec change not supported! (from %s to %s)", ss.codec, codec)
