@@ -795,7 +795,10 @@ class ServerSource(object):
 
     def new_stream(self, sound_source, codec):
         soundlog("new_stream(%s)", codec)
-        self.sound_source.codec = codec
+        if self.sound_source!=sound_source:
+            soundlog("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source) 
+            return
+        sound_source.codec = codec
         if self.server_driven:
             #tell the client this is the start:
             self.send("sound-data", self.sound_source.codec, "",
