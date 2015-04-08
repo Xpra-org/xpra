@@ -206,7 +206,7 @@ class ServerSource(object):
         self.speaker_codecs = speaker_codecs
         self.supports_microphone = supports_microphone
         self.microphone_codecs = microphone_codecs
-        self.sound_source_sequence = -1
+        self.sound_source_sequence = 0
         self.sound_source = None
         self.sound_sink = None
 
@@ -777,6 +777,7 @@ class ServerSource(object):
             self.sound_source = start_sending_sound(self.sound_source_plugin, codec, volume, self.sound_decoders, self.pulseaudio_server, self.pulseaudio_id)
             soundlog("start_sending_sound() sound source=%s", self.sound_source)
             if self.sound_source:
+                self.sound_source.sequence = self.sound_source_sequence
                 self.sound_source.connect("new-buffer", self.new_sound_buffer)
                 self.sound_source.connect("new-stream", self.new_stream)
                 self.sound_source.start()
@@ -791,7 +792,7 @@ class ServerSource(object):
             if self.server_driven:
                 #tell the client this is the end:
                 self.send("sound-data", ss.codec, "", {"end-of-stream" : True,
-                                                       "sequence"      : self.sound_source_sequence})
+                                                       "sequence"      : ss.sequence})
             ss.cleanup()
 
     def new_stream(self, sound_source, codec):
@@ -805,15 +806,17 @@ class ServerSource(object):
             self.send("sound-data", self.sound_source.codec, "",
                       {"start-of-stream"    : True,
                        "codec"              : self.sound_source.codec,
-                       "sequence"           : self.sound_source_sequence})
+                       "sequence"           : self.sound_source.sequence})
 
     def new_sound_buffer(self, sound_source, data, metadata):
-        soundlog("new_sound_buffer(%s, %s, %s) suspended=%s, sequence=%s",
-                 sound_source, len(data or []), metadata, self.suspended, self.sound_source_sequence)
-        if self.sound_source is None or self.is_closed():
+        soundlog("new_sound_buffer(%s, %s, %s) suspended=%s",
+                 sound_source, len(data or []), metadata, self.suspended)
+        if self.sound_source!=sound_source or self.is_closed():
             return
-        if self.sound_source_sequence>0:
-            metadata["sequence"] = self.sound_source_sequence
+        if sound_source.sequence<self.sound_source_sequence:
+            return
+        if self.sound_source.sequence>=0:
+            metadata["sequence"] = self.sound_source.sequence
         self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
 
     def stop_receiving_sound(self):
@@ -876,7 +879,7 @@ class ServerSource(object):
                 return False
             self.timeout_add(100, fadeout)
         elif action=="new-sequence":
-            self.sound_source_sequence = args[0]
+            self.sound_source_sequence = int(args[0])
             return "new sequence is %s" % self.sound_source_sequence
         #elif action=="quality":
         #    assert self.sound_source
