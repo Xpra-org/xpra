@@ -790,7 +790,8 @@ class ServerSource(object):
             self.sound_source = None
             if self.server_driven:
                 #tell the client this is the end:
-                self.send("sound-data", ss.codec, "", {"end-of-stream" : True})
+                self.send("sound-data", ss.codec, "", {"end-of-stream" : True,
+                                                       "sequence"      : self.sound_source_sequence})
             ss.cleanup()
 
     def new_stream(self, sound_source, codec):

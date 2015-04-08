@@ -139,11 +139,11 @@ class UIXpraClient(XpraClientBase):
             soundlog("sound support unavailable: %s", e)
             has_gst = False
         #sound state:
-        self.sink_restart_pending = False
         self.on_sink_ready = None
         self.sound_sink = None
         self.server_sound_sequence = False
         self.min_sound_sequence = 0
+        self.server_sound_eos_sequence = False
         self.sound_source = None
         self.sound_in_bytecount = 0
         self.sound_out_bytecount = 0
@@ -1314,6 +1314,7 @@ class UIXpraClient(XpraClientBase):
         self.server_randr = c.boolget("resize_screen")
         log("server has randr: %s", self.server_randr)
         self.server_sound_sequence = c.boolget("sound_sequence")
+        self.server_sound_eos_sequence = c.boolget("sound.eos-sequence")
         self.server_info_request = c.boolget("info-request")
         e = c.strget("encoding")
         if e:
@@ -1645,29 +1646,31 @@ class UIXpraClient(XpraClientBase):
         self.stop_receiving_sound()
     def sound_process_stopped(self, sound_sink, *args):
         soundlog("the sound sink process %s has stopped, current sound sink=%s", sound_sink, self.sound_sink)
-        if not self.sink_restart_pending and sound_sink==self.sound_sink:
+        if sound_sink==self.sound_sink:
             soundlog.warn("the sound process has stopped")
             self.stop_receiving_sound()
 
-    def sound_sink_overrun(self, *args):
-        if self.sink_restart_pending:
-            soundlog("overrun re-start is already pending")
+    def sound_sink_overrun(self, sound_sink, *args):
+        if sound_sink!=self.sound_sink:
+            soundlog("sound_sink_overrun() not the current sink, ignoring it")
             return
         soundlog.warn("re-starting speaker because of overrun")
         codec = self.sound_sink.codec
-        self.sink_restart_pending = True
         if self.server_sound_sequence:
             self.min_sound_sequence += 1
-        #Note: the next sound packet will take care of starting a new pipeline
         self.stop_receiving_sound()
         def restart():
-            self.sink_restart_pending = False
-            soundlog("restart() sound_sink=%s, codec=%s, server_sound_sequence=%s", self.sound_sink, codec, self.server_sound_sequence)
+            soundlog("sound_sink=%s, codec=%s, server_sound_sequence=%s", self.sound_sink, codec, self.server_sound_sequence)
             if self.server_sound_sequence:
                 self.send_new_sound_sequence()
             self.start_receiving_sound()
-            return False
-        self.timeout_add(200, restart)
+        #by default for older servers,
+        #wait before restarting so we can process the "end-of-stream" message:
+        delay = 500
+        if self.server_sound_eos_sequence:
+            #no need to wait, we won't mistakenly stop() the wrong sink:
+            delay = 0
+        self.timeout_add(delay, restart)
 
     def start_sound_sink(self, codec):
         soundlog("start_sound_sink(%s)", codec)
@@ -1720,14 +1723,14 @@ class UIXpraClient(XpraClientBase):
             else:
                 soundlog("speaker is now disabled - dropping packet")
                 return
-        elif metadata.boolget("end-of-stream"):
-            if self.sound_sink:
-                soundlog("server sent end-of-stream, closing sound pipeline")
-                self.stop_receiving_sound(False)
-            return
         seq = metadata.intget("sequence", -1)
         if self.min_sound_sequence>0 and seq<self.min_sound_sequence:
             soundlog("ignoring sound data with old sequence number %s", seq)
+            return
+        if metadata.boolget("end-of-stream"):
+            if self.sound_sink:
+                soundlog("server sent end-of-stream, closing sound pipeline")
+                self.stop_receiving_sound(False)
             return
         ss = self.sound_sink
         if ss is not None and codec!=self.sound_sink.codec:

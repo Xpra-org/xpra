@@ -900,7 +900,8 @@ class ServerBase(ServerCore):
                 "encoding.generic", "encoding.strict_control",
                 "sound.server_driven",
                 "command_request",
-                "event_request", "server-events")
+                "event_request", "server-events",
+                "sound.eos-sequence")
 
     def make_hello(self, source):
         capabilities = ServerCore.make_hello(self, source)
