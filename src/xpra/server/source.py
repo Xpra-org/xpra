@@ -803,10 +803,10 @@ class ServerSource(object):
         sound_source.codec = codec
         if self.server_driven:
             #tell the client this is the start:
-            self.send("sound-data", self.sound_source.codec, "",
+            self.send("sound-data", sound_source.codec, "",
                       {"start-of-stream"    : True,
-                       "codec"              : self.sound_source.codec,
-                       "sequence"           : self.sound_source.sequence})
+                       "codec"              : sound_source.codec,
+                       "sequence"           : sound_source.sequence})
 
     def new_sound_buffer(self, sound_source, data, metadata):
         soundlog("new_sound_buffer(%s, %s, %s) suspended=%s",
@@ -815,9 +815,9 @@ class ServerSource(object):
             return
         if sound_source.sequence<self.sound_source_sequence:
             return
-        if self.sound_source.sequence>=0:
-            metadata["sequence"] = self.sound_source.sequence
-        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
+        if sound_source.sequence>=0:
+            metadata["sequence"] = sound_source.sequence
+        self.send("sound-data", sound_source.codec, Compressed(sound_source.codec, data), metadata)
 
     def stop_receiving_sound(self):
         ss = self.sound_sink
