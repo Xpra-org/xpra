@@ -94,8 +94,8 @@ class UI_thread_watcher(object):
         log("poll_UI_loop() running")
         while not self.exit.isSet():
             delta = time.time()-self.last_UI_thread_time
-            log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago, UI_blocked=%s", delta, self.UI_blocked)
-            if delta>self.max_delta:
+            log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago (max %i), UI_blocked=%s", delta, self.max_delta/1000, self.UI_blocked)
+            if delta>self.max_delta/1000.0:
                 #UI thread is (still?) blocked:
                 if not self.UI_blocked:
                     log.info("UI thread is now blocked")
