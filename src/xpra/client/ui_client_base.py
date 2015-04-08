@@ -1724,7 +1724,7 @@ class UIXpraClient(XpraClientBase):
                 soundlog("speaker is now disabled - dropping packet")
                 return
         seq = metadata.intget("sequence", -1)
-        if self.min_sound_sequence>0 and seq<self.min_sound_sequence:
+        if self.min_sound_sequence>0 and seq>=0 and seq<self.min_sound_sequence:
             soundlog("ignoring sound data with old sequence number %s", seq)
             return
         if metadata.boolget("end-of-stream"):
