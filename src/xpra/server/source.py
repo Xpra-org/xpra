@@ -774,13 +774,14 @@ class ServerSource(object):
             assert self.supports_speaker, "cannot send sound: support not enabled on the server"
             assert self.sound_source is None, "a sound source already exists"
             assert self.sound_receive, "cannot send sound: support is not enabled on the client"
-            self.sound_source = start_sending_sound(self.sound_source_plugin, codec, volume, self.sound_decoders, self.pulseaudio_server, self.pulseaudio_id)
-            soundlog("start_sending_sound() sound source=%s", self.sound_source)
-            if self.sound_source:
-                self.sound_source.sequence = self.sound_source_sequence
-                self.sound_source.connect("new-buffer", self.new_sound_buffer)
-                self.sound_source.connect("new-stream", self.new_stream)
-                self.sound_source.start()
+            ss = start_sending_sound(self.sound_source_plugin, codec, volume, self.sound_decoders, self.pulseaudio_server, self.pulseaudio_id)
+            self.sound_source = ss
+            soundlog("start_sending_sound() sound source=%s", ss)
+            if ss:
+                ss.sequence = self.sound_source_sequence
+                ss.connect("new-buffer", self.new_sound_buffer)
+                ss.connect("new-stream", self.new_stream)
+                ss.start()
         except Exception as e:
             log.error("error setting up sound: %s", e, exc_info=True)
 
@@ -812,8 +813,10 @@ class ServerSource(object):
         soundlog("new_sound_buffer(%s, %s, %s) suspended=%s",
                  sound_source, len(data or []), metadata, self.suspended)
         if self.sound_source!=sound_source or self.is_closed():
+            soundlog("sound buffer dropped: from old source or closed")
             return
         if sound_source.sequence<self.sound_source_sequence:
+            soundlog("sound buffer dropped: old sequence number: %s (current is %s)", sound_source.sequence, self.sound_source_sequence)
             return
         if sound_source.sequence>=0:
             metadata["sequence"] = sound_source.sequence
