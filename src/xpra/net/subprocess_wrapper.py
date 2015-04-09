@@ -157,6 +157,7 @@ class subprocess_callee(object):
         if p:
             self.protocol = None
             p.close()
+        log("stop() stopping mainloop %s", self.mainloop)
         self.mainloop.quit()
 
     def handle_signal(self, sig, frame):
@@ -295,9 +296,9 @@ class subprocess_caller(object):
         self.stop()
 
     def stop(self):
-        log("%s.stop()", self)
+        log("stop() sending stop request to %s", self.description)
         proc = self.process
-        if proc:
+        if proc and proc.poll() is None:
             try:
                 proc.terminate()
                 self.process = None
@@ -306,6 +307,7 @@ class subprocess_caller(object):
         p = self.protocol
         if p:
             self.protocol = None
+            log("%s.stop() calling %s", self, p.close)
             try:
                 p.close()
             except Exception as e:
