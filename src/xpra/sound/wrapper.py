@@ -91,7 +91,9 @@ class sound_play(sound_subprocess):
         sound_subprocess.__init__(self, sound_pipeline, ["add_data"], ["underrun", "overrun"])
         if FAKE_OVERRUN>0:
             def fake_overrun(*args):
-                self.wrapped_object.emit("overrun", 500)
+                wo = self.wrapped_object
+                if wo:
+                    wo.emit("overrun", 500)
             gobject.timeout_add(FAKE_OVERRUN*1000, fake_overrun)
 
 
