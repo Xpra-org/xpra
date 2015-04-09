@@ -153,7 +153,7 @@ class sound_subprocess_wrapper(subprocess_caller):
 
 
     def cleanup(self):
-        log("cleanup() sending request to cleanup")
+        log("cleanup() sending cleanup request to %s", self.description)
         self.send("cleanup")
         #cleanup should cause the process to exit
         gobject.timeout_add(500, self.stop)
