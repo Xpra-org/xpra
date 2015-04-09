@@ -119,22 +119,27 @@ class SoundPipeline(gobject.GObject):
         #            log(v)
         self.state = "stopped"
         p.set_state(gst.STATE_NULL)
-        self.volume = None
         log("SoundPipeline.stop() done")
 
     def cleanup(self):
-        self.stop()
-        if not self.bus:
-            return
         log("SoundPipeline.cleanup()")
-        self.bus.remove_signal_watch()
-        if self.bus_message_handler_id:
-            self.bus.disconnect(self.bus_message_handler_id)
+        self.stop()
+        b = self.bus
         self.bus = None
+        log("SoundPipeline.cleanup() bus=%s", b)
+        if not b:
+            return
+        b.remove_signal_watch()
+        bmhid = self.bus_message_handler_id
+        log("SoundPipeline.cleanup() bus_message_handler_id=%s", bmhid)
+        if bmhid:
+            self.bus_message_handler_id = None
+            b.disconnect(bmhid)
         self.pipeline = None
         self.codec = None
         self.bitrate = -1
         self.state = None
+        self.volume = None
         log("SoundPipeline.cleanup() done")
 
     def on_message(self, bus, message):
