@@ -150,6 +150,7 @@ class SoundSource(SoundPipeline):
         self.byte_count += len(data)
         metadata["time"] = int(time.time()*1000)
         self.idle_emit("new-buffer", data, metadata)
+        self.emit_info()
 
 
 gobject.type_register(SoundSource)

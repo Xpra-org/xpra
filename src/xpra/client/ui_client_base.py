@@ -1549,8 +1549,6 @@ class UIXpraClient(XpraClientBase):
         assert self.sound_source is None
         def sound_source_state_changed(*args):
             self.emit("microphone-changed")
-        def sound_source_bitrate_changed(*args):
-            self.emit("microphone-changed")
         try:
             from xpra.sound.wrapper import start_sending_sound
             self.sound_source = start_sending_sound(self.sound_source_plugin, None, 1.0, self.server_sound_decoders, self.server_pulseaudio_server, self.server_pulseaudio_id)
@@ -1558,7 +1556,6 @@ class UIXpraClient(XpraClientBase):
                 return False
             self.sound_source.connect("new-buffer", self.new_sound_buffer)
             self.sound_source.connect("state-changed", sound_source_state_changed)
-            self.sound_source.connect("bitrate-changed", sound_source_bitrate_changed)
             self.sound_source.start()
             soundlog("start_sound_source() sound source %s started", self.sound_source)
             return True
@@ -1693,7 +1690,6 @@ class UIXpraClient(XpraClientBase):
                 return False
             self.sound_sink = ss
             ss.connect("state-changed", self.sound_sink_state_changed)
-            ss.connect("bitrate-changed", self.sound_sink_bitrate_changed)
             ss.connect("error", self.sound_sink_error)
             ss.connect("overrun", self.sound_sink_overrun)
             from xpra.net.protocol import Protocol

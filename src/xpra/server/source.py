@@ -781,9 +781,13 @@ class ServerSource(object):
                 ss.sequence = self.sound_source_sequence
                 ss.connect("new-buffer", self.new_sound_buffer)
                 ss.connect("new-stream", self.new_stream)
+                ss.connect("info", self.sound_source_info)
                 ss.start()
         except Exception as e:
             log.error("error setting up sound: %s", e, exc_info=True)
+
+    def sound_source_info(self, info):
+        soundlog("sound_source_info(%s)", info)
 
     def stop_sending_sound(self):
         ss = self.sound_source

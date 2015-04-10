@@ -14,7 +14,6 @@ log = Logger("sound")
 
 DEBUG_SOUND = os.environ.get("XPRA_SOUND_DEBUG", "0")=="1"
 SUBPROCESS_DEBUG = os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",")
-EXPORT_INFO_TIME = int(os.environ.get("XPRA_SOUND_INFO_TIME", "1000"))
 FAKE_OVERRUN = int(os.environ.get("XPRA_FAKE_OVERRUN", "0"))
 
 
@@ -46,14 +45,12 @@ class sound_subprocess(subprocess_callee):
     def __init__(self, wrapped_object, method_whitelist, exports_list):
         #add bits common to both record and play:
         methods = method_whitelist+["set_volume", "stop", "cleanup"]
-        exports = ["state-changed", "bitrate-changed", "error"] + exports_list
+        exports = ["state-changed", "info", "error"] + exports_list
         subprocess_callee.__init__(self, wrapped_object=wrapped_object, method_whitelist=methods)
         for x in exports:
             self.connect_export(x)
 
     def start(self):
-        if EXPORT_INFO_TIME>0:
-            gobject.timeout_add(EXPORT_INFO_TIME, self.export_info)
         gobject.idle_add(self.wrapped_object.start)
         subprocess_callee.start(self)
 
@@ -173,7 +170,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         return self.last_info
 
     def info_update(self, sink, info):
-        log("info_update(%s, %s)", sink, info)
+        log("info_update: %s", info)
         self.last_info = info
         self.last_info["time"] = int(time.time())
         self.codec_description = info.get("codec_description")

@@ -133,6 +133,7 @@ class SoundSink(SoundPipeline):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
         log("queue pushing: level=%s", ltime)
         self.queue_state = "pushing"
+        self.emit_info()
 
     def queue_running(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
@@ -143,6 +144,7 @@ class SoundSink(SoundPipeline):
             self.queue.set_property("min-threshold-time", 0)
             #pass
         self.queue_state = "running"
+        self.emit_info()
 
     def queue_underrun(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
@@ -151,6 +153,7 @@ class SoundSink(SoundPipeline):
             #lift min time restrictions:
             self.queue.set_property("min-threshold-time", QUEUE_MIN_TIME)
         self.queue_state = "underrun"
+        self.emit_info()
 
     def queue_overrun(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
@@ -163,6 +166,7 @@ class SoundSink(SoundPipeline):
         log("queue overrun: level=%s", ltime)
         self.overruns += 1
         self.emit("overrun", ltime)
+        self.emit_info()
 
     def eos(self):
         log("eos()")
@@ -218,6 +222,7 @@ class SoundSink(SoundPipeline):
             self.byte_count += len(data)
             ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
             log("pushed %s bytes, new buffer level: %sms", len(data), ltime)
+        self.emit_info()
 
     def push_buffer(self, buf):
         #buf.size = size

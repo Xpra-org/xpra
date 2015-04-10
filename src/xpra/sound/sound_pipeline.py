@@ -19,9 +19,9 @@ class SoundPipeline(gobject.GObject):
 
     __generic_signals__ = {
         "state-changed"     : one_arg_signal,
-        "bitrate-changed"   : one_arg_signal,
         "error"             : one_arg_signal,
         "new-stream"        : one_arg_signal,
+        "info"              : one_arg_signal,
         }
 
     def __init__(self, codec):
@@ -38,9 +38,19 @@ class SoundPipeline(gobject.GObject):
         self.state = "stopped"
         self.buffer_count = 0
         self.byte_count = 0
+        self.emit_info_due = False
 
     def idle_emit(self, sig, *args):
         gobject.idle_add(self.emit, sig, *args)
+
+    def emit_info(self):
+        if self.emit_info_due:
+            return
+        self.emit_info_due = True        
+        def do_emit_info():
+            self.emit_info_due = False
+            self.emit("info", self.get_info())
+        gobject.timeout_add(50, do_emit_info)
 
     def get_info(self):
         info = {"codec"             : self.codec,
@@ -84,7 +94,7 @@ class SoundPipeline(gobject.GObject):
             return
         self.bitrate = new_bitrate
         log("new bitrate: %s", self.bitrate)
-        #self.emit("bitrate-changed", new_bitrate)
+        self.emit_info()
 
 
     def set_volume(self, volume=100):
@@ -102,6 +112,7 @@ class SoundPipeline(gobject.GObject):
         self.idle_emit("new-stream", self.codec)
         self.state = "active"
         self.pipeline.set_state(gst.STATE_PLAYING)
+        self.emit_info()
         log("SoundPipeline.start() done")
 
     def stop(self):
@@ -196,6 +207,7 @@ class SoundPipeline(gobject.GObject):
             log.info("pipeline warning: %s", w[1:])
         else:
             log.info("unhandled bus message type %s: %s", t, message)
+        self.emit_info()
 
     def parse_message0(self, message):
         #message parsing code for GStreamer 0.10
