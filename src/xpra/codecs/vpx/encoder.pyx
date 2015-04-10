@@ -399,7 +399,7 @@ cdef class Encoder:
         cdef vpx_codec_err_t ctrl = vpx_codec_control_(self.context, attr, value)
         log("%s setting %s to %s", self.encoding, info, value)    
         if ctrl!=0:
-            log.warn("failed to set %s to %s: %s", info, value, get_error_string(ctrl))
+            log.warn("failed to set %s to %s: %s (%s)", info, value, get_error_string(ctrl), ctrl)
 
 
     def log_cfg(self):
@@ -580,7 +580,8 @@ cdef class Encoder:
             return
         self.quality = pct
         self.update_cfg()
-        self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100)
+        if self.encoding=="vp9":
+            self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100)
         cdef vpx_codec_err_t ret = vpx_codec_enc_config_set(self.context, self.cfg)
         assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
 
