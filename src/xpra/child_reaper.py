@@ -16,8 +16,10 @@ from xpra.gtk_common.gobject_compat import import_gobject
 gobject = import_gobject()
 gobject.threads_init()
 
+from xpra.util import AdHocStruct, updict
 from xpra.log import Logger
 log = Logger("server", "util")
+
 
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
 # or when the user requests it with the env var:
@@ -36,15 +38,14 @@ def getChildReaper(quit_cb=None):
 # Note that this class has async subtleties -- e.g., it is possible for a
 # child to exit and us to receive the SIGCHLD before our fork() returns (and
 # thus before we even know the pid of the child).  So be careful:
+# We can also end up with multiple procinfo structures with the same pid,
+# and that should be fine too
 class ChildReaper(object):
     #note: the quit callback will fire only once!
     def __init__(self, quit_cb=None):
+        log("ChildReaper(%s)", quit_cb)
         self._quit = quit_cb
-        self._children_pids = {}
-        self._dead_pids = set()
-        self._ignored_pids = set()
-        self._forget_pids = set()
-        self._callbacks = {}
+        self._proc_info = []
         if USE_PROCESS_POLLING:
             POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
             if BUGGY_PYTHON:
@@ -52,7 +53,7 @@ class ChildReaper(object):
                 log.warn("switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
             else:
                 log("using process polling every %s seconds", POLL_DELAY)
-            gobject.timeout_add(POLL_DELAY*1000, self.check)
+            gobject.timeout_add(POLL_DELAY*1000, self.poll)
         else:
             #with a less buggy python, we can just check the list of pids
             #whenever we get a SIGCHLD
@@ -72,35 +73,44 @@ class ChildReaper(object):
             gobject.timeout_add(0, check_once)
 
     def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
-        process.command = command
-        process.name = name
-        assert process.pid>0
-        self._children_pids[process.pid] = process
-        if ignore:
-            self._ignored_pids.add(process.pid)
-        if forget:
-            self._forget_pids.add(process.pid)
-        if callback:
-            self._callbacks[process.pid] = callback
-        log("add_process(%s, %s, %s, %s) pid=%s", process, name, command, ignore, process.pid)
+        pid = process.pid
+        assert pid>0, "process has no pid!"
+        procinfo = AdHocStruct()
+        procinfo.pid = pid
+        procinfo.name = name
+        procinfo.command = command
+        procinfo.ignore = ignore
+        procinfo.forget = forget
+        procinfo.callback = callback
+        procinfo.process = process
+        procinfo.returncode = process.poll()
+        procinfo.dead = False
+        log("add_process(%s, %s, %s, %s) pid=%s", process, name, command, ignore, pid)
         #could have died already:
-        if process.poll() is not None:
-            self.check()
+        self._proc_info.append(procinfo)
+        if procinfo.returncode is not None:
+            self.add_dead_process(procinfo)
+
+    def poll(self):
+        #poll each process that is not dead yet:
+        log("poll() procinfo list: %s", self._proc_info)
+        for procinfo in list(self._proc_info):
+            process = procinfo.process
+            if not procinfo.dead and process and process.poll() is not None:
+                self.add_dead_process(procinfo)
+        return True
 
     def check(self):
-        pids = set(self._children_pids.keys()) - self._ignored_pids
-        log("check() pids=%s", pids)
-        if pids:
-            for pid, proc in self._children_pids.items():
-                if proc.poll() is not None:
-                    self.add_dead_pid(pid)
-            log("check() pids=%s, dead_pids=%s", pids, self._dead_pids)
-            if pids.issubset(self._dead_pids):
-                cb = self._quit
-                if cb:
-                    self._quit = None
-                    cb()
-                return False
+        #see if we are meant to exit-with-children
+        #see if we still have procinfos alive (and not meant to be ignored)
+        alive = [procinfo for procinfo in list(self._proc_info) if (not procinfo.ignore and not procinfo.dead)]
+        log("check() alive=%s", alive)
+        if len(alive)==0:
+            cb = self._quit
+            if cb:
+                self._quit = None
+                cb()
+            return False
         return True
 
     def sigchld(self, signum, frame):
@@ -108,26 +118,42 @@ class ChildReaper(object):
         self.reap()
 
     def add_dead_pid(self, pid):
-        already_seen = pid in self._dead_pids
-        log("add_dead_pid(%s) already_seen=%s", pid, already_seen)
-        if already_seen:
+        #find the procinfo for this pid:
+        matches = [procinfo for procinfo in self._proc_info if procinfo.pid==pid and not procinfo.dead]
+        log("add_dead_pid(%s) matches=%s", pid, matches)
+        if not matches:
+            #not one of ours? odd.
             return
-        proc = self._children_pids.get(pid)
-        callback = self._callbacks.get(pid)
-        log("add_dead_pid(%s) process=%s, callback=%s", pid, proc, callback)
-        if callback and proc:
-            callback(proc)
-        if pid in self._forget_pids:
-            #forget it:
-            self._forget_pids.remove(pid)
-            del self._children_pids[pid]
-        if pid not in self._dead_pids:
-            if proc:
-                if pid in self._ignored_pids:
-                    log("child '%s' with pid %s has terminated (ignored)", proc.name, pid)
+        for procinfo in matches:
+            self.add_dead_process(procinfo)
+
+    def add_dead_process(self, procinfo):
+        log("add_dead_process(%s)", procinfo)
+        process = procinfo.process
+        if process:
+            procinfo.returncode = process.poll()
+            procinfo.dead = procinfo.returncode is not None
+            cb = procinfo.callback
+            if procinfo.dead and procinfo.process and cb:
+                procinfo.callback = None
+                cb(procinfo.process)
+            if procinfo.dead:
+                #once it's dead, clear the reference to the process:
+                #this should free up some resources
+                #and ensure we don't end up here again
+                procinfo.process = None
+                if procinfo.ignore:
+                    log("child '%s' with pid %s has terminated (ignored)", procinfo.name, procinfo.pid)
                 else:
-                    log.info("child '%s' with pid %s has terminated", proc.name, pid)
-            self._dead_pids.add(pid)
+                    log.info("child '%s' with pid %s has terminated", procinfo.name, procinfo.pid)
+        if procinfo.dead and procinfo.forget:
+            #forget it:
+            try:
+                self._proc_info.remove(procinfo)
+            except:
+                pass
+        log("updated procinfo=%s", procinfo)
+        if procinfo.dead:
             self.check()
 
     def reap(self):
@@ -142,15 +168,12 @@ class ChildReaper(object):
             self.add_dead_pid(pid)
 
     def get_info(self):
-        d = dict(self._children_pids)
-        info = {"children"          : len(d),
-                "children.dead"     : len(self._dead_pids),
-                "children.ignored"  : len(self._ignored_pids)}
-        for i, pid in enumerate(sorted(d.keys())):
-            proc = d[pid]
-            info["child[%i].live" % i]  = pid not in self._dead_pids
-            info["child[%i].pid" % i]   = pid
-            info["child[%i].command" % i]   = proc.command
-            info["child[%i].ignored" % i] = pid in self._ignored_pids
-            info["child[%i].forget" % i] = pid in self._forget_pids
+        iv = list(self._proc_info)
+        info = {"children"          : len(iv),
+                "children.dead"     : len([x for x in iv if x.dead]),
+                "children.ignored"  : len([x for x in iv if x.ignore])}
+        pi = sorted(self._proc_info, key=lambda x: x.pid, reverse=True)
+        for i, procinfo in enumerate(pi):
+            d = dict((k,getattr(procinfo,k)) for k in ("name", "command", "ignore", "forget", "returncode", "dead"))
+            updict(info, "child[%i]" % i, d)
         return info
