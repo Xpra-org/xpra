@@ -299,6 +299,10 @@ class subprocess_caller(object):
         self.stop()
 
     def stop(self):
+        self.stop_process()
+        self.stop_protocol()
+
+    def stop_process(self):
         log("stop() sending stop request to %s", self.description)
         proc = self.process
         if proc and proc.poll() is None:
@@ -307,6 +311,8 @@ class subprocess_caller(object):
                 self.process = None
             except Exception as e:
                 log.warn("failed to stop the wrapped subprocess %s: %s", proc, e)
+
+    def stop_protocol(self):
         p = self.protocol
         if p:
             self.protocol = None

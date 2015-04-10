@@ -150,6 +150,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         #hook some default packet handlers:
         self.connect("state-changed", self.state_changed)
         self.connect("info", self.info_update)
+        self.connect("signal", self.subprocess_signal)
 
 
     def cleanup(self):
@@ -159,7 +160,12 @@ class sound_subprocess_wrapper(subprocess_caller):
         gobject.timeout_add(500, self.stop)
 
 
-    def state_changed(self, sink, new_state):
+    def subprocess_signal(self, wrapper, proc):
+        log("subprocess_signal: %s", proc)
+        self.stop_protocol()
+
+
+    def state_changed(self, wrapper, new_state):
         self.state = new_state
 
     def get_state(self):
@@ -169,7 +175,7 @@ class sound_subprocess_wrapper(subprocess_caller):
     def get_info(self):
         return self.last_info
 
-    def info_update(self, sink, info):
+    def info_update(self, wrapper, info):
         log("info_update: %s", info)
         self.last_info = info
         self.last_info["time"] = int(time.time())
