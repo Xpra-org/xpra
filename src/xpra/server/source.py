@@ -786,8 +786,8 @@ class ServerSource(object):
         except Exception as e:
             log.error("error setting up sound: %s", e, exc_info=True)
 
-    def sound_source_info(self, info):
-        soundlog("sound_source_info(%s)", info)
+    def sound_source_info(self, source, info):
+        soundlog("sound_source_info: %s", info)
 
     def stop_sending_sound(self):
         ss = self.sound_source
