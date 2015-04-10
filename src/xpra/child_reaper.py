@@ -43,6 +43,11 @@ def reaper_cleanup():
     singleton.poll()
 
 
+class ProcInfo(object):
+    def __repr__(self):
+        return "ProcInfo(%s)" % self.__dict__
+
+
 # Note that this class has async subtleties -- e.g., it is possible for a
 # child to exit and us to receive the SIGCHLD before our fork() returns (and
 # thus before we even know the pid of the child).  So be careful:
@@ -83,7 +88,7 @@ class ChildReaper(object):
     def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
         pid = process.pid
         assert pid>0, "process has no pid!"
-        procinfo = AdHocStruct()
+        procinfo = ProcInfo()
         procinfo.pid = pid
         procinfo.name = name
         procinfo.command = command
