@@ -54,16 +54,13 @@ class sound_subprocess(subprocess_callee):
         gobject.idle_add(self.wrapped_object.start)
         subprocess_callee.start(self)
 
-    def stop(self):
+    def cleanup(self):
         wo = self.wrapped_object
         log("stop() wrapped object=%s", wo)
         if wo:
             #this will stop the sound pipeline:
             self.wrapped_object = None
             wo.cleanup()
-        #this will stop the protocol and main loop
-        #so call it with a delay so the sound pipeline can shutdown cleanly
-        gobject.timeout_add(250, subprocess_callee.stop, self)
 
     def export_info(self):
         wo = self.wrapped_object

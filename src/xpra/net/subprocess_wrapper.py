@@ -152,7 +152,12 @@ class subprocess_callee(object):
         log("net_stop() will call stop from main thread")
         gobject.idle_add(self.stop)
 
+
+    def cleanup(self):
+        pass
+
     def stop(self):
+        self.cleanup()
         p = self.protocol
         log("stop() protocol=%s", p)
         if p:
@@ -169,6 +174,7 @@ class subprocess_callee(object):
         signame = SIGNAMES.get(sig, sig)
         log("handle_signal(%s, %s) calling stop from main thread", signame, frame)
         self.send("signal", signame)
+        self.cleanup()
         #give time for the network layer to send the signal message
         gobject.timeout_add(150, self.stop)
 
