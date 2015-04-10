@@ -44,6 +44,7 @@ from xpra.scripts.main import sound_option
 from xpra.scripts.config import parse_bool_or_int
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
+from xpra.child_reaper import reaper_cleanup
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
 from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, CLIENT_EXIT
@@ -372,6 +373,7 @@ class UIXpraClient(XpraClientBase):
             self.stop_sending_sound()
         if self.sound_sink:
             self.stop_receiving_sound()
+        reaper_cleanup()
         log("UIXpraClient.cleanup() done")
 
     def destroy_all_windows(self):

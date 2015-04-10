@@ -35,6 +35,14 @@ def getChildReaper(quit_cb=None):
     return singleton
 
 
+def reaper_cleanup():
+    global singleton
+    if not singleton:
+        return
+    singleton.reap()
+    singleton.poll()
+
+
 # Note that this class has async subtleties -- e.g., it is possible for a
 # child to exit and us to receive the SIGCHLD before our fork() returns (and
 # thus before we even know the pid of the child).  So be careful:
@@ -174,6 +182,6 @@ class ChildReaper(object):
                 "children.ignored"  : len([x for x in iv if x.ignore])}
         pi = sorted(self._proc_info, key=lambda x: x.pid, reverse=True)
         for i, procinfo in enumerate(pi):
-            d = dict((k,getattr(procinfo,k)) for k in ("name", "command", "ignore", "forget", "returncode", "dead"))
+            d = dict((k,getattr(procinfo,k)) for k in ("name", "command", "ignore", "forget", "returncode", "dead", "pid"))
             updict(info, "child[%i]" % i, d)
         return info

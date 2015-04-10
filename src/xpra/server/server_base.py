@@ -27,6 +27,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
     repr_ellipsized
+from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import python_platform, parse_bool_or_int
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, codec_versions, has_codec, get_codec
@@ -571,6 +572,7 @@ class ServerBase(ServerCore):
             self.notifications_forwarder = None
         ServerCore.cleanup(self)
         getVideoHelper().cleanup()
+        reaper_cleanup()
         self.cleanup_pulseaudio()
 
     def add_listen_socket(self, socktype, socket):

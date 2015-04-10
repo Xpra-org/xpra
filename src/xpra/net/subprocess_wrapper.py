@@ -16,6 +16,7 @@ gobject.threads_init()
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.protocol import Protocol
 from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr
+from xpra.child_reaper import getChildReaper
 from xpra.log import Logger
 log = Logger("util")
 
@@ -266,7 +267,9 @@ class subprocess_caller(object):
     def exec_subprocess(self):
         kwargs = self.exec_kwargs()
         log("exec_subprocess() command=%s, kwargs=%s", self.command, kwargs)
-        return subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=self.get_env(), **kwargs)
+        proc = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=self.get_env(), **kwargs)
+        getChildReaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
+        return proc
 
     def get_env(self):
         env = os.environ.copy()
