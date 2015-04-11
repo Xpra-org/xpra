@@ -170,7 +170,7 @@ class ChildReaper(object):
             self.check()
 
     def reap(self):
-        while True:
+        while os.name=="posix":
             try:
                 pid, _ = os.waitpid(-1, os.WNOHANG)
             except OSError:
