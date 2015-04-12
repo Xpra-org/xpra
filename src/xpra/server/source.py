@@ -782,9 +782,14 @@ class ServerSource(object):
                 ss.connect("new-buffer", self.new_sound_buffer)
                 ss.connect("new-stream", self.new_stream)
                 ss.connect("info", self.sound_source_info)
+                ss.connect("exit", self.sound_source_exit)
                 ss.start()
         except Exception as e:
             log.error("error setting up sound: %s", e, exc_info=True)
+
+    def sound_source_exit(self, source, *args):
+        log("sound_source_exit(%s, %s)", source, args)
+        self.stop_sending_sound()
 
     def sound_source_info(self, source, info):
         soundlog("sound_source_info: %s", info)

@@ -214,7 +214,8 @@ class subprocess_callee(object):
             return
         method = getattr(self.wrapped_object, attr, None)
         if not method:
-            log.warn("unknown command: %s", command)
+            if self.wrapped_object is not None:
+                log.warn("unknown command: %s", command)
             return
         if DEBUG_WRAPPER:
             log("calling %s.%s%s", self.wrapped_object, attr, str(tuple(packet[1:]))[:128])
@@ -249,7 +250,9 @@ class subprocess_caller(object):
 
 
     def subprocess_exit(self, *args):
+        #beware: this may fire more than once!
         log("subprocess_exit%s command=%s", args, self.command)
+        self._fire_callback("exit")
 
     def start(self):
         self.process = self.exec_subprocess()
@@ -350,13 +353,16 @@ class subprocess_caller(object):
     def process_packet(self, proto, packet):
         if DEBUG_WRAPPER:
             log("process_packet(%s, %s)", proto, [str(x)[:32] for x in packet])
-        command = bytestostr(packet[0])
-        callbacks = self.signal_callbacks.get(command)
-        log("process_packet callbacks(%s)=%s", command, callbacks)
+        signal_name = bytestostr(packet[0])
+        self._fire_callback(signal_name, packet[1:])
+
+    def _fire_callback(self, signal_name, extra_args=[]):
+        callbacks = self.signal_callbacks.get(signal_name)
+        log("firing callback for %s: %s", signal_name, callbacks)
         if callbacks:
             for cb, args in callbacks:
                 try:
-                    all_args = list(packet[1:]) + args
+                    all_args = list(args) + extra_args
                     cb(self, *all_args)
                 except Exception:
-                    log.error("error processing callback %s for %s packet", cb, command, exc_info=True)
+                    log.error("error processing callback %s for %s packet", cb, signal_name, exc_info=True)

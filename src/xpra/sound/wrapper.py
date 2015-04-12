@@ -14,7 +14,10 @@ log = Logger("sound")
 
 DEBUG_SOUND = os.environ.get("XPRA_SOUND_DEBUG", "0")=="1"
 SUBPROCESS_DEBUG = os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",")
-FAKE_OVERRUN = int(os.environ.get("XPRA_FAKE_OVERRUN", "0"))
+FAKE_OVERRUN = int(os.environ.get("XPRA_SOUND_FAKE_OVERRUN", "0"))
+FAKE_START_FAILURE = os.environ.get("XPRA_SOUND_FAKE_START_FAILURE", "0")=="1"
+FAKE_EXIT = int(os.environ.get("XPRA_SOUND_FAKE_EXIT", "0"))
+FAKE_CRASH = int(os.environ.get("XPRA_SOUND_FAKE_CRASH", "0"))
 
 
 #this wrapper takes care of launching src.py or sink.py
@@ -51,7 +54,18 @@ class sound_subprocess(subprocess_callee):
             self.connect_export(x)
 
     def start(self):
-        gobject.idle_add(self.wrapped_object.start)
+        if not FAKE_START_FAILURE:
+            gobject.idle_add(self.wrapped_object.start)
+        if FAKE_EXIT>0:
+            def process_exit():
+                self.cleanup()
+                gobject.timeout_add(250, self.stop)
+            gobject.timeout_add(FAKE_EXIT*1000, process_exit)
+        if FAKE_CRASH>0:
+            def force_exit():
+                import sys
+                sys.exit(1)
+            gobject.timeout_add(FAKE_CRASH*1000, force_exit)
         subprocess_callee.start(self)
 
     def cleanup(self):
@@ -149,12 +163,29 @@ class sound_subprocess_wrapper(subprocess_caller):
         self.connect("info", self.info_update)
         self.connect("signal", self.subprocess_signal)
 
+    def start(self):
+        self.verify_started()
+        subprocess_caller.start(self)
+        gobject.timeout_add(2500, self.verify_started)
+
 
     def cleanup(self):
         log("cleanup() sending cleanup request to %s", self.description)
         self.send("cleanup")
         #cleanup should cause the process to exit
         gobject.timeout_add(500, self.stop)
+
+
+    def verify_started(self):
+        p = self.process
+        log("verify_started() process=%s, last_info=%s, codec=%s", p, self.last_info, self.codec)
+        if p is None or p.poll() is not None:
+            #process has terminated already
+            return
+        #if we don't get an "info" packet, then the pipeline must have failed to start
+        if not self.last_info:
+            log.warn("the %s process has failed to start, stopping it", self.description)
+            self.cleanup()
 
 
     def subprocess_signal(self, wrapper, proc):

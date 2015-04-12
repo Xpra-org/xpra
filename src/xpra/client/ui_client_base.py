@@ -1681,6 +1681,21 @@ class UIXpraClient(XpraClientBase):
         soundlog("sound_sink_overrun() will restart in %ims (server supports eos sequence: %s)", delay, self.server_sound_eos_sequence)
         self.timeout_add(delay, restart)
 
+    def sound_sink_exit(self, sound_sink, *args):
+        log("sound_sink_exit(%s, %s) sound_sink=%s", sound_sink, args, self.sound_sink)
+        ss = self.sound_sink
+        if sound_sink!=ss:
+            soundlog("sound_sink_overrun() not the current sink, ignoring it")
+            return
+        if ss and ss.codec:
+            #the mandatory "I've been naughty warning":
+            #we use the "codec" field as guard to ensure we only print this warning once..
+            log.warn("the %s sound sink has stopped", ss.codec)
+            ss.codec = ""
+        #if we had an overrun, we should have restarted things already
+        #(and the guard at the top ensures we don't end up stopping the new sink)
+        self.stop_receiving_sound()
+
     def start_sound_sink(self, codec):
         soundlog("start_sound_sink(%s)", codec)
         assert self.sound_sink is None, "sound sink already exists!"
@@ -1694,6 +1709,7 @@ class UIXpraClient(XpraClientBase):
             ss.connect("state-changed", self.sound_sink_state_changed)
             ss.connect("error", self.sound_sink_error)
             ss.connect("overrun", self.sound_sink_overrun)
+            ss.connect("exit", self.sound_sink_exit)
             from xpra.net.protocol import Protocol
             ss.connect(Protocol.CONNECTION_LOST, self.sound_process_stopped)
             ss.start()
