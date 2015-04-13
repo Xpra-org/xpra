@@ -789,7 +789,8 @@ class ServerSource(object):
 
     def sound_source_exit(self, source, *args):
         log("sound_source_exit(%s, %s)", source, args)
-        self.stop_sending_sound()
+        if source==self.sound_source:
+            self.stop_sending_sound()
 
     def sound_source_info(self, source, info):
         soundlog("sound_source_info: %s", info)

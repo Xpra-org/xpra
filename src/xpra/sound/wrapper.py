@@ -164,7 +164,6 @@ class sound_subprocess_wrapper(subprocess_caller):
         self.connect("signal", self.subprocess_signal)
 
     def start(self):
-        self.verify_started()
         subprocess_caller.start(self)
         gobject.timeout_add(2500, self.verify_started)
 

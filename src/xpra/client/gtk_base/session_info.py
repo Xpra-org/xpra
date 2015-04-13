@@ -704,9 +704,9 @@ class SessionInfo(gtk.Window):
             p = get_sound_info(supported, prop)
             label.set_text(p.get("state", ""))
             if details:
-                d = p.get("queue.used_pct", -1)
+                d = p.get("queue.used", -1)
                 if d>=0:
-                    details.set_text(" (buffer: %s%%)" % str(d).rjust(3))
+                    details.set_text(" (buffer: %sms)" % str(d).rjust(3))
                 else:
                     details.set_text("")
         set_sound_info(self.speaker_label, self.speaker_details, self.client.speaker_enabled, self.client.sound_sink)
