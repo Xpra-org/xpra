@@ -294,7 +294,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             log("not sending updated window state %s to a server which is missing the configure skip-geometry feature", self._window_state)
             return
         def send_updated_window_state():
-            if self._window_state:
+            if self._window_state and self.get_window():
                 self.process_configure_event(True)
         if self._window_state:
             self.timeout_add(25, send_updated_window_state)
