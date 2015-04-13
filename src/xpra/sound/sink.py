@@ -182,6 +182,7 @@ class SoundSink(SoundPipeline):
                 "time"          : int(QUEUE_TIME/MS_TO_NS),
                 "min_time"      : int(QUEUE_MIN_TIME/MS_TO_NS),
                 "used_pct"      : int(min(QUEUE_TIME, clt)*100.0/QUEUE_TIME),
+                "used"          : int(clt/MS_TO_NS),
                 "overruns"      : self.overruns,
                 "state"         : self.queue_state})
         return info
