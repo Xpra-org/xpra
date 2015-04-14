@@ -1895,7 +1895,11 @@ if csc_cython_ENABLED:
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
-    make_constants("xpra", "codecs", "vpx", "constants", LIBVPX14=pkg_config_ok("--atleast-version=1.4", "libvpx"))
+    kwargs = {"LIBVPX14"    : pkg_config_ok("--atleast-version=1.4", "libvpx"),
+              "ENABLE_VP8"  : True,
+              "ENABLE_VP9"  : pkg_config_ok("--atleast-version=1.3", "libvpx"),
+              }
+    make_constants("xpra", "codecs", "vpx", "constants", **kwargs)
     vpx_pkgconfig = pkgconfig("vpx")
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx"]+membuffers_c,

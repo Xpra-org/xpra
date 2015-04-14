@@ -12,9 +12,7 @@ log = Logger("decoder", "vpx")
 
 VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
 
-DEF ENABLE_VP8 = True
-DEF ENABLE_VP9 = True
-
+include "constants.pxi"
 
 from libc.stdint cimport int64_t
 
@@ -61,9 +59,9 @@ cdef extern from "vpx/vpx_image.h":
         unsigned int y_chroma_shift
 
 cdef extern from "vpx/vp8dx.h":
-    IF ENABLE_VP8 == True:
+    IF ENABLE_VP8:
         const vpx_codec_iface_t *vpx_codec_vp8_dx()
-    IF ENABLE_VP9 == True:
+    IF ENABLE_VP9:
         const vpx_codec_iface_t *vpx_codec_vp9_dx()
 
 cdef extern from "vpx/vpx_decoder.h":
@@ -95,10 +93,10 @@ cdef extern from "vpx/vpx_decoder.h":
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES = {}
 CODECS = []
-IF ENABLE_VP8 == True:
+IF ENABLE_VP8:
     CODECS.append("vp8")
     COLORSPACES["vp8"] = [b"YUV420P"]
-IF ENABLE_VP9 == True:
+IF ENABLE_VP9:
     CODECS.append("vp9")
     vp9_cs = [b"YUV420P"]
     #this is the ABI version with libvpx 1.4.0:
@@ -153,10 +151,10 @@ def get_info():
 
 
 cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
-    IF ENABLE_VP8 == True:
+    IF ENABLE_VP8:
         if encoding=="vp8":
             return vpx_codec_vp8_dx()
-    IF ENABLE_VP9 == True:
+    IF ENABLE_VP9:
         if encoding=="vp9":
             return vpx_codec_vp9_dx()
     raise Exception("unsupported encoding: %s" % encoding)

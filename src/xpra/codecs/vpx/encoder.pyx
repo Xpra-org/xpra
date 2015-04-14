@@ -23,11 +23,11 @@ except:
         pass
 VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1))
 
-DEF ENABLE_VP8 = True
-DEF ENABLE_VP9 = True
 include "constants.pxi"
 
-ENABLE_VP9_YUV444 = os.environ.get("XPRA_VP9_YUV444", "1")=="1"
+ENABLE_VP9_YUV444 = False
+IF ENABLE_VP9:
+    ENABLE_VP9_YUV444 = os.environ.get("XPRA_VP9_YUV444", "1")=="1"
 ENABLE_VP9_TILING = os.environ.get("XPRA_VP9_TILING", "0")=="1"
 
 
@@ -71,7 +71,8 @@ cdef extern from "vpx/vpx_codec.h":
 
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
-    cdef int VPX_IMG_FMT_I444
+    IF ENABLE_VP9:
+        cdef int VPX_IMG_FMT_I444
     ctypedef struct vpx_image_t:
         unsigned int w
         unsigned int h
@@ -85,9 +86,9 @@ cdef extern from "vpx/vpx_image.h":
         unsigned int y_chroma_shift
 
 cdef extern from "vpx/vp8cx.h":
-    IF ENABLE_VP8 == True:
+    IF ENABLE_VP8:
         const vpx_codec_iface_t *vpx_codec_vp8_cx()
-    IF ENABLE_VP9 == True:
+    IF ENABLE_VP9:
         const vpx_codec_iface_t *vpx_codec_vp9_cx()
 
 cdef extern from "vpx/vpx_encoder.h":
@@ -103,7 +104,8 @@ cdef extern from "vpx/vpx_encoder.h":
     IF LIBVPX14:
         #function to enable/disable periodic Q boost:
         int VP9E_SET_FRAME_PERIODIC_BOOST
-    int VP9E_SET_LOSSLESS
+    IF ENABLE_VP9:
+        int VP9E_SET_LOSSLESS
     #vpx_enc_pass:
     int VPX_RC_ONE_PASS
     int VPX_RC_FIRST_PASS
@@ -200,10 +202,10 @@ PACKET_KIND = {
 COLORSPACES = {}
 
 CODECS = []
-IF ENABLE_VP8 == True:
+IF ENABLE_VP8:
     CODECS.append("vp8")
     COLORSPACES["vp8"] = [b"YUV420P"]
-IF ENABLE_VP9 == True:
+IF ENABLE_VP9:
     CODECS.append("vp9")
     vp9_cs = [b"YUV420P"]
     #this is the ABI version with libvpx 1.4.0:
@@ -263,10 +265,10 @@ def get_info():
 
 
 cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
-    IF ENABLE_VP8 == True:
+    IF ENABLE_VP8:
         if encoding=="vp8":
             return vpx_codec_vp8_cx()
-    IF ENABLE_VP9 == True:
+    IF ENABLE_VP9:
         if encoding=="vp9":
             return vpx_codec_vp9_cx()
     raise Exception("unsupported encoding: %s" % encoding)
@@ -284,8 +286,9 @@ def get_spec(encoding, colorspace):
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
     if colorspace==b"YUV420P":
         return VPX_IMG_FMT_I420
-    elif colorspace==b"YUV444P":
-        return VPX_IMG_FMT_I444
+    IF ENABLE_VP9:
+        if colorspace==b"YUV444P" and ENABLE_VP9_YUV444:
+            return VPX_IMG_FMT_I444
     raise Exception("invalid colorspace %s" % colorspace)
 
 def get_error_string(int err):
@@ -381,15 +384,16 @@ cdef class Encoder:
             raise Exception("failed to initialized vpx encoder: %s" % vpx_codec_error(self.context))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
         cdef vpx_codec_err_t ctrl
-        if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
-            tile_columns = 0
-            if width>=256:
-                tile_columns = 1
-            elif width>=512:
-                tile_columns = 2
-            elif width>=1024:
-                tile_columns = 3
-            self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, tile_columns)
+        IF ENABLE_VP9:
+            if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
+                tile_columns = 0
+                if width>=256:
+                    tile_columns = 1
+                elif width>=512:
+                    tile_columns = 2
+                elif width>=1024:
+                    tile_columns = 3
+                self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, tile_columns)
         IF LIBVPX14:
             #disable periodic Q boost which causes latency spikes:
             self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
@@ -580,8 +584,9 @@ cdef class Encoder:
             return
         self.quality = pct
         self.update_cfg()
-        if self.encoding=="vp9":
-            self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100)
+        IF ENABLE_VP9:
+            if self.encoding=="vp9":
+                self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100)
         cdef vpx_codec_err_t ret = vpx_codec_enc_config_set(self.context, self.cfg)
         assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
 
