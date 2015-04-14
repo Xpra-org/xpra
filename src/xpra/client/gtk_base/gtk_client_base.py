@@ -442,7 +442,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             gl_client_window = __import__(GTK_GL_CLIENT_WINDOW_MODULE, {}, {}, ["GLClientWindow"])
             self.GLClientWindowClass = gl_client_window.GLClientWindow
             self.client_supports_opengl = True
-            self.opengl_enabled = True
+            #only enable opengl by default if safe to do so:
+            self.opengl_enabled = self.opengl_props.get("safe", False)
         except ImportError as e:
             opengllog.warn("OpenGL support could not be enabled:")
             opengllog.warn(" %s", e)

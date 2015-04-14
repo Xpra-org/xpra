@@ -247,7 +247,7 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_notificationsmenuitem())
         if not self.client.readonly:
             menu.append(self.make_clipboardmenuitem())
-        if self.client.opengl_enabled:
+        if self.client.client_supports_opengl:
             menu.append(self.make_openglmenuitem())
         if self.client.windows_enabled and len(self.client.get_encodings())>1:
             menu.append(self.make_encodingsmenuitem())

@@ -14,16 +14,22 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 
 WHITELIST = {}
+GREYLIST = {}
 BLACKLIST = {"vendor" : ["nouveau", "Humper", "VMware, Inc."],
              "renderer" : ["Software Rasterizer"]}
+
 if False:
     #for testing:
     BLACKLIST["vendor"].append("NVIDIA Corporation")
     WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
 
 if sys.platform.startswith("darwin") or sys.platform.startswith("win"):
-    #crashes were reported with the Intel driver on OSX
-    BLACKLIST["vendor"].append("Intel Inc.")
+    #crashes were reported with the Intel driver on OSX and win32:
+    GREYLIST.setdefault("vendor", []).append("Intel Inc.")
+if sys.platform.startswith("darwin"):
+    #frequent crashes on osx with GT 650M: (see ticket #808)
+    GREYLIST.setdefault("vendor", []).append("NVIDIA Corporation")
+
 
 #alpha requires gtk3 or *nix only for gtk2:
 DEFAULT_ALPHA = sys.version>'3' or (not sys.platform.startswith("win") and not sys.platform.startswith("darwin"))
@@ -230,11 +236,17 @@ def do_check_GL_support(min_texture_size, force_enable):
 
         blacklisted = None
         whitelisted = None
+        greylisted = None
         for k,vlist in BLACKLIST.items():
             v = props.get(k)
             if v in vlist:
                 log("%s '%s' found in blacklist: %s", k, v, vlist)
                 blacklisted = k, v
+        for k,vlist in GREYLIST.items():
+            v = props.get(k)
+            if v in vlist:
+                log("%s '%s' found in greylist: %s", k, v, vlist)
+                greylisted = k, v
         for k,vlist in WHITELIST.items():
             v = props.get(k)
             if v in vlist:
@@ -247,6 +259,7 @@ def do_check_GL_support(min_texture_size, force_enable):
                 log.warn("Warning: %s '%s' is blacklisted!", *blacklisted)
             else:
                 gl_check_error("%s '%s' is blacklisted!" % (blacklisted))
+        props["safe"] = bool(whitelisted) or not (bool(greylisted) or bool(blacklisted))
 
         #check for specific functions we need:
         from OpenGL.GL import glActiveTexture, glTexSubImage2D, glTexCoord2i, \
