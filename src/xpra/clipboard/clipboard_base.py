@@ -162,6 +162,10 @@ class ClipboardProtocolHelperBase(object):
         proxy.got_token(targets, target_data)
 
     def _get_clipboard_from_remote_handler(self, proxy, selection, target):
+        for x in DISCARD_TARGETS:
+            if x.match(target):
+                log("invalid target '%s'", target)
+                return None
         request_id = self._clipboard_request_counter
         self._clipboard_request_counter += 1
         log("get clipboard from remote handler id=%s", request_id)
@@ -309,6 +313,11 @@ class ClipboardProtocolHelperBase(object):
         request_id, selection, target = packet[1:4]
         def no_contents():
             self.send("clipboard-contents-none", request_id, selection)
+        for x in DISCARD_TARGETS:
+            if x.match(target):
+                log("invalid target '%s'", target)
+                no_contents()
+                return
         name = self.remote_to_local(selection)
         log("process clipboard request, request_id=%s, selection=%s, local name=%s, target=%s", request_id, selection, name, target)
         proxy = self._clipboard_proxies.get(name)
