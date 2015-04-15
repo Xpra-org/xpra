@@ -13,10 +13,10 @@ cdef extern from "../buffers/buffers.h":
 
 
 def xor_str(buf, xor_string):
-    assert len(buf)==len(xor_string), "cannot xor strings of different lengths (cyxor)"
+    assert len(buf)==len(xor_string), "cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(buf), len(buf), type(xor_string), len(xor_string))
     cdef const unsigned char * cbuf = <unsigned char *> 0 #@DuplicatedSignature
     cdef Py_ssize_t cbuf_len = 0                    #@DuplicatedSignature
-    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0
+    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(buf), buf)
     cdef const unsigned char * xbuf = <unsigned char *> 0 #@DuplicatedSignature
     cdef Py_ssize_t xbuf_len = 0                    #@DuplicatedSignature
     assert object_as_buffer(xor_string, <const void**> &xbuf, &xbuf_len)==0
