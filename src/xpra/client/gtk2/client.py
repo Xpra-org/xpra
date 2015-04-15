@@ -422,6 +422,7 @@ class XpraClient(GTKXpraClient):
             return
         #the last window has gone, we can remove the group leader,
         #find all the references to this group leader:
+        del self._group_leader_wids[group_leader]
         refs = []
         for ref, gl in self._ref_to_group_leader.items():
             if gl==group_leader:
