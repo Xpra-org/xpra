@@ -65,8 +65,8 @@ cdef extern from "vpx/vpx_codec.h":
     vpx_codec_err_t vpx_codec_destroy(vpx_codec_ctx_t *ctx)
     const char *vpx_codec_version_str()
     const char *vpx_codec_build_config()
-    #this should be a vararg function, but we only use it in one place for an int,
-    #so define it that way:
+    #this should be a vararg function, but we only use it with a single int argument,
+    #so define it that way (easier on cython):
     vpx_codec_err_t vpx_codec_control_(vpx_codec_ctx_t *ctx, int ctrl_id, int value)    
 
 cdef extern from "vpx/vpx_image.h":
