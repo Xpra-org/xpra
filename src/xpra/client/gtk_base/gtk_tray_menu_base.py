@@ -552,7 +552,7 @@ class GTKTrayMenuBase(object):
                 gl.set_tooltip_text("no server support for runtime switching")
                 return
             def opengl_toggled(*args):
-                log.info("opengl_toggled%s", args)
+                log("opengl_toggled%s", args)
                 self.client.toggle_opengl()
             gl.connect("toggled", opengl_toggled)
         self.client.connect("handshake-complete", gl_set)
