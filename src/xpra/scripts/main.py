@@ -1346,8 +1346,10 @@ def guess_xpra_display(socket_dir):
     sockdir = DotXpra(socket_dir)
     results = sockdir.sockets()
     live = [display for state, display in results if state==DotXpra.LIVE]
-    assert len(live)>0, "no existing xpra servers found"
-    assert len(live)<=1, "too many existing xpra servers found, cannot guess which one to use"
+    if len(live)==0:
+        raise InitException("no existing xpra servers found")
+    if len(live)>1:
+        raise InitException("too many existing xpra servers found, cannot guess which one to use")
     return live[0]
 
 def guess_X11_display(socket_dir):
