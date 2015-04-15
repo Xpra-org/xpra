@@ -45,6 +45,7 @@ cursorlog = Logger("server", "cursor")
 traylog = Logger("server", "tray")
 settingslog = Logger("x11", "xsettings")
 workspacelog = Logger("x11", "workspace")
+metadatalog = Logger("x11", "metadata")
 
 import xpra
 from xpra.util import nonl, typedict
@@ -702,13 +703,20 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):
-        for k in ("maximized", "above", "below", "fullscreen", "sticky", "shaded", "skip-pager", "skip-taskbar"):
+        metadatalog("set_window_state%s", (wid, window, new_window_state))
+        changes = []
+        for k in ("maximized", "above", "below", "fullscreen", "sticky", "shaded", "skip-pager", "skip-taskbar", "iconified"):
             if k in new_window_state:
+                #stupid naming conflict (should have used the same at both ends):
+                wpropname = {"iconified" : "iconic"}.get(k, k)
                 new_state = bool(new_window_state.get(k, False))
-                cur_state = bool(window.get_property(k))
-                log("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
+                cur_state = bool(window.get_property(wpropname))
+                metadatalog("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
                 if cur_state!=new_state:
-                    window.set_property(k, new_state)
+                    window.set_property(wpropname, new_state)
+                    changes.append(k)
+        metadatalog("set_window_state: changes=%s", changes)
+        return changes
 
     def _process_map_window(self, proto, packet):
         wid, x, y, width, height = packet[1:6]
@@ -759,23 +767,27 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if not window:
             windowlog("cannot map window %s: already removed!", wid)
             return
+        damage = False
         if window.is_tray():
             assert self._tray
             if not skip_geometry:
                 traylog("tray %s configured to: %s", window, (x, y, w, h))
                 self._tray.move_resize(window, x, y, w, h)
+                damage = True
         else:
             assert not window.is_OR() or skip_geometry, "received a configure packet with geometry for OR window %s from %s: %s" % (window, proto, packet)
             self.last_client_configure_event = time.time()
             if len(packet)>=9:
-                self._set_window_state(proto, wid, window, packet[8])
+                changes = self._set_window_state(proto, wid, window, packet[8])
+                damage = len(changes)>0
             if not skip_geometry:
                 owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
                 windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
                 self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)
+                damage |= oww!=w or owh!=h
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
-        if not skip_geometry and (window.is_tray() or (self._desktop_manager.visible(window) and (oww!=w or owh!=h))):
+        if damage:
             self._damage(window, 0, 0, w, h)
 
 
