@@ -74,7 +74,7 @@ def memoryview_to_bytes(v):
         return v
     if _memoryview and isinstance(v, _memoryview):
         return v.tobytes()
-    return v
+    return str(v)
 
 
 def data_to_buffer(in_data):
