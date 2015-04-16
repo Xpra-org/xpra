@@ -17,7 +17,7 @@ xpra (0.15.0-1) UNRELEASED; urgency=low
   * more detailed bug report information
   * more minimal MS Windows and OSX builds
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 10 Oct 2014 21:59:35 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 10 Oct 2014 21:59:35 +0700
 
 xpra (0.14.0-1) UNRELEASED; urgency=low
   * support for lzo compression
