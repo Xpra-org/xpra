@@ -104,9 +104,9 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     height = image.get_height()
     stride = image.get_rowstride()
 
-    #compression
+    #compression stage:
     #by default, wire=raw:
-    raw_data = str(pixels)
+    raw_data = memoryview_to_bytes(pixels)
     wire_data = raw_data
     level = 0
     algo = "not"
@@ -117,36 +117,33 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             level = level // 2
     if level>0:
         if rgb_lz4 and compression.use_lz4:
-            wire_data = compression.compressed_wrapper(coding, pixels, lz4=True)
+            cwrapper = compression.compressed_wrapper(coding, pixels, lz4=True)
             algo = "lz4"
             level = 1
         elif rgb_lzo and compression.use_lzo:
-            wire_data = compression.compressed_wrapper(coding, pixels, lzo=True)
+            cwrapper = compression.compressed_wrapper(coding, pixels, lzo=True)
             algo = "lzo"
             level = 1
-        else:
-            assert rgb_zlib and compression.use_zlib
-            wire_data = compression.compressed_wrapper(coding, pixels, zlib=True, level=level)
+        elif rgb_zlib and compression.use_zlib:
+            cwrapper = compression.compressed_wrapper(coding, pixels, zlib=True, level=level)
             algo = "zlib"
-        raw_data = wire_data.data
-        #log("%s/%s data compressed from %s bytes down to %s (%s%%) with lz4=%s",
-        #         coding, pixel_format, len(pixels), len(raw_data), int(100.0*len(raw_data)/len(pixels)), self.rgb_lz4)
-        if len(raw_data)>=(len(pixels)-32):
+        else:
+            cwrapper = None
+        if cwrapper is None or len(cwrapper.data)>=(len(raw_data)-32):
             #compressed is actually bigger! (use uncompressed)
             level = 0
-            wire_data = str(pixels)
-            raw_data = wire_data
         else:
             #add compressed marker:
+            wire_data = cwrapper.data
             options[algo] = level
     if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
         bpp = 32
     else:
         bpp = 24
-    log("rgb_encode using level=%s, %s compressed %sx%s in %s/%s: %s bytes down to %s", level, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(raw_data))
+    log("rgb_encode using level=%s, %s compressed %sx%s in %s/%s: %s bytes down to %s", level, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(wire_data))
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
-    return coding, compression.Compressed(coding, raw_data, True), options, width, height, stride, bpp
+    return coding, compression.Compressed(coding, wire_data, True), options, width, height, stride, bpp
 
 
 def PIL_encode(coding, image, quality, speed, supports_transparency):
