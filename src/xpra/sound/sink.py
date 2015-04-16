@@ -82,7 +82,6 @@ class SoundSink(SoundPipeline):
         pipeline_els = []
         pipeline_els.append("appsrc"+
                             " name=src"+
-                            " max-bytes=32768"+
                             " emit-signals=0"+
                             " block=0"+
                             " is-live=0"+

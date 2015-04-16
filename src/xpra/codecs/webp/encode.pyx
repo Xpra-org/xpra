@@ -339,7 +339,7 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
         preset = WEBP_PRESET_ICON
 
     i = object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)
-    assert i>=0, "failed to get buffer from pixel object: %s" % type(pixels)
+    assert i==0, "failed to get buffer from pixel object: %s (returned %s)" % (type(pixels), i)
     log("webp.compress(%s bytes, %s, %s, %s, %s, %s, %s) buf=%#x", len(pixels), width, height, stride, quality, speed, has_alpha, <unsigned long> pic_buf)
     c = (stride or (width*4)) * height
     assert pic_buf_len>=c, "pixel buffer is too small: expected at least %s bytes but got %s" % (c, pic_buf_len)

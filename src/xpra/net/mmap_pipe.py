@@ -5,7 +5,7 @@
 
 import os
 import ctypes
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.simple_stats import to_std_unit
 from xpra.log import Logger
 log = Logger("mmap")
@@ -205,7 +205,7 @@ def mmap_write(mmap_area, mmap_size, data):
         #[+++++++++E------------------------]
         #[+++++++++**********E--------------]
         mmap_area.seek(end)
-        mmap_area.write(data)
+        mmap_area.write(memoryview_to_bytes(data))
         data = [(end, l)]
         mmap_data_end.value = end+l
     else:

@@ -31,7 +31,7 @@ int object_as_buffer(PyObject *obj, const void ** buffer, Py_ssize_t * buffer_le
     if (PyMemoryView_Check(obj)) {
         rpybuf = PyMemoryView_GET_BUFFER(obj);
         if (rpybuf->buf==NULL)
-        	return 1;
+        	return -1;
         buffer[0] = rpybuf->buf;
         return 0;
     }
@@ -43,7 +43,7 @@ int object_as_write_buffer(PyObject *obj, void ** buffer, Py_ssize_t * buffer_le
     if (PyMemoryView_Check(obj)) {
         wpybuf = PyMemoryView_GET_BUFFER(obj);
 		if (wpybuf->buf==NULL)
-			return 1;
+			return -1;
         buffer[0] = wpybuf->buf;
         return 0;
     }
