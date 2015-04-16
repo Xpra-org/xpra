@@ -7,9 +7,12 @@ cdef extern from "stdlib.h":
     void* malloc(size_t __size)
     void free(void* mem)
 
+cdef extern from "../buffers/memalign.h":
+    void *xmemalign(size_t size) nogil
 
 cdef extern from "../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    object memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly)
 
 
 def xor_str(buf, xor_string):
@@ -19,13 +22,15 @@ def xor_str(buf, xor_string):
     assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(buf), buf)
     cdef const unsigned char * xbuf = <unsigned char *> 0 #@DuplicatedSignature
     cdef Py_ssize_t xbuf_len = 0                    #@DuplicatedSignature
-    assert object_as_buffer(xor_string, <const void**> &xbuf, &xbuf_len)==0
-    assert cbuf_len == xbuf_len
-    cdef unsigned char * out = <unsigned char *> malloc(cbuf_len)
+    assert object_as_buffer(xor_string, <const void**> &xbuf, &xbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(buf), buf)
+    assert cbuf_len == xbuf_len, "python or cython bug? buffers don't have the same length?"
+    cdef unsigned char * out = <unsigned char *> xmemalign(cbuf_len)
+    assert out!=NULL, "failed to allocate cyxor output buffer"
     cdef int i                                      #@DuplicatedSignature
     try :
         for 0 <= i < cbuf_len:
             out[i] = cbuf[i] ^ xbuf[i]
-        return out[:cbuf_len]
+        return memory_as_pybuffer(out, cbuf_len, True)
     finally:
-        free(out)
+        pass
+        #free(out)
