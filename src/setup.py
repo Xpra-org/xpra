@@ -1752,7 +1752,7 @@ if clipboard_ENABLED:
                 ))
 
 cython_add(Extension("xpra.codecs.xor.cyxor",
-            ["xpra/codecs/xor/cyxor.pyx", buffers_c],
+            ["xpra/codecs/xor/cyxor.pyx"]+membuffers_c,
             **pkgconfig()))
 
 if server_ENABLED:
