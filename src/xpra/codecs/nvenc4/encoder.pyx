@@ -1818,7 +1818,7 @@ cdef class Encoder:
         if image_stride<=self.inputPitch:
             stride = image_stride
             assert len(pixels)<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, len(pixels), w, h, stride, self.inputPitch, self.input_height)
-            self.inputBuffer.data[:len(pixels)] = pixels
+            self.inputBuffer[:len(pixels)] = pixels
         else:
             #ouch, we need to copy the source pixels into the smaller buffer
             #before uploading to the device... this is probably costly!
