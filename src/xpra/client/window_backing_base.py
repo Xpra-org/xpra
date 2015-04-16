@@ -7,6 +7,7 @@
 import os
 from xpra.log import Logger
 log = Logger("paint")
+deltalog = Logger("delta")
 
 from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
@@ -179,12 +180,14 @@ class WindowBackingBase(object):
             assert bucket>=0 and bucket<DELTA_BUCKETS, "invalid delta bucket number: %s" % bucket
             if self._delta_pixel_data[bucket] is None:
                 raise Exception("delta region bucket %s references pixmap data we do not have!" % bucket)
-            lwidth, lheight, store, ldata = self._delta_pixel_data[bucket]
-            assert width==lwidth and height==lheight and delta==store, "delta bucket %s data does not match: expected %s but got %s" % (bucket, (width, height, delta), (lwidth, lheight, store))
+            lwidth, lheight, seq, ldata = self._delta_pixel_data[bucket]
+            assert width==lwidth and height==lheight and delta==seq, "delta bucket %s data does not match: expected %s but got %s" % (bucket, (width, height, delta), (lwidth, lheight, seq))
+            deltalog("delta: xoring with bucket %i", bucket)
             rgb_data = xor_str(img_data, ldata)
         #store new pixels for next delta:
         store = options.intget("store", -1)
         if store>=0:
+            deltalog("delta: storing sequence %i in bucket %i", store, bucket)
             self._delta_pixel_data[bucket] =  width, height, store, rgb_data
         return rgb_data
 

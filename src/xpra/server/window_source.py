@@ -16,6 +16,7 @@ refreshlog = Logger("window", "refresh")
 compresslog = Logger("window", "compress")
 scalinglog = Logger("scaling")
 iconlog = Logger("icon")
+deltalog = Logger("delta")
 
 
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 100))
@@ -1501,6 +1502,7 @@ class WindowSource(object):
                     data = xor_str(dpixels, ldata)
                     image.set_pixels(data)
                     dr[-1] = time.time()            #update last used time
+                    deltalog("delta: using matching bucket %s: %sx%s (%s)", i, lw, lh, lcoding)
                     break
 
         #by default, don't set rowstride (the container format will take care of providing it):
@@ -1531,6 +1533,7 @@ class WindowSource(object):
                 #compressed size is more than 33% of the original
                 #maybe delta is not helping us, so clear it:
                 self.delta_pixel_data[bucket] = None
+                deltalog("delta: clearing bucket %i (compressed size=%s, original size=%s)", bucket, csize, psize)
                 #TODO: could tell the clients they can clear it too
                 #(add a new client capability and send it a zero store value)
             else:
@@ -1539,6 +1542,7 @@ class WindowSource(object):
                     lpd = self.delta_pixel_data
                     try:
                         bucket = lpd.index(None)
+                        deltalog("delta: found empty bucket %i", bucket)
                     except:
                         #find a bucket which has not been used recently
                         t = 0
@@ -1547,6 +1551,7 @@ class WindowSource(object):
                             if dr and (t==0 or dr[-1]<t):
                                 t = dr[-1]
                                 bucket = i
+                        deltalog("delta: using oldest bucket %i", bucket)
                 self.delta_pixel_data[bucket] = [w, h, coding, store, len(dpixels), dpixels, time.time()]
                 client_options["store"] = store
                 client_options["bucket"] = bucket
@@ -1554,7 +1559,7 @@ class WindowSource(object):
                 totals = self.statistics.encoding_totals.setdefault("delta", [0, 0])
                 totals[0] = totals[0] + 1
                 totals[1] = totals[1] + w*h
-                log("delta client options: %s (for region %s)", client_options, (x, y, w, h))
+                deltalog("delta: client options=%s (for region %s)", client_options, (x, y, w, h))
         encoding = coding
         if not self.generic_encodings:
             #old clients use non-generic encoding names:

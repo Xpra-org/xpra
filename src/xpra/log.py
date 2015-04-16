@@ -107,7 +107,8 @@ def set_global_logging_handler(h):
 
 
 KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "video",
-                 "score", "encoding", "scaling", "subregion", "regiondetect", "regionrefresh", "refresh", "compress", "mouse",
+                 "score", "encoding", "scaling", "delta",
+                 "subregion", "regiondetect", "regionrefresh", "refresh", "compress", "mouse",
                  "error", "verbose",
                  #codecs:
                  "csc", "cuda", "cython", "opencl", "swscale",
