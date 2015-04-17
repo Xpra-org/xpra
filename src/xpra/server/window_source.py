@@ -111,7 +111,7 @@ class WindowSource(object):
         ropts = ropts.intersection(set(self.core_encodings))        #ensure the client has support for it
         self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", list(ropts))
         self.supports_delta = []
-        if not window.is_tray():
+        if not window.is_tray() and DELTA:
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
             if self.supports_delta:
                 self.delta_buckets = min(25, encoding_options.intget("delta_buckets", 1))
@@ -1463,28 +1463,28 @@ class WindowSource(object):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         x, y, w, h, _ = image.get_geometry()
+        assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
 
         #more useful is the actual number of bytes (assuming 32bpp)
         #since we generally don't send the padding with it:
-        psize = w*h*4
-        assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
+        isize = w*h
+        psize = isize*4
         log("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
         start = time.time()
+        mmap_data = None
+        delta, store, bucket = -1, -1, -1
         if self._mmap and self._mmap_size>0 and psize>256:
             mmap_data = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
-            if mmap_data:
-                #success
-                data, mmap_free_size, written = mmap_data
-                self.global_statistics.mmap_bytes_sent += written
-                self.global_statistics.mmap_free_size = mmap_free_size
-                #hackish: pass data to mmap_encode using "options":
-                coding = "mmap"         #changed encoding!
-                options["mmap_data"] = data
-
+        if mmap_data:
+            #the mmap area has been populated, now tell the client about it:
+            data, mmap_free_size, written = mmap_data
+            self.global_statistics.mmap_bytes_sent += written
+            self.global_statistics.mmap_free_size = mmap_free_size
+            #hackish: pass data to mmap_encode using "options":
+            coding = "mmap"         #changed encoding!
+            options["mmap_data"] = data
         #if client supports delta pre-compression for this encoding, use it if we can:
-        delta, store, bucket = -1, -1, -1
-        isize = image.get_width()*image.get_height()
-        if DELTA and not (self._mmap and self._mmap_size>0) and self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size:
+        elif self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size:
             #this may save space (and lower the cost of xoring):
             restride_image(image)
             #we need to copy the pixels because some encodings
@@ -1521,7 +1521,7 @@ class WindowSource(object):
         coding, data, client_options, outw, outh, outstride, bpp = ret
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
-        if coding!="mmap" and (self.is_cancelled(sequence) or self.suspended):
+        if mmap_data is None and (self.is_cancelled(sequence) or self.suspended):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         #tell client about delta/store for this pixmap:
