@@ -30,7 +30,7 @@ from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.window_source import WindowSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
-from xpra.codecs.loader import OLD_ENCODING_NAMES_TO_NEW, NEW_ENCODING_NAMES_TO_OLD
+from xpra.codecs.loader import OLD_ENCODING_NAMES_TO_NEW
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import codec_spec
 from xpra.net import compression

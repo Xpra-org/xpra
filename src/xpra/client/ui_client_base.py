@@ -38,7 +38,7 @@ from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_i
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
                                get_native_tray_menu_helper_classes, get_dpi, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, ClientExtras)
 from xpra.codecs.codec_constants import get_PIL_decodings
-from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, ALL_NEW_ENCODING_NAMES_TO_OLD, OLD_ENCODING_NAMES_TO_NEW, PROBLEMATIC_ENCODINGS
+from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, OLD_ENCODING_NAMES_TO_NEW, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option
 from xpra.scripts.config import parse_bool_or_int
@@ -176,7 +176,6 @@ class UIXpraClient(XpraClientBase):
         self.force_ungrab = False
         self.window_unmap = False
         self.window_refresh_config = False
-        self.server_generic_encodings = False
         self.server_encodings = []
         self.server_core_encodings = []
         self.server_encodings_problematic = PROBLEMATIC_ENCODINGS
@@ -1288,7 +1287,6 @@ class UIXpraClient(XpraClientBase):
             if not v:
                 return v
             return [OLD_ENCODING_NAMES_TO_NEW.get(x, x) for x in v]
-        self.server_generic_encodings = c.boolget("encoding.generic")
         self.server_encodings = getenclist("encodings")
         self.server_core_encodings = getenclist("encodings.core", self.server_encodings)
         self.server_encodings_problematic = getenclist("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
@@ -1824,9 +1822,6 @@ class UIXpraClient(XpraClientBase):
         assert encoding in self.get_encodings(), "encoding %s is not supported!" % encoding
         assert encoding in self.server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, self.server_encodings)
         self.encoding = encoding
-        if not self.server_generic_encodings:
-            #translate to old name the server will understand:
-            encoding = ALL_NEW_ENCODING_NAMES_TO_OLD.get(encoding, encoding)
         self.send("encoding", encoding)
 
 
