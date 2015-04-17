@@ -68,13 +68,14 @@ else:
             return x.decode()
         return str(x)
 
-
-def memoryview_to_bytes(v):
-    if not has_memoryview:
+if not has_memoryview:
+    def memoryview_to_bytes(v):
         return v
-    if _memoryview and isinstance(v, _memoryview):
-        return v.tobytes()
-    return str(v)
+else:
+    def memoryview_to_bytes(v):
+        if _memoryview and isinstance(v, _memoryview):
+            return v.tobytes()
+        return str(v)
 
 
 def data_to_buffer(in_data):
