@@ -38,7 +38,7 @@ from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_i
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
                                get_native_tray_menu_helper_classes, get_dpi, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, ClientExtras)
 from xpra.codecs.codec_constants import get_PIL_decodings
-from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, OLD_ENCODING_NAMES_TO_NEW, PROBLEMATIC_ENCODINGS
+from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option
 from xpra.scripts.config import parse_bool_or_int
@@ -1281,18 +1281,12 @@ class UIXpraClient(XpraClientBase):
         server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
         if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
             log.warn("server does not support auto-refresh!")
-        def getenclist(k, default_value=[]):
-            #deals with old servers and substitute old encoding names for the new ones
-            v = c.strlistget(k, default_value)
-            if not v:
-                return v
-            return [OLD_ENCODING_NAMES_TO_NEW.get(x, x) for x in v]
-        self.server_encodings = getenclist("encodings")
-        self.server_core_encodings = getenclist("encodings.core", self.server_encodings)
-        self.server_encodings_problematic = getenclist("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
-        self.server_encodings_with_speed = getenclist("encodings.with_speed", ("h264",)) #old servers only supported x264
-        self.server_encodings_with_quality = getenclist("encodings.with_quality", ("jpeg", "webp", "h264"))
-        self.server_encodings_with_lossless_mode = getenclist("encodings.with_lossless_mode", ())
+        self.server_encodings = c.strlistget("encodings")
+        self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
+        self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
+        self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("h264",)) #old servers only supported x264
+        self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
+        self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
         self.change_quality = c.boolget("change-quality")
         self.change_min_quality = c.boolget("change-min-quality")
         self.change_speed = c.boolget("change-speed")
@@ -1949,7 +1943,6 @@ class UIXpraClient(XpraClientBase):
         """ this runs from the draw thread above """
         wid, x, y, width, height, coding, data, packet_sequence, rowstride = packet[1:10]
         #rename old encoding aliases early:
-        coding = OLD_ENCODING_NAMES_TO_NEW.get(coding, coding)
         window = self._id_to_window.get(wid)
         if not window:
             #window is gone

@@ -30,7 +30,6 @@ from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.window_source import WindowSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
-from xpra.codecs.loader import OLD_ENCODING_NAMES_TO_NEW
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import codec_spec
 from xpra.net import compression
@@ -638,15 +637,9 @@ class ServerSource(object):
         self.keyboard_config = None
 
         #encodings:
-        def getenclist(k, default_value=[]):
-            #deals with old servers and substitute old encoding names for the new ones
-            v = c.strlistget(k, default_value)
-            if not v:
-                return v
-            return [OLD_ENCODING_NAMES_TO_NEW.get(x, x) for x in v]
-        self.encodings = getenclist("encodings")
-        self.core_encodings = getenclist("encodings.core", self.encodings)
-        self.rgb_formats = getenclist("encodings.rgb_formats", ["RGB"])
+        self.encodings = c.strlistget("encodings")
+        self.core_encodings = c.strlistget("encodings.core", self.encodings)
+        self.rgb_formats = c.strlistget("encodings.rgb_formats", ["RGB"])
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
             log("windows/pixels forwarding is disabled for this client")
@@ -1045,7 +1038,6 @@ class ServerSource(object):
         """
         if not self.ui_client:
             return
-        encoding = OLD_ENCODING_NAMES_TO_NEW.get(encoding, encoding)
         if encoding:
             if encoding not in self.encodings:
                 log.warn("client specified an encoding it does not support: %s, client supplied list: %s" % (encoding, self.encodings))
