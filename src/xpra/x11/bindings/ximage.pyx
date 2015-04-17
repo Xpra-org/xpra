@@ -328,13 +328,16 @@ cdef class XImageWrapper:
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
-        self.allocate_buffer(buf_len)
+        self.allocate_buffer(buf_len, True)
         memcpy(self.pixels, buf, buf_len)
 
-    def allocate_buffer(self, buf_len):
-        if self.pixels!=NULL:
+    def get_pixel_ptr(self):
+        return int(<unsigned long> self.pixels)
+
+    def allocate_buffer(self, Py_ssize_t buf_len, int free_existing=1):
+        if self.pixels!=NULL and free_existing!=0:
             free(self.pixels)
-            self.pixels = NULL
+        self.pixels = NULL
         #Note: we can't free the XImage, because it may
         #still be used somewhere else (see XShmWrapper)
         if posix_memalign(<void **> &self.pixels, 64, buf_len):

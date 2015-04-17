@@ -94,7 +94,7 @@ class ImageWrapper(object):
     def set_pixels(self, pixels):
         self.pixels = pixels
 
-    def allocate_buffer(self, buf_len):
+    def allocate_buffer(self, buf_len, free_existing=1):
         #only defined for XImage wrappers:
         raise NotImplementedError()
 

@@ -14,6 +14,9 @@ cdef extern from "../buffers/buffers.h":
 cdef extern from "string.h":
     void * memcpy(void * destination, void * source, size_t num)
 
+cdef extern from "stdlib.h":
+    void free(void* mem)
+
 
 import struct
 from xpra.log import Logger
@@ -247,23 +250,33 @@ def restride_image(image):
     assert object_as_buffer(pixels, <const void**> &img_buf, &img_buf_len)==0, "cannot convert %s to a readable buffer" % type(pixels)
     if img_buf_len<=0:
         return False
-    cdef int out_size = rstride*height                 #desirable size we could have
+    cdef int out_size = rstride*height                  #desirable size we could have
     #is it worth re-striding to save space:
     if img_buf_len-out_size<1024 or out_size*110/100>img_buf_len:
         return False
     #we'll save at least 1KB and 10%, do it
     #Note: we could also change the pixel format whilst we're at it
     # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
-    #this buffer is allocated by the imagewrapper, so it will be freed after use for us:
-    cdef unsigned long ptr = int(image.allocate_buffer(out_size))
-    assert ptr>0
+    #this buffer is allocated by the imagewrapper, so it will be freed after use for us,
+    #but we need to tell allocate_buffer not to free the current buffer (if there is one),
+    #and we have to deal with this ourselves after we're done copying it
+    cdef unsigned long ptr
+
+    #save pixels pointer to free later:
+    ptr = int(image.get_pixel_ptr())
+    cdef unsigned long pixptr = ptr
+
+    ptr = int(image.allocate_buffer(out_size, False))
+    assert ptr>0, "allocate_buffer failed"
     cdef unsigned char *out = <unsigned char*> ptr
+
     cdef int ry = height
-    while ry>0:
+    for 0 <= ry < height:
         memcpy(out, img_buf, rstride)
         out += rstride
         img_buf += stride
-        ry -= 1
+    if pixptr:
+        free(<void *> pixptr)
     log("restride_image: %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)" % (pixel_format, 100-100*out_size/img_buf_len, stride, img_buf_len, rstride, out_size))
     image.set_rowstride(rstride)
     return True
