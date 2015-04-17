@@ -382,7 +382,8 @@ class WindowSource(object):
         self.statistics.reset()
         self.suspended = False
         self.refresh(window, {"quality" : 100})
-        self.send_window_icon(window)
+        if not window.is_OR() and not window.is_tray():
+            self.send_window_icon(window)
 
     def refresh(self, window, options={}):
         w, h = window.get_dimensions()
