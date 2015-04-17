@@ -13,7 +13,7 @@ import uuid
 
 #hide some ugly python3 compat:
 try:
-    import _thread    as thread         #@UnresolvedImport @UnusedImport (python3)
+    import _thread as thread            #@UnresolvedImport @UnusedImport (python3)
 except:
     import thread                       #@Reimport @UnusedImport
 
@@ -27,7 +27,6 @@ try:
 except:
     import __builtin__ as builtins      #@Reimport @UnusedImport
 _memoryview = builtins.__dict__.get("memoryview")
-has_memoryview = _memoryview is not None
 
 
 SIGNAMES = {}
@@ -68,22 +67,22 @@ else:
             return x.decode()
         return str(x)
 
-if not has_memoryview:
+if _memoryview:
     def memoryview_to_bytes(v):
-        return v
-else:
-    def memoryview_to_bytes(v):
-        if _memoryview and isinstance(v, _memoryview):
+        if isinstance(v, _memoryview):
             return v.tobytes()
         return str(v)
+else:
+    def memoryview_to_bytes(v):
+        return v
 
+if sys.version>='3':
+    def data_to_buffer(in_data):
+        return BytesIOClass(bytearray(in_data.encode("latin1")))
+else:
+    def data_to_buffer(in_data):
+        return BytesIOClass(bytearray(in_data))
 
-def data_to_buffer(in_data):
-    if sys.version>='3':
-        data = bytearray(in_data.encode("latin1"))
-    else:
-        data = bytearray(in_data)
-    return BytesIOClass(data)
 
 def platform_name(sys_platform, release):
     if not sys_platform:
@@ -154,11 +153,11 @@ def get_user_uuid():
 
 def is_Ubuntu():
     try:
+        assert os.name=="posix"
         v = load_binary_file("/etc/issue")
-        return bool(v) and v.find("Ubuntu")>=0
+        return v.find("Ubuntu")>=0
     except:
-        pass
-    return False
+        return False
 
 def load_binary_file(filename):
     if not os.path.exists(filename):
