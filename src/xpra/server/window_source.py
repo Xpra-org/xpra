@@ -1528,8 +1528,8 @@ class WindowSource(object):
             client_options["bucket"] = bucket
         csize = len(data)
         if store>0:
-            if delta>0 and csize>=psize/3:
-                #compressed size is more than 33% of the original
+            if delta>0 and csize>=psize*40//100:
+                #compressed size is more than 40% of the original
                 #maybe delta is not helping us, so clear it:
                 self.delta_pixel_data[bucket] = None
                 deltalog("delta: clearing bucket %i (compressed size=%s, original size=%s)", bucket, csize, psize)
