@@ -11,6 +11,9 @@ int get_version(void) {
     return 1;
 }
 
+//Before Python 3.3, use PyMemoryView_FromBuffer
+//MAJOR<<24 + MINOR<<16 + MICRO<<8
+#if PY_VERSION_HEX<=0x3030000
 PyObject *memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
     Py_buffer pybuf;
     Py_ssize_t shape[] = {buf_len};
@@ -25,6 +28,11 @@ PyObject *memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
     pybuf.shape = shape;
     return PyMemoryView_FromBuffer(&pybuf);
 }
+#else
+PyObject *memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
+	return PyMemoryView_FromMemory(ptr, buf_len, readonly);
+}
+#endif
 
 int object_as_buffer(PyObject *obj, const void ** buffer, Py_ssize_t * buffer_len) {
     Py_buffer *rpybuf;
