@@ -6,6 +6,7 @@
 import time
 import os
 from xpra.codecs.codec_constants import video_codec_spec
+from xpra.os_util import bytestostr
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
@@ -204,14 +205,14 @@ COLORSPACES = {}
 CODECS = []
 IF ENABLE_VP8:
     CODECS.append("vp8")
-    COLORSPACES["vp8"] = [b"YUV420P"]
+    COLORSPACES["vp8"] = ["YUV420P"]
 IF ENABLE_VP9:
     CODECS.append("vp9")
-    vp9_cs = [b"YUV420P"]
+    vp9_cs = ["YUV420P"]
     #this is the ABI version with libvpx 1.4.0:
     if ENABLE_VP9_YUV444:
         if VPX_ENCODER_ABI_VERSION>=10:
-            vp9_cs.append(b"YUV444P")
+            vp9_cs.append("YUV444P")
         else:
             log("encoder abi is too low to enable YUV444P: %s", VPX_ENCODER_ABI_VERSION)
     COLORSPACES["vp9"] = vp9_cs
@@ -284,10 +285,10 @@ def get_spec(encoding, colorspace):
 
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
-    if colorspace==b"YUV420P":
+    if colorspace=="YUV420P":
         return VPX_IMG_FMT_I420
     IF ENABLE_VP9:
-        if colorspace==b"YUV444P" and ENABLE_VP9_YUV444:
+        if colorspace=="YUV444P" and ENABLE_VP9_YUV444:
             return VPX_IMG_FMT_I444
     raise Exception("invalid colorspace %s" % colorspace)
 
@@ -308,7 +309,7 @@ cdef class Encoder:
     cdef int max_threads
     cdef double initial_bitrate_per_pixel
     cdef object encoding
-    cdef char* src_format
+    cdef object src_format
     cdef int speed
     cdef int quality
 
@@ -320,7 +321,7 @@ cdef class Encoder:
         assert scaling==(1,1), "vpx does not handle scaling"
         assert encoding in get_encodings()
         assert src_format in get_input_colorspaces(encoding)
-        self.src_format = src_format
+        self.src_format = bytestostr(src_format)
         #log("vpx_encoder.init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
 
         cdef const vpx_codec_iface_t *codec_iface = make_codec_cx(encoding)
@@ -350,7 +351,7 @@ cdef class Encoder:
 
         self.update_cfg()
         self.cfg.g_usage = USAGE_STREAM_FROM_SERVER
-        self.cfg.g_profile = int(bool(self.src_format==b"YUV444P"))           #use 1 for YUV444P and RGB support
+        self.cfg.g_profile = int(bool(self.src_format=="YUV444P"))          #use 1 for YUV444P and RGB support
         self.cfg.g_w = width
         self.cfg.g_h = height
         cdef vpx_rational_t timebase
@@ -517,10 +518,10 @@ cdef class Encoder:
         image.d_h = self.height
         #this is the chroma shift for YUV420P:
         #both X and Y are downscaled by 2^1
-        if self.src_format==b"YUV420P":
+        if self.src_format=="YUV420P":
             image.x_chroma_shift = 1
             image.y_chroma_shift = 1
-        elif self.src_format==b"YUV444P":
+        elif self.src_format=="YUV444P":
             image.x_chroma_shift = 0
             image.y_chroma_shift = 0
         else:
@@ -592,8 +593,6 @@ cdef class Encoder:
 
 
 def selftest():
-    import sys
-    assert sys.version[0]!='3', "currently broken with python3.."
     #fake empty buffer:
     w, h = 24, 16
     y = bytearray(b"\0" * (w*h))

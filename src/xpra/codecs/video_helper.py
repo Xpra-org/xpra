@@ -188,15 +188,15 @@ class VideoHelper(object):
         for encoding, encoder_specs in self._video_encoder_specs.items():
             for in_csc, specs in encoder_specs.items():
                 for spec in specs:
-                    d.setdefault("encoding."+in_csc+"_to_"+encoding, []).append(spec.codec_type)
+                    d.setdefault("encoding.%s_to_%s" % (in_csc, encoding), []).append(spec.codec_type)
         for in_csc, specs in self._csc_encoder_specs.items():
             for out_csc, specs in specs.items():
-                d["csc."+in_csc+"_to_"+out_csc] = [spec.codec_type for spec in specs]
+                d["csc.%s_to_%s" % (in_csc, out_csc)] = [spec.codec_type for spec in specs]
         for encoding, decoder_specs in self._video_decoder_specs.items():
             for out_csc, decoders in decoder_specs.items():
                 for decoder in decoders:
                     decoder_name, _ = decoder
-                    d.setdefault("decoding."+encoding+"_to_"+out_csc, []).append(decoder_name)
+                    d.setdefault("decoding.%s_to_%s" % (encoding, out_csc), []).append(decoder_name)
         def modstatus(x, def_list, active_list):
             #the module is present
             if x in active_list:
