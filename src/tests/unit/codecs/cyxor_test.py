@@ -43,6 +43,22 @@ class TestHMAC(unittest.TestCase):
         self.fail_xor(bool, int)
     
 
+    def test_large_xor_speed(self):
+        import time
+        start = time.time()
+        size = 1*1024*1024       #1MB
+        zeroes  = chr(0)*size
+        ones    = chr(1)*size
+        count = 10
+        for _ in range(count):
+            self.check_xor(zeroes, ones, ones)
+        end = time.time()
+        speed = size/(end-start)/1024/1024
+        #print("%iMB/s: took %ims on average (%s iterations)" % (speed, 1000*(end-start)/count, count))
+        assert speed>0, "running the xor speed test took too long"
+
+
+
 def main():
     unittest.main()
 
