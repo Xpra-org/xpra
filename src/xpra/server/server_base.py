@@ -1495,11 +1495,6 @@ class ServerBase(ServerCore):
         return i
 
     def get_encoding_info(self):
-        """
-            Warning: the encodings values may get
-            re-written on the way out.
-            (see ServerSource.rewrite_encoding_values)
-        """
         return  {
              ""                     : self.encodings,
              "core"                 : self.core_encodings,

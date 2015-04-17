@@ -263,8 +263,6 @@ class ServerSource(object):
         self.encodings = []                         #all the encodings supported by the client
         self.core_encodings = []
         self.rgb_formats = ["RGB"]
-        self.generic_rgb_encodings = False
-        self.generic_encodings = False
         self.encoding_options = typedict()
         self.default_encoding_options = typedict()
 
@@ -649,8 +647,6 @@ class ServerSource(object):
         self.encodings = getenclist("encodings")
         self.core_encodings = getenclist("encodings.core", self.encodings)
         self.rgb_formats = getenclist("encodings.rgb_formats", ["RGB"])
-        self.generic_rgb_encodings = c.boolget("generic-rgb-encodings")
-        self.generic_encodings = c.boolget("encoding.generic")
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
             log("windows/pixels forwarding is disabled for this client")
@@ -680,7 +676,7 @@ class ServerSource(object):
             elif k.startswith("encoding."):
                 stripped_k = k[len("encoding."):]
                 if stripped_k in ("transparency", "csc_atoms", "client_options",
-                                  "video_separateplane", "generic",
+                                  "video_separateplane",
                                   "rgb_zlib", "rgb_lz4", "rgb_lzo",
                                   "webp_leaks", "video_subregion", "uses_swscale",
                                   "video_scaling", "video_reinit"):
@@ -1114,9 +1110,6 @@ class ServerSource(object):
         if self.wants_encodings or self.send_windows:
             assert self.encoding, "cannot send windows/encodings without an encoding!"
             encoding = self.encoding
-            if not self.generic_encodings:
-                #translate back into the legacy names:
-                encoding = NEW_ENCODING_NAMES_TO_OLD.get(encoding, encoding)
             capabilities["encoding"] = encoding
         if self.wants_features:
             capabilities.update({
@@ -1127,7 +1120,6 @@ class ServerSource(object):
             capabilities["mmap_token"] = self.mmap_client_token
         if self.keyboard_config:
             capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
-        self.rewrite_encoding_values(capabilities)
         self.send("hello", capabilities)
 
 
@@ -1256,39 +1248,7 @@ class ServerSource(object):
 
 
     def send_info_response(self, info):
-        self.rewrite_encoding_values(info)
         self.send("info-response", info)
-
-
-    def rewrite_encoding_values(self, d):
-        """
-            The server class does not know
-            what encoding name values the client supports.
-            (this is used for patching the contents of "hello" and "info" packets for older clients)
-        """
-        replace = {}
-        if not self.generic_rgb_encodings:
-            replace["rgb"] = ("rgb24", "rgb32")
-        if not self.generic_encodings:
-            replace["h264"] = ("x264", )
-            replace["vp8"] = ("vpx", )
-        if len(replace)==0:
-            return
-        #filter only "encodings.*" keys:
-        for k in (x for x in d.keys() if x=="encodings" or x.startswith("encodings.")):
-            v = d.get(k)
-            if type(v) not in (list, tuple):
-                continue
-            l = list(v)
-            newlist = l
-            for new_encoding_name, old_encoding_names in replace.items():
-                if new_encoding_name not in l:
-                    continue
-                p = newlist.index(new_encoding_name)
-                newlist = newlist[:p] + list(old_encoding_names) + newlist[p+1:]
-            if l!=newlist:
-                d[k] = newlist
-                log("rewrite_encoding_values for key '%s': %s replaced by %s", k, l, newlist)
 
 
     def send_server_event(self, *args):

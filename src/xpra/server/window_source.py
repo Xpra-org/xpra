@@ -44,7 +44,7 @@ from xpra.server.region import rectangle, add_rectangle, remove_rectangle
 from xpra.codecs.argb.argb import restride_image    #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
-from xpra.codecs.loader import NEW_ENCODING_NAMES_TO_OLD, PREFERED_ENCODING_ORDER, get_codec
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
 from xpra.net import compression
 
@@ -101,7 +101,6 @@ class WindowSource(object):
         self.rgb_lz4 = compression.use_lz4 and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
         self.webp_leaks = encoding_options.boolget("webp_leaks", True)  #all clients leaked memory until this flag got added
-        self.generic_encodings = encoding_options.boolget("generic")
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = encoding_options.boolget("full_frames_only")
         ropts = set(("png", "webp", "rgb24", "rgb32", "jpeg"))     #default encodings for auto-refresh
@@ -208,7 +207,6 @@ class WindowSource(object):
         self.rgb_zlib = False
         self.rgb_lz4 = False
         self.rgb_lzo = False
-        self.generic_encodings = []
         self.supports_transparency = False
         self.full_frames_only = False
         self.supports_delta = []
@@ -1562,9 +1560,6 @@ class WindowSource(object):
                 totals[1] = totals[1] + w*h
                 deltalog("delta: client options=%s (for region %s)", client_options, (x, y, w, h))
         encoding = coding
-        if not self.generic_encodings:
-            #old clients use non-generic encoding names:
-            encoding = NEW_ENCODING_NAMES_TO_OLD.get(coding, coding)
         #actual network packet:
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
