@@ -22,14 +22,14 @@ def xor_str(buf, xor_string):
     assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(buf), buf)
     cdef const unsigned char * xbuf                 #@DuplicatedSignature
     cdef Py_ssize_t xbuf_len = 0                    #@DuplicatedSignature
-    assert object_as_buffer(xor_string, <const void**> &xbuf, &xbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(buf), buf)
+    assert object_as_buffer(xor_string, <const void**> &xbuf, &xbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(xor_string), xor_string)
     assert cbuf_len == xbuf_len, "python or cython bug? buffers don't have the same length?"
-    cdef unsigned char * out = <unsigned char *> xmemalign(cbuf_len)
-    assert out!=NULL, "failed to allocate cyxor output buffer"
+    out_bytes = bytearray(cbuf_len)
+    cdef unsigned char * obuf                 #@DuplicatedSignature
+    cdef Py_ssize_t obuf_len = 0                    #@DuplicatedSignature
+    assert object_as_buffer(out_bytes, <const void**> &obuf, &obuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(obuf), obuf)
+    assert obuf_len==cbuf_len
     cdef int i                                      #@DuplicatedSignature
-    try :
-        for 0 <= i < cbuf_len:
-            out[i] = cbuf[i] ^ xbuf[i]
-        return out[:cbuf_len]
-    finally:
-        free(out)
+    for 0 <= i < cbuf_len:
+        obuf[i] = cbuf[i] ^ xbuf[i]
+    return out_bytes
