@@ -1454,7 +1454,7 @@ class WindowSource(object):
             * 'mmap' will use 'mmap_send' + 'mmap_encode' - always if available, otherwise:
             * 'jpeg' and 'png' are handled by 'PIL_encode'.
             * 'webp' uses 'webp_encode'
-            * 'h264' and 'vp8' use 'video_encode'
+            * 'h264', 'h265', 'vp8' and 'vp9' use 'video_encode'
             * 'rgb24' and 'rgb32' use 'rgb_encode'
         """
         if self.is_cancelled(sequence) or self.suspended:
@@ -1475,12 +1475,12 @@ class WindowSource(object):
             mmap_data = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
         if mmap_data:
             #the mmap area has been populated, now tell the client about it:
-            data, mmap_free_size, written = mmap_data
+            mmap_info, mmap_free_size, written = mmap_data
             self.global_statistics.mmap_bytes_sent += written
             self.global_statistics.mmap_free_size = mmap_free_size
             #hackish: pass data to mmap_encode using "options":
             coding = "mmap"         #changed encoding!
-            options["mmap_data"] = data
+            options["mmap_data"] = mmap_info
         #if client supports delta pre-compression for this encoding, use it if we can:
         elif self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size:
             #this may save space (and lower the cost of xoring):
@@ -1498,10 +1498,10 @@ class WindowSource(object):
                     #xor with this matching delta bucket:
                     delta = lsequence
                     bucket = i
-                    data = xor_str(dpixels, ldata)
-                    image.set_pixels(data)
+                    xored = xor_str(dpixels, ldata)
+                    image.set_pixels(xored)
                     dr[-1] = time.time()            #update last used time
-                    deltalog("delta: using matching bucket %s: %sx%s (%s)", i, lw, lh, lcoding)
+                    deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i)", i, lw, lh, lcoding, dlen, lsequence)
                     break
 
         #by default, don't set rowstride (the container format will take care of providing it):
