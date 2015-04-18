@@ -610,27 +610,33 @@ XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
 XpraWindow.prototype._init_avc = function() {
 	var me = this;
 	// configure the AVC decoder
-	this.avc = new Avc();
-    this.avc.configure({
-        filter: "original",
-        filterHorLuma: "optimized",
-        filterVerLumaEdge: "optimized",
-        getBoundaryStrengthsA: "optimized"
-    });
+	this.avc = new Decoder({
+		rgb: true
+	});
+	//this.avc = new Avc();
+    //this.avc.configure({
+    //    filter: "original",
+    //    filterHorLuma: "optimized",
+    //    filterVerLumaEdge: "optimized",
+    //    getBoundaryStrengthsA: "optimized"
+    //});
     this.avc.onPictureDecoded = function(buffer, bufWidth, bufHeight) {
-        var lumaSize = bufWidth * bufHeight,
-                chromaSize = lumaSize >> 2;
+        //var lumaSize = bufWidth * bufHeight,
+        //        chromaSize = lumaSize >> 2;
 
-        me.glcanvas.YTexture.fill(buffer.subarray(0, lumaSize));
-        me.glcanvas.UTexture.fill(buffer.subarray(lumaSize, lumaSize + chromaSize));
-        me.glcanvas.VTexture.fill(buffer.subarray(lumaSize + chromaSize, lumaSize + 2 * chromaSize));
-        me.glcanvas.drawScene();
+        //me.glcanvas.YTexture.fill(buffer.subarray(0, lumaSize));
+        //me.glcanvas.UTexture.fill(buffer.subarray(lumaSize, lumaSize + chromaSize));
+        //me.glcanvas.VTexture.fill(buffer.subarray(lumaSize + chromaSize, lumaSize + 2 * chromaSize));
+        //me.glcanvas.drawScene();
+        var img = me.offscreen_canvas_ctx.createImageData(bufWidth, bufHeight);
+        img.data.set(buffer);
+		me.offscreen_canvas_ctx.putImageData(img, 0, 0);
     };
     // configure the GL Canvas
-    if(this.offscreen_canvas_mode!='3d') {
-	    this._init_3d_canvas();
-	    this.glcanvas = new YUVWebGLCanvas(this.offscreen_canvas, new Size(this.w, this.h));
-	}
+    //if(this.offscreen_canvas_mode!='3d') {
+	//    this._init_3d_canvas();
+	//    this.glcanvas = new YUVWebGLCanvas(this.offscreen_canvas, new Size(this.w, this.h));
+	//}
 }
 
 XpraWindow.prototype._h264_process_nal = function(data) {
