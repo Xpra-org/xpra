@@ -130,6 +130,10 @@
 		<script>
 			$(document).ready(function() {
 			    var client = new XpraClient('screen');
+			    // the primary encoding can be set
+			    client.enable_encoding("jpeg");
+			    // encodings can be disabled like so
+			    // client.disable_encoding("h264");
 			    client.connect(window.location.hostname, window.location.port, false);
 			});
 		</script>

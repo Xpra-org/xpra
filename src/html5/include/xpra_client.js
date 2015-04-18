@@ -23,6 +23,9 @@ function XpraClient(container) {
 	// some client stuff
 	this.OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
+	this.supported_encodings = ["h264", "jpeg", "png", "rgb32"];
+	this.enabled_encodings = [];
+	// modifier keys
 	this.caps_lock = null;
 	this.alt_modifier = null;
 	this.meta_modifier = null;
@@ -147,6 +150,20 @@ XpraClient.prototype.close = function() {
 	// close all windows
 	// close protocol
 	this.protocol.close();
+}
+
+XpraClient.prototype.enable_encoding = function(encoding) {
+	// add an encoding to our hello.encodings list
+	this.enabled_encodings.push(encoding);
+}
+
+XpraClient.prototype.disable_encoding = function(encoding) {
+	// remove an encoding from our hello.encodings.core list
+	// as if we don't support it
+	var index = this.supported_encodings.indexOf(encoding);
+	if(index > -1) {
+		this.supported_encodings.splice(index, 1);
+	}
 }
 
 XpraClient.prototype._route_packet = function(packet, ctx) {
@@ -364,6 +381,15 @@ XpraClient.prototype._get_screen_sizes = function() {
 	return [screen];
 }
 
+XpraClient.prototype._get_encodings = function() {
+	if(this.enabled_encodings.length == 0) {
+		// return all supported encodings
+		return this.supported_encodings;
+	} else {
+		return this.enabled_encodings;
+	}
+}
+
 XpraClient.prototype._make_hello = function() {
 	return {
 		"version"					: "0.15.0",
@@ -382,12 +408,12 @@ XpraClient.prototype._make_hello = function() {
 		"notify-startup-complete"	: true,
 		"generic-rgb-encodings"		: true,
 		"window.raise"				: true,
-		"encodings"					: ["jpeg", "png", "rgb"],
+		"encodings"					: this._get_encodings(),
 		"raw_window_icons"			: true,
 		//rgb24 is not efficient in HTML so don't use it:
 		//png and jpeg will need extra code
 		//"encodings.core"			: ["rgb24", "rgb32", "png", "jpeg"],
-		"encodings.core"			: ["rgb32", "png", "jpeg"],
+		"encodings.core"			: this.supported_encodings,
 		"encodings.rgb_formats"	 	: this.RGB_FORMATS,
 		"encoding.generic"	  		: true,
 		"encoding.transparency"		: true,
@@ -398,6 +424,7 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.video_reinit"		: false,
 		"encoding.video_scaling"	: false,
 		"encoding.csc_modes"		: ["YUV420P"],
+		"encoding.x264.YUV420P.profile"	: "baseline",
 		//sound (not yet):
 		"sound.receive"				: true,
 		"sound.send"				: false,
