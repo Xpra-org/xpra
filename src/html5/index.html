@@ -128,13 +128,44 @@
 		</div>
 
 		<script>
+
+			if (!window.location.getParameter ) {
+				window.location.getParameter = function(key) {
+					function parseParams() {
+							var params = {},
+									e,
+									a = /\+/g,	// Regex for replacing addition symbol with a space
+									r = /([^&=]+)=?([^&]*)/g,
+									d = function (s) { return decodeURIComponent(s.replace(a, " ")); },
+									q = window.location.search.substring(1);
+
+							while (e = r.exec(q))
+									params[d(e[1])] = d(e[2]);
+
+							return params;
+					}
+
+					if (!this.queryStringParams)
+							this.queryStringParams = parseParams();
+
+					return this.queryStringParams[key];
+				};
+			}
+
 			$(document).ready(function() {
+				// look at url parameters
+				var encoding = window.location.getParameter("encoding") || null;
+				var server = window.location.getParameter("server") || window.location.hostname;
+				var port = window.location.getParameter("port") || window.location.port;
+				// create the client
 			    var client = new XpraClient('screen');
 			    // the primary encoding can be set
-			    client.enable_encoding("jpeg");
+			    if(encoding) {
+			    	client.enable_encoding(encoding);
+			    }
 			    // encodings can be disabled like so
 			    // client.disable_encoding("h264");
-			    client.connect(window.location.hostname, window.location.port, false);
+			    client.connect(server, port, false);
 			});
 		</script>
 	</body>
