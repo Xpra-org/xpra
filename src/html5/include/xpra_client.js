@@ -25,6 +25,9 @@ function XpraClient(container) {
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
 	this.supported_encodings = ["h264", "jpeg", "png", "rgb32"];
 	this.enabled_encodings = [];
+	// hello
+	this.HELLO_TIMEOUT = 2000
+	this.hello_timer = null;
 	// modifier keys
 	this.caps_lock = null;
 	this.alt_modifier = null;
@@ -48,6 +51,8 @@ function XpraClient(container) {
 	// the client holds a list of packet handlers
 	this.packet_handlers = {
 		'open': this._process_open,
+		'close': this._process_close,
+		'disconnect': this._process_disconnect,
 		'startup-complete': this._process_startup_complete,
 		'hello': this._process_hello,
 		'ping': this._process_ping,
@@ -89,6 +94,10 @@ function XpraClient(container) {
 			me._keyb_onkeypress(e, me);
 		};
 	}
+}
+
+XpraClient.prototype.callback_close = function(reason) {
+	console.error(reason);
 }
 
 XpraClient.prototype.connect = function(host, port, ssl) {
@@ -144,6 +153,11 @@ XpraClient.prototype._do_connect = function(with_worker) {
 	uri += ":" + this.port;
 	// do open
 	this.protocol.open(uri);
+	// wait timeout seconds for a hello, then bomb
+	var me = this;
+	this.hello_timer = setTimeout(function () {
+		me.callback_close("Did not recieve hello before timeout reached, not an Xpra server?");
+	}, this.HELLO_TIMEOUT);
 }
 
 XpraClient.prototype.close = function() {
@@ -588,12 +602,30 @@ XpraClient.prototype._process_open = function(packet, ctx) {
 	ctx.protocol.send(["hello", hello]);
 }
 
+XpraClient.prototype._process_close = function(packet, ctx) {
+	// call the client's close callback
+	ctx.callback_close();
+}
+
+XpraClient.prototype._process_disconnect = function(packet, ctx) {
+	if(ctx.hello_timer) {
+		clearTimeout(ctx.hello_timer);
+		ctx.hello_timer = null;
+	}
+	ctx.callback_close("Disconnect: "+packet[1]+", "+packet[2]);
+}
+
 XpraClient.prototype._process_startup_complete = function(packet, ctx) {
 	console.log("startup complete");
 }
 
 XpraClient.prototype._process_hello = function(packet, ctx) {
 	//show("process_hello("+packet+")");
+	// clear hello timer
+	if(ctx.hello_timer) {
+		clearTimeout(ctx.hello_timer);
+		ctx.hello_timer = null;
+	}
 	var hello = packet[1];
 	var version = hello["version"];
 	try {
@@ -603,13 +635,13 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 			vno[i] = parseInt(vparts[i]);
 		}
 		if (vno[0]<=0 && vno[1]<10) {
-			throw "unsupported version: " + version;
+			ctx.callback_close("unsupported version: " + version);
 			this.close();
 			return;
 		}
 	}
 	catch (e) {
-		throw "error parsing version number '" + version + "'";
+		ctx.callback_close("error parsing version number '" + version + "'");
 		this.close();
 		return;
 	}

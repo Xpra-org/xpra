@@ -1,0 +1,108 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="css/signin.css" rel="stylesheet">
+    <title>Xpra HTML5 Client</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+	<link rel="icon" type="image/png" href="/favicon.png" />
+  </head>
+
+<body>
+
+<div class="container">
+
+
+		<form class="form-signin form-inline">
+
+      	<img src="include/xpra-logo.png" />
+        <h2 class="form-signin-heading">Xpra HTML5 Client</h2>
+        
+        <div id="alert-disconnect" class="alert alert-info" role="alert" style="display:none;">
+		  	<p>You were disconnected for the following reason:</p>
+		  	<p><span id="disconnect-reason"></span></p>
+		  </div>
+        
+		  <div class="form-group">
+		    <label class="sr-only" for="server">Server</label>
+		    <input type="text" class="form-control" id="server" placeholder="Server">
+		  </div>
+		  <div class="form-group">
+		    <label class="sr-only" for="port">Port</label>
+		    <input type="text" class="form-control" id="port" placeholder="Port">
+		  </div>
+
+		  <div class="form-group">
+		  	<a class="btn btn-lg btn-success" role="button" onclick="doConnect();">Connect</a>
+		  </div>
+
+		  <div class="form-group">
+		    <label class="sr-only" for="encoding">Encoding</label>
+		    <select class="form-control" id="encoding">
+		      <option value="h264">H.264</option>
+		      <option value="jpeg">JPEG</option>
+			  <option value="png">PNG</option>
+			  <option value="rgb">Raw RGB + zlib</option>
+			</select>
+		  </div>
+
+		</form>
+
+    </div> <!-- /container -->
+
+<script>
+
+/**
+ * Adds window.location.getParameter to those browsers that don't have it:
+ *
+ * See:
+ * http://stackoverflow.com/a/8812157/428751
+ */
+if (!window.location.getParameter ) {
+	window.location.getParameter = function(key) {
+		function parseParams() {
+				var params = {},
+						e,
+						a = /\+/g,	// Regex for replacing addition symbol with a space
+						r = /([^&=]+)=?([^&]*)/g,
+						d = function (s) { return decodeURIComponent(s.replace(a, " ")); },
+						q = window.location.search.substring(1);
+
+				while (e = r.exec(q))
+						params[d(e[1])] = d(e[2]);
+
+				return params;
+		}
+
+		if (!this.queryStringParams)
+				this.queryStringParams = parseParams();
+
+		return this.queryStringParams[key];
+	};
+}
+
+var disconnect_reason = window.location.getParameter("disconnect") || null;
+
+if(disconnect_reason) {
+	document.getElementById("alert-disconnect").style.display = "block";
+	document.getElementById("disconnect-reason").innerHTML = disconnect_reason;
+}
+
+function doConnect() {
+	var server = document.getElementById("server").value;
+	var port = document.getElementById("port").value;
+	var encoding = document.getElementById("encoding").value;
+	//alert("connect to "+server+" on port "+port+" using "+encoding);
+	window.location="/index.html?server="+server+"&port="+port+"&encoding="+encoding+"&submit=true";
+}
+
+</script>
+
+</body>
+</html>
