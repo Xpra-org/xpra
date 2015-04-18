@@ -352,8 +352,8 @@ def start_websockify(child_reaper, opts, tcp_sockets):
     child_reaper.add_process(websockify_proc, "websockify", websockify_command, ignore=True, callback=websockify_ended)
     log.info("websockify started, serving %s on %s:%s", www_dir, html_host, html_port)
     def cleanup_websockify():
-        log("cleanup_websockify() process.poll()=%s, pid=%s, dead_pids=%s", websockify_proc.poll(), websockify_proc.pid, child_reaper._dead_pids)
-        if websockify_proc.poll() is None and websockify_proc.pid not in child_reaper._dead_pids:
+        log("cleanup_websockify() process.poll()=%s, pid=%s", websockify_proc.poll(), websockify_proc.pid)
+        if websockify_proc.poll() is None and not websockify_proc._closed:
             log.info("stopping websockify with pid %s", websockify_proc.pid)
             try:
                 websockify_proc._closed = True

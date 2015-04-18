@@ -16,7 +16,7 @@ from xpra.gtk_common.gobject_compat import import_gobject
 gobject = import_gobject()
 gobject.threads_init()
 
-from xpra.util import AdHocStruct, updict
+from xpra.util import updict
 from xpra.log import Logger
 log = Logger("server", "util")
 
