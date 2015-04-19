@@ -66,7 +66,7 @@ CHARCODE_TO_NAME = {
 	169 : "parenright",
 	170 : "asterisk",
 	171	: "plus",
-	172	: "pipe",
+	172	: "bar",
 	173	: "minus",
 	174 : "braceleft",
 	175 : "braceright",
