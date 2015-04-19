@@ -28,6 +28,8 @@ MAX_PIXELS_PREFER_RGB = int(os.environ.get("XPRA_MAX_PIXELS_PREFER_RGB", 4096))
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MIN_DELTA_SIZE = int(os.environ.get("XPRA_MIN_DELTA_SIZE", "1024"))
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "32768"))
+MAX_DELTA_HITS = int(os.environ.get("XPRA_MAX_DELTA_HITS", "20"))
+
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
 FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
 STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
@@ -299,8 +301,8 @@ class WindowSource(object):
         now = time.time()
         for i,x in enumerate(self.delta_pixel_data):
             if x:
-                w, h, coding, store, buflen, _, last_used = x
-                info["encoding.delta.bucket[%s]" % i] = w, h, coding, store, buflen, int((now-last_used)*1000)
+                w, h, coding, store, buflen, _, hits, last_used = x
+                info["encoding.delta.bucket[%s]" % i] = w, h, coding, store, buflen, hits, int((now-last_used)*1000)
         up("encoding",  self.get_quality_speed_info())
         try:
             #ie: get_strict_encoding -> "strict_encoding"
@@ -1470,7 +1472,7 @@ class WindowSource(object):
         log("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
         start = time.time()
         mmap_data = None
-        delta, store, bucket = -1, -1, -1
+        delta, store, bucket, hits = -1, -1, -1, 0
         if self._mmap and self._mmap_size>0 and psize>256:
             mmap_data = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
         if mmap_data:
@@ -1496,15 +1498,22 @@ class WindowSource(object):
             for i, dr in enumerate(list(self.delta_pixel_data)):
                 if dr is None:
                     continue
-                lw, lh, lcoding, lsequence, buflen, ldata, _ = dr
+                lw, lh, lcoding, lsequence, buflen, ldata, hits, _ = dr
                 if lw==w and lh==h and lcoding==coding and buflen==dlen:
+                    deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i, hit count=%s)", i, lw, lh, lcoding, dlen, lsequence, hits)
                     #xor with this matching delta bucket:
                     delta = lsequence
                     bucket = i
                     xored = xor_str(dpixels, ldata)
                     image.set_pixels(xored)
                     dr[-1] = time.time()            #update last used time
-                    deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i)", i, lw, lh, lcoding, dlen, lsequence)
+                    if MAX_DELTA_HITS>0 and hits<MAX_DELTA_HITS:
+                        hits += 1
+                        dr[-2] = hits               #update hit count
+                    else:
+                        deltalog("delta: too many hits for bucket %s: %s, clearing it", bucket, hits)
+                        hits = 0
+                        self.delta_pixel_data[i] = None
                     break
 
         #by default, don't set rowstride (the container format will take care of providing it):
@@ -1554,7 +1563,7 @@ class WindowSource(object):
                                 t = dr[-1]
                                 bucket = i
                         deltalog("delta: using oldest bucket %i", bucket)
-                self.delta_pixel_data[bucket] = [w, h, coding, store, len(dpixels), dpixels, time.time()]
+                self.delta_pixel_data[bucket] = [w, h, coding, store, len(dpixels), dpixels, hits, time.time()]
                 client_options["store"] = store
                 client_options["bucket"] = bucket
                 #record number of frames and pixels:
