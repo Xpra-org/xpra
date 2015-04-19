@@ -20,6 +20,21 @@ from xpra.log import Logger
 log = Logger("x11", "keyboard")
 vlog = Logger("x11", "keyboard", "verbose")
 
+#keys we choose not to map if the free space in the keymap is too limited
+#this list was generated using:
+#$ DISPLAY=:1 xmodmap -pke | awk -F= '{print $2}' | xargs -n 1 echo | sort -u | grep XF | xargs
+OPTIONAL_KEYS = ["XF86AudioForward", "XF86AudioLowerVolume", "XF86AudioMedia", "XF86AudioMicMute", "XF86AudioMute", "XF86AudioNext", "XF86AudioPause", "XF86AudioPlay", "XF86AudioPrev", "XF86AudioRaiseVolume", "XF86AudioRecord", "XF86AudioRewind", "XF86AudioStop",
+                 "XF86Back", "XF86Battery", "XF86Bluetooth", "XF86Calculator", "XF86ClearGrab", "XF86Close",
+                 "XF86Copy", "XF86Cut", "XF86Display", "XF86Documents", "XF86DOS", "XF86Eject", "XF86Explorer",
+                 "XF86Favorites", "XF86Finance", "XF86Forward", "XF86Game", "XF86Go", "XF86HomePage", "XF86KbdBrightnessDown", "XF86KbdBrightnessUp", "XF86KbdLightOnOff",
+                 "XF86Launch1", "XF86Launch2", "XF86Launch3", "XF86Launch4", "XF86Launch5", "XF86Launch6", "XF86Launch7", "XF86Launch8", "XF86Launch9", "XF86LaunchA", "XF86LaunchB",
+                 "XF86Mail", "XF86MailForward", "XF86MenuKB", "XF86Messenger", "XF86MonBrightnessDown", "XF86MonBrightnessUp", "XF86MyComputer",
+                 "XF86New", "XF86Next_VMode", "XF86Open", "XF86Paste", "XF86Phone", "XF86PowerOff",
+                 "XF86Prev_VMode", "XF86Reload", "XF86Reply", "XF86RotateWindows", "XF86Save", "XF86ScreenSaver",
+                 "XF86ScrollDown", "XF86ScrollUp", "XF86Search", "XF86Send", "XF86Shop", "XF86Sleep", "XF86Suspend",
+                 "XF86Switch_VT_1", "XF86Switch_VT_10", "XF86Switch_VT_11", "XF86Switch_VT_12", "XF86Switch_VT_2", "XF86Switch_VT_3", "XF86Switch_VT_4", "XF86Switch_VT_5", "XF86Switch_VT_6", "XF86Switch_VT_7", "XF86Switch_VT_8", "XF86Switch_VT_9",
+                 "XF86Tools", "XF86TouchpadOff", "XF86TouchpadOn", "XF86TouchpadToggle", "XF86Ungrab", "XF86WakeUp", "XF86WebCam", "XF86WLAN", "XF86WWW", "XF86Xfer"]
+
 
 def exec_keymap_command(args, stdin=None):
     try:
@@ -183,7 +198,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                 modifiers.add(modifier)
         return modifiers
 
-    def filter_mappings(mappings):
+    def filter_mappings(mappings, drop_extra_keys=False):
         filtered = {}
         for keycode, entries in mappings.items():
             mods = modifiers_for(entries)
@@ -193,8 +208,13 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
             #now remove entries for keysyms we don't have:
             f_entries = set([(keysym, index) for keysym, index in entries if X11Keyboard.parse_keysym(keysym) is not None])
             if len(f_entries)==0:
-                log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
+                log.warn("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
                 continue
+            if drop_extra_keys:
+                noopt = [keysym for keysym, index in entries if (X11Keyboard.parse_keysym(keysym) is not None and keysym not in OPTIONAL_KEYS)]
+                if len(noopt)==0:
+                    log("keymapping removed keycode entry %s pointing to optional keys: %s", keycode, entries)
+                    continue
             filtered[keycode] = f_entries
         return filtered
 
@@ -216,12 +236,12 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         preserve_keycode_entries = X11Keyboard.get_keycode_mappings()
         log("preserved mappings:")
         dump_dict(preserve_keycode_entries)
-        log("preserve_keycode_entries=%s", preserve_keycode_entries)
-        preserve_keycode_entries = filter_mappings(indexed_mappings(preserve_keycode_entries))
 
     kcmin, kcmax = X11Keyboard.get_minmax_keycodes()
     for try_harder in (False, True):
-        trans, new_keycodes, missing_keycodes = translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
+        filtered_preserve_keycode_entries = filter_mappings(indexed_mappings(preserve_keycode_entries), try_harder)
+        log("filtered_preserve_keycode_entries=%s", filtered_preserve_keycode_entries)
+        trans, new_keycodes, missing_keycodes = translate_keycodes(kcmin, kcmax, keycodes, filtered_preserve_keycode_entries, keysym_to_modifier, try_harder)
         if len(missing_keycodes)==0:
             break
     instructions = keymap_to_xmodmap(new_keycodes)
