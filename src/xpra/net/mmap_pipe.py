@@ -215,7 +215,7 @@ def mmap_write(mmap_area, mmap_size, data):
             #[------------------S+++++++++E------]
             #[*******E----------S+++++++++-------]
             mmap_area.seek(8)
-            mmap_area.write(data)
+            mmap_area.write(memoryview_to_bytes(data))
             data = [(8, l)]
             mmap_data_end.value = 8+l
         else:
@@ -223,9 +223,9 @@ def mmap_write(mmap_area, mmap_size, data):
             #[------------------S+++++++++E------]
             #[******E-----------S+++++++++*******]
             mmap_area.seek(end)
-            mmap_area.write(data[:chunk])
+            mmap_area.write(memoryview_to_bytes(data[:chunk]))
             mmap_area.seek(8)
-            mmap_area.write(data[chunk:])
+            mmap_area.write(memoryview_to_bytes(data[chunk:]))
             l2 = l-chunk
             data = [(end, chunk), (8, l2)]
             mmap_data_end.value = 8+l2
