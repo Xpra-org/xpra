@@ -1788,7 +1788,7 @@ cdef class Encoder:
             #before uploading to the device... this is probably costly!
             stride = self.inputPitch
             for i in range(h):
-                self.inputBuffer.data[i*stride:(i+1)*stride] = pixels[i*image_stride:(i+1)*image_stride+stride]
+                self.inputBuffer[i*stride:(i+1)*stride] = pixels[i*image_stride:(i+1)*image_stride+stride]
         log("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), input_size)
 
         #copy input buffer to CUDA buffer:

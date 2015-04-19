@@ -1826,7 +1826,7 @@ cdef class Encoder:
             for i in range(h):
                 x = i*stride
                 y = i*image_stride
-                self.inputBuffer.data[x:x+stride] = pixels[y:y+stride]
+                self.inputBuffer[x:x+stride] = pixels[y:y+stride]
         log("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), input_size)
 
         #copy input buffer to CUDA buffer:
