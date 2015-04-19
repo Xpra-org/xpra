@@ -298,7 +298,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
     """
     log("translate_keycodes(%s, %s, %s, %s, %s, %s)", kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
     #list of free keycodes we can use:
-    free_keycodes = [i for i in range(kcmin, kcmax) if i not in preserve_keycode_entries]
+    free_keycodes = [i for i in range(kcmin, kcmax+1) if i not in preserve_keycode_entries]
     keycode_trans = {}              #translation map from client keycode to our server keycode
     server_keycodes = {}            #the new keycode definitions
     missing_keycodes = []           #the groups of entries we failed to map due to lack of free keycodes
