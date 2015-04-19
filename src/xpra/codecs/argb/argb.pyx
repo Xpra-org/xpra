@@ -267,7 +267,9 @@ def restride_image(image):
     cdef unsigned long pixptr = ptr
 
     ptr = int(image.allocate_buffer(out_size, False))
-    assert ptr>0, "allocate_buffer failed"
+    if ptr==0:
+        #not an ximage, cannot restride (shouldn't be needed anyway)
+        return False
     cdef unsigned char *out = <unsigned char*> ptr
 
     cdef int ry = height

@@ -96,7 +96,7 @@ class ImageWrapper(object):
 
     def allocate_buffer(self, buf_len, free_existing=1):
         #only defined for XImage wrappers:
-        raise NotImplementedError()
+        return 0
 
     def clone_pixel_data(self):
         assert not self.freed, "image has already been freed!"
