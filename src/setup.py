@@ -77,7 +77,10 @@ PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
 #we don't support building with "pkg-config" on win32 with python2:
 if PKG_CONFIG and (PYTHON3 or not WIN32):
-    has_pkg_config = get_status_output([PKG_CONFIG, "--version"])[0]==0
+    pkg_config_version = get_status_output([PKG_CONFIG, "--version"])
+    has_pkg_config = pkg_config_version[0]==0 and pkg_config_version[1]
+    if has_pkg_config:
+        print("found pkg-config version: %s" % pkg_config_version[1])
 
 def pkg_config_ok(*args, **kwargs):
     if not has_pkg_config:
@@ -980,23 +983,28 @@ if WIN32:
     nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
     nvenc_lib_names         = []    #not linked against it, we use dlopen!
 
-    # Same for PyGTK:
+    # Same for PyGTK / GTK3:
     # http://www.pygtk.org/downloads.html
-    gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
-    python_include_path = "C:\\Python27\\include"
-    gtk2runtime_path        = os.path.join(gtk2_path, "runtime")
-    gtk2_lib_dir            = os.path.join(gtk2runtime_path, "bin")
-    gtk2_base_include_dir   = os.path.join(gtk2runtime_path, "include")
+    if PYTHON3:
+        GTK3_DIR = "C:\\GTK3"
+        GTK_INCLUDE_DIR = os.path.join(GTK3_DIR, "include")
+    else:
+        gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
+        python_include_path = "C:\\Python27\\include"
+        gtk2runtime_path        = os.path.join(gtk2_path, "runtime")
+        gtk2_lib_dir            = os.path.join(gtk2runtime_path, "bin")
+        GTK_INCLUDE_DIR   = os.path.join(gtk2runtime_path, "include")
+        #gtk2 only:
+        gdkconfig_include_dir   = os.path.join(gtk2runtime_path, "lib", "gtk-2.0", "include")
+        glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
+        pygtk_include_dir       = os.path.join(python_include_path, "pygtk-2.0")
+        gtk2_include_dir        = os.path.join(GTK_INCLUDE_DIR, "gtk-2.0")
 
-    pygtk_include_dir       = os.path.join(python_include_path, "pygtk-2.0")
-    atk_include_dir         = os.path.join(gtk2_base_include_dir, "atk-1.0")
-    gtk2_include_dir        = os.path.join(gtk2_base_include_dir, "gtk-2.0")
-    gdkpixbuf_include_dir   = os.path.join(gtk2_base_include_dir, "gdk-pixbuf-2.0")
-    glib_include_dir        = os.path.join(gtk2_base_include_dir, "glib-2.0")
-    cairo_include_dir       = os.path.join(gtk2_base_include_dir, "cairo")
-    pango_include_dir       = os.path.join(gtk2_base_include_dir, "pango-1.0")
-    gdkconfig_include_dir   = os.path.join(gtk2runtime_path, "lib", "gtk-2.0", "include")
-    glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
+    atk_include_dir         = os.path.join(GTK_INCLUDE_DIR, "atk-1.0")
+    gdkpixbuf_include_dir   = os.path.join(GTK_INCLUDE_DIR, "gdk-pixbuf-2.0")
+    glib_include_dir        = os.path.join(GTK_INCLUDE_DIR, "glib-2.0")
+    cairo_include_dir       = os.path.join(GTK_INCLUDE_DIR, "cairo")
+    pango_include_dir       = os.path.join(GTK_INCLUDE_DIR, "pango-1.0")
     #END OF HARDCODED SECTION
     ###########################################################
 
@@ -1341,6 +1349,19 @@ if WIN32:
         build_xpra_conf(dist)
 
 
+    #FIXME: ugly workaround for building the ugly pycairo workaround on win32:
+    #the win32 py-gi installers don't have development headers for pycairo
+    #so we hardcode them here instead...
+    #(until someone fixes the win32 builds properly)
+    PYCAIRO_DIR = "C:\\pycairo-1.10.0"
+    def pycairo_pkgconfig(*pkgs_options, **ekw):
+        if "pycairo" in pkgs_options:
+            kw = pkgconfig("cairo", **ekw)
+            add_to_keywords(kw, 'include_dirs', PYCAIRO_DIR)
+            checkdirs(PYCAIRO_DIR)
+            return kw
+        return exec_pkgconfig(*pkgs_options, **ekw)
+
     #hard-coded pkgconfig replacement for visual studio:
     #(normally used with python2 / py2exe builds)
     def VC_pkgconfig(*pkgs_options, **ekw):
@@ -1411,11 +1432,17 @@ if WIN32:
         elif "pygobject-2.0" in pkgs_options[0]:
             dirs = (python_include_path,
                     pygtk_include_dir, atk_include_dir, gtk2_include_dir,
-                    gtk2_base_include_dir, gdkconfig_include_dir, gdkpixbuf_include_dir,
+                    GTK_INCLUDE_DIR, gdkconfig_include_dir, gdkpixbuf_include_dir,
                     glib_include_dir, glibconfig_include_dir,
                     cairo_include_dir, pango_include_dir)
             add_to_keywords(kw, 'include_dirs', *dirs)
             checkdirs(*dirs)
+        elif "cairo" in pkgs_options:
+            add_to_keywords(kw, 'include_dirs', GTK_INCLUDE_DIR, cairo_include_dir)
+            add_to_keywords(kw, 'libraries', "cairo")
+            checkdirs(cairo_include_dir)
+        elif "pycairo" in pkgs_options:
+            kw = pycairo_pkgconfig(*pkgs_options, **ekw)
         else:
             sys.exit("ERROR: unknown package config: %s" % str(pkgs_options))
         if debug_ENABLED:
@@ -1438,12 +1465,7 @@ if WIN32:
         #the win32 py-gi installers don't have development headers for pycairo
         #so we hardcode them here instead...
         #(until someone fixes the win32 builds properly)
-        def pkgconfig(*pkgs_options, **ekw):
-            if "pycairo" in pkgs_options:
-                kw = exec_pkgconfig("cairo", **ekw)
-                add_to_keywords(kw, 'include_dirs', "C:\\pycairo-1.10.0")
-                return kw
-            return exec_pkgconfig(*pkgs_options, **ekw)
+        pkgconfig = pycairo_pkgconfig
 
 
     remove_packages(*external_excludes)

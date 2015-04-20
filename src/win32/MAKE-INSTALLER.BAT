@@ -67,8 +67,8 @@ if NOT "%VC%"=="" (
 
 ECHO ***************************************************************
 ECHO ****** build cython pyd files inplace
-ECHO %PYTHON_EXE% -OO setup.py build_ext --inplace ^> build-xpra.log
-%PYTHON_EXE% -OO setup.py build_ext --inplace > build-xpra.log
+ECHO %PYTHON_EXE% -OO setup.py build_ext --inplace %COMPILER_ARGS% ^> build-xpra.log
+%PYTHON_EXE% -OO setup.py build_ext --inplace %COMPILER_ARGS% > build-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "build error, see build-xpra.log"
 	GOTO ERROR
@@ -90,8 +90,8 @@ SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PY
 SET PATH=%PATH%;%GSTREAMER%\sdk\bin;%GSTREAMER%\bin
 SET PY2EXE_ARGS=%BUILD_ARGS%
 IF %SHOW_DEPENDENCIES% NEQ 0 SET PY2EXE_ARGS=%BUILD_ARGS% -x
-ECHO %PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS% ^> py2exe-xpra.log
-%PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS% > py2exe-xpra.log
+ECHO %PYTHON_EXE% -OO setup.py py2exe %COMPILER_ARGS% %PY2EXE_ARGS% ^> py2exe-xpra.log
+%PYTHON_EXE% -OO setup.py py2exe %COMPILER_ARGS% %PY2EXE_ARGS% > py2exe-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "py2exe error, see py2exe-xpra.log"
 	GOTO ERROR
