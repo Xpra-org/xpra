@@ -92,6 +92,10 @@ UNDECORATED_TYPE_HINTS = set((
                     "COMBO",
                     "DND"))
 
+import sys
+PYTHON3 = sys.version_info[0] == 3
+WIN32 = sys.platform.startswith("win")
+
 
 class GTKKeyEvent(AdHocStruct):
     pass
@@ -771,8 +775,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def update_icon(self, width, height, coding, data):
-        iconlog("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
         coding = bytestostr(coding)
+        iconlog("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
+        if PYTHON3 and WIN32:
+            iconlog("not setting icon to prevent crashes..")
+            return
         if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
             data = unpremultiply_argb(data)
             rgba = str(bgra_to_rgba(data))
