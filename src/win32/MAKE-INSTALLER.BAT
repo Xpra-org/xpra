@@ -175,7 +175,7 @@ if %errorlevel% NEQ 0 (
 
 ECHO ***************************************************************
 ECHO ****** Finished - running the new installer
-SET INSTALLER_FILENAME=Xpra%EXTRA_VERSION%_Setup_%FULL_VERSION%.exe
+SET INSTALLER_FILENAME=Xpra%EXTRA_VERSION%%BUILD_TYPE%_Setup_%FULL_VERSION%.exe
 MOVE /Y Output\Xpra_Setup.exe %INSTALLER_FILENAME%
 RMDIR Output
 dir %INSTALLER_FILENAME%
