@@ -1098,7 +1098,7 @@ if WIN32:
             #(ie: "libatk-1.0-0.dll" -> "atk")
             add_DLLs('atk', 'cairo-gobject',
                      'dbus', 'dbus-glib', 'gdk', 'gdk_pixbuf',
-                     'libjasper', 'libjavascriptcoregtk',
+                     'jasper', 'javascriptcoregtk',
                      'gdkglext', 'gio', 'girepository', 'glib',
                      'gnutls', 'gobject', 'gthread',
                      'gtk', 'gtkglext', 'harfbuzz-gobject',
@@ -1275,7 +1275,7 @@ if WIN32:
                })
             add_data_files('Microsoft.VC90.CRT', glob.glob(C_DLLs+'Microsoft.VC90.CRT\\*.*'))
             add_data_files('Microsoft.VC90.MFC', glob.glob(C_DLLs+'Microsoft.VC90.MFC\\*.*'))
-            if webp_ENABLED:
+            if webp_ENABLED and not PYTHON3:
                 #add the webp DLL to the output:
                 #And since 0.2.1, you have to compile the DLL yourself..
                 #the path after installing may look like this:
@@ -1419,9 +1419,12 @@ if WIN32:
                          [vpx_lib_dir],
                          vpx_lib_names, nocmt=True)
         elif "webp" in pkgs_options[0]:
-            add_keywords([webp_bin_dir], [webp_include_dir],
-                         [webp_lib_dir],
-                         webp_lib_names, nocmt=True)
+            if PYTHON3:
+                pass
+            else:
+                add_keywords([webp_bin_dir], [webp_include_dir],
+                             [webp_lib_dir],
+                             webp_lib_names, nocmt=True)
         elif ("nvenc3" in pkgs_options[0]) or ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]):
             add_keywords([nvenc_bin_dir, cuda_bin_dir], [nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir],
                          [cuda_lib_dir],
