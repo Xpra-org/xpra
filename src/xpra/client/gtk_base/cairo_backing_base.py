@@ -13,7 +13,7 @@ PixbufLoader    = import_pixbufloader()
 from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.codecs.loader import get_codec
-from xpra.os_util import BytesIOClass, memoryview_to_bytes
+from xpra.os_util import BytesIOClass, memoryview_to_bytes, strtobytes
 
 from xpra.log import Logger
 log = Logger("paint", "cairo")
@@ -116,8 +116,7 @@ class CairoBackingBase(GTKWindowBacking):
             oformat = "RGB"
         #use frombytes rather than frombuffer to be compatible with python3 new-style buffers
         #this is slower, but since this codepath is already dreadfully slow, we don't care
-        bdata = memoryview_to_bytes(img_data)
-        log("bdata=%s", type(bdata))
+        bdata = strtobytes(memoryview_to_bytes(img_data))
         img = PIL.Image.frombytes(oformat, (width,height), bdata, "raw", rgb_format, rowstride, 1)
         #This is insane, the code below should work, but it doesn't:
         # img_data = bytearray(img.tostring('raw', oformat, 0, 1))
