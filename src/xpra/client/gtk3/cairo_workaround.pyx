@@ -21,6 +21,10 @@
 # "PyGObject just lacks the glue code that allows it to pass the statically-wrapped
 # cairo.Pattern to introspected methods"
 
+
+#cython: boundscheck=False
+
+
 import cairo
 
 
@@ -93,15 +97,19 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
     cdef int iheight    = cairo_image_surface_get_height(surface)
     assert iwidth>=width and iheight>=height, "invalid image surface: expected at least %sx%s but got %sx%s" % (width, height, iwidth, iheight)
     assert istride>=iwidth*4, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
+    cdef int x,y
+    cdef srci, dsti
     #just deal with the formats we care about:
     if format==CAIRO_FORMAT_RGB24 and rgb_format=="RGB":
         #cairo's RGB24 format is actually stored as BGR!
         for y in range(height):
             for x in range(width):
-                data[x*4 + 0 + y*istride] = cbuf[x*3 + 2 + y*stride]    #B
-                data[x*4 + 1 + y*istride] = cbuf[x*3 + 1 + y*stride]    #G
-                data[x*4 + 2 + y*istride] = cbuf[x*3 + 0 + y*stride]    #R
-                data[x*4 + 3 + y*istride] = 255                         #X
+                srci = x*4 + y*istride
+                dsti = x*3 + y*stride
+                data[srci + 0] = cbuf[dsti + 2]     #B
+                data[srci + 1] = cbuf[dsti + 1]     #G
+                data[srci + 2] = cbuf[dsti + 0]     #R
+                data[srci + 3] = 255                #X
         return
     #note: this one is currently unused because it doesn't work
     #and I don't know why
