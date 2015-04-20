@@ -104,7 +104,8 @@ def get_build_info():
         if CYTHON_VERSION!="unknown":
             info.append("built with Cython %s" % CYTHON_VERSION)
         if COMPILER_VERSION!="unknown":
-            info.append(COMPILER_VERSION)
+            cv = COMPILER_VERSION.replace("Optimizing Compiler Version", "Optimizing Compiler\nVersion")
+            info += cv.splitlines()
     except Exception as e:
         warn("Error: could not find the build information: %s" % e)
     return info
