@@ -30,7 +30,9 @@ def save_properties(props, filename):
         except:
             print("WARNING: failed to delete %s" % filename)
     def u(v):
-        if type(v) not in (str, unicode):
+        try:
+            v = v.decode()
+        except:
             v = str(v)
         try:
             return v.encode("utf-8")
@@ -52,7 +54,7 @@ def save_properties(props, filename):
             w("\n")
     print("updated %s with:" % filename)
     for k in sorted(props.keys()):
-        print("* %s = %s" % (str(k).ljust(20), u(props[k])))
+        print("* %s = %s" % (str(k).ljust(20), u(props[k]).decode()))
 
 def get_properties(filename):
     props = dict()
@@ -70,6 +72,9 @@ def get_properties(filename):
                 if s[0] in ('!', '#'):
                     continue
                 parts = s.split("=", 1)
+                if len(parts)<2:
+                    print("missing equal sign: %s" % s)
+                    continue
                 name = parts[0]
                 value = parts[1]
                 if value[0]!="'" or value[-1]!="'":
