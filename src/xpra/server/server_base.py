@@ -20,6 +20,7 @@ soundlog = Logger("sound")
 clientlog = Logger("client")
 screenlog = Logger("screen")
 printlog = Logger("printing")
+netlog = Logger("network")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
@@ -604,6 +605,7 @@ class ServerBase(ServerCore):
         self.cleanup_source(protocol)
 
     def cleanup_source(self, protocol):
+        netlog("cleanup_source(%s)", protocol)
         #this ensures that from now on we ignore any incoming packets coming
         #from this connection as these could potentially set some keys pressed, etc
         if protocol in self._potential_protocols:
@@ -614,14 +616,16 @@ class ServerBase(ServerCore):
             source.close()
             del self._server_sources[protocol]
             if self.exit_with_client:
-                log.info("Last client has disconnected, terminating")
+                netlog.info("Last client has disconnected, terminating")
                 self.quit(0)
             else:
-                log.info("xpra client disconnected.")
+                netlog.info("xpra client disconnected.")
         return source
 
     def is_timedout(self, protocol):
-        return ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
+        v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
+        netlog("is_timedout(%s)=%s", protocol, v)
+        return v
 
     def no_more_clients(self):
         #so it is now safe to clear them:
@@ -650,7 +654,7 @@ class ServerBase(ServerCore):
         info = packet[1]
         if len(packet)>2:
             info += " (%s)" % (", ".join(packet[2:]))
-        log.info("client %s has requested disconnection: %s", proto, info)
+        netlog.info("client %s has requested disconnection: %s", proto, info)
         self.disconnect_protocol(proto, CLIENT_REQUEST)
 
     def _process_connection_lost(self, proto, packet):
@@ -2224,19 +2228,19 @@ class ServerBase(ServerCore):
                 ui_handlers = self._default_packet_handlers
             handler = handlers.get(packet_type)
             if handler:
-                log("process non-ui packet %s", packet_type)
+                netlog("process non-ui packet %s", packet_type)
                 handler(proto, packet)
                 return
             handler = ui_handlers.get(packet_type)
             if handler:
-                log("will process ui packet %s", packet_type)
+                netlog("will process ui packet %s", packet_type)
                 self.idle_add(handler, proto, packet)
                 return
             if not proto._closed:
-                log.error("unknown or invalid packet type: %s from %s", packet_type, proto)
+                netlog.error("unknown or invalid packet type: %s from %s", packet_type, proto)
             if proto not in self._server_sources:
                 proto.close()
         except KeyboardInterrupt:
             raise
         except:
-            log.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
+            netlog.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)

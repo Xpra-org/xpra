@@ -18,6 +18,8 @@ import thread
 
 from xpra.log import Logger
 log = Logger("server")
+netlog = Logger("network")
+proxylog = Logger("proxy")
 commandlog = Logger("command")
 
 import xpra
@@ -333,10 +335,10 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def cleanup(self, *args):
-        log("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
+        netlog("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
         for p in list(self._tcp_proxy_clients):
             p.quit()
-        log("cleanup will disconnect: %s", self._potential_protocols)
+        netlog("cleanup will disconnect: %s", self._potential_protocols)
         if self._upgrading:
             reason = SERVER_EXIT
         else:
@@ -353,7 +355,7 @@ class ServerCore(object):
         assert socktype, "cannot find socket type for %s" % listener
         sock, address = listener.accept()
         if len(self._potential_protocols)>=self._max_connections:
-            log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
+            netlog.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
             sock.close()
             return  True
         try:
@@ -363,9 +365,9 @@ class ServerCore(object):
         sockname = sock.getsockname()
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
-        log("new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", args, sock, sockname, address, peername)
+        netlog("new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", args, sock, sockname, address, peername)
         sc = SocketConnection(sock, sockname, address, target, socktype)
-        log.info("New connection received: %s", sc)
+        netlog.info("New connection received: %s", sc)
         protocol = Protocol(self, sc, self.process_packet)
         protocol.large_packets.append("info-response")
         protocol.authenticator = None
@@ -382,7 +384,7 @@ class ServerCore(object):
         return True
 
     def invalid_header(self, proto, data):
-        log("invalid_header(%s, %s) input_packetcount=%s, tcp_proxy=%s", proto, repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy)
+        netlog("invalid_header(%s, %s) input_packetcount=%s, tcp_proxy=%s", proto, repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy)
         if proto.input_packetcount==0 and self._tcp_proxy:
             self.start_tcp_proxy(proto, data)
             return
@@ -390,7 +392,7 @@ class ServerCore(object):
         proto.gibberish(err, data)
 
     def start_tcp_proxy(self, proto, data):
-        log("start_tcp_proxy(%s, %s)", proto, data[:10])
+        proxylog("start_tcp_proxy(%s, %s)", proto, data[:10])
         client_connection = proto.steal_connection()
         self._potential_protocols.remove(proto)
         #connect to web server:
@@ -400,26 +402,28 @@ class ServerCore(object):
         try:
             web_server_connection = _socket_connect(sock, (host, int(port)), "web-proxy-for-%s" % proto, "tcp")
         except:
-            log.warn("failed to connect to proxy: %s:%s", host, port)
+            proxylog.warn("failed to connect to proxy: %s:%s", host, port)
             proto.gibberish("invalid packet header", data)
             return
-        log("proxy connected to tcp server at %s:%s : %s", host, port, web_server_connection)
+        proxylog("proxy connected to tcp server at %s:%s : %s", host, port, web_server_connection)
         web_server_connection.write(data)
         p = XpraProxy(client_connection, web_server_connection)
         self._tcp_proxy_clients.append(p)
         def run_proxy():
             p.run()
-            log("run_proxy() %s ended", p)
+            proxylog("run_proxy() %s ended", p)
             if p in self._tcp_proxy_clients:
                 self._tcp_proxy_clients.remove(p)
         t = make_daemon_thread(run_proxy, "web-proxy-for-%s" % proto)
         t.start()
-        log.info("client %s forwarded to proxy server %s:%s", client_connection, host, port)
+        proxylog.info("client %s forwarded to proxy server %s:%s", client_connection, host, port)
 
     def is_timedout(self, protocol):
         #subclasses may override this method (ServerBase does)
-        return not protocol._closed and protocol in self._potential_protocols and \
+        v = not protocol._closed and protocol in self._potential_protocols and \
             protocol not in self._tcp_proxy_clients
+        netlog("is_timedout(%s)=%s", protocol, v)
+        return v
 
     def verify_connection_accepted(self, protocol):
         if self.is_timedout(protocol):
@@ -427,42 +431,46 @@ class ServerCore(object):
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def send_disconnect(self, proto, reason, *extra):
-        log("send_disconnect(%s, %s, %s)", proto, reason, extra)
+        netlog("send_disconnect(%s, %s, %s)", proto, reason, extra)
         if proto._closed:
             return
         proto.send_now(["disconnect", reason]+list(extra))
         self.timeout_add(1000, self.force_disconnect, proto)
 
     def force_disconnect(self, proto):
+        netlog("force_disconnect(%s)", proto)
         proto.close()
 
     def disconnect_client(self, protocol, reason, *extra):
+        netlog("disconnect_client(%s, %s, %s)", protocol, reason, extra)
         if protocol and not protocol._closed:
             self.disconnect_protocol(protocol, reason, *extra)
 
     def disconnect_protocol(self, protocol, reason, *extra):
+        netlog("disconnect_protocol(%s, %s, %s)", protocol, reason, extra)
         i = str(reason)
         if extra:
             i += " (%s)" % extra
-        log.info("Disconnecting client %s: %s", protocol, i)
+        netlog.info("Disconnecting client %s: %s", protocol, i)
         protocol.flush_then_close(["disconnect", reason]+list(extra))
 
 
     def _process_connection_lost(self, proto, packet):
+        netlog("process_connection_lost(%s, %s)", proto, packet)
         if proto in self._potential_protocols:
-            log.info("Connection lost")
+            netlog.info("Connection lost")
             self._potential_protocols.remove(proto)
 
     def _process_gibberish(self, proto, packet):
         (_, message, data) = packet
-        log("Received uninterpretable nonsense from %s: %s", proto, message)
-        log(" data: %s", repr_ellipsized(data))
+        netlog("Received uninterpretable nonsense from %s: %s", proto, message)
+        netlog(" data: %s", repr_ellipsized(data))
         self.disconnect_client(proto, message)
 
     def _process_invalid(self, protocol, packet):
         (_, message, data) = packet
-        log("Received invalid packet: %s", message)
-        log(" data: %s", repr_ellipsized(data))
+        netlog("Received invalid packet: %s", message)
+        netlog(" data: %s", repr_ellipsized(data))
         self.disconnect_client(protocol, message)
 
 
@@ -601,17 +609,17 @@ class ServerCore(object):
     def get_encryption_key(self, authenticator=None):
         #if we have a keyfile specified, use that:
         if self.encryption_keyfile:
-            log("trying to load encryption key from keyfile: %s", self.encryption_keyfile)
+            netlog("trying to load encryption key from keyfile: %s", self.encryption_keyfile)
             return self.filedata_nocrlf(self.encryption_keyfile)
         env_key = os.environ.get('XPRA_ENCRYPTION_KEY')
         if env_key:
             return env_key
         v = None
         if authenticator:
-            log("trying to get encryption key from: %s", authenticator)
+            netlog("trying to get encryption key from: %s", authenticator)
             v = authenticator.get_password()
         if v is None and self.password_file:
-            log("trying to load encryption key from password file: %s", self.password_file)
+            netlog("trying to load encryption key from password file: %s", self.password_file)
             v = self.filedata_nocrlf(self.password_file)
         if v is None and os.environ.get('XPRA_PASSWORD'):
             v = os.environ.get('XPRA_PASSWORD')
@@ -655,6 +663,7 @@ class ServerCore(object):
 
     def accept_client(self, proto, c):
         #max packet size from client (the biggest we can get are clipboard packets)
+        netlog("accept_client(%s, %s)", proto, c)
         proto.max_packet_size = 1024*1024  #1MB
         proto.send_aliases = c.dictget("aliases")
         if proto in self._potential_protocols:
@@ -750,12 +759,12 @@ class ServerCore(object):
             assert isinstance(packet_type, types.StringTypes), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
             handler = self._default_packet_handlers.get(packet_type)
             if handler:
-                log("process packet %s", packet_type)
+                netlog("process packet %s", packet_type)
                 handler(proto, packet)
                 return
-            log.error("unknown or invalid packet type: %s from %s", packet_type, proto)
+            netlog.error("unknown or invalid packet type: %s from %s", packet_type, proto)
             proto.close()
         except KeyboardInterrupt:
             raise
         except:
-            log.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
+            netlog.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
