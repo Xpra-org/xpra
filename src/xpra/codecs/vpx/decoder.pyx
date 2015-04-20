@@ -6,6 +6,7 @@
 import os
 from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.os_util import bytestostr
 
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
@@ -208,7 +209,7 @@ cdef class Decoder:
         cdef int flags = 0
         cdef const vpx_codec_iface_t *codec_iface = make_codec_dx(encoding)
         self.encoding = encoding
-        self.dst_format = colorspace
+        self.dst_format = bytestostr(colorspace)
         self.pixfmt = get_vpx_colorspace(self.dst_format)
         self.width = width
         self.height = height
@@ -241,7 +242,7 @@ cdef class Decoder:
                 }
 
     def get_colorspace(self):
-        return self.dst_format.decode()
+        return self.dst_format
 
     def get_width(self):
         return self.width
