@@ -1096,8 +1096,9 @@ if WIN32:
 
             #list of DLLs we want to include, without the "lib" prefix, or the version and extension
             #(ie: "libatk-1.0-0.dll" -> "atk")
-            add_DLLs('atk', 'cairo-gobject', 'cairo',
-                     'dbus', 'dbus-glib', 'gdk', 'gdk_pixbuf', 'openraw',
+            add_DLLs('atk', 'cairo-gobject',
+                     'dbus', 'dbus-glib', 'gdk', 'gdk_pixbuf',
+                     'libjasper', 'libjavascriptcoregtk',
                      'gdkglext', 'gio', 'girepository', 'glib',
                      'gnutls', 'gobject', 'gthread',
                      'gtk', 'gtkglext', 'harfbuzz-gobject',
@@ -1105,7 +1106,7 @@ if WIN32:
                      'p11-kit', 'proxy',
                      'pango', 'pangocairo', 'pangoft2', 'pangowin32',
                      'png16',
-                     'rsvg', 'webp', "iconv",
+                     'rsvg', 'webp',
                      'winpthread',
                      'zzz')
             #this one may be missing in pygi-aio 3.14?
