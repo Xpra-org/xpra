@@ -44,7 +44,6 @@ class ClientWindowBase(ClientWidgetBase):
         self._iconified = False
         self.border = border
         self.max_window_size = max_window_size
-        self.button_state = {}
 
         self.init_window(metadata)
         self.setup_window()
@@ -490,17 +489,7 @@ class ClientWindowBase(ClientWidgetBase):
         pointer, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid()
         mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s, pointer=%s, modifiers=%s, buttons=%s", button, event, depressed, self._id, self._client._focused, pointer, modifiers, buttons)
-        def send_button(pressed):
-            self._client.send_positional(["button-action", wid,
-                                          button, pressed,
-                                          pointer, modifiers, buttons])
-        pressed_state = self.button_state.get(button, False)
-        if pressed_state is False and depressed is False:
-            mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", wid)
-            #(needed for some dialogs on win32):
-            send_button(True)
-        self.button_state[button] = depressed
-        send_button(depressed)
+        self._client.send_button(wid, button, depressed, pointer, modifiers, buttons)
 
     def do_button_press_event(self, event):
         self._button_action(event.button, event, True)

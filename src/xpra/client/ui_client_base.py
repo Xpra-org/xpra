@@ -26,6 +26,7 @@ dbuslog = Logger("client", "dbus")
 grablog = Logger("client", "grab")
 iconlog = Logger("client", "icon")
 screenlog = Logger("client", "screen")
+mouselog = Logger("mouse")
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -56,6 +57,10 @@ except:
 FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
+
+
+PYTHON3 = sys.version_info[0] == 3
+WIN32 = sys.platform.startswith("win")
 
 
 """
@@ -224,6 +229,7 @@ class UIXpraClient(XpraClientBase):
         self._window_with_grab = None
         self._last_screen_settings = None
         self._suspended_at = 0
+        self._button_state = {}
 
         self.init_aliases()
 
@@ -743,6 +749,23 @@ class UIXpraClient(XpraClientBase):
         self.opengl_enabled = False
         self.client_supports_opengl = False
         self.opengl_props = {"info" : "not supported"}
+
+
+    def send_button(self, wid, button, pressed, pointer, modifiers, buttons):
+        def send_button(state):
+            self.send_positional(["button-action", wid,
+                                              button, state,
+                                              pointer, modifiers, buttons])
+        pressed_state = self._button_state.get(button, False)
+        if PYTHON3 and WIN32 and pressed_state==pressed:
+            mouselog("button action: unchanged state, ignoring event")
+            return
+        if pressed_state is False and pressed is False:
+            mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", wid)
+            #(needed for some dialogs on win32):
+            send_button(True)
+        self._button_state[button] = pressed
+        send_button(pressed)
 
 
     def get_keymap_properties(self):
