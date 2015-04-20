@@ -81,7 +81,7 @@ if PKG_CONFIG and (PYTHON3 or not WIN32):
     pkg_config_version = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = pkg_config_version[0]==0 and pkg_config_version[1]
     if has_pkg_config:
-        print("found pkg-config version: %s" % pkg_config_version[1])
+        print("found pkg-config version: %s" % pkg_config_version[1].decode().strip("\n\r"))
 
 def pkg_config_ok(*args, **kwargs):
     if not has_pkg_config:
