@@ -77,7 +77,7 @@ class CairoBacking(CairoBackingBase):
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
         """ must be called from UI thread """
-        log("cairo._do_paint_rgb(%s, %s, %s bytes,%s,%s,%s,%s,%s,%s)", FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data), x, y, width, height, rowstride, options)
+        log("cairo._do_paint_rgb(%s, %s, %s %s,%s,%s,%s,%s,%s,%s) set_image_surface_data=%s", FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data), type(img_data), x, y, width, height, rowstride, options, set_image_surface_data)
         rgb_format = options.strget("rgb_format", "RGB")
         #this format we can handle with the workaround:
         if cairo_format==cairo.FORMAT_RGB24 and rgb_format=="RGB" and set_image_surface_data:

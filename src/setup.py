@@ -1096,7 +1096,7 @@ if WIN32:
 
             #list of DLLs we want to include, without the "lib" prefix, or the version and extension
             #(ie: "libatk-1.0-0.dll" -> "atk")
-            add_DLLs('atk', 'cairo-gobject',
+            add_DLLs('atk', 'cairo-gobject', 'cairo',
                      'dbus', 'dbus-glib', 'gdk', 'gdk_pixbuf', 'openraw',
                      'gdkglext', 'gio', 'girepository', 'glib',
                      'gnutls', 'gobject', 'gthread',
@@ -1105,7 +1105,7 @@ if WIN32:
                      'p11-kit', 'proxy',
                      'pango', 'pangocairo', 'pangoft2', 'pangowin32',
                      'png16',
-                     'rsvg', 'webp',
+                     'rsvg', 'webp', "iconv",
                      'winpthread',
                      'zzz')
             #this one may be missing in pygi-aio 3.14?
@@ -1440,6 +1440,9 @@ if WIN32:
         elif "cairo" in pkgs_options:
             add_to_keywords(kw, 'include_dirs', GTK_INCLUDE_DIR, cairo_include_dir)
             add_to_keywords(kw, 'libraries', "cairo")
+            if PYTHON3:
+                cairo_library_dir = os.path.join(PYCAIRO_DIR, "lib")
+                add_to_keywords(kw, "library_dirs", cairo_library_dir)
             checkdirs(cairo_include_dir)
         elif "pycairo" in pkgs_options:
             kw = pycairo_pkgconfig(*pkgs_options, **ekw)

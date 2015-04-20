@@ -69,6 +69,8 @@ else:
 
 if _memoryview:
     def memoryview_to_bytes(v):
+        if type(v)==bytes:
+            return v
         if isinstance(v, _memoryview):
             return v.tobytes()
         return str(v)
