@@ -82,7 +82,12 @@ class UIXpraClient(XpraClientBase):
 
     def __init__(self):
         XpraClientBase.__init__(self)
-        log.info("xpra client version %s" % XPRA_VERSION)
+        try:
+            from xpra.src_info import REVISION
+            rev_info = " (r%s)" % REVISION
+        except:
+            rev_info = ""
+        log.info("xpra %s client version %s%s", self.client_toolkit(), XPRA_VERSION, rev_info)
         self.start_time = time.time()
         self._window_to_id = {}
         self._id_to_window = {}
