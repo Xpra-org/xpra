@@ -640,13 +640,13 @@ class SessionInfo(gtk.Window):
         def populate_speaker_info(*args):
             can = scaps.boolget("sound.send", False) and self.client.speaker_allowed
             self.bool_icon(self.server_speaker_icon, can)
-            self.speaker_codec_label.set_text(pipeline_info(can, self.client.sound_sink))
+            self.speaker_codec_label.set_text(bytestostr(pipeline_info(can, self.client.sound_sink)))
         populate_speaker_info()
         self.client.connect("speaker-changed", populate_speaker_info)
         def populate_microphone_info(*args):
             can = scaps.boolget("sound.receive", False) and self.client.microphone_allowed
             self.bool_icon(self.server_microphone_icon, can)
-            self.microphone_codec_label.set_text(pipeline_info(can, self.client.sound_source))
+            self.microphone_codec_label.set_text(bytestostr(pipeline_info(can, self.client.sound_source)))
         populate_microphone_info()
         self.client.connect("microphone-changed", populate_microphone_info)
 
