@@ -363,6 +363,6 @@ class subprocess_caller(object):
             for cb, args in callbacks:
                 try:
                     all_args = list(args) + extra_args
-                    cb(self, *all_args)
+                    gobject.idle_add(cb, self, *all_args)
                 except Exception:
                     log.error("error processing callback %s for %s packet", cb, signal_name, exc_info=True)
