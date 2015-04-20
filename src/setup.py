@@ -474,7 +474,7 @@ def make_constants_pxi(constants_path, pxi_path, **kwargs):
                     out.write('    unsigned int %s %s\n' % const)
                 else:
                     out.write('    unsigned int %s\n' % (const,))
-    
+
             out.write("constants = {\n")
             for const in constants:
                 if isinstance(const, tuple):
@@ -1129,6 +1129,9 @@ if WIN32:
                      'rsvg', 'webp',
                      'winpthread',
                      'zzz')
+            if os.environ.get("VCINSTALLDIR"):
+                #Visual Studio links our avcodec2 module against libiconv...
+                add_DLLs("iconv")
             #this one may be missing in pygi-aio 3.14?
             #ie: libpyglib-gi-2.0-python34
             # pyglib-gi-2.0-python%s%s' % (sys.version_info[0], sys.version_info[1])
@@ -1918,7 +1921,7 @@ if webp_ENABLED:
         if not os.path.exists(libwebp4):
             shutil.copy(libwebp5, libwebp4)
         add_data_files('', [libwebp4, libwebp5])
-    
+
     webp_pkgconfig = pkgconfig("webp")
     cython_add(Extension("xpra.codecs.webp.encode",
                 ["xpra/codecs/webp/encode.pyx", buffers_c],
