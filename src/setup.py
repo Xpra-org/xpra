@@ -11,6 +11,7 @@
 # does the make_constants hack.)
 
 import glob
+import site
 from distutils.core import setup
 from distutils.extension import Extension
 import subprocess, sys
@@ -964,12 +965,6 @@ if WIN32:
         vpx_lib_names = ["vpxmd"]             #for libvpx 1.2.0
     else:
         vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
-    #webp:
-    webp_path = "C:\\libwebp-windows-x86"
-    webp_include_dir    = webp_path+"\\include"
-    webp_lib_dir        = webp_path+"\\lib"
-    webp_bin_dir        = webp_path+"\\bin"
-    webp_lib_names      = ["libwebp"]
     #cuda:
     cuda_path = "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v5.5"
     cuda_include_dir    = os.path.join(cuda_path, "include")
@@ -988,6 +983,24 @@ if WIN32:
     if PYTHON3:
         GTK3_DIR = "C:\\GTK3"
         GTK_INCLUDE_DIR = os.path.join(GTK3_DIR, "include")
+
+        #find the gnome python directory
+        #(ie: "C:\Python34\Lib\site-packages\gnome")
+        #and global include directory
+        #(ie: "C:\Python34\include")
+        GNOME_DIR = None
+        for x in site.getsitepackages():
+            t = os.path.join(x, "gnome")
+            if os.path.exists(t):
+                GNOME_DIR = t
+            t = os.path.join(x, "include")
+            if os.path.exists(t):
+                webp_include_dir = t
+        #webp:
+        webp_path       = GNOME_DIR
+        webp_bin_dir    = GNOME_DIR
+        webp_lib_dir    = GNOME_DIR
+        webp_lib_names      = ["libwebp"]
     else:
         gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
         python_include_path = "C:\\Python27\\include"
@@ -999,6 +1012,13 @@ if WIN32:
         glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
         pygtk_include_dir       = os.path.join(python_include_path, "pygtk-2.0")
         gtk2_include_dir        = os.path.join(GTK_INCLUDE_DIR, "gtk-2.0")
+
+        #webp:
+        webp_path = "C:\\libwebp-windows-x86"
+        webp_include_dir    = webp_path+"\\include"
+        webp_lib_dir        = webp_path+"\\lib"
+        webp_bin_dir        = webp_path+"\\bin"
+        webp_lib_names      = ["libwebp"]
 
     atk_include_dir         = os.path.join(GTK_INCLUDE_DIR, "atk-1.0")
     gdkpixbuf_include_dir   = os.path.join(GTK_INCLUDE_DIR, "gdk-pixbuf-2.0")
@@ -1017,7 +1037,7 @@ if WIN32:
         external_includes += ["win32con", "win32gui", "win32process", "win32api"]
         if PYTHON3:
             from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
-            import site
+
             #ie: C:\Python3.5\Lib\site-packages\
             site_dir = site.getsitepackages()[1]
             #this is where the installer I have used put things:
@@ -1419,12 +1439,9 @@ if WIN32:
                          [vpx_lib_dir],
                          vpx_lib_names, nocmt=True)
         elif "webp" in pkgs_options[0]:
-            if PYTHON3:
-                pass
-            else:
-                add_keywords([webp_bin_dir], [webp_include_dir],
-                             [webp_lib_dir],
-                             webp_lib_names, nocmt=True)
+            add_keywords([webp_bin_dir], [webp_include_dir],
+                         [webp_lib_dir],
+                         webp_lib_names, nocmt=True)
         elif ("nvenc3" in pkgs_options[0]) or ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]):
             add_keywords([nvenc_bin_dir, cuda_bin_dir], [nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir],
                          [cuda_lib_dir],
@@ -1891,6 +1908,17 @@ if enc_x265_ENABLED:
 
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:
+    if WIN32 and PYTHON3:
+        #python3 gi has webp already, but our codecs somehow end up linking against the mingw version,
+        #and at runtime requesting "libwebp-4.dll", which does not exist anywhere!?
+        #the installer already bundles a "libwebp-5.dll", so we just duplicate it and hope for the best!
+        #TODO: make it link against the gnome-gi one and remove this ugly hack:
+        libwebp5 = os.path.join(webp_path, "libwebp-5.dll")
+        libwebp4 = os.path.join(webp_path, "libwebp-4.dll")
+        if not os.path.exists(libwebp4):
+            shutil.copy(libwebp5, libwebp4)
+        add_data_files('', [libwebp4, libwebp5])
+    
     webp_pkgconfig = pkgconfig("webp")
     cython_add(Extension("xpra.codecs.webp.encode",
                 ["xpra/codecs/webp/encode.pyx", buffers_c],
