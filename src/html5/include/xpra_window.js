@@ -375,6 +375,12 @@ XpraWindow.prototype.set_maximized = function(maximized) {
 	this.max_save_restore(maximized);
 	this.maximized = maximized;
 	this.handle_resized();
+	// enable or disable the draggable event
+	if(this.maximized) {
+		jQuery(this.div).draggable('disable');
+	} else {
+		jQuery(this.div).draggable('enable');
+	}
 };
 
 /**
