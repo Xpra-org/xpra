@@ -67,6 +67,12 @@ function XpraClient(container) {
 		'clipboard-token': this._process_clipboard_token,
 		'set-clipboard-enabled': this._process_set_clipboard_enabled
 	};
+	// assign callback for window resize event
+	if (window.jQuery) {
+		jQuery(window).resize(jQuery.debounce(250, function (e) {
+			me._screen_resized(e, me);
+		}));
+	}
 	// assign the keypress callbacks
 	// if we detect jQuery, use that to assign them instead
 	// to allow multiple clients on the same page
@@ -197,6 +203,10 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 		console.error("error processing '"+packet_type+"' with '"+fn+"': "+e);
 		throw e;
 	}
+}
+
+XpraClient.prototype._screen_resized = function(event, ctx) {
+	console.log("resized");
 }
 
 XpraClient.prototype._keyb_get_modifiers = function(event) {
