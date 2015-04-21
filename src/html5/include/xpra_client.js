@@ -33,6 +33,7 @@ function XpraClient(container) {
 	this.alt_modifier = null;
 	this.meta_modifier = null;
 	// audio stuff
+	this.audio_enabled = false;
 	this.audio_ctx = null;
 	// the container div is the "screen" on the HTML page where we
 	// are able to draw our windows in.
@@ -480,6 +481,7 @@ XpraClient.prototype._make_hello = function() {
 		"dpi"						: this._get_DPI(),
 		//not handled yet, but we will:
 		"clipboard_enabled"			: true,
+		"clipboard.want_targets"	: true,
 		"notifications"				: true,
 		"cursors"					: true,
 		"bell"						: true,
@@ -685,7 +687,11 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		}
 	}
 	//show("alt="+alt_modifier+", meta="+meta_modifier);
-	//ctx._sound_start_receiving();
+	// stuff that must be done after hello
+	if(ctx.audio_enabled) {
+		ctx._sound_start_receiving();
+	}
+	
 }
 
 XpraClient.prototype._process_ping = function(packet, ctx) {
@@ -772,15 +778,7 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_sound_data = function(packet, ctx) {
-	ctx.audio_ctx.decodeAudioData(packet[2], function(buffer) {
-		/*var source = ctx.audio_ctx.createBufferSource();
-		source.buffer = buffer;
-		source.connect(ctx.audio_ctx.destination);
-		source.start(0);*/
-		console.log("decoded audio data");
-    }, function() {
-    	console.error("Error processing sound data")
-    });
+	console.log(packet);
 }
 
 XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
