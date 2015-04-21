@@ -313,7 +313,7 @@
      <branch repo="pypi.python.org"
 	     module="/packages/source/n/numpy/numpy-1.9.2.tar.gz"
 	     version="1.9.2"
-	     hash="md5:e80c19d2fb25af576460bb7dac31c59a"
+	     hash="md5:a1ed53432dbcd256398898d35bc8e645"
 	     />
   </distutils>
 
