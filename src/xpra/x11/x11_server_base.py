@@ -32,7 +32,7 @@ grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
 
 from xpra.util import prettify_plug_name
-from xpra.os_util import find_lib
+from xpra.os_util import find_lib, find_lib_ldconfig
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.server_keyboard_config import KeyboardConfig
@@ -139,10 +139,12 @@ class X11ServerBase(GTKServerBase):
 
     def find_fakeXinerama(self):
         if sys.platform.startswith("linux"):
-            libpath = find_lib_ldconfig("fakeXinerama")
-            if libpath:
-                return libpath
-
+            try:
+                libpath = find_lib_ldconfig("fakeXinerama")
+                if libpath:
+                    return libpath
+            except:
+                log.warn("Failed to launch ldconfig -p")
         return find_lib("libfakeXinerama.so.1")
 
 

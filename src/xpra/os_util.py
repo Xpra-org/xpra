@@ -194,6 +194,22 @@ def setbinarymode(fd):
             log = Logger("util")
             log.error("setting stdin to binary mode failed", exc_info=True)
 
+def find_lib_ldconfig(libname):
+    libname = re.escape(libname)
+
+    arch_map = {"x86_64": "libc6,x86-64"}
+    arch = arch_map.get(os.uname()[4], "libc6")
+
+    pattern = r'^\s+lib%s\.[^\s]+ \(%s(?:,.*?)?\) => (.*lib%s[^\s]+)' % (libname, arch, libname)
+
+    import subprocess
+    p = subprocess.Popen(["ldconfig", "-p"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    data = p.communicate()[0]
+
+    libpath = re.search(pattern, data, re.MULTILINE)
+    if libpath:
+        libpath = libpath.group(1)
+    return libpath
 
 def find_lib(libname):
     #it would be better to rely on dlopen to find the paths
