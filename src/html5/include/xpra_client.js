@@ -762,8 +762,14 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 	if (win) {
 		// win.paint draws the update to the window's off-screen buffer and returns true if it
 		// was changed.
-		win.paint(x, y, width, height, coding, data, packet_sequence, rowstride, options);
-		decode_time = new Date().getTime() - start;
+		win.paint(x, y,
+			width, height,
+			coding, data, packet_sequence, rowstride, options,
+			function (ctx) {
+				decode_time = new Date().getTime() - start;
+				ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time);
+			}
+		);
 		// request that drawing to screen takes place at next available opportunity if possible
 		if(requestAnimationFrame) {
 			requestAnimationFrame(function() {
@@ -774,7 +780,6 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 			win.draw();
 		}
 	}
-	ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time);
 }
 
 XpraClient.prototype._process_sound_data = function(packet, ctx) {

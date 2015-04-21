@@ -717,7 +717,7 @@ XpraWindow.prototype._h264_process_raw = function(data) {
  * we have received from the server.
  * The image is painted into off-screen canvas.
  */
-XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options) {
+XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
 	"use strict";
 	//console.log("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
 
@@ -746,6 +746,8 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		// set the imagedata rgb32 method
 		img.data.set(img_data);
 		this.offscreen_canvas_ctx.putImageData(img, x, y);
+		// send decode callback once we actually decoded
+		decode_callback(this.client);
 	}
 	else if (coding=="jpeg" || coding=="png") {
 		// create image data
@@ -759,6 +761,8 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		var me = this;
 	    j.onload = function () {
 	        me.offscreen_canvas_ctx.drawImage(j, x, y);
+	        // send decode callback once we actually decoded
+			decode_callback(me.client);
 	    };
 	}
 	else if (coding=="h264") {
@@ -768,6 +772,8 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		// we can pass a buffer full of NALs to avc.decode directly
 		// as long as they are framed properly with the NAL header
 		this.avc.decode(new Uint8Array(img_data));
+		// how do we know when the avc has finished decoding?!
+		decode_callback(this.client);
 		//this._h264_process_raw(img_data);
 	}
 	else {
