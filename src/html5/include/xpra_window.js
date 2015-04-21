@@ -26,10 +26,12 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.client = client;
 	//keep reference both the internal canvas and screen drawn canvas:
 	this.canvas = canvas_state;
+	this.canvas_ctx = this.canvas.getContext('2d');
 	this.offscreen_canvas = null;
 	this.offscreen_canvas_ctx = null;
 	this.offscreen_canvas_mode = null;
 	this._init_2d_canvas();
+
 	//enclosing div in page DOM
 	this.div = jQuery("#" + String(wid));
 
@@ -583,10 +585,8 @@ XpraWindow.prototype.update_icon = function(w, h, pixel_format, data) {
  */
 XpraWindow.prototype.draw = function() {
 	"use strict";
-	//get visible canvas context
-	var ctx = this.canvas.getContext('2d');
-	//pass the 'buffer' canvas directly, nice
-	ctx.drawImage(this.offscreen_canvas, 0, 0);
+	//pass the 'buffer' canvas directly to visible canvas context
+	this.canvas_ctx.drawImage(this.offscreen_canvas, 0, 0);
 };
 
 XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
