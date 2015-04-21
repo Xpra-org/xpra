@@ -386,7 +386,11 @@ class ServerCore(object):
     def invalid_header(self, proto, data):
         netlog("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy)
         if proto.input_packetcount==0 and self._tcp_proxy:
-            self.start_tcp_proxy(proto, data)
+            #start a new proxy in a thread
+            def run_proxy():
+                self.start_tcp_proxy(proto, data)
+            t = make_daemon_thread(run_proxy, "web-proxy-for-%s" % proto)
+            t.start()
             return
         err = "invalid packet format, not an xpra client?"
         proto.gibberish(err, data)
@@ -409,14 +413,11 @@ class ServerCore(object):
         web_server_connection.write(data)
         p = XpraProxy(client_connection, web_server_connection)
         self._tcp_proxy_clients.append(p)
-        def run_proxy():
-            p.run()
-            proxylog("run_proxy() %s ended", p)
-            if p in self._tcp_proxy_clients:
-                self._tcp_proxy_clients.remove(p)
-        t = make_daemon_thread(run_proxy, "web-proxy-for-%s" % proto)
-        t.start()
         proxylog.info("client %s forwarded to proxy server %s:%s", client_connection, host, port)
+        p.run()
+        proxylog("run_proxy() %s ended", p)
+        if p in self._tcp_proxy_clients:
+            self._tcp_proxy_clients.remove(p)
 
     def is_timedout(self, protocol):
         #subclasses may override this method (ServerBase does)
