@@ -46,10 +46,10 @@
 		${prefix}/lib/libgtkmacintegration.*.dylib
 	</binary>
 	<binary>
- 	   ${prefix}/lib/libexpat.*.dylib
+ 		${prefix}/lib/libexpat.*.dylib
 	</binary>
 	<binary>
- 	   ${prefix}/lib/libjpeg.*.dylib
+ 		${prefix}/lib/libjpeg.*.dylib
 	</binary>
 	<binary>
 		${prefix}/lib/libtiff.*.dylib
@@ -74,6 +74,9 @@
 	</binary>
 	<binary>
 		${prefix}/lib/libgst*.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libz*.dylib
 	</binary>
 	<binary>
 		${prefix}/lib/pango/${pkg:pango:pango_module_version}/modules/*.so
