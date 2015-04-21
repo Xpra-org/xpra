@@ -1116,6 +1116,9 @@ class ServerSource(object):
 
 
     def get_info(self):
+        lpe = 0
+        if self.last_ping_echoed_time>0:
+            lpe = int(time.time()*1000-self.last_ping_echoed_time)
         info = {
                 "version"           : self.client_version or "unknown",
                 "platform_name"     : platform_name(self.client_platform, self.client_release),
@@ -1129,6 +1132,7 @@ class ServerSource(object):
                 "desktop_names"     : self.desktop_names,
                 "connection_time"   : int(self.connection_time),
                 "elapsed_time"      : int(time.time()-self.connection_time),
+                "last-ping-echo"    : lpe,
                 "suspended"         : self.suspended,
                 }
 
