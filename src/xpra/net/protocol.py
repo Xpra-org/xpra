@@ -573,9 +573,7 @@ class Protocol(object):
     #(so this can more easily be intercepted and overriden
     # see tcp-proxy)
     def _invalid_header(self, data):
-        #call via idle_add gives the client time
-        #to disconnect (and so we don't bother with it)
-        self.idle_add(self.invalid_header, self, data)
+        self.invalid_header(self, data)
 
     def invalid_header(self, proto, data):
         err = "invalid packet header: '%s'" % binascii.hexlify(data[:8])
@@ -625,14 +623,13 @@ class Protocol(object):
                 if bl<=0:
                     break
                 if payload_size<0:
-                    head = read_buffer[:8]
                     if read_buffer[0] not in ("P", ord("P")):
                         self._invalid_header(read_buffer)
                         return
                     if bl<8:
                         break   #packet still too small
                     #packet format: struct.pack('cBBBL', ...) - 8 bytes
-                    _, protocol_flags, compression_level, packet_index, data_size = unpack_header(head)
+                    _, protocol_flags, compression_level, packet_index, data_size = unpack_header(read_buffer[:8])
 
                     #sanity check size (will often fail if not an xpra client):
                     if data_size>self.abs_max_packet_size:
