@@ -5,11 +5,15 @@
 # later version. See the file COPYING for details.
 
 import threading
+import binascii
+import os
 
 from xpra.log import Logger
 log = Logger("proxy")
 
 from xpra.net.bytestreams import untilConcludes
+
+SHOW_DATA = os.environ.get("XPRA_PROXY_SHOW_DATA", "0")=="1"
 
 
 class XpraProxy(object):
@@ -54,6 +58,9 @@ class XpraProxy(object):
                     log("%s: connection lost", log_name)
                     self.quit()
                     return
+                if SHOW_DATA:
+                    log("data=%s", buf)
+                    log("data=%s", binascii.hexlify(buf))
                 while buf and not self._closed:
                     log("%s: writing %s bytes", log_name, len(buf))
                     written = untilConcludes(self.is_active, to_conn.write, buf)
