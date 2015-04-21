@@ -481,20 +481,16 @@ XpraWindow.prototype.handle_moved = function(e) {
 }
 
 /**
- * The canvas ("screen") has been resized, we may need to resize our window to match
+ * The "screen" has been resized, we may need to resize our window to match
  * if it is fullscreen or maximized.
  */
-XpraWindow.prototype.canvas_resized = function() {
+XpraWindow.prototype.screen_resized = function() {
 	"use strict";
-	/*
-
-	TODO
 
 	if (this.fullscreen || this.maximized) {
-		this.fill_canvas();
-		this.handle_resize();
+		this.fill_screen();
+		this.handle_resized();
 	}
-	*/
 };
 
 /**

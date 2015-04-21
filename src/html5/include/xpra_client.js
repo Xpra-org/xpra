@@ -206,9 +206,15 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 }
 
 XpraClient.prototype._screen_resized = function(event, ctx) {
+	// send the desktop_size packet so server knows we changed size
 	var newsize = this._get_desktop_size();
 	var packet = ["desktop_size", newsize[0], newsize[1], this._get_screen_sizes()];
-	this.protocol.send(packet);
+	ctx.protocol.send(packet);
+	// call the screen_resized function on all open windows
+	for (var i in ctx.id_to_window) {
+		var iwin = ctx.id_to_window[i];
+		iwin.screen_resized();
+	}
 }
 
 XpraClient.prototype._keyb_get_modifiers = function(event) {
