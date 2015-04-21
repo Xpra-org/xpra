@@ -482,6 +482,7 @@ XpraClient.prototype._make_hello = function() {
 		//not handled yet, but we will:
 		"clipboard_enabled"			: true,
 		"clipboard.want_targets"	: true,
+		"clipboard.selections"		: ["CLIPBOARD"],
 		"notifications"				: true,
 		"cursors"					: true,
 		"bell"						: true,
