@@ -157,6 +157,7 @@
 
 				// look at url parameters
 				var encoding = window.location.getParameter("encoding") || null;
+				var debug = window.location.getParameter("debug") || false;
 				var submit = window.location.getParameter("submit") || null;
 				var server = window.location.getParameter("server") || window.location.hostname;
 				var port = window.location.getParameter("port") || window.location.port;
@@ -172,18 +173,20 @@
 			    // client.disable_encoding("h264");
 
 			    // attach a callback for when client closes
-			    client.callback_close = function(reason) {
-			    	if(submit) {
-			    		if(reason) {
-			    			window.location="/connect.html?disconnect="+reason;
-			    		} else {
-			    			window.location="/connect.html?disconnect=Connection closed (socket closed)";
-			    		}
-			    	} else {
-				    	// if we didn't submit through the form, silently redirect to the connect gui
-				    	window.location="/connect.html";
+			    if(!debug) {
+				    client.callback_close = function(reason) {
+				    	if(submit) {
+				    		if(reason) {
+				    			window.location="/connect.html?disconnect="+reason;
+				    		} else {
+				    			window.location="/connect.html?disconnect=Connection closed (socket closed)";
+				    		}
+				    	} else {
+					    	// if we didn't submit through the form, silently redirect to the connect gui
+					    	window.location="/connect.html";
+					    }
 				    }
-			    }
+				}
 
 			    // and connect
 			    client.connect(server, port, false);
