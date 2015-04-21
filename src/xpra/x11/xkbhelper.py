@@ -354,26 +354,30 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         """ may change the keycode if needed
             in which case we update the entries and populate 'keycode_trans'
         """
+        l = log
+        for name, _ in entries:
+            if name in DEBUG_KEYSYMS:
+                l = log.info
         if server_keycode in server_keycodes:
-            log("assign: keycode %s already in use: %s", server_keycode, server_keycodes.get(server_keycode))
+            l("assign: server keycode %s already in use: %s", server_keycode, server_keycodes.get(server_keycode))
             server_keycode = -1
         elif server_keycode>0 and (server_keycode<kcmin or server_keycode>kcmax):
-            log("assign: keycode %s out of range (%s to %s)", server_keycode, kcmin, kcmax)
+            l("assign: keycode %s out of range (%s to %s)", server_keycode, kcmin, kcmax)
             server_keycode = -1
         if server_keycode<=0:
             if len(free_keycodes)>0:
                 server_keycode = free_keycodes[0]
-                log("set_keycodes key %s using free keycode=%s", entries, server_keycode)
+                l("set_keycodes key %s using free keycode=%s", entries, server_keycode)
             else:
-                msg = "set_keycodes: no free keycodes!, cannot translate %s: %s", server_keycode, entries
+                msg = "set_keycodes: no free keycodes!, cannot translate %s: %s", server_keycode, tuple(entries)
                 if try_harder:
                     log.error(*msg)
                 else:
-                    log(*msg)
+                    l(*msg)
                 missing_keycodes.append(entries)
                 server_keycode = -1
         if server_keycode>0:
-            log("set_keycodes key %s (%s) mapped to keycode=%s", keycode, entries, server_keycode)
+            l("set_keycodes key %s (%s) mapped to keycode=%s", keycode, tuple(entries), server_keycode)
             #can't use it any more!
             if server_keycode in free_keycodes:
                 free_keycodes.remove(server_keycode)
@@ -381,9 +385,9 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
             for name, _ in entries:
                 if keycode>=0 and server_keycode!=keycode:
                     keycode_trans[(keycode, name)] = server_keycode
+                    l("keycode_trans[(%s, %s)]=%s", keycode, name, server_keycode)
                 keycode_trans[name] = server_keycode
-                if name in DEBUG_KEYSYMS:
-                    log.info("keycode_trans[(%s, %s)]=%s", keycode, name, server_keycode)
+                l("keycode_trans[%s]=%s", name, server_keycode)
             server_keycodes[server_keycode] = entries
         return server_keycode
 
@@ -418,17 +422,17 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 l("preserve_keycode_matches[%s]=%s", keycode, v)
 
         if len(preserve_keycode_matches)==0:
-            l("no preserve matches for %s", entries)
+            l("no preserve matches for %s", tuple(entries))
             return do_assign(client_keycode, -1, entries)         #nothing to preserve
 
         l("preserve matches for %s : %s", entries, preserve_keycode_matches)
         #direct superset:
         for p_keycode, p_entries in preserve_keycode_matches.items():
             if entries.issubset(p_entries):
-                l("found direct preserve superset for %s : %s -> %s : %s", client_keycode, entries, p_keycode, p_entries)
+                l("found direct preserve superset for client keycode %s %s -> server keycode %s %s", client_keycode, tuple(entries), p_keycode, tuple(p_entries))
                 return do_assign(client_keycode, p_keycode, p_entries)
             if p_entries.issubset(entries):
-                l("found direct superset of preserve for %s : %s -> %s : %s", client_keycode, entries, p_keycode, p_entries)
+                l("found direct superset of preserve for client keycode %s %s -> server keycode %s %s", client_keycode, tuple(entries), p_keycode, tuple(p_entries))
                 return do_assign(client_keycode, p_keycode, entries)
 
         #ignoring indexes, but requiring at least as many keysyms:
@@ -436,10 +440,10 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
             p_keysyms = set([keysym for keysym,_ in p_entries])
             if keysyms.issubset(p_keysyms):
                 if len(p_entries)>len(entries):
-                    l("found keysym preserve superset with more keys for %s : %s", entries, p_entries)
+                    l("found keysym preserve superset with more keys for %s : %s", tuple(entries), tuple(p_entries))
                     return do_assign(client_keycode, p_keycode, p_entries)
             if p_keysyms.issubset(keysyms):
-                l("found keysym superset of preserve with more keys for %s : %s", entries, p_entries)
+                l("found keysym superset of preserve with more keys for %s : %s", tuple(entries), tuple(p_entries))
                 return do_assign(client_keycode, p_keycode, entries)
 
         if try_harder:
@@ -449,10 +453,10 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 for p_keycode, p_entries in preserve_keycode_matches.items():
                     p_keysyms = set([keysym for keysym,_ in p_entries])
                     if main_key.issubset(p_entries):
-                        l("found main key superset for %s : %s", main_key, p_entries)
+                        l("found main key superset for %s : %s", main_key, tuple(p_entries))
                         return do_assign(client_keycode, p_keycode, p_entries)
 
-        l("no matches for %s", entries)
+        l("no matches for %s", tuple(entries))
         return do_assign(client_keycode, -1, entries)
 
     #now try to assign each keycode:
