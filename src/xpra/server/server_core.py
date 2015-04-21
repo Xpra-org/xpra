@@ -384,7 +384,7 @@ class ServerCore(object):
         return True
 
     def invalid_header(self, proto, data):
-        netlog.info("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy)
+        netlog("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy)
         if proto.input_packetcount==0 and self._tcp_proxy:
             self.start_tcp_proxy(proto, data)
             return
