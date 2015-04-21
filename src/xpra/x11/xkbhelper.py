@@ -18,7 +18,6 @@ X11Keyboard = X11KeyboardBindings()
 
 from xpra.log import Logger
 log = Logger("x11", "keyboard")
-vlog = Logger("x11", "keyboard", "verbose")
 
 DEBUG_KEYSYMS = [x for x in os.environ.get("XPRA_DEBUG_KEYSYMS", "").split(",") if len(x)>0]
 
@@ -374,7 +373,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 missing_keycodes.append(entries)
                 server_keycode = -1
         if server_keycode>0:
-            vlog("set_keycodes key %s (%s) mapped to keycode=%s", keycode, entries, server_keycode)
+            log("set_keycodes key %s (%s) mapped to keycode=%s", keycode, entries, server_keycode)
             #can't use it any more!
             if server_keycode in free_keycodes:
                 free_keycodes.remove(server_keycode)
@@ -384,7 +383,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                     keycode_trans[(keycode, name)] = server_keycode
                 keycode_trans[name] = server_keycode
                 if name in DEBUG_KEYSYMS:
-                    log.info("keycode_trans[%s]=%s", name, server_keycode)
+                    log.info("keycode_trans[(%s, %s)]=%s", keycode, name, server_keycode)
             server_keycodes[server_keycode] = entries
         return server_keycode
 
