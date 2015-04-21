@@ -9,6 +9,7 @@
 import gtk.gdk
 import gobject
 import os.path
+import sys
 
 #ensure that we use gtk as display source:
 from xpra.x11.gtk_x11 import gdk_display_source
@@ -137,6 +138,11 @@ class X11ServerBase(GTKServerBase):
         return env
 
     def find_fakeXinerama(self):
+        if sys.platform.startswith("linux"):
+            libpath = find_lib_ldconfig("fakeXinerama")
+            if libpath:
+                return libpath
+
         return find_lib("libfakeXinerama.so.1")
 
 
