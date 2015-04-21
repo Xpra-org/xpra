@@ -206,7 +206,9 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 }
 
 XpraClient.prototype._screen_resized = function(event, ctx) {
-	console.log("resized");
+	var newsize = this._get_desktop_size();
+	var packet = ["desktop_size", newsize[0], newsize[1], this._get_screen_sizes()];
+	this.protocol.send(packet);
 }
 
 XpraClient.prototype._keyb_get_modifiers = function(event) {
