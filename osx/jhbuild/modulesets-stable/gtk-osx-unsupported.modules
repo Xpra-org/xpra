@@ -26,6 +26,8 @@
   <repository type="tarball" name="gnutls" href="ftp://ftp.gnutls.org/"/>
   <repository type="tarball" name="webm"
               href="http://downloads.webmproject.org/releases/"/>
+  <repository type="tarball" name="openssl"
+	      href="https://www.openssl.org/source/"/>
 
   <metamodule id="meta-gtk-osx-unsupported">
     <dependencies>
@@ -39,6 +41,14 @@
       <dep package="meta-gtk-osx-core"/>
       <dep package="libsoup"/>
       <dep package="WebKit"/>
+    </dependencies>
+  </metamodule>
+
+  <metamodule id="meta-gtk-osx-webkit1.6">
+    <dependencies>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="libsoup"/>
+      <dep package="WebKit1.6"/>
     </dependencies>
   </metamodule>
 
@@ -63,18 +73,32 @@
 	    repo="iso-codes"/>
   </autotools>
 
-  <autotools id="zlib" autogen-sh="configure" skip-autogen="never">
+  <autotools id="zlib" autogen-sh="configure" skip-autogen="never"
+	     supports-non-srcdir-builds="no">
     <branch repo="sourceforge" version="1.2.8"
             module="libpng/zlib-1.2.8.tar.xz"/>
   </autotools>
 
   <autotools id="p11-kit" autogen-sh="configure"
              autogenargs="--without-trust-paths">
-    <branch repo="p11-glue" version="0.22.1" module="p11-kit-0.22.1.tar.gz"/>
+    <branch repo="p11-glue" version="0.22.1"
+	    module="p11-kit-0.22.1.tar.gz">
+<patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/p11-kit-dirfd.patch"
+       strip="1"/>
+    </branch>
     <dependencies>
       <dep package="libtasn1"/>
     </dependencies>
   </autotools>
+
+  <!-- of the many arguments such as prefix and libdir that jhbuild might pass
+  to configure, openssl only understands prefix, and only with =. -->
+  <autotools id="openssl" autogen-sh="Configure" autogenargs="shared"
+             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
+	     supports-non-srcdir-builds="no">
+    <branch module="openssl-0.9.8ze.tar.gz" version="0.9.8ze" repo="openssl"/>
+  </autotools>
+
 
   <!-- Rudely demands TeX to build documentation -->
   <!-- Assembler files are missing md5-compress.asm for x86_64 -->
@@ -82,18 +106,21 @@
        autogenargs="--disable-documentation --disable-assembler">
     <!-- gnutls 3.3.x does not support nettle 3.0 -->
     <branch repo="ftp.gnu.org" version="2.7.1"
-            module="nettle/nettle-2.7.1.tar.gz"/>
+            module="nettle/nettle-2.7.1.tar.gz">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libnettle-cc-for-build-needs-cflags.patch" strip="1"/>
+    </branch>
     <dependencies>
       <dep package="gmp"/>
+      <dep package="openssl"/>
     </dependencies>
   </autotools>
 
+  <!-- Building with p11-kit support breaks g-ir-scanner, for some weird reason. -->
   <autotools id="gnutls" autogen-sh="configure"
-             autogenargs="--disable-gtk-doc-html">
+             autogenargs="--disable-gtk-doc-html --without-p11-kit">
     <branch repo="gnutls" version="3.3.12"
             module="gcrypt/gnutls/v3.3/gnutls-3.3.12.tar.xz"/>
     <dependencies>
-      <dep package="p11-kit"/>
       <dep package="libnettle"/>
       <dep package="libtasn1" />
       <dep package="zlib"/>
@@ -147,6 +174,7 @@
 	    repo="abisource/enchant">
  <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-gsize.patch" strip="1"/>
  <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-env.patch" strip="1"/>
+ <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-xdg-path.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -211,6 +239,33 @@
     <after>
       <dep package="meta-gtk-osx-core"/>
       <dep package="meta-gstreamer-1.0"/>
+      <dep package="meta-gtk-osx-gtk3"/>
+    </after>
+  </autotools>
+
+  /* WebKit 1.10 doesn't build with the 10.5 SDK, so use this older version for old builds. */
+  <autotools id="WebKit1.6" autogen-sh="configure"
+	     autogenargs="--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=2.0">
+    <branch repo="webkit.org" module="webkit-1.6.1.tar.gz" version="1.6.1">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-no-x11.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-pango-includes.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-missing-utf8-include.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-enable-blob.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-gnome-3.6-fixup.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-clang-fixup.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-out-of-source-fixup.patch" strip="1"/>
+
+    </branch>
+    <dependencies>
+      <dep package="enchant"/>
+      <dep package="icu"/>
+      <dep package="libsoup"/>
+      <dep package="meta-gtk-osx-freetype"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="meta-gstreamer-1.0"/>
+      <dep package="meta-gtk-osx-gtk3"/>
     </after>
   </autotools>
 
@@ -227,13 +282,13 @@
   <autotools id="webkit1gtk3" autogen-sh="autoreconf" makeargs="-j1"
              autogenargs="--enable-quartz-target --with-gtk=3.0 --disable-webkit2 --disable-credential-storage --disable-geolocation --disable-video --disable-web-audio CXXFLAGS='-std=gnu++11'">
     <branch repo="webkit.org" module="webkitgtk-2.4.8.tar.xz" version="2.4.8">
-      <patch file="file:///Users/john/Development/GTK-OSX/gtk-osx-build/patches/webkit-126324-clang-check.patch"
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-126324-clang-check.patch"
              strip="1"/>
-      <patch file="file:///Users/john/Development/GTK-OSX/gtk-osx-build/patches/webkit-140167-disable-netscape-api.patch"
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-140167-disable-netscape-api.patch"
              strip="1"/>
-      <patch file="file:///Users/john/Development/GTK-OSX/gtk-osx-build/patches/webkit-133293-cfi-clang-failure.patch"
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-133293-cfi-clang-failure.patch"
              strip="1"/>
-      <patch file="file:///Users/john/Development/GTK-OSX/gtk-osx-build/patches/webkit-126433-check-platform-gtk.patch"
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-126433-check-platform-gtk.patch"
              strip="1"/>
     </branch>
     <dependencies>

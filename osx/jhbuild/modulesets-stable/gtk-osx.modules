@@ -84,8 +84,8 @@
 
   <autotools id="libffi" autogenargs="--disable-builddir"
              autogen-sh="configure">
-    <branch module="libffi/libffi-3.0.13.tar.gz" repo="sourceware.org"
-            version="3.0.13" checkoutdir="atgreen-libffi-873d687"/>
+    <branch module="libffi/libffi-3.2.1.tar.gz" repo="sourceware.org"
+            version="3.2.1"/>
   </autotools>
 
 <!-- This is the latest 0.10 version. Later versions are 1.29 and intended to work with glib 2.29; the minor version of gobject-introspection will track the minor version of glib that it's intended to work with. Note that in the unlikely event you need to introspect Gtk+-2.0, you need to build Glib 1.28 and use this gobject-introspection. The default is to *not* introspect Gtk+-2.0 and to use the latest GLib and Gobject-Introspection with Gtk3 -->
@@ -219,10 +219,9 @@
 
   <autotools id="gtk-mac-integration" autogen-sh="configure"
              autogenargs="--disable-python">
-    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.5.tar.xz"
-            version="2.0.5"
-            hash="sha256:6c4ff7501d7ff35e49068052d80fcf76ce494e5953c5f3967e4958b1b0c67b9f">
-       <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/0001-Fix-unhandled-exception-from-attempting-to-access-me.patch" strip="1"/>
+    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.7.tar.xz"
+            version="2.0.7"
+            hash="sha256:e6de70da740b452f18c113a7ebb6772936a0fb9873137514090849820e296eb7">
     </branch>
     <dependencies>
     </dependencies>

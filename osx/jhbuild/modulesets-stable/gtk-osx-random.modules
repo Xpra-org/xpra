@@ -187,8 +187,8 @@ Libglade itself is deprecated. This is the last release. -->
 
   <autotools id="gtksourceview3"
     autogen-template="gnome-autogen.sh --prefix %(prefix)s  %(autogenargs)s">
-    <branch module="gtksourceview/3.10/gtksourceview-3.10.1.tar.xz"
-            version="3.6.0" hash="sha256:38de44f832b4110a3442af2fce58fce0a54f4b22a763c490bcdc1b1db2fb0b01">
+    <branch module="gtksourceview/3.14/gtksourceview-3.14.3.tar.xz"
+            version="3.14.3" hash="sha256:7bbe8b603ed7346669911fa074fe69388a4c89c1b15317befc3aa212b3d01a7b">
     </branch>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
@@ -282,8 +282,8 @@ Libglade itself is deprecated. This is the last release. -->
              autogenargs="--disable-python --without-x --without-dbus
 			  --without-gnomevfs --without-wmf --enable-binreloc "
 	     makeargs='LDFLAGS="-framework Carbon"'>
-    <branch module="gimp/v2.8/gimp-2.8.2.tar.bz2" version="2.8.2"
-            md5sum="b542138820ca3a41cbd63fc331907955" repo="gimp">
+    <branch module="gimp/v2.8/gimp-2.8.14.tar.bz2" version="2.8.14"
+            md5sum="233c948203383fa078434cc3f8f925cb" repo="gimp">
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/Bug-555525-plug-ins-twain-tw_mac.c.patch" strip="1" />
     </branch>
     <after>
@@ -295,6 +295,11 @@ Libglade itself is deprecated. This is the last release. -->
       <dep package="fontconfig"/>
       <dep package="gegl"/>
     </dependencies>
+  </autotools>
+
+  <autotools id='json-glib' autogen-sh="configure">
+    <branch   module="json-glib/1.0/json-glib-1.0.2.tar.xz" version="1.0.2"
+	      hash="sha256:887bd192da8f5edc53b490ec51bf3ffebd958a671f5963e4f3af32c22e35660a"/>
   </autotools>
 
   <autotools id="babl" >
@@ -309,6 +314,7 @@ Libglade itself is deprecated. This is the last release. -->
             module="gegl/0.2/gegl-0.2.0.tar.bz2"/>
     <dependencies>
       <dep package="babl"/>
+      <dep package="json-glib"/>
     </dependencies>
   </autotools>
 
@@ -372,9 +378,9 @@ Libglade itself is deprecated. This is the last release. -->
     </dependencies>
   </autotools>
 
-  <autotools id="gtkspell3" autogen-sh="autoreconf">
-    <branch module="gtkspell/gtkspell3-3.0.4.tar.gz" repo="sourceforge"
-	    version="3.0.4">
+  <autotools id="gtkspell3" autogen-sh="configure">
+    <branch module="gtkspell/gtkspell3-3.0.7.tar.gz" repo="sourceforge"
+	    version="3.0.7">
     </branch>
     <dependencies>
       <dep package="enchant"/>

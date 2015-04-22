@@ -148,7 +148,9 @@
              skip-autogen="never"
              autogenargs="--without-bzip2 --without-harfbuzz">
     <branch module="freetype/freetype-2.5.3.tar.gz" version="2.5.3"
-            repo="sourceforge"/>
+	    repo="sourceforge">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/freetype-2.5.3-ccexe_cflags.patch" strip="1"/>
+    </branch>
     <dependencies>
       <dep package="zlib"/>
     </dependencies>
@@ -174,7 +176,8 @@
     </dependencies>
   </autotools>
 
-  <autotools id="hicolor-icon-theme" autogen-sh="configure">
+  <autotools id="hicolor-icon-theme" autogen-sh="configure"
+	     supports-non-srcdir-builds="no">
     <branch module="hicolor-icon-theme-0.13.tar.gz" repo="icon-theme"
             version="0.13"/>
   </autotools>
@@ -182,8 +185,7 @@
   <autotools id="gettext-runtime" autogen-sh="configure"
 	     autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp">
     <branch repo="ftp.gnu.org" source-subdir="gettext-runtime"
-            module="gettext/gettext-0.19.3.tar.xz" version="0.19.3"
-            size="6628460" md5sum="092c3f460553ceb4a638ff81d36434c4"/>
+            module="gettext/gettext-0.19.4.tar.xz" version="0.19.4"/>
   </autotools>
 
   <metamodule id="meta-gtk-osx-bootstrap">
