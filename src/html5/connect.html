@@ -12,6 +12,8 @@
     <title>Xpra HTML5 Client</title>
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
 	<link rel="icon" type="image/png" href="/favicon.png" />
+
+	<script type="text/javascript" src="include/jquery.min.js"></script>
   </head>
 
 <body>
@@ -52,7 +54,22 @@
 			</select>
 		  </div>
 
+		  <div class="panel-group" role="tablist" style="padding-top:8px;">
+		    <div class="panel panel-default">
+		      <div id="expandopts" class="panel-heading" role="tab">
+		        <h4 class="panel-title">Advanced options</h4>
+		      </div>
+		      <div id="hiddenopts" class="panel-collapse collapse in" role="tabpanel" style="display:none;">
+		        <ul class="list-group">
+		          <li class="list-group-item"><input type="checkbox" id="normal_fullscreen"> Normal fullscreen windows</li>
+		        </ul>
+		      </div>
+		    </div>
+		  </div>
+
 		</form>
+
+
 
     </div> <!-- /container -->
 
@@ -87,20 +104,35 @@ if (!window.location.getParameter ) {
 	};
 }
 
-var disconnect_reason = window.location.getParameter("disconnect") || null;
-
-if(disconnect_reason) {
-	document.getElementById("alert-disconnect").style.display = "block";
-	document.getElementById("disconnect-reason").innerHTML = disconnect_reason;
-}
-
 function doConnect() {
 	var server = document.getElementById("server").value;
 	var port = document.getElementById("port").value;
 	var encoding = document.getElementById("encoding").value;
+	// url to client
+	var url = "/index.html?server="+server+"&port="+port+"&encoding="+encoding+"&submit=true";
+	// check options
+	var normal_fullscreen = document.getElementById("normal_fullscreen").checked;
+	if(normal_fullscreen) {
+		url = url + "&normal_fullscreen=true";
+	}
 	//alert("connect to "+server+" on port "+port+" using "+encoding);
-	window.location="/index.html?server="+server+"&port="+port+"&encoding="+encoding+"&submit=true";
+	window.location = url;
 }
+
+$(document).ready(function() {
+
+	var disconnect_reason = window.location.getParameter("disconnect") || null;
+
+	if(disconnect_reason) {
+		document.getElementById("alert-disconnect").style.display = "block";
+		document.getElementById("disconnect-reason").innerHTML = disconnect_reason;
+	}
+
+	$("#expandopts").click(function() {
+		$("#hiddenopts").slideToggle();
+	});
+
+});
 
 </script>
 
