@@ -158,6 +158,12 @@
 				};
 			}
 
+			// disable right click menu:
+			window.oncontextmenu = function(e) {
+				//showCustomMenu();
+				return false;
+			}
+
 			$(document).ready(function() {
 
 				// look at url parameters
