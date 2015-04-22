@@ -169,9 +169,9 @@
 --disable-filter=atrim --disable-filter=null
 --disable-programs --disable-avfilter"
              autogen-sh="configure">
-    <branch module="/releases/ffmpeg-2.6.1.tar.bz2"
-            version="2.6.1"
-            hash="md5:62b5a37525fdf79aedd4a51a64793ed7"
+    <branch module="/releases/ffmpeg-2.5.6.tar.bz2"
+            version="2.5.6"
+            hash="md5:90321a90119e511fb11b10154cb04c87"
             repo="ffmpeg.org"/>
   </autotools>
 
