@@ -449,6 +449,21 @@ XpraWindow.prototype.fill_screen = function() {
 	this.h = (screen_size[1] - this.topoffset) - this.bottomoffset;
 };
 
+XpraWindow.prototype.undecorate = function() {
+	// hide the window decoration
+	jQuery(this.d_header).hide();
+	// replace window style
+	jQuery(this.div).removeClass("window");
+	jQuery(this.div).addClass("undecorated");
+	// reset the offsets
+	this.leftoffset = parseInt(jQuery(this.div).css('border-left-width'), 10);
+	this.rightoffset = parseInt(jQuery(this.div).css('border-right-width'), 10);
+	this.topoffset = parseInt(jQuery(this.div).css('border-top-width'), 10);
+	this.bottomoffset = parseInt(jQuery(this.div).css('border-bottom-width'), 10);
+	// update geometry
+	this.updateCSSGeometry();
+}
+
 /**
  * We have resized the window, so we need to:
  * - work out new position of internal canvas
