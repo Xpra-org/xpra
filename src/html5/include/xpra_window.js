@@ -132,6 +132,11 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		}
 	}
 
+	// listen for mouse wheel events on my window
+	jQuery(this.div).bind('mousewheel DOMMouseScroll', function (e) {
+		me.on_mousescroll(e);
+	});
+
 	// need to update the CSS geometry
 	this.ensure_visible();
 	this.updateCSSGeometry();
@@ -240,9 +245,9 @@ XpraWindow.prototype.on_mousemove = function(e) {
 			mx = mouse.x,
 			my = mouse.y;
 
-			var modifiers = [];
-			var buttons = [];
-			this.handle_mouse_move(mx, my, modifiers, buttons);
+	var modifiers = [];
+	var buttons = [];
+	this.handle_mouse_move(mx, my, modifiers, buttons);
 
 };
 
@@ -273,6 +278,27 @@ XpraWindow.prototype.on_mouseup = function(e) {
 
 	this.dragging = false;
 };
+
+XpraWindow.prototype.on_mousescroll = function(e) {
+	var mouse = this.getMouse(e),
+			mx = mouse.x,
+			my = mouse.y;
+
+	var modifiers = [];
+	var buttons = [];
+
+	// see if we are going up or down
+    if (e.originalEvent.wheelDelta > 0 || e.originalEvent.detail < 0) {
+        // scroll up
+        this.handle_mouse_click(4, true, mx, my, modifiers, buttons);
+        this.handle_mouse_click(4, false, mx, my, modifiers, buttons);
+    }
+    else {
+    	// scroll down
+    	this.handle_mouse_click(5, true, mx, my, modifiers, buttons);
+        this.handle_mouse_click(5, false, mx, my, modifiers, buttons);
+    }
+}
 
 /**
  * toString allows us to identify windows by their unique window id.
