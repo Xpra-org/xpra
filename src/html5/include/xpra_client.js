@@ -25,8 +25,9 @@ function XpraClient(container) {
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
 	this.supported_encodings = ["h264", "jpeg", "png", "rgb32"];
 	this.enabled_encodings = [];
+	this.normal_fullscreen_mode = false;
 	// hello
-	this.HELLO_TIMEOUT = 2000
+	this.HELLO_TIMEOUT = 2000;
 	this.hello_timer = null;
 	// modifier keys
 	this.caps_lock = null;
@@ -518,8 +519,14 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 		this._window_closed
 		);
 	this.id_to_window[wid] = win;
-	var geom = win.get_internal_geometry();
 	if (!override_redirect) {
+		if(this.normal_fullscreen_mode) {
+			if(win.windowtype == "NORMAL") {
+				win.undecorate();
+				win.set_maximized(true);
+			}
+		}
+		var geom = win.get_internal_geometry();
 		this.protocol.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
 		this._window_set_focus(win);
 	}

@@ -163,6 +163,7 @@
 				// look at url parameters
 				var encoding = window.location.getParameter("encoding") || null;
 				var debug = window.location.getParameter("debug") || false;
+				var normal_fullscreen = window.location.getParameter("normal_fullscreen") || null;
 				var submit = window.location.getParameter("submit") || null;
 				var server = window.location.getParameter("server") || window.location.hostname;
 				var port = window.location.getParameter("port") || window.location.port;
@@ -176,6 +177,11 @@
 			    }
 			    // encodings can be disabled like so
 			    // client.disable_encoding("h264");
+
+			    // see if we should undecorate and maximise normal windows
+			    if(normal_fullscreen) {
+			    	client.normal_fullscreen_mode = true;
+			    }
 
 			    // attach a callback for when client closes
 			    if(!debug) {
