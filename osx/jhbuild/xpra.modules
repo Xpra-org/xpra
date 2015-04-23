@@ -41,7 +41,7 @@
 			version="2.11.08"
                         hash="md5:7aae5cb8e03fac48029c82a7470ab066"
             repo="www.nasm.us">
-    <patch file="nasm-makefile-destdir.patch" strip="0" />
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
     </branch>
   </autotools>
 
