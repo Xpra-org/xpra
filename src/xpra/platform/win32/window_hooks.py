@@ -9,10 +9,15 @@ from xpra.log import Logger
 log = Logger("win32", "window", "util")
 vlog = Logger("verbose")
 
-import win32gui, win32con, win32api     #@UnresolvedImport
+import win32con, win32api     #@UnresolvedImport
 import ctypes
-from ctypes.wintypes import POINT
+from ctypes.wintypes import POINT, c_int, c_long
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
+
+#use ctypes to ensure we call the "W" version:
+SetWindowLong = ctypes.windll.user32.SetWindowLongW
+CallWindowProc = ctypes.windll.user32.CallWindowProcW
+WndProcType = ctypes.WINFUNCTYPE(c_int, c_long, c_int, c_int, c_int)
 
 
 class MINMAXINFO(ctypes.Structure):
@@ -60,7 +65,8 @@ class Win32Hooks(object):
 
     def setup(self):
         assert self._oldwndproc is None
-        self._oldwndproc = win32gui.SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._wndproc)
+        self._newwndproc = WndProcType(self._wndproc)
+        self._oldwndproc = SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
 
     def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
         if self.max_size:
@@ -87,7 +93,7 @@ class Win32Hooks(object):
         if not self._oldwndproc or not self._hwnd:
             return
         try:
-            win32api.SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
+            SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
             self._oldwndproc = None
             self._hwnd = None
         except:
@@ -100,6 +106,6 @@ class Win32Hooks(object):
         if callback:
             #run our callback
             callback(hwnd, msg, wparam, lparam)
-        v = win32gui.CallWindowProc(self._oldwndproc, hwnd, msg, wparam, lparam)
+        v = CallWindowProc(self._oldwndproc, hwnd, msg, wparam, lparam)
         vlog("_wndproc%s return value=%s", (hwnd, msg, wparam, lparam), v)
         return v
