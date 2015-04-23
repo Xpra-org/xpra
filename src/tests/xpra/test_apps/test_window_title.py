@@ -13,7 +13,11 @@ def main():
 	entry = gtk.Entry()
 	entry.set_max_length(50)
 	entry.connect("changed", change_callback, window, entry)
-	entry.set_text("Hello")
+	title = "Hello"
+	import sys
+	if len(sys.argv)>1:
+		title = sys.argv[1]
+	entry.set_text(title)
 	entry.show()
 	window.add(entry)
 	window.show_all()
