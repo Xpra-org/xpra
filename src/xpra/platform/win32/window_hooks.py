@@ -40,7 +40,6 @@ class Win32Hooks(object):
                      win32con.WM_GETMINMAXINFO          : self.on_getminmaxinfo,
                      }
         self.max_size = None
-        self._oldwndproc = win32gui.SetWindowLong(hwnd, win32con.GWL_WNDPROC, self._wndproc)
         try:
             #we only use this code for resizable windows, so use SM_C?SIZEFRAME:
             self.frame_width = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
@@ -51,6 +50,11 @@ class Win32Hooks(object):
             self.frame_height = 4
             self.caption_height = 26
         log("Win32Hooks: window frame size is %sx%s", self.frame_width, self.frame_height)
+        self._oldwndproc = None
+
+    def setup(self):
+        assert self._oldwndproc is None
+        self._oldwndproc = win32gui.SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._wndproc)
 
     def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
         if self.max_size:
