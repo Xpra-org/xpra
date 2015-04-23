@@ -19,6 +19,9 @@ import ctypes
 from ctypes import windll, byref
 
 WINDOW_HOOKS = os.environ.get("XPRA_WIN32_WINDOW_HOOKS", "1")=="1"
+GROUP_LEADER = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GROUP_LEADER", "1")=="1"
+UNDECORATED_STYLE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_UNDECORATED_STYLE", "1")=="1"
+MAX_SIZE_HINT = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_MAX_SIZE_HINT", "1")=="1"
 
 
 KNOWN_EVENTS = {}
@@ -138,112 +141,117 @@ def add_window_hooks(window):
         handle = window.get_window().handle
     except:
         return
-    #windows 7 onwards can use AppUserModel to emulate the group leader stuff:
-    propsys = get_propsys()
-    log("win32 hooks: propsys=%s", propsys)
-    if propsys:
-        def set_group(leader):
+
+    if GROUP_LEADER:
+        #windows 7 onwards can use AppUserModel to emulate the group leader stuff:
+        propsys = get_propsys()
+        log("win32 hooks: propsys=%s", propsys)
+        if propsys:
+            def set_group(leader):
+                try:
+                    log("win32 hooks: set_group(%#x)", leader.handle)
+                    ps = propsys.SHGetPropertyStoreForWindow(handle)
+                    key = propsys.PSGetPropertyKeyFromName("System.AppUserModel.ID")
+                    value = propsys.PROPVARIANTType(leader.handle)
+                    log("win32 hooks: calling %s(%s, %s)", ps.SetValue, key, value)
+                    ps.SetValue(key, value)
+                except Exception as e:
+                    log.error("failed to set group leader: %s", e)
+            window.get_window().set_group = set_group
+            log("hooked group leader override using %s", propsys)
+
+    if UNDECORATED_STYLE:
+        #OR windows never have any decorations or taskbar menu
+        readd_window_options = None
+        if not window._override_redirect:
+            #override set_decorated so we can preserve the taskbar menu for undecorated windows
+            window.__set_decorated = window.set_decorated
+            def readd_window_options():
+                try:
+                    cur_style = win32api.GetWindowLong(handle, win32con.GWL_STYLE)
+                    #re-add taskbar menu:
+                    style = cur_style
+                    style |= win32con.WS_SYSMENU
+                    style |= win32con.WS_MAXIMIZEBOX
+                    #can always minimize:
+                    style |= win32con.WS_MINIMIZEBOX
+                    log("readd_window_options() using %s style=%#x on window %#x", ["unchanged", "new"][int(style!=cur_style)], style, handle)
+                    if style!=cur_style:
+                        win32gui.SetWindowLong(handle, win32con.GWL_STYLE, style)
+                except:
+                    log.warn("failed to override window style", exc_info=True)
+            def set_decorated(b):
+                window.__set_decorated(b)
+                readd_window_options()
+            window.set_decorated = set_decorated
+            readd_window_options()
+            #override after_window_state_updated so we can re-add the missing style options
+            #(somehow doing it from on_realize which calls add_window_hooks is not enough)
+            window.__after_window_state_updated = window.after_window_state_updated
+            def after_window_state_updated(*args):
+                log("after_window_state_updated%s", args)
+                window.__after_window_state_updated()
+                readd_window_options()
+            window.after_window_state_updated = after_window_state_updated
+    
             try:
-                log("win32 hooks: set_group(%#x)", leader.handle)
-                ps = propsys.SHGetPropertyStoreForWindow(handle)
-                key = propsys.PSGetPropertyKeyFromName("System.AppUserModel.ID")
-                value = propsys.PROPVARIANTType(leader.handle)
-                log("win32 hooks: calling %s(%s, %s)", ps.SetValue, key, value)
-                ps.SetValue(key, value)
-            except Exception as e:
-                log.error("failed to set group leader: %s", e)
-        window.get_window().set_group = set_group
-        log("hooked group leader override using %s", propsys)
-    #OR windows never have any decorations or taskbar menu
-    readd_window_options = None
-    if not window._override_redirect:
-        #override set_decorated so we can preserve the taskbar menu for undecorated windows
-        window.__set_decorated = window.set_decorated
-        def readd_window_options():
-            try:
-                cur_style = win32api.GetWindowLong(handle, win32con.GWL_STYLE)
-                #re-add taskbar menu:
-                style = cur_style
-                style |= win32con.WS_SYSMENU
-                style |= win32con.WS_MAXIMIZEBOX
-                #can always minimize:
-                style |= win32con.WS_MINIMIZEBOX
-                log("readd_window_options() using %s style=%#x on window %#x", ["unchanged", "new"][int(style!=cur_style)], style, handle)
-                if style!=cur_style:
-                    win32gui.SetWindowLong(handle, win32con.GWL_STYLE, style)
+                el = get_win32_event_listener(True)
+                log("win32_event_listener=%s", el)
+                if el:
+                    def activate_cb(*args):
+                        log("activate_cb%s", args)
+                        readd_window_options()
+                    el.add_event_callback(win32con.WM_ACTIVATEAPP, activate_cb)
+                    window.activate_app_hook = activate_cb
             except:
-                log.warn("failed to override window style", exc_info=True)
-        def set_decorated(b):
-            window.__set_decorated(b)
-            readd_window_options()
-        window.set_decorated = set_decorated
-        readd_window_options()
-        #override after_window_state_updated so we can re-add the missing style options
-        #(somehow doing it from on_realize which calls add_window_hooks is not enough)
-        window.__after_window_state_updated = window.after_window_state_updated
-        def after_window_state_updated(*args):
-            log("after_window_state_updated%s", args)
-            window.__after_window_state_updated()
-            readd_window_options()
-        window.after_window_state_updated = after_window_state_updated
+                log.warn("failed to add activateapp callback", exc_info=True)
 
-        try:
-            el = get_win32_event_listener(True)
-            log("win32_event_listener=%s", el)
-            if el:
-                def activate_cb(*args):
-                    log("activate_cb%s", args)
-                    readd_window_options()
-                el.add_event_callback(win32con.WM_ACTIVATEAPP, activate_cb)
-                window.activate_app_hook = activate_cb
-        except:
-            log.warn("failed to add activateapp callback", exc_info=True)
-
-    #glue code for gtk to win32 APIs:
-    #add event hook class:
-    win32hooks = Win32Hooks(handle)
-    log("add_window_hooks(%s) added hooks for hwnd %#x: %s", window, handle, win32hooks)
-    window.win32hooks = win32hooks
-    win32hooks.max_size = None
-
-    #save original geometry function:
-    window.__apply_geometry_hints = window.apply_geometry_hints
-    #our function for taking gdk window hints and passing them to the win32 hooks class:
-    def apply_maxsize_hints(hints):
-        workw, workh = 0, 0
-        if not window.get_decorated():
-            workarea = get_monitor_workarea_for_window(handle)
-            log("using workarea as window size limit for undecorated window: %s", workarea)
-            if workarea:
-                workw, workh = workarea[2:4]
-        maxw = hints.get("max_width", 0)
-        maxh = hints.get("max_height", 0)
-        if workw>0 and workh>0:
-            #clamp to workspace for undecorated windows:
-            if maxw>0 and maxh>0:
-                maxw = min(workw, maxw)
-                maxh = min(workh, maxh)
-            else:
-                maxw, maxh = workw, workh
-        log("apply_maxsize_hints(%s) for window %s, found max: %sx%s", hints, window, maxw, maxh)
-        if (maxw>0 and maxw<32767) or (maxh>0 and maxh<32767):
-            window.win32hooks.max_size = (maxw or 32000), (maxh or 32000)
-        elif window.win32hooks.max_size:
-            #was set, clear it
-            window.win32hooks.max_size = None
-        #remove them so GTK doesn't try to set attributes,
-        #which would remove the maximize button:
-        for x in ("max_width", "max_height"):
-            if x in hints:
-                del hints[x]
-    #our monkey patching method, which calls the function above:
-    def apply_geometry_hints(hints):
-        apply_maxsize_hints(hints)
-        return window.__apply_geometry_hints(hints)
-    window.apply_geometry_hints = apply_geometry_hints
-    #apply current geometry hints, if any:
-    if window.geometry_hints:
-        apply_maxsize_hints(window.geometry_hints)
+    if MAX_SIZE_HINT:
+        #glue code for gtk to win32 APIs:
+        #add event hook class:
+        win32hooks = Win32Hooks(handle)
+        log("add_window_hooks(%s) added hooks for hwnd %#x: %s", window, handle, win32hooks)
+        window.win32hooks = win32hooks
+        win32hooks.max_size = None
+    
+        #save original geometry function:
+        window.__apply_geometry_hints = window.apply_geometry_hints
+        #our function for taking gdk window hints and passing them to the win32 hooks class:
+        def apply_maxsize_hints(hints):
+            workw, workh = 0, 0
+            if not window.get_decorated():
+                workarea = get_monitor_workarea_for_window(handle)
+                log("using workarea as window size limit for undecorated window: %s", workarea)
+                if workarea:
+                    workw, workh = workarea[2:4]
+            maxw = hints.get("max_width", 0)
+            maxh = hints.get("max_height", 0)
+            if workw>0 and workh>0:
+                #clamp to workspace for undecorated windows:
+                if maxw>0 and maxh>0:
+                    maxw = min(workw, maxw)
+                    maxh = min(workh, maxh)
+                else:
+                    maxw, maxh = workw, workh
+            log("apply_maxsize_hints(%s) for window %s, found max: %sx%s", hints, window, maxw, maxh)
+            if (maxw>0 and maxw<32767) or (maxh>0 and maxh<32767):
+                window.win32hooks.max_size = (maxw or 32000), (maxh or 32000)
+            elif window.win32hooks.max_size:
+                #was set, clear it
+                window.win32hooks.max_size = None
+            #remove them so GTK doesn't try to set attributes,
+            #which would remove the maximize button:
+            for x in ("max_width", "max_height"):
+                if x in hints:
+                    del hints[x]
+        #our monkey patching method, which calls the function above:
+        def apply_geometry_hints(hints):
+            apply_maxsize_hints(hints)
+            return window.__apply_geometry_hints(hints)
+        window.apply_geometry_hints = apply_geometry_hints
+        #apply current geometry hints, if any:
+        if window.geometry_hints:
+            apply_maxsize_hints(window.geometry_hints)
 
 def remove_window_hooks(window):
     try:
