@@ -22,6 +22,7 @@ WINDOW_HOOKS = os.environ.get("XPRA_WIN32_WINDOW_HOOKS", "1")=="1"
 GROUP_LEADER = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GROUP_LEADER", "1")=="1"
 UNDECORATED_STYLE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_UNDECORATED_STYLE", "1")=="1"
 MAX_SIZE_HINT = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_MAX_SIZE_HINT", "1")=="1"
+GEOMETRY = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GEOMETRY", "1")=="1"
 
 
 KNOWN_EVENTS = {}
@@ -215,44 +216,45 @@ def add_window_hooks(window):
         win32hooks.max_size = None
         win32hooks.setup()
 
-        #save original geometry function:
-        window.__apply_geometry_hints = window.apply_geometry_hints
-        #our function for taking gdk window hints and passing them to the win32 hooks class:
-        def apply_maxsize_hints(hints):
-            workw, workh = 0, 0
-            if not window.get_decorated():
-                workarea = get_monitor_workarea_for_window(handle)
-                log("using workarea as window size limit for undecorated window: %s", workarea)
-                if workarea:
-                    workw, workh = workarea[2:4]
-            maxw = hints.get("max_width", 0)
-            maxh = hints.get("max_height", 0)
-            if workw>0 and workh>0:
-                #clamp to workspace for undecorated windows:
-                if maxw>0 and maxh>0:
-                    maxw = min(workw, maxw)
-                    maxh = min(workh, maxh)
-                else:
-                    maxw, maxh = workw, workh
-            log("apply_maxsize_hints(%s) for window %s, found max: %sx%s", hints, window, maxw, maxh)
-            if (maxw>0 and maxw<32767) or (maxh>0 and maxh<32767):
-                window.win32hooks.max_size = (maxw or 32000), (maxh or 32000)
-            elif window.win32hooks.max_size:
-                #was set, clear it
-                window.win32hooks.max_size = None
-            #remove them so GTK doesn't try to set attributes,
-            #which would remove the maximize button:
-            for x in ("max_width", "max_height"):
-                if x in hints:
-                    del hints[x]
-        #our monkey patching method, which calls the function above:
-        def apply_geometry_hints(hints):
-            apply_maxsize_hints(hints)
-            return window.__apply_geometry_hints(hints)
-        window.apply_geometry_hints = apply_geometry_hints
-        #apply current geometry hints, if any:
-        if window.geometry_hints:
-            apply_maxsize_hints(window.geometry_hints)
+        if GEOMETRY:
+            #save original geometry function:
+            window.__apply_geometry_hints = window.apply_geometry_hints
+            #our function for taking gdk window hints and passing them to the win32 hooks class:
+            def apply_maxsize_hints(hints):
+                workw, workh = 0, 0
+                if not window.get_decorated():
+                    workarea = get_monitor_workarea_for_window(handle)
+                    log("using workarea as window size limit for undecorated window: %s", workarea)
+                    if workarea:
+                        workw, workh = workarea[2:4]
+                maxw = hints.get("max_width", 0)
+                maxh = hints.get("max_height", 0)
+                if workw>0 and workh>0:
+                    #clamp to workspace for undecorated windows:
+                    if maxw>0 and maxh>0:
+                        maxw = min(workw, maxw)
+                        maxh = min(workh, maxh)
+                    else:
+                        maxw, maxh = workw, workh
+                log("apply_maxsize_hints(%s) for window %s, found max: %sx%s", hints, window, maxw, maxh)
+                if (maxw>0 and maxw<32767) or (maxh>0 and maxh<32767):
+                    window.win32hooks.max_size = (maxw or 32000), (maxh or 32000)
+                elif window.win32hooks.max_size:
+                    #was set, clear it
+                    window.win32hooks.max_size = None
+                #remove them so GTK doesn't try to set attributes,
+                #which would remove the maximize button:
+                for x in ("max_width", "max_height"):
+                    if x in hints:
+                        del hints[x]
+            #our monkey patching method, which calls the function above:
+            def apply_geometry_hints(hints):
+                apply_maxsize_hints(hints)
+                return window.__apply_geometry_hints(hints)
+            window.apply_geometry_hints = apply_geometry_hints
+            #apply current geometry hints, if any:
+            if window.geometry_hints:
+                apply_maxsize_hints(window.geometry_hints)
 
 def remove_window_hooks(window):
     try:

@@ -32,13 +32,18 @@ class MINMAXINFO(ctypes.Structure):
 #only hardcoded for handling WM_GETMINMAXINFO,
 #but should be pretty easy to tweak if needed.
 
+
+import os
+MINMAXINFO = os.environ.get("XPRA_WIN32_MINMAXINFO", "1")=="1"
+
+
 class Win32Hooks(object):
 
     def __init__(self, hwnd):
         self._hwnd = hwnd
-        self._message_map = {
-                     win32con.WM_GETMINMAXINFO          : self.on_getminmaxinfo,
-                     }
+        self._message_map = {}
+        if MINMAXINFO:
+            self._message_map[win32con.WM_GETMINMAXINFO] = self.on_getminmaxinfo
         self.max_size = None
         try:
             #we only use this code for resizable windows, so use SM_C?SIZEFRAME:
@@ -50,6 +55,7 @@ class Win32Hooks(object):
             self.frame_height = 4
             self.caption_height = 26
         log("Win32Hooks: window frame size is %sx%s", self.frame_width, self.frame_height)
+        log("Win32Hooks: message_map=%s", self._message_map)
         self._oldwndproc = None
 
     def setup(self):
@@ -89,11 +95,11 @@ class Win32Hooks(object):
 
     def _wndproc(self, hwnd, msg, wparam, lparam):
         event_name = WNDPROC_EVENT_NAMES.get(msg, msg)
-        vlog("_wndproc%s event name=%s", (hwnd, msg, wparam, lparam), event_name)
-        v = win32gui.CallWindowProc(self._oldwndproc, hwnd, msg, wparam, lparam)
         callback = self._message_map.get(msg)
-        vlog("_wndproc%s return value=%s, callback=%s", (hwnd, msg, wparam, lparam), v, callback)
+        vlog("_wndproc%s event name=%s, callback=%s", (hwnd, msg, wparam, lparam), event_name, callback)
         if callback:
             #run our callback
             callback(hwnd, msg, wparam, lparam)
+        v = win32gui.CallWindowProc(self._oldwndproc, hwnd, msg, wparam, lparam)
+        vlog("_wndproc%s return value=%s", (hwnd, msg, wparam, lparam), v)
         return v
