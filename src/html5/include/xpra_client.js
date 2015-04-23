@@ -38,6 +38,7 @@ function XpraClient(container) {
 	this.audio_ctx = null;
 	// the "clipboard"
 	this.clipboard_buffer = "";
+	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
 	// the container div is the "screen" on the HTML page where we
 	// are able to draw our windows in.
 	this.container = document.getElementById(container);
@@ -808,9 +809,11 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
-	// we should probably update our clipboard buffer
-	ctx.clipboard_buffer = packet[7];
-	if(packet[3] == "UTF8_STRING") {
+	// only accept some clipboard types
+	if(ctx.clipboard_targets.indexOf(packet[3])>=0) {
+		// we should probably update our clipboard buffer
+		ctx.clipboard_buffer = packet[7];
+		// prompt user
 		prompt("Text was placed on the remote clipboard:", packet[7]);
 	}
 }
