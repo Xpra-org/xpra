@@ -219,7 +219,7 @@
                         hash="md5:e831e0b84ece7180985b11032bc3706d"
                         checkoutdir="pygtkglext"
             repo="xpra.org">
-    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/pygtkglext-osx-v4.patch" strip="1"/>
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygtkglext-osx-v4.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="gtkglext"/>
