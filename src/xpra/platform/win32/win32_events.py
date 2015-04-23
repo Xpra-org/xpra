@@ -90,6 +90,7 @@ class Win32EventListener(object):
             l.remove(callback)
 
     def cleanup(self):
+        self.event_callback = {}
         self.stop_win32_session_events()
         if self.hwnd:
             win32gui.DestroyWindow(self.hwnd)
