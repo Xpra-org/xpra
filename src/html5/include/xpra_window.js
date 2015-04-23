@@ -650,7 +650,7 @@ XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
 }
 
 /**
- * The following functions handle h264 decoder
+ * The following function inits the h264 decoder
  */
 XpraWindow.prototype._init_avc = function() {
 	var me = this;
@@ -658,101 +658,11 @@ XpraWindow.prototype._init_avc = function() {
 	this.avc = new Decoder({
 		rgb: true
 	});
-	//this.avc = new Avc();
-    //this.avc.configure({
-    //    filter: "original",
-    //    filterHorLuma: "optimized",
-    //    filterVerLumaEdge: "optimized",
-    //    getBoundaryStrengthsA: "optimized"
-    //});
     this.avc.onPictureDecoded = function(buffer, bufWidth, bufHeight) {
-        //var lumaSize = bufWidth * bufHeight,
-        //        chromaSize = lumaSize >> 2;
-
-        //me.glcanvas.YTexture.fill(buffer.subarray(0, lumaSize));
-        //me.glcanvas.UTexture.fill(buffer.subarray(lumaSize, lumaSize + chromaSize));
-        //me.glcanvas.VTexture.fill(buffer.subarray(lumaSize + chromaSize, lumaSize + 2 * chromaSize));
-        //me.glcanvas.drawScene();
         var img = me.offscreen_canvas_ctx.createImageData(bufWidth, bufHeight);
         img.data.set(buffer);
 		me.offscreen_canvas_ctx.putImageData(img, 0, 0);
     };
-    // configure the GL Canvas
-    //if(this.offscreen_canvas_mode!='3d') {
-	//    this._init_3d_canvas();
-	//    this.glcanvas = new YUVWebGLCanvas(this.offscreen_canvas, new Size(this.w, this.h));
-	//}
-}
-
-XpraWindow.prototype._h264_process_nal = function(data) {
-	var s = 0;
-
-	if(data[2]==0) {
-		s = 4
-	} else {
-		s = 3;
-	}
-
-	if(data[s]==0x67) {
-		console.log("got SPS NAL bytes:"+data.length);
-	} else if (data[s]==0x68) {
-		console.log("got PPS NAL bytes:"+data.length);
-	} else if (data[s]==0x65) {
-		console.log("got IDR picture NAL unit bytes:"+data.length);
-	} else if (data[s]==0x41) {
-		console.log("got Non-IDR picture NAL unit bytes:"+data.length);
-	} else if (data[s]==0x06) {
-		console.log("got an access unit delimiter NAL unit bytes:"+data.length);
-	} else {
-		console.warn("got unknown NAL type "+data[s]);
-	}
-
-	this.avc.decode(new Uint8Array(data.slice(s, data.length)));
-}
-
-XpraWindow.prototype._h264_process_raw = function(data) {
-	// the purpose of this function is to split the stream
-	// into the individual NAL units
-	// it's useful for debugging but not required in production
-	var b = 0;
-	var offset = 0;
-	var l = data.length;
-	var zeroCnt = 0;
-	var nals = null;
-	var nale = null;
-
-	for (b; b < l; ++b){
-		if (data[b] === 0){
-			zeroCnt++;
-		}else{
-			if (data[b] == 1){
-				if (zeroCnt >= 2) {
-					if(nals==null) {
-			    		// this is the first nal occurance
-			    		// we don't know how long the first data is yet
-			    		nals = b-(zeroCnt);
-			    	} else {
-			    		if(nale==null) {
-			    			// we found the next occurance
-			    			// now we know how long the first is
-			    			nale = b-(zeroCnt);
-			    			console.log("got nal from "+nals+ " to "+nale);
-			    			this._h264_process_nal(data.slice(nals, nale));
-			    			nals = b-(zeroCnt);
-			    			nale = null;
-			    		}
-			    	}
-		    	}
-			}
-			zeroCnt = 0;
-		}
-
-		if(b==(l-1)) {
-			console.log("got nal from "+nals+" to "+(l-1));
-			this._h264_process_nal(data.slice(nals, l));
-		}
-	}
-
 }
 
 /**
