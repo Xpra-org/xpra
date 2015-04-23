@@ -1,0 +1,14 @@
+--- src/quartz-style.c.bak	2015-04-20 21:10:25.000000000 -0700
++++ src/quartz-style.c	2015-04-20 21:10:51.000000000 -0700
+@@ -1570,10 +1570,10 @@
+       else
+         draw_info.state = kThemeMenuActive;
+ 
+-      item_rect = CGRectMake (x1, y, x2-x1, height);
+ 
+       toplevel = gtk_widget_get_toplevel (widget);
+       gdk_window_get_size (toplevel->window, &width, &height);
++      item_rect = CGRectMake (x1, y, x2-x1, height);
+       menu_rect = CGRectMake (0, 0, width, height);
+ 
+       context = get_context (window, area);
