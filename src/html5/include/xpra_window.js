@@ -129,6 +129,8 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 			jQuery('#maximize' + String(wid)).click(function() {
 				me.toggle_maximized();
 			});
+		} else {
+			jQuery(this.div).addClass("override-redirect");
 		}
 	}
 
