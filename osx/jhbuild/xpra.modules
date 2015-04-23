@@ -29,7 +29,7 @@
   <repository type="tarball" name="sourceforge" href="http://downloads.sourceforge.net/sourceforge/"/>
   <repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
 
-  <autotools id="yasm" autogenargs="--build=i386-darwin CC='gcc -arch i386' CXX='g++ -arch i386'" autogen-sh="configure">
+  <autotools id="yasm" autogen-sh="configure">
     <branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
 			version="1.3.0"
                         hash="md5:fc9e586751ff789b34b1f21d572d96af"
@@ -87,7 +87,7 @@
             repo="winswitch.org"/>
   </autotools>
 
-  <autotools id="libmad" autogenargs="--build=i386-darwin" autogen-sh="configure">
+  <autotools id="libmad" autogen-sh="configure">
     <branch module="/src/libmad-0.15.1b.tar.gz"
 			version="0.15.1b"
                         hash="md5:1be543bc30c56fb6bea1d7bf6a64e66c"
@@ -141,7 +141,7 @@
 
   <autotools id="x264"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
-             autogenargs="--enable-pic --enable-shared --enable-static --host=i386-apple-darwin"
+             autogenargs="--enable-pic --enable-shared --enable-static"
              autogen-sh="configure">
     <branch module="/pub/x264/snapshots/x264-snapshot-20141218-2245-stable.tar.bz2"
 			version="20141218-2245-stable"
@@ -158,7 +158,7 @@
 
   <autotools id="ffmpeg"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
-             autogenargs="--cpu=i686 --enable-runtime-cpudetect --enable-pic --enable-memalign-hack
+             autogenargs="--enable-runtime-cpudetect --enable-pic --enable-memalign-hack
 --enable-static --enable-shared --enable-gpl
 --disable-everything
 --enable-swscale --enable-libx264 --enable-decoder=h264
@@ -226,7 +226,7 @@
     </dependencies>
   </autotools>
 
-  <autotools id="gmplib" autogenargs="--build=i386-darwin" autogen-sh="configure">
+  <autotools id="gmplib" autogen-sh="configure">
     <branch module="/pub/gmp-6.0.0/gmp-6.0.0a.tar.xz"
 			version="6.0.0a"
                         hash="md5:1e6da4e434553d2811437aa42c7f7c76"
@@ -234,7 +234,7 @@
             repo="ftp.gmplib.org"/>
   </autotools>
 
-  <autotools id="mpfr" autogenargs="--build=i386-darwin" autogen-sh="configure">
+  <autotools id="mpfr" autogen-sh="configure">
     <branch module="/mpfr-current/mpfr-3.1.2.tar.bz2"
                         hash="md5:ee2c3ac63bf0c2359bf08fc3ee094c19"
 			version="3.1.2" repo="www.mpfr.org">
