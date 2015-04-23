@@ -36,6 +36,8 @@ function XpraClient(container) {
 	// audio stuff
 	this.audio_enabled = false;
 	this.audio_ctx = null;
+	// the "clipboard"
+	this.clipboard_buffer = "";
 	// the container div is the "screen" on the HTML page where we
 	// are able to draw our windows in.
 	this.container = document.getElementById(container);
@@ -67,7 +69,8 @@ function XpraClient(container) {
 		'draw': this._process_draw,
 		'sound-data': this._process_sound_data,
 		'clipboard-token': this._process_clipboard_token,
-		'set-clipboard-enabled': this._process_set_clipboard_enabled
+		'set-clipboard-enabled': this._process_set_clipboard_enabled,
+		'clipboard-request': this._process_clipboard_request
 	};
 	// assign callback for window resize event
 	if (window.jQuery) {
@@ -217,6 +220,16 @@ XpraClient.prototype._screen_resized = function(event, ctx) {
 		var iwin = ctx.id_to_window[i];
 		iwin.screen_resized();
 	}
+}
+
+XpraClient.prototype.handle_paste = function(text) {
+	// set our clipboard buffer
+	this.clipboard_buffer = text;
+	// send token
+	var packet = ["clipboard-token", "CLIPBOARD"];
+	this.protocol.send(packet);
+	// tell user to paste in remote application
+	alert("Paste acknowledged. Please paste in remote application.");
 }
 
 XpraClient.prototype._keyb_get_modifiers = function(event) {
@@ -802,4 +815,18 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 
 XpraClient.prototype._process_set_clipboard_enabled = function(packet, ctx) {
 	console.warn("server set clipboard state to "+packet[1]+" reason was: "+packet[2]);
+}
+
+XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
+	var request_id = packet[1],
+		selection = packet[2],
+		target = packet[3];
+
+	if(this.clipboard_buffer == "") {
+		packet = ["clipboard-contents-none", request_id, selection];
+	} else {
+		var packet = ["clipboard-contents", request_id, selection, "UTF8_STRING", 8, "bytes", ctx.clipboard_buffer];
+	}
+
+	ctx.protocol.send(packet);
 }
