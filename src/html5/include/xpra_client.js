@@ -808,6 +808,8 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
+	// we should probably update our clipboard buffer
+	ctx.clipboard_buffer = packet[7];
 	if(packet[3] == "UTF8_STRING") {
 		prompt("Text was placed on the remote clipboard:", packet[7]);
 	}
