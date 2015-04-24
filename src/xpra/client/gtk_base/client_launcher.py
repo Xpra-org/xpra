@@ -16,17 +16,19 @@ import shlex
 import signal
 import traceback
 
-from xpra.platform.gui import init as gui_init
-gui_init()
-
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango
-
-gtk = import_gtk()
-gdk = import_gdk()
 gobject = import_gobject()
 gobject.threads_init()
+gtk = import_gtk()
+gdk = import_gdk()
+try:
+    gdk.threads_init()
+except:
+    pass
 pango = import_pango()
 
+from xpra.platform.gui import init as gui_init
+gui_init()
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, ENCRYPTION_CIPHERS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
@@ -79,6 +81,8 @@ def validate_in_list(x, options):
 LAUNCHER_VALIDATION = {
                         "mode"              : lambda x : validate_in_list(x, MODES),
                       }
+
+PYTHON3 = sys.version_info[0]==3
 
 
 black   = color_parse("black")
@@ -158,7 +162,7 @@ class ApplicationWindow:
         hbox.set_spacing(20)
         hbox.pack_start(gtk.Label("Mode: "))
         self.mode_combo = gtk.combo_box_new_text()
-        self.mode_combo.get_model().clear()
+        #self.mode_combo.get_model().clear()
         self.mode_combo.append_text("TCP")
         if "AES" in ENCRYPTION_CIPHERS:
             self.mode_combo.append_text("TCP + AES")
@@ -167,65 +171,69 @@ class ApplicationWindow:
         hbox.pack_start(self.mode_combo)
         vbox.pack_start(hbox)
 
-        # Encoding:
-        hbox = gtk.HBox(False, 20)
-        hbox.set_spacing(20)
-        hbox.pack_start(gtk.Label("Encoding: "))
-        self.encoding_combo = OptionMenu()
-        def get_current_encoding():
-            return self.config.encoding
-        def set_new_encoding(e):
-            self.config.encoding = e
-        encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
-        server_encodings = encodings
-        es = make_encodingsmenu(get_current_encoding, set_new_encoding, encodings, server_encodings)
-        self.encoding_combo.set_menu(es)
-        set_history_from_active(self.encoding_combo)
-        hbox.pack_start(self.encoding_combo)
-        vbox.pack_start(hbox)
-        self.encoding_combo.connect("changed", self.encoding_changed)
+        self.encoding_combo = None
+        if not PYTHON3:
+            #not implemented for gtk3, where we can't use set_menu()...
 
-        # Quality
-        hbox = gtk.HBox(False, 20)
-        hbox.set_spacing(20)
-        self.quality_label = gtk.Label("Quality: ")
-        hbox.pack_start(self.quality_label)
-        self.quality_combo = OptionMenu()
-        def set_min_quality(q):
-            self.config.min_quality = q
-        def set_quality(q):
-            self.config.quality = q
-        def get_min_quality():
-            return self.config.min_quality
-        def get_quality():
-            return self.config.quality
-        sq = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
-                                   get_min_quality, get_quality, set_min_quality, set_quality)
-        self.quality_combo.set_menu(sq)
-        set_history_from_active(self.quality_combo)
-        hbox.pack_start(self.quality_combo)
-        vbox.pack_start(hbox)
+            # Encoding:
+            hbox = gtk.HBox(False, 20)
+            hbox.set_spacing(20)
+            hbox.pack_start(gtk.Label("Encoding: "))
+            self.encoding_combo = OptionMenu()
+            def get_current_encoding():
+                return self.config.encoding
+            def set_new_encoding(e):
+                self.config.encoding = e
+            encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+            server_encodings = encodings
+            es = make_encodingsmenu(get_current_encoding, set_new_encoding, encodings, server_encodings)
+            self.encoding_combo.set_menu(es)
+            set_history_from_active(self.encoding_combo)
+            hbox.pack_start(self.encoding_combo)
+            vbox.pack_start(hbox)
+            self.encoding_combo.connect("changed", self.encoding_changed)
 
-        # Speed
-        hbox = gtk.HBox(False, 20)
-        hbox.set_spacing(20)
-        self.speed_label = gtk.Label("Speed: ")
-        hbox.pack_start(self.speed_label)
-        self.speed_combo = OptionMenu()
-        def set_min_speed(s):
-            self.config.min_speed = s
-        def set_speed(s):
-            self.config.speed = s
-        def get_min_speed():
-            return self.config.min_speed
-        def get_speed():
-            return self.config.speed
-        ss = make_min_auto_menu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
-                                   get_min_speed, get_speed, set_min_speed, set_speed)
-        self.speed_combo.set_menu(ss)
-        set_history_from_active(self.speed_combo)
-        hbox.pack_start(self.speed_combo)
-        vbox.pack_start(hbox)
+            # Quality
+            hbox = gtk.HBox(False, 20)
+            hbox.set_spacing(20)
+            self.quality_label = gtk.Label("Quality: ")
+            hbox.pack_start(self.quality_label)
+            self.quality_combo = OptionMenu()
+            def set_min_quality(q):
+                self.config.min_quality = q
+            def set_quality(q):
+                self.config.quality = q
+            def get_min_quality():
+                return self.config.min_quality
+            def get_quality():
+                return self.config.quality
+            sq = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
+                                       get_min_quality, get_quality, set_min_quality, set_quality)
+            self.quality_combo.set_menu(sq)
+            set_history_from_active(self.quality_combo)
+            hbox.pack_start(self.quality_combo)
+            vbox.pack_start(hbox)
+    
+            # Speed
+            hbox = gtk.HBox(False, 20)
+            hbox.set_spacing(20)
+            self.speed_label = gtk.Label("Speed: ")
+            hbox.pack_start(self.speed_label)
+            self.speed_combo = OptionMenu()
+            def set_min_speed(s):
+                self.config.min_speed = s
+            def set_speed(s):
+                self.config.speed = s
+            def get_min_speed():
+                return self.config.min_speed
+            def get_speed():
+                return self.config.speed
+            ss = make_min_auto_menu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
+                                       get_min_speed, get_speed, set_min_speed, set_speed)
+            self.speed_combo.set_menu(ss)
+            set_history_from_active(self.speed_combo)
+            hbox.pack_start(self.speed_combo)
+            vbox.pack_start(hbox)
 
         # Username@Host:Port
         hbox = gtk.HBox(False, 0)
@@ -384,6 +392,8 @@ class ApplicationWindow:
         self.validate()
 
     def get_selected_encoding(self, *args):
+        if not self.encoding_combo:
+            return ""
         index = get_active_item_index(self.encoding_combo)
         return self.encoding_combo.get_menu().index_to_encoding.get(index)
 
@@ -621,7 +631,7 @@ class ApplicationWindow:
         self.config.ssh_port = self.ssh_port_entry.get_text()
         self.config.port = self.port_entry.get_text()
         self.config.username = self.username_entry.get_text()
-        self.config.encoding = self.get_selected_encoding()
+        self.config.encoding = self.get_selected_encoding() or self.config.encoding
         mode_enc = self.mode_combo.get_active_text()
         if mode_enc.startswith("TCP"):
             self.config.mode = "tcp"
@@ -640,7 +650,7 @@ class ApplicationWindow:
             self.mode_combo.set_active(1)
         else:
             self.mode_combo.set_active(2)
-        if self.config.encoding:
+        if self.config.encoding and self.encoding_combo:
             index = self.encoding_combo.get_menu().encoding_to_index.get(self.config.encoding, -1)
             log("setting encoding combo to %s / %s", self.config.encoding, index)
             if index>=0:

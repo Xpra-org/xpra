@@ -64,7 +64,11 @@ def get_gtk_version_info():
 
 
 if is_gtk3():
-    color_parse             = gdk.Color.parse
+    def color_parse(*args):
+        ok, v = gdk.Color.parse(*args)
+        if not ok:
+            return None
+        return v
     default_Cursor          = gdk.Cursor.new(gdk.CursorType.X_CURSOR)
     new_Cursor_for_display  = gdk.Cursor.new_for_display
     new_Cursor_from_pixbuf  = gdk.Cursor.new_from_pixbuf
@@ -145,17 +149,7 @@ if is_gtk3():
     def pack_start(self, child, expand=True, fill=True, padding=0):
         orig_pack_start(self, child, expand, fill, padding)
     gtk.Box.pack_start = pack_start
-    def append_text(self, text):
-        model = self.get_model()
-        model.append([text])
-    gtk.ComboBox.append_text = append_text
-    def new_text():
-        combo = gtk.ComboBox()
-        model = gtk.ListStore(str)
-        combo.set_model(model)
-        combo.set_entry_text_column(0)
-        return combo
-    gtk.combo_box_new_text = new_text
+    gtk.combo_box_new_text = gtk.ComboBoxText
 
     class OptionMenu(gtk.MenuButton):
         pass
