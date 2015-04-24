@@ -765,10 +765,6 @@ class UIXpraClient(XpraClientBase):
         if PYTHON3 and WIN32 and pressed_state==pressed:
             mouselog("button action: unchanged state, ignoring event")
             return
-        if pressed_state is False and pressed is False:
-            mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", wid)
-            #(needed for some dialogs on win32):
-            send_button(True)
         self._button_state[button] = pressed
         send_button(pressed)
 
