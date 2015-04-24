@@ -11,7 +11,8 @@ vlog = Logger("verbose")
 
 import win32con, win32api     #@UnresolvedImport
 import ctypes
-from ctypes.wintypes import POINT, c_int, c_long
+from ctypes import c_int, c_long
+from ctypes.wintypes import POINT
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 
 #use ctypes to ensure we call the "W" version:
