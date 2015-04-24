@@ -7,7 +7,17 @@
 # this used to be implemented using a gtk.gdk.Rectangle
 # but we don't want its union() behaviour which can be too expensive
 
-from xpra.util import AdHocStruct
+
+#what I want is a real macro!
+cdef inline int MIN(int a, int b):
+    if a<=b:
+        return a
+    return b
+cdef inline int MAX(int a, int b):
+    if a>=b:
+        return a
+    return b
+
 
 cdef class rectangle:
 
@@ -51,10 +61,10 @@ cdef class rectangle:
             raise Exception("invalid richcmp operator: %s" % op)
 
     def merge(self, x, y, w, h):
-        cdef int newx = min(self.x, x)
-        cdef int newy = min(self.y, y)
-        self.width = max(self.x+self.width, x+w)-newx
-        self.height = max(self.y+self.height, y+h)-newy
+        cdef int newx = MIN(self.x, x)
+        cdef int newy = MIN(self.y, y)
+        self.width = MAX(self.x+self.width, x+w)-newx
+        self.height = MAX(self.y+self.height, y+h)-newy
         self.x = newx
         self.y = newy
 
@@ -62,12 +72,12 @@ cdef class rectangle:
         self.merge(rect.x, rect.y, rect.width, rect.height)
 
     def intersects(self, int x, int y, int w, int h):
-        cdef int  ix = max(self.x, x)
-        cdef int  iw = min(self.x+self.width, x+w) - ix
+        cdef int  ix = MAX(self.x, x)
+        cdef int  iw = MIN(self.x+self.width, x+w) - ix
         if iw<=0:
             return False
-        cdef int  iy = max(self.y, y)
-        cdef int  ih = min(self.y+self.height, y+h) - iy
+        cdef int  iy = MAX(self.y, y)
+        cdef int  ih = MIN(self.y+self.height, y+h) - iy
         return ih>0
 
     def intersects_rect(self, rectangle rect):
@@ -77,10 +87,10 @@ cdef class rectangle:
         """ returns the rectangle containing the intersection with the given area,
             or None
         """
-        cdef int ix = max(self.x, x)
-        cdef int iy = max(self.y, y)
-        cdef int iw = min(self.x+self.width, x+w) - ix
-        cdef int ih = min(self.y+self.height, y+h) - iy
+        cdef int ix = MAX(self.x, x)
+        cdef int iy = MAX(self.y, y)
+        cdef int iw = MIN(self.x+self.width, x+w) - ix
+        cdef int ih = MIN(self.y+self.height, y+h) - iy
         if iw<=0 or ih<=0:
             return None
         return rectangle(ix, iy, iw, ih)
@@ -116,8 +126,8 @@ cdef class rectangle:
             #top:
             rects.append(rectangle(self.x, self.y, self.width, y-self.y))
         #height for both sides:
-        cdef int sy = max(self.y, y)
-        cdef int sh = min(self.y+self.height, y+h)-sy
+        cdef int sy = MAX(self.y, y)
+        cdef int sh = MIN(self.y+self.height, y+h)-sy
         cdef int nsx, nsw
         if sh>0:
             if self.x<x:
