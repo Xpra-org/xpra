@@ -8,7 +8,8 @@ import time
 import gobject
 gobject.threads_init()
 
-from xpra.server.region import rectangle, add_rectangle
+from xpra.server.region import rectangle        #@UnresolvedImport (cython)
+from xpra.server.region import add_rectangle, remove_rectangle, merge_all, contains_rect
 
 
 #collected with the server "-d encoding"
@@ -526,32 +527,64 @@ R2 = [
     (2,    61,    8,    15)
     ]
 
+N = 1000
+
 def test_gvim_damage_performance(rectangles):
     start = time.time()
-    for _ in range(100):
+    for _ in range(N):
         rects = []
         for x,y,width,height in rectangles:
             r = rectangle(x, y, width, height)
             rects.append(r)
     end = time.time()
-    print("created %s rectangles in %.2fms" % (len(rectangles), (end-start)*1000.0/100))
+    print("created %s rectangles %s times in %.2fms" % (len(rectangles), N, (end-start)*1000.0/N))
     #now try add rectangle:
     start = time.time()
-    for _ in range(100):
+    for _ in range(N):
         rects = []
         for x,y,width,height in rectangles:
             r = rectangle(x, y, width, height)
-            rects.append(r)
             add_rectangle(rects, r)
-
     end = time.time()
-    print("add_rectangle %s rectangles in %.2fms" % (len(rectangles), (end-start)*1000.0/100))
-    
+    print("add_rectangle %s rectangles %s times in %.2fms" % (len(rectangles), N, (end-start)*1000.0/N))
+    #now try remove rectangle:
+    start = time.time()
+    for _ in range(N):
+        rects = []
+        for x,y,width,height in rectangles:
+            r = rectangle(x+width//4, y+height//3, width//2, height//2)
+            remove_rectangle(rects, r)
+    end = time.time()
+    print("remove_rectangle %s rectangles %s times in %.2fms" % (len(rectangles), N, (end-start)*1000.0/N))
+
+    start = time.time()
+    n = N*1000
+    for _ in range(n):
+        for r in rects:
+            contains_rect(rects, r)
+    end = time.time()
+    print("contains_rect %s rectangles %s times in %.2fms" % (len(rectangles), n, (end-start)*1000.0/N))
+
+
+def test_merge_all():
+    start = time.time()
+    R = [rectangle(*v) for v in R1+R2]
+    n = N*10
+    for _ in range(n):
+        v = merge_all(R)
+    end = time.time()
+    print("merged %s rectangles %s times in %.2fms" % (len(R), n, (end-start)*1000.0/N))
+
 
 def main():
+    print("R1:")
     test_gvim_damage_performance(R1)
+    print("")
+    print("R2:")
     test_gvim_damage_performance(R2)
 
+    print("")
+    test_merge_all()
 
 if __name__ == "__main__":
     main()

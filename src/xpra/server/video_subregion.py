@@ -205,13 +205,13 @@ class VideoSubregion(object):
         def score_region(info, region, ignore_size=0):
             #check if the region given is a good candidate, and if so we use it
             #clamp it:
-            region.width = min(ww, region.width)
-            region.height = min(wh, region.height)
-            if region.width<MIN_W or region.height<MIN_H:
+            width = min(ww, region.width)
+            height = min(wh, region.height)
+            if width<MIN_W or height<MIN_H:
                 #too small, ignore it:
                 return 0
             #and make sure this does not end up much bigger than needed:
-            insize = region.width*region.height
+            insize = width*height
             if ww*wh<=insize:
                 return 0
             #count how many pixels are in or out if this region
@@ -239,7 +239,7 @@ class VideoSubregion(object):
             # if they ever happen to have a slightly lower hit count)
             score = inpct * ww*wh*2 / (ww*wh + insize)
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, score=%2i",
-                  info, region, inpct, outpct, 100*region.width*region.height/ww/wh, score)
+                  info, region, inpct, outpct, 100*width*height/ww/wh, score)
             return score
 
         update_markers()

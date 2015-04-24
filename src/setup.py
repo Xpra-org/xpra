@@ -1809,6 +1809,9 @@ if server_ENABLED:
     cython_add(Extension("xpra.server.cystats",
                 ["xpra/server/cystats.pyx"],
                 **pkgconfig()))
+    cython_add(Extension("xpra.server.region",
+                ["xpra/server/region.pyx"],
+                **pkgconfig()))
 
 
 toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
