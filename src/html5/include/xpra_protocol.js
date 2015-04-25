@@ -193,6 +193,12 @@ XpraProtocol.prototype._process = function() {
 	if (level!=0) {
 		if (level & 0x10) {
 			// lz4
+			// first four bytes have something in, maybe the length of uncompressed data?
+			packet_data.splice(0, 4);
+			// decode the LZ4 block
+			var inflated = new Buffer(10000000);
+			var uncompressedSize = LZ4.decodeBlock(packet_data, inflated);
+			inflated = inflated.slice(0, uncompressedSize);
 		} else if (level & 0x20) {
 			// lzo
 		} else {
@@ -241,7 +247,8 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 	// worker imports are relative to worker script path
 	importScripts('websock.js',
 		'bencode.js',
-		'inflate.min.js');
+		'inflate.min.js',
+		'lz4.min.js');
 	// make protocol instance
 	var protocol = new XpraProtocol();
 	// we create a custom packet handler which posts packet as a message
@@ -269,4 +276,9 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 	}, false);
 	// tell host we are ready
 	postMessage({'c': 'r'});
-} 
+}
+
+
+// initialise LZ4 library
+var Buffer = require('buffer').Buffer;
+var LZ4 = require('lz4');
