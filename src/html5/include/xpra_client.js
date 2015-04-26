@@ -479,7 +479,7 @@ XpraClient.prototype._make_hello = function() {
 		"sound.decoders"			: ["mp3"],
 		//compression bits:
 		"zlib"						: true,
-		"lz4"						: false,
+		"lz4"						: true,
 		"lzo"						: false,
 		"compression_level"	 		: 1,
 		"compressible_cursors"		: true,

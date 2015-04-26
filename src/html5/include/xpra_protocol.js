@@ -154,6 +154,17 @@ XpraProtocol.prototype._buffer_shift = function(bytes) {
 	return this.rQ.splice(0, 0+bytes);;
 }
 
+function intFromBytes( x ){
+    var val = 0;
+    for (var i = 0; i < x.length; ++i) {        
+        val += x[i];        
+        if (i < x.length-1) {
+            val = val << 8;
+        }
+    }
+    return val;
+}
+
 XpraProtocol.prototype._process = function() {
 	// peek at first 8 bytes of buffer
 	var buf = this._buffer_peek(8);
@@ -193,10 +204,13 @@ XpraProtocol.prototype._process = function() {
 	if (level!=0) {
 		if (level & 0x10) {
 			// lz4
-			// first four bytes have something in, maybe the length of uncompressed data?
-			packet_data.splice(0, 4);
+			// python-lz4 inserts the length of the uncompressed data as an int 
+			// at the start of the stream
+			var d = packet_data.splice(0, 4);
+			// will always be little endian
+			var length = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
 			// decode the LZ4 block
-			var inflated = new Buffer(10000000);
+			var inflated = new Buffer(length);
 			var uncompressedSize = LZ4.decodeBlock(packet_data, inflated);
 			inflated = inflated.slice(0, uncompressedSize);
 		} else if (level & 0x20) {
