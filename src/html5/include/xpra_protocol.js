@@ -154,17 +154,6 @@ XpraProtocol.prototype._buffer_shift = function(bytes) {
 	return this.rQ.splice(0, 0+bytes);;
 }
 
-function intFromBytes( x ){
-    var val = 0;
-    for (var i = 0; i < x.length; ++i) {        
-        val += x[i];        
-        if (i < x.length-1) {
-            val = val << 8;
-        }
-    }
-    return val;
-}
-
 XpraProtocol.prototype._process = function() {
 	// peek at first 8 bytes of buffer
 	var buf = this._buffer_peek(8);
