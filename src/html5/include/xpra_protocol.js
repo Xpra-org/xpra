@@ -159,7 +159,14 @@ XpraProtocol.prototype._process = function() {
 	var buf = this._buffer_peek(8);
 
 	if (buf[0]!=ord("P")) {
-		throw "invalid packet header format: " + buf[0];
+		msg = "invalid packet header format: " + buf[0];
+		if (buf.length>1) {
+			msg += ": ";
+			for (c in buf) {
+				msg += String.fromCharCode(c);
+			}
+		}
+		throw msg;
 	}
 
 	var proto_flags = buf[1];
