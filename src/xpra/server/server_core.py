@@ -370,7 +370,7 @@ class ServerCore(object):
         netlog("socket connection: %s", sc)
         frominfo = ""
         if peername:
-            frominfo = " from %s" % peername
+            frominfo = " from %s" % str(peername)
         netlog.info("New %s connection received%s", socktype, frominfo)
         protocol = Protocol(self, sc, self.process_packet)
         protocol.large_packets.append("info-response")
