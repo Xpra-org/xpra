@@ -1,0 +1,54 @@
+// based on aurora-websocket.js https://github.com/fsbdev/aurora-websocket
+// MIT licensed
+
+(function() {
+  var __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  AV.XpraSource = (function(_super) {
+    __extends(XpraSource, _super);
+
+    function XpraSource() {
+      // constructor
+    }
+
+    XpraSource.prototype.start = function() {
+      return this._send({
+        resume: true
+      });
+    };
+
+    XpraSource.prototype.pause = function() {
+      return this._send({
+        pause: true
+      });
+    };
+
+    XpraSource.prototype.reset = function() {
+      return this._send({
+        reset: true
+      });
+    };
+
+    XpraSource.prototype._on_data = function(data) {
+      buf = new AV.Buffer(new Uint8Array(data));
+      return _this.emit('data', buf);
+    };
+
+    return XpraSource;
+
+  })(AV.EventEmitter);
+
+  AV.Asset.fromXpraSource = function() {
+    var source;
+    source = new AV.XpraSource();
+    return new AV.Asset(source);
+  };
+
+  AV.Player.fromXpraSource = function() {
+    var asset;
+    asset = AV.Asset.fromXpraSource();
+    return new AV.Player(asset);
+  };
+
+}).call(this);
