@@ -211,8 +211,7 @@ class ProxyServer(ServerCore):
                 #now we can go back to using blocking sockets:
                 self.set_socket_timeout(client_conn, None)
                 client_conn.set_active(True)
-                #maybe this is safe to enable?
-                #self.set_socket_timeout(server_conn, None)
+                self.set_socket_timeout(server_conn, None)
 
                 assert uid!=0 and gid!=0
                 message_queue = MQueue()
