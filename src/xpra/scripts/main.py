@@ -1416,7 +1416,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
         from xpra.daemon_thread import make_daemon_thread
         make_daemon_thread(reaper, "server-startup-reaper").start()
     server_conn = connect_or_fail(pick_display(error_cb, opts, args))
-    app = XpraProxy(TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
+    app = XpraProxy("xpra-pipe-proxy", TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
     signal.signal(signal.SIGINT, app.quit)
     signal.signal(signal.SIGTERM, app.quit)
     app.run()
