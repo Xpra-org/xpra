@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -12,6 +12,7 @@ from xpra.log import Logger
 log = Logger("proxy")
 
 from xpra.net.bytestreams import untilConcludes
+from xpra.util import repr_ellipsized
 
 SHOW_DATA = os.environ.get("XPRA_PROXY_SHOW_DATA", "0")=="1"
 
@@ -25,7 +26,11 @@ class XpraProxy(object):
         the server socket.
     """
 
-    def __init__(self, client_conn, server_conn):
+    def __repr__(self):
+        return "XpraProxy(%s: %s - %s)" % (self._name, self._client_conn, self._server_conn)
+
+    def __init__(self, name, client_conn, server_conn):
+        self._name = name
         self._client_conn = client_conn
         self._server_conn = server_conn
         self._closed = False
@@ -33,38 +38,39 @@ class XpraProxy(object):
         self._to_server = threading.Thread(target=self._to_server_loop)
 
     def run(self):
-        log("XpraProxy.run()")
+        log("XpraProxy.run() %s", self._name)
         self._to_client.start()
         self._to_server.start()
         self._to_client.join()
         self._to_server.join()
-        log("XpraProxy.run() ended")
+        log("XpraProxy.run() %s: all the threads have ended, calling quit() to close the connections", self._name)
+        self.quit()
 
     def _to_client_loop(self):
-        self._copy_loop("<-server", self._server_conn, self._client_conn)
-        self._to_server._Thread__stop()
+        self._copy_loop("<-server %s" % self._name, self._server_conn, self._client_conn)
+        self._closed = True
 
     def _to_server_loop(self):
-        self._copy_loop("->server", self._client_conn, self._server_conn)
-        self._to_client._Thread__stop()
+        self._copy_loop("->server %s" % self._name, self._client_conn, self._server_conn)
+        self._closed = True
 
     def _copy_loop(self, log_name, from_conn, to_conn):
-        log("XpraProxy._copy_loop(%s, %s, %s)", log_name, from_conn, to_conn)
+        #log("XpraProxy._copy_loop(%s, %s, %s)", log_name, from_conn, to_conn)
         try:
             while not self._closed:
                 log("%s: waiting for data", log_name)
                 buf = untilConcludes(self.is_active, from_conn.read, 65536)
                 if not buf:
                     log("%s: connection lost", log_name)
-                    self.quit()
                     return
                 if SHOW_DATA:
-                    log("data=%s", buf)
-                    log("data=%s", binascii.hexlify(buf))
+                    log("%s: %s bytes: %s", log_name, len(buf), repr_ellipsized(buf))
+                    log("%s:           %s", log_name, repr_ellipsized(binascii.hexlify(buf)))
                 while buf and not self._closed:
                     log("%s: writing %s bytes", log_name, len(buf))
                     written = untilConcludes(self.is_active, to_conn.write, buf)
                     buf = buf[written:]
+                    log("%s: written %s bytes", log_name, written)
         except Exception as e:
             log("%s: %s", log_name, e)
             self.quit()
@@ -73,7 +79,7 @@ class XpraProxy(object):
         return not self._closed
 
     def quit(self, *args):
-        log("XpraProxy.quit(%s) closing connections", args)
+        log("XpraProxy.quit(%s) %s: closing connections", args,  self._name)
         self._closed = True
         try:
             self._client_conn.close()

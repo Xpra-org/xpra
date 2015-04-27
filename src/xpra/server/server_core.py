@@ -365,9 +365,10 @@ class ServerCore(object):
         sockname = sock.getsockname()
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
-        netlog("new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", args, sock, sockname, address, peername)
+        netlog("new_connection(%s) sock=%s, timeout=%s, sockname=%s, address=%s, peername=%s", args, sock, self._socket_timeout, sockname, address, peername)
         sc = SocketConnection(sock, sockname, address, target, socktype)
-        netlog.info("New connection received: %s", sc)
+        netlog("socket connection: %s", sc)
+        netlog.info("New %s connection received from %s", socktype, peername)
         protocol = Protocol(self, sc, self.process_packet)
         protocol.large_packets.append("info-response")
         protocol.authenticator = None
@@ -396,8 +397,9 @@ class ServerCore(object):
         proto.gibberish(err, data)
 
     def start_tcp_proxy(self, proto, data):
-        proxylog("start_tcp_proxy(%s, %s)", proto, data[:10])
+        proxylog("start_tcp_proxy(%s, '%s')", proto, repr_ellipsized(data))
         self._potential_protocols.remove(proto)
+        proxylog("start_tcp_proxy: protocol state before stealing: %s", proto.get_info(alias_info=False))
         client_connection = proto.steal_connection()
         #connect to web server:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -410,10 +412,12 @@ class ServerCore(object):
             proto.gibberish("invalid packet header", data)
             return
         proxylog("proxy connected to tcp server at %s:%s : %s", host, port, web_server_connection)
+        sock.settimeout(0.5)
+        self.set_socket_timeout(client_connection, 0.5)
         web_server_connection.write(data)
-        p = XpraProxy(client_connection, web_server_connection)
+        p = XpraProxy(client_connection.target, client_connection, web_server_connection)
         self._tcp_proxy_clients.append(p)
-        proxylog.info("client %s forwarded to proxy server %s:%s", client_connection, host, port)
+        proxylog.info("client connection from %s forwarded to proxy server on %s:%s", client_connection.target, host, port)
         p.run()
         proxylog("run_proxy() %s ended", p)
         if p in self._tcp_proxy_clients:
