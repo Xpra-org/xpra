@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("proxy")
 
 
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized
 from xpra.server.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.scripts.config import make_defaults_struct
@@ -185,7 +185,10 @@ class ProxyServer(ServerCore):
             return
         log("server connection=%s", server_conn)
 
-        client_conn = client_proto.steal_connection()
+        #no other packets should be arriving until the proxy instance responds to the initial hello packet
+        def unexpected_packet(*args):
+            log.warn("received an unexpected packet on the proxy connection: %s", [repr_ellipsized(x) for x in args])
+        client_conn = client_proto.steal_connection(unexpected_packet)
         client_state = client_proto.save_state()
         cipher = None
         encryption_key = None
@@ -200,16 +203,15 @@ class ProxyServer(ServerCore):
         def do_start_proxy():
             log("do_start_proxy()")
             try:
-                #stop IO in proxy:
-                #(it may take up to _socket_timeout until the thread exits)
-                client_conn.set_active(False)
-                ioe = client_proto.wait_for_io_threads_exit(0.1+self._socket_timeout)
+                ioe = client_proto.wait_for_io_threads_exit(0.5+self._socket_timeout)
                 if not ioe:
-                    log.error("IO threads have failed to terminate!")
+                    log.error("some network IO threads have failed to terminate!")
                     return
                 #now we can go back to using blocking sockets:
                 self.set_socket_timeout(client_conn, None)
                 client_conn.set_active(True)
+                #maybe this is safe to enable?
+                #self.set_socket_timeout(server_conn, None)
 
                 assert uid!=0 and gid!=0
                 message_queue = MQueue()

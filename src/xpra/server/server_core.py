@@ -29,7 +29,7 @@ from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.platform import set_application_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES, Queue
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import new_cipher_caps
@@ -403,7 +403,9 @@ class ServerCore(object):
         proxylog("start_tcp_proxy(%s, '%s')", proto, repr_ellipsized(data))
         self._potential_protocols.remove(proto)
         proxylog("start_tcp_proxy: protocol state before stealing: %s", proto.get_info(alias_info=False))
-        client_connection = proto.steal_connection()
+        #any buffers read after we steal the connection will be placed in this temporary queue:
+        temp_read_buffer = Queue()
+        client_connection = proto.steal_connection(temp_read_buffer.put)
         #connect to web server:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(10)
@@ -415,9 +417,26 @@ class ServerCore(object):
             proto.gibberish("invalid packet header", data)
             return
         proxylog("proxy connected to tcp server at %s:%s : %s", host, port, web_server_connection)
-        sock.settimeout(0.5)
-        self.set_socket_timeout(client_connection, 0.5)
+        sock.settimeout(self._socket_timeout)
+
+        ioe = proto.wait_for_io_threads_exit(0.5+self._socket_timeout)
+        if not ioe:
+            proxylog.warn("proxy failed to stop all existing network threads!")
+            self.disconnect_protocol(proto, "internal threading error")
+            return
+        #now that we own it, we can start it again:
+        client_connection.set_active(True)
+        #and we can use blocking sockets:
+        self.set_socket_timeout(client_connection, None)
+        sock.settimeout(None)
+
+        proxylog("pushing initial buffer to its new destination: %s", repr_ellipsized(data))
         web_server_connection.write(data)
+        while not temp_read_buffer.empty():
+            buf = temp_read_buffer.get()
+            if buf:
+                proxylog("pushing read buffer to its new destination: %s", repr_ellipsized(buf))
+                web_server_connection.write(buf)
         p = XpraProxy(client_connection.target, client_connection, web_server_connection)
         self._tcp_proxy_clients.append(p)
         proxylog.info("client connection from %s forwarded to proxy server on %s:%s", client_connection.target, host, port)

@@ -104,6 +104,7 @@ class Protocol(object):
             self._process_packet_cb = process_packet_cb
         self._write_queue = Queue(1)
         self._read_queue = Queue(20)
+        self._read_queue_put = self._read_queue.put
         # Invariant: if .source is None, then _source_has_more == False
         self._get_packet_cb = get_packet_cb
         #counters:
@@ -165,6 +166,7 @@ class Protocol(object):
         exited = True
         for t in (self._read_thread, self._write_thread):
             if t.isAlive():
+                log.warn("%s thread of %s has not yet exited (timeout=%s)", t.name, self._conn, timeout)
                 exited = False
                 break
         return exited
@@ -549,7 +551,8 @@ class Protocol(object):
     def _read(self):
         buf = self._conn.read(READ_BUFFER_SIZE)
         #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
-        self._read_queue.put(buf)
+        #add to the read queue (or whatever takes its place - see steal_connection)
+        self._read_queue_put(buf)
         if not buf:
             log("read thread: eof")
             self.close()
@@ -871,13 +874,23 @@ class Protocol(object):
         self.terminate_queue_threads()
         self.idle_add(self.clean)
 
-    def steal_connection(self):
+    def steal_connection(self, read_callback=None):
         #so we can re-use this connection somewhere else
         #(frees all protocol threads and resources)
+        #Note: this method can only be used with non-blocking sockets,
+        #and if more than one packet can arrive, the read_callback should be used
+        #to ensure that no packets get lost.
+        #The caller must call wait_for_io_threads_exit() to ensure that this
+        #class is no longer reading from the connection before it can re-use it
         assert not self._closed
+        if read_callback:
+            self._read_queue_put = read_callback
         conn = self._conn
         self._closed = True
         self._conn = None
+        if conn:
+            #this ensures that we exit the untilConcludes() read/write loop
+            conn.set_active(False)
         self.terminate_queue_threads()
         return conn
 
