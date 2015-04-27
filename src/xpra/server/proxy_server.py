@@ -186,8 +186,9 @@ class ProxyServer(ServerCore):
         log("server connection=%s", server_conn)
 
         #no other packets should be arriving until the proxy instance responds to the initial hello packet
-        def unexpected_packet(*args):
-            log.warn("received an unexpected packet on the proxy connection: %s", [repr_ellipsized(x) for x in args])
+        def unexpected_packet(packet):
+            if packet:
+                log.warn("received an unexpected packet on the proxy connection: %s", repr_ellipsized(packet))
         client_conn = client_proto.steal_connection(unexpected_packet)
         client_state = client_proto.save_state()
         cipher = None
