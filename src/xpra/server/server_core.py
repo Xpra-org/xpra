@@ -368,7 +368,10 @@ class ServerCore(object):
         netlog("new_connection(%s) sock=%s, timeout=%s, sockname=%s, address=%s, peername=%s", args, sock, self._socket_timeout, sockname, address, peername)
         sc = SocketConnection(sock, sockname, address, target, socktype)
         netlog("socket connection: %s", sc)
-        netlog.info("New %s connection received from %s", socktype, peername)
+        frominfo = ""
+        if peername:
+            frominfo = " from %s" % peername
+        netlog.info("New %s connection received%s", socktype, frominfo)
         protocol = Protocol(self, sc, self.process_packet)
         protocol.large_packets.append("info-response")
         protocol.authenticator = None
