@@ -232,7 +232,8 @@ class Protocol(object):
                 log.error("error collecting connection information on %s", self._conn, exc_info=True)
         info["has_more"] = self._source_has_more.is_set()
         for t in (self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread):
-            info["thread.%s" % t.name] = t.is_alive()
+            if t:
+                info["thread.%s" % t.name] = t.is_alive()
         return info
 
 
