@@ -157,7 +157,6 @@ def write_html():
     ofile.write('  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n')
     ofile.write('  <title>Xpra Performance Results</title>\n')
     ofile.write('  <link href="css/xpra.css" rel="stylesheet" type="text/css">\n')
-    ofile.write('  <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../../excanvas.min.js"></script><![endif]-->\n')
     ofile.write('  <script language="javascript" type="text/javascript" src="js/jquery.js"></script>\n')
     ofile.write('  <script language="javascript" type="text/javascript" src="js/jquery.flot.js"></script>\n')
     ofile.write('  <script language="javascript" type="text/javascript" src="js/jquery.flot.categories.js"></script>\n')
