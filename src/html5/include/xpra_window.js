@@ -695,6 +695,23 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 			var inflated = new Zlib.Inflate(img_data).decompress();
 			//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
 			img_data = inflated;
+		} else if (options!=null && options["lz4"]>0) {
+			// in future we need to make sure that we use typed arrays everywhere...
+			if(img_data.subarray) {
+				var d = img_data.subarray(0, 4);
+			} else {
+				var d = img_data.slice(0, 4);
+			}
+			// will always be little endian
+			var length = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+			// decode the LZ4 block
+			var inflated = new Buffer(length);
+			if(img_data.subarray) {
+				var uncompressedSize = LZ4.decodeBlock(img_data.subarray(4), inflated);
+			} else {
+				var uncompressedSize = LZ4.decodeBlock(img_data.slice(4), inflated);
+			}
+			img_data = inflated.slice(0, uncompressedSize);
 		}
 		// set the imagedata rgb32 method
 		img.data.set(img_data);

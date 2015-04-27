@@ -488,7 +488,7 @@ XpraClient.prototype._make_hello = function() {
 		"compressible_cursors"		: true,
 		"encoding.rgb24zlib"		: true,
 		"encoding.rgb_zlib"			: true,
-		"encoding.rgb_lz4"			: false,
+		"encoding.rgb_lz4"			: true,
 		"windows"					: true,
 		//partial support:
 		"keyboard"					: true,
