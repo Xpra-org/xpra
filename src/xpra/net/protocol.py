@@ -195,7 +195,7 @@ class Protocol(object):
         return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread] if x is not None]
 
 
-    def get_info(self):
+    def get_info(self, alias_info=True):
         info = {
             "input.packetcount"     : self.input_packetcount,
             "input.raw_packetcount" : self.input_raw_packetcount,
@@ -213,19 +213,26 @@ class Protocol(object):
             info["compressor"] = compression.get_compressor_name(self._compress)
         e = self._encoder
         if e:
-            info["encoder"] = packet_encoding.get_encoder_name(self._encoder)
-        for k,v in self.send_aliases.items():
-            info["send_alias." + str(k)] = v
-            info["send_alias." + str(v)] = k
-        for k,v in self.receive_aliases.items():
-            info["receive_alias." + str(k)] = v
-            info["receive_alias." + str(v)] = k
+            if self._encoder==self.noencode:
+                info["encoder"] = "noencode"
+            else:
+                info["encoder"] = packet_encoding.get_encoder_name(self._encoder)
+        if alias_info:
+            for k,v in self.send_aliases.items():
+                info["send_alias." + str(k)] = v
+                info["send_alias." + str(v)] = k
+            for k,v in self.receive_aliases.items():
+                info["receive_alias." + str(k)] = v
+                info["receive_alias." + str(v)] = k
         c = self._conn
         if c:
             try:
                 info.update(self._conn.get_info())
             except:
                 log.error("error collecting connection information on %s", self._conn, exc_info=True)
+        info["has_more"] = self._source_has_more.is_set()
+        for t in (self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread):
+            info["thread.%s" % t.name] = t.is_alive()
         return info
 
 
