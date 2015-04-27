@@ -207,7 +207,11 @@ def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
     else:
         #parse octal mode given as config option:
         try:
-            sperms = int(socket_permissions, 8)
+            if type(socket_permissions)==int:
+                sperms = socket_permissions
+            else:
+                #assume octal string:
+                sperms = int(socket_permissions, 8)
             assert sperms>=0 and sperms<=0o777
         except ValueError:
             raise ValueError("invalid socket permissions (must be an octal number): '%s'" % socket_permissions)

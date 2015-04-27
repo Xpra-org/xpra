@@ -219,7 +219,7 @@ class ProxyInstanceProcess(Process):
             if x not in order:
                 order.append(x)
         self.video_encoder_types = [x for x in order if x in encoder_types]
-        log.info("proxy video encoders: %s", self.video_encoder_types)
+        log.info("proxy video encoders: %s", ", ".join(self.video_encoder_types))
 
 
     def create_control_socket(self):
@@ -231,10 +231,10 @@ class ProxyInstanceProcess(Process):
             log.warn("You already have a proxy server running at %s, the control socket will not be created!", sockpath)
             return False
         try:
-            sock = create_unix_domain_socket(sockpath, None)
+            sock = create_unix_domain_socket(sockpath, None, 0o600)
             sock.listen(5)
-        except Exception as e:
-            log.warn("failed to setup control socket %s: %s", sockpath, e)
+        except:
+            log.warn("failed to setup control socket %s", sockpath, exc_info=True)
             return False
         self.control_socket = sock
         self.control_socket_path = sockpath
