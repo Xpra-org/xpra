@@ -474,6 +474,23 @@ class ProxyInstanceProcess(Process):
         log("sending to server: %s", p[0])
         return p, None, None, self.server_packets.qsize()>0
 
+
+    def _packet_recompress(self, packet, index, name):
+        if len(packet)>index:
+            data = packet[index]
+            if len(data)<512:
+                packet[8] = str(data)
+                return
+            #FIXME: this is ugly and not generic!
+            zlib = compression.use_zlib and self.caps.get("zlib", True)
+            lz4 = compression.use_lz4 and self.caps.get("lz4", False)
+            lzo = compression.use_lzo and self.caps.get("lzo", False)
+            if zlib or lz4 or lzo:
+                packet[index] = compressed_wrapper(name, data, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
+            else:
+                #prevent warnings about large uncompressed data
+                packet[index] = Compressed("raw %s" % name, data, can_inline=True)
+
     def process_server_packet(self, proto, packet):
         packet_type = packet[0]
         log("process_server_packet: %s", packet_type)
@@ -515,20 +532,9 @@ class ProxyInstanceProcess(Process):
             #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
             #or:
             #packet = ["cursor", ""]
-            if len(packet)>=9:
-                pixels = packet[8]
-                if len(pixels)<512:
-                    packet[8] = str(pixels)
-                else:
-                    #FIXME: this is ugly and not generic!
-                    zlib = compression.use_zlib and self.caps.get("zlib", True)
-                    lz4 = compression.use_lz4 and self.caps.get("lz4", False)
-                    lzo = compression.use_lzo and self.caps.get("lzo", False)
-                    if zlib or lz4 or lzo:
-                        packet[8] = compressed_wrapper("cursor", pixels, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
-                    else:
-                        #prevent warnings about large uncompressed data
-                        packet[8] = Compressed("raw cursor", pixels, can_inline=True)
+            self._packet_recompress(packet, 8, "cursor")
+        elif packet_type=="window-icon":
+            self._packet_recompress(packet, 5, "icon")
         self.queue_client_packet(packet)
 
 
