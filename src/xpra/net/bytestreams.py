@@ -125,6 +125,8 @@ class Connection(object):
         return {
                 "type"              : self.info or "",
                 "endpoint"          : self.target or "",
+                "info"              : self.info or "",
+                "active"            : self.active,
                 "input.bytecount"   : self.input_bytecount,
                 "output.bytecount"  : self.output_bytecount,
                 }
@@ -183,6 +185,16 @@ class TwoFileConnection(Connection):
     def __repr__(self):
         return "TwoFileConnection(%s)" % str(self.target)
 
+    def get_info(self):
+        d = Connection.get_info(self)
+        try:
+            d["type"] = "pipe"
+            d["pipe.read.fd"] = self._read_fd
+            d["pipe.write.fd"] = self._write_fd
+        except:
+            pass
+        return d
+
 
 class SocketConnection(Connection):
     def __init__(self, socket, local, remote, target, info):
@@ -207,3 +219,20 @@ class SocketConnection(Connection):
         if self.remote:
             return "SocketConnection(%s - %s)" % (self.local, self.remote)
         return "SocketConnection(%s)" % self.local
+
+    def get_info(self):
+        d = Connection.get_info(self)
+        try:
+            d["type"] = "socket"
+            s = self._socket
+            if s:
+                from xpra.util import updict
+                updict(d, "socket", {
+                        "fileno"        : s.fileno(),
+                        "timeout"       : int(1000*(s.gettimeout() or 0)),
+                        "family"        : s.family,
+                        "proto"         : s.proto,
+                        "type"          : s.type})
+        except:
+            log.warn("failed to get socket information", exc_info=True)
+        return d
