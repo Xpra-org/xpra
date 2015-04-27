@@ -13,21 +13,15 @@
     }
 
     XpraSource.prototype.start = function() {
-      return this._send({
-        resume: true
-      });
+      return true;
     };
 
     XpraSource.prototype.pause = function() {
-      return this._send({
-        pause: true
-      });
+      return true;
     };
 
     XpraSource.prototype.reset = function() {
-      return this._send({
-        reset: true
-      });
+      return true;
     };
 
     XpraSource.prototype._on_data = function(data) {
