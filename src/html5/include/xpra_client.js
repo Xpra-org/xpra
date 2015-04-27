@@ -109,7 +109,10 @@ function XpraClient(container) {
 }
 
 XpraClient.prototype.callback_close = function(reason) {
-	console.error(reason);
+	if (reason === undefined) {
+		reason = "unknown reason";
+	}
+	console.log("connection closed: "+reason);
 }
 
 XpraClient.prototype.connect = function(host, port, ssl) {
@@ -140,7 +143,7 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 				console.log("client got unknown message from worker");
 			};
 		}, false);
-		// ask the worker to check for websocket support, when we recieve a reply
+		// ask the worker to check for websocket support, when we receive a reply
 		// through the eventlistener above, _do_connect() will finish the job
 		worker.postMessage({'cmd': 'check'});
 	} else {
@@ -168,7 +171,7 @@ XpraClient.prototype._do_connect = function(with_worker) {
 	// wait timeout seconds for a hello, then bomb
 	var me = this;
 	this.hello_timer = setTimeout(function () {
-		me.callback_close("Did not recieve hello before timeout reached, not an Xpra server?");
+		me.callback_close("Did not receive hello before timeout reached, not an Xpra server?");
 	}, this.HELLO_TIMEOUT);
 }
 
