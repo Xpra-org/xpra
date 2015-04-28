@@ -74,7 +74,7 @@ rm -rf %{buildroot}
 * Sun Jan 18 2015 Antoine Martin <antoine@devloop.org.uk> 20141218
 - new upstream release
 
-* Mon Dec 09 2014 Antoine Martin <antoine@devloop.org.uk> 20141208
+* Tue Dec 09 2014 Antoine Martin <antoine@devloop.org.uk> 20141208
 - new upstream release
 
 * Tue Oct 07 2014 Antoine Martin <antoine@devloop.org.uk> 20141006
