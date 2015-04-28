@@ -5,14 +5,27 @@
  <metadata_license>CC0-1.0</metadata_license>
  <project_license>GPL-2.0+</project_license>
  <name>Xpra</name>
- <summary>Screen for X11</summary>
+ <summary>A persistent remote display server and client for X11</summary>
  <description>
   <p>
-   Xpra gives you "persistent remote applications" for X11.
+   Xpra is a persistent remote display server and client for X11
+   applications and desktops.
   </p>
   <p>
-   Xpra allows you to forward applications or full desktops to remote clients,
-   including sound, clipboard, printing, etc
+    Xpra is "screen for X": it allows you to run X programs, usually
+    on a remote host, direct their display to your local machine, and
+    then to disconnect from these programs and reconnect from the same
+    or another machine, without losing any state. It gives you remote
+    access to individual applications. Xpra also allows forwarding of
+    sound, clipboard and printing services.
+  </p>
+  <p>
+    Xpra is "rootless" or "seamless": programs you run under it show
+    up on your desktop as regular programs, managed by your regular
+    window manager.  Sessions can be accessed over SSH, or password
+    protected over plain TCP sockets.  Xpra is usable over reasonably
+    slow links and does its best to adapt to changing network
+    bandwidth constraints.
   </p>
  </description>
  <screenshots>
