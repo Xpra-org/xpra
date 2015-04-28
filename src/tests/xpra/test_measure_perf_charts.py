@@ -16,30 +16,37 @@ from collections import defaultdict
 # Data file naming convention: prefix_id_rep.csv
 #
 # This script takes no arguments. When it's run, it will
-# produce and HTML file called "test_perf_charts.html".
+# produce an HTML file called "test_perf_charts.html".
 #
 # Open that file in your browser to see the charts.
 #----------------------------------------------------------------
-#
+
+#----------------------------------------------------------------
+# The following variables will all need to be edited to match
+# the tests that you are charting
+#----------------------------------------------------------------
+
+# Location of the data files
 data_dir = "./logs"
 
 # Data file prefix
 prefix = "all_tests_40"
 
 # id is the actual id string used in the data file name
-# display is how that parameter should be shown in the charts
+# display is how that parameter should be displayed in the charts
 params = [{"id": "16", "display": "v14.16"},
           {"id": "14", "display": "v14.19"}]
 
+# The description will be shown on the output page
 description = 'Comparison of v14.16 and v14.19'
 
-# The file name 'rep' value is the sequence number of that 
+# Each file name's 'rep' value is the sequence number of that 
 # data file, when results of multiple files should be averaged
 reps = 9     # Number of data files in this set
 
 #----------------------------------------------------------------
-# Set any of the values in the following lists to 1 to include 
-# when generating the charts
+# Set any of the values in the following lists to 1 in order to
+# include that test app, or metric column in the chart page.
 # 
 apps = {"glxgears": 1, 
         "glxspheres": 1, 
