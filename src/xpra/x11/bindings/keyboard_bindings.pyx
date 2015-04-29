@@ -10,6 +10,8 @@ import time
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
+from xpra.util import bytestostr
+
 
 ###################################
 # Headers, python magic
@@ -436,7 +438,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                 if keysym!=NoSymbol:
                     keyname = XKeysymToString(keysym)
                     if keyname!=NULL:
-                        key = str(keyname)
+                        key = bytestostr(keyname)
                 keynames.append(key)
             #now remove trailing empty entries:
             while len(keynames)>0 and keynames[-1]=="":
