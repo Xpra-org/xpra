@@ -99,7 +99,7 @@ class ChildReaper(object):
         procinfo.process = process
         procinfo.returncode = process.poll()
         procinfo.dead = False
-        log("add_process(%s, %s, %s, %s) pid=%s", process, name, command, ignore, pid)
+        log("add_process(%s, %s, %s, %s, %s) pid=%s", process, name, command, ignore, forget, pid)
         #could have died already:
         self._proc_info.append(procinfo)
         if procinfo.returncode is not None:
@@ -117,6 +117,7 @@ class ChildReaper(object):
     def check(self):
         #see if we are meant to exit-with-children
         #see if we still have procinfos alive (and not meant to be ignored)
+        self.poll()
         alive = [procinfo for procinfo in list(self._proc_info) if (not procinfo.ignore and not procinfo.dead)]
         log("check() alive=%s", alive)
         if len(alive)==0:
@@ -165,7 +166,7 @@ class ChildReaper(object):
             try:
                 self._proc_info.remove(procinfo)
             except:
-                pass
+                log("failed to remove %s from proc info list", procinfo, exc_info=True)
         log("updated procinfo=%s", procinfo)
         if procinfo.dead:
             self.check()
