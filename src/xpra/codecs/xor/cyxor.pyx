@@ -15,14 +15,14 @@ cdef extern from "../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 
-def xor_str(buf, xor_string):
-    assert len(buf)==len(xor_string), "cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(buf), len(buf), type(xor_string), len(xor_string))
+def xor_str(buf, xor):
+    assert len(buf)==len(xor), "cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(buf), len(buf), type(xor), len(xor))
     cdef const unsigned char * cbuf                 #@DuplicatedSignature
     cdef Py_ssize_t cbuf_len = 0                    #@DuplicatedSignature
     assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(buf), buf)
     cdef const unsigned char * xbuf                 #@DuplicatedSignature
     cdef Py_ssize_t xbuf_len = 0                    #@DuplicatedSignature
-    assert object_as_buffer(xor_string, <const void**> &xbuf, &xbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(xor_string), xor_string)
+    assert object_as_buffer(xor, <const void**> &xbuf, &xbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(xor), xor)
     assert cbuf_len == xbuf_len, "python or cython bug? buffers don't have the same length?"
     out_bytes = bytearray(cbuf_len)
     cdef unsigned char * obuf                 #@DuplicatedSignature
