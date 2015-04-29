@@ -92,7 +92,7 @@ def pkg_config_ok(*args, **kwargs):
 def check_pyopencl_AMD():
     try:
         import pyopencl
-        opencl_platforms = pyopencl.get_platforms()
+        opencl_platforms = pyopencl.get_platforms()         #@UndefinedVariable
         for platform in opencl_platforms:
             if platform.name.startswith("AMD"):
                 print("WARNING: AMD OpenCL icd found, refusing to build OpenCL by default!")
