@@ -40,7 +40,7 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
                 name = gdk.keyval_name(keyval)
                 name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
                 if name not in ignore_keys:
-                    keycodes.append((keyval or "", name or "", keycode or 0, key.group or 0, key.level or 0))
+                    keycodes.append((keyval or 0, name or "", keycode or 0, key.group or 0, key.level or 0))
         else:
             #gtk2:
             for keyval, keycode, group, level in entries:
