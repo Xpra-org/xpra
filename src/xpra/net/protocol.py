@@ -456,14 +456,14 @@ class Protocol(object):
                     packet[i] = item.data
                     min_comp_size += l
                     size_check += l
-            elif ti==str and level>0 and l>LARGE_PACKET_SIZE:
+            elif ti in (str, bytes) and level>0 and l>LARGE_PACKET_SIZE:
                 log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
                 cl, cdata = self._compress(item, level)
                 packets.append((i, cl, cdata))
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
-            elif ti!=str:
+            elif ti not in (str, bytes):
                 log.warn("unexpected data type %s in %s packet: %s", ti, packet[0], repr_ellipsized(item))
         #now the main packet (or what is left of it):
         packet_type = packet[0]
