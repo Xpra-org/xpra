@@ -48,12 +48,13 @@ def gtk_main_quit_really():
 # propagate it from Python code. Sigh.) But sys.excepthook will still get
 # called with such exceptions.
 _hooked = False
+_oldhook = None
 def gtk_main_quit_on_fatal_exceptions_enable():
-    global _hooked
+    global _hooked, _oldhook
     if _hooked:
         return
     _hooked = True
-    oldhook = sys.excepthook
+    _oldhook = sys.excepthook
     def gtk_main_quit_on_fatal_exception(etype, val, tb):
         if issubclass(etype, (KeyboardInterrupt, SystemExit)):
             print("Shutting down main-loop")
@@ -67,5 +68,12 @@ def gtk_main_quit_on_fatal_exceptions_enable():
             print(traceback.print_exception(etype, val, tb))
             print("Maximum recursion depth exceeded")
         else:
-            return oldhook(etype, val, tb)
+            return _oldhook(etype, val, tb)
     sys.excepthook = gtk_main_quit_on_fatal_exception
+
+def gtk_main_quit_on_fatal_exceptions_disable():    
+    global __oldhook
+    oh = _oldhook
+    if oh:
+        _oldhook = None
+        sys.excepthook = oh

@@ -15,7 +15,8 @@ log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
-                           gtk_main_quit_on_fatal_exceptions_enable)
+                           gtk_main_quit_on_fatal_exceptions_enable,
+                           gtk_main_quit_on_fatal_exceptions_disable)
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main
 from xpra.util import updict
@@ -40,8 +41,13 @@ class GTKServerBase(ServerBase):
         ### Set up keymap change notification:
         gtk.gdk.keymap_get_default().connect("keys-changed", self._keys_changed)
 
+    def signal_quit(self, signum, frame):
+        gtk_main_quit_on_fatal_exceptions_disable()
+        ServerBase.signal_quit(self, signum, frame)
+
     def do_quit(self):
         log("do_quit: calling gtk_main_quit_really")
+        gtk_main_quit_on_fatal_exceptions_disable()
         gtk_main_quit_really()
         log("do_quit: gtk_main_quit_really done")
 
