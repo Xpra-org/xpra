@@ -259,17 +259,17 @@ class ServerCore(object):
 
 
     def reaper_quit(self):
-        self.clean_quit(False)
+        self.clean_quit()
 
     def signal_quit(self, signum, frame):
         log.info("")
         log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
-        self.clean_quit(True)
+        self.idle_add(self.clean_quit)
 
-    def clean_quit(self, from_signal=False, upgrading=False):
-        log("clean_quit(%s, %s)", from_signal, upgrading)
+    def clean_quit(self, upgrading=False):
+        log("clean_quit(%s)", upgrading)
         #ensure the reaper doesn't call us again:
         if self.child_reaper:
             def noop():
@@ -281,10 +281,9 @@ class ServerCore(object):
             log.debug("quit_timer()")
             self.quit(upgrading)
         #if from a signal, just force quit:
-        stop_worker(from_signal)
-        if not from_signal:
-            #not from signal: use force stop worker after delay
-            self.timeout_add(250, stop_worker, True)
+        stop_worker()
+        #not from signal: use force stop worker after delay
+        self.timeout_add(250, stop_worker, True)
         self.timeout_add(500, quit_timer)
         def force_quit(*args):
             log.debug("force_quit()")

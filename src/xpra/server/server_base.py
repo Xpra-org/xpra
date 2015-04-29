@@ -564,7 +564,7 @@ class ServerBase(ServerCore):
     def reaper_exit(self):
         if self.exit_with_children:
             log.info("all children have exited and --exit-with-children was specified, exiting")
-            self.idle_add(self.clean_quit, False)
+            self.idle_add(self.clean_quit)
 
 
     def cleanup(self, *args):
@@ -589,7 +589,7 @@ class ServerBase(ServerCore):
     def _process_exit_server(self, proto, packet):
         log.info("Exiting response to request")
         self._disconnect_all(SERVER_EXIT)
-        self.timeout_add(1000, self.clean_quit, False, ServerCore.EXITING_CODE)
+        self.timeout_add(1000, self.clean_quit, ServerCore.EXITING_CODE)
 
     def _process_shutdown_server(self, proto, packet):
         log.info("Shutting down in response to request")
