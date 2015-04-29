@@ -19,7 +19,7 @@ class StatusIcon:
         cr.set_operator(cairo.OPERATOR_CLEAR)
         cr.fill()
         cr.set_operator(cairo.OPERATOR_SOURCE)
-        for i, color in enumerate([(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)]): 
+        for i, color in enumerate([(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)]):
             cr.set_source_rgba(*color)
             cr.new_path()
             x = (i % 2) * s

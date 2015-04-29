@@ -371,7 +371,7 @@ cdef class Encoder:
         param.i_keyint_min = 999999
         param.b_intra_refresh = 0   #no intra refresh
         param.b_open_gop = 1        #allow open gop
-        #param.p_log_private = 
+        #param.p_log_private =
         x264_param_apply_profile(&param, self.profile)
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL

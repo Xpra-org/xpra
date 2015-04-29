@@ -68,7 +68,7 @@ cdef extern from "vpx/vpx_codec.h":
     const char *vpx_codec_build_config()
     #this should be a vararg function, but we only use it with a single int argument,
     #so define it that way (easier on cython):
-    vpx_codec_err_t vpx_codec_control_(vpx_codec_ctx_t *ctx, int ctrl_id, int value)    
+    vpx_codec_err_t vpx_codec_control_(vpx_codec_ctx_t *ctx, int ctrl_id, int value)
 
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
@@ -402,7 +402,7 @@ cdef class Encoder:
 
     def codec_control(self, info, int attr, int value):
         cdef vpx_codec_err_t ctrl = vpx_codec_control_(self.context, attr, value)
-        log("%s setting %s to %s", self.encoding, info, value)    
+        log("%s setting %s to %s", self.encoding, info, value)
         if ctrl!=0:
             log.warn("failed to set %s to %s: %s (%s)", info, value, get_error_string(ctrl), ctrl)
 
@@ -526,7 +526,7 @@ cdef class Encoder:
             image.y_chroma_shift = 0
         else:
             raise Exception("invalid colorspace: %s" % self.src_format)
-            
+
         image.bps = 0
         if self.frames==0:
             flags |= VPX_EFLAG_FORCE_KF

@@ -213,7 +213,7 @@ class ApplicationWindow:
             set_history_from_active(self.quality_combo)
             hbox.pack_start(self.quality_combo)
             vbox.pack_start(hbox)
-    
+
             # Speed
             hbox = gtk.HBox(False, 20)
             hbox.set_spacing(20)

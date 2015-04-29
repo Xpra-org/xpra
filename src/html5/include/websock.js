@@ -4,9 +4,9 @@
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Licensed under MPL 2.0 (see LICENSE.txt)
  *
- * * This version is modified to 
+ * * This version is modified to
  * * - remove references to window object for worker use
- * * - removes dependency on noVNC's Util helper 
+ * * - removes dependency on noVNC's Util helper
  * * - rQpeekBytes() to peek an arbitrary number of bytes
  *
  * Websock is similar to the standard WebSocket object but Websock

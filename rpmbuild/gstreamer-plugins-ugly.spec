@@ -47,7 +47,7 @@ gstreamer-plugins-good because:
     --disable-amrnb \
     --disable-amrwb \
 	--disable-x264 \
-    --enable-debug 
+    --enable-debug
 %{__make} %{?_smp_mflags}
 
 %install

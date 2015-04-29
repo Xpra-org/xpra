@@ -12,7 +12,7 @@ Source0:        http://pypi.python.org/packages/source/p/pytools/pytools-%{versi
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
-BuildRequires:  python-devel python-setuptools 
+BuildRequires:  python-devel python-setuptools
 
 %description
 A collection of tools for Python
@@ -38,7 +38,7 @@ If you're curious nonetheless, here's what's on offer:
 %install
 rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
- 
+
 
 %clean
 rm -rf $RPM_BUILD_ROOT

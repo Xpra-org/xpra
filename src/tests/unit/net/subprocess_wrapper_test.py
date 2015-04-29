@@ -86,7 +86,7 @@ class SubprocessWrapperTest(unittest.TestCase):
             mainloop.quit()
         lp.connect("end", end)
         self.timeout = False
-        def timeout_error():    
+        def timeout_error():
             self.timeout = True
             mainloop.quit()
         gobject.timeout_add(500, timeout_error)
@@ -114,7 +114,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         callee.test_signal = test_signal_function
         #lc.connect_export("test-signal", hello)
         self.timeout = False
-        def timeout_error():    
+        def timeout_error():
             self.timeout = True
             lc.stop()
         gobject.timeout_add(500, timeout_error)

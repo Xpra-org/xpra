@@ -14,9 +14,9 @@
     }
 }(this, function () {
   "use strict";
-  
+
   var global;
-  
+
   function initglobal(){
     global = this;
     if (!global){
@@ -28,24 +28,24 @@
     };
   };
   initglobal();
-  
-  
+
+
 
   function error(message) {
     console.error(message);
     console.trace();
   };
 
-  
+
   function assert(condition, message) {
     if (!condition) {
       error(message);
     };
   };
 
-  
+
   var getModule = function(_broadwayOnHeadersDecoded, _broadwayOnPictureDecoded){
-    
+
     var windowBak;
     if (typeof window != 'undefined'){
       windowBak = window;
@@ -54,15 +54,15 @@
       _broadwayOnHeadersDecoded: _broadwayOnHeadersDecoded,
       _broadwayOnPictureDecoded: _broadwayOnPictureDecoded
     };
-    
+
     /*
-    
+
       The reason why this is all packed into one file is that this file can also function as worker.
       you can integrate the file into your build system and provide the original file to be loaded into a worker.
-    
+
     */
-    
-    
+
+
 function d(a){throw a;}var g=void 0,i=!0,k=null,m=!1;function n(){return function(){}}var p;p||(p=eval("(function() { try { return Module || {} } catch(e) { return {} } })()"));var aa={},r;for(r in p)p.hasOwnProperty(r)&&(aa[r]=p[r]);var t="object"===typeof process&&"function"===typeof require,ba="object"===typeof window,ca="function"===typeof importScripts,da=!ba&&!t&&!ca;
 if(t){p.print||(p.print=function(a){process.stdout.write(a+"\n")});p.printErr||(p.printErr=function(a){process.stderr.write(a+"\n")});var fa=require("fs"),ga=require("path");p.read=function(a,b){var a=ga.normalize(a),c=fa.readFileSync(a);!c&&a!=ga.resolve(a)&&(a=path.join(__dirname,"..","src",a),c=fa.readFileSync(a));c&&!b&&(c=c.toString());return c};p.readBinary=function(a){return p.read(a,i)};p.load=function(a){ha(read(a))};p.thisProgram=1<process.argv.length?process.argv[1].replace(/\\/g,"/"):
 "unknown-program";p.arguments=process.argv.slice(2);"undefined"!==typeof module&&(module.exports=p);process.on("uncaughtException",function(a){a instanceof ia||d(a)})}else da?(p.print||(p.print=print),"undefined"!=typeof printErr&&(p.printErr=printErr),p.read="undefined"!=typeof read?read:function(){d("no read() available (jsc?)")},p.readBinary=function(a){if("function"===typeof readbuffer)return new Uint8Array(readbuffer(a));a=read(a,"binary");w("object"===typeof a);return a},"undefined"!=typeof scriptArgs?
@@ -253,21 +253,21 @@ Na(Oa);!(0<S)&&!p.calledRun&&(p.setStatus?(p.setStatus("Running..."),setTimeout(
 function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort() is unexpected, build with -s ASSERTIONS=1 which can give more information.")}p.abort=p.abort=A;if(p.preInit)for("function"==typeof p.preInit&&(p.preInit=[p.preInit]);0<p.preInit.length;)p.preInit.pop()();var lc=m;p.noInitialRun&&(lc=m);mc();
 
 
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     var resultModule = window.Module || this.Module;
     return resultModule;
   };
-  
+
   var Broadway = function(parOptions){
     this.options = parOptions || {};
-    
+
     var asmInstance;
-    
+
     var Module = getModule(function () {
 
     }, function ($buffer, width, height) {
@@ -275,7 +275,7 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
       if (!buffer) {
         buffer = this.pictureBuffers[$buffer] = toU8Array($buffer, (width * height * 3) / 2);
       };
-      
+
       if (this.options.rgb){
         if (!asmInstance){
           asmInstance = getAsm(width, height);
@@ -287,9 +287,9 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
         copyU8.set( asmInstance.out );
         this.onPictureDecoded(copyU8, width, height);
         return;
-        
+
       };
-      
+
       this.onPictureDecoded(buffer, width, height);
     }.bind(this));
 
@@ -299,25 +299,25 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
     var HEAP32 = Module.HEAP32;
     var _h264bsdClip = Module._get_h264bsdClip();
 
-    
+
     var MAX_STREAM_BUFFER_LENGTH = 1024 * 1024;
-  
+
     // from old constructor
     Module._broadwayInit();
-    
+
     /**
-   * Creates a typed array from a HEAP8 pointer. 
+   * Creates a typed array from a HEAP8 pointer.
    */
     function toU8Array(ptr, length) {
       return HEAPU8.subarray(ptr, ptr + length);
     };
     this.streamBuffer = toU8Array(Module._broadwayCreateStream(MAX_STREAM_BUFFER_LENGTH), MAX_STREAM_BUFFER_LENGTH);
     this.pictureBuffers = {};
-    
+
     this.onPictureDecoded = function (buffer, width, height) {
-      
+
     };
-    
+
     /**
      * Decodes a stream buffer. This may be one single (unframed) NAL unit without the
      * start code, or a sequence of NAL units with framing start code prefixes. This
@@ -331,8 +331,8 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
     };
 
 
-    
-    function patchOptimizations(config, patches) { 
+
+    function patchOptimizations(config, patches) {
       var scope = getGlobalScope();
       for (var name in patches) {
         var patch = patches[name];
@@ -349,7 +349,7 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
         }
       }
     };
-    
+
     var patches = {
       "filter": {
         name: "_h264bsdFilterPicture",
@@ -394,7 +394,7 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
     function getGlobalScope() {
       return function () { return this; }.call(null);
     };
-    
+
     /* Optimizations */
 
     function clip(x, y, z) {
@@ -549,29 +549,29 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
     }
   };
 
-  
+
   Broadway.prototype = {
     configure: function (config) {
       // patchOptimizations(config, patches);
       console.info("Broadway Configured: " + JSON.stringify(config));
     }
-    
+
   };
-  
-  
-  
-  
+
+
+
+
   /*
-  
+
     asm.js implementation of a yuv to rgb convertor
     provided by @soliton4
-    
-    based on 
+
+    based on
     http://www.wordsaretoys.com/2013/10/18/making-yuv-conversion-a-little-faster/
-  
+
   */
-  
-  
+
+
   // factory to create asm.js yuv -> rgb convertor for a given resolution
   var asmInstances = {};
   var getAsm = function(parWidth, parHeight){
@@ -821,21 +821,21 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
     };
   };
 
-  
+
   /*
     potential worker initialization
-  
+
   */
-  
-  
+
+
   if (typeof self != "undefined"){
     var isWorker = false;
     var decoder;
     self.addEventListener('message', function(e) {
-      
+
       if (isWorker){
         decoder.decode(new Uint8Array(e.data));
-        
+
       }else{
         if (e.data && e.data.type === "Broadway.js - Worker init"){
           isWorker = true;
@@ -851,7 +851,7 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
             // buffer needs to be copied because we give up ownership
             var copyU8 = new Uint8Array(buffer.length);
             copyU8.set( buffer, 0, buffer.length );
-            
+
             // only post the buffer (slightly faster)
             // add 2nd parameter to indicate transfer of owner ship (this it was makes this worker implementation faster)
             postMessage(copyU8.buffer, [copyU8.buffer]);
@@ -864,9 +864,9 @@ function A(a){a&&(p.print(a),p.fa(a));H=i;d("abort() at "+Fa()+"\nIf this abort(
 
     }, false);
   };
-  
-  
+
+
   return Broadway;
-  
+
 }));
 

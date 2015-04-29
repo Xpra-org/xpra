@@ -170,7 +170,7 @@ class subprocess_callee(object):
         """ This is for OS signals SIGINT and SIGTERM """
         #next time, just stop:
         signal.signal(signal.SIGINT, self.signal_stop)
-        signal.signal(signal.SIGTERM, self.signal_stop)        
+        signal.signal(signal.SIGTERM, self.signal_stop)
         signame = SIGNAMES.get(sig, sig)
         log("handle_signal(%s, %s) calling stop from main thread", signame, frame)
         self.send("signal", signame)

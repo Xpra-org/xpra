@@ -18,7 +18,7 @@ $(function() {
 	opacity: 0.80,
 	"font-size": "0.75em"
     }).appendTo("body");
-    
+
     $(".placeholder").bind("plothover", function (event, pos, item) {
 	if (item) {
 	    var x = item.datapoint[0].toFixed(2),

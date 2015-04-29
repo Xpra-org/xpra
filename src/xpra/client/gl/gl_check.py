@@ -261,7 +261,7 @@ def do_check_GL_support(min_texture_size, force_enable):
                 gl_check_error("%s '%s' is blacklisted!" % (blacklisted))
         safe = bool(whitelisted) or not (bool(greylisted) or bool(blacklisted))
         if safe and sys.version_info[0]>2:
-            log.warn("Warning: OpenGL python3 support is not enabled by default") 
+            log.warn("Warning: OpenGL python3 support is not enabled by default")
             safe = False
         props["safe"] = safe
 

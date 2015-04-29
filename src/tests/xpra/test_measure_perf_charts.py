@@ -1,13 +1,7 @@
 #!/usr/bin/env python
 
-import re
-import sys
-import os.path
-import time
 import csv
-import codecs
 import collections
-from collections import defaultdict
 
 #----------------------------------------------------------------
 # The files this generator acts upon are the CSV files output
@@ -40,26 +34,26 @@ params = [{"id": "16", "display": "v14.16"},
 # The description will be shown on the output page
 description = 'Comparison of v14.16 and v14.19'
 
-# Each file name's 'rep' value is the sequence number of that 
+# Each file name's 'rep' value is the sequence number of that
 # data file, when results of multiple files should be averaged
 reps = 9     # Number of data files in this set
 
 #----------------------------------------------------------------
 # Set any of the values in the following lists to 1 in order to
 # include that test app, or metric column in the chart page.
-# 
-apps = {"glxgears": 1, 
-        "glxspheres": 1, 
-        "moebiusgears": 1, 
-        "polytopes": 1, 
-        "x11perf": 0, 
+#
+apps = {"glxgears": 1,
+        "glxspheres": 1,
+        "moebiusgears": 1,
+        "polytopes": 1,
+        "x11perf": 0,
         "xterm": 1,
         "gtkperf": 0}
 
-metrics = {"Regions/s": 1, 
+metrics = {"Regions/s": 1,
            "Pixels/s Sent": 1,
-           "Encoding Pixels/s": 1, 
-           "Decoding Pixels/s": 1, 
+           "Encoding Pixels/s": 1,
+           "Decoding Pixels/s": 1,
            "Application packets in/s": 1,
            "Application bytes in/s": 1,
            "Application packets out/s": 1,
@@ -227,7 +221,7 @@ def write_html():
     ofile.write('        <h3>' + description + '</h3>\n')
     ofile.write('        <div id="help_text">Click a metric on the right to locate it in the results.</div>\n')
     ofile.write('      </div>\n')
-    
+
     ofile.write('      <div id="select_box">\n')
     m_index = 0
     for metric in sorted(tests.keys()):
@@ -257,19 +251,19 @@ def write_html():
     ofile.write('</body>\n')
     ofile.write('</html>\n')
     ofile.close()
-    
+
 def col_index(label):
     return headers[label]
 
 def get_value(row, label):
     return row[col_index(label)].strip()
-    
+
 def get_metric(row, label):
     cell = row[col_index(label)]
     if cell is None or cell is '':
         cell = '0'
     return cell.strip()
-    
+
 def get_headers(row):
     index = 0
     for column in row:

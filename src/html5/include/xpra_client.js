@@ -638,7 +638,7 @@ XpraClient.prototype._sound_start_receiving = function() {
 }
 
 /*
- * packet processing functions start here 
+ * packet processing functions start here
  */
 
 XpraClient.prototype._process_open = function(packet, ctx) {

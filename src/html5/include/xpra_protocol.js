@@ -200,7 +200,7 @@ XpraProtocol.prototype._process = function() {
 	if (level!=0) {
 		if (level & 0x10) {
 			// lz4
-			// python-lz4 inserts the length of the uncompressed data as an int 
+			// python-lz4 inserts the length of the uncompressed data as an int
 			// at the start of the stream
 			var d = packet_data.splice(0, 4);
 			// will always be little endian

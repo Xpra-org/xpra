@@ -22,7 +22,7 @@ cdef inline int MAX(int a, int b):
 cdef class rectangle:
 
     cdef readonly int x, y, width, height
-    cdef readonly long hash 
+    cdef readonly long hash
 
     def __init__(self, int x, int y, int w, int h):
         assert w>=0 and h>=0

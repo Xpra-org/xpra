@@ -51,7 +51,7 @@ def do_test_codec_roundtrip(encoder_class, decoder_class, encoding, src_format, 
         end = time.time()
         assert data is not None, "compression failed"
         print("compressed %s bytes down to %s (%.1f%%) in %.1fms" % (isize, len(data), 100.0*len(data)/isize, 1000.0*(end-start)))
-    
+
         print("uncompressing %s bytes using %s" % (len(data), decoder))
         options['csc'] = src_format
         start = time.time()

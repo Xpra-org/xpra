@@ -194,7 +194,7 @@ def add_window_hooks(window):
                 window.__after_window_state_updated()
                 readd_window_options()
             window.after_window_state_updated = after_window_state_updated
-    
+
             try:
                 el = get_win32_event_listener(True)
                 log("win32_event_listener=%s", el)

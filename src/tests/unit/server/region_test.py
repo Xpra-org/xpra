@@ -8,8 +8,8 @@
 import unittest
 
 try:
-    from xpra.server.region import rectangle
-    
+    from xpra.server.region import rectangle        #@UnresolvedImport
+
     R1 = rectangle(0, 0, 20, 20)
     R2 = rectangle(0, 0, 20, 20)
     R3 = rectangle(0, 0, 40, 40)
@@ -25,7 +25,7 @@ class TestVersionUtilModule(unittest.TestCase):
         assert R1==R2
         assert R1!=R3
         assert R2!=R3
-    
+
     def test_merge(self):
         r1 = R1.clone()
         r1.merge_rect(R4)
@@ -33,7 +33,7 @@ class TestVersionUtilModule(unittest.TestCase):
         r2 = R2.clone()
         r2.merge_rect(R5)
         assert r2.x==0 and r2.y==0 and r2.width==200 and r2.height==200
-    
+
     def test_intersection(self):
         r1 = rectangle(0, 0, 100, 100)
         r2 = rectangle(50, 50, 200, 200)
@@ -47,14 +47,14 @@ class TestVersionUtilModule(unittest.TestCase):
         r4 = rectangle(0, 0, 10, 10)
         i = r3.intersection_rect(r4)
         assert i is None
-    
+
     def test_contains(self):
         assert R1.contains_rect(R2)
         assert not R1.contains_rect(R3)
         assert R3.contains_rect(R1)
         assert not R1.contains_rect(R4)
         assert not R1.contains_rect(R5)
-    
+
     def test_substract(self):
         #  ##########          ##########
         #  #        #          ##########

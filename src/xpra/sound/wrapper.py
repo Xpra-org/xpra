@@ -38,7 +38,7 @@ FAKE_CRASH = int(os.environ.get("XPRA_SOUND_FAKE_CRASH", "0"))
 # * VOLUME: optional, a number from 0.0 to 1.0
 #   ie: 1.0
 # FIXME: CODEC_OPTIONS should allow us to specify different options for each CODEC
-# The output will be a regular xpra packet, containing serialized signals that we receive 
+# The output will be a regular xpra packet, containing serialized signals that we receive
 # The input can be a regular xpra packet, those are converted into method calls
 
 class sound_subprocess(subprocess_callee):

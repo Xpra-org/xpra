@@ -11,27 +11,27 @@
 #   prefix: a string to identify the data set
 #   id: a string to identify the variable that the data set is testing (for example '14' because we're testing xpra v14 in this data set)
 #   repetitions: decide how many times you want to run the tests
-# 
+#
 # The data file names you will produce will then be in the format:
 #   prefix_id_rep#.csv
 #
 # With this information in hand you can now create a script that will run the tests, containing commands like:
 #   ./test_measure_perf.py as an example:
 
-# For example: 
+# For example:
 #
 # ./test_measure_perf.py all_tests_40 ./data/all_tests_40_14_1.csv 1 14 > ./data//all_tests_40_14_1.log
 # ./test_measure_perf.py all_tests_40 ./data/all_tests_40_14_2.csv 2 14 > ./data//all_tests_40_14_2.log
 #
 # In this example script, I'm running test_measure_perf 2 times, using a config class named "all_tests_40.py",
 # and outputting the results to data files using the prefix "all_tests_40", for version 14.
-# 
+#
 # The additional arguments "1 14", "2 14" are custom paramaters which will be written to the "Custom Params" column
-# in the corresponding data files. 
+# in the corresponding data files.
 #
 # Where you see "1", "2" in the file names or params, that's referring to the corresponding repetition of the tests.
 #
-# Once this script has run, you can open up test_measure_perf_charts.py and take a look at the 
+# Once this script has run, you can open up test_measure_perf_charts.py and take a look at the
 # instructions there for generating the charts.
 #
 

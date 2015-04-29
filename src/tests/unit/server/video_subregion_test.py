@@ -21,7 +21,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
     def test_eq(self):
         log = video_subregion.sslog
-        
+
         def refresh_cb(window, regions):
             log("refresh_cb(%s, %s)", window, regions)
         r = video_subregion.VideoSubregion(gobject.timeout_add, gobject.source_remove, refresh_cb, 150)
