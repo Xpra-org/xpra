@@ -23,7 +23,7 @@ class TestModuleFunctions(unittest.TestCase):
         mvb = memoryview_to_bytes(mv)
         mvs = bytestostr(mvb)
         assert mvs==str_value
-        
+
 
     def test_strs(self):
         for l in (1, 16, 255):

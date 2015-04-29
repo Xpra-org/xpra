@@ -163,10 +163,10 @@ class typedict(dict):
     log = Logger("util")
 
     def capsget(self, key, default=None):
-        k = key
-        if type(key)==str:
-            k = strtobytes(key)
-        v = self.get(k, default)
+        v = self.get(key)
+        #py3k and bytes as keys...
+        if v is None and type(key)==str:
+            v = self.get(strtobytes(key), default)
         if sys.version >= '3' and type(v)==bytes:
             v = bytestostr(v)
         return v

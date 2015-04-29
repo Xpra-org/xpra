@@ -23,8 +23,11 @@ def main():
         #ie: "unit.version_util_test"
         name = p[len(root)+1:-3].replace(os.path.sep, ".")
         print("running %s" % name)
+        cmd = [p]
+        if sys.version_info[0]>=3:
+            cmd.insert(0, "python%s" % sys.version_info[0])
         try:
-            proc = subprocess.Popen(p)
+            proc = subprocess.Popen(cmd)
         except:
             print("failed to execute %s" % p)
             sys.exit(1)

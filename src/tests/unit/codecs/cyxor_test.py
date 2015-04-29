@@ -4,12 +4,18 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import unittest
 
-from xpra.codecs.xor.cyxor import xor_str
+from xpra.os_util import strtobytes
+try:
+    from xpra.codecs.xor.cyxor import xor_str       #@UnresolvedImport
+except:
+    xor_str = None
 import binascii
 def h(v):
     return binascii.hexlify(v)
+
 
 class TestHMAC(unittest.TestCase):
 
@@ -19,19 +25,19 @@ class TestHMAC(unittest.TestCase):
         except:
             return
         raise Exception("xor_str did not fail on %s / %s", h(in1), h(in2))
-    
+
     def check_xor(self, in1, in2, expected):
         out = xor_str(in1, in2)
         #print("xor_str(%s, %s)=%s" % (h(in1), h(in2), h(out)))
         assert out==expected
-    
+
     def test_xor_str(self):
-        zeroes  = chr(0)*16
-        ones    = chr(1)*16
-        ff      = chr(255)*16
-        fe      = chr(254)*16
-        empty   = ""
-        lstr    = "\0x80"*64
+        zeroes  = strtobytes(chr(0)*16)
+        ones    = strtobytes(chr(1)*16)
+        ff      = strtobytes(chr(255)*16)
+        fe      = strtobytes(chr(254)*16)
+        empty   = b""
+        lstr    = b"\0x80"*64
         self.check_xor(zeroes, zeroes, zeroes)
         self.check_xor(ones, ones, zeroes)
         self.check_xor(ff, ones, fe)
@@ -41,14 +47,13 @@ class TestHMAC(unittest.TestCase):
         self.fail_xor(empty, zeroes)
         self.fail_xor(lstr, ff)
         self.fail_xor(bool, int)
-    
+
 
     def test_large_xor_speed(self):
-        import time
         start = time.time()
         size = 1*1024*1024       #1MB
-        zeroes  = chr(0)*size
-        ones    = chr(1)*size
+        zeroes  = strtobytes(chr(0)*size)
+        ones    = strtobytes(chr(1)*size)
         count = 10
         for _ in range(count):
             self.check_xor(zeroes, ones, ones)

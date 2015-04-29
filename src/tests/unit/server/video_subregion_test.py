@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 
 import time
-import gobject
+from xpra.gtk_common.gobject_compat import import_gobject
+gobject = import_gobject()
 gobject.threads_init()
 
 import unittest

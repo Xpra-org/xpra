@@ -19,14 +19,14 @@ class TestIntegerClasses(unittest.TestCase):
         a = IntegerClass()
         a.increase()
         a.decrease()
-        self.assertEquals(a, 0)
+        self.assertEqual(int(a), 0)
         a.increase(10)
-        self.assertEquals(a.get(), 10)
+        self.assertEqual(int(a.get()), 10)
         a.decrease()        #9
-        self.assertLess(a, 10)
+        self.assertLess(int(a), 10)
         a.decrease(19)
-        self.assertGreaterEqual(a, -10)
-        self.assertEquals(IntegerClass(int(str(a))), -10)
+        self.assertGreaterEqual(int(a), -10)
+        self.assertEqual(int(IntegerClass(int(str(a)))), -10)
 
     def test_AtomicInteger(self):
         self._test_IntegerClass(AtomicInteger)
@@ -48,10 +48,10 @@ class TestTypeDict(unittest.TestCase):
     def _test_values_type(self, d, getter, value_types, values_allowed=[]):
         for k in d.keys():
             v = getter(k)
-            self.assertIsNotNone(v)
+            self.assertIsNotNone(v, "expected value for %s key '%s'" % (type(k), k))
             self.assertIn(type(v), value_types)
             if values_allowed:
-                self.assertIn(v, values_allowed)
+                self.assertIn(v, values_allowed, "unexpected value for %s" % k)
 
     def test_strget(self):
         d = typedict({b"bytekey"    : b"bytevalue",
@@ -59,23 +59,23 @@ class TestTypeDict(unittest.TestCase):
         self._test_values_type(d, d.strget, [str, unicode])
 
     def test_intget(self):
-        d = typedict({b"bytekey"    : b"1",
+        d = typedict({b"bytekey"    : "1",
                       u"unicodekey" : 2,
                       996           : 3.14})
         self._test_values_type(d, d.intget, [int], [1, 2, 3])
 
     def test_boolget(self):
-        d = typedict({"empty-string-is-false"       : "",
-                      "False boolean stays as it is": False,
-                      "zero is False"               : 0})
+        d = typedict({b"empty-string-is-false"          : b"",
+                      b"False boolean stays as it is"   : False,
+                      b"zero is False"                  : 0})
         self._test_values_type(d, d.boolget, [bool], [False])
-        d = typedict({"non-empty-string-is-true"    : "hello",
-                      "True boolean stays as it is" : True,
-                      "non-zero number is True"     : -1})
+        d = typedict({b"non-empty-string-is-true"       : "hello",
+                      b"True boolean stays as it is"    : True,
+                      b"non-zero number is True"        : -1})
         self._test_values_type(d, d.boolget, [bool], [True])
 
     def test_dictget(self):
-        d = typedict({"nested" : {}})
+        d = typedict({b"nested" : {}})
         self._test_values_type(d, d.dictget, [dict])
 
     #def intpair(self, k, default_value=None):
@@ -97,32 +97,32 @@ class TestModuleFunctions(unittest.TestCase):
               1         : 2}
         d = {}
         updict(d, "d1", d1)
-        self.assertEquals(d.get("d1.foo"), "bar")
+        self.assertEqual(d.get("d1.foo"), "bar")
         self.assertIsNone(d.get("d2"))
         updict(d, "d2", d2)
-        self.assertEquals(d.get("d2.1"), 2)
+        self.assertEqual(d.get("d2.1"), 2)
         #TODO: test suffix stuff
 
     def test_pver(self):
-        self.assertEquals(pver(""), "")
-        self.assertEquals(pver("any string"), "any string")
-        self.assertEquals(pver((1, 2, 3)), "1.2.3")
+        self.assertEqual(pver(""), "")
+        self.assertEqual(pver("any string"), "any string")
+        self.assertEqual(pver((1, 2, 3)), "1.2.3")
 
     def test_std(self):
-        self.assertEquals(std(""), "")
-        self.assertEquals(std("abcd"), "abcd")
-        self.assertEquals(std("r1"), "r1")
+        self.assertEqual(std(""), "")
+        self.assertEqual(std("abcd"), "abcd")
+        self.assertEqual(std("r1"), "r1")
         for invalid in ("*", "\n", "\r"):
-            self.assertEquals(std(invalid), "")
-            self.assertEquals(std("a"+invalid+"b"), "ab")
+            self.assertEqual(std(invalid), "")
+            self.assertEqual(std("a"+invalid+"b"), "ab")
 
     def test_alnum(self):
-        self.assertEquals(alnum("!\"$%^&*()_+{}:@~\\<>?/*-"), "")
-        self.assertEquals(alnum("aBcD123"), "aBcD123")
+        self.assertEqual(alnum("!\"$%^&*()_+{}:@~\\<>?/*-"), "")
+        self.assertEqual(alnum("aBcD123"), "aBcD123")
 
     def test_nonl(self):
-        self.assertEquals(nonl("\n\r"), "\\n\\r")
-        self.assertEquals(nonl("A\nB\rC"), "A\\nB\\rC")
+        self.assertEqual(nonl("\n\r"), "\\n\\r")
+        self.assertEqual(nonl("A\nB\rC"), "A\\nB\\rC")
 
     def test_xor(self):
         self.assertEqual(xor("A", "a"), xor("B", "b"))

@@ -41,6 +41,7 @@ def reaper_cleanup():
         return
     singleton.reap()
     singleton.poll()
+    singleton = None
 
 
 class ProcInfo(object):

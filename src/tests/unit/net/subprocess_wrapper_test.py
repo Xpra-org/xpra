@@ -6,8 +6,10 @@
 
 import unittest
 
-import gobject
+from xpra.gtk_common.gobject_compat import import_gobject, import_glib
+gobject = import_gobject()
 gobject.threads_init()
+glib = import_glib()
 
 from xpra.log import enable_debug_for
 enable_debug_for("all")
@@ -89,16 +91,18 @@ class SubprocessWrapperTest(unittest.TestCase):
         def timeout_error():
             self.timeout = True
             mainloop.quit()
-        gobject.timeout_add(500, timeout_error)
-        gobject.idle_add(lp.send, "foo", "hello foo")
-        gobject.idle_add(lp.send, "bar", "hello bar")
-        gobject.idle_add(lp.send, "end")
+        glib.timeout_add(500, timeout_error)
+        sent_str = b"hello foo"
+        glib.idle_add(lp.send, "foo", sent_str)
+        glib.idle_add(lp.send, "bar", b"hello bar")
+        glib.idle_add(lp.send, "end")
         lp.stop = mainloop.quit
         #run!
         lp.start()
         mainloop.run()
         assert len(readback)==1, "expected 1 record in loopback but got %s" % len(readback)
-        assert readback[0][0] == "hello foo"
+        rss = readback[0][0]
+        assert rss== sent_str, "expected message string '%s' but got '%s'" % (sent_str, rss)
         assert self.timeout is False, "the test did not exit cleanly (not received the 'end' packet?)"
 
     def test_loopback_callee(self):
@@ -117,17 +121,19 @@ class SubprocessWrapperTest(unittest.TestCase):
         def timeout_error():
             self.timeout = True
             lc.stop()
-        gobject.timeout_add(500, timeout_error)
-        gobject.idle_add(callee.emit, "test-signal", "hello foo")
+        glib.timeout_add(500, timeout_error)
+        signal_string = b"hello foo"
+        glib.idle_add(callee.emit, "test-signal", signal_string)
         #hook up a stop function call which ends this test cleanly
         def stop(*args):
             lc.stop()
         callee.stop = stop
-        gobject.idle_add(lc.send, "stop")
+        glib.idle_add(lc.send, "stop")
         #run!
         lc.start()
         assert len(readback)==1, "expected 1 record in loopback but got %s" % len(readback)
-        assert readback[0][0] == "hello foo"
+        rss = readback[0][0]
+        assert rss== signal_string, "expected signal string '%s' but got '%s'" % (signal_string, rss)
         assert self.timeout is False, "the test did not exit cleanly (not received the 'end' packet?)"
 
 def main():
