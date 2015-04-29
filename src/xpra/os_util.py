@@ -61,10 +61,10 @@ else:
     def strtobytes(x):
         if type(x)==bytes:
             return x
-        return str(x).encode()
+        return str(x).encode("latin1")
     def bytestostr(x):
         if type(x)==bytes:
-            return x.decode()
+            return x.decode("latin1")
         return str(x)
 
 if _memoryview:
