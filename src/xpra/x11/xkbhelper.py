@@ -207,15 +207,19 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
 
     def filter_mappings(mappings, drop_extra_keys=False):
         filtered = {}
+        invalid_keysyms = set()
         for keycode, entries in mappings.items():
             mods = modifiers_for(entries)
             if len(mods)>1:
                 log.warn("keymapping removed invalid keycode entry %s pointing to more than one modifier (%s): %s", keycode, mods, entries)
                 continue
             #now remove entries for keysyms we don't have:
-            f_entries = set([(keysym, index) for keysym, index in entries if X11Keyboard.parse_keysym(keysym) is not None])
+            f_entries = set([(keysym, index) for keysym, index in entries if keysym and X11Keyboard.parse_keysym(keysym) is not None])
+            for keysym, _ in entries:
+                if keysym and X11Keyboard.parse_keysym(keysym) is None:
+                    invalid_keysyms.add(keysym)
             if len(f_entries)==0:
-                log.warn("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
+                log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
                 continue
             if drop_extra_keys:
                 noopt = [keysym for keysym, index in entries if (X11Keyboard.parse_keysym(keysym) is not None and keysym not in OPTIONAL_KEYS)]
@@ -223,6 +227,8 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                     log("keymapping removed keycode entry %s pointing to optional keys: %s", keycode, entries)
                     continue
             filtered[keycode] = f_entries
+        if invalid_keysyms:
+            log.warn("the following keysyms are invalid and have not been mapped: %s", ", ".join((str(x) for x in invalid_keysyms)))
         return filtered
 
     #get the list of keycodes (either from x11 keycodes or gtk keycodes):
