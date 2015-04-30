@@ -414,9 +414,9 @@
   </autotools>
 
   <autotools id="apr" autogenargs="" autogen-sh="configure">
-    <branch module="/dist/apr/apr-1.5.1.tar.bz2"
-                        hash="md5:5486180ec5a23efb5cae6d4292b300ab"
-			version="1.5.1"
+    <branch module="/dist/apr/apr-1.5.2.tar.bz2"
+                        hash="md5:4e9769f3349fe11fc0a5e1b224c236aa"
+			version="1.5.2"
             repo="www.eu.apache.org"/>
   </autotools>
 
@@ -448,9 +448,9 @@
   </autotools>
 
   <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
-    <branch module="/dist/subversion/subversion-1.8.11.tar.bz2"
-                        hash="md5:766a89bbbb388f8eb76166672d3b9e49"
-			version="1.8.11"
+    <branch module="/dist/subversion/subversion-1.8.13.tar.bz2"
+                        hash="md5:4413417b529d7bdf82f74e50df02e88b"
+			version="1.8.13"
             repo="www.eu.apache.org"/>
      <dependencies>
       <dep package="db"/>
