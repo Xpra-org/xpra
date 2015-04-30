@@ -62,6 +62,9 @@ XPRA_TRAY_WINDOW_PROPERTY = "_xpra_tray_window_"
 #TRANSPARENCY = False
 TRANSPARENCY = True
 
+#Java can send this message to the tray (no idea why):
+IGNORED_MESSAGE_TYPES = ("_GTK_LOAD_ICONTHEMES", )
+
 
 def get_tray_window(tray_window):
     return tray_window.get_data(XPRA_TRAY_WINDOW_PROPERTY)
@@ -177,6 +180,8 @@ class SystemTray(gobject.GObject):
         elif event.message_type=="_NET_SYSTEM_TRAY_MESSAGE_DATA":
             assert event.format==8
             log.info("tray message data - not handled yet!")
+        elif event.message_type in IGNORED_MESSAGE_TYPES:
+            log("do_xpra_client_message_event(%s) in ignored message type list", event)
         else:
             log.info("do_xpra_client_message_event(%s)", event)
 
