@@ -654,8 +654,13 @@ class ServerBase(ServerCore):
         info = packet[1]
         if len(packet)>2:
             info += " (%s)" % (", ".join(packet[2:]))
-        netlog.info("client %s has requested disconnection: %s", proto, info)
+        #only log protocol info if there is more than one client:
+        proto_info = ""
+        if len(self._server_sources)>1:
+            proto_info = " %s" % proto
+        netlog.info("client%s has requested disconnection: %s", proto_info, info)
         self.disconnect_protocol(proto, CLIENT_REQUEST)
+
 
     def _process_connection_lost(self, proto, packet):
         ServerCore._process_connection_lost(self, proto, packet)

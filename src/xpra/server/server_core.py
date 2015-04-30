@@ -477,7 +477,11 @@ class ServerCore(object):
         i = str(reason)
         if extra:
             i += " (%s)" % extra
-        netlog.info("Disconnecting client %s: %s", protocol, i)
+        try:
+            proto_info = " '%s'" % protocol._conn.get_info().get("endpoint")
+        except:
+            proto_info = " %s" % protocol
+        netlog.info("Disconnecting client%s: %s", proto_info, i)
         protocol.flush_then_close(["disconnect", reason]+list(extra))
 
 
