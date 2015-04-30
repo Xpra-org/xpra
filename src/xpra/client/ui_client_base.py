@@ -1551,12 +1551,13 @@ class UIXpraClient(XpraClientBase):
                 log.warn("cannot start sound: identical user environment as the server (loop)")
                 return
 
-        if self.sound_source:
-            if self.sound_source.get_state()=="active":
+        ss = self.sound_source
+        if ss:
+            if ss.get_state()=="active":
                 log.error("already sending sound!")
                 return
-            self.sound_source.start()
-        if not self.start_sound_source():
+            ss.start()
+        elif not self.start_sound_source():
             return
         self.microphone_enabled = True
         self.emit("microphone-changed")
@@ -1569,17 +1570,31 @@ class UIXpraClient(XpraClientBase):
             self.emit("microphone-changed")
         try:
             from xpra.sound.wrapper import start_sending_sound
-            self.sound_source = start_sending_sound(self.sound_source_plugin, None, 1.0, self.server_sound_decoders, self.server_pulseaudio_server, self.server_pulseaudio_id)
-            if not self.sound_source:
+            ss = start_sending_sound(self.sound_source_plugin, None, 1.0, self.server_sound_decoders, self.server_pulseaudio_server, self.server_pulseaudio_id)
+            if not ss:
                 return False
-            self.sound_source.connect("new-buffer", self.new_sound_buffer)
-            self.sound_source.connect("state-changed", sound_source_state_changed)
-            self.sound_source.start()
-            soundlog("start_sound_source() sound source %s started", self.sound_source)
+            self.sound_source = ss
+            ss.connect("new-buffer", self.new_sound_buffer)
+            ss.connect("state-changed", sound_source_state_changed)
+            ss.connect("new-stream", self.new_stream)
+            ss.start()
+            soundlog("start_sound_source() sound source %s started", ss)
             return True
         except Exception as e:
             log.error("error setting up sound: %s", e)
             return False
+
+    def new_stream(self, sound_source, codec):
+        soundlog("new_stream(%s)", codec)
+        if self.sound_source!=sound_source:
+            soundlog("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
+            return
+        sound_source.codec = codec
+        #tell the server this is the start:
+        self.send("sound-data", sound_source.codec, "",
+                  {"start-of-stream"    : True,
+                   "codec"              : sound_source.codec,
+                   "sequence"           : sound_source.sequence})
 
     def stop_sending_sound(self):
         """ stop the sound source and emit client signal """

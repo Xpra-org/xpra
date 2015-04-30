@@ -901,6 +901,10 @@ class ServerSource(object):
             log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
             self.sound_sink.cleanup()
             self.sound_sink = None
+        if metadata.boolget("end-of-stream"):
+            soundlog("client sent end-of-stream, closing sound pipeline")
+            self.stop_receiving_sound(False)
+            return
         if not self.sound_sink:
             try:
                 def sound_sink_error(*args):
@@ -910,20 +914,24 @@ class ServerSource(object):
                     log.warn("re-starting sound input because of overrun")
                     def sink_clean():
                         soundlog("sink_clean() sound_sink=%s", self.sound_sink)
-                        if self.sound_sink:
-                            self.sound_sink.cleanup()
+                        ss = self.sound_sink
+                        if ss:
                             self.sound_sink = None
+                            ss.cleanup()
                     self.idle_add(sink_clean)
                     #Note: the next sound packet will take care of starting a new pipeline
-                from xpra.sound.sink import SoundSink
-                self.sound_sink = SoundSink(codec=codec)
+                from xpra.sound.wrapper import start_receiving_sound
+                ss = start_receiving_sound(codec)
+                if not ss:
+                    return
+                self.sound_sink = ss
                 soundlog("sound_data(..) created sound sink: %s", self.sound_sink)
-                self.sound_sink.connect("error", sound_sink_error)
-                self.sound_sink.connect("overrun", sound_sink_overrun)
-                self.sound_sink.start()
+                ss.connect("error", sound_sink_error)
+                ss.connect("overrun", sound_sink_overrun)
+                ss.start()
                 soundlog("sound_data(..) sound sink started")
-            except Exception as e:
-                log.error("failed to setup sound: %s", e)
+            except Exception:
+                log.error("failed to setup sound", exc_info=True)
                 return
         self.sound_sink.add_data(data, metadata)
 
