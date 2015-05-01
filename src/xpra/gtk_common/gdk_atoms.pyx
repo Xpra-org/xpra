@@ -20,8 +20,8 @@ log = Logger("gtk")
 ###################################
 # Serious black magic happens here (I owe these guys beers):
 cdef extern from "pygobject.h":
-    void init_pygobject()
-init_pygobject()
+    void pygobject_init()
+pygobject_init()
 
 cdef extern from "pygtk/pygtk.h":
     void init_pygtk()
