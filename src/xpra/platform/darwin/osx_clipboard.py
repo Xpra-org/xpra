@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import gobject
+import glib
 
 from xpra.log import Logger
 log = Logger("clipboard", "osx")
@@ -174,7 +175,7 @@ class OSXClipboardProxy(ClipboardProxy):
         if update_clipboard_change_count:
             c = update_clipboard_change_count()
             log("change count now at %s", c)
-        gobject.idle_add(self.remove_block)
+        glib.idle_add(self.remove_block)
 
     def local_clipboard_changed(self):
         log("local_clipboard_changed() greedy_client=%s, have_token=%s, blocked=%s", self._greedy_client, self._have_token, self._block_owner_change)
@@ -201,7 +202,7 @@ def main():
     gobject.threads_init()
     import gtk.gdk
     gtk.gdk.threads_init()
-    get_UI_watcher(gobject.timeout_add)
+    get_UI_watcher(glib.timeout_add)
 
     log.info("testing pasteboard")
     if not init_pasteboard():

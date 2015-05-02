@@ -7,8 +7,7 @@
 # later version. See the file COPYING for details.
 
 import gtk.gdk
-import gobject
-gobject.threads_init()
+import glib
 
 from xpra.log import Logger
 log = Logger("server", "gtk")
@@ -32,9 +31,9 @@ class GTKServerBase(ServerBase):
 
     def __init__(self):
         log("ServerBase.__init__()")
-        self.idle_add = gobject.idle_add
-        self.timeout_add = gobject.timeout_add
-        self.source_remove = gobject.source_remove
+        self.idle_add = glib.idle_add
+        self.timeout_add = glib.timeout_add
+        self.source_remove = glib.source_remove
         ServerBase.__init__(self)
 
     def watch_keymap_changes(self):
@@ -59,7 +58,7 @@ class GTKServerBase(ServerBase):
 
     def add_listen_socket(self, socktype, sock):
         sock.listen(5)
-        gobject.io_add_watch(sock, gobject.IO_IN, self._new_connection, sock)
+        glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock)
         self.socket_types[sock] = socktype
 
     def make_hello(self, source):

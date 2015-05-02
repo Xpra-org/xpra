@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import cairo
-from gi.repository import GObject           #@UnresolvedImport
+from gi.repository import GLib              #@UnresolvedImport
 from gi.repository import GdkPixbuf         #@UnresolvedImport
 
 from xpra.client.gtk_base.cairo_backing_base import CairoBackingBase, FORMATS
@@ -69,7 +69,7 @@ class CairoBacking(CairoBackingBase):
                     log.error("cairo error during paint", exc_info=True)
                     success = False
                 fire_paint_callbacks(callbacks, success)
-            GObject.idle_add(ui_paint_image)
+            GLib.idle_add(ui_paint_image)
             return
         #this will end up calling do_paint_rgb24 after converting the pixels to RGB
         GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)

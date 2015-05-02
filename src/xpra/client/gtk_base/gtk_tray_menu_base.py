@@ -6,9 +6,9 @@
 
 import sys
 import os
-from xpra.gtk_common.gobject_compat import import_gtk, import_gobject, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
 gtk = import_gtk()
-gobject = import_gobject()
+glib = import_glib()
 
 from xpra.util import CLIENT_EXIT
 from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, BUTTON_PRESS_MASK
@@ -75,7 +75,7 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
             if state is not None and state==self.get_active():
                 #toggle did not fire after the button release, so force it:
                 self.set_active(not state)
-        gobject.idle_add(recheck)
+        glib.idle_add(recheck)
 
 
 def make_min_auto_menu(title, min_options, options, get_current_min_value, get_current_value, set_min_value_cb, set_value_cb):
@@ -958,7 +958,7 @@ class GTKTrayMenuBase(object):
                 if expected_counter!=self.mouse_in_tray_menu_counter:
                     return    False            #counter has changed
                 self.close_menu()
-            gobject.timeout_add(500, check_menu_left, self.mouse_in_tray_menu_counter)
+            glib.timeout_add(500, check_menu_left, self.mouse_in_tray_menu_counter)
         self.mouse_in_tray_menu_counter = 0
         self.mouse_in_tray_menu = False
         log("popup_menu_workaround: adding events callbacks")

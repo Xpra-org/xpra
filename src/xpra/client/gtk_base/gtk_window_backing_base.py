@@ -8,8 +8,8 @@ import os
 import sys
 
 #pygtk3 vs pygtk2 (sigh)
-from xpra.gtk_common.gobject_compat import import_gobject, import_cairo, is_gtk3
-gobject = import_gobject()
+from xpra.gtk_common.gobject_compat import import_glib, import_cairo, is_gtk3
+glib = import_glib()
 cairo   = import_cairo()
 
 from xpra.client.window_backing_base import WindowBackingBase
@@ -33,7 +33,7 @@ class GTKWindowBacking(WindowBackingBase):
     HAS_ALPHA = GTK_ALPHA_SUPPORTED
 
     def __init__(self, wid, window_alpha):
-        WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA, gobject.idle_add)
+        WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA, glib.idle_add)
 
 
     def cairo_draw(self, context):

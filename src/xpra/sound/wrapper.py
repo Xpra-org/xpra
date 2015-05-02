@@ -6,7 +6,7 @@
 import os
 import time
 
-from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, gobject
+from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, glib
 from xpra.platform.paths import get_sound_executable
 from xpra.util import AdHocStruct
 from xpra.log import Logger
@@ -55,17 +55,17 @@ class sound_subprocess(subprocess_callee):
 
     def start(self):
         if not FAKE_START_FAILURE:
-            gobject.idle_add(self.wrapped_object.start)
+            glib.idle_add(self.wrapped_object.start)
         if FAKE_EXIT>0:
             def process_exit():
                 self.cleanup()
-                gobject.timeout_add(250, self.stop)
-            gobject.timeout_add(FAKE_EXIT*1000, process_exit)
+                glib.timeout_add(250, self.stop)
+            glib.timeout_add(FAKE_EXIT*1000, process_exit)
         if FAKE_CRASH>0:
             def force_exit():
                 import sys
                 sys.exit(1)
-            gobject.timeout_add(FAKE_CRASH*1000, force_exit)
+            glib.timeout_add(FAKE_CRASH*1000, force_exit)
         subprocess_callee.start(self)
 
     def cleanup(self):
@@ -102,7 +102,7 @@ class sound_play(sound_subprocess):
                 wo = self.wrapped_object
                 if wo:
                     wo.emit("overrun", 500)
-            gobject.timeout_add(FAKE_OVERRUN*1000, fake_overrun)
+            glib.timeout_add(FAKE_OVERRUN*1000, fake_overrun)
 
 
 def run_sound(mode, error_cb, options, args):
@@ -165,14 +165,14 @@ class sound_subprocess_wrapper(subprocess_caller):
 
     def start(self):
         subprocess_caller.start(self)
-        gobject.timeout_add(2500, self.verify_started)
+        glib.timeout_add(2500, self.verify_started)
 
 
     def cleanup(self):
         log("cleanup() sending cleanup request to %s", self.description)
         self.send("cleanup")
         #cleanup should cause the process to exit
-        gobject.timeout_add(500, self.stop)
+        glib.timeout_add(500, self.stop)
 
 
     def verify_started(self):

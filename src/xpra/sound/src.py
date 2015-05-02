@@ -157,6 +157,7 @@ gobject.type_register(SoundSource)
 
 
 def main():
+    import glib
     from xpra.platform import init, clean
     init("Xpra-Sound-Source")
     try:
@@ -217,8 +218,7 @@ def main():
                     f.write(data)
                     f.flush()
 
-        gobject_mainloop = gobject.MainLoop()
-        gobject.threads_init()
+        glib_mainloop = glib.MainLoop()
 
         ss.connect("new-buffer", new_buffer)
         ss.start()
@@ -226,13 +226,13 @@ def main():
         import signal
         def deadly_signal(sig, frame):
             log.warn("got deadly signal %s", SIGNAMES.get(sig, sig))
-            gobject.idle_add(ss.stop)
-            gobject.idle_add(gobject_mainloop.quit)
+            glib.idle_add(ss.stop)
+            glib.idle_add(glib_mainloop.quit)
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
 
         try:
-            gobject_mainloop.run()
+            glib_mainloop.run()
         except Exception as e:
             log.error("main loop error: %s", e)
         ss.stop()

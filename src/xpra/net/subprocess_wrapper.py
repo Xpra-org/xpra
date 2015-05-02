@@ -9,9 +9,8 @@ import signal
 import subprocess
 import binascii
 
-from xpra.gtk_common.gobject_compat import import_gobject
-gobject = import_gobject()
-gobject.threads_init()
+from xpra.gtk_common.gobject_compat import import_glib
+glib = import_glib()
 
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.protocol import Protocol
@@ -45,7 +44,7 @@ WIN32_SHOWWINDOW = os.environ.get("XPRA_WIN32_SHOWWINDOW", "0")=="1"
 #        gtk.main()
 #    def quit(self):
 #        gtk.main_quit()
-mainloop = gobject.MainLoop
+mainloop = glib.MainLoop
 
 
 class subprocess_callee(object):
@@ -132,7 +131,7 @@ class subprocess_callee(object):
         #stdin and stdout wrapper:
         conn = TwoFileConnection(self._output, self._input, abort_test=None, target=self.name, info=self.name, close_cb=self.net_stop)
         conn.timeout = 0
-        protocol = Protocol(gobject, conn, self.process_packet, get_packet_cb=self.get_packet)
+        protocol = Protocol(glib, conn, self.process_packet, get_packet_cb=self.get_packet)
         try:
             protocol.enable_encoder("rencode")
         except Exception as e:
@@ -150,7 +149,7 @@ class subprocess_callee(object):
         #this is called from the network thread,
         #we use idle add to ensure we clean things up from the main thread
         log("net_stop() will call stop from main thread")
-        gobject.idle_add(self.stop)
+        glib.idle_add(self.stop)
 
 
     def cleanup(self):
@@ -176,7 +175,7 @@ class subprocess_callee(object):
         self.send("signal", signame)
         self.cleanup()
         #give time for the network layer to send the signal message
-        gobject.timeout_add(150, self.stop)
+        glib.timeout_add(150, self.stop)
 
     def signal_stop(self, sig, frame):
         """ This time we really want to exit without waiting """
@@ -219,7 +218,7 @@ class subprocess_callee(object):
             return
         if DEBUG_WRAPPER:
             log("calling %s.%s%s", self.wrapped_object, attr, str(tuple(packet[1:]))[:128])
-        gobject.idle_add(method, *packet[1:])
+        glib.idle_add(method, *packet[1:])
 
 
 class subprocess_caller(object):
@@ -263,7 +262,7 @@ class subprocess_caller(object):
         #make a connection using the process stdin / stdout
         conn = TwoFileConnection(self.process.stdin, self.process.stdout, abort_test=None, target=self.description, info=self.description, close_cb=self.subprocess_exit)
         conn.timeout = 0
-        protocol = Protocol(gobject, conn, self.process_packet, get_packet_cb=self.get_packet)
+        protocol = Protocol(glib, conn, self.process_packet, get_packet_cb=self.get_packet)
         #we assume the other end has the same encoders (which is reasonable):
         #TODO: fallback to bencoder
         protocol.enable_encoder("rencode")
@@ -363,6 +362,6 @@ class subprocess_caller(object):
             for cb, args in callbacks:
                 try:
                     all_args = list(args) + extra_args
-                    gobject.idle_add(cb, self, *all_args)
+                    glib.idle_add(cb, self, *all_args)
                 except Exception:
                     log.error("error processing callback %s for %s packet", cb, signal_name, exc_info=True)

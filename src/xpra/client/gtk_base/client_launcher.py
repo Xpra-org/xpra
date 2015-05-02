@@ -16,7 +16,8 @@ import shlex
 import signal
 import traceback
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango, import_glib
+glib = import_glib()
 gobject = import_gobject()
 gobject.threads_init()
 gtk = import_gtk()
@@ -417,14 +418,14 @@ class ApplicationWindow:
 
     def set_info_text(self, text):
         if self.info:
-            gobject.idle_add(self.info.set_text, text)
+            glib.idle_add(self.info.set_text, text)
 
     def set_info_color(self, is_error=False):
         self.set_widget_fg_color(self.info, is_error)
 
 
     def set_sensitive(self, s):
-        gobject.idle_add(self.window.set_sensitive, s)
+        glib.idle_add(self.window.set_sensitive, s)
 
     def connect_clicked(self, *args):
         self.update_options_from_gui()
@@ -451,7 +452,7 @@ class ApplicationWindow:
             self.set_info_color(True)
             self.set_info_text(t)
             self.window.show()
-        gobject.idle_add(ui_handle_exception)
+        glib.idle_add(ui_handle_exception)
 
     def do_connect(self):
         try:
@@ -528,8 +529,8 @@ class ApplicationWindow:
             log.error("failed to connect", exc_info=True)
             self.handle_exception(e)
             return
-        gobject.idle_add(self.window.hide)
-        gobject.idle_add(self.start_XpraClient, conn)
+        glib.idle_add(self.window.hide)
+        glib.idle_add(self.start_XpraClient, conn)
 
     def start_XpraClient(self, conn):
         try:
@@ -579,7 +580,7 @@ class ApplicationWindow:
                     self.client.quit = ignore_further_quit_events
                 self.set_sensitive(True)
                 self.reset_client()
-                gobject.idle_add(self.window.show)
+                glib.idle_add(self.window.show)
             else:
                 do_quit()
 
@@ -615,7 +616,7 @@ class ApplicationWindow:
         else:
             color_obj = white
         if color_obj:
-            gobject.idle_add(widget.modify_base, STATE_NORMAL, color_obj)
+            glib.idle_add(widget.modify_base, STATE_NORMAL, color_obj)
 
     def set_widget_fg_color(self, widget, is_error=False):
         if is_error:
@@ -623,7 +624,7 @@ class ApplicationWindow:
         else:
             color_obj = black
         if color_obj:
-            gobject.idle_add(widget.modify_fg, STATE_NORMAL, color_obj)
+            glib.idle_add(widget.modify_fg, STATE_NORMAL, color_obj)
 
 
     def update_options_from_gui(self):
@@ -750,7 +751,7 @@ def main():
                 gobject.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
                 gobject.timeout_add(1000, app.set_info_color, True)
             #call from UI thread:
-            gobject.idle_add(show_signal)
+            glib.idle_add(show_signal)
         signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
         has_file = len(args) == 1
@@ -769,7 +770,7 @@ def main():
         if app.config.autoconnect:
             #file says we should connect,
             #do that only (not showing UI unless something goes wrong):
-            gobject.idle_add(app.do_connect)
+            glib.idle_add(app.do_connect)
         if not has_file:
             app.reset_errors()
         gui_ready()

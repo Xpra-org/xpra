@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import pynotify
+import pynotify                 #@UnresolvedImport
 from xpra.client.notifications.notifier_base import NotifierBase
 
 
@@ -24,14 +24,14 @@ class PyNotify_Notifier(NotifierBase):
 
 
 def main():
-    import gobject
+    import glib
     import gtk
     def show():
         n = PyNotify_Notifier()
         n.show_notify("", 0, "Test", 0, "", "Summary", "Body...", 0)
         return False
-    gobject.idle_add(show)
-    gobject.timeout_add(20000, gtk.main_quit)
+    glib.idle_add(show)
+    glib.timeout_add(20000, gtk.main_quit)
     gtk.main()
 
 

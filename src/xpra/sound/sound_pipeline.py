@@ -10,9 +10,11 @@ from xpra.sound.gstreamer_util import gst
 from xpra.log import Logger
 log = Logger("sound")
 
-from xpra.gtk_common.gobject_compat import import_gobject
+from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal
 gobject = import_gobject()
+gobject.threads_init()
+glib = import_glib()
 
 
 class SoundPipeline(gobject.GObject):
@@ -41,7 +43,7 @@ class SoundPipeline(gobject.GObject):
         self.emit_info_due = False
 
     def idle_emit(self, sig, *args):
-        gobject.idle_add(self.emit, sig, *args)
+        glib.idle_add(self.emit, sig, *args)
 
     def emit_info(self):
         if self.emit_info_due:
@@ -50,7 +52,7 @@ class SoundPipeline(gobject.GObject):
         def do_emit_info():
             self.emit_info_due = False
             self.emit("info", self.get_info())
-        gobject.timeout_add(50, do_emit_info)
+        glib.timeout_add(50, do_emit_info)
 
     def get_info(self):
         info = {"codec"             : self.codec,

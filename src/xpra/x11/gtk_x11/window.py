@@ -15,6 +15,7 @@ import os
 from socket import gethostname
 
 import gobject
+import glib
 import gtk.gdk
 import cairo
 import signal
@@ -529,7 +530,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._managed = False
         log("do_unmanaged(%s) damage_forward_handle=%s, composite=%s", wm_exiting, self._damage_forward_handle, self._composite)
         remove_event_receiver(self.client_window, self)
-        gobject.idle_add(self.managed_disconnect)
+        glib.idle_add(self.managed_disconnect)
         if self._composite:
             if self._damage_forward_handle:
                 self._composite.disconnect(self._damage_forward_handle)

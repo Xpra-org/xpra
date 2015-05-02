@@ -10,8 +10,9 @@ import struct
 import re
 import binascii
 
-from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, import_glib
 gobject = import_gobject()
+glib = import_glib()
 gtk = import_gtk()
 gdk = import_gdk()
 
@@ -474,7 +475,7 @@ class ClipboardProxy(gtk.Invisible):
             self._have_token = False
             self.emit("send-clipboard-token", self._selection)
             self._sent_token_events += 1
-            gobject.idle_add(self.remove_block)
+            glib.idle_add(self.remove_block)
 
     def do_selection_request_event(self, event):
         log("do_selection_request_event(%s)", event)
@@ -576,7 +577,7 @@ class ClipboardProxy(gtk.Invisible):
                 self._block_owner_change = True
                 self.emit("send-clipboard-token", self._selection)
                 if boc is False:
-                    gobject.idle_add(self.remove_block)
+                    glib.idle_add(self.remove_block)
         gtk.Invisible.do_selection_clear_event(self, event)
 
     def got_token(self, targets, target_data):
@@ -592,7 +593,7 @@ class ClipboardProxy(gtk.Invisible):
         if self._block_owner_change:
             #re-enable the flag via idle_add so events like do_owner_changed
             #get a chance to run first.
-            gobject.idle_add(self.remove_block)
+            glib.idle_add(self.remove_block)
 
     def remove_block(self, *args):
         log("remove_block(%s)", args)

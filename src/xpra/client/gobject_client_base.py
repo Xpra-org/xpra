@@ -4,8 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gobject
+from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
+glib = import_glib()
 
 from xpra.log import Logger
 log = Logger("gobject", "client")
@@ -34,16 +35,16 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
         self.gobject_init()
 
     def timeout_add(self, *args):
-        return gobject.timeout_add(*args)
+        return glib.timeout_add(*args)
 
     def idle_add(self, *args):
-        return gobject.idle_add(*args)
+        return glib.idle_add(*args)
 
     def source_remove(self, *args):
-        return gobject.source_remove(*args)
+        return glib.source_remove(*args)
 
     def get_scheduler(self):
-        return gobject
+        return glib
 
 
     def client_type(self):
@@ -77,13 +78,13 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
     def connect_with_timeout(self, conn):
         self.setup_connection(conn)
         if conn.timeout>0:
-            gobject.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.timeout)
-        gobject.idle_add(self.send_hello)
+            glib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.timeout)
+        glib.idle_add(self.send_hello)
 
     def run(self):
         XpraClientBase.run(self)
-        self.gobject_mainloop = gobject.MainLoop()
-        self.gobject_mainloop.run()
+        self.glib_mainloop = glib.MainLoop()
+        self.glib_mainloop.run()
         return  self.exit_code
 
     def make_hello(self):
@@ -96,7 +97,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
         if self.exit_code is None:
             self.exit_code = exit_code
         self.cleanup()
-        gobject.timeout_add(50, self.gobject_mainloop.quit)
+        glib.timeout_add(50, self.glib_mainloop.quit)
 
 
 

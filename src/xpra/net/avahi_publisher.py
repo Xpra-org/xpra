@@ -151,17 +151,16 @@ class AvahiPublisher:
 
 
 def main():
-	import gobject
-	gobject.threads_init()
+	import glib
 	import random, signal
 	port = int(20000*random.random())+10000
 	host = "0.0.0.0"
 	name = "test service"
 	publisher = AvahiPublisher(name, port, stype=XPRA_MDNS_TYPE, host=host, text="somename: somevalue")
 	assert publisher
-	gobject.idle_add(publisher.start)
+	glib.idle_add(publisher.start)
 	signal.signal(signal.SIGTERM, exit)
-	gobject.MainLoop().run()
+	glib.MainLoop().run()
 
 
 if __name__ == "__main__":

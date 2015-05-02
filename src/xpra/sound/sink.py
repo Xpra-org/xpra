@@ -242,6 +242,7 @@ gobject.type_register(SoundSink)
 
 
 def main():
+    import glib
     from xpra.platform import init, clean
     init("Sound-Record")
     try:
@@ -284,16 +285,15 @@ def main():
         ss.add_data(data)
         def eos(*args):
             print("eos")
-            gobject.idle_add(gobject_mainloop.quit)
+            glib.idle_add(glib_mainloop.quit)
         ss.connect("eos", eos)
         ss.start()
 
-        gobject_mainloop = gobject.MainLoop()
-        gobject.threads_init()
+        glib_mainloop = glib.MainLoop()
 
         import signal
         def deadly_signal(*args):
-            gobject.idle_add(gobject_mainloop.quit)
+            glib.idle_add(glib_mainloop.quit)
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
 
@@ -302,12 +302,12 @@ def main():
             if qtime<=0:
                 log.info("underrun (end of stream)")
                 thread.start_new_thread(ss.stop, ())
-                gobject.timeout_add(500, gobject_mainloop.quit)
+                glib.timeout_add(500, glib_mainloop.quit)
                 return False
             return True
         gobject.timeout_add(1000, check_for_end)
 
-        gobject_mainloop.run()
+        glib_mainloop.run()
         return 0
     finally:
         clean()

@@ -6,8 +6,7 @@
 
 import os
 import signal
-import gobject
-gobject.threads_init()
+import glib
 from multiprocessing import Queue as MQueue, freeze_support
 freeze_support()
 
@@ -47,9 +46,9 @@ class ProxyServer(ServerCore):
         #the display they're on and the message queue we can
         # use to communicate with them
         self.processes = {}
-        self.idle_add = gobject.idle_add
-        self.timeout_add = gobject.timeout_add
-        self.source_remove = gobject.source_remove
+        self.idle_add = glib.idle_add
+        self.timeout_add = glib.timeout_add
+        self.source_remove = glib.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
         self.control_commands = ["hello", "stop"]
         #ensure we cache the platform info before intercepting SIGCHLD
@@ -73,7 +72,7 @@ class ProxyServer(ServerCore):
         pass
 
     def do_run(self):
-        self.main_loop = gobject.MainLoop()
+        self.main_loop = glib.MainLoop()
         self.main_loop.run()
 
     def do_handle_command_request(self, command, args):
@@ -114,7 +113,7 @@ class ProxyServer(ServerCore):
 
     def add_listen_socket(self, socktype, sock):
         sock.listen(5)
-        gobject.io_add_watch(sock, gobject.IO_IN, self._new_connection, sock)
+        glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock)
         self.socket_types[sock] = socktype
 
     def verify_connection_accepted(self, protocol):
@@ -245,7 +244,7 @@ class ProxyServer(ServerCore):
         log("processes: %s", self.processes)
 
     def get_info(self, proto, *args):
-        info = {"server.type" : "Python/GObject/proxy"}
+        info = {"server.type" : "Python/GLib/proxy"}
         #only show more info if we have authenticated
         #as the user running the proxy server process:
         sessions = proto.authenticator.get_sessions()
