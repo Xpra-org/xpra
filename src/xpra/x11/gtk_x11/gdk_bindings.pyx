@@ -52,8 +52,8 @@ cdef extern from "gdk/gdkx.h":
 
 # Serious black magic happens here (I owe these guys beers):
 cdef extern from "pygobject.h":
-    void pygobject_init()
-pygobject_init()
+    void pygobject_init(int req_major, int req_minor, int req_micro)
+pygobject_init(-1, -1, -1)
 
 cdef extern from "pygtk/pygtk.h":
     void init_pygtk()
