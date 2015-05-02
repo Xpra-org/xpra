@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import gtk
-import gobject
+from xpra.gtk_common.gobject_compat import import_glib, import_gtk
+glib = import_glib()
+gtk = import_gtk()
 
 def change_callback(self, window, entry):
 	print("text=%s" % entry.get_text())
@@ -55,7 +56,7 @@ def make_window(OR=False):
 		return state.counter>0
 	def resize_fast(*args):
 		state.counter = 200
-		gobject.idle_add(do_resize_fast)
+		glib.idle_add(do_resize_fast)
 	btn.connect('clicked', resize_fast)
 	vbox.add(btn)
 
