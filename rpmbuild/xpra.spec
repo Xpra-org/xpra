@@ -131,8 +131,9 @@ Requires(postun): desktop-file-utils
 BuildRequires: python3-devel
 BuildRequires: python3-Cython
 BuildRequires: gtk3-devel
-#BuildRequires: pygobject3-devel
+BuildRequires: python3-gobject
 BuildRequires: gobject-introspection-devel
+BuildRequires: python3-rencode
 %endif
 
 
