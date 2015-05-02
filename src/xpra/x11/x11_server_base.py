@@ -7,7 +7,6 @@
 # later version. See the file COPYING for details.
 
 import gtk.gdk
-import gobject
 import os.path
 import sys
 
@@ -231,7 +230,7 @@ class X11ServerBase(GTKServerBase):
                 keylog("reenable_keymap_changes(%s)", args)
                 self.keymap_changing = False
                 self._keys_changed()
-            gobject.idle_add(reenable_keymap_changes)
+            self.idle_add(reenable_keymap_changes)
 
 
     def _clear_keys_pressed(self):

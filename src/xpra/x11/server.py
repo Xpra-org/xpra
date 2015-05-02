@@ -617,7 +617,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 return
             window.raise_window()
             window.give_client_focus()
-        gobject.idle_add(give_focus)
+        self.idle_add(give_focus)
         if server_source and modifiers is not None:
             focuslog("focus: will set modified mask to %s", modifiers)
             server_source.make_keymask_match(modifiers)
