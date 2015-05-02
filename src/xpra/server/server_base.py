@@ -559,7 +559,7 @@ class ServerBase(ServerCore):
         self.child_reaper.add_process(process, name, command, ignore, callback=callback)
 
     def is_child_alive(self, proc):
-        return proc is not None and proc.poll() is None and proc.pid not in self.child_reaper._dead_pids
+        return proc is not None and proc.poll() is None
 
     def reaper_exit(self):
         if self.exit_with_children:
