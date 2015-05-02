@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 from gtk import gdk
-import gobject
 import os
 
 from xpra.log import Logger
@@ -34,12 +33,12 @@ class GTK2WindowBacking(GTKWindowBacking):
         if USE_PIL and has_codec("PIL"):
             return GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
         #gdk needs UI thread:
-        gobject.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
+        self.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
         return  False
 
     def do_draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
         """ called as last resort when PIL is not available"""
-        gobject.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
+        self.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
 
 
     def paint_pixbuf_gdk(self, coding, img_data, x, y, width, height, options, callbacks):
