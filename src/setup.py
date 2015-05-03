@@ -149,7 +149,7 @@ cuda_ENABLED            = nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED
 #elif os.path.exists("C:\\nvenc_3.0_windows_sdk")
 #...
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
-memoryview_ENABLED      = PYTHON3
+memoryview_ENABLED      = sys.version>='2.7'
 
 warn_ENABLED            = True
 strict_ENABLED          = True
