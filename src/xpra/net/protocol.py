@@ -104,7 +104,7 @@ class Protocol(object):
             self._process_packet_cb = process_packet_cb
         self._write_queue = Queue(1)
         self._read_queue = Queue(20)
-        self._read_queue_put = self._read_queue.put
+        self._read_queue_put = self.read_queue_put
         # Invariant: if .source is None, then _source_has_more == False
         self._get_packet_cb = get_packet_cb
         #counters:
@@ -137,8 +137,8 @@ class Protocol(object):
         from xpra.daemon_thread import make_daemon_thread
         self._write_thread = make_daemon_thread(self._write_thread_loop, "write")
         self._read_thread = make_daemon_thread(self._read_thread_loop, "read")
-        self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
-        self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
+        self._read_parser_thread = None         #started when needed
+        self._write_format_thread = None        #started when needed
         self._source_has_more = threading.Event()
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
@@ -162,10 +162,11 @@ class Protocol(object):
 
     def wait_for_io_threads_exit(self, timeout=None):
         for t in (self._read_thread, self._write_thread):
-            t.join(timeout)
+            if t and t.isAlive():
+                t.join(timeout)
         exited = True
         for t in (self._read_thread, self._write_thread):
-            if t.isAlive():
+            if t and t.isAlive():
                 log.warn("%s thread of %s has not yet exited (timeout=%s)", t.name, self._conn, timeout)
                 exited = False
                 break
@@ -244,8 +245,6 @@ class Protocol(object):
             if not self._closed:
                 self._write_thread.start()
                 self._read_thread.start()
-                self._read_parser_thread.start()
-                self._write_format_thread.start()
         self.idle_add(do_start)
 
     def send_now(self, packet):
@@ -262,6 +261,11 @@ class Protocol(object):
 
     def source_has_more(self):
         self._source_has_more.set()
+        #start the format thread:
+        if not self._write_format_thread:
+            from xpra.daemon_thread import make_daemon_thread
+            self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
+            self._write_format_thread.start()
 
     def _write_format_thread_loop(self):
         log("write_format_thread_loop starting")
@@ -592,6 +596,14 @@ class Protocol(object):
             err += " read buffer=%s" % repr_ellipsized(data)
         self.gibberish(err, data)
 
+
+    def read_queue_put(self, data):
+        #start the parse thread if needed:
+        if not self._read_parser_thread:
+            from xpra.daemon_thread import make_daemon_thread
+            self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
+            self._read_parser_thread.start()
+        self._read_queue.put(data)
 
     def _read_parse_thread_loop(self):
         log("read_parse_thread_loop starting")
