@@ -61,6 +61,7 @@
 		      </div>
 		      <div id="hiddenopts" class="panel-collapse collapse in" role="tabpanel" style="display:none;">
 		        <ul class="list-group">
+		          <li class="list-group-item"><input type="checkbox" id="sound"> Experimental sound support</li>
 		          <li class="list-group-item"><input type="checkbox" id="normal_fullscreen"> Normal fullscreen windows</li>
 		        </ul>
 		      </div>
@@ -114,6 +115,10 @@ function doConnect() {
 	var normal_fullscreen = document.getElementById("normal_fullscreen").checked;
 	if(normal_fullscreen) {
 		url = url + "&normal_fullscreen=true";
+	}
+	var sound = document.getElementById("sound").checked;
+	if(sound) {
+		url = url + "&sound=true";
 	}
 	//alert("connect to "+server+" on port "+port+" using "+encoding);
 	window.location = url;

@@ -36,8 +36,6 @@ function XpraClient(container) {
 	// audio stuff
 	this.audio_enabled = false;
 	this.audio_ctx = null;
-	this.aurora_source = null;
-	this.player = null;
 	// the "clipboard"
 	this.clipboard_buffer = "";
 	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
@@ -630,29 +628,13 @@ XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequenc
 }
 
 XpraClient.prototype._sound_start_receiving = function() {
-	/*try {
+	try {
 		this.audio_ctx = AV.Player.fromXpraSource();
 	} catch(e) {
 	    console.error('Could not start audio player:', e);
 	    return;
 	}
-	this.audio_ctx.play();*/
-	var MySource = AV.EventEmitter.extend ({
-                start	: function () {
-                },
-                pause	: function () {
-                },
-                reset	: function () {
-                },
-                on_data : function (data) {
-                	var buf = new AV.Buffer(new Uint8Array(data));
-      				return this.emit('data', buf);
-                }
-            });
-    this.aurora_source = new MySource();
-    asset = new AV.Asset(this.aurora_source);
-    this.player = new AV.Player(asset);
-    this.player.play();
+	this.audio_ctx.play();
 	this.protocol.send(["sound-control", "start", "wav"]);
 }
 
@@ -830,8 +812,8 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 	if(packet[3]["start-of-stream"] == 1) {
 		console.log("start of stream");
 	} else {
-		ctx.aurora_source.on_data(packet[2]);
-		console.log(ctx.player.format);
+		ctx.audio_ctx.asset.source._on_data(packet[2]);
+		console.log(ctx.audio_ctx.format);
 	}
 }
 
