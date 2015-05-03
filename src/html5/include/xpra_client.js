@@ -481,7 +481,7 @@ XpraClient.prototype._make_hello = function() {
 		//sound (not yet):
 		"sound.receive"				: true,
 		"sound.send"				: false,
-		"sound.decoders"			: ["mp3"],
+		"sound.decoders"			: ["wav"],
 		//compression bits:
 		"zlib"						: true,
 		"lz4"						: true,
@@ -653,7 +653,7 @@ XpraClient.prototype._sound_start_receiving = function() {
     asset = new AV.Asset(this.aurora_source);
     this.player = new AV.Player(asset);
     this.player.play();
-	this.protocol.send(["sound-control", "start", "mp3"]);
+	this.protocol.send(["sound-control", "start", "wav"]);
 }
 
 /*
@@ -831,7 +831,6 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 		console.log("start of stream");
 	} else {
 		ctx.aurora_source.on_data(packet[2]);
-		console.log(ctx.player.format);
 	}
 }
 
