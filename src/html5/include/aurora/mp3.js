@@ -130,25 +130,7 @@ var MP3Demuxer = AV.Demuxer.extend(function() {
     AV.Demuxer.register(this);
 
     this.probe = function(stream) {
-        var off = stream.offset;
-
-        // skip id3 metadata if it exists
-        var id3header = MP3Demuxer.getID3v2Header(stream);
-        if (id3header)
-            stream.advance(10 + id3header.length);
-
-        // attempt to read the header of the first audio frame
-        var s = new MP3Stream(new AV.Bitstream(stream));
-        var header = null;
-
-        try {
-            header = MP3FrameHeader.decode(s);
-        } catch (e) {};
-
-        // go back to the beginning, for other probes
-        stream.seek(off);
-
-        return !!header;
+        return true;
     };
 
     this.getID3v2Header = function(stream) {

@@ -182,6 +182,7 @@
 			$(document).ready(function() {
 
 				// look at url parameters
+				var sound = window.location.getParameter("sound") || null;
 				var encoding = window.location.getParameter("encoding") || null;
 				var debug = window.location.getParameter("debug") || false;
 				var normal_fullscreen = window.location.getParameter("normal_fullscreen") || null;
@@ -202,6 +203,11 @@
 			    // see if we should undecorate and maximise normal windows
 			    if(normal_fullscreen) {
 			    	client.normal_fullscreen_mode = true;
+			    }
+
+			    // experimental sound support
+			    if(sound) {
+			    	client.audio_enabled = true;
 			    }
 
 			    // attach a callback for when client closes

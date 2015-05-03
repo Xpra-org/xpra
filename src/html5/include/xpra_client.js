@@ -36,6 +36,8 @@ function XpraClient(container) {
 	// audio stuff
 	this.audio_enabled = false;
 	this.audio_ctx = null;
+	this.aurora_source = null;
+	this.player = null;
 	// the "clipboard"
 	this.clipboard_buffer = "";
 	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
@@ -628,12 +630,29 @@ XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequenc
 }
 
 XpraClient.prototype._sound_start_receiving = function() {
-	try {
-		this.audio_ctx = new AudioContext();
+	/*try {
+		this.audio_ctx = AV.Player.fromXpraSource();
 	} catch(e) {
-	    console.error('Web Audio API is not supported in this browser, will not start sound.');
+	    console.error('Could not start audio player:', e);
 	    return;
 	}
+	this.audio_ctx.play();*/
+	var MySource = AV.EventEmitter.extend ({
+                start	: function () {
+                },
+                pause	: function () {
+                },
+                reset	: function () {
+                },
+                on_data : function (data) {
+                	var buf = new AV.Buffer(new Uint8Array(data));
+      				return this.emit('data', buf);
+                }
+            });
+    this.aurora_source = new MySource();
+    asset = new AV.Asset(this.aurora_source);
+    this.player = new AV.Player(asset);
+    this.player.play();
 	this.protocol.send(["sound-control", "start", "mp3"]);
 }
 
@@ -681,13 +700,13 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		}
 		if (vno[0]<=0 && vno[1]<10) {
 			ctx.callback_close("unsupported version: " + version);
-			this.close();
+			ctx.close();
 			return;
 		}
 	}
 	catch (e) {
 		ctx.callback_close("error parsing version number '" + version + "'");
-		this.close();
+		ctx.close();
 		return;
 	}
 	console.log("got hello: server version "+version+" accepted our connection");
@@ -704,9 +723,9 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 				//doesn't hurt to test both:
 				for (var j=0; j<key.length; j++) {
 					if ("Alt_L"==key[j])
-						this.alt_modifier = mod;
+						ctx.alt_modifier = mod;
 					if ("Meta_L"==key[j])
-						this.meta_modifier = mod;
+						ctx.meta_modifier = mod;
 				}
 			}
 		}
@@ -808,7 +827,7 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_sound_data = function(packet, ctx) {
-	console.log(packet);
+	ctx.aurora_source.on_data(packet[2]);
 }
 
 XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
