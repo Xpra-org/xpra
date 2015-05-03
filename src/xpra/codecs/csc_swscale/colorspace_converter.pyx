@@ -17,18 +17,18 @@ from xpra.codecs.image_wrapper import ImageWrapper
 include "constants.pxi"
 
 
-cdef extern from "../buffers/buffers.h":
+cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
-cdef extern from "../buffers/memalign.h":
+cdef extern from "../../buffers/memalign.h":
     int pad(int size) nogil
     void *xmemalign(size_t size) nogil
 
 cdef extern from "stdlib.h":
     void free(void *ptr)
 
-cdef extern from "../inline.h":
+cdef extern from "../../inline.h":
     pass
 
 ctypedef unsigned char uint8_t

@@ -8,10 +8,10 @@ cdef extern from "stdlib.h":
     void free(void* mem)
 
 
-cdef extern from "../buffers/memalign.h":
+cdef extern from "../../buffers/memalign.h":
     void *xmemalign(size_t size) nogil
 
-cdef extern from "../buffers/buffers.h":
+cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 

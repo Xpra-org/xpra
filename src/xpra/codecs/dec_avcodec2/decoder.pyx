@@ -18,7 +18,7 @@ ctypedef unsigned long size_t
 ctypedef unsigned char uint8_t
 
 
-cdef extern from "../buffers/buffers.h":
+cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
@@ -28,10 +28,10 @@ cdef extern from "string.h":
     void free(void * ptr) nogil
 
 
-cdef extern from "../inline.h":
+cdef extern from "../../inline.h":
     pass
 
-cdef extern from "../buffers/memalign.h":
+cdef extern from "../../buffers/memalign.h":
     void *xmemalign(size_t size)
 
 

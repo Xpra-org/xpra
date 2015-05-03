@@ -42,7 +42,7 @@ cdef extern from "stdarg.h":
     void va_end(va_list)
     fake_type int_type "int"
 
-cdef extern from "../buffers/buffers.h":
+cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "x264.h":

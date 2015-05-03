@@ -22,15 +22,15 @@ cdef extern from "string.h":
     void *memset(void * ptr, int value, size_t num) nogil
     void free(void * ptr) nogil
 
-cdef extern from "../buffers/memalign.h":
-    void *xmemalign(size_t size)
-
 ctypedef unsigned char uint8_t
 ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t
 
 
-cdef extern from "../buffers/buffers.h":
+cdef extern from "../../buffers/memalign.h":
+    void *xmemalign(size_t size)
+
+cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 

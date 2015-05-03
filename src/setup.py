@@ -1685,9 +1685,9 @@ if memoryview_ENABLED:
 else:
     assert not PYTHON3
     bmod = "old"
-buffers_c = "xpra/codecs/buffers/%s_buffers.c" % bmod
+buffers_c = "xpra/buffers/%s_buffers.c" % bmod
 #convenience grouping for codecs:
-membuffers_c = ["xpra/codecs/buffers/memalign.c", "xpra/codecs/inline.c", buffers_c]
+membuffers_c = ["xpra/buffers/memalign.c", "xpra/inline.c", buffers_c]
 
 
 toggle_packages(server_ENABLED, "xpra.server", "xpra.server.auth")

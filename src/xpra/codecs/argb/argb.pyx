@@ -7,7 +7,7 @@
 #cython: boundscheck=False, wraparound=False, cdivision=True
 
 
-cdef extern from "../buffers/buffers.h":
+cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
     int    object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 

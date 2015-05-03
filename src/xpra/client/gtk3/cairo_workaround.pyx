@@ -28,7 +28,7 @@
 import cairo
 
 
-cdef extern from "../../codecs/buffers/buffers.h":
+cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "Python.h":

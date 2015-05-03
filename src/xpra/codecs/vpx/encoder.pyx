@@ -39,10 +39,10 @@ cdef extern from "string.h":
     void free(void *ptr) nogil
 
 
-cdef extern from "../buffers/memalign.h":
+cdef extern from "../../buffers/memalign.h":
     void *xmemalign(size_t size)
 
-cdef extern from "../buffers/buffers.h":
+cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 ctypedef unsigned char uint8_t

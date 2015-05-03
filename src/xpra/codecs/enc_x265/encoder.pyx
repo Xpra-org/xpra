@@ -24,7 +24,7 @@ cdef extern from "stdint.h":
 cdef extern from "inttypes.h":
     pass
 
-cdef extern from "../buffers/buffers.h":
+cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "x265.h":

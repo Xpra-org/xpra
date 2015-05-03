@@ -16,10 +16,10 @@ cdef extern from "stdlib.h":
     void free(void *ptr)
 
 
-cdef extern from "../buffers/memalign.h":
+cdef extern from "../../buffers/memalign.h":
     void *xmemalign(size_t size)
 
-cdef extern from "../buffers/buffers.h":
+cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
 
 cdef extern from "webp/decode.h":
