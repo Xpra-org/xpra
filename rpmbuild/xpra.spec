@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.15.0
+%define version 0.16.0
 %if 0%{?rhel} && 0%{?rhel} <= 6
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -303,6 +303,9 @@ fi
 
 
 %changelog
+* Sun May 03 2015 Antoine Martin <antoine@devloop.org.uk> 0.16.0-1
+- TODO
+
 * Tue Apr 28 2015 Antoine Martin <antoine@devloop.org.uk> 0.15.0-1
 -printer forwarding
 -functional HTML5 client
