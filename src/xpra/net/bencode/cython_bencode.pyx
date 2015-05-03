@@ -6,15 +6,17 @@
 
 # Taken from BitTorrent 3.4.2 (which is MIT-licensed), then hacked up
 # further.
-
 # Original version written by Petru Paler
+
 
 __version__ = ("Cython", 0, 12)
 
+
+cdef extern from "../../codecs/buffers/buffers.h":
+    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+
 import sys
 if sys.version_info[0]>=3:
-    raise ImportError("not ported to py3k yet")
-    #work in progress:
     StringType  = bytes
     UnicodeType = str
     IntType     = int
@@ -23,26 +25,9 @@ if sys.version_info[0]>=3:
     ListType    = list
     TupleType   = tuple
     BooleanType = bool
-    def strtobytes(x):
-        if type(x)==bytes:
-            return x
-        return str(x).encode("utf8")
-    def bytestostr(x):
-        if type(x)==bytes:
-            return x.decode("utf8")
-        return str(x)
 else:
     from types import (StringType, UnicodeType, IntType, LongType, DictType, ListType,
                        TupleType, BooleanType)
-    def strtobytes(x):      #@DuplicatedSignature
-        return str(x)
-    def bytestostr(x):      #@DuplicatedSignature
-        return str(x)
-
-cdef int unicode_support = 0
-def set_unicode_support(us):
-    global unicode_support
-    unicode_support = bool(us)
 
 
 cdef int find(const char *p, char c, int start, size_t len):
@@ -76,14 +61,22 @@ cdef decode_string(const char *x, int f, int l):
     cdef int colon = find(x, ':', f, l)
     cdef int slen
     assert colon>=0, "colon not found in string size header"
+    lenstr = x[f:colon]
     try:
-        slen = int(x[f:colon])
+        slen = int(lenstr)
     except (OverflowError, ValueError):
-        slen = long(x[f:colon])
+        try:
+            slen = long(lenstr)
+        except:
+            raise ValueError("cannot parse length '%s' (f=%s, colon=%s, string=%s)" % (lenstr, f, colon, x))
     if x[f] == '0' and colon != f+1:
         raise ValueError("leading zeroes are not allowed (found in string length)")
     colon += 1
     return (x[colon:colon+slen], colon+slen)
+
+cdef decode_py3kstring(const char *x, int f, int l):
+    xs, fs = decode_string(x, f, l)
+    return (xs.decode("utf8"), fs)
 
 cdef decode_unicode(const char *x, int f, int l):
     xs, fs = decode_string(x, f+1, l)
@@ -124,16 +117,25 @@ cdef decode(const char *x, int f, size_t l, char *what):
     elif c=='i':
         return decode_int(x, f, l)
     elif c in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'):
-        return decode_string(x, f, l)
+        if sys.version_info[0]<3:
+            return decode_string(x, f, l)
+        else:
+            return decode_py3kstring(x, f, l)
     elif c=='u':
         return decode_unicode(x, f, l)
     else:
         raise ValueError("invalid %s type identifier: %s at position %s" % (what, c, f))
 
-def bdecode(x):
+"""
     cdef const char *s = x
-    cdef int f = 0
     cdef size_t l = len(x)
+"""
+def bdecode(x):
+    xs = x.encode("utf8")
+    cdef const char *s
+    cdef Py_ssize_t l
+    assert object_as_buffer(xs, <const void **> &s, &l)==0, "failed to convert %s to a buffer" % type(x)
+    cdef int f = 0
     try:
         return decode(s, f, l, "bencoded string")
     except (IndexError, KeyError):
@@ -150,12 +152,8 @@ cdef void encode_string(x, r) except *:
     r.extend((str(len(x)), ':', x))
 
 cdef void encode_unicode(x, r) except *:
-    global unicode_support
     x = x.encode("utf8")
-    if unicode_support:
-        r.extend(('u', str(len(x)), ':', x))
-    else:
-        encode_string(x, r)
+    encode_string(x, r)
 
 cdef void encode_list(object x, r) except *:
     r.append('l')
@@ -199,8 +197,12 @@ def bencode(x):
     r = []
     try:
         encode(x, r)
+        def bytestostr(x):
+            if type(x)==bytes:
+                return x.decode("utf8")
+            return str(x)
         return ''.join(bytestostr(x) for x in r)
-    except Exception:
+    except Exception as e:
         import traceback
         traceback.print_exc()
-        raise ValueError("cannot encode '%s'" % x)
+        raise ValueError("cannot encode '%s': %s" % (x, e))

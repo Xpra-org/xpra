@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import nonl, bytestostr, strtobytes
+from xpra.util import strtobytes, bytestostr, repr_ellipsized
 import unittest
 import binascii
 
@@ -97,24 +97,26 @@ def _cmp(o, r):
         return
     if type(r)==dict and type(o)==dict:
         for k,ov in o.items():
-            ak = None
-            for tk in k,bytestostr(k),strtobytes(k):
-                if tk in r:
-                    ak = tk
-                    break
-            if not ak or ak not in r:
-                assert False, "restored dict is missing %s" % k
-            rv = r.get(ak)
+            #with py3k, the key can end up being bytes instead of string...
+            rv = r.get(k, r.get(bytestostr(k), r.get(strtobytes(k))))
+            assert rv is not None, "restored dict is missing %s: %s" % (k, r)
             _cmp(ov, rv)
         return
+    import sys
+    if sys.version_info[0]<3 and type(o)==unicode and type(r)==str:
+        o = o.encode("utf-8")
+    elif type(o)==bytes and type(r)==str:
+        o = o.decode("utf-8")
+    elif type(o)==str and type(r)==bytes:
+        r = r.decode("utf-8")
     if o==r:
         return
     print("")
     print("original %s:" % type(o))
-    print("%s" % binascii.hexlify(strtobytes(o)))
     print("returned %s:" % type(r))
     try:
-        print("%s" % binascii.hexlify(strtobytes(r)))
+        print("original: %s" % binascii.hexlify(str(o)))
+        print("returned: %s" % binascii.hexlify(str(r)))
     except:
         pass
     assert False, "value does not match: expected %s (%s) but got %s (%s)" % (o, type(o), r, type(r))
@@ -126,9 +128,13 @@ class TestBencoderFunctions(object):
     def test_decoding(self):
 
         def t(s, ev, remainder=""):
-            rv, rr = self.decode(s)
-            #print("decode(%s)=%s (%s)" % (s, rv, type(rv)))
-            _cmp(rv, ev)
+            try:
+                rv, rr = self.decode(s)
+                #print("decode(%s)=%s (%s)" % (s, rv, type(rv)))
+                _cmp(rv, ev)
+            except Exception as e:
+                print("error on decoding of '%s'" % repr_ellipsized(s))
+                raise e
             rrstr = s[rr:]
             assert rrstr == remainder, "expected remainder value %s but got %s" % (remainder, rrstr)
             # With gibberish added:
@@ -178,32 +184,18 @@ class TestBencoderFunctions(object):
 
     def t(self, v, encstr=None):
         be = self.encode(v)
-        #print("bencode(%s)=%s" % (i(v), i(be)))
         if encstr:
-            p = 0
-            while p<min(len(encstr), len(be)):
-                if encstr[p]!=be[p]:
-                    break
-                p += 1
-            assert be==encstr, "expected '%s' but got '%s', strings differ at position %s: expected '%s' but found '%s' (lengths: %s vs %s)" % (nonl(encstr), nonl(be), p, encstr[p], be[p], len(encstr), len(be))
+            _cmp(be, encstr)
         restored = self.decode(be)
         rlist = restored[0]
-        if len(rlist)!=len(v):
-            print("MISMATCH!")
-            print("v=%s" % v)
-            print("l=%s" % rlist)
-            assert False, "length of decoded value does not match: exected %s but got %s" % (len(v), len(rlist))
-        assert len(rlist)==2
-        #print("enc=%s" % binascii.hexlify(be or ""))
-        #print("exp=%s" % binascii.hexlify(encstr or ""))
-        _cmp(rlist[0], v[0])
+        _cmp(v[0], rlist[0])
 
         rd = rlist[1]
         od = v[1]
         _cmp(od, rd)
 
     def test_simple(self):
-        v = [b"a", []]
+        v = ["a", []]
         estr = binascii.unhexlify("6c313a616c6565").decode()
         self.t(v, estr)
 
@@ -211,7 +203,7 @@ class TestBencoderFunctions(object):
         ustr = u"Schr\xc3\xb6dinger\xe2\x80\x99s_Cat".encode("utf8")
         estr = binascii.unhexlify("6c32353a53636872c383c2b664696e676572c3a2c280c299735f436174646565")
         self.t([ustr, {}], estr)
-    
+
     def test_encoding_hello(self):
         self.t(hello)
     
@@ -240,10 +232,7 @@ class TestCythonBencoder(unittest.TestCase, TestBencoderFunctions):
 
 
 def main():
-    import sys
-    #needs fixing for py3k:
-    if sys.version_info[0]<3:
-        unittest.main()
+    unittest.main()
 
 if __name__ == '__main__':
     main()

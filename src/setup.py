@@ -1976,7 +1976,7 @@ toggle_packages(bencode_ENABLED, "xpra.net.bencode")
 if cython_bencode_ENABLED:
     bencode_pkgconfig = pkgconfig(optimize=not debug_ENABLED)
     cython_add(Extension("xpra.net.bencode.cython_bencode",
-                ["xpra/net/bencode/cython_bencode.pyx"],
+                ["xpra/net/bencode/cython_bencode.pyx", buffers_c],
                 **bencode_pkgconfig))
 
 
