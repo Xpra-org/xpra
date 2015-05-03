@@ -827,7 +827,12 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_sound_data = function(packet, ctx) {
-	ctx.aurora_source.on_data(packet[2]);
+	if(packet[3]["start-of-stream"] == 1) {
+		console.log("start of stream");
+	} else {
+		ctx.aurora_source.on_data(packet[2]);
+		console.log(ctx.player.format);
+	}
 }
 
 XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
