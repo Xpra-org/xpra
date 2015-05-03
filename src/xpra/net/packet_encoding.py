@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
@@ -162,8 +161,6 @@ def decode(data, protocol_flags):
             raise InvalidPacketEncodingException("bencode is not available")
         if not use_bencode:
             raise InvalidPacketEncodingException("bencode is disabled")
-        #if sys.version>='3':
-        #    data = data.decode("latin1")
         packet, l = bdecode(data)
         assert l==len(data)
         return packet

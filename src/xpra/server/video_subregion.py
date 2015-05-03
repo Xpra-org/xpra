@@ -8,7 +8,7 @@ import time
 import math
 
 from xpra.util import MutableInteger
-from xpra.server.region import rectangle, add_rectangle, remove_rectangle, merge_all
+from xpra.server.region import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
 from xpra.log import Logger
 
 sslog = Logger("regiondetect")
