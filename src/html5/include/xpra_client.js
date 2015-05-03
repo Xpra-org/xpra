@@ -831,6 +831,7 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 		console.log("start of stream");
 	} else {
 		ctx.aurora_source.on_data(packet[2]);
+		console.log(ctx.player.format);
 	}
 }
 
