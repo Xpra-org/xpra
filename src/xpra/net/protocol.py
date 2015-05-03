@@ -901,6 +901,7 @@ class Protocol(object):
         self._write_thread = None
         self._read_thread = None
         self._read_parser_thread = None
+        self._write_format_thread = None
         self._process_packet_cb = None
 
     def terminate_queue_threads(self):
