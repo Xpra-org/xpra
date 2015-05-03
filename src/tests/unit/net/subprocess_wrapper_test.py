@@ -47,7 +47,7 @@ class loopback_connection(Connection):
 
 def loopback_protocol(process_packet_cb, get_packet_cb):
     conn = loopback_connection("fake", "fake")
-    protocol = Protocol(gobject, conn, process_packet_cb, get_packet_cb=get_packet_cb)
+    protocol = Protocol(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
     protocol.enable_encoder("rencode")
     protocol.enable_compressor("none")
     return protocol
@@ -78,7 +78,7 @@ gobject.type_register(TestCallee)
 class SubprocessWrapperTest(unittest.TestCase):
 
     def test_loopback_caller(self):
-        mainloop = gobject.MainLoop()
+        mainloop = glib.MainLoop()
         lp = loopback_process()
         readback = []
         def record_packet(self, *args):

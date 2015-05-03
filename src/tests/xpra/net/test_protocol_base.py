@@ -15,6 +15,7 @@ log.enable_debug()
 
 import gobject
 gobject.threads_init()
+import glib
 
 TEST_SOCKFILE = "./test-socket"
 
@@ -54,7 +55,7 @@ class SimpleServer(object):
         sock.settimeout(None)
         sock.setblocking(1)
         sc = makeSocketConnection(sock, str(address)+"server")
-        protocol = Protocol(gobject, sc, self.process_packet)
+        protocol = Protocol(glib, sc, self.process_packet)
         protocol.salt = None
         protocol.set_compression_level(1)
         protocol.start()
@@ -75,7 +76,7 @@ class SimpleClient(object):
         sock.connect(TEST_SOCKFILE)
         sock.settimeout(None)
         sc = makeSocketConnection(sock, "test-client-socket")
-        self.protocol = Protocol(gobject, sc, self.process_packet, None)
+        self.protocol = Protocol(glib, sc, self.process_packet, None)
         self.protocol.start()
         if len(self.packets)>0:
             gobject.timeout_add(1000, self.send_packet)
