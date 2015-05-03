@@ -52,7 +52,7 @@ except:
         from io import StringIO as StringIOClass        #@Reimport @UnusedImport
 
 
-if sys.version < '3':
+if sys.version_info[0] < 3:
     def strtobytes(x):
         return str(x)
     def bytestostr(x):

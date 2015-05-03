@@ -5,8 +5,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import nonl
+from xpra.util import nonl, bytestostr, strtobytes
 import unittest
+import binascii
 
 
 #sample data to encode:
@@ -23,15 +24,15 @@ large_hello = ["hello",
                 'encoding.vpx.version': 'v1.2.0', 'xkbmap_print': u'xkb_keymap {\n\txkb_keycodes  { include "evdev+aliases(qwerty)"\t};\n\txkb_types     { include "complete"\t};\n\txkb_compat    { include "complete"\t};\n\txkb_symbols   { include "pc+gb+us:2+inet(evdev)"\t};\n\txkb_geometry  { include "pc(pc104)"\t};\n};\n',
                 'sound.receive': True, 'digest': ('hmac', 'xor'),
                 'aliases': {'lost-window': 6, 'bell': 7, 'desktop_size': 8, 'new-override-redirect': 9, 'ping_echo': 5, 'new-window': 10, 'connection-lost': 11, 'startup-complete': 12, 'info-response': 2, 'disconnect': 13, 'ping': 3, 'window-resized': 14, 'set_deflate': 15, 'rpc-reply': 16, 'window-icon': 17, 'draw': 18, 'notify_close': 19, 'sound-data': 1, 'raise-window': 20, 'window-metadata': 21, 'set-clipboard-enabled': 22, 'configure-override-redirect': 23, 'challenge': 24, 'cursor': 25, 'notify_show': 26, 'gibberish': 27, 'new-tray': 28, 'hello': 29},
-                'platform.platform': 'Linux-3.12.5-200.fc19.x86_64-x86_64-with-fedora-19-Schr\xc3\xb6dinger\xe2\x80\x99s_Cat',
+                'platform.platform': 'Linux-3.12.5-200.fc19.x86_64-x86_64-with-fedora-20',
                 'mmap_file': '/tmp/xpra.AFrOuc.mmap', 'uuid': '8643124ce701ee68dbb6b7a8c4eb13a5f6409494', 'encoding.opencl.version': '2013.1', 'bencode.version': ('Cython', 0, 11), 'xkbmap_layout': '',
                 'xkbmap_mod_meanings': {'ISO_Level3_Shift': 'mod5', 'Meta_L': 'mod1', 'Control_R': 'control', 'Super_R': 'mod4', 'Mode_switch': 'mod5', 'Hyper_L': 'mod4', 'Caps_Lock': 'lock', 'Alt_L': 'mod1', 'Num_Lock': 'mod2', 'Super_L': 'mod4', 'Shift_R': 'shift', 'Shift_L': 'shift', 'Control_L': 'control'},
                 'encoding.PIL.version': '1.1.7', 'platform': 'linux2', 'sound.server_driven': True, 'clipboard': True, 'encodings.rgb_formats': ['RGB', 'RGBA'], 'chunked_compression': True, 'keyboard_sync': True, 'sound.pygst.version': (0, 10, 22), 'sound.send': True, 'screen_sizes': [(':0.0', 1920, 1080, 508, 286, [('DVI-I-1', 0, 0, 1920, 1080, 531, 299)], 0, 0, 1920, 1055)],
-                'username': 'antoine', 'auto_refresh_delay': 250, 'mmap_token': 215666214940457138203759294163634184205L, 'encoding.h264.YUV420P.profile': 'high10', 'encoding.transparency': True, 'build.cpu': 'x86_64', 'pycrypto.fastmath': True,
+                'username': 'antoine', 'auto_refresh_delay': 250, 'mmap_token': 215666214940457138203759294163634184205, 'encoding.h264.YUV420P.profile': 'high10', 'encoding.transparency': True, 'build.cpu': 'x86_64', 'pycrypto.fastmath': True,
                 'xkbmap_query': u'rules:      evdev\nmodel:      pc104\nlayout:     gb,us\nvariant:    ,\n',
                 'encoding.rgb24zlib': True, 'platform.machine': 'x86_64', 'encoding.csc_atoms': True, 'encoding.x264.YUV420P.profile': 'high10', 'build.on': 'desktop', 'rencode': True, 'generic_window_types': True, 'gtk.version': (2, 24, 22), 'window.raise': True, 'modifiers': [],
                 'name': 'Antoine Martin', 'encoding.client_options': True, 'encoding.supports_delta': ['png', 'rgb24', 'rgb32'], 'platform.name': 'Linux', 'zlib': True, 'build.revision': '5071', 'client_type': 'Python/Gtk2', 'sound.pulseaudio.server': '{7725dfc225d14958a625ddaaaea5962b}unix:/run/user/1000/pulse/native', 'encoding_client_options': True,
-                'build.by': 'root', 'machine_id': '7725dfc225d14958a625ddaaaea5962b', 'display': ':10', 'python.version': (2, 7, 5), 'encoding.video_scaling': True, 'encoding.x264.version': 130L, 'encoding.uses_swscale': True, 'server_uuid': '', 'desktop_size': [1920, 1080], 'encodings': ['h264', 'vp8', 'webp', 'png', 'png/P', 'png/L', 'rgb', 'jpeg'], 'share': False, 'xkbmap_variant': '', 'sound.pulseaudio.id': '1000@7725dfc225d14958a625ddaaaea5962b/2073', 'cursors': True, 'randr_notify': True,
+                'build.by': 'root', 'machine_id': '7725dfc225d14958a625ddaaaea5962b', 'display': ':10', 'python.version': (2, 7, 5), 'encoding.video_scaling': True, 'encoding.x264.version': 130, 'encoding.uses_swscale': True, 'server_uuid': '', 'desktop_size': [1920, 1080], 'encodings': ['h264', 'vp8', 'webp', 'png', 'png/P', 'png/L', 'rgb', 'jpeg'], 'share': False, 'xkbmap_variant': '', 'sound.pulseaudio.id': '1000@7725dfc225d14958a625ddaaaea5962b/2073', 'cursors': True, 'randr_notify': True,
                 'sound.decoders': ['mp3', 'wavpack', 'wav', 'flac', 'speex'], 'rencode.version': '1.0.2', 'encoding.csc_modes': ('YUV420P', 'YUV422P', 'YUV444P', 'BGRA', 'BGRX'), 'generic-rgb-encodings': True,
                 'xkbmap_keycodes': [(65307, 'Escape', 9, 0, 0), (49, '1', 10, 0, 0), (33, 'exclam', 10, 0, 1), (185, 'onesuperior', 10, 0, 2), (161, 'exclamdown', 10, 0, 3), (49, '1', 10, 1, 0), (33, 'exclam', 10, 1, 1), (50, '2', 11, 0, 0), (34, 'quotedbl', 11, 0, 1), (178, 'twosuperior', 11, 0, 2), (2755, 'oneeighth', 11, 0, 3), (50, '2', 11, 1, 0), (64, 'at', 11, 1, 1), (51, '3', 12, 0, 0), (163, 'sterling', 12, 0, 1), (179, 'threesuperior', 12, 0, 2), (163, 'sterling', 12, 0, 3), (51, '3', 12, 1, 0), (35, 'numbersign', 12, 1, 1), (52, '4', 13, 0, 0), (36, 'dollar', 13, 0, 1), (8364, 'EuroSign', 13, 0, 2), (188, 'onequarter', 13, 0, 3), (52, '4', 13, 1, 0), (36, 'dollar', 13, 1, 1), (53, '5', 14, 0, 0),
                                     (37, 'percent', 14, 0, 1), (189, 'onehalf', 14, 0, 2), (2756, 'threeeighths', 14, 0, 3), (53, '5', 14, 1, 0), (37, 'percent', 14, 1, 1), (54, '6', 15, 0, 0), (94, 'asciicircum', 15, 0, 1), (190, 'threequarters', 15, 0, 2), (2757, 'fiveeighths', 15, 0, 3), (54, '6', 15, 1, 0), (94, 'asciicircum', 15, 1, 1), (55, '7', 16, 0, 0), (38, 'ampersand', 16, 0, 1), (123, 'braceleft', 16, 0, 2), (2758, 'seveneighths', 16, 0, 3), (55, '7', 16, 1, 0), (38, 'ampersand', 16, 1, 1), (56, '8', 17, 0, 0), (42, 'asterisk', 17, 0, 1), (91, 'bracketleft', 17, 0, 2), (2761, 'trademark', 17, 0, 3), (56, '8', 17, 1, 0), (42, 'asterisk', 17, 1, 1), (57, '9', 18, 0, 0), (40, 'parenleft', 18, 0, 1),
@@ -54,8 +55,8 @@ large_hello = ["hello",
                                     (269025097, 'XF86Launch9', 196, 0, 0), (269025193, 'XF86TouchpadToggle', 199, 0, 0), (269025200, 'XF86TouchpadOn', 200, 0, 0), (269025201, 'XF86TouchpadOff', 201, 0, 0), (65406, 'Mode_switch', 203, 0, 0), (65513, 'Alt_L', 204, 0, 1), (65511, 'Meta_L', 205, 0, 1), (65515, 'Super_L', 206, 0, 1), (65517, 'Hyper_L', 207, 0, 1), (269025044, 'XF86AudioPlay', 208, 0, 0), (269025073, 'XF86AudioPause', 209, 0, 0), (269025091, 'XF86Launch3', 210, 0, 0), (269025092, 'XF86Launch4', 211, 0, 0), (269025099, 'XF86LaunchB', 212, 0, 0), (269025191, 'XF86Suspend', 213, 0, 0), (269025110, 'XF86Close', 214, 0, 0), (269025044, 'XF86AudioPlay', 215, 0, 0), (269025175, 'XF86AudioForward', 216, 0, 0),
                                     (65377, 'Print', 218, 0, 0), (269025167, 'XF86WebCam', 220, 0, 0), (269025049, 'XF86Mail', 223, 0, 0), (269025166, 'XF86Messenger', 224, 0, 0), (269025051, 'XF86Search', 225, 0, 0), (269025119, 'XF86Go', 226, 0, 0), (269025084, 'XF86Finance', 227, 0, 0), (269025118, 'XF86Game', 228, 0, 0), (269025078, 'XF86Shop', 229, 0, 0), (65385, 'Cancel', 231, 0, 0), (269025027, 'XF86MonBrightnessDown', 232, 0, 0), (269025026, 'XF86MonBrightnessUp', 233, 0, 0), (269025074, 'XF86AudioMedia', 234, 0, 0), (269025113, 'XF86Display', 235, 0, 0), (269025028, 'XF86KbdLightOnOff', 236, 0, 0), (269025030, 'XF86KbdBrightnessDown', 237, 0, 0), (269025029, 'XF86KbdBrightnessUp', 238, 0, 0),
                                     (269025147, 'XF86Send', 239, 0, 0), (269025138, 'XF86Reply', 240, 0, 0), (269025168, 'XF86MailForward', 241, 0, 0), (269025143, 'XF86Save', 242, 0, 0), (269025115, 'XF86Documents', 243, 0, 0), (269025171, 'XF86Battery', 244, 0, 0), (269025172, 'XF86Bluetooth', 245, 0, 0), (269025173, 'XF86WLAN', 246, 0, 0)],
-                'rgb24zlib': True, 'raw_window_icons': True, 'clipboard.set_enabled': True, 'system_tray': True, 'hostname': 'desktop', 'namespace': True, 'key_repeat': (500L, 30L),
-                'encoding.generic': True, 'version': '0.11.0', 'build.bit': '64bit', 'compressible_cursors': True, 'platform.linux_distribution': ('Fedora', '19', 'Schr\xc3\xb6dinger\xe2\x80\x99s Cat'),
+                'rgb24zlib': True, 'raw_window_icons': True, 'clipboard.set_enabled': True, 'system_tray': True, 'hostname': 'desktop', 'namespace': True, 'key_repeat': (500, 30),
+                'encoding.generic': True, 'version': '0.11.0', 'build.bit': '64bit', 'compressible_cursors': True, 'platform.linux_distribution': ('Fedora', '20', 'Spherical-Cow'),
                 'encoding.rgb_lz4': True, 'clipboard.notifications': True, 'sound.encoders': ['mp3', 'wavpack', 'wav', 'flac', 'speex'], 'encoding.avcodec.version': (54, 92, 100), 'encoding.x264.I420.profile': 'high10', 'notify-startup-complete': True, 'bencode': True, 'xkbmap_mod_pointermissing': [], 'encoding.webp.version': '0.2.2', 'server-window-resize': True, 'xsettings-tuple': True, 'encoding.h264.I420.profile': 'high10',
                 'clipboard.selections': ['CLIPBOARD', 'PRIMARY', 'SECONDARY'], 'pygtk.version': (2, 24, 0), 'encoding.video_reinit': True, 'build.date': '2014-01-01',
                 'xkbmap_x11_keycodes': {9: ['Escape', '', 'Escape'], 10: ['1', 'exclam', '1', 'exclam', 'onesuperior', 'exclamdown'], 11: ['2', 'quotedbl', '2', 'at', 'twosuperior', 'oneeighth'], 12: ['3', 'sterling', '3', 'numbersign', 'threesuperior', 'sterling'], 13: ['4', 'dollar', '4', 'dollar', 'EuroSign', 'onequarter'], 14: ['5', 'percent', '5', 'percent', 'onehalf', 'threeeighths'], 15: ['6', 'asciicircum', '6', 'asciicircum', 'threequarters', 'fiveeighths'], 16: ['7', 'ampersand', '7', 'ampersand', 'braceleft', 'seveneighths'], 17: ['8', 'asterisk', '8', 'asterisk', 'bracketleft', 'trademark'],
@@ -83,42 +84,77 @@ nested_dicts = ['some_new_feature_we_may_add', {"with_a_nested_dict" : {"contain
 nested_dicts_output = "l27:some_new_feature_we_may_addd18:with_a_nested_dictd23:containing_another_dictl4:with6:nested6:arraysl2:inl2:it5:goingll4:deepi0ei-1eeeeeeeee"
 
 
+def _cmp(o, r):
+    #our own deep compare function,
+    #ignores tuple vs list differences,
+    #and gives us a clue about where the problem is
+    if type(o)==type(r) and o==r:
+        return
+    if type(r) in (tuple, list) and type(o) in (tuple, list):
+        assert len(r)==len(o), "list/tuple differs in length: expected %s but got %s" % (o, r)
+        for i in range(len(r)):
+            _cmp(o[i], r[i])
+        return
+    if type(r)==dict and type(o)==dict:
+        for k,ov in o.items():
+            ak = None
+            for tk in k,bytestostr(k),strtobytes(k):
+                if tk in r:
+                    ak = tk
+                    break
+            if not ak or ak not in r:
+                assert False, "restored dict is missing %s" % k
+            rv = r.get(ak)
+            _cmp(ov, rv)
+        return
+    if o==r:
+        return
+    print("")
+    print("original %s:" % type(o))
+    print("%s" % binascii.hexlify(strtobytes(o)))
+    print("returned %s:" % type(r))
+    try:
+        print("%s" % binascii.hexlify(strtobytes(r)))
+    except:
+        pass
+    assert False, "value does not match: expected %s (%s) but got %s (%s)" % (o, type(o), r, type(r))
+
+
 class TestBencoderFunctions(object):
 
    
     def test_decoding(self):
-        def t(s, value, remainder):
-            #log(" "+i(s))
-            # Test "one-shot":
+
+        def t(s, ev, remainder=""):
             rv, rr = self.decode(s)
-            assert rv == value, "expected value %s but got %s" % (rv, value)
+            #print("decode(%s)=%s (%s)" % (s, rv, type(rv)))
+            _cmp(rv, ev)
             rrstr = s[rr:]
             assert rrstr == remainder, "expected remainder value %s but got %s" % (remainder, rrstr)
             # With gibberish added:
             g_str = s + "asdf"
             rv, rr = self.decode(g_str)
-            assert rv == value, "expected value %s but got %s" % (rv, value)
+            _cmp(rv, ev)
             rrstr = g_str[rr:]
             assert rrstr.endswith("asdf")
     
         #t("l16:configure-windowi2ei555ei340ei649ei381ed9:maximizedi0e6:screeni0e9:maximizedi0eee", [], "")
     
-        t("i12345e", 12345, "")
-        t("i-12345e", -12345, "")
+        t("i12345e", 12345)
+        t("i-12345e", -12345)
         t("i12345eQQQ", 12345, "QQQ")
-        t("3:foo", "foo", "")
-        t("3:fooQQQ", "foo", "QQQ")
-        t("li12e4:asdfi34ee", [12, "asdf", 34], "")
-        t("d4:asdf3:foo4:bsdfi1234ee", {"asdf": "foo", "bsdf": 1234}, "")
-    
+        t("3:foo", "foo")
+        t("3:gooQQQ", "goo", "QQQ")
+        t("li12e4:asdfi34ee", [12, "asdf", 34])
+        t("d4:asdf3:doo4:bsdfi1234ee", {"asdf": "doo", "bsdf": 1234})
+
         t("d4:asdfli1ei2ei3ei4ee5:otheri-55e2:qqd2:qql2:hieee",
-          {"asdf": [1, 2, 3, 4], "qq": {"qq": ["hi"]}, "other": -55},
-          "")
+          {"asdf": [1, 2, 3, 4], "qq": {"qq": ["hi"]}, "other": -55})
     
-        t("l0:e", [""], "")
+        t("l0:e", [""])
     
         # Keys do not have to be strings:
-        t("di0ei0ee", {0 : 0}, "")
+        t("di0ei0ee", {0 : 0})
     
         def te(s, exc):
             #log(" "+s)
@@ -132,7 +168,7 @@ class TestBencoderFunctions(object):
     
         te("iie", ValueError)
         te("i0x0e", ValueError)
-        t("i0e", 0, "")
+        t("i0e", 0)
         te("i00e", ValueError)
     
         te("0x2:aa", ValueError)
@@ -140,26 +176,6 @@ class TestBencoderFunctions(object):
         te("02:aa", ValueError)
 
 
-    def cmp(self, o, r):
-        #our own deep compare function,
-        #ignores tuple vs list differences,
-        #and gives us a clue about where the problem is
-        if o==r:
-            return
-        if type(r) in (tuple, list) and type(o) in (tuple, list):
-            assert len(r)==len(o), "list/tuple differs in length: expected %s but got %s" % (o, r)
-            for i in range(len(r)):
-                self.cmp(o[i], r[i])
-            return
-        if type(r)==dict and type(o)==dict:
-            for k,ov in o.items():
-                if k not in r:
-                    assert False, "restored dict is missing %s" % k
-                rv = r.get(k)
-                self.cmp(ov, rv)
-            return
-        assert False, "value for %s does not match: %s vs %s (types: %s / %s)" % (k, ov, rv, type(ov), type(rv))
-    
     def t(self, v, encstr=None):
         be = self.encode(v)
         #print("bencode(%s)=%s" % (i(v), i(be)))
@@ -169,10 +185,6 @@ class TestBencoderFunctions(object):
                 if encstr[p]!=be[p]:
                     break
                 p += 1
-            #bec = be[p:p+20]
-            #encstrc = encstr[p:p+20]
-            #print("context: expected '%s' but got '%s'" % (nonl(encstrc), nonl(bec)))
-            #print("context: expected '%s' but got '%s'" % ([ord(c) for c in encstrc], [ord(c) for c in bec]))
             assert be==encstr, "expected '%s' but got '%s', strings differ at position %s: expected '%s' but found '%s' (lengths: %s vs %s)" % (nonl(encstr), nonl(be), p, encstr[p], be[p], len(encstr), len(be))
         restored = self.decode(be)
         rlist = restored[0]
@@ -182,11 +194,23 @@ class TestBencoderFunctions(object):
             print("l=%s" % rlist)
             assert False, "length of decoded value does not match: exected %s but got %s" % (len(v), len(rlist))
         assert len(rlist)==2
-        assert rlist[0]==v[0], "packet type differs: expected %s but got %s" % (v[0], rlist[0])
+        #print("enc=%s" % binascii.hexlify(be or ""))
+        #print("exp=%s" % binascii.hexlify(encstr or ""))
+        _cmp(rlist[0], v[0])
 
         rd = rlist[1]
         od = v[1]
-        self.cmp(od, rd)
+        _cmp(od, rd)
+
+    def test_simple(self):
+        v = [b"a", []]
+        estr = binascii.unhexlify("6c313a616c6565").decode()
+        self.t(v, estr)
+
+    def test_unicode(self):
+        ustr = u"Schr\xc3\xb6dinger\xe2\x80\x99s_Cat".encode("utf8")
+        estr = binascii.unhexlify("6c32353a53636872c383c2b664696e676572c3a2c280c299735f436174646565")
+        self.t([ustr, {}], estr)
     
     def test_encoding_hello(self):
         self.t(hello)
@@ -216,7 +240,10 @@ class TestCythonBencoder(unittest.TestCase, TestBencoderFunctions):
 
 
 def main():
-    unittest.main()
+    import sys
+    #needs fixing for py3k:
+    if sys.version_info[0]<3:
+        unittest.main()
 
 if __name__ == '__main__':
     main()

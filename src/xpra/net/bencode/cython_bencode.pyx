@@ -9,14 +9,35 @@
 
 # Original version written by Petru Paler
 
-__version__ = ("Cython", 0, 11)
+__version__ = ("Cython", 0, 12)
 
 import sys
-if sys.version>='3':
+if sys.version_info[0]>=3:
     raise ImportError("not ported to py3k yet")
-
-from types import (StringType, UnicodeType, IntType, LongType, DictType, ListType,
-                   TupleType, BooleanType)
+    #work in progress:
+    StringType  = bytes
+    UnicodeType = str
+    IntType     = int
+    LongType    = int
+    DictType    = dict
+    ListType    = list
+    TupleType   = tuple
+    BooleanType = bool
+    def strtobytes(x):
+        if type(x)==bytes:
+            return x
+        return str(x).encode("utf8")
+    def bytestostr(x):
+        if type(x)==bytes:
+            return x.decode("utf8")
+        return str(x)
+else:
+    from types import (StringType, UnicodeType, IntType, LongType, DictType, ListType,
+                       TupleType, BooleanType)
+    def strtobytes(x):      #@DuplicatedSignature
+        return str(x)
+    def bytestostr(x):      #@DuplicatedSignature
+        return str(x)
 
 cdef int unicode_support = 0
 def set_unicode_support(us):
@@ -178,7 +199,7 @@ def bencode(x):
     r = []
     try:
         encode(x, r)
-        return ''.join(r)
+        return ''.join(bytestostr(x) for x in r)
     except Exception:
         import traceback
         traceback.print_exc()
