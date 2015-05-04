@@ -596,17 +596,23 @@ cdef class Encoder:
 def selftest():
     #fake empty buffer:
     w, h = 24, 16
-    y = bytearray(b"\0" * (w*h))
-    u = bytearray(b"\0" * (w*h//4))
-    v = bytearray(b"\0" * (w*h//4))
     for encoding in get_encodings():
-        e = Encoder()
-        try:
-            e.init_context(w, h, "YUV420P", ["YUV420P"], encoding, w, h, (1,1), {})
-            from xpra.codecs.image_wrapper import ImageWrapper
-            image = ImageWrapper(0, 0, w, h, [y, u ,v], "YUV420P", 32, [w, w/2, w/2], planes=ImageWrapper.PACKED, thread_safe=True)
-            c = e.compress_image(image)
-            #import binascii
-            #print("compressed data(%s)=%s" % (encoding, binascii.hexlify(str(c))))
-        finally:
-            e.clean()
+        for cs in get_input_colorspaces(encoding):
+            e = Encoder()
+            try:
+                e.init_context(w, h, cs, [cs], encoding, w, h, (1,1), {})
+                from xpra.codecs.image_wrapper import ImageWrapper
+                from xpra.codecs.codec_constants import get_subsampling_divs
+                divs = get_subsampling_divs(cs)
+                ydiv = divs[0]  #always (1,1)
+                y = bytearray(b"\0" * (w*h//(ydiv[0]*ydiv[1])))
+                udiv = divs[1]
+                u = bytearray(b"\0" * (w*h//(udiv[0]*udiv[1])))
+                vdiv = divs[2]
+                v = bytearray(b"\0" * (w*h//(vdiv[0]*vdiv[1])))
+                image = ImageWrapper(0, 0, w, h, [y, u, v], cs, 32, [w//ydiv[0], w//udiv[0], w//vdiv[0]], planes=ImageWrapper.PACKED, thread_safe=True)
+                c = e.compress_image(image)
+                #import binascii
+                #print("compressed data(%s)=%s" % (encoding, binascii.hexlify(str(c))))
+            finally:
+                e.clean()
