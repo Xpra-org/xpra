@@ -1492,14 +1492,15 @@ class WindowSource(object):
             #hack note: the '[:]' slicing does not make a copy when dealing with a memoryview
             #but it does when dealing with strings! (and so we only make one copy no matter what here)
             dpixels = memoryview_to_bytes(dpixels[:])
+            pixel_format = image.get_pixel_format()
             dlen = len(dpixels)
             store = sequence
             for i, dr in enumerate(list(self.delta_pixel_data)):
                 if dr is None:
                     continue
-                lw, lh, lcoding, lsequence, buflen, ldata, hits, _ = dr
-                if lw==w and lh==h and lcoding==coding and buflen==dlen:
-                    deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i, hit count=%s)", i, lw, lh, lcoding, dlen, lsequence, hits)
+                lw, lh, lpixel_format, lsequence, buflen, ldata, hits, _ = dr
+                if lw==w and lh==h and lpixel_format==pixel_format and buflen==dlen:
+                    deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i, hit count=%s)", i, lw, lh, lpixel_format, dlen, lsequence, hits)
                     #xor with this matching delta bucket:
                     delta = lsequence
                     bucket = i
