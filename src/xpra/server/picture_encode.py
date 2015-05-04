@@ -110,7 +110,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     wire_data = raw_data
     level = 0
     algo = "not"
-    if len(pixels)>=256 and (rgb_zlib and compression.use_zlib) or (rgb_lz4 and compression.lz4) or (rgb_lzo and compression.use_lzo):
+    if len(pixels)>=256 and (rgb_zlib and compression.use_zlib) or (rgb_lz4 and compression.use_lz4) or (rgb_lzo and compression.use_lzo):
         level = max(0, min(5, int(115-speed)/20))
         if len(pixels)<1024:
             #fewer pixels, make it more likely we won't bother compressing:
