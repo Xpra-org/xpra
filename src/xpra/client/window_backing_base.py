@@ -22,8 +22,6 @@ from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_plac
 
 DELTA_BUCKETS = int(os.environ.get("XPRA_DELTA_BUCKETS", "5"))
 
-PIL = get_codec("PIL")
-
 #ie:
 #CSC_OPTIONS = { "YUV420P" : {"RGBX" : [opencl.spec, swscale.spec], "BGRX" : ...} }
 CSC_OPTIONS = None
@@ -81,6 +79,7 @@ class WindowBackingBase(object):
         self._video_decoder = None
         self._csc_decoder = None
         self._decoder_lock = Lock()
+        PIL = get_codec("PIL")
         self._PIL_encodings = get_PIL_decodings(PIL)
         self.draw_needs_refresh = True
         self.mmap = None
@@ -195,6 +194,7 @@ class WindowBackingBase(object):
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
+        PIL = get_codec("PIL")
         assert PIL, "PIL not found"
         buf = BytesIOClass(img_data)
         img = PIL.Image.open(buf)

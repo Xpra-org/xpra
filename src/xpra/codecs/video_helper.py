@@ -10,7 +10,7 @@ from threading import Lock
 from xpra.log import Logger
 log = Logger("codec", "video")
 
-from xpra.codecs.loader import get_codec, get_codec_error, load_codecs
+from xpra.codecs.loader import get_codec, get_codec_error
 
 
 #the codec loader uses the names...
@@ -213,7 +213,6 @@ class VideoHelper(object):
 
     def init(self):
         log("VideoHelper.init()")
-        load_codecs()
         with self._lock:
             #check again with lock held (in case of race):
             log("VideoHelper.init() initialized=%s", self._initialized)
@@ -416,10 +415,11 @@ def getVideoHelper():
 
 
 def main():
-    from xpra.codecs.loader import log as loader_log
+    from xpra.codecs.loader import log as loader_log, load_codecs
     if "-v" in sys.argv or "--verbose" in sys.argv:
         loader_log.enable_debug()
         log.enable_debug()
+    load_codecs()
     vh = getVideoHelper()
     vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
     vh.init()

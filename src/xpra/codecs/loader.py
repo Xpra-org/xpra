@@ -89,49 +89,59 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
     return None
 
 
-loaded = False
-def load_codecs():
+loaded = None
+def load_codecs(encoders=True, decoders=True, csc=True):
     global loaded
     if loaded:
         return
     loaded = True
+    show = []
     log("loading codecs")
-    codec_import_check("PIL", "Python Imaging Library", "PIL", "PIL", "Image")
-    add_codec_version("PIL", "PIL.Image", "PILLOW_VERSION", "VERSION")
+    if encoders or decoders:
+        codec_import_check("PIL", "Python Imaging Library", "PIL", "PIL", "Image")
+        add_codec_version("PIL", "PIL.Image", "PILLOW_VERSION", "VERSION")
 
-    codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
-    codec_import_check("dec_vpx", "vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
-    add_codec_version("vpx", "xpra.codecs.vpx.encoder")
+    if encoders:
+        show += list(ENCODER_CODECS)
+        codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
+        add_codec_version("enc_webp", "xpra.codecs.webp.encode")
 
-    codec_import_check("enc_x264", "x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
-    add_codec_version("x264", "xpra.codecs.enc_x264.encoder")
+        codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
+        add_codec_version("vpx", "xpra.codecs.vpx.decoder")
 
-    codec_import_check("enc_x265", "x265 encoder", "xpra.codecs.enc_x265", "xpra.codecs.enc_x265.encoder", "Encoder")
-    add_codec_version("x265", "xpra.codecs.enc_x265.encoder")
+        codec_import_check("enc_x264", "x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
+        add_codec_version("x264", "xpra.codecs.enc_x264.encoder")
 
-    for v in (4, 3, 5):
-        codec_import_check("nvenc%s" % v, "nvenc encoder", "xpra.codecs.nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v, "Encoder")
-        add_codec_version("nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v)
+        codec_import_check("enc_x265", "x265 encoder", "xpra.codecs.enc_x265", "xpra.codecs.enc_x265.encoder", "Encoder")
+        add_codec_version("x265", "xpra.codecs.enc_x265.encoder")
 
-    codec_import_check("csc_swscale", "swscale colorspace conversion", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
-    add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter")
+        for v in (4, 3, 5):
+            codec_import_check("nvenc%s" % v, "nvenc encoder", "xpra.codecs.nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v, "Encoder")
+            add_codec_version("nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v)
 
-    codec_import_check("csc_cython", "cython colorspace conversion", "xpra.codecs.csc_cython", "xpra.codecs.csc_cython.colorspace_converter", "ColorspaceConverter")
-    add_codec_version("cython", "xpra.codecs.csc_cython.colorspace_converter")
+    if csc:
+        show += list(CSC_CODECS)
+        codec_import_check("csc_swscale", "swscale colorspace conversion", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
+        add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter")
+    
+        codec_import_check("csc_cython", "cython colorspace conversion", "xpra.codecs.csc_cython", "xpra.codecs.csc_cython.colorspace_converter", "ColorspaceConverter")
+        add_codec_version("cython", "xpra.codecs.csc_cython.colorspace_converter")
+    
+        codec_import_check("csc_opencl", "OpenCL colorspace conversion", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
+        add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter")
 
-    codec_import_check("csc_opencl", "OpenCL colorspace conversion", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
-    add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter")
+    if decoders:
+        show += list(DECODER_CODECS)
+        codec_import_check("dec_webp", "webp decoder", "xpra.codecs.webp", "xpra.codecs.webp.decode", "decompress")
+        add_codec_version("dec_webp", "xpra.codecs.webp.decode")
 
-    codec_import_check("dec_avcodec2", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
-    add_codec_version("avcodec2", "xpra.codecs.dec_avcodec2.decoder")
+        codec_import_check("dec_vpx", "vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
+        add_codec_version("vpx", "xpra.codecs.vpx.encoder")
 
-    codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
-    add_codec_version("enc_webp", "xpra.codecs.webp.encode")
+        codec_import_check("dec_avcodec2", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
+        add_codec_version("avcodec2", "xpra.codecs.dec_avcodec2.decoder")
 
-    codec_import_check("dec_webp", "webp decoder", "xpra.codecs.webp", "xpra.codecs.webp.decode", "decompress")
-    add_codec_version("dec_webp", "xpra.codecs.webp.decode")
-
-    #not really a codec, but gets used by codecs:
+    #not really a codec, but gets used by codecs, so include version info:
     add_codec_version("numpy", "numpy")
 
     log("done loading codecs")
@@ -145,28 +155,30 @@ def load_codecs():
 
 
 def get_codec_error(name):
+    assert loaded
     return codec_errors.get(name)
 
 def get_codec(name):
-    load_codecs()
+    assert loaded
     return codecs.get(name)
 
 def get_codec_version(name):
-    load_codecs()
+    assert loaded
     return codec_versions.get(name)
 
 def has_codec(name):
-    load_codecs()
+    assert loaded
     return name in codecs
+
 
 OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"}
 ALL_OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8", "rgb24" : "rgb"}
 
-ALL_CODECS = "PIL", "enc_vpx", "dec_vpx", "enc_x264", "enc_x265", "nvenc3", "nvenc4", "nvenc5", \
-            "csc_swscale", "csc_cython", "csc_opencl", \
-            "dec_avcodec2", \
-            "enc_webp", \
-            "dec_webp"
+CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl"
+ENCODER_CODECS = "PIL", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc3", "nvenc4", "nvenc5"
+DECODER_CODECS = "PIL", "dec_vpx", "dec_webp", "dec_avcodec2"
+
+ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
@@ -233,7 +245,7 @@ def main():
         load_codecs()
         print("codecs and csc modules found:")
         #print("codec_status=%s" % codecs)
-        for name in ALL_CODECS:
+        for name in sorted(ALL_CODECS):
             mod = codecs.get(name, "")
             f = mod
             if mod and hasattr(mod, "__file__"):

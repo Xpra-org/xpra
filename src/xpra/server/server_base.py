@@ -31,7 +31,7 @@ from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ER
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import python_platform, parse_bool_or_int
 from xpra.scripts.main import sound_option
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, codec_versions, has_codec, get_codec
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.codec_constants import get_PIL_encodings
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 if sys.version > '3':
@@ -246,6 +246,7 @@ class ServerBase(ServerCore):
         log("threaded_init() end")
 
     def init_encodings(self):
+        load_codecs(decoders=False)
         encs, core_encs = [], []
         def add_encodings(encodings):
             for ce in encodings:

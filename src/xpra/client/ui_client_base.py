@@ -39,7 +39,7 @@ from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_i
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
                                get_native_tray_menu_helper_classes, get_dpi, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, ClientExtras)
 from xpra.codecs.codec_constants import get_PIL_decodings
-from xpra.codecs.loader import codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
+from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option
 from xpra.scripts.config import parse_bool_or_int
@@ -292,6 +292,7 @@ class UIXpraClient(XpraClientBase):
 
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)
+        load_codecs(encoders=False)
         vh = getVideoHelper()
         vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
         vh.init()
