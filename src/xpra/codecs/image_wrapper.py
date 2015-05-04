@@ -98,6 +98,10 @@ class ImageWrapper(object):
         #only defined for XImage wrappers:
         return 0
 
+    def restride(self, *args):
+        #not supported by the generic image wrapper:
+        return False
+
     def clone_pixel_data(self):
         assert not self.freed, "image has already been freed!"
         if self.planes == 0:

@@ -43,7 +43,6 @@ from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
 from xpra.server.region import rectangle, add_rectangle, remove_rectangle   #@UnresolvedImport
-from xpra.codecs.argb.argb import restride_image    #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
@@ -1486,7 +1485,7 @@ class WindowSource(object):
         #if client supports delta pre-compression for this encoding, use it if we can:
         elif self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size:
             #this may save space (and lower the cost of xoring):
-            restride_image(image)
+            image.restride()
             #we need to copy the pixels because some encodings
             #may modify the pixel array in-place!
             dpixels = image.get_pixels()

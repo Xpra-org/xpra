@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("window", "encoding")
 
 from xpra.net import compression
-from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, restride_image   #@UnresolvedImport
+from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba  #@UnresolvedImport
 from xpra.os_util import StringIOClass
 from xpra.codecs.loader import get_codec, get_codec_version
 from xpra.codecs.codec_constants import get_PIL_encodings
@@ -96,7 +96,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     options = {"rgb_format" : pixel_format}
 
     #we may want to re-stride:
-    restride_image(image)
+    image.restride()
 
     #compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()

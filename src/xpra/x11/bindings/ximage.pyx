@@ -16,6 +16,10 @@ xshmdebug = Logger("x11", "bindings", "ximage", "xshm", "verbose")
 ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
 
 
+cdef roundup(int n, int m):
+    return (n + m - 1) & ~(m - 1)
+
+
 ###################################
 # Headers, python magic
 ###################################
@@ -289,17 +293,15 @@ cdef class XImageWrapper:
         return self.pixel_format
 
     def get_pixels(self):
+        cdef void *pix_ptr = self.get_pixels_ptr()
+        return memory_as_pybuffer(pix_ptr, self.get_size(), False)
+
+    cdef void *get_pixels_ptr(self):
         if self.pixels!=NULL:
-            return self.get_char_pixels()
-        return self.get_image_pixels()
-
-    cdef get_char_pixels(self):
-        assert self.pixels!=NULL
-        return memory_as_pybuffer(self.pixels, self.get_size(), False)
-
-    cdef get_image_pixels(self):
-        assert self.image!=NULL
-        return memory_as_pybuffer(self.image.data, self.get_size(), False)
+            return self.pixels
+        if self.image==NULL:
+            return NULL
+        return self.image.data
 
     def is_thread_safe(self):
         return self.thread_safe
@@ -328,16 +330,9 @@ cdef class XImageWrapper:
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
-        self.allocate_buffer(buf_len, True)
-        memcpy(self.pixels, buf, buf_len)
-
-    def get_pixel_ptr(self):
-        return int(<unsigned long> self.pixels)
-
-    def allocate_buffer(self, Py_ssize_t buf_len, int free_existing=1):
-        if self.pixels!=NULL and free_existing!=0:
+        if self.pixels!=NULL:
             free(self.pixels)
-        self.pixels = NULL
+            self.pixels = NULL
         #Note: we can't free the XImage, because it may
         #still be used somewhere else (see XShmWrapper)
         if posix_memalign(<void **> &self.pixels, 64, buf_len):
@@ -345,10 +340,13 @@ cdef class XImageWrapper:
         assert self.pixels!=NULL
         if self.image==NULL:
             self.thread_safe = 1
-            #we can only mark this object as thread safe
+            #we can now mark this object as thread safe
             #if we have already freed the XImage
-            #(since it needs to be freed from the UI thread)
-        return int(<unsigned long> self.pixels)
+            #which needs to be freed from the UI thread
+            #but our new buffer is just a malloc buffer,
+            #which is safe from any thread
+        memcpy(self.pixels, buf, buf_len)
+
 
     def free(self):                                     #@DuplicatedSignature
         ximagedebug("%s.free()", self)
@@ -368,6 +366,46 @@ cdef class XImageWrapper:
         if self.pixels!=NULL:
             free(self.pixels)
             self.pixels = NULL
+
+
+    def restride(self, int newstride=0):
+        #NOTE: this must be called from the UI thread!
+        if newstride==0:
+            newstride = roundup(self.width*len(self.pixel_format), 4)   #a reasonable stride: rounded up to 4
+        if self.rowstride<8 or newstride>self.rowstride or self.height<=2:
+            return False                    #not worth it
+        cdef int size = self.rowstride*self.height
+        cdef int newsize = newstride*self.height                  #desirable size we could have
+        #is it worth re-striding to save space:
+        #(save at least 1KB and 10%)
+        if size-newsize<1024 or newsize*110/100>size:
+            log("restride(%s) not enough savings: size=%s, newsize=%s", newstride, size, newsize) 
+            return False
+        #Note: we could also change the pixel format whilst we're at it
+        # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
+        cdef void *img_buf = self.get_pixels_ptr()
+        assert img_buf!=NULL, "this image wrapper is empty!"
+        cdef void *new_buf
+        if posix_memalign(<void **> &new_buf, 64, newsize):
+            raise Exception("posix_memalign failed!")
+        cdef int ry
+        cdef void *to = new_buf
+        for 0 <= ry < self.height:
+            memcpy(to, img_buf, newstride)
+            to += newstride
+            img_buf += self.rowstride
+        log("restride() %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)", 
+            self.pixel_format, 100-100*newsize/size, self.rowstride, size, newstride, newsize)
+        #we can now free the pixels buffer if present
+        #(but not the ximage - this is not running in the UI thread!)
+        self.free_pixels()
+        #set the new attributes:
+        self.rowstride = newstride
+        self.pixels = <char *> new_buf
+        #without any X11 image to free, this is now thread safe:
+        if self.image==NULL:
+            self.thread_safe = 1
+        return True
 
 
 cdef class XShmWrapper(object):
@@ -523,17 +561,16 @@ cdef class XShmImageWrapper(XImageWrapper):
     def __init__(self, *args):                      #@DuplicatedSignature
         self.free_callback = None
 
-    def __repr__(self):                              #@DuplicatedSignature
+    def __repr__(self):                             #@DuplicatedSignature
         return "XShmImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
 
-    cdef get_image_pixels(self):                     #@DuplicatedSignature
-        cdef char *offset
-        xshmdebug("XShmImageWrapper.get_image_pixels() self=%s", self)
+    cdef void *get_pixels_ptr(self):                #@DuplicatedSignature
+        if self.pixels!=NULL:
+            return self.pixels
         assert self.image!=NULL and self.height>0
+        xshmdebug("XShmImageWrapper.get_pixels_ptr() self=%s", self)
         #calculate offset (assuming 4 bytes "pixelstride"):
-        offset = self.image.data + (self.y * self.rowstride) + (4 * self.x)
-        cdef Py_ssize_t size = self.height * self.rowstride
-        return memory_as_pybuffer(offset, size, False)
+        return self.image.data + (self.y * self.rowstride) + (4 * self.x)
 
     def free(self):                                 #@DuplicatedSignature
         #ensure we never try to XDestroyImage:
