@@ -328,26 +328,6 @@ cdef class Decoder:
 
 
 def selftest():
-    import binascii
-    TEST_COMPRESSED_DATA = {
-        "vp8" : {"YUV420P" : "1003009d012a1800100000070885858899848800281013ad501fc01fd01050122780feffbb029ffffa2546bd18c06f7ffe8951fffe8951af46301bdfffa22a00"},
-        "vp9" : {"YUV420P" : "8249834200017000f60038241c18000000200000047ffffffba9da00059fffffff753b413bffffffeea7680000",
-                 "YUV444P" : "a249834200002e001ec007048383000000040000223fffffeea76800c7ffffffeea7680677ffffff753b40081000"},
-    }
-    w, h = 24, 16
-    for encoding in get_encodings():
-        test_data_set = TEST_COMPRESSED_DATA.get(encoding)
-        for cs in get_input_colorspaces(encoding):
-            test_data = test_data_set.get(cs)
-            if not test_data:
-                continue
-            data = binascii.unhexlify(test_data)
-            e = Decoder()
-            try:
-                e.init_context(encoding, w, h, cs)
-                image = e.decompress_image(data, {})
-                assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
-                assert image.get_width()==w, "expected image of width %s but got %s" % (w, image.get_width())
-                assert image.get_height()==h, "expected image of height %s but got %s" % (h, image.get_height())
-            finally:
-                e.clean()
+    from xpra.codecs.codec_selftest import testdecoder
+    from xpra.codecs.vpx import decoder
+    testdecoder(decoder)
