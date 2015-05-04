@@ -16,6 +16,8 @@ if sys.version > '3':
 #do not require the libraries to be installed
 NOWARN = ["nvenc3", "nvenc4", "nvenc5", "opencl"]
 
+RUN_SELF_TESTS = True
+
 codec_errors = {}
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, *classnames):
@@ -36,7 +38,7 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                 ic =  __import__(class_module, {}, {}, classname)
                 selftest = getattr(ic, "selftest", None)
                 log("%s.selftest=%s", name, selftest)
-                if selftest:
+                if RUN_SELF_TESTS and selftest:
                     selftest()
                 #log.warn("codec_import_check(%s, ..)=%s" % (name, ic))
                 log(" found %s : %s", name, ic)
