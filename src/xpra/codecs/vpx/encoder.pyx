@@ -396,8 +396,9 @@ cdef class Encoder:
                     tile_columns = 3
                 self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, tile_columns)
         IF LIBVPX14:
-            #disable periodic Q boost which causes latency spikes:
-            self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
+            if encoding=="vp9":
+                #disable periodic Q boost which causes latency spikes:
+                self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
 
 
     def codec_control(self, info, int attr, int value):
