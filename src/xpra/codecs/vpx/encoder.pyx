@@ -611,8 +611,9 @@ def selftest():
                 vdiv = divs[2]
                 v = bytearray(b"\0" * (w*h//(vdiv[0]*vdiv[1])))
                 image = ImageWrapper(0, 0, w, h, [y, u, v], cs, 32, [w//ydiv[0], w//udiv[0], w//vdiv[0]], planes=ImageWrapper.PACKED, thread_safe=True)
-                c = e.compress_image(image)
+                data, meta = e.compress_image(image)
                 #import binascii
-                #print("compressed data(%s)=%s" % (encoding, binascii.hexlify(str(c))))
+                #print("compressed data: %s bytes (%s), metadata: %s" % (len(data), type(data), meta))
+                #print("compressed data(%s, %s)=%s" % (encoding, cs, binascii.hexlify(data)))
             finally:
                 e.clean()
