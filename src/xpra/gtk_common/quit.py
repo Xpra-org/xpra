@@ -47,13 +47,11 @@ def gtk_main_quit_really():
 # idling in the main loop, then it will pass the exception along, but it won't
 # propagate it from Python code. Sigh.) But sys.excepthook will still get
 # called with such exceptions.
-_hooked = False
 _oldhook = None
 def gtk_main_quit_on_fatal_exceptions_enable():
-    global _hooked, _oldhook
-    if _hooked:
+    global _oldhook
+    if _oldhook:
         return
-    _hooked = True
     _oldhook = sys.excepthook
     def gtk_main_quit_on_fatal_exception(etype, val, tb):
         if issubclass(etype, (KeyboardInterrupt, SystemExit)):
