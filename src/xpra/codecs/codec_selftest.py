@@ -5,6 +5,9 @@
 # later version. See the file COPYING for details.
 
 import binascii
+
+from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.log import Logger
 log = Logger("util")
 
@@ -17,6 +20,25 @@ TEST_COMPRESSED_DATA = {
 }
 W = 24
 H = 16
+
+
+def make_test_image(pixel_format, w, h):
+    if pixel_format.startswith("YUV") or pixel_format=="GBRP":
+        divs = get_subsampling_divs(pixel_format)
+        ydiv = divs[0]  #always (1,1)
+        y = bytearray(b"\0" * (w*h//(ydiv[0]*ydiv[1])))
+        udiv = divs[1]
+        u = bytearray(b"\0" * (w*h//(udiv[0]*udiv[1])))
+        vdiv = divs[2]
+        v = bytearray(b"\0" * (w*h//(vdiv[0]*vdiv[1])))
+        image = ImageWrapper(0, 0, w, h, [y, u, v], pixel_format, 32, [w//ydiv[0], w//udiv[0], w//vdiv[0]], planes=ImageWrapper._3_PLANES, thread_safe=True)
+    elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB"):
+        rgb_data = bytearray(b"\0" * (w*h*len(pixel_format)))
+        image = ImageWrapper(0, 0, w, h, rgb_data, pixel_format, 32, w*len(pixel_format), planes=ImageWrapper.PACKED, thread_safe=True)
+    else:
+        raise Exception("don't know how to create a %s image" % pixel_format)
+    return image
+
 
 def testdecoder(decoder_module):
     for encoding in decoder_module.get_encodings():
@@ -36,5 +58,29 @@ def testdecoder(decoder_module):
                 assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
                 assert image.get_width()==W, "expected image of width %s but got %s" % (W, image.get_width())
                 assert image.get_height()==H, "expected image of height %s but got %s" % (H, image.get_height())
+                #test failures:
+                try:
+                    image = e.decompress_image("junk", {})
+                except:
+                    pass
+                if image is not None:
+                    raise Exception("decoding junk with %s should have failed, got %s instead" % (decoder_module.get_type(), image))
+            finally:
+                e.clean()
+
+def testcsc(csc_module):
+    for cs_in in csc_module.get_input_colorspaces():
+        for cs_out in csc_module.get_output_colorspaces(cs_in):
+            log("%s: testing %s / %s", csc_module.get_type(), cs_in, cs_out)
+            e = csc_module.ColorspaceConverter()
+            try:
+                #TODO: test scaling
+                e.init_context(W, H, cs_in, W, H, cs_out)
+                image = make_test_image(cs_in, W, H)
+                out = e.convert_image(image)
+                #print("convert_image(%s)=%s" % (image, out))
+                assert out.get_width()==W, "expected image of width %s but got %s" % (W, image.get_width())
+                assert out.get_height()==H, "expected image of height %s but got %s" % (H, image.get_height())
+                assert out.get_pixel_format()==cs_out
             finally:
                 e.clean()

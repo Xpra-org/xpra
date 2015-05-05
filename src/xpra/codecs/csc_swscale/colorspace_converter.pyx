@@ -483,3 +483,9 @@ cdef class ColorspaceConverter:
         out_image = CSCImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, oplanes)
         out_image.csc_image = csci
         return out_image
+
+
+def selftest():
+    from xpra.codecs.codec_selftest import testcsc
+    from xpra.codecs.csc_swscale import colorspace_converter
+    testcsc(colorspace_converter)

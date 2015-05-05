@@ -21,7 +21,7 @@ class TestDecoders(unittest.TestCase):
                 continue
             #print("found %s: %s" % (codec_name, codec))
             selftest = getattr(codec, "selftest", None)
-            #print("selftest=%s" % selftest)
+            #print("selftest(%s)=%s" % (codec_name, selftest))
             if selftest:
                 selftest()
 

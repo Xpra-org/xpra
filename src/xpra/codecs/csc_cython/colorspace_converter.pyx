@@ -575,3 +575,9 @@ cdef class ColorspaceConverter:
         out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
         out_image.cython_buffer = <unsigned long> output_image
         return out_image
+
+
+def selftest():
+    from xpra.codecs.codec_selftest import testcsc
+    from xpra.codecs.csc_cython import colorspace_converter
+    testcsc(colorspace_converter)
