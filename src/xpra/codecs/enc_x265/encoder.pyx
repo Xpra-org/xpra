@@ -488,3 +488,9 @@ cdef class Encoder:
         self.frames += 1
         log("x265 compressed data size: %s, client options=%s", frame_size, client_options)
         return  "".join(data), client_options
+
+
+def selftest():
+    from xpra.codecs.codec_selftest import testencoder
+    from xpra.codecs.enc_x265 import encoder
+    testencoder(encoder)
