@@ -766,7 +766,7 @@ class ColorspaceConverter(object):
 
         #input image:
         iformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNSIGNED_INT8)
-        shape = (stride/4, self.src_height)
+        shape = (stride//4, self.src_height)
         log("convert_image() input image format=%s, shape=%s, work size: local=%s, global=%s", iformat, shape, localWorkSize, globalWorkSize)
         if type(pixels)==str:
             #str is not a buffer, so we have to copy the data
