@@ -32,7 +32,7 @@ def dimdiv(dim, div):
     #when we divide a dimensions by the subsampling
     #we want to round up so as to include the last
     #pixel when we hit odd dimensions
-    return roundup(dim/div, div)
+    return roundup(dim//div, div)
 
 def device_type(d):
     try:
