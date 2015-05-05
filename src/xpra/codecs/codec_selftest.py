@@ -60,7 +60,7 @@ def testdecoder(decoder_module):
                 assert image.get_height()==H, "expected image of height %s but got %s" % (H, image.get_height())
                 #test failures:
                 try:
-                    image = e.decompress_image("junk", {})
+                    image = e.decompress_image(b"junk", {})
                 except:
                     pass
                 if image is not None:
