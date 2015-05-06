@@ -13,7 +13,7 @@ from xpra.codecs.codec_constants import get_subsampling_divs, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
 from xpra.server.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
 from xpra.server.video_subregion import VideoSubregion
-from xpra.codecs.loader import PREFERED_SERVER_ENCODING_ORDER
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.util import updict
 from xpra.log import Logger
 
@@ -87,7 +87,7 @@ class WindowVideoSource(WindowSource):
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
-        self.non_video_encodings = [x for x in PREFERED_SERVER_ENCODING_ORDER if x in nv_common]
+        self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
 
         #those two instances should only ever be modified or accessed from the encode thread:
         self._csc_encoder = None
@@ -285,7 +285,7 @@ class WindowVideoSource(WindowSource):
         WindowSource.do_set_client_properties(self, properties)
         #encodings may have changed, so redo this:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
-        self.non_video_encodings = [x for x in PREFERED_SERVER_ENCODING_ORDER if x in nv_common]
+        self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
         log("do_set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s, scaling_control=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
@@ -1234,7 +1234,7 @@ class WindowVideoSource(WindowSource):
             fallback_encodings = set(self._encoders.keys()) - set(self.video_encodings) - set(["mmap"])
             log.error("BUG: failed to setup a video pipeline for %s encoding with source format %s, will fallback to: %s", encoding, src_format, ", ".join(list(fallback_encodings)))
             assert len(fallback_encodings)>0
-            fallback_encoding = [x for x in PREFERED_SERVER_ENCODING_ORDER if x in fallback_encodings][0]
+            fallback_encoding = [x for x in PREFERED_ENCODING_ORDER if x in fallback_encodings][0]
             return self._encoders[fallback_encoding](fallback_encoding, image, options)
         assert self._video_encoder
 

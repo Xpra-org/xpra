@@ -184,10 +184,8 @@ ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp8", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265", "vp9"]
-#now that vp9 is usable, move it up the list, but only on the server,
-#(don't make the clients request vp9 since they could be connecting to an old server..)
-PREFERED_SERVER_ENCODING_ORDER = ["h264", "vp9", "vp8", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
+PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
+
 
 from xpra.net import compression
 RGB_COMP_OPTIONS  = ["Raw RGB"]
