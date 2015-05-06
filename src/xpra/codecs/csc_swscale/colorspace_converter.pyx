@@ -200,7 +200,12 @@ def get_input_colorspaces():
 
 def get_output_colorspaces(input_colorspace):
     #exclude input colorspace:
-    return [x for x in COLORSPACES if x!=input_colorspace]
+    exclude = [input_colorspace]
+    if input_colorspace in ("YUV420P", "YUV422P"):
+        #these would cause a warning:
+        #"No accelerated colorspace conversion found from yuv420p to gbrp."
+        exclude.append("GBRP")
+    return [x for x in COLORSPACES if x not in exclude]
 
 def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
