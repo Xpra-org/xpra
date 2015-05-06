@@ -635,15 +635,15 @@ class ColorspaceConverter(object):
         maxw_w, maxw_h = selected_device.max_work_item_sizes[:2]
         while local_w*local_h>selected_device.max_work_group_size or local_w>maxw_w or local_h>maxw_h:
             if local_w>maxw_w:
-                local_w /= 2
+                local_w //= 2
             if local_h>maxw_h:
-                local_h /= 2
+                local_h //= 2
             if local_w*local_h>selected_device.max_work_group_size:
                 #prefer h<w for local work:
                 if local_h>=local_w:
-                    local_h /= 2
+                    local_h //= 2
                 else:
-                    local_w /= 2
+                    local_w //= 2
         globalWorkSize = (roundup(wwidth, local_w), roundup(wheight, local_h))
         localWorkSize = local_w, local_h
         return globalWorkSize, localWorkSize
@@ -789,8 +789,8 @@ class ColorspaceConverter(object):
         out_sizes = []
         for i in range(3):
             x_div, y_div = divs[i]
-            p_stride = roundup(self.dst_width / x_div, max(2, localWorkSize[0]))
-            p_height = roundup(self.dst_height / y_div, 2)
+            p_stride = roundup(self.dst_width // x_div, max(2, localWorkSize[0]))
+            p_height = roundup(self.dst_height // y_div, 2)
             p_size = p_stride * p_height
             #log("output buffer for channel %s: stride=%s, height=%s, size=%s", i, p_stride, p_height, p_size)
             out_buf = pyopencl.Buffer(self.context, mem_flags.WRITE_ONLY, p_size)
