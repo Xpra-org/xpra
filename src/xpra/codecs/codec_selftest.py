@@ -88,8 +88,8 @@ def testencoder(encoder_module, full):
                     assert len(data)>0
                     assert meta is not None
                     #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
-                    print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
-                    print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
+                    #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
+                    #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
                     if full:
                         try:
                             wrong_format = [x for x in ("YUV420P", "YUV444P", "BGRX") if x!=cs_in][0]
