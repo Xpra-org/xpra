@@ -54,7 +54,7 @@ try:
 except:
     ALL_CLIPBOARDS = []
 
-FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
+FAKE_BROKEN_CONNECTION = int(os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0"))
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
@@ -1146,7 +1146,10 @@ class UIXpraClient(XpraClientBase):
             #no longer connected!
             return False
         last = self._server_ok
-        self._server_ok = not FAKE_BROKEN_CONNECTION and self.last_ping_echoed_time>=ping_sent_time
+        if FAKE_BROKEN_CONNECTION>0:
+            self._server_ok = (int(time.time()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
+        else:
+            self._server_ok = not FAKE_BROKEN_CONNECTION and self.last_ping_echoed_time>=ping_sent_time
         log("check_server_echo(%s) last=%s, server_ok=%s", ping_sent_time, last, self._server_ok)
         if last!=self._server_ok and not self._server_ok:
             log.info("server is not responding, drawing spinners over the windows")
@@ -1159,7 +1162,7 @@ class UIXpraClient(XpraClientBase):
                     log.info("server is OK again")
                     return False
                 return True
-            self.redraw_spinners()
+            self.idle_add(self.redraw_spinners)
             self.timeout_add(250, timer_redraw)
         return False
 
