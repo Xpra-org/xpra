@@ -50,7 +50,7 @@ class GLClientWindow(GTK2WindowBase):
         if not b or not self.can_have_spinner():
             return
         b.paint_spinner = not ok
-        if not b._backing or not b.paint_screen:
+        if b._backing and b.paint_screen:
             b.gl_expose_event(self._backing._backing, "spinner: fake event")
             w, h = self.get_size()
             self.queue_draw(0, 0, w, h)
