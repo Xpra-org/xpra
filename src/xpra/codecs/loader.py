@@ -185,6 +185,9 @@ ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
 PREFERED_ENCODING_ORDER = ["h264", "vp8", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265", "vp9"]
+#now that vp9 is usable, move it up the list, but only on the server,
+#(don't make the clients request vp9 since they could be connecting to an old server..)
+PREFERED_SERVER_ENCODING_ORDER = ["h264", "vp9", "vp8", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
 
 from xpra.net import compression
 RGB_COMP_OPTIONS  = ["Raw RGB"]
@@ -208,7 +211,7 @@ ENCODINGS_HELP = {
       "h264"    : "H.264 video codec",
       "h265"    : "H.265 (HEVC) video codec (slow and buggy - do not use!)",
       "vp8"     : "VP8 video codec",
-      "vp9"     : "VP9 video codec (very slow - do not use!)",
+      "vp9"     : "VP9 video codec",
       "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
       "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
       "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
@@ -220,7 +223,7 @@ ENCODINGS_HELP = {
 HELP_ORDER = ("h264", "h265", "vp8", "vp9", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
 
 #those are currently so useless that we don't want the user to select them by mistake
-PROBLEMATIC_ENCODINGS = ("h265", "vp9")
+PROBLEMATIC_ENCODINGS = ("h265", )
 
 
 def encodings_help(encodings):

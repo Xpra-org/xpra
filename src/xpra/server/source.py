@@ -883,6 +883,10 @@ class ServerSource(object):
         elif action=="new-sequence":
             self.sound_source_sequence = int(args[0])
             return "new sequence is %s" % self.sound_source_sequence
+        elif action=="sync":
+            self.sound_sync = int(args[0])
+            log.info("sound sync set to %s", self.sound_sync)
+            return "sound sync set to %s" % self.sound_sync
         #elif action=="quality":
         #    assert self.sound_source
         #    quality = args[0]

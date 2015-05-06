@@ -45,7 +45,7 @@ from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
 from xpra.server.region import rectangle, add_rectangle, remove_rectangle   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
+from xpra.codecs.loader import PREFERED_SERVER_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
 from xpra.net import compression
 
@@ -553,7 +553,7 @@ class WindowSource(object):
             common_encodings.append("rgb")
         if self.webp_leaks and "webp" in common_encodings:
             common_encodings.remove("webp")
-        self.common_encodings = [x for x in PREFERED_ENCODING_ORDER if x in common_encodings]
+        self.common_encodings = [x for x in PREFERED_SERVER_ENCODING_ORDER if x in common_encodings]
         if not self.common_encodings:
             raise Exception("no common encodings found (server: %s vs client: %s)" % (", ".join(self._encoders.keys()), ", ".join(self.core_encodings)))
         #ensure the encoding chosen is supported by this source:

@@ -31,7 +31,7 @@ from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ER
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import python_platform, parse_bool_or_int
 from xpra.scripts.main import sound_option
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
+from xpra.codecs.loader import PREFERED_SERVER_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.codec_constants import get_PIL_encodings
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 if sys.version > '3':
@@ -289,7 +289,7 @@ class ServerBase(ServerCore):
         self.encodings = encs
         self.core_encodings = core_encs
         self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb") or x=="webp")]
-        pref = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings]
+        pref = [x for x in PREFERED_SERVER_ENCODING_ORDER if x in self.encodings]
         if pref:
             self.default_encoding = pref[0]
         else:
