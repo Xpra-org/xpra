@@ -1166,9 +1166,10 @@ class UIXpraClient(XpraClientBase):
     def redraw_spinners(self):
         #draws spinner on top of the window, or not (plain repaint)
         #depending on whether the server is ok or not
+        ok = self.server_ok()
         for w in self._id_to_window.values():
             if not w.is_tray():
-                w.spinner(self.server_ok())
+                w.spinner(ok)
 
     def check_echo_timeout(self, ping_time):
         log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)

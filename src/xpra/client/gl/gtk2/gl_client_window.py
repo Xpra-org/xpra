@@ -47,12 +47,13 @@ class GLClientWindow(GTK2WindowBase):
 
     def spinner(self, ok):
         b = self._backing
-        if not b or not b.paint_screen or not b._backing or not self.can_have_spinner():
+        if not b or not b._backing or not self.can_have_spinner():
             return
-        w, h = self.get_size()
         b.paint_spinner = not ok
-        b.gl_expose_event(self._backing._backing, "spinner: fake event")
-        self.queue_draw(0, 0, w, h)
+        if b.paint_screen:
+            b.gl_expose_event(self._backing._backing, "spinner: fake event")
+            w, h = self.get_size()
+            self.queue_draw(0, 0, w, h)
 
     def do_expose_event(self, event):
         log("GL do_expose_event(%s)", event)
